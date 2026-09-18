@@ -1,0 +1,7 @@
+node_modules
+.next
+.data
+reference
+AGENTS.md
+package-lock.json
+supabase

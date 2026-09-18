@@ -46,14 +46,14 @@ begin
  if coalesce((old_state->>'revision')::integer,-1)<>expected_revision or (document->>'revision')::integer<>expected_revision+1 then raise exception 'Revision conflict' using errcode='40001';end if;
  if old_state is not null then
   -- Preserve audit prefix and every prior sealed record, including inside the aggregate.
-  if not (document->'events' @> old_state->'events') or not(document->'signers' @> old_state->'signers') or not(document->'files' @> old_state->'files') then raise exception 'Immutable evidence removed';end if;
+  if not ((document->'events') @> (old_state->'events')) or not((document->'signers') @> (old_state->'signers')) or not((document->'files') @> (old_state->'files')) then raise exception 'Immutable evidence removed';end if;
   for x in select value from jsonb_array_elements(old_state->'versions') loop
-   if (x->>'frozen')::boolean and not(document->'versions' @> jsonb_build_array(x)) then raise exception 'Frozen evidence changed';end if;
+   if (x->>'frozen')::boolean and not((document->'versions') @> jsonb_build_array(x)) then raise exception 'Frozen evidence changed';end if;
   end loop;
  end if;
  insert into public.proposals(id,revision,state,client_id,title,status,token,source,proposify_id,created_at,updated_at,search_text)
  values(pid,(document->>'revision')::integer,document,(document->'client'->>'id')::uuid,document->>'title',document->>'status',document->>'token',document->>'source',document->>'proposify_id',(document->>'created_at')::timestamptz,(document->>'updated_at')::timestamptz,concat_ws(' ',document->>'title',document->'client'->>'company',document->'client'->>'email',document->>'search_text'))
- on conflict(id) do update set revision=excluded.revision,state=excluded.state,title=excluded.title,status=excluded.status,token=excluded.token,updated_at=excluded.updated_at,search_text=excluded.search_text;
+ on conflict(id) do update set revision=excluded.revision,state=excluded.state,client_id=excluded.client_id,title=excluded.title,status=excluded.status,token=excluded.token,updated_at=excluded.updated_at,search_text=excluded.search_text;
  for x in select value from jsonb_array_elements(document->'versions') loop
  insert into public.proposal_versions values((x->>'id')::uuid,pid,(x->>'version_no')::integer,x) on conflict(id) do update set data=excluded.data where proposal_versions.data is distinct from excluded.data;
  end loop;
