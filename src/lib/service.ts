@@ -194,6 +194,10 @@ export class ProposalService {
       );
       check(new Date(p.valid_until) > this.clock(), "Proposal expired");
       check(p.quote.length > 0, "Quote required");
+      check(
+        new Set(p.quote.map((l) => l.id)).size === p.quote.length,
+        "Duplicate quote items must be combined using quantity",
+      );
       for (const l of p.quote) {
         check(l.active, "Inactive pricing item");
         check(
@@ -233,6 +237,7 @@ export class ProposalService {
         {
           to: p.client.email,
           subject: p.title,
+          send_version: version.version_no,
           text: `Review your proposal: ${process.env.APP_URL ?? "http://127.0.0.1:3000"}/p/${p.token}`,
         },
         now,
@@ -241,7 +246,7 @@ export class ProposalService {
   }
   async byToken(token: string, password = "") {
     check(/^[A-Za-z0-9_-]{43}$/.test(token), "Not found", 404);
-    const p = (await this.repo.list()).find((x) => x.token === token);
+    const p = await this.repo.byToken(token);
     check(p, "Not found", 404);
     publicAccess(p, password, this.clock());
     return p;

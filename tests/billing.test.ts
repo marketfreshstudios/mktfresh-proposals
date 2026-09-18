@@ -63,3 +63,43 @@ it("routes one-time vs monthly, matches customers, blocks near-match, and is ide
     (await bill(p, "qbo", new UnconfiguredBillingProvider("QBO"))).status,
   ).toBe("needs_review");
 });
+
+it("preserves OIOT kickoff separation and subscription scheduling metadata", async () => {
+  const { repo, service, draft } = await setup();
+  const items =
+    await repo.entities<import("../src/lib/model").Item>("pricing_items");
+  const kickoff = items.find((i) => i.sku === "oiot-kickoff")!,
+    monthly = items.find((i) => i.sku === "oiot-monthly")!;
+  const { mutate } = await import("../src/lib/repository");
+  await mutate(repo, draft.id, (p) => {
+    p.quote = [kickoff, monthly].map((i) => ({
+      ...i,
+      qty: 1,
+      optional: false,
+      selected: true,
+    }));
+    p.oiot = { full_price: 275000, kickoff: 50000, pages: 5 };
+  });
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const qbo = await bill(p, "qbo", new MockBillingProvider("qbo")),
+    stripe = await bill(p, "stripe", new MockBillingProvider("stripe"));
+  expect(
+    (qbo.metadata!.lines as { unit_price: number }[]).map((l) => l.unit_price),
+  ).toEqual([50000]);
+  expect(
+    (stripe.metadata!.lines as { unit_price: number }[]).map(
+      (l) => l.unit_price,
+    ),
+  ).toEqual([17500]);
+  expect(stripe.metadata!.oiot).toMatchObject({
+    remaining: 30,
+    after_cents: 10000,
+    build_credit_cents: 7500,
+    proration_behavior: "none",
+    kickoff_billed_in: "qbo",
+  });
+});

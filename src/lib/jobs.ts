@@ -122,6 +122,8 @@ export class Worker {
   private async execute(p: Proposal, j: Job) {
     if (j.kind === "email") {
       const payload = j.payload;
+      if (payload.send_version && payload.send_version !== p.versions.length)
+        return;
       if (
         payload.reminder_day &&
         (!["sent", "viewed"].includes(p.status) ||
@@ -160,7 +162,10 @@ export class Worker {
           p.billing_links = p.billing_links
             .filter((l) => l.provider !== provider)
             .concat(link);
-          if (old?.status !== "succeeded")
+          if (
+            old?.status !== "succeeded" &&
+            (link.status !== "succeeded" || link.external_object_id)
+          )
             event(
               p,
               link.status === "succeeded"

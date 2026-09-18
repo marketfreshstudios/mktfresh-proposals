@@ -6,6 +6,7 @@ export type EntityTable =
   "clients" | "pricing_items" | "templates" | "content_library";
 export interface Repository {
   get(id: string): Promise<Proposal | null>;
+  byToken(token: string): Promise<Proposal | null>;
   list(search?: string): Promise<Proposal[]>;
   save(p: Proposal, expected: number): Promise<void>;
   entities<T>(table: EntityTable): Promise<T[]>;
@@ -16,6 +17,11 @@ export class MemoryRepository implements Repository {
   catalog = new Map<EntityTable, Map<string, unknown>>();
   async get(id: string) {
     return structuredClone(this.rows.get(id) ?? null);
+  }
+  async byToken(token: string) {
+    return structuredClone(
+      [...this.rows.values()].find((p) => p.token === token) ?? null,
+    );
   }
   async list(search?: string) {
     const terms = (search ?? "").toLowerCase().split(/\s+/).filter(Boolean);
@@ -82,6 +88,10 @@ export class LocalRepository extends MemoryRepository {
     await this.ready;
     return super.get(id);
   }
+  override async byToken(token: string) {
+    await this.ready;
+    return super.byToken(token);
+  }
   override async list(search?: string) {
     await this.ready;
     return super.list(search);
@@ -116,6 +126,15 @@ export class SupabaseRepository implements Repository {
       .from("proposals")
       .select("state")
       .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.state as Proposal) ?? null;
+  }
+  async byToken(token: string) {
+    const { data, error } = await this.db
+      .from("proposals")
+      .select("state")
+      .eq("token", token)
       .maybeSingle();
     if (error) throw error;
     return (data?.state as Proposal) ?? null;

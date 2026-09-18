@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "seed": "tsx scripts/seed.ts",
-    "import": "tsx scripts/proposify-import/index.ts"
+    "seed": "node --env-file-if-exists=.env.local --import tsx scripts/seed.ts",
+    "import": "node --env-file-if-exists=.env.local --import tsx scripts/proposify-import/index.ts",
+    "verify:supabase": "tsx scripts/verify-supabase.ts",
+    "format:check": "prettier --check src scripts tests e2e *.ts *.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
