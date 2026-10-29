@@ -1,0 +1,616 @@
+{
+  "run": "clock-check-1793297669929",
+  "clock": "clock_1UVxqMCyTuAwrO6jhg53JOqk",
+  "customer": "cus_VX1uKscBTFS7Zl",
+  "subscription": "sub_1UVxqOCyTuAwrO6jNoRNRSxF",
+  "schedule": "sub_sched_1UVxqUCyTuAwrO6jxuoWDn7V",
+  "start": 1793297669,
+  "result": "passed: 30 payments of $175 then paid $100 hosted-standard-100 invoice",
+  "key_check": "Passed before run and each API request",
+  "billing_mode": "test",
+  "api_version": "2024-06-20",
+  "finished_at": "2026-10-29T18:29:35.629Z",
+  "steps": [
+    {
+      "payment": 1,
+      "invoice": "in_1UVxqOCyTuAwrO6jwvGjpGDj",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1793297669,
+      "period_start": 1793297669,
+      "period_end": 1795976069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 2,
+      "invoice": "in_1UVxqbCyTuAwrO6j8HtYpukv",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1796238869,
+      "period_start": 1795976069,
+      "period_end": 1798568069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 3,
+      "invoice": "in_1UVxrwCyTuAwrO6jiJtIMlDk",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1798830869,
+      "period_start": 1798568069,
+      "period_end": 1801246469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 4,
+      "invoice": "in_1UVxsNCyTuAwrO6jEeFSjwkE",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1801509269,
+      "period_start": 1801246469,
+      "period_end": 1803838469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 5,
+      "invoice": "in_1UVxsnCyTuAwrO6j5wQfmtcs",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1804101269,
+      "period_start": 1803838469,
+      "period_end": 1806344069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 6,
+      "invoice": "in_1UVxtBCyTuAwrO6jv7y9UCxD",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1806606869,
+      "period_start": 1806344069,
+      "period_end": 1809022469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 7,
+      "invoice": "in_1UVxteCyTuAwrO6jHdXLt0cC",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1809285269,
+      "period_start": 1809022469,
+      "period_end": 1811614469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 8,
+      "invoice": "in_1UVxu3CyTuAwrO6jq6M8MoHw",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1811877269,
+      "period_start": 1811614469,
+      "period_end": 1814292869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 9,
+      "invoice": "in_1UVxuUCyTuAwrO6je2zSLBvR",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1814555669,
+      "period_start": 1814292869,
+      "period_end": 1816884869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 10,
+      "invoice": "in_1UVxuvCyTuAwrO6jjx5oHZn1",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1817147669,
+      "period_start": 1816884869,
+      "period_end": 1819563269,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 11,
+      "invoice": "in_1UVxvOCyTuAwrO6jPzh5c5dK",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1819826069,
+      "period_start": 1819563269,
+      "period_end": 1822241669,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 12,
+      "invoice": "in_1UVxvrCyTuAwrO6j26O0SRBz",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1822504469,
+      "period_start": 1822241669,
+      "period_end": 1824833669,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 13,
+      "invoice": "in_1UVxwLCyTuAwrO6j0q2uRS3J",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1825096469,
+      "period_start": 1824833669,
+      "period_end": 1827512069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 14,
+      "invoice": "in_1UVxwtCyTuAwrO6jqJ1KENyd",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1827774869,
+      "period_start": 1827512069,
+      "period_end": 1830104069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 15,
+      "invoice": "in_1UVxxMCyTuAwrO6jnBbWKYoI",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1830366869,
+      "period_start": 1830104069,
+      "period_end": 1832782469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 16,
+      "invoice": "in_1UVxxoCyTuAwrO6jH0S4R1zV",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1833045269,
+      "period_start": 1832782469,
+      "period_end": 1835460869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 17,
+      "invoice": "in_1UVxyGCyTuAwrO6jsFCKNuiH",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1835723669,
+      "period_start": 1835460869,
+      "period_end": 1837966469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 18,
+      "invoice": "in_1UVxymCyTuAwrO6jBbWHZ8cS",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1838229269,
+      "period_start": 1837966469,
+      "period_end": 1840644869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 19,
+      "invoice": "in_1UVxzECyTuAwrO6jBONRRidA",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1840907669,
+      "period_start": 1840644869,
+      "period_end": 1843236869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 20,
+      "invoice": "in_1UVxzdCyTuAwrO6jVzKMt97L",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1843499669,
+      "period_start": 1843236869,
+      "period_end": 1845915269,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 21,
+      "invoice": "in_1UVy06CyTuAwrO6j0uSbPPHS",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1846178069,
+      "period_start": 1845915269,
+      "period_end": 1848507269,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 22,
+      "invoice": "in_1UVy0VCyTuAwrO6jSQxbQ4LP",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1848770069,
+      "period_start": 1848507269,
+      "period_end": 1851185669,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 23,
+      "invoice": "in_1UVy0uCyTuAwrO6jb0Kn7x1m",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1851448469,
+      "period_start": 1851185669,
+      "period_end": 1853864069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 24,
+      "invoice": "in_1UVy1NCyTuAwrO6jA1tdqR8i",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1854126869,
+      "period_start": 1853864069,
+      "period_end": 1856456069,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 25,
+      "invoice": "in_1UVy1qCyTuAwrO6jXbsRM2vE",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1856718869,
+      "period_start": 1856456069,
+      "period_end": 1859134469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 26,
+      "invoice": "in_1UVy2HCyTuAwrO6jvyjr3unJ",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1859397269,
+      "period_start": 1859134469,
+      "period_end": 1861726469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 27,
+      "invoice": "in_1UVy2mCyTuAwrO6j3NLygUjo",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1861989269,
+      "period_start": 1861726469,
+      "period_end": 1864404869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 28,
+      "invoice": "in_1UVy3FCyTuAwrO6j25AHRVle",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1864667669,
+      "period_start": 1864404869,
+      "period_end": 1866996869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 29,
+      "invoice": "in_1UVy3eCyTuAwrO6jLeU2wzyt",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1867259669,
+      "period_start": 1866996869,
+      "period_end": 1869502469,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 30,
+      "invoice": "in_1UVy47CyTuAwrO6j3caUo3At",
+      "amount_paid": 17500,
+      "paid": true,
+      "price_lookup_key": "oiot-monthly-175",
+      "plan": "oiot-monthly-175",
+      "frozen_time": 1869765269,
+      "period_start": 1869502469,
+      "period_end": 1872180869,
+      "subscription_status": "active"
+    },
+    {
+      "payment": 31,
+      "invoice": "in_1UVy4ZCyTuAwrO6jhHP9cT9D",
+      "amount_paid": 10000,
+      "paid": true,
+      "price_lookup_key": "hosted-standard-100",
+      "plan": "hosted-standard-100",
+      "frozen_time": 1872443669,
+      "period_start": 1872180869,
+      "period_end": 1874772869,
+      "subscription_status": "active"
+    }
+  ],
+  "errors": [],
+  "total_paid_cents": 535000,
+  "webhooks": {
+    "listener_permission": "passed",
+    "cli_version": "1.53.1",
+    "requested_api_version": "2024-06-20",
+    "delivered_api_version": "2019-12-03",
+    "result": "blocked: snapshot version mismatch after valid signature",
+    "events": [
+      {
+        "status": "rejected",
+        "id": "evt_1UVxqRCyTuAwrO6j9BQcf8F1",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxrpCyTuAwrO6jtRLEjIzd",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxsGCyTuAwrO6jkbYlojDz",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxsgCyTuAwrO6jkXyTqn6E",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxt6CyTuAwrO6j8aWsfojy",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxtWCyTuAwrO6jMRhnzsHw",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxtwCyTuAwrO6jBI7QrwuC",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxuNCyTuAwrO6jjIzlum6X",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxuoCyTuAwrO6jdjR4T5nw",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxvHCyTuAwrO6jmLvOertw",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxvkCyTuAwrO6jJhPIkWg8",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxwCCyTuAwrO6j8poJiZM1",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxwkCyTuAwrO6jDaQJIAKT",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxxECyTuAwrO6jNlTG0alw",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxxgCyTuAwrO6ja9fGeUj4",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxy9CyTuAwrO6jcoxtFIS0",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxydCyTuAwrO6jbil9uiQZ",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxz5CyTuAwrO6jl7BzKKoX",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxzWCyTuAwrO6jO7peUPml",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVxzyCyTuAwrO6jjmVSJaHS",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy0OCyTuAwrO6jXpMBnKsd",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy0mCyTuAwrO6jv3P30UwJ",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy1GCyTuAwrO6j70uwErSw",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy1jCyTuAwrO6jGFvKzTeN",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy29CyTuAwrO6jmsY0Pf09",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy2fCyTuAwrO6j3ZQSwmok",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy37CyTuAwrO6jWo8T1E2J",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy3XCyTuAwrO6jIVzrxLOk",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy3zCyTuAwrO6j6YwqMMFh",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy4SCyTuAwrO6jh6w1Zj1z",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      },
+      {
+        "status": "rejected",
+        "id": "evt_1UVy4uCyTuAwrO6jXpx9eMgi",
+        "type": "invoice.paid",
+        "api_version": "2019-12-03",
+        "message": "Error: Webhook must use pinned snapshot API version"
+      }
+    ],
+    "app_processing_and_replay": "pending"
+  }
+}
