@@ -29,8 +29,8 @@
 
 1. **Stripe test catalogue:** sync passed on 29 October (41 imported), but the initial acceptance gate incorrectly required the retired illustrative key `storage-30gb-60`. The owner clarified that `hosting-upgrade-60` is its replacement and is present in test mode. `hosted-standard-100` and `oiot-monthly-175` are present. No catalogue copy is needed. The corrected gate passed at 18:00 UTC. Actual pagination and legacy exclusion still need test data (this response was one page and no imported prices carried `metadata[legacy]=true`). Compare names, amounts and intervals with the owner's catalogue.
 2. **D2:** the core monthly scenario passed on 29 October (details below). Broader acceptance still includes an existing test customer with active monthly subscription and working card. Sign a proposal; confirm original items unchanged, one new item per selected line, no proration, correct customer company and plan metadata, unchanged existing subscription description/collection method, no Checkout link, and accurate new recurring totals/email. Repeat for yearly items, mixed intervals and retry/replay.
-3. **D3:** new-customer Checkout completed with a test card on 29 October; signed webhook delivery/replay remains blocked by the CLI permission below. Broader cases: no card/no usable subscription/new customer. Confirm Checkout uses the same stored customer; complete it using Stripe test payment data; deliver the signed snapshot webhook and confirm no duplicate subscription on replay. Test abandoned/expired sessions and correction/retry behavior.
-4. **Scheduled subscriptions:** initial separate subscription and two-phase schedule passed on 29 October. Remaining: test clocks/payment failures/paid invoices, supplied 18/30 and legacy 35-payment terms, month ends, phase metadata, separate subscription, generic step-down key/amount, retry after failed payment, and `send_invoice` first-invoice finalize/send. Mock contracts cannot establish Stripe's acceptance of schedule phase updates.
+3. **D3:** new-customer Checkout completed with a test card on 29 October; signed webhook processing/replay remains blocked by the CLI snapshot-version mismatch described in the latest verification below. Broader cases: no card/no usable subscription/new customer. Confirm Checkout uses the same stored customer; complete it using Stripe test payment data; deliver the signed snapshot webhook and confirm no duplicate subscription on replay. Test abandoned/expired sessions and correction/retry behavior.
+4. **Scheduled subscriptions:** the separate subscription, two-phase schedule and a real test-clock run through 30 paid $175 invoices followed by a paid $100 `hosted-standard-100` invoice passed on 29 October (latest evidence below). Remaining: failed/unpaid invoice handling and webhook-driven recalculation, legacy 35-payment terms, additional month-end anchors, and `send_invoice` first-invoice finalize/send.
 5. **Custom retainer:** actual $2,000/month billing passed under a newly created generic test-only Custom Retainer family. Full sign → billing → PDF acceptance with the actual provider remains pending; the existing browser flow uses mocked billing. Confirm signed amount/scope, reuse of the generic family on subsequent proposals, no lookup-key price creation, correct inline price and plan metadata. Duplicate family names must be refused across all product pages. Check restricted-key permissions with actual test requests.
 6. **QuickBooks sandbox:** initial grant, encrypted token rotation, exact email/stored-ID matching and same-company/different-email review; correct line items/amounts, `EmailStatus=NotSet`, no customer email, fallback Custom services item and durable retry without duplicate invoices.
 7. **Hosted deployment:** Vercel Chromium binary size/runtime/memory, embedded fonts/logo, both PDFs, private downloads, cron authentication and timing, webhook delivery/replay, custom-domain links and actual Resend delivery/DNS.
@@ -181,4 +181,44 @@ Test objects retained for inspection (not cancelled or deleted):
 - OIOT subscription `sub_1UVxerCyTuAwrO6j8eQ9rX8r`; schedule `sub_sched_1UVxewCyTuAwrO6j5JwrEvW7`.
 - Custom Retainer product `prod_VX1iT46oNV26LR`; subscription `sub_1UVxfDCyTuAwrO6j4ILDBWhG`.
 
-Sanitized results and request statuses are committed in `docs/stripe-test-results-2026-10-29.json`. Detailed local journals and Checkout screenshots remain ignored under `.data/stripe-acceptance/` in the review checkout. No Stripe provider request failed in the four core billing scenarios; the only permission failure was starting the CLI listener. **Stopped after recording results. Webhooks require the missing test-key CLI permission before another authorized run; QuickBooks remains pending.**
+Sanitized results and request statuses are committed in `docs/stripe-test-results-2026-10-29.json`. Detailed local journals and Checkout screenshots remain ignored under `.data/stripe-acceptance/` in the review checkout. No Stripe provider request failed in the four core billing scenarios; the only permission failure was starting the CLI listener. **Stopped after recording results. At that point webhooks required the test-key CLI permission. The owner subsequently granted it; see the latest verification below. QuickBooks remains pending.**
+
+
+## Webhook and test-clock continuation — 29 October 2026
+
+The owner granted Debugging Tools Write and Test Clocks Write and authorized this continuation. Each run read only the repository `.env.local` test key, validated its test prefix, and used test mode. API calls retained the `2024-06-20` version and per-request key guard. No saved CLI account credentials, live resources, or account-wide API settings were used or changed.
+
+### Webhook forwarding result
+
+- **CLI permission issue resolved.** `stripe listen` starts using the explicit repository key and `/dev/null` configuration, with test mode (no `--live`). A local signing secret was obtained and kept only in ignored local files.
+- Actual clock-subscription `invoice.paid` events reached the local production webhook verifier. Timestamp and HMAC verification succeeded; the verifier then returned HTTP 400 with `Webhook must use pinned snapshot API version` because the CLI renders snapshots at the account default **2019-12-03**, whereas this app deliberately requires **2024-06-20**.
+- Installed CLI 1.53.1 rejects `listen --api-version 2024-06-20` with `unknown flag: --api-version`. Its latest-version option would also differ from the app's pinned version. [Stripe CLI version explanation](https://github.com/stripe/stripe-cli/issues/1143).
+- **Application webhook processing and replay remain blocked**, now by version compatibility rather than permission. No payload version was rewritten, no fabricated accepted event was substituted, and the app's guard was not weakened. Checkout completion/replay and failure-event application checks remain pending a compatible pinned-version delivery path. Do not change the shared account's default version merely to work around this local CLI limitation.
+
+### Test-clock method
+
+A fresh test clock, customer and OIOT subscription were created solely for this simulation; earlier test subscriptions were left untouched. The application provider created its normal separate subscription and two-phase schedule from the entered 18-month minimum / 30-payment terms. The clock advanced one monthly boundary at a time. Each invoice had to be automatically paid before proceeding, with its amount, plan metadata, lookup key, absence of proration, and cumulative paid-invoice count checked through Stripe's pinned API.
+
+The initial runner expected collection after a short advance and stopped on the second invoice still being draft. Stripe reported `automatically_finalizes_at` 72 hours after invoice creation and `webhooks_delivered_at=null`. The runner resumed the same clock/customer/subscription and advanced to the reported finalization time plus an hour; no manual invoice finalization or payment was used. This is an observed test-account invoice delay, not an OIOT schedule failure.
+
+Because the incoming CLI snapshots are rejected before application job processing, this run tests Stripe's execution of the application's initially configured schedule. It does not certify the webhook-driven schedule recalculation path for unpaid/failed invoices. That remains a separate pending test.
+
+
+### Test-clock result — passed
+
+- **Exactly 30 distinct, automatically paid invoices at $175**, followed by **invoice 31 automatically paid at $100**. Total test payments: **$5,350**. No manual invoice finalization/payment or catalogue writes occurred.
+- Payments 1–30 retained `oiot-monthly-175` in both the price lookup key and subscription `metadata.plan`. The first $100 invoice and subscription both use **`hosted-standard-100`**. The transition starts **29 April 2029** in simulated time, after the 30th paid billing period. The subscription remains active, with no proration lines in any checked invoice.
+- The 18-month minimum did not cause an early transition. The simulation traversed February billing dates while retaining the subscription's monthly anchor behavior.
+- All test-clock/customer/subscription API requests succeeded; **no restricted-key permission errors** occurred in this continuation. The temporary draft-invoice wait was resolved by honoring Stripe's reported automatic-finalization time.
+- Stripe signed and forwarded the clock's `invoice.paid` events, but the local verifier rejected their incompatible version before enqueueing application jobs. Thus the successful schedule result proves Stripe's execution of the schedule created by the provider, **not** the blocked webhook-driven recalculation or replay path.
+
+Retained test objects:
+
+- Clock: `clock_1UVxqMCyTuAwrO6jhg53JOqk`.
+- Customer: `cus_VX1uKscBTFS7Zl`.
+- Subscription: `sub_1UVxqOCyTuAwrO6jNoRNRSxF`.
+- Schedule: `sub_sched_1UVxqUCyTuAwrO6jxuoWDn7V`.
+
+The clock is left frozen after the first $100 payment; no further advances or cancellations were performed. Evidence: [stripe-clock-results-2026-10-29.json](docs/stripe-clock-results-2026-10-29.json), containing all 31 invoice checks and 31 matching forwarded webhook results. Local runtime evidence remains ignored under `.data/stripe-clock/`.
+
+**Stopped.** Local forwarding was stopped and its temporary signing-secret file removed. Remaining webhook work requires a delivery path that emits snapshot payloads at **2024-06-20**; the shared account default and the app's version guard remain unchanged. Failed-payment recalculation/replay remains pending. QuickBooks remains pending credentials.
