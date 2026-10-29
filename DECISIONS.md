@@ -86,3 +86,7 @@ The 29 October review supersedes the earlier instruction to update every touched
 - Staff display names belong to `staff_users`, seeded from Auth metadata/email. Staff emails are resolved from Auth and cannot be supplied or edited through the proposal/team forms. Owners may edit all names; members only their own. Membership/role RLS and write restrictions remain unchanged.
 - The workspace records an owner-configured domain already verified with the email provider; send refuses missing domains and exact-domain mismatches. DNS/provider verification is an owner setup action, not inferred from an email address. Migration leaves the new domain blank rather than claiming unverified setup.
 - Each send freezes the chosen staff sender, company and domain on the proposal and sent event; queued emails freeze quoted From and Reply-To ([Resend API](https://resend.com/docs/api-reference/emails/send-email)). Re-send may choose another sender. Notifications go to the chosen sender, sending staff, staff creator, and later company-signature applier. Legacy sent proposals keep saved email identity until re-send. AI schemas/services cannot choose or change sender identity.
+
+## Shared select chevrons (29 October 2026)
+
+Native select arrows are replaced globally by the design system's Font Awesome Solid chevron, rotated down at 12px. Image tokens mirror each theme's ink-muted and ink colors; white paper keeps the light variants. All controls reserve 36px on the right with the arrow inset 12px. Hover excludes disabled controls and existing focus styles remain intact.

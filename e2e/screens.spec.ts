@@ -12,7 +12,7 @@ import type { Proposal } from "../src/lib/model";
 test("all screen states in both themes, with explicit visual fixtures", async ({
   page,
 }) => {
-  // The 72 full-page captures need additional time on shared CI runners.
+  // The 74 full-page captures need additional time on shared CI runners.
   test.setTimeout(600000);
   page.setDefaultTimeout(15000);
   const { repo, service, draft, settings } = await setup();
@@ -255,6 +255,46 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         }
       }
 
+      // Exercise the actual controls on every captured surface, including paper.
+      await page.mouse.move(0, 0);
+      for (const select of await page.locator("select:visible").all()) {
+        await expect(select).toHaveCSS("appearance", "none");
+        await expect(select).toHaveCSS("padding-right", "36px");
+        await expect(select).toHaveCSS("background-size", "12px 12px");
+        await expect(select).toHaveCSS(
+          "background-position",
+          "calc(100% - 12px) 50%",
+        );
+        const paper = await select.evaluate((el) => !!el.closest(".paper"));
+        const muted = theme === "dark" && !paper ? "a3abb6" : "5a626b";
+        await expect(select).toHaveCSS("background-image", new RegExp(muted));
+      }
+      if (name === "send") {
+        const from = page.getByRole("combobox", { name: "From", exact: true });
+        await expect(from).toBeEnabled();
+        await from.hover();
+        await expect(from).toHaveCSS(
+          "background-image",
+          new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
+        );
+        await page.keyboard.press("Tab");
+        await from.focus();
+        await expect(from).toHaveCSS("outline-style", "solid");
+        await expect(from).toHaveCSS("outline-width", "2px");
+        await from.evaluate((el: HTMLSelectElement) => {
+          el.disabled = true;
+        });
+        await expect(from).toBeDisabled();
+        await expect(from).toHaveCSS(
+          "background-image",
+          new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+        );
+        await from.evaluate((el: HTMLSelectElement) => {
+          el.disabled = false;
+          el.blur();
+        });
+        await page.mouse.move(0, 0);
+      }
       await page.evaluate(() => document.fonts.ready);
       const file = `${name}-${phone ? "phone" : "desktop"}-${theme}.png`;
       await page.screenshot({ path: `${root}/${file}`, fullPage: true });
