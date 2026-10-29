@@ -1,4 +1,5 @@
 "use client";
+import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -11,7 +12,7 @@ import {
   type Proposal,
   type Item,
 } from "../lib/model";
-import { renderBlocks, variables, money } from "../lib/presentation";
+import { variables, money } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 function RichEditor({
   value,
@@ -284,8 +285,7 @@ export function ProposalEditor({
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
-    [stale, setStale] = useState(false),
-    [preview, setPreview] = useState(false);
+    [stale, setStale] = useState(false);
   const generation = useRef(0),
     revision = useRef(initial.revision),
     savingRef = useRef(false);
@@ -342,10 +342,6 @@ export function ProposalEditor({
   }, [dirty]);
   const ready = readiness(p, catalog),
     map = variables(p);
-  let html = "";
-  try {
-    html = renderBlocks(p.content, p.quote, map, p.currency);
-  } catch {}
   return (
     <div className="stack">
       {p.origin && (
@@ -420,8 +416,13 @@ export function ProposalEditor({
         <span role="status" className="muted">
           {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
         </span>
-        <Button onClick={() => setPreview(!preview)}>
-          {preview ? "Return to editor" : "Preview as client"}
+        <Button
+          disabled={dirty || saving || stale}
+          onClick={() =>
+            window.open(`/p/${p.id}?preview=1`, "_blank", "noopener")
+          }
+        >
+          Preview as client
         </Button>
         {!dirty && !saving && (
           <a className="btn primary" href={`/proposals/${p.id}/send`}>
@@ -431,23 +432,12 @@ export function ProposalEditor({
       </div>
       <div className="editor-grid">
         <div className="stack">
-          {preview ? (
-            <div
-              className="paper"
-              dangerouslySetInnerHTML={{
-                __html:
-                  html ||
-                  "Resolve the listed variables to preview this document.",
-              }}
-            />
-          ) : (
-            <BlocksEditor
-              content={p.content}
-              onChange={(content) => change({ content })}
-              map={map}
-              library={library}
-            />
-          )}
+          <BlocksEditor
+            content={p.content}
+            onChange={(content) => change({ content })}
+            map={map}
+            library={library}
+          />
         </div>
         <aside className="card quote-panel stack">
           <h2>Quote</h2>
@@ -734,13 +724,12 @@ export function ProposalEditor({
               }}
             >
               <option value="">Choose a service</option>
-              {catalog
-                .filter((i) => i.active)
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name} — {money(i.amount, p.currency)}/{i.interval}
-                  </option>
-                ))}
+              {sellableCatalogue(catalog).map((i) => (
+                <option key={i.id} value={i.id}>
+                  {itemDisplayName(i)} — {money(i.amount, p.currency)}/
+                  {i.interval}
+                </option>
+              ))}
             </select>
           </Field>
           <Button

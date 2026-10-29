@@ -56,7 +56,9 @@ export function readiness(
       !l.qbo_item_ref &&
       !p.workspace_settings?.qbo_custom_item_ref
     )
-      errors.push(`${l.name}: QuickBooks item or workspace fallback required`);
+      warnings.push(
+        `${l.name}: Invoice manually if QuickBooks is not connected or mapped`,
+      );
     if (l.interval !== "one_time") {
       if (!l.stripe_lookup_key && !l.custom_family_id)
         errors.push(

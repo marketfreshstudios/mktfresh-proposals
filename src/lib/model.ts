@@ -20,6 +20,7 @@ export const ScheduleSchema = z.object({
 });
 export const ItemSchema = z.object({
   id: z.string().uuid(),
+  display_name: z.string().trim().min(1).max(200).optional(),
   sku: z.string().regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1).max(200),
   description: z.string().max(10000).default(""),
@@ -38,6 +39,7 @@ export const ItemSchema = z.object({
 });
 export type Item = z.infer<typeof ItemSchema>;
 export const LineSchema = ItemSchema.omit({
+  display_name: true,
   active: true,
   legacy: true,
   sku: true,
@@ -71,6 +73,7 @@ export function catalogLine(
   return LineSchema.parse({
     ...item,
     ...options,
+    name: item.display_name?.trim() || item.name,
     pricing_item_id: item.id,
     list_amount: item.amount,
     selected: options.optional ? options.selected : true,

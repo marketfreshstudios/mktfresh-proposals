@@ -1,4 +1,5 @@
 "use client";
+import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { TemplateWarnings } from "./template-warnings";
 import { inactiveTemplateItems } from "../lib/template-quote";
 import type { ReferenceDocument } from "../lib/documents";
@@ -1212,6 +1213,16 @@ function Record({
         <Totals lines={p.quote} currency={p.currency} />
         <Signatures proposal={p} />
         <div className="actions">
+          {p.source === "native" && (
+            <a
+              className="btn"
+              href={`/p/${p.id}?preview=1`}
+              target="_blank"
+              rel="noopener"
+            >
+              Preview as client
+            </a>
+          )}
           {p.token && (
             <Button
               onClick={async () => {
@@ -1596,7 +1607,9 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
           </Field>
           {data.catalog
             .filter((i) =>
-              (i.name + i.sku).toLowerCase().includes(query.toLowerCase()),
+              (itemDisplayName(i) + i.name + i.sku)
+                .toLowerCase()
+                .includes(query.toLowerCase()),
             )
             .map((i) => (
               <button
@@ -1605,7 +1618,7 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
                 onClick={() => setSelected(i)}
               >
                 <span>
-                  <strong>{i.name}</strong>
+                  <strong>{itemDisplayName(i)}</strong>
                   <small>
                     {i.stripe_lookup_key ?? i.qbo_item_ref ?? "Mapping needed"}{" "}
                     · {i.legacy ? "Legacy" : i.active ? "Active" : "Inactive"}
@@ -1632,6 +1645,7 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
               post("/api/pricing_items", {
                 ...selected,
                 ...Object.fromEntries(f),
+                display_name: f.get("display_name") || undefined,
                 amount: Math.round(Number(f.get("price")) * 100),
                 active: f.get("active") === "on",
                 legacy: f.get("legacy") === "on",
@@ -1644,6 +1658,7 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
           <h2>{selected ? "Edit catalogue item" : "New catalogue item"}</h2>
           {[
             ["name", "Name"],
+            ["display_name", "Display name"],
             ["sku", "SKU"],
             ["description", "Description"],
             ["stripe_lookup_key", "Stripe lookup key"],
@@ -1653,10 +1668,18 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
               <input
                 name={key}
                 required={["name", "sku"].includes(key)}
+                placeholder={
+                  key === "display_name" ? selected?.name : undefined
+                }
                 defaultValue={String(selected?.[key as keyof Item] ?? "")}
               />
             </Field>
           ))}
+          <small>
+            Display name is used on new proposal lines and in dropdowns. Leave
+            it blank to use the synced name. Stripe sync preserves your
+            override.
+          </small>
           <Field label="Price (USD)">
             <input
               name="price"
@@ -1849,13 +1872,11 @@ function Templates({
             }}
           >
             <option value="">Choose an item</option>
-            {data.catalog
-              .filter((i) => i.active && !i.legacy)
-              .map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name}
-                </option>
-              ))}
+            {sellableCatalogue(data.catalog).map((i) => (
+              <option key={i.id} value={i.id}>
+                {itemDisplayName(i)}
+              </option>
+            ))}
           </select>
         </Field>
         <Button variant="primary" type="submit">
