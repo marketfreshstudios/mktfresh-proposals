@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Billing setup</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../system/tokens.css">
+<link rel="stylesheet" href="../system/components/bundle.css">
+<script src="../system/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--ink)}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--surface-page); overflow: hidden;"><header style="flex-shrink: 0; padding: 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 17px; line-height: 24px; font-weight: 600;">Meridian Studio</div><div style="font-size: 13px; line-height: 18px; color: var(--ink-muted);">Brightline Foods</div></header><div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 16px 12px; display: flex; flex-direction: column; gap: 14px;"><x-import component-from-global-scope="ProposalDS.Banner" tone="success" icon="verified" title="Signed. Your copy is on its way by email.">This proposal is accepted and complete on your side. The step below only sets up the monthly part.</x-import><div style="background: var(--paper); color: var(--paper-ink); font-family: var(--font-serif); border-radius: var(--radius-md); box-shadow: var(--shadow-paper); padding: 20px 18px;"><h1 style="margin: 0; font-size: 22px; line-height: 30px; font-weight: 600;">One more step: set up your monthly billing</h1><p style="margin: 10px 0 0; font-size: 16px; line-height: 26px;">Your one-time items are invoiced separately. This card covers the recurring part only.</p><div style="margin-top: 16px; padding: 14px; background: var(--surface-sunken); border-radius: var(--radius-sm); font-family: var(--font-sans);"><div style="display: flex; justify-content: space-between; font-size: 15px; line-height: 24px;"><span>Hosting and care plan</span><span style="font-variant-numeric: tabular-nums;">$175.00/month</span></div><div style="margin-top: 8px; font-size: 13px; line-height: 20px; color: var(--ink-muted);">First charge on 1 October 2026. $175.00/month for 30 months, then $100.00/month. 12-month minimum term.</div></div></div><div style="padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface);"><div style="font-size: 13px; line-height: 20px; color: var(--ink-muted);">If you already pay us monthly, this screen instead reads <strong style="color: var(--ink);">&ldquo;We&rsquo;ll add this to your existing monthly billing&rdquo;</strong> with your card&rsquo;s brand and last four, the new monthly total, and a link to update the card.</div></div><p style="margin: 0; font-size: 13px; line-height: 20px; color: var(--ink-muted); text-align: center;">The same link is in your email, so you can finish this later.</p></div><div style="flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--shadow-bar); padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px;"><a href="ClientSigned.dc.html" style="text-decoration: none; display: block;"><x-import component-from-global-scope="ProposalDS.Button" variant="primary" size="xl" icon="recurring" block="{{yes}}">Add a card</x-import></a><a href="ClientSigned.dc.html" style="text-align: center; font-size: 13px; color: var(--ink-muted); text-decoration: underline;">I&rsquo;ll do this later</a></div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { yes: true, oneTime: 12400, monthly: 175 };
+  }
+}
+</script>
+</body>
+</html>

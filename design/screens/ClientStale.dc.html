@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Revision conflict</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../system/tokens.css">
+<link rel="stylesheet" href="../system/components/bundle.css">
+<script src="../system/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--ink)}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--surface-page); overflow: hidden;"><header style="flex-shrink: 0; padding: 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 17px; line-height: 24px; font-weight: 600;">Meridian Studio</div><div style="font-size: 13px; line-height: 18px; color: var(--ink-muted);">Proposal for Brightline Foods</div></header><div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 16px 12px; display: flex; flex-direction: column; gap: 14px;"><x-import component-from-global-scope="ProposalDS.Banner" tone="warning" icon="stale" title="This proposal changed while you were reading it." actions="{{reload}}">The pricing or wording is different from what is on your screen. Reload to see the current version before you sign.</x-import><div style="opacity: 0.45; pointer-events: none;"><div style="background: var(--paper); color: var(--paper-ink); font-family: var(--font-serif); border-radius: var(--radius-md); box-shadow: var(--shadow-paper); padding: 20px 18px;"><h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600;">Website redesign &amp; ongoing care</h1><p style="margin: 10px 0 0; font-size: 16px; line-height: 26px;">Each phase ends with a review you sign off before the next begins.</p><div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--paper-border); font-size: 14px; line-height: 22px; color: var(--paper-muted);">Discovery workshop &middot; Site design and build &middot; Photography day &middot; Hosting and care plan</div></div></div><p style="margin: 0; font-size: 13px; line-height: 20px; color: var(--ink-muted); text-align: center;">Nothing reloads by itself. A document that rewrote itself under someone about to sign is exactly what this state prevents.</p></div><div style="flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--shadow-bar); padding: 12px 16px 16px;"><x-import component-from-global-scope="ProposalDS.Button" variant="primary" size="xl" icon="signature" block="{{yes}}" disabled="{{yes}}" note="Reload first — you cannot sign a version that has changed.">Accept &amp; sign</x-import></div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { yes: true, oneTime: 12400, monthly: 175, reload: null };
+  }
+}
+</script>
+</body>
+</html>

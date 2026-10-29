@@ -1,0 +1,32 @@
+<!-- @dsCard group="Feedback" height=700 subtitle="Nothing yet, nothing matching, and nothing wrong are three different messages" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { EmptyState, Button } = D;
+  function App() {
+    return h('div', {className:'row', style:{gap:'16px', alignItems:'stretch'}},
+      h('div', {className:'card', style:{flex:'1 1 240px'}},
+        h(EmptyState, {icon:'document', title:'No proposals yet',
+          text:'Start one from a template and it will appear here.',
+          actions:h(Button, {variant:'primary', icon:'plus'}, 'New proposal')})),
+      h('div', {className:'card', style:{flex:'1 1 240px'}},
+        h(EmptyState, {icon:'search', title:'No proposals match these filters',
+          text:'Try widening the date range, or clear the filters to see everything.',
+          actions:h(Button, {variant:'secondary', icon:'close'}, 'Clear filters')})),
+      h('div', {className:'card', style:{flex:'1 1 240px'}},
+        h(EmptyState, {icon:'verified', title:'Nothing needs attention',
+          text:'Every billing link is synced and no customer matches are waiting.'})));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

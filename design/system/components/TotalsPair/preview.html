@@ -1,0 +1,32 @@
+<!-- @dsCard group="Money" height=424 subtitle="Two figures, side by side, both in ink — there is no blended total" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { TotalsPair } = D;
+  function App() {
+    return h('div', {className:'col'},
+      h('div', {className:'card'},
+        h('p', {className:'cap'}, 'Sticky bar and record header'),
+        h(TotalsPair, {oneTime:12400, monthly:175, size:'lg'})),
+      h('div', {className:'card'},
+        h('p', {className:'cap'}, 'With a schedule and a minimum term'),
+        h(TotalsPair, {oneTime:8250, monthly:175, size:'md',
+          oneTimeNote:'Invoiced on signature, net 14.',
+          monthlyNote:'$175.00/month for 30 months, then $100.00/month. 12-month minimum.'})),
+      h('div', {className:'card'},
+        h('p', {className:'cap'}, 'Zero still shows \u2014 never hide a column'),
+        h(TotalsPair, {oneTime:3600, monthly:0, size:'md'})));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

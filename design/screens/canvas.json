@@ -1,0 +1,209 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Audit.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Audit trail — the evidence view",
+      "w": 1440,
+      "x": 10640,
+      "y": 0
+    },
+    "ClientBilling.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Billing setup",
+      "w": 390,
+      "x": 1880,
+      "y": 1480
+    },
+    "ClientCompleted.dc.html": {
+      "h": 844,
+      "title": "Completed",
+      "w": 390,
+      "x": 2820,
+      "y": 1480
+    },
+    "ClientEnded.dc.html": {
+      "h": 620,
+      "title": "Superseded / expired / declined",
+      "w": 390,
+      "x": 3290,
+      "y": 1480
+    },
+    "ClientPassword.dc.html": {
+      "h": 600,
+      "title": "Password gate",
+      "w": 390,
+      "x": 0,
+      "y": 1480
+    },
+    "ClientReading.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Reading — tick the options",
+      "w": 390,
+      "x": 470,
+      "y": 1480
+    },
+    "ClientSign.dc.html": {
+      "h": 1040,
+      "is_interactive": true,
+      "title": "Signature step",
+      "w": 390,
+      "x": 1410,
+      "y": 1480
+    },
+    "ClientSigned.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Signed, awaiting counter-signature",
+      "w": 390,
+      "x": 2350,
+      "y": 1480
+    },
+    "ClientStale.dc.html": {
+      "h": 844,
+      "title": "Revision conflict — blocks signing",
+      "w": 390,
+      "x": 940,
+      "y": 1480
+    },
+    "Countersign.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Counter-sign",
+      "w": 1440,
+      "x": 9120,
+      "y": 0
+    },
+    "Editor.dc.html": {
+      "h": 980,
+      "is_interactive": true,
+      "title": "Editor — the main working screen",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "Integrations.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Integrations — the work queue",
+      "w": 1440,
+      "x": 12160,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Dashboard — what needs me today",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "New.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "New proposal",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Proposals.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Proposals — the list",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Record.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "The record — signed by client",
+      "w": 1440,
+      "x": 7600,
+      "y": 0
+    },
+    "Send.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Send — last check before it leaves",
+      "w": 1440,
+      "x": 6080,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-19T02:42:27Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/artifact/W6hG2gbJ58k4xWSvd5LuQG",
+      "copiedAt": "2026-09-19T02:42:27Z",
+      "namespace": "proposalds",
+      "title": "Proposal & E-Sign System",
+      "version": null
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "n1": {
+      "color": "blue",
+      "maxH": 160,
+      "text": "Dashboard → New → Editor → Send → Record → Counter-sign. Desktop, 1440px. Every frame links to the next, so press Play to click through it. Two owners, no roles, no onboarding.",
+      "w": 900,
+      "x": 0,
+      "y": -210
+    },
+    "n2": {
+      "color": "teal",
+      "maxH": 160,
+      "text": "Everything at /p/:token, mobile first at 390px. Open → tick options → sign → billing setup → confirmation. The document sits on paper, which does not invert with the theme, because it must match the sealed PDF.",
+      "w": 900,
+      "x": 0,
+      "y": 1270
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "Staff flow",
+      "w": 240,
+      "x": 0,
+      "y": -330
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 3680,
+      "text": "Client flow",
+      "w": 240,
+      "x": 0,
+      "y": 1150
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Proposals.dc.html",
+    "New.dc.html",
+    "Editor.dc.html",
+    "Send.dc.html",
+    "Record.dc.html",
+    "Countersign.dc.html",
+    "Audit.dc.html",
+    "Integrations.dc.html",
+    "ClientPassword.dc.html",
+    "ClientReading.dc.html",
+    "ClientStale.dc.html",
+    "ClientSign.dc.html",
+    "ClientBilling.dc.html",
+    "ClientSigned.dc.html",
+    "ClientCompleted.dc.html",
+    "ClientEnded.dc.html"
+  ],
+  "pages": [],
+  "title": "Proposal & E-Sign — Screens"
+}

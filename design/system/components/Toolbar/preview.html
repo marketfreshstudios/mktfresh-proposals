@@ -1,0 +1,42 @@
+<!-- @dsCard group="Actions" height=196 subtitle="One grouped row of controls — actions, or a segmented choice" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Toolbar } = D;
+  function App() {
+    return h('div', {className:'col'},
+      h('div', null,
+        h('p', {className:'cap'}, 'Action group \u2014 the editor\u2019s block inserter'),
+        h(Toolbar, {label:'Insert a block', onSelect:function(){}, items:[
+          {id:'heading', label:'Heading', icon:'edit'},
+          {id:'text', label:'Text', icon:'document'},
+          {id:'image', label:'Image', icon:'image'},
+          {id:'pricing', label:'Pricing table', icon:'one-time'},
+          {id:'signature', label:'Signature', icon:'signature'},
+          {separator:true},
+          {id:'break', label:'Page break', icon:'page-break'},
+          {id:'var', label:'Variable', icon:'variable'}]})),
+      h('div', null,
+        h('p', {className:'cap'}, 'Segmented \u2014 pass selected and it becomes a choice'),
+        h('div', {className:'row'},
+          h(Toolbar, {label:'Document view', selected:'sent', onSelect:function(){}, items:[
+            {id:'sent', label:'As sent'},
+            {id:'signed', label:'As signed'},
+            {id:'versions', label:'Versions'}]}),
+          h(Toolbar, {label:'Density', size:'lg', selected:'draw', onSelect:function(){}, items:[
+            {id:'draw', label:'Draw', icon:'signature'},
+            {id:'type', label:'Type', icon:'edit'}]}))));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

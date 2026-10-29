@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reading the proposal</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../system/tokens.css">
+<link rel="stylesheet" href="../system/components/bundle.css">
+<script src="../system/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--ink)}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--surface-page); overflow: hidden;"><header style="flex-shrink: 0; padding: 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 17px; line-height: 24px; font-weight: 600;">Meridian Studio</div><div style="font-size: 13px; line-height: 18px; color: var(--ink-muted);">Proposal for Brightline Foods</div></header><div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 16px 12px;"><div style="background: var(--paper); color: var(--paper-ink); font-family: var(--font-serif); border-radius: var(--radius-md); box-shadow: var(--shadow-paper); padding: 22px 18px;"><h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.01em;">Website redesign &amp; ongoing care</h1><p style="margin: 12px 0 0; font-size: 17px; line-height: 28px;">Prepared for Rowan at Brightline Foods.</p><p style="margin: 12px 0 0; font-size: 17px; line-height: 28px;">Each phase ends with a review you sign off before the next begins. Your care plan starts the day the new site goes live.</p><h2 style="margin: 24px 0 0; font-size: 20px; line-height: 28px; font-weight: 600;">Choose what you want</h2><p style="margin: 8px 0 12px; font-size: 15px; line-height: 24px; color: var(--paper-muted);">Tick the optional items. Both totals below update as you go.</p><x-import component-from-global-scope="ProposalDS.PricingTable" groups="{{groups}}"></x-import><p style="margin: 20px 0 0; font-size: 14px; line-height: 22px; color: var(--paper-muted); padding-top: 14px; border-top: 1px solid var(--paper-border);">Valid until 12 October 2026 &middot; From Meridian Studio &middot; jordan@meridian.example</p></div></div><div style="flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--shadow-bar); padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 12px;"><x-import component-from-global-scope="ProposalDS.TotalsPair" one-time="{{oneTime}}" monthly="{{monthly}}" size="lg"></x-import><a href="ClientSign.dc.html" style="text-decoration: none; display: block;"><x-import component-from-global-scope="ProposalDS.Button" variant="primary" size="xl" icon="signature" block="{{yes}}">Accept &amp; sign</x-import></a><a href="ClientEnded.dc.html" style="text-align: center; font-size: 13px; color: var(--ink-muted); text-decoration: underline;">Decline this proposal</a></div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { yes: true, oneTime: 12400, monthly: 175, groups: [
+      { title: 'One-time', cadence: 'oneTime', lines: [
+        { id: 'a', name: 'Discovery workshop', description: 'Half-day session, up to six people.', amount: 1200, cadence: 'oneTime' },
+        { id: 'b', name: 'Site design and build', description: 'Twelve templates, responsive.', amount: 9800, cadence: 'oneTime' },
+        { id: 'c', name: 'Photography day', description: 'On-site, edited and delivered.', amount: 1400, cadence: 'oneTime', optional: true, selected: true },
+        { id: 'd', name: 'Copywriting', description: 'Long-form copy for eight pages.', amount: 2200, cadence: 'oneTime', optional: true, selected: false } ] },
+      { title: 'Monthly', cadence: 'monthly', lines: [
+        { id: 'e', name: 'Hosting and care plan', description: 'Updates, backups, uptime monitoring.', amount: 175, cadence: 'monthly', minimumTerm: 12,
+          schedule: '$175.00/month for 30 months, then $100.00/month' },
+        { id: 'f', name: 'Search reporting', description: 'Monthly report and a 30-minute call.', amount: 95, cadence: 'monthly', optional: true, selected: false } ] }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

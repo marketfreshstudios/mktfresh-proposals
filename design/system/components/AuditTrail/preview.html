@@ -1,0 +1,35 @@
+<!-- @dsCard group="Data" height=364 subtitle="Append-only evidence; a blank is stated, never left empty" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { AuditTrail, Button, Icon } = D;
+  function App() {
+    return h('div', {className:'card'},
+      h(AuditTrail, {events:[
+        {type:'proposal.created', actor:'Claude', byAI:true, ip:'Not available', revision:1, at:'12 Sep 2026, 09:14'},
+        {type:'proposal.sent', actor:'Jordan Mills', ip:'198.51.100.24', revision:4, at:'12 Sep 2026, 11:02'},
+        {type:'link.viewed', actor:'Rowan Vale', ip:'203.0.113.88', revision:4, at:'12 Sep 2026, 14:37'},
+        {type:'quote.option_toggled', actor:'Rowan Vale', ip:'203.0.113.88', revision:4, at:'12 Sep 2026, 14:41'},
+        {type:'signature.client', actor:'Rowan Vale', ip:'203.0.113.88', revision:4, at:'12 Sep 2026, 14:44'}]}),
+      h('div', {style:{marginTop:'16px', display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap'}},
+        h('div', {className:'ps-hash', style:{flex:'1 1 320px'}},
+          h('span', {style:{color:'var(--ink-muted)'}}, 'final PDF'),
+          h('span', {className:'ps-hash__value'}, 'sha256:9f2c4ae1b7d03c6a5518e0f4b2c7d9a1e83f6b0c4d2a9e17'),
+          h(Icon, {name:'copy', size:13, title:'Copy hash'})),
+        h('span', {style:{display:'inline-flex', alignItems:'center', gap:'6px',
+                  color:'var(--success)', fontSize:'13px', fontWeight:600}},
+          h(Icon, {name:'verified', size:14}), h('span', null, 'Matches \u2014 unchanged since sealing'))));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

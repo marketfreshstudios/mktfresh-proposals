@@ -1,0 +1,35 @@
+<!-- @dsCard group="Forms" height=256 subtitle="Ticked, unticked, and locked — a required line is never a disabled tick" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Checkbox } = D;
+  function App() {
+    return h('div', {className:'card', style:{maxWidth:'560px'}},
+      h('div', {className:'col', style:{gap:'14px'}},
+        h(Checkbox, {checked:true, onChange:function(){}},
+          h('span', null, h('strong', null, 'Photography day'),
+            h('span', {style:{color:'var(--ink-muted)'}}, ' \u2014 on-site, edited and delivered'))),
+        h(Checkbox, {checked:false, onChange:function(){}},
+          h('span', null, h('strong', null, 'Copywriting'),
+            h('span', {style:{color:'var(--ink-muted)'}}, ' \u2014 long-form copy for eight pages'))),
+        h(Checkbox, {checked:true, locked:true},
+          h('span', null, h('strong', null, 'Site design and build'),
+            h('span', {style:{color:'var(--ink-muted)'}}, ' \u2014 included, cannot be removed'))),
+        h('hr', {style:{border:0, borderTop:'1px solid var(--border)', margin:'2px 0'}}),
+        h(Checkbox, {checked:true, onChange:function(){}},
+          h('span', {style:{font:'400 14px/22px var(--font-serif)'}},
+            'I have read and agree to the terms above, and I intend this to be my electronic signature.'))));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

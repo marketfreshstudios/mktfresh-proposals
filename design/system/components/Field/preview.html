@@ -1,0 +1,31 @@
+<!-- @dsCard group="Forms" height=500 subtitle="The email-mismatch error is the one that decides whether a client finishes" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Field } = D;
+  function App() {
+    return h('div', {className:'card', style:{maxWidth:'520px'}},
+      h('div', {className:'col'},
+        h(Field, {label:'Full name', required:true, value:'Rowan Vale', size:'lg', onChange:function(){}}),
+        h(Field, {label:'Job title', value:'', placeholder:'Operations Director', size:'lg',
+          hint:'Shown beside your signature on the sealed copy.', onChange:function(){}}),
+        h(Field, {label:'Email address', required:true, type:'email', size:'lg',
+          value:'rowan@brightline.example',
+          error:'This proposal was sent to r.vale@brightline.example. Sign in with that address, or ask us to re-send it to this one.',
+          onChange:function(){}}),
+        h(Field, {label:'Link password', value:'', disabled:true,
+          hint:'Turned off for this proposal.'})));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

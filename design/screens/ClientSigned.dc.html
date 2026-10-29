@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Signed, awaiting counter-signature</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../system/tokens.css">
+<link rel="stylesheet" href="../system/components/bundle.css">
+<script src="../system/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:var(--font-sans);background:var(--surface-page);color:var(--ink)}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--surface-page); overflow: hidden;"><header style="flex-shrink: 0; padding: 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 17px; line-height: 24px; font-weight: 600;">Meridian Studio</div><div style="font-size: 13px; line-height: 18px; color: var(--ink-muted);">Brightline Foods</div></header><div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 16px 12px; display: flex; flex-direction: column; gap: 14px;"><x-import component-from-global-scope="ProposalDS.Banner" tone="warning" icon="signature" title="You&rsquo;re all set.">Meridian Studio will countersign and send your final copy. Nothing else is needed from you.</x-import><div style="display: flex; flex-direction: column; gap: 10px;"><x-import component-from-global-scope="ProposalDS.Button" variant="secondary" size="lg" icon="download" block="{{yes}}">Download your signed copy</x-import><x-import component-from-global-scope="ProposalDS.Button" variant="ghost" size="lg" icon="verified" block="{{yes}}">Verify this document</x-import></div><div style="opacity: 0.7;"><div style="background: var(--paper); color: var(--paper-ink); font-family: var(--font-serif); border-radius: var(--radius-md); box-shadow: var(--shadow-paper); padding: 18px;"><div style="font-size: 18px; line-height: 26px; font-weight: 600;">Website redesign &amp; ongoing care</div><div style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 22px;"><div style="display: flex; gap: 10px; align-items: center;"><span style="width: 20px; height: 20px; border-radius: var(--radius-xs); background: var(--surface-sunken); border: 2px solid var(--border); flex-shrink: 0;"></span><span>Discovery workshop</span></div><div style="display: flex; gap: 10px; align-items: center;"><span style="width: 20px; height: 20px; border-radius: var(--radius-xs); background: var(--surface-sunken); border: 2px solid var(--border); flex-shrink: 0;"></span><span>Site design and build</span></div><div style="display: flex; gap: 10px; align-items: center;"><span style="width: 20px; height: 20px; border-radius: var(--radius-xs); background: var(--surface-sunken); border: 2px solid var(--border); flex-shrink: 0;"></span><span>Photography day</span></div><div style="display: flex; gap: 10px; align-items: center;"><span style="width: 20px; height: 20px; border-radius: var(--radius-xs); background: var(--surface-sunken); border: 2px solid var(--border); flex-shrink: 0;"></span><span>Hosting and care plan</span></div></div><div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--paper-border); font-size: 13px; color: var(--paper-muted);">Locked &mdash; these are the items you accepted.</div></div></div><a href="ClientCompleted.dc.html" style="text-align: center; font-size: 13px; color: var(--accent);">See the completed state &rarr;</a></div></div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { yes: true, oneTime: 12400, monthly: 175 };
+  }
+}
+</script>
+</body>
+</html>

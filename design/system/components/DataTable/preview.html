@@ -1,0 +1,45 @@
+<!-- @dsCard group="Data" height=588 subtitle="Both money columns right-aligned and tabular; status is a pill, never a tinted row" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { DataTable, StatusPill, EmptyState, Button } = D;
+  function App() {
+    return h('div', {className:'col'},
+      h('div', {className:'card', style:{padding:0, overflow:'hidden'}},
+        h(DataTable, {
+          columns:[
+            {header:'Proposal', render:function(r){ return h('span', null,
+              h('span', {className:'ps-table__title'}, r.title),
+              h('span', {className:'ps-table__sub'}, r.client)); }},
+            {header:'Status', render:function(r){ return h(StatusPill, {status:r.status, source:r.source}); }},
+            {header:'One-time', numeric:true, render:function(r){ return D.formatMoney(r.oneTime); }},
+            {header:'Monthly', numeric:true, render:function(r){
+              return r.monthly ? D.formatMoney(r.monthly) + '/mo' : D.formatMoney(0); }},
+            {header:'Sent', key:'sent'}],
+          rows:[
+            {id:1, title:'Website redesign & ongoing care', client:'Brightline Foods',
+             status:'signed', oneTime:12400, monthly:175, sent:'12 Sep 2026'},
+            {id:2, title:'Brand refresh', client:'Harbour Lane Clinic',
+             status:'viewed', oneTime:6800, monthly:0, sent:'9 Sep 2026'},
+            {id:3, title:'Quarterly retainer 2026', client:'Nine Mile Outfitters',
+             status:'completed', oneTime:0, monthly:2400, sent:'1 Sep 2026'},
+            {id:4, title:'Campaign microsite', client:'Verity Press',
+             status:'expired', oneTime:4200, monthly:0, sent:'2 Aug 2026', source:'imported'}]})),
+      h('div', {className:'card', style:{padding:0, overflow:'hidden'}},
+        h('p', {className:'cap', style:{padding:'12px 12px 0'}}, 'Loading'),
+        h(DataTable, {loading:true, columns:[
+          {header:'Proposal'},{header:'Status'},{header:'One-time', numeric:true},{header:'Monthly', numeric:true}]})));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

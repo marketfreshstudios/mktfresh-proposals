@@ -1,0 +1,54 @@
+<!-- @dsCard height=344 -->
+<style>
+  body {
+    margin: 0; width: 960px; height: 344px; overflow: hidden;
+    background: var(--surface-page); color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .band { display: block; }
+  .b-ink     { fill: var(--ink); }
+  .b-info    { fill: var(--info); }
+  .b-warning { fill: var(--warning); }
+  .b-accent  { fill: var(--accent); }
+  .b-success { fill: var(--success); }
+  .rule      { fill: var(--surface-page); }
+  .text { padding: var(--space-6) var(--space-8) 0; max-width: 832px; }
+  .name {
+    margin: 0; font-family: var(--font-sans);
+    font-size: 64px; line-height: 0.95; font-weight: 700;
+    letter-spacing: -0.02em; color: var(--ink);
+  }
+  .tag {
+    margin: var(--space-3) 0 0; font-size: 14px; line-height: 20px;
+    color: var(--ink-muted);
+  }
+</style>
+
+<!--
+  blocks     ink 160 · info 192 · warning 224 · accent 288 · success 96, all x16 (space-4 multiples),
+             112 tall (a third of 344); five identity tokens, accent widest as the tenant's own colour.
+  arrangement A full-bleed top band of unequal vertical bands in lifecycle order — draft, sent and viewed,
+             signed by client, counter-signature, completed — success bleeding off the right edge.
+             Square-cut: a full-bleed band has no corners to carry a radius token.
+  pattern    A few hairline rules. The README says elevation is scarce and a hairline is the default edge,
+             the document is set in a serif, and the product's central object is a ruled line someone signs
+             on — so three rules cross every block instead of sitting between them.
+  scales     Band widths space-4 x 10/12/14/18/6 · band height 112 · rule pitch space-5 (24px) ·
+             rule weight stroke-hairline (1px), cut from the ground, clear of the band edge · text inset space-8, gap space-6,
+             tagline gap space-3.
+-->
+<svg class="band" width="960" height="112" viewBox="0 0 960 112" aria-hidden="true">
+  <rect class="b-ink"     x="0"   y="0" width="160" height="112"/>
+  <rect class="b-info"    x="160" y="0" width="192" height="112"/>
+  <rect class="b-warning" x="352" y="0" width="224" height="112"/>
+  <rect class="b-accent"  x="576" y="0" width="288" height="112"/>
+  <rect class="b-success" x="864" y="0" width="96"  height="112"/>
+  <rect class="rule" x="0" y="40" width="960" height="1"/>
+  <rect class="rule" x="0" y="64" width="960" height="1"/>
+  <rect class="rule" x="0" y="88" width="960" height="1"/>
+</svg>
+
+<div class="text">
+  <h1 class="name">Proposal &amp;<br>E-Sign System</h1>
+  <p class="tag">Two parties, two totals, one sealed record.</p>
+</div>
