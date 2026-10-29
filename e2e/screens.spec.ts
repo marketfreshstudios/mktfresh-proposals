@@ -288,7 +288,8 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         if (state === "sign")
           await page.getByRole("button", { name: "Accept & sign" }).click();
         if (state === "stale") {
-          await page.getByRole("checkbox").first().uncheck();
+          // A revision conflict replaces the checkbox; assert the warning, not its final checked state.
+          await page.getByRole("checkbox").first().click();
           await expect(
             page.getByText("This proposal changed while you were reading it"),
           ).toBeVisible();
