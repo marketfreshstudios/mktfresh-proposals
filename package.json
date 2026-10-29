@@ -17,9 +17,11 @@
     "check:neutral": "node --import tsx scripts/check-neutral.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@sparticuz/chromium": "153.0.0",
     "@supabase/supabase-js": "2.116.0",
     "csv-parse": "7.0.2",
+    "marked": "18.1.2",
     "next": "16.4.3",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",

@@ -8,6 +8,7 @@ export type EntityTable =
   | "pricing_items"
   | "templates"
   | "content_library"
+  | "workspace_events"
   | "workspace_settings"
   | "workspace_documents"
   | "custom_families"

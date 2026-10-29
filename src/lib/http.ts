@@ -1,3 +1,4 @@
+import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
 import { receiveStripeWebhook } from "./providers/webhook";
@@ -44,11 +45,50 @@ async function body(req: Request) {
 export async function handle(req: Request, path: string[]) {
   try {
     const method = req.method;
+    if (path[0] === "auth" && path[1] === "local" && method === "POST") {
+      check(
+        process.env.APP_MODE === "local" &&
+          process.env.NODE_ENV !== "production" &&
+          !process.env.VERCEL,
+        "Local login unavailable",
+        404,
+      );
+      check(
+        !req.headers.get("origin") ||
+          req.headers.get("origin") === new URL(req.url).origin,
+        "Same-origin request required",
+        403,
+      );
+      const input = await body(req);
+      check(
+        equalSecret(input.token ?? "", process.env.DEV_STAFF_TOKEN ?? ""),
+        "Invalid local token",
+        401,
+      );
+      const response = json({ authenticated: true });
+      response.headers.set(
+        "Set-Cookie",
+        `proposal_session=${input.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800`,
+      );
+      return response;
+    }
     if (path[0] === "auth" && path[1] === "login" && method === "POST") {
+      check(
+        !req.headers.get("origin") ||
+          req.headers.get("origin") === new URL(req.url).origin,
+        "Same-origin request required",
+        403,
+      );
       const input = z
         .object({ email: z.email(), password: z.string().min(1).max(200) })
         .parse(await body(req));
-      return json(await login(input.email, input.password));
+      const session = await login(input.email, input.password);
+      const response = json({ authenticated: true });
+      response.headers.set(
+        "Set-Cookie",
+        `proposal_session=${session.access_token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${session.expires_in}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
+      );
+      return response;
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
       const rt = runtime(uuid.parse(path[2]));
@@ -146,6 +186,39 @@ export async function handle(req: Request, path: string[]) {
     }
     const user = await staff(req),
       rt = runtime(user.workspace_id);
+    if (path[0] === "auth" && path[1] === "session" && method === "GET")
+      return json({
+        user,
+        settings: (await rt.repo.entities("workspace_settings"))[0] ?? null,
+      });
+    if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
+      const response = json({ signed_out: true });
+      response.headers.set(
+        "Set-Cookie",
+        "proposal_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+      );
+      return response;
+    }
+    if (path[0] === "assistants") {
+      const oauth = oauthServer();
+      if (method === "GET")
+        return json(
+          (await oauth.store.list(rt.repo.workspaceId))
+            .filter((r) => r.kind === "grant")
+            .map((r) => ({
+              id: r.id,
+              name: r.data.connector_name,
+              scopes: r.data.scopes,
+              last_used: r.data.last_used,
+              revoked: r.data.revoked,
+            })),
+        );
+      if (method === "POST" && path[2] === "revoke") {
+        await oauth.revoke(uuid.parse(path[1]), rt.repo.workspaceId);
+        return json({ revoked: true });
+      }
+    }
+
     if (path[0] === "catalog-sync" && method === "POST") {
       const provider = path[1];
       if (provider === "stripe") {
@@ -331,8 +404,16 @@ export async function handle(req: Request, path: string[]) {
           readiness(p, await rt.repo.entities<Item>("pricing_items")),
         );
       }
-      if (method === "POST" && action === "send")
-        return json(await rt.service.send(id, user));
+      if (method === "POST" && action === "send") {
+        const input = req.headers
+          .get("content-type")
+          ?.includes("application/json")
+          ? await body(req)
+          : {};
+        return json(
+          await rt.service.send(id, user, input.confirm_ai_review === true),
+        );
+      }
       if (method === "POST" && action === "countersign")
         return json(
           await rt.service.sign(

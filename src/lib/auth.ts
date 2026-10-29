@@ -19,8 +19,22 @@ export function actor(request: Request, name = "client"): Actor {
     user_agent: (request.headers.get("user-agent") ?? "").slice(0, 1000),
   };
 }
+export function cookie(request: Request, name: string) {
+  return (
+    (request.headers.get("cookie") ?? "")
+      .split(";")
+      .map((s) => s.trim())
+      .find((s) => s.startsWith(name + "="))
+      ?.slice(name.length + 1) ?? ""
+  );
+}
 export async function staff(request: Request) {
-  const token = (request.headers.get("authorization") ?? "").replace(
+  const authorization = request.headers.get("authorization");
+  if (!authorization && !["GET", "HEAD"].includes(request.method)) {
+    if (request.headers.get("origin") !== new URL(request.url).origin)
+      throw new AppError(403, "Same-origin request required");
+  }
+  const token = (authorization ?? cookie(request, "proposal_session")).replace(
     /^Bearer /,
     "",
   );

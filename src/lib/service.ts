@@ -99,6 +99,9 @@ export class ProposalService {
       currency?: string;
       password?: string;
       playbook?: unknown;
+      brief?: string;
+      content?: Block[];
+      quote?: Proposal["quote"];
     },
     actor: Actor,
   ) {
@@ -149,8 +152,13 @@ export class ProposalService {
       first_viewed_at: null,
       client_signed_at: null,
       completed_at: null,
-      content: structuredClone(template.content),
-      quote,
+      content: input.content ?? structuredClone(template.content),
+      quote: input.quote ?? quote,
+      brief: input.brief,
+      ai_unreviewed: actor.actor.startsWith("ai:"),
+      ai_connector: actor.actor.startsWith("ai:")
+        ? actor.actor.slice(3)
+        : undefined,
       versions: [],
       signers: [],
       events: [],
@@ -179,6 +187,7 @@ export class ProposalService {
     input: {
       revision: number;
       title?: string;
+      brief?: string;
       content?: Block[];
       quote?: Proposal["quote"];
       valid_until?: string;
@@ -189,6 +198,9 @@ export class ProposalService {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       check(p.status === "draft", "Only drafts can be edited", 409);
       if (input.title) p.title = input.title;
+      if (input.brief !== undefined) p.brief = input.brief;
+      p.ai_unreviewed = actor.actor.startsWith("ai:");
+      if (p.ai_unreviewed) p.ai_connector = actor.actor.slice(3);
       if (input.content) p.content = input.content;
       if (input.quote) p.quote = input.quote;
       if (input.valid_until) {
@@ -201,7 +213,12 @@ export class ProposalService {
       event(p, "edited", actor);
     });
   }
-  async send(id: string, actor: Actor) {
+  async send(id: string, actor: Actor, confirmAiReview = false) {
+    check(
+      !actor.actor.startsWith("ai:"),
+      "AI assistants cannot send proposals",
+      403,
+    );
     const catalog = await this.repo.entities<Item>("pricing_items");
     return mutate(this.repo, id, (p) => {
       check(
@@ -209,7 +226,11 @@ export class ProposalService {
         "Cannot send signed or closed proposal",
         409,
       );
-      const ready = readiness(p, catalog, this.clock());
+      check(
+        !p.ai_unreviewed || confirmAiReview,
+        "Confirm review of AI changes before sending",
+      );
+      const ready = readiness(p, catalog, this.clock(), confirmAiReview);
       check(ready.ready, ready.errors.join("; "));
       check(p.quote.length > 0, "Quote required");
       check(
@@ -315,6 +336,11 @@ export class ProposalService {
     actor: Actor,
     access?: { token: string; password: string },
   ) {
+    check(
+      !actor.actor.startsWith("ai:"),
+      "AI assistants cannot sign proposals",
+      403,
+    );
     const input = SignatureSchema.parse(raw);
     if (input.kind === "drawn") {
       const { PDFDocument } = await import("pdf-lib");
@@ -413,6 +439,11 @@ export class ProposalService {
     });
   }
   async decline(token: string, password: string, actor: Actor) {
+    check(
+      !actor.actor.startsWith("ai:"),
+      "AI assistants cannot decline proposals",
+      403,
+    );
     const p = await this.byToken(token, password);
     return mutate(this.repo, p.id, (p) => {
       publicAccess(p, password, this.clock());
