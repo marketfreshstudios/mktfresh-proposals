@@ -1,3 +1,5 @@
+> **Phase 1 is complete (see `HANDOFF_PHASE1.md`). Current instructions are in [`PHASE2.md`](PHASE2.md); where it differs from the Phase 1 brief below, `PHASE2.md` wins. Designs are in `design/`.**
+
 # Codex handoff — MarketFresh proposal & e-signature system
 
 You are building a self-hosted replacement for Proposify for MarketFresh (a two-person marketing/web services LLC). Work autonomously. The owner is hands-off; do NOT stop to ask questions except at the single checkpoint marked **STOP** below. Where this brief is silent, make a sensible choice, record it in `DECISIONS.md`, and keep going.

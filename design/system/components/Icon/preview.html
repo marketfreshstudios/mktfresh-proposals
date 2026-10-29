@@ -1,0 +1,38 @@
+<!-- @dsCard group="Foundations" height=224 subtitle="Font Awesome Free Solid, inlined so it inherits text colour" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Icon } = D;
+  function App() {
+    return h('div', {className:'card'},
+      h('p', {className:'cap'}, 'Inherits the colour of its text'),
+      h('div', {className:'row', style:{gap:'20px', marginBottom:'20px'}},
+        [['signature','var(--warning)','Signed by client'],
+         ['verified','var(--success)','Completed'],
+         ['failed','var(--danger)','Failed job'],
+         ['review','var(--warning)','Needs review'],
+         ['ai','var(--ai)','Drafted by AI'],
+         ['stale','var(--warning)','Stale revision']].map(function(x, i) {
+          return h('span', {key:i, style:{color:x[1], display:'inline-flex', alignItems:'center',
+                    gap:'6px', fontSize:'13px', fontWeight:600}},
+            h(Icon, {name:x[0], size:16}), h('span', null, x[2]));
+        })),
+      h('p', {className:'cap'}, 'The set'),
+      h('div', {className:'row', style:{gap:'18px', color:'var(--ink-muted)'}},
+        Object.keys(D.icons).map(function(n) {
+          return h('span', {key:n, title:n}, h(Icon, {name:n, size:18}));
+        })));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

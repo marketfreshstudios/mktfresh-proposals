@@ -1,0 +1,32 @@
+<!-- @dsCard group="Feedback" height=620 subtitle="Stale revision blocks; the AI review banner informs" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Banner, Button } = D;
+  function App() {
+    return h('div', {className:'col'},
+      h(Banner, {tone:'warning', icon:'stale', title:'This proposal changed while you were reading it.',
+        actions:h(Button, {variant:'primary', size:'lg', icon:'retry'}, 'Reload and review')},
+        'The pricing or wording is different from what is on your screen. Reload to see the current version before you sign.'),
+      h(Banner, {tone:'ai', title:'Drafted by an assistant \u2014 not yet reviewed',
+        actions:h(Button, {variant:'secondary', icon:'check'}, 'Mark as reviewed'), onDismiss:function(){}},
+        'Claude wrote this draft 2 hours ago. Two prices differ from the catalog default and are highlighted in the quote.'),
+      h(Banner, {tone:'danger', title:'Couldn\u2019t create the draft invoice',
+        actions:h(Button, {variant:'secondary', icon:'retry'}, 'Retry')},
+        'Your signature is safe and the proposal is complete. Only the accounting sync failed.'),
+      h(Banner, {tone:'success', icon:'verified', title:'Matches \u2014 this file is unchanged since sealing'},
+        'Checked against the final PDF hash recorded on 14 September 2026.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

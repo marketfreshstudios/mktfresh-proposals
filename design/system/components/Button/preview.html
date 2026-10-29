@@ -1,0 +1,41 @@
+<!-- @dsCard group="Actions" height=276 subtitle="Four variants, four sizes, and a disabled state that says why" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { Button } = D;
+  function App() {
+    return h('div', {className:'col'},
+      h('div', null,
+        h('p', {className:'cap'}, 'Variants'),
+        h('div', {className:'row'},
+          h(Button, {variant:'primary', icon:'send'}, 'Send proposal'),
+          h(Button, {variant:'secondary', icon:'copy'}, 'Copy link'),
+          h(Button, {variant:'ghost', icon:'retry'}, 'Retry'),
+          h(Button, {variant:'danger', icon:'declined'}, 'Decline'))),
+      h('div', null,
+        h('p', {className:'cap'}, 'Sizes \u2014 xl for Accept & sign, lg on any client page'),
+        h('div', {className:'row'},
+          h(Button, {size:'sm'}, 'Small'),
+          h(Button, {size:'md'}, 'Medium'),
+          h(Button, {variant:'primary', size:'lg'}, 'Large'),
+          h(Button, {variant:'primary', size:'xl', icon:'signature'}, 'Accept & sign'))),
+      h('div', null,
+        h('p', {className:'cap'}, 'Busy and blocked'),
+        h('div', {className:'row', style:{alignItems:'flex-start'}},
+          h(Button, {variant:'primary', loading:true, loadingLabel:'Sealing your signed copy\u2026'}, 'Sign'),
+          h(Button, {variant:'primary', disabled:true,
+            note:'Two variables are still unresolved.'}, 'Send proposal'))));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

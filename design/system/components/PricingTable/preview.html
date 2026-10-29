@@ -1,0 +1,46 @@
+<!-- @dsCard group="Money" height=784 subtitle="Required lines lock, optional lines tick, cadences never interleave" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { PricingTable, TotalsPair } = D;
+  function App() {
+    return h('div', {className:'ps-paper', style:{padding:'24px', maxWidth:'680px'}},
+      h('h3', {style:{font:'600 20px/28px var(--font-serif)', margin:'0 0 4px', color:'var(--paper-ink)'}},
+        'What you are accepting'),
+      h('p', {style:{font:'400 14px/22px var(--font-serif)', margin:'0 0 8px', color:'var(--paper-muted)'}},
+        'Tick the optional items you want. Totals update as you go.'),
+      h(PricingTable, {
+        onToggle:function(){},
+        groups:[
+          {title:'One-time', cadence:'oneTime', lines:[
+            {id:'a', name:'Discovery workshop', description:'Half-day session, up to six people.',
+             amount:1200, cadence:'oneTime'},
+            {id:'b', name:'Site design and build', description:'Twelve templates, responsive.',
+             amount:9800, cadence:'oneTime'},
+            {id:'c', name:'Photography day', description:'On-site, edited and delivered.',
+             amount:1400, cadence:'oneTime', optional:true, selected:true},
+            {id:'d', name:'Copywriting', description:'Long-form copy for eight pages.',
+             amount:2200, cadence:'oneTime', optional:true, selected:false}]},
+          {title:'Monthly', cadence:'monthly', lines:[
+            {id:'e', name:'Hosting and care plan', description:'Updates, backups, uptime monitoring.',
+             amount:175, cadence:'monthly', minimumTerm:12,
+             schedule:'$175.00/month for 30 months, then $100.00/month'},
+            {id:'f', name:'Search reporting', description:'Monthly report and a 30-minute call.',
+             amount:95, cadence:'monthly', optional:true, selected:false, quantity:1}]}]}),
+      h('div', {style:{marginTop:'20px', paddingTop:'16px',
+                borderTop:'1px solid var(--paper-border)'}},
+        h(TotalsPair, {oneTime:12400, monthly:175, size:'md'})));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

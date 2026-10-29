@@ -1,0 +1,35 @@
+<!-- @dsCard group="Client pages" height=328 subtitle="The one piece of chrome on a client page; the document pads to clear it" -->
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-page); font-family: var(--font-sans); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .06em;
+         text-transform: uppercase; color: var(--ink-muted); margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius-md); padding: 16px; }
+</style>
+<div id="root"></div>
+<script>
+(function () {
+  var D = window.ProposalDS, h = React.createElement;
+  var { StickyActionBar, Button } = D;
+  function App() {
+    return h('div', {style:{maxWidth:'680px'}},
+      h('div', {className:'ps-paper', style:{padding:'24px', borderBottomLeftRadius:0,
+                borderBottomRightRadius:0, boxShadow:'none',
+                border:'1px solid var(--paper-border)', borderBottom:0}},
+        h('h2', {style:{font:'600 26px/34px var(--font-serif)', margin:'0 0 12px',
+                 color:'var(--paper-ink)'}}, 'Website redesign & ongoing care'),
+        h('p', {style:{font:'400 17px/28px var(--font-serif)', margin:0, color:'var(--paper-ink)'}},
+          'Each phase ends with a review you sign off before the next begins. Your care plan starts the day the new site goes live.'),
+        h('p', {style:{font:'400 14px/22px var(--font-serif)', margin:'16px 0 0',
+                 color:'var(--paper-muted)'}}, 'Valid until 12 October 2026 \u00b7 From Meridian Studio')),
+      h(StickyActionBar, {oneTime:12400, monthly:175, onAction:function(){},
+        secondary:h(Button, {variant:'ghost', size:'lg'}, 'Decline')}),
+      h('p', {style:{font:'400 13px/18px var(--font-sans)', color:'var(--ink-muted)',
+               margin:'12px 0 0'}},
+        'On a phone the bar stacks and pins to the bottom. Give the document bottom padding equal to its height so the last line stays reachable.'));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>

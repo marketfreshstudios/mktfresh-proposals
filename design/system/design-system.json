@@ -1,0 +1,276 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-19T02:23:38Z"
+ },
+ "title": "Proposal & E-Sign System",
+ "namespace": "ProposalDS",
+ "libraries": [
+  {
+   "name": "react",
+   "version": "18"
+  },
+  {
+   "name": "react-dom",
+   "version": "18"
+  }
+ ],
+ "sections": {},
+ "groups": [
+  "Icons"
+ ],
+ "assetGroups": {
+  "Icons": {
+   "name": "Icons",
+   "tile": "s",
+   "order": [
+    "edit.svg",
+    "send.svg",
+    "viewed.svg",
+    "signature.svg",
+    "countersign.svg",
+    "verified.svg",
+    "declined.svg",
+    "expired.svg",
+    "archive.svg",
+    "lock.svg",
+    "clock.svg",
+    "running.svg",
+    "failed.svg",
+    "review.svg",
+    "stale.svg",
+    "retry.svg",
+    "ai.svg",
+    "recurring.svg",
+    "one-time.svg",
+    "download.svg",
+    "pdf.svg",
+    "document.svg",
+    "link.svg",
+    "copy.svg",
+    "search.svg",
+    "plus.svg",
+    "check.svg",
+    "chevron-right.svg",
+    "close.svg",
+    "more.svg",
+    "image.svg",
+    "page-break.svg",
+    "variable.svg"
+   ],
+   "files": {
+    "edit.svg": {
+     "name": "edit.svg",
+     "blob": "3ac9cc808f001b25b1a68473d9d3c910",
+     "size": 648,
+     "type": "image/svg+xml"
+    },
+    "send.svg": {
+     "name": "send.svg",
+     "blob": "a43006297a1a66995d8e669866d2ea18",
+     "size": 461,
+     "type": "image/svg+xml"
+    },
+    "viewed.svg": {
+     "name": "viewed.svg",
+     "blob": "3a60c2fa94a513523f76597fac83b5c9",
+     "size": 704,
+     "type": "image/svg+xml"
+    },
+    "signature.svg": {
+     "name": "signature.svg",
+     "blob": "d01918d51134b7cf0fff7fab071de016",
+     "size": 949,
+     "type": "image/svg+xml"
+    },
+    "countersign.svg": {
+     "name": "countersign.svg",
+     "blob": "4dbee9db7e48cebf3a6213879cd55bbd",
+     "size": 464,
+     "type": "image/svg+xml"
+    },
+    "verified.svg": {
+     "name": "verified.svg",
+     "blob": "b25eef71d482bf73a4ae4c54e4253406",
+     "size": 327,
+     "type": "image/svg+xml"
+    },
+    "declined.svg": {
+     "name": "declined.svg",
+     "blob": "5abd1744ca8dd0bed0756910414462fd",
+     "size": 414,
+     "type": "image/svg+xml"
+    },
+    "expired.svg": {
+     "name": "expired.svg",
+     "blob": "86deaef31dee5789d1eacc27fd42c357",
+     "size": 581,
+     "type": "image/svg+xml"
+    },
+    "archive.svg": {
+     "name": "archive.svg",
+     "blob": "cfc4a1bdedfa5b0cec3ea21770a079ae",
+     "size": 416,
+     "type": "image/svg+xml"
+    },
+    "lock.svg": {
+     "name": "lock.svg",
+     "blob": "a725988be22e7a11014e5db4ff2e6693",
+     "size": 362,
+     "type": "image/svg+xml"
+    },
+    "clock.svg": {
+     "name": "clock.svg",
+     "blob": "9b63e68ea5cef90939b00cf03820159c",
+     "size": 315,
+     "type": "image/svg+xml"
+    },
+    "running.svg": {
+     "name": "running.svg",
+     "blob": "509956e7bef0caaafc571f88fef796ed",
+     "size": 461,
+     "type": "image/svg+xml"
+    },
+    "failed.svg": {
+     "name": "failed.svg",
+     "blob": "8d81fa222a67ee94f94909d4b1b83fe1",
+     "size": 443,
+     "type": "image/svg+xml"
+    },
+    "review.svg": {
+     "name": "review.svg",
+     "blob": "d9fef6331044eba9c7bb6c7e9aee2397",
+     "size": 570,
+     "type": "image/svg+xml"
+    },
+    "stale.svg": {
+     "name": "stale.svg",
+     "blob": "8d4080ec95b6bac20ecdd180b327b0d8",
+     "size": 604,
+     "type": "image/svg+xml"
+    },
+    "retry.svg": {
+     "name": "retry.svg",
+     "blob": "ac64e90837835b7ec3f970f2709548db",
+     "size": 496,
+     "type": "image/svg+xml"
+    },
+    "ai.svg": {
+     "name": "ai.svg",
+     "blob": "c23f2a8038146ffe934fdb8554599913",
+     "size": 1022,
+     "type": "image/svg+xml"
+    },
+    "recurring.svg": {
+     "name": "recurring.svg",
+     "blob": "b8f18a9ecda9fa8fe504da289e772b1b",
+     "size": 608,
+     "type": "image/svg+xml"
+    },
+    "one-time.svg": {
+     "name": "one-time.svg",
+     "blob": "577e0cf2661c28493c4f06b88702a160",
+     "size": 801,
+     "type": "image/svg+xml"
+    },
+    "download.svg": {
+     "name": "download.svg",
+     "blob": "dd346a531a87f2e6a9de67e336c81423",
+     "size": 556,
+     "type": "image/svg+xml"
+    },
+    "pdf.svg": {
+     "name": "pdf.svg",
+     "blob": "b2a951a793d4e2eb339dce880bf202dc",
+     "size": 821,
+     "type": "image/svg+xml"
+    },
+    "document.svg": {
+     "name": "document.svg",
+     "blob": "3918e085c6834aa447b080251b801dd9",
+     "size": 541,
+     "type": "image/svg+xml"
+    },
+    "link.svg": {
+     "name": "link.svg",
+     "blob": "71e445779ef0ae0bc86d23eeb4163af1",
+     "size": 908,
+     "type": "image/svg+xml"
+    },
+    "copy.svg": {
+     "name": "copy.svg",
+     "blob": "5b2fb269565ecdd3a0453360906f1832",
+     "size": 417,
+     "type": "image/svg+xml"
+    },
+    "search.svg": {
+     "name": "search.svg",
+     "blob": "4ef3261d1e20e4e95ada8e403354d1a8",
+     "size": 364,
+     "type": "image/svg+xml"
+    },
+    "plus.svg": {
+     "name": "plus.svg",
+     "blob": "75ec3a55fbc2d6cbd1c5bf0bbeb041b9",
+     "size": 331,
+     "type": "image/svg+xml"
+    },
+    "check.svg": {
+     "name": "check.svg",
+     "blob": "0bf3928305f5e956ba5017940f7ce0a4",
+     "size": 311,
+     "type": "image/svg+xml"
+    },
+    "chevron-right.svg": {
+     "name": "chevron-right.svg",
+     "blob": "ce5cb099a7ea6f31e0de82fb4e4792a2",
+     "size": 307,
+     "type": "image/svg+xml"
+    },
+    "close.svg": {
+     "name": "close.svg",
+     "blob": "2fa58606f054415010ec4ab6a1685899",
+     "size": 410,
+     "type": "image/svg+xml"
+    },
+    "more.svg": {
+     "name": "more.svg",
+     "blob": "3095de806f304be0a6646ffda6839861",
+     "size": 261,
+     "type": "image/svg+xml"
+    },
+    "image.svg": {
+     "name": "image.svg",
+     "blob": "f1aa561a1da1466390165b6c18516e3a",
+     "size": 533,
+     "type": "image/svg+xml"
+    },
+    "page-break.svg": {
+     "name": "page-break.svg",
+     "blob": "8d7a3c1e8edb707d28381b8255d471bd",
+     "size": 642,
+     "type": "image/svg+xml"
+    },
+    "variable.svg": {
+     "name": "variable.svg",
+     "blob": "ae85c07ae62bd381dade37270e0cc2b7",
+     "size": 596,
+     "type": "image/svg+xml"
+    }
+   }
+  }
+ },
+ "blobs": {},
+ "docs": {
+  "readme": "project/README.md",
+  "sections": []
+ },
+ "lastChange": {
+  "by": "Jonathan",
+  "at": "2026-09-19T03:20:22Z",
+  "via": "Cowork",
+  "note": "Added Toolbar, FilterChip and Badge, plus three icons the editor needed."
+ }
+}
