@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
+    "build": "next build && npm run check:pdf-trace",
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -14,7 +14,8 @@
     "import": "node --env-file-if-exists=.env.local --import tsx scripts/proposify-import/index.ts",
     "verify:supabase": "tsx scripts/verify-supabase.ts",
     "format:check": "prettier --check src scripts tests e2e *.ts *.json",
-    "check:neutral": "node --import tsx scripts/check-neutral.ts"
+    "check:neutral": "node --import tsx scripts/check-neutral.ts",
+    "check:pdf-trace": "node --import tsx scripts/check-pdf-trace.ts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "6.7.2",
@@ -30,6 +31,7 @@
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",
     "playwright": "1.63.0",
+    "playwright-core": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.7"

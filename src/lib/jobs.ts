@@ -4,7 +4,6 @@ import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
 import { sha256, versionHash, money } from "./content";
 import { bill, type BillingProvider } from "./billing";
-import { sealedPdf } from "./pdf";
 import { mutate, type Repository } from "./repository";
 import { event, notify, queue, system } from "./service";
 import {
@@ -69,7 +68,7 @@ export class Worker {
     private storage: Storage,
     private mailer: Mailer,
     public providers: Record<"qbo" | "stripe", BillingProvider>,
-    private render = sealedPdf,
+    private render?: typeof import("./pdf").sealedPdf,
   ) {}
   async drain(id?: string) {
     const results = [];
@@ -253,7 +252,9 @@ export class Worker {
       const stage = String(j.payload.stage);
       if (p.files.some((f) => f.kind === "sealed" && f.stage === stage)) return;
       const v = j.payload.version as Version;
-      const rendered = await this.render(
+      // Import failures belong to this retryable job, never API initialization.
+      const render = this.render ?? (await import("./pdf")).sealedPdf;
+      const rendered = await render(
         v,
         j.payload.signers as Signer[],
         j.payload.events as Audit[],
