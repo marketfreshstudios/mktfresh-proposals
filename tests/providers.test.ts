@@ -30,7 +30,7 @@ function transport(existing = false, multi = false) {
     description: "Original description",
     collection_method: "send_invoice",
     metadata: multi
-      ? { plan: "multi", plan_items: "hosted-standard-100,storage-30gb-60" }
+      ? { plan: "multi", plan_items: "hosted-standard-100,hosting-upgrade-60" }
       : { plan: "old-plan" },
     items: {
       data: [
@@ -423,7 +423,7 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
   expect(update).toEqual({
     metadata: {
       plan: "multi",
-      plan_items: "hosted-standard-100,storage-30gb-60,hosting-essentials-25",
+      plan_items: "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
     },
   });
 });
