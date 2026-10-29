@@ -120,6 +120,10 @@ export const SignatureSchema = z
     typed_name: z.string().trim().max(200).optional(),
     image: z.string().max(500000).optional(),
     revision: z.number().int().nonnegative(),
+    reviewed_hash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
   })
   .superRefine((v, c) => {
     if (v.kind === "typed" && !v.typed_name)

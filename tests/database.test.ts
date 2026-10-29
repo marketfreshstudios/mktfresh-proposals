@@ -28,6 +28,12 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/20261029164822_catalogue_line_upgrade.sql",
+      "utf8",
+    ),
+  );
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
   p = await service.sign(p.id, signature(p.revision), "client", clientActor, {

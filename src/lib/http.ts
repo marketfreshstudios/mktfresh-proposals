@@ -19,11 +19,11 @@ import {
   type Block,
   type Template,
 } from "./model";
-import { actor, equalSecret, login, staff } from "./auth";
+import { actor, equalSecret, login, staff, sameOrigin } from "./auth";
 import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
-import { CONSENT, htmlDocument } from "./content";
+import { sha256 } from "./content";
 const uuid = z.string().uuid();
 const headers = {
   "Cache-Control": "no-store",
@@ -54,8 +54,7 @@ export async function handle(req: Request, path: string[]) {
         404,
       );
       check(
-        !req.headers.get("origin") ||
-          req.headers.get("origin") === new URL(req.url).origin,
+        !req.headers.get("origin") || sameOrigin(req),
         "Same-origin request required",
         403,
       );
@@ -74,8 +73,7 @@ export async function handle(req: Request, path: string[]) {
     }
     if (path[0] === "auth" && path[1] === "login" && method === "POST") {
       check(
-        !req.headers.get("origin") ||
-          req.headers.get("origin") === new URL(req.url).origin,
+        !req.headers.get("origin") || sameOrigin(req),
         "Same-origin request required",
         403,
       );
@@ -114,6 +112,30 @@ export async function handle(req: Request, path: string[]) {
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
         rt = await publicRuntime(token);
+      if (method === "GET" && action === "brand") {
+        const p = await rt.repo.byToken(token);
+        check(p, "Not found", 404);
+        const settings = p.workspace_settings;
+        if (path[3] === "logo") {
+          check(
+            settings &&
+              settings.logo &&
+              settings.logo.startsWith(rt.repo.workspaceId + "/"),
+            "Logo unavailable",
+            404,
+          );
+          return new Response(
+            Buffer.from(await rt.storage.get(settings.logo)),
+            { headers: { ...headers, "Content-Type": "image/png" } },
+          );
+        }
+        return json({
+          name: settings?.company_name ?? "Proposal",
+          email: settings?.email ?? "",
+          logo: settings?.logo ?? null,
+          accent_colour: settings?.accent_colour ?? "#245547",
+        });
+      }
       if (method === "GET" && !action)
         return json(
           publicResult(await rt.service.view(token, password, actor(req))),
@@ -122,6 +144,10 @@ export async function handle(req: Request, path: string[]) {
         const input = z
           .object({
             revision: z.number().int(),
+            reviewed_hash: z
+              .string()
+              .regex(/^[a-f0-9]{64}$/)
+              .optional(),
             item_id: uuid,
             selected: z.boolean(),
           })
@@ -198,6 +224,41 @@ export async function handle(req: Request, path: string[]) {
         "proposal_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       );
       return response;
+    }
+    if (path[0] === "workspace-logo") {
+      if (method === "POST") {
+        const input = await body(req);
+        check(
+          /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(input.image ?? ""),
+          "PNG logo required",
+        );
+        const bytes = Buffer.from(input.image.split(",")[1], "base64");
+        check(
+          bytes.length < 750000 &&
+            bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a",
+          "Valid PNG under 750 KB required",
+        );
+        const path = rt.repo.workspaceId + "/" + sha256(bytes) + ".png";
+        await rt.storage.put(path, bytes);
+        return json({ path });
+      }
+      if (method === "GET") {
+        const settings = (
+          await rt.repo.entities<{ id: string; logo: string }>(
+            "workspace_settings",
+          )
+        )[0];
+        check(
+          settings &&
+            settings.logo &&
+            settings.logo.startsWith(rt.repo.workspaceId + "/"),
+          "Logo unavailable",
+          404,
+        );
+        return new Response(Buffer.from(await rt.storage.get(settings.logo)), {
+          headers: { ...headers, "Content-Type": "image/png" },
+        });
+      }
     }
     if (path[0] === "assistants") {
       const oauth = oauthServer();
@@ -278,6 +339,10 @@ export async function handle(req: Request, path: string[]) {
         if (table === "workspace_settings") {
           raw.id = rt.repo.workspaceId;
           entity = WorkspaceSettingsSchema.parse(raw);
+          check(
+            !entity.logo || entity.logo.startsWith(rt.repo.workspaceId + "/"),
+            "Logo must belong to this workspace",
+          );
         } else if (table === "workspace_documents") {
           entity = z
             .object({
@@ -346,14 +411,43 @@ export async function handle(req: Request, path: string[]) {
           total: list.length,
           items: list
             .slice(offset, offset + limit)
-            .map(({ id, title, status, client, created_at, source }) => ({
-              id,
-              title,
-              status,
-              client,
-              created_at,
-              source,
-            })),
+            .map(
+              ({
+                id,
+                title,
+                status,
+                client,
+                created_at,
+                currency,
+                source,
+                files,
+                quote,
+                signers,
+                jobs,
+                ai_unreviewed,
+                valid_until,
+                sent_at,
+                billing_links,
+                origin,
+              }) => ({
+                id,
+                title,
+                status,
+                client,
+                created_at,
+                currency,
+                source,
+                files,
+                quote,
+                signers,
+                jobs,
+                ai_unreviewed,
+                valid_until,
+                sent_at,
+                billing_links,
+                origin,
+              }),
+            ),
         });
       }
       if (method === "POST" && !id) {
@@ -439,7 +533,10 @@ export async function handle(req: Request, path: string[]) {
           headers: {
             ...headers,
             "Content-Type": "application/pdf",
-            "Content-Disposition": 'attachment; filename="proposal.pdf"',
+            "Content-Disposition":
+              new URL(req.url).searchParams.get("inline") === "1"
+                ? 'inline; filename="proposal.pdf"'
+                : 'attachment; filename="proposal.pdf"',
           },
         });
       }
@@ -454,34 +551,5 @@ export async function handle(req: Request, path: string[]) {
       e instanceof Error ? e.message : "Unknown error",
     );
     return json({ error: "Internal service error" }, 500);
-  }
-}
-export async function publicPage(req: Request, token: string) {
-  try {
-    const rt = await publicRuntime(token),
-      password = req.headers.get("x-proposal-password") ?? "";
-    const p = await rt.service.view(token, password, actor(req));
-    const data = publicResult(p);
-    const harness =
-      process.env.APP_MODE === "local" && process.env.NODE_ENV !== "production";
-    const controls = harness
-      ? `<hr><p>Development signing harness</p><pre id="state">${JSON.stringify({ revision: data.revision, quote: data.quote }).replace(/</g, "&lt;")}</pre><p>${CONSENT}</p><form id="sign"><label>Name <input name="name" required></label><label>Email <input name="email" type="email" required></label><label><input name="consent" type="checkbox" required> I agree to the consent above</label><button>Sign</button></form><pre id="result"></pre><script>document.getElementById('sign').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const r=await fetch('/api/public/${token}/sign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:${data.revision},name:f.get('name'),email:f.get('email'),consent:f.get('consent')==='on',kind:'typed',typed_name:f.get('name')})});document.getElementById('result').textContent=JSON.stringify(await r.json());};</script>`
-      : "";
-    return new Response(htmlDocument(data.html + controls), {
-      headers: {
-        ...headers,
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Security-Policy": harness
-          ? "default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'none'; frame-ancestors 'none'"
-          : "default-src 'none'; img-src data:; style-src 'unsafe-inline'; frame-ancestors 'none'",
-      },
-    });
-  } catch (e) {
-    return json(
-      {
-        error: e instanceof AppError ? e.message : "Unable to render proposal",
-      },
-      e instanceof AppError ? e.status : 500,
-    );
   }
 }

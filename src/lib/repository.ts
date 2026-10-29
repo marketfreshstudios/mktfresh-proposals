@@ -208,12 +208,18 @@ export class SupabaseRepository implements Repository {
     }
   }
   async entities<T>(table: EntityTable) {
-    const { data, error } = await this.db
-      .from(table)
-      .select("data")
-      .eq("workspace_id", this.workspaceId);
-    if (error) throw error;
-    return data.map((x) => x.data as T);
+    const all: T[] = [];
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await this.db
+        .from(table)
+        .select("data")
+        .eq("workspace_id", this.workspaceId)
+        .order("id")
+        .range(from, from + 499);
+      if (error) throw error;
+      all.push(...data.map((x) => x.data as T));
+      if (data.length < 500) return all;
+    }
   }
   async put<T extends { id: string }>(table: EntityTable, entity: T) {
     const { error } = await this.db

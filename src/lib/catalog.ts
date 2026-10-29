@@ -21,6 +21,7 @@ type Price = {
   id: string;
   lookup_key: string | null;
   unit_amount: number | null;
+  currency?: string;
   nickname: string | null;
   recurring: { interval: string } | null;
   product: StripeProduct;
@@ -83,6 +84,7 @@ export async function resolveLookup(api: StripeTransport, key: string) {
   check(page.data.length === 1, `Lookup key ${key} does not resolve uniquely`);
   const price = page.data[0];
   check(price.metadata.legacy !== "true", `Legacy lookup key ${key}`);
+  check(price.product.active, "Catalogue product is inactive");
   return price;
 }
 export async function createCustomFamily(
@@ -142,6 +144,7 @@ export async function createCustomFamily(
   const family = {
     id: sha256(repo.workspaceId + product.id)
       .slice(0, 32)
+      .replace(/^(.{12}).(.{3})./, "$14$28")
       .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5"),
     name: product.name,
     stripe_product_id: product.id,
