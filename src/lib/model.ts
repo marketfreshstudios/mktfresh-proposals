@@ -213,6 +213,9 @@ export type Proposal = {
   valid_until: string;
   currency: string;
   source: "native" | "proposify_import";
+  brief?: string;
+  ai_unreviewed?: boolean;
+  ai_connector?: string;
   origin?: { source: "playbook"; source_version: string };
   proposify_id: string | null;
   created_by: string;

@@ -1,3 +1,5 @@
+import { connectAssistant } from "./mcp-client";
+import { catalogLine, type Item } from "../src/lib/model";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -116,17 +118,31 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
     const response = await request.post("/api/" + path, { headers, data });
     expect(response.ok(), await response.text()).toBe(true);
   }
-  let r = await request.post("/api/proposals", {
+  const call = await connectAssistant(request, headers);
+  const catalog = (await call("list_catalog", {})) as Item[];
+  const lines = [itemId, monthlyId, optionalId].map((id) =>
+    catalogLine(
+      catalog.find((i) => i.id === id)!,
+      { qty: 1, optional: id === optionalId, selected: true },
+    ),
+  );
+  let p = await call("create_proposal_draft", {
+    brief: "Discovery notes for the website partnership",
+    client_id: clientId,
+    template_id: templateId,
+    title: "Website partnership",
+    content_markdown:
+      "# {{proposal.title}}\n\nPrepared for {{client.company}}. Monthly: {{quote.monthly_total}}.",
+    lines,
+  });
+  expect(p.ai_unreviewed).toBe(true);
+  lines[0].amount += 100;
+  let r = await request.patch(`/api/proposals/${p.id}`, {
     headers,
-    data: {
-      client_id: clientId,
-      template_id: templateId,
-      title: "Website partnership",
-      valid_until: new Date(Date.now() + 86400000 * 30).toISOString(),
-    },
+    data: { revision: p.revision, quote: lines },
   });
   expect(r.ok(), await r.text()).toBe(true);
-  let p = await r.json();
+  p = await r.json();
   r = await request.post(`/api/proposals/${p.id}/send`, { headers });
   p = await r.json();
   expect(p.token).toHaveLength(43);

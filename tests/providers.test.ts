@@ -210,13 +210,11 @@ it("custom retainer bills entered 2000/month inline on existing family, without 
 });
 it("pins Stripe version and persists action results beyond retry", async () => {
   const { repo } = await setup();
-  const fetcher = vi
-    .fn()
-    .mockResolvedValue(
-      new Response(JSON.stringify({ id: "result", livemode: false }), {
-        status: 200,
-      }),
-    );
+  const fetcher = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ id: "result", livemode: false }), {
+      status: 200,
+    }),
+  );
   const api = new StripeHttp("rk_test_fake", repo, fetcher);
   await api.post("/v1/customers", { name: "Client" }, "customer");
   await api.post("/v1/customers", { name: "Client" }, "customer");

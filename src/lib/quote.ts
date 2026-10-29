@@ -2,11 +2,18 @@ import { LineSchema, type Item, type Proposal } from "./model";
 import { renderBlocks, variables } from "./content";
 
 /** One shared readiness result for the editor, send endpoint and MCP. */
-export function readiness(p: Proposal, catalog: Item[], now = new Date()) {
+export function readiness(
+  p: Proposal,
+  catalog: Item[],
+  now = new Date(),
+  confirmAiReview = false,
+) {
   const errors: string[] = [],
     warnings: string[] = [];
   if (Date.parse(p.valid_until) <= now.getTime())
     errors.push("Proposal expired");
+  if (p.ai_unreviewed && !confirmAiReview)
+    errors.push("Confirm review of AI changes before sending");
   if (!p.quote.length) errors.push("Quote required");
   if (new Set(p.quote.map((l) => l.id)).size !== p.quote.length)
     errors.push("Duplicate line IDs");
