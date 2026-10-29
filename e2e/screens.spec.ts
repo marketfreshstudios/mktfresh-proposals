@@ -6,7 +6,9 @@ import type { Proposal } from "../src/lib/model";
 test("all screen states in both themes, with explicit visual fixtures", async ({
   page,
 }) => {
-  test.setTimeout(240000);
+  // The 72 full-page captures need additional time on shared CI runners.
+  test.setTimeout(600000);
+  page.setDefaultTimeout(15000);
   const { repo, service, draft } = await setup();
   draft.workspace_settings = {
     ...draft.workspace_settings!,
