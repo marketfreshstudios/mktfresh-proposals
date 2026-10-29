@@ -9,6 +9,7 @@ import {
   Field,
   Empty,
   Totals,
+  JobState,
   Status,
   Signatures,
   ThemeToggle,
@@ -1242,17 +1243,46 @@ function Record({ p, refresh }: { p: Proposal; refresh: () => Promise<void> }) {
               <p className="muted">
                 A billing failure never undoes a signature.
               </p>
-              {p.jobs.map((j) => (
-                <div className="row" key={j.id}>
-                  <div>
-                    <strong>{j.kind}</strong>
-                    <small>
-                      {j.status} · attempt {j.attempts}
-                    </small>
-                    {j.last_error && <p>{j.last_error}</p>}
+              {p.jobs.map((j) => {
+                const label =
+                  j.kind === "email"
+                    ? j.payload.to === p.client.email
+                      ? "Email to client"
+                      : "Email to staff"
+                    : j.kind === "pdf"
+                      ? "Sealed PDF"
+                      : "Billing";
+                const review =
+                  j.kind === "billing" &&
+                  p.billing_links.some((l) => l.status === "needs_review");
+                return j.status === "done" ? (
+                  <div className="row" key={j.id}>
+                    <strong>{label}</strong>
+                    <span className="pill success">Complete</span>
                   </div>
-                </div>
-              ))}
+                ) : (
+                  <JobState
+                    key={j.id}
+                    state={
+                      review
+                        ? "review"
+                        : j.status === "pending"
+                          ? "queued"
+                          : j.status
+                    }
+                    label={label}
+                    error={j.last_error}
+                    attempts={j.attempts}
+                    onRetry={() => {
+                      if (review) location.href = `/clients/${p.client.id}`;
+                      else
+                        void post(`/api/proposals/${p.id}/retry`)
+                          .then(refresh)
+                          .catch((e) => setMessage(String(e)));
+                    }}
+                  />
+                );
+              })}
               <Button
                 onClick={async () => {
                   await post(`/api/proposals/${p.id}/jobs`);

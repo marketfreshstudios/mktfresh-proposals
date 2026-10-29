@@ -24,6 +24,8 @@ export function totals(lines: Line[]) {
   }
   return out;
 }
+export const intervalLabel = (interval: Line["interval"]) =>
+  ({ one_time: "One-time", month: "Monthly", year: "Yearly" })[interval];
 export const money = (cents: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
     cents / 100,
@@ -138,7 +140,7 @@ export function renderBlocks(
               .filter((l) => !l.optional || l.selected)
               .map(
                 (l) =>
-                  `<tr><td>${escape(l.name)} (${l.interval})<p>${escape(l.description)}</p>${l.min_term_months ? `<p>${l.min_term_months}-month minimum</p>` : ""}${l.schedule ? `<p>After ${l.schedule.after_paid_invoices} paid invoices: ${money(l.schedule.then.amount, currency)}/${l.interval}.</p>` : ""}</td><td>${l.qty}</td><td>${money(l.amount * l.qty, currency)}</td></tr>`,
+                  `<tr><td>${escape(l.name)} (${intervalLabel(l.interval)})<p>${escape(l.description)}</p>${l.min_term_months ? `<p>${l.min_term_months}-month minimum</p>` : ""}${l.schedule ? `<p>After ${l.schedule.after_paid_invoices} paid invoices: ${money(l.schedule.then.amount, currency)} ${intervalLabel(l.interval).toLowerCase()}.</p>` : ""}</td><td>${l.qty}</td><td>${money(l.amount * l.qty, currency)}</td></tr>`,
               )
               .join("") +
             `</tbody></table><p>One time: ${money(totals(quote).one_time_total, currency)} · Monthly: ${money(totals(quote).monthly_total, currency)} · Yearly: ${money(totals(quote).yearly_total, currency)}</p>`

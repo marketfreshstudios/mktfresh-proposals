@@ -236,6 +236,25 @@ export class StripeProvider implements BillingProvider {
         }
       const items = await Promise.all(group.map((l) => this.item(l, currency)));
       if (existing) {
+        const priorPlan = existing.metadata.plan;
+        const priorKeys =
+          priorPlan === "multi"
+            ? (existing.metadata.plan_items ?? "")
+                .split(",")
+                .map((k) => k.trim())
+                .filter(Boolean)
+            : priorPlan
+              ? [priorPlan]
+              : [];
+        const keys = [
+          ...new Set([
+            ...priorKeys,
+            ...existing.items.data
+              .map((i) => i.price.lookup_key)
+              .filter((k): k is string => !!k),
+            ...group.map((l) => this.plan(l)),
+          ]),
+        ].filter((k) => k !== "multi");
         for (let i = 0; i < group.length; i++)
           await this.api.post(
             "/v1/subscription_items",
@@ -247,24 +266,12 @@ export class StripeProvider implements BillingProvider {
             },
             key + ":add:" + group[i].id,
           );
-        const oldKeys = existing.items.data.map(
-          (i) => i.price.lookup_key ?? existing!.metadata.plan ?? "existing",
-        );
-        const keys = [
-          ...new Set([...oldKeys, ...group.map((l) => this.plan(l))]),
-        ];
         await this.api.post(
           `/v1/subscriptions/${existing.id}`,
           {
-            description: title,
-            collection_method: settings.collection_method,
-            ...(settings.collection_method === "send_invoice"
-              ? { days_until_due: 30 }
-              : {}),
             metadata: {
               plan: keys.length > 1 ? "multi" : keys[0],
-              plan_items: JSON.stringify(keys),
-              proposal_id: proposal,
+              plan_items: keys.join(","),
             },
           },
           key + ":metadata:" + interval,
@@ -302,9 +309,7 @@ export class StripeProvider implements BillingProvider {
                     description: title,
                     metadata: {
                       plan: group.length > 1 ? "multi" : this.plan(group[0]),
-                      plan_items: JSON.stringify(
-                        group.map((l) => this.plan(l)),
-                      ),
+                      plan_items: group.map((l) => this.plan(l)).join(","),
                       proposal_id: proposal,
                     },
                   },

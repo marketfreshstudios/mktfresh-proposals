@@ -65,13 +65,11 @@ it("round-trips playbook entered lines without calculating prices", async () => 
 it("new family identifiers are valid UUIDs usable by quote lines", async () => {
   const api = {
     get: vi.fn().mockResolvedValue({ data: [], has_more: false }),
-    post: vi
-      .fn()
-      .mockResolvedValue({
-        id: "prod_family",
-        name: "Custom Retainer",
-        active: true,
-      }),
+    post: vi.fn().mockResolvedValue({
+      id: "prod_family",
+      name: "Custom Retainer",
+      active: true,
+    }),
   } as unknown as StripeTransport;
   const result = await createCustomFamily(
     new MemoryRepository(),

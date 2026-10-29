@@ -187,6 +187,54 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
       await expect(page.getByText("Loading your workspace…")).toHaveCount(0);
       await expect(page.getByText("Opening your proposal…")).toHaveCount(0);
       if (prepare) await prepare();
+      if (
+        name.startsWith("client-") &&
+        name !== "client-detail" &&
+        !["client-password", "client-ended"].includes(name)
+      ) {
+        await expect(
+          page.getByLabel("Proposal totals", { exact: true }),
+        ).toHaveCount(1);
+        await expect(
+          page
+            .getByLabel("Proposal totals")
+            .getByText("Yearly", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByText("Signature: client", { exact: true }),
+        ).toHaveCount(0);
+        if (
+          [
+            "client-reading",
+            "client-stale",
+            "client-signed",
+            "client-completed",
+            "client-billing",
+          ].includes(name)
+        )
+          await expect(page.locator(".client-signature")).toHaveCount(2);
+        if (name === "client-completed")
+          await expect(page.locator(".typed-signature")).toHaveCount(2);
+        if (name === "client-reading") {
+          await page.evaluate(() =>
+            window.scrollTo(0, document.body.scrollHeight),
+          );
+          await expect
+            .poll(async () =>
+              page.evaluate(
+                () =>
+                  document
+                    .querySelector(".document-end")!
+                    .getBoundingClientRect().bottom <=
+                  document.querySelector(".client-bar")!.getBoundingClientRect()
+                    .top,
+              ),
+            )
+            .toBe(true);
+          await page.evaluate(() => window.scrollTo(0, 0));
+        }
+      }
+
       await page.evaluate(() => document.fonts.ready);
       const file = `${name}-${phone ? "phone" : "desktop"}-${theme}.png`;
       await page.screenshot({ path: `${root}/${file}`, fullPage: true });

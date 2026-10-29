@@ -1,6 +1,6 @@
 "use client";
 import { accentText } from "../lib/branding";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   api,
   post,
@@ -34,6 +34,28 @@ export function ClientProposal({ token }: { token: string }) {
     logo?: string | null;
     accent_colour?: string;
   }>({ name: "Proposal", email: "" });
+  const bar = useRef<HTMLDivElement>(null),
+    [barHeight, setBarHeight] = useState(0);
+  const sticky =
+    !!p &&
+    !locked &&
+    !ended &&
+    !stale &&
+    step === "read" &&
+    !["signed_by_client", "completed"].includes(p.status);
+  useEffect(() => {
+    if (!sticky || !bar.current) {
+      setBarHeight(0);
+      return;
+    }
+    const node = bar.current;
+    const measure = () => setBarHeight(node.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [sticky]);
+  const hasYearly = p?.quote.some((l) => l.interval === "year") ?? false;
   const headers = { "x-proposal-password": password };
   async function load() {
     setBusy(true);
@@ -165,7 +187,10 @@ export function ClientProposal({ token }: { token: string }) {
         </div>
         <ThemeToggle />
       </header>
-      <main className="client-body stack">
+      <main
+        className="client-body stack"
+        style={{ paddingBottom: barHeight + 24 }}
+      >
         {error && (
           <Banner tone="danger" title="Please try again">
             {error}
@@ -241,7 +266,6 @@ export function ClientProposal({ token }: { token: string }) {
                       Your proposal is already accepted. One-time items are
                       invoiced separately.
                     </p>
-                    <Totals value={p.totals} currency={p.currency} />
                     {billing.checkout.map((s, i) => (
                       <a className="btn primary" key={s.url} href={s.url}>
                         Set up billing{" "}
@@ -263,13 +287,17 @@ export function ClientProposal({ token }: { token: string }) {
                       ),
                       p.currency,
                     )}
-                    . New yearly total:{" "}
-                    {money(
-                      billing.added_existing.reduce(
-                        (sum, entry) => sum + entry.yearly_total,
-                        0,
-                      ),
-                      p.currency,
+                    {hasYearly && (
+                      <>
+                        . New yearly total:{" "}
+                        {money(
+                          billing.added_existing.reduce(
+                            (sum, entry) => sum + entry.yearly_total,
+                            0,
+                          ),
+                          p.currency,
+                        )}
+                      </>
                     )}
                     . No additional billing setup is needed.
                   </Banner>
@@ -327,10 +355,7 @@ export function ClientProposal({ token }: { token: string }) {
                   )}
                   {verify && <p role="status">{verify}</p>}
                 </div>
-                <div
-                  className="paper"
-                  dangerouslySetInnerHTML={{ __html: p.html }}
-                />
+                <ClientDocument proposal={p} frozen />
               </>
             ) : step === "sign" ? (
               <>
@@ -342,7 +367,11 @@ export function ClientProposal({ token }: { token: string }) {
                     currency={p.currency}
                     frozen
                   />
-                  <Totals value={p.totals} currency={p.currency} />
+                  <Totals
+                    value={p.totals}
+                    currency={p.currency}
+                    showYearly={hasYearly}
+                  />
                 </div>
                 {!stale && (
                   <SignatureForm
@@ -368,42 +397,13 @@ export function ClientProposal({ token }: { token: string }) {
               </>
             ) : (
               <>
-                <article className="paper">
-                  {p.content.map((block, index) =>
-                    block.type === "pricing_table" ? (
-                      <section key={index}>
-                        <h2>Your investment</h2>
-                        <p className="muted">
-                          Optional items are your choice. Totals update as you
-                          go.
-                        </p>
-                        <Quote
-                          lines={p.quote as Line[]}
-                          currency={p.currency}
-                          frozen={stale}
-                          busy={busy}
-                          onToggle={toggle}
-                        />
-                        <Totals value={p.totals} currency={p.currency} />
-                      </section>
-                    ) : (
-                      <div
-                        key={index}
-                        dangerouslySetInnerHTML={{
-                          __html: renderBlocks(
-                            [block],
-                            p.quote as Line[],
-                            p.variables,
-                            p.currency,
-                          ),
-                        }}
-                      />
-                    ),
-                  )}
-                  <p className="muted">
-                    Valid until {date(p.valid_until)} · From {brand.name}
-                  </p>
-                </article>
+                <ClientDocument
+                  proposal={p}
+                  frozen={stale}
+                  busy={busy}
+                  onToggle={toggle}
+                  showTotals={!sticky}
+                />
                 {declining && (
                   <section className="card">
                     <h2>Decline this proposal?</h2>
@@ -431,9 +431,13 @@ export function ClientProposal({ token }: { token: string }) {
                     </div>
                   </section>
                 )}
-                {!stale && (
-                  <div className="client-bar">
-                    <Totals value={p.totals} currency={p.currency} />
+                {sticky && (
+                  <div className="client-bar" ref={bar}>
+                    <Totals
+                      value={p.totals}
+                      currency={p.currency}
+                      showYearly={hasYearly}
+                    />
                     <div className="actions">
                       <Button
                         variant="primary"
@@ -475,62 +479,170 @@ export function Quote({
 }) {
   return (
     <div className="quote-display">
-      {(["one_time", "month", "year"] as const).map((interval) => (
-        <section key={interval}>
-          <h3>
-            {interval === "one_time"
-              ? "One-time"
-              : interval === "month"
-                ? "Monthly"
-                : "Yearly"}
-          </h3>
-          {lines
-            .filter((l) => l.interval === interval)
-            .map((l) => (
-              <div className="row" key={l.id}>
-                <div>
-                  {l.optional && !frozen ? (
-                    <label className="check">
-                      <input
-                        type="checkbox"
-                        checked={l.selected}
-                        disabled={busy}
-                        onChange={(e) => onToggle?.(l.id, e.target.checked)}
-                      />
-                      <strong>{l.name}</strong>
-                    </label>
-                  ) : (
-                    <strong>
-                      <Icon name="lock" /> {l.name}
-                      {l.optional && !l.selected ? " — not selected" : ""}
-                    </strong>
-                  )}
-                  <p>{l.description}</p>
-                  {l.group && <small>Group: {l.group}</small>}
-                  {l.min_term_months && (
-                    <p>{l.min_term_months}-month minimum</p>
-                  )}
-                  {l.schedule && (
-                    <p>
-                      {money(l.amount, currency)}/{interval} for{" "}
-                      {l.schedule.after_paid_invoices} paid invoices, then{" "}
-                      {money(l.schedule.then.amount, currency)}/{interval}.
-                    </p>
-                  )}
-                  <small>Quantity {l.qty}</small>
+      {(["one_time", "month", "year"] as const)
+        .filter(
+          (interval) =>
+            interval !== "year" || lines.some((l) => l.interval === "year"),
+        )
+        .map((interval) => (
+          <section key={interval}>
+            <h3>
+              {interval === "one_time"
+                ? "One-time"
+                : interval === "month"
+                  ? "Monthly"
+                  : "Yearly"}
+            </h3>
+            {lines
+              .filter((l) => l.interval === interval)
+              .map((l) => (
+                <div className="row" key={l.id}>
+                  <div>
+                    {l.optional && !frozen ? (
+                      <label className="check">
+                        <input
+                          type="checkbox"
+                          checked={l.selected}
+                          disabled={busy}
+                          onChange={(e) => onToggle?.(l.id, e.target.checked)}
+                        />
+                        <strong>{l.name}</strong>
+                      </label>
+                    ) : (
+                      <strong>
+                        <Icon name="lock" /> {l.name}
+                        {l.optional && !l.selected ? " — not selected" : ""}
+                      </strong>
+                    )}
+                    <p>{l.description}</p>
+                    {l.group && <small>Group: {l.group}</small>}
+                    {l.min_term_months && (
+                      <p>{l.min_term_months}-month minimum</p>
+                    )}
+                    {l.schedule && (
+                      <p>
+                        {money(l.amount, currency)}/{interval} for{" "}
+                        {l.schedule.after_paid_invoices} paid invoices, then{" "}
+                        {money(l.schedule.then.amount, currency)}/{interval}.
+                      </p>
+                    )}
+                    <small>Quantity {l.qty}</small>
+                  </div>
+                  <span className="amount">
+                    {money(l.amount * l.qty, currency)}
+                    {interval === "month"
+                      ? "/month"
+                      : interval === "year"
+                        ? "/year"
+                        : ""}
+                  </span>
                 </div>
-                <span className="amount">
-                  {money(l.amount * l.qty, currency)}
-                  {interval === "month"
-                    ? "/month"
-                    : interval === "year"
-                      ? "/year"
-                      : ""}
-                </span>
-              </div>
-            ))}
-        </section>
-      ))}
+              ))}
+          </section>
+        ))}
     </div>
+  );
+}
+
+function ClientDocument({
+  proposal: p,
+  frozen = false,
+  busy = false,
+  onToggle,
+  showTotals = true,
+}: {
+  proposal: PublicProposal;
+  frozen?: boolean;
+  busy?: boolean;
+  onToggle?: (id: string, value: boolean) => void;
+  showTotals?: boolean;
+}) {
+  return (
+    <article className="paper client-document">
+      {p.content.map((block, index) =>
+        block.type === "pricing_table" ? (
+          <section key={index}>
+            <h2>Your investment</h2>
+            {!frozen && (
+              <p className="muted">
+                Optional items are your choice. Totals update as you go.
+              </p>
+            )}
+            <Quote
+              lines={p.quote as Line[]}
+              currency={p.currency}
+              frozen={frozen}
+              busy={busy}
+              onToggle={onToggle}
+            />
+          </section>
+        ) : block.type === "signature_block" ? (
+          <ClientSignatureBlock
+            key={index}
+            proposal={p}
+            role={block.role ?? "client"}
+          />
+        ) : (
+          <div
+            key={index}
+            dangerouslySetInnerHTML={{
+              __html: renderBlocks(
+                [block],
+                p.quote as Line[],
+                p.variables,
+                p.currency,
+              ),
+            }}
+          />
+        ),
+      )}
+      {showTotals && (
+        <Totals
+          value={p.totals}
+          currency={p.currency}
+          showYearly={p.quote.some((l) => l.interval === "year")}
+        />
+      )}
+      <p className="muted document-end">
+        Valid until {date(p.valid_until)} · From {p.company.name}
+      </p>
+    </article>
+  );
+}
+function ClientSignatureBlock({
+  proposal: p,
+  role,
+}: {
+  proposal: PublicProposal;
+  role: "client" | "company";
+}) {
+  const signer = p.signers.find((s) => s.role === role),
+    name =
+      signer?.name ??
+      (role === "client"
+        ? p.recipient.name
+        : p.variables["company.owner"] || p.company.name);
+  return (
+    <section
+      className="client-signature"
+      aria-label={`${role === "client" ? "Client" : "Company"} signature`}
+    >
+      <h3>{role === "client" ? "Client" : "Company"} signature</h3>
+      <strong>{name}</strong>
+      {signer ? (
+        <>
+          {signer.kind === "drawn" && signer.image ? (
+            <img src={signer.image} alt={`${name}’s signature`} />
+          ) : (
+            <p className="typed-signature">
+              {signer.typed_name ?? signer.name}
+            </p>
+          )}
+          <small>Signed {date(signer.signed_at)}</small>
+        </>
+      ) : (
+        <p className="muted">Awaiting signature</p>
+      )}
+    </section>
   );
 }
