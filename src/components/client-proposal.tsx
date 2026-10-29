@@ -621,7 +621,9 @@ function ClientSignatureBlock({
       signer?.name ??
       (role === "client"
         ? p.recipient.name
-        : p.variables["company.owner"] || p.company.name);
+        : p.company.signatory_name ||
+          p.variables["company.owner"] ||
+          p.company.name);
   return (
     <section
       className="client-signature"
@@ -629,6 +631,12 @@ function ClientSignatureBlock({
     >
       <h3>{role === "client" ? "Client" : "Company"} signature</h3>
       <strong>{name}</strong>
+      {(signer?.title || (role === "company" && p.company.signatory_title)) && (
+        <p>
+          {signer?.title || p.company.signatory_title}
+          {role === "company" ? ` · ${signer?.company || p.company.name}` : ""}
+        </p>
+      )}
       {signer ? (
         <>
           {signer.kind === "drawn" && signer.image ? (

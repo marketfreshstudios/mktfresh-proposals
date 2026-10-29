@@ -17,11 +17,21 @@ import {
   Icon,
 } from "./ui";
 import { ProposalEditor, BlocksEditor } from "./editor";
-import { SignatureForm } from "./signature";
+import {
+  CompanySignatureForm,
+  StoredSignatureEditor,
+} from "./company-signature";
 import { money, renderBlocks, variables, totals } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { PlaybookDraftSchema } from "../lib/playbook";
-import type { Proposal, Client, Item, Template, Block } from "../lib/model";
+import type {
+  Actor,
+  Proposal,
+  Client,
+  Item,
+  Template,
+  Block,
+} from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 const nav = [
   ["", "Dashboard"],
@@ -36,6 +46,9 @@ const nav = [
   ["settings/ai", "AI assistants"],
 ];
 type Data = {
+  user: Actor;
+  signatory_version: string;
+  staff: { user_id: string; name: string; email: string; role: string }[];
   settings: WorkspaceSettings | null;
   proposals: Proposal[];
   total: number;
@@ -78,9 +91,12 @@ export function StaffApp({
     setLoading(true);
     setError("");
     try {
-      const session = await api<{ settings: WorkspaceSettings | null }>(
-        "/api/auth/session",
-      );
+      const session = await api<{
+        settings: WorkspaceSettings | null;
+        user: Actor;
+        signatory_version: string;
+        staff: Data["staff"];
+      }>("/api/auth/session");
       const [
         proposals,
         clients,
@@ -102,6 +118,9 @@ export function StaffApp({
       ]);
       setData({
         settings: session.settings,
+        user: session.user,
+        signatory_version: session.signatory_version,
+        staff: session.staff ?? [],
         proposals: proposals.items,
         total: proposals.total,
         clients,
@@ -240,16 +259,14 @@ export function StaffApp({
               <Document p={p} />
             </div>
             <div className="card stack">
-              <h2>Your signature</h2>
+              <h2>Company signature</h2>
               <Signatures proposal={p} />
               {p.status === "signed_by_client" ? (
-                <SignatureForm
-                  consentText={p.workspace_settings?.consent_text ?? ""}
-                  name={data.settings?.owner}
-                  email={data.settings?.email}
-                  revision={p.revision}
-                  reviewedHash={p.versions.at(-1)?.content_hash}
-                  label="Counter-sign and complete"
+                <CompanySignatureForm
+                  settings={data.settings}
+                  user={data.user}
+                  version={data.signatory_version}
+                  proposal={p}
                   onSign={async (value) => {
                     await post(`/api/proposals/${p.id}/countersign`, value);
                     location.href = `/proposals/${p.id}`;
@@ -1357,6 +1374,8 @@ function Audit({ p }: { p: Proposal }) {
             <strong>
               {s.name} · {s.role}
             </strong>
+            {s.application_statement && <p>{s.application_statement}</p>}
+            {s.authorization_text && <p>{s.authorization_text}</p>}
             <p>{s.consent_text}</p>
             <small>
               {date(s.consent_at)} · IP {s.ip || "Not available"}
@@ -1380,7 +1399,7 @@ function Audit({ p }: { p: Proposal }) {
               <tr key={e.id}>
                 <td>{new Date(e.created_at).toLocaleString()}</td>
                 <td>{e.type}</td>
-                <td>{e.actor}</td>
+                <td>{String(e.metadata.application_statement ?? e.actor)}</td>
                 <td>{e.ip || "Not available"}</td>
                 <td>
                   <details>
@@ -2000,6 +2019,13 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
   const s = data.settings,
     [logo, setLogo] = useState<string | null>(s?.logo ?? null),
     [error, setError] = useState("");
+  const [signatoryImage, setSignatoryImage] = useState(
+    s?.company_signatory?.image ?? null,
+  );
+  const [allowed, setAllowed] = useState(
+    s?.company_signatory?.authorized_user_ids ?? [],
+  );
+  const owner = data.user?.staff_role === "owner";
   return (
     <div className="stack">
       <form
@@ -2012,6 +2038,19 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
               ...s,
               ...Object.fromEntries(f),
               logo,
+              company_signatory: owner
+                ? {
+                    name: String(f.get("signatory_name")),
+                    title: String(f.get("signatory_title")),
+                    user_id: f.get("signatory_user_id") || null,
+                    email:
+                      data.staff.find(
+                        (m) => m.user_id === f.get("signatory_user_id"),
+                      )?.email ?? s?.email,
+                    image: signatoryImage,
+                    authorized_user_ids: allowed,
+                  }
+                : s?.company_signatory,
               default_validity_days: Number(f.get("default_validity_days")),
               reminder_days: String(f.get("reminder_days"))
                 .split(",")
@@ -2025,7 +2064,7 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
         <h2>Workspace identity and sending</h2>
         {[
           ["company_name", "Company name"],
-          ["owner", "Owner / signatory"],
+          ["owner", "Owner contact name"],
           ["email", "Contact email"],
           ["phone", "Phone"],
           ["address", "Address"],
@@ -2087,6 +2126,66 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
             {error}
           </Banner>
         )}
+        <fieldset className="stack" disabled={!owner}>
+          <legend>Company signatory</legend>
+          {!owner && (
+            <p>
+              Only a workspace owner can change the signatory and authorized
+              staff.
+            </p>
+          )}
+          <Field label="Signatory name">
+            <input
+              name="signatory_name"
+              required
+              defaultValue={s?.company_signatory?.name ?? s?.owner ?? ""}
+            />
+          </Field>
+          <Field label="Signatory title">
+            <input
+              name="signatory_title"
+              required
+              defaultValue={s?.company_signatory?.title ?? "Owner"}
+            />
+          </Field>
+          <Field label="Signatory staff account">
+            <select
+              name="signatory_user_id"
+              defaultValue={s?.company_signatory?.user_id ?? ""}
+            >
+              <option value="">Choose the signatory’s staff account</option>
+              {data.staff.map((m) => (
+                <option key={m.user_id} value={m.user_id}>
+                  {m.name} [{m.email}]
+                </option>
+              ))}
+            </select>
+          </Field>
+          <StoredSignatureEditor
+            value={signatoryImage}
+            onChange={setSignatoryImage}
+          />
+          <p>
+            Staff authorized to apply this signature (include the signatory if
+            they will sign):
+          </p>
+          {data.staff.map((m) => (
+            <label className="check" key={m.user_id}>
+              <input
+                type="checkbox"
+                checked={allowed.includes(m.user_id)}
+                onChange={(e) =>
+                  setAllowed(
+                    e.target.checked
+                      ? [...allowed, m.user_id]
+                      : allowed.filter((id) => id !== m.user_id),
+                  )
+                }
+              />
+              {m.name} [{m.email}]
+            </label>
+          ))}
+        </fieldset>
         <Field label="Electronic signature consent">
           <textarea
             name="consent_text"
@@ -2125,9 +2224,10 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
           </select>
         </Field>
         <p className="muted">
-          Changes apply to new proposals. Existing agreements retain their saved
-          identity and consent. Add staff through your own authentication
-          administration.
+          Identity and consent changes apply to new proposals. Signatory changes
+          apply to future counter-signatures, including proposals already
+          awaiting signing. Completed agreements retain their saved identity and
+          consent. Add staff through your own authentication administration.
         </p>
         <Button variant="primary" type="submit">
           Save workspace settings

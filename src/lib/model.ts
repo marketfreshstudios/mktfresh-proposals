@@ -135,7 +135,21 @@ export const SignatureSchema = z
       c.addIssue({ code: "custom", message: "PNG signature required" });
   });
 export type SignatureInput = z.infer<typeof SignatureSchema>;
+export const CounterSignatureSchema = z.object({
+  revision: z.number().int().nonnegative(),
+  reviewed_hash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  consent: z.literal(true),
+  signatory_version: z.string(),
+  authorization: z.boolean().optional(),
+  authorization_text: z.string().max(1000).optional(),
+});
 export type Actor = {
+  staff_name?: string;
+  staff_email?: string;
+  staff_role?: "owner" | "member";
   workspace_id?: string;
   actor: string;
   ip: string;
@@ -148,6 +162,11 @@ export type Signer = Omit<SignatureInput, "consent" | "revision"> &
     consent_text: string;
     consent_at: string;
     signature_image_path?: string;
+    company?: string;
+    signatory_user_id?: string;
+    applied_by?: { user_id: string; name: string; email: string };
+    authorization_text?: string;
+    application_statement?: string;
   };
 export type Audit = Actor & {
   id: string;

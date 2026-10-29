@@ -1,3 +1,4 @@
+import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
@@ -6,7 +7,7 @@ import { syncStripeCatalog, createCustomFamily } from "./catalog";
 import { readiness } from "./quote";
 import { PlaybookDraftSchema } from "./playbook";
 import type { Item } from "./model";
-import { WorkspaceSettingsSchema } from "./workspace";
+import { WorkspaceSettingsSchema, type WorkspaceSettings } from "./workspace";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -19,7 +20,14 @@ import {
   type Block,
   type Template,
 } from "./model";
-import { actor, equalSecret, login, staff, sameOrigin } from "./auth";
+import {
+  actor,
+  equalSecret,
+  login,
+  staff,
+  sameOrigin,
+  workspaceStaff,
+} from "./auth";
 import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
@@ -212,11 +220,17 @@ export async function handle(req: Request, path: string[]) {
     }
     const user = await staff(req),
       rt = runtime(user.workspace_id);
-    if (path[0] === "auth" && path[1] === "session" && method === "GET")
+    if (path[0] === "auth" && path[1] === "session" && method === "GET") {
+      const settings =
+        (await rt.repo.entities<WorkspaceSettings>("workspace_settings"))[0] ??
+        null;
       return json({
         user,
-        settings: (await rt.repo.entities("workspace_settings"))[0] ?? null,
+        settings,
+        signatory_version: signatoryVersion(settings),
+        staff: await workspaceStaff(user.workspace_id),
       });
+    }
     if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
       const response = json({ signed_out: true });
       response.headers.set(
@@ -339,6 +353,40 @@ export async function handle(req: Request, path: string[]) {
         if (table === "workspace_settings") {
           raw.id = rt.repo.workspaceId;
           entity = WorkspaceSettingsSchema.parse(raw);
+          const previous = (
+            await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+          )[0];
+          if (
+            JSON.stringify(entity.company_signatory ?? null) !==
+            JSON.stringify(previous?.company_signatory ?? null)
+          ) {
+            check(
+              user.staff_role === "owner",
+              "Only workspace owners can change company signatory settings",
+              403,
+            );
+            const config = entity.company_signatory;
+            if (config) {
+              const members = await workspaceStaff(user.workspace_id);
+              check(
+                config.authorized_user_ids.every((id) =>
+                  members.some((m) => m.user_id === id),
+                ),
+                "Authorized signers must belong to this workspace",
+              );
+              if (config.user_id) {
+                const signatory = members.find(
+                  (m) => m.user_id === config.user_id,
+                );
+                check(
+                  signatory,
+                  "Designated signatory must belong to this workspace",
+                );
+                config.email = signatory.email;
+              }
+              if (config.image) await validateSignatureImage(config.image);
+            }
+          }
           check(
             !entity.logo || entity.logo.startsWith(rt.repo.workspaceId + "/"),
             "Logo must belong to this workspace",
@@ -510,12 +558,7 @@ export async function handle(req: Request, path: string[]) {
       }
       if (method === "POST" && action === "countersign")
         return json(
-          await rt.service.sign(
-            id,
-            SignatureSchema.parse(await body(req)),
-            "company",
-            user,
-          ),
+          await rt.service.sign(id, await body(req), "company", user),
         );
       if (method === "POST" && action === "retry") {
         await rt.worker.retry(id);

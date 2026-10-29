@@ -62,6 +62,9 @@ export async function staff(request: Request) {
     return {
       ...actor(request, "staff:00000000-0000-4000-8000-000000000001"),
       workspace_id: LOCAL_WORKSPACE_ID,
+      staff_role: "owner" as const,
+      staff_name: "Local Staff",
+      staff_email: "staff@example.test",
     };
   if (!token || !process.env.SUPABASE_URL)
     throw new AppError(401, "Staff login required");
@@ -78,6 +81,14 @@ export async function staff(request: Request) {
   return {
     ...actor(request, "staff:" + data.user.id),
     workspace_id: member.data.workspace_id,
+    staff_role: member.data.role as "owner" | "member",
+    staff_name: String(
+      data.user.user_metadata?.full_name ??
+        data.user.user_metadata?.name ??
+        data.user.email ??
+        "Staff",
+    ),
+    staff_email: data.user.email ?? "",
   };
 }
 export async function login(email: string, password: string) {
@@ -98,4 +109,42 @@ export async function login(email: string, password: string) {
   if (member.error || !member.data)
     throw new AppError(403, "Staff access required");
   return data.session;
+}
+
+export async function workspaceStaff(workspaceId: string) {
+  if (
+    process.env.APP_MODE === "local" &&
+    process.env.NODE_ENV !== "production" &&
+    !process.env.VERCEL
+  )
+    return [
+      {
+        user_id: "00000000-0000-4000-8000-000000000001",
+        name: "Local Staff",
+        email: "staff@example.test",
+        role: "owner",
+      },
+    ];
+  const db = supabase();
+  const { data, error } = await db
+    .from("staff_users")
+    .select("user_id,role")
+    .eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return Promise.all(
+    data.map(async (member) => {
+      const { data, error } = await db.auth.admin.getUserById(member.user_id);
+      if (error || !data.user?.email)
+        throw new AppError(503, "Unable to load staff identity");
+      return {
+        ...member,
+        email: data.user.email,
+        name: String(
+          data.user.user_metadata?.full_name ??
+            data.user.user_metadata?.name ??
+            data.user.email,
+        ),
+      };
+    }),
+  );
 }

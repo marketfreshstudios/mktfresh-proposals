@@ -423,7 +423,8 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
   expect(update).toEqual({
     metadata: {
       plan: "multi",
-      plan_items: "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
+      plan_items:
+        "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
     },
   });
 });
