@@ -176,3 +176,26 @@ it("rejects unknown variables and unsupported Markdown rather than silently drop
     markdownBlocks("![remote](https://example.test/img.png)", []),
   ).toThrow("Unsupported Markdown");
 });
+
+it("AI draft tools cannot set or change a proposal sender", async () => {
+  const { repo, draft } = await setup();
+  const actor = {
+    ...staff,
+    actor: "ai:Example assistant",
+    workspace_id: repo.workspaceId,
+  };
+  await aiTool(
+    repo,
+    actor,
+    "update_proposal_draft",
+    {
+      id: draft.id,
+      revision: draft.revision,
+      title: "Updated",
+      sender_user_id: staff.actor.slice(6),
+      sender: { email: "forged@example.test" },
+    },
+    ["proposals:read", "proposals:draft"],
+  );
+  expect((await repo.get(draft.id))!.sender).toBeUndefined();
+});

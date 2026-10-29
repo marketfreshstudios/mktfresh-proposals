@@ -43,12 +43,20 @@ const nav = [
   ["integrations", "Integrations"],
   ["imports", "Imports"],
   ["settings", "Settings"],
+  ["settings/team", "Team"],
   ["settings/ai", "AI assistants"],
 ];
 type Data = {
+  app_url: string;
   user: Actor;
   signatory_version: string;
-  staff: { user_id: string; name: string; email: string; role: string }[];
+  staff: {
+    user_id: string;
+    name: string;
+    display_name: string;
+    email: string;
+    role: string;
+  }[];
   settings: WorkspaceSettings | null;
   proposals: Proposal[];
   total: number;
@@ -95,6 +103,7 @@ export function StaffApp({
         settings: WorkspaceSettings | null;
         user: Actor;
         signatory_version: string;
+        app_url: string;
         staff: Data["staff"];
       }>("/api/auth/session");
       const [
@@ -118,6 +127,7 @@ export function StaffApp({
       ]);
       setData({
         settings: session.settings,
+        app_url: session.app_url,
         user: session.user,
         signatory_version: session.signatory_version,
         staff: session.staff ?? [],
@@ -243,6 +253,7 @@ export function StaffApp({
           />
         ) : action === "send" ? (
           <SendProposal
+            data={data}
             p={p}
             catalog={data.catalog}
             onSent={(next) => {
@@ -285,7 +296,7 @@ export function StaffApp({
         ) : action === "audit" ? (
           <Audit p={p} />
         ) : (
-          <Record p={p} refresh={load} />
+          <Record p={p} refresh={load} appUrl={data.app_url} />
         );
     } else if (section === "proposals") {
       subtitle = `${data.total} proposals`;
@@ -358,6 +369,10 @@ export function StaffApp({
     } else if (section === "integrations") {
       headerAction = null;
       content = <Integrations data={data} run={run} />;
+    } else if (section === "settings" && id === "team") {
+      title = "Team";
+      headerAction = null;
+      content = <Team data={data} run={run} />;
     } else if (section === "settings" && id === "ai") {
       title = "AI assistants";
       subtitle =
@@ -392,7 +407,8 @@ export function StaffApp({
               href={"/" + key}
               key={key}
               className={
-                path.join("/") === key || (key === section && id !== "ai")
+                path.join("/") === key ||
+                (key === section && !["ai", "team"].includes(id ?? ""))
                   ? "active"
                   : ""
               }
@@ -1048,18 +1064,21 @@ function Document({ p }: { p: Proposal }) {
   );
 }
 function SendProposal({
+  data,
   p,
   catalog,
   onSent,
 }: {
   p: Proposal;
   catalog: Item[];
+  data: Data;
   onSent: (p: Proposal) => void;
 }) {
   const [confirmed, setConfirmed] = useState(false),
     [rotate, setRotate] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [senderId, setSenderId] = useState(data.user.actor.slice(6));
   const ready = readiness(p, catalog, new Date(), confirmed);
   return (
     <div className="grid">
@@ -1075,6 +1094,25 @@ function SendProposal({
           {ready.ready && <p>✓ Content, signatures and quote are ready.</p>}
         </section>
         <section className="card stack">
+          <Field label="From">
+            <select
+              value={senderId}
+              onChange={(e) => setSenderId(e.target.value)}
+            >
+              {data.staff.map((member) => (
+                <option key={member.user_id} value={member.user_id}>
+                  {member.display_name} · {data.settings?.company_name} &lt;
+                  {member.email}&gt;
+                </option>
+              ))}
+            </select>
+          </Field>
+          <small>
+            Sender must use the verified sending domain:{" "}
+            {data.settings?.sending_domain ||
+              "not configured — set it in Settings"}
+            .
+          </small>
           <h2>Recipient</h2>
           <strong>
             {p.client.first_name} {p.client.last_name}
@@ -1123,6 +1161,7 @@ function SendProposal({
                 onSent(
                   await post(`/api/proposals/${p.id}/send`, {
                     confirm_ai_review: confirmed,
+                    sender_user_id: senderId,
                   }),
                 );
               } catch (e) {
@@ -1154,7 +1193,15 @@ function SendProposal({
     </div>
   );
 }
-function Record({ p, refresh }: { p: Proposal; refresh: () => Promise<void> }) {
+function Record({
+  p,
+  refresh,
+  appUrl,
+}: {
+  p: Proposal;
+  refresh: () => Promise<void>;
+  appUrl: string;
+}) {
   const [message, setMessage] = useState("");
   return (
     <div className="stack">
@@ -1170,7 +1217,7 @@ function Record({ p, refresh }: { p: Proposal; refresh: () => Promise<void> }) {
             <Button
               onClick={async () => {
                 await navigator.clipboard.writeText(
-                  (p.workspace_settings?.client_url ?? location.origin) +
+                  (p.workspace_settings?.client_url ?? appUrl) +
                     "/p/" +
                     p.token,
                 );
@@ -2062,33 +2109,30 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
         }}
       >
         <h2>Workspace identity and sending</h2>
+        <p>
+          Enter the domain already verified with your email provider. Staff
+          sender names are managed in <a href="/settings/team">Team</a>. Client
+          links use the deployment’s canonical address.
+        </p>
         {[
           ["company_name", "Company name"],
           ["owner", "Owner contact name"],
           ["email", "Contact email"],
           ["phone", "Phone"],
           ["address", "Address"],
-          ["email_sender_name", "Sender name"],
-          ["email_sender_address", "Sender email"],
-          ["client_url", "Client website URL"],
+          ["sending_domain", "Verified sending domain"],
           ["timezone", "Timezone"],
           ["qbo_custom_item_ref", "QuickBooks Custom services item reference"],
         ].map(([key, label]) => (
           <Field key={key} label={label}>
             <input
               name={key}
+              readOnly={key === "sending_domain" && !owner}
               defaultValue={String(
                 s?.[key as keyof WorkspaceSettings] ??
                   (key === "timezone" ? "America/New_York" : ""),
               )}
-              required={[
-                "company_name",
-                "email",
-                "email_sender_name",
-                "email_sender_address",
-                "client_url",
-                "timezone",
-              ].includes(key)}
+              required={["company_name", "email", "timezone"].includes(key)}
             />
           </Field>
         ))}
@@ -2310,6 +2354,54 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
           <Button type="submit">Save reference</Button>
         </form>
       </section>
+    </div>
+  );
+}
+
+function Team({ data, run }: { data: Data; run: Runner }) {
+  return (
+    <div className="stack">
+      <p>
+        Display names appear in proposal emails. Email addresses come from staff
+        login accounts. Owners can edit everyone; members can edit their own
+        name.
+      </p>
+      {data.staff.map((member) => (
+        <form
+          className="card form"
+          key={member.user_id}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const name = new FormData(e.currentTarget).get("display_name");
+            void run(() =>
+              post(`/api/team/${member.user_id}`, { display_name: name }),
+            );
+          }}
+        >
+          <h2>{member.email}</h2>
+          <Field label="Display name">
+            <input
+              name="display_name"
+              required
+              maxLength={200}
+              defaultValue={member.display_name}
+              disabled={
+                data.user.staff_role !== "owner" &&
+                data.user.actor !== "staff:" + member.user_id
+              }
+            />
+          </Field>
+          <Button
+            type="submit"
+            disabled={
+              data.user.staff_role !== "owner" &&
+              data.user.actor !== "staff:" + member.user_id
+            }
+          >
+            Save display name
+          </Button>
+        </form>
+      ))}
     </div>
   );
 }

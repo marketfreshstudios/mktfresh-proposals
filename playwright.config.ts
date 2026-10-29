@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+process.env.APP_URL = "http://127.0.0.1:3100";
 export default defineConfig({
   testDir: "e2e",
   workers: 1,

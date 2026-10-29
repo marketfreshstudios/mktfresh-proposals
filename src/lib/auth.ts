@@ -1,3 +1,6 @@
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { z } from "zod";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -63,7 +66,7 @@ export async function staff(request: Request) {
       ...actor(request, "staff:00000000-0000-4000-8000-000000000001"),
       workspace_id: LOCAL_WORKSPACE_ID,
       staff_role: "owner" as const,
-      staff_name: "Local Staff",
+      staff_name: await localDisplayName(),
       staff_email: "staff@example.test",
     };
   if (!token || !process.env.SUPABASE_URL)
@@ -73,7 +76,7 @@ export async function staff(request: Request) {
   if (error || !data.user) throw new AppError(401, "Invalid session");
   const member = await db
     .from("staff_users")
-    .select("user_id,workspace_id,role")
+    .select("user_id,workspace_id,role,display_name")
     .eq("user_id", data.user.id)
     .maybeSingle();
   if (member.error || !member.data)
@@ -82,12 +85,7 @@ export async function staff(request: Request) {
     ...actor(request, "staff:" + data.user.id),
     workspace_id: member.data.workspace_id,
     staff_role: member.data.role as "owner" | "member",
-    staff_name: String(
-      data.user.user_metadata?.full_name ??
-        data.user.user_metadata?.name ??
-        data.user.email ??
-        "Staff",
-    ),
+    staff_name: member.data.display_name || data.user.email || "Staff",
     staff_email: data.user.email ?? "",
   };
 }
@@ -103,7 +101,7 @@ export async function login(email: string, password: string) {
   if (error || !data.session) throw new AppError(401, "Invalid credentials");
   const member = await supabase()
     .from("staff_users")
-    .select("user_id,workspace_id,role")
+    .select("user_id,workspace_id,role,display_name")
     .eq("user_id", data.user.id)
     .maybeSingle();
   if (member.error || !member.data)
@@ -120,7 +118,8 @@ export async function workspaceStaff(workspaceId: string) {
     return [
       {
         user_id: "00000000-0000-4000-8000-000000000001",
-        name: "Local Staff",
+        name: await localDisplayName(),
+        display_name: await localDisplayName(),
         email: "staff@example.test",
         role: "owner",
       },
@@ -128,7 +127,7 @@ export async function workspaceStaff(workspaceId: string) {
   const db = supabase();
   const { data, error } = await db
     .from("staff_users")
-    .select("user_id,role")
+    .select("user_id,role,display_name")
     .eq("workspace_id", workspaceId);
   if (error) throw error;
   return Promise.all(
@@ -139,12 +138,70 @@ export async function workspaceStaff(workspaceId: string) {
       return {
         ...member,
         email: data.user.email,
-        name: String(
-          data.user.user_metadata?.full_name ??
-            data.user.user_metadata?.name ??
-            data.user.email,
-        ),
+        display_name: member.display_name || data.user.email,
+        name: member.display_name || data.user.email,
       };
     }),
   );
+}
+
+export const DisplayNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .refine(
+    (value) => !/[\r\n]/.test(value),
+    "Display name cannot contain line breaks",
+  );
+async function localDisplayName() {
+  try {
+    return DisplayNameSchema.parse(
+      JSON.parse(
+        await readFile(
+          join(process.env.DATA_DIR ?? ".data", "staff-profile.json"),
+          "utf8",
+        ),
+      ).display_name,
+    );
+  } catch {
+    return "Local Staff";
+  }
+}
+export async function updateStaffDisplayName(
+  actor: Actor,
+  userId: string,
+  name: unknown,
+) {
+  if (!actor.actor.startsWith("staff:"))
+    throw new AppError(403, "Staff authorization required");
+  const display_name = DisplayNameSchema.parse(name);
+  if (actor.staff_role !== "owner" && actor.actor !== "staff:" + userId)
+    throw new AppError(403, "Only owners can edit another staff member's name");
+  const members = await workspaceStaff(actor.workspace_id!);
+  if (!members.some((m) => m.user_id === userId))
+    throw new AppError(404, "Staff member not found in this workspace");
+  if (
+    process.env.APP_MODE === "local" &&
+    process.env.NODE_ENV !== "production" &&
+    !process.env.VERCEL
+  ) {
+    const dir = process.env.DATA_DIR ?? ".data";
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      join(dir, "staff-profile.json"),
+      JSON.stringify({ display_name }),
+    );
+  } else {
+    const { data, error } = await supabase()
+      .from("staff_users")
+      .update({ display_name })
+      .eq("workspace_id", actor.workspace_id!)
+      .eq("user_id", userId)
+      .select("user_id,display_name")
+      .single();
+    if (error || !data)
+      throw new AppError(400, "Unable to update staff display name");
+  }
+  return { user_id: userId, display_name };
 }

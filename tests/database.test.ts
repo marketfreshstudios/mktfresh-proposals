@@ -5,7 +5,7 @@ import { setup, staff, clientActor, signature } from "./helpers";
 it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit and frozen versions", async () => {
   const db = new PGlite();
   await db.exec(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;`,
+    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;`,
   );
   await db.exec(
     await readFile("supabase/migrations/20260918190502_phase1.sql", "utf8"),
@@ -72,7 +72,9 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
     ]),
   ).rejects.toThrow("permission denied");
   await db.exec("reset role");
-  await db.query("insert into auth.users values($1)", [staff.actor.slice(6)]);
+  await db.query("insert into auth.users(id) values($1)", [
+    staff.actor.slice(6),
+  ]);
   await db.query(
     "insert into staff_users(user_id,workspace_id) values($1,'00000000-0000-4000-8000-000000000001')",
     [staff.actor.slice(6)],
@@ -127,5 +129,51 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
       }),
     ]),
   ).rejects.toThrow("Workspace mismatch");
+
+  // Upgrade editable settings/profiles without changing proposal snapshots.
+  await db.query(
+    "insert into workspace_settings(id,workspace_id,data) values($1,$1,$2)",
+    [
+      repo.workspaceId,
+      JSON.stringify({
+        client_url: "https://legacy.example.test",
+        email_sender_name: "Legacy",
+        email_sender_address: "legacy@example.test",
+      }),
+    ],
+  );
+  await db.query(
+    "update auth.users set email='alex@example.test',raw_user_meta_data=$1 where id=$2",
+    [JSON.stringify({ full_name: "Alex Morgan" }), staff.actor.slice(6)],
+  );
+  const before = (await db.query("select state from proposals")).rows;
+  await db.exec(
+    await readFile(
+      "supabase/migrations/20261029200247_staff_senders_and_canonical_links.sql",
+      "utf8",
+    ),
+  );
+  expect((await db.query("select display_name from staff_users")).rows).toEqual(
+    [{ display_name: "Alex Morgan" }],
+  );
+  expect((await db.query("select data from workspace_settings")).rows).toEqual([
+    { data: { sending_domain: "" } },
+  ]);
+  expect((await db.query("select state from proposals")).rows).toEqual(before);
+  await db.exec(
+    "insert into auth.users(id,email) values('00000000-0000-4000-8000-000000000003','new@example.test'); insert into staff_users(user_id,workspace_id) values('00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000001')",
+  );
+  expect(
+    (
+      await db.query(
+        "select display_name from staff_users where user_id='00000000-0000-4000-8000-000000000003'",
+      )
+    ).rows,
+  ).toEqual([{ display_name: "new@example.test" }]);
+  await db.exec("set role authenticated");
+  await expect(
+    db.exec("update staff_users set display_name='forged',role='owner'"),
+  ).rejects.toThrow("permission denied");
+  await db.exec("reset role");
   await db.close();
 });

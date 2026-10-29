@@ -182,7 +182,12 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
     } else
       expect(
         calls.find((c) => c.path === "/v1/checkout/sessions")?.params,
-      ).toMatchObject({ customer: "cus_test", mode: "subscription" });
+      ).toMatchObject({
+        customer: "cus_test",
+        mode: "subscription",
+        success_url: "http://127.0.0.1:3100/billing/complete",
+        cancel_url: "http://127.0.0.1:3100/billing/pending",
+      });
   }
 });
 it("custom retainer bills entered 2000/month inline on existing family, without creating products or prices", async () => {
@@ -426,5 +431,20 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
       plan_items:
         "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
     },
+  });
+});
+
+it("Checkout preserves a legacy proposal origin after workspace client_url is removed", async () => {
+  const { repo, service, draft } = await setup();
+  let p = await service.send(draft.id, staff);
+  p.workspace_settings!.client_url = "https://legacy.example.test/old-app";
+  const { api, calls } = transport(false);
+  const result = await bill(p, "stripe", new StripeProvider(api, repo));
+  expect(result.status).toBe("succeeded");
+  expect(
+    calls.find((c) => c.path === "/v1/checkout/sessions")!.params,
+  ).toMatchObject({
+    success_url: "https://legacy.example.test/old-app/billing/complete",
+    cancel_url: "https://legacy.example.test/old-app/billing/pending",
   });
 });
