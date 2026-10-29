@@ -1,3 +1,4 @@
+import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
 import { proposalLink } from "./links";
 import { emailIdentity, staffRecipients } from "./email-identity";
@@ -9,7 +10,6 @@ import { readiness } from "./quote";
 import { randomBytes, randomUUID } from "node:crypto";
 import {
   AppError,
-  catalogLine,
   readLine,
   check,
   SignatureSchema,
@@ -127,12 +127,14 @@ export class ProposalService {
       "Future expiry required",
     );
     check(/^[A-Z]{3}$/.test(input.currency ?? "USD"), "Currency required");
-    const catalog = await this.repo.entities<Item>("pricing_items");
-    const quote = template.default_quote.map((q) => {
-      const item = catalog.find((i) => i.id === q.pricing_item_id && i.active);
-      check(item, "Inactive or missing pricing item");
-      return catalogLine(item, q);
-    });
+    // Explicit lines (including an empty list) and playbook lines fully replace defaults.
+    const supplied = input.quote !== undefined || input.playbook !== undefined;
+    const defaults = supplied
+      ? { quote: [], warnings: [] }
+      : templateDefaultQuote(
+          template,
+          await this.repo.entities<Item>("pricing_items"),
+        );
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
@@ -170,7 +172,8 @@ export class ProposalService {
       client_signed_at: null,
       completed_at: null,
       content: input.content ?? structuredClone(template.content),
-      quote: input.quote ?? quote,
+      quote: input.quote ?? defaults.quote,
+      creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
       ai_connector: actor.actor.startsWith("ai:")
@@ -201,8 +204,11 @@ export class ProposalService {
         "created",
         actor,
         actor.actor.startsWith("ai:")
-          ? { document_versions: input.document_versions ?? [] }
-          : {},
+          ? {
+              document_versions: input.document_versions ?? [],
+              warnings: defaults.warnings,
+            }
+          : { warnings: defaults.warnings },
         now,
       );
     await this.repo.save(p, -1);

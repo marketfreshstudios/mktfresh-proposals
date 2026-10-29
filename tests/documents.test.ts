@@ -354,3 +354,23 @@ it("a slow failed refresh cannot overwrite a newer successful version", async ()
     fetch_error: null,
   });
 });
+
+it.each(["", "const ", "let ", "var "])(
+  "extracts non-ASCII PLAYBOOK_VERSION labels with %s declarations and either quote style",
+  async (declaration) => {
+    for (const quote of ["'", '"']) {
+      const repo = new MemoryRepository();
+      const text =
+        declaration +
+        "PLAYBOOK_VERSION = " +
+        quote +
+        "v1.17 · 15 October 2026" +
+        quote +
+        ";\nOther text";
+      const doc = await saveDocument(repo, linked, async () => text);
+      expect(doc.version).toBe("v1.17 · 15 October 2026");
+      expect(doc.content).toBe(text);
+      expect(doc.content_hash).toMatch(/^[a-f0-9]{64}$/);
+    }
+  },
+);

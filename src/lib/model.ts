@@ -216,6 +216,7 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  creation_warnings?: string[];
   sender?: import("./email-identity").ProposalSender;
   notification_emails?: string[];
   workspace_id?: string;

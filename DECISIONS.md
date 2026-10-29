@@ -102,3 +102,11 @@ References support pasted text and linked HTTPS sources. Successful fetched vers
 Fetches enforce a total 15-second deadline, a 1 MiB UTF-8 limit, public IPs only, DNS pinning, and at most three redirects on the same HTTPS origin. Compression is refused. A refresh generation condition prevents an older in-flight refresh from replacing a newer result. Failures preserve the last successful version. The hourly cron refreshes linked references once per UTC hour; explicit refresh always fetches.
 
 Document read receipts are private and scoped to the OAuth grant, not the connector's display name. Each unique document version returned by get_document is retained; create_proposal_draft snapshots those receipts on its first event. Listing metadata alone does not imply the document content was read. Pasted versions have no fetch timestamp; linked versions carry the successful fetch time and an extracted PLAYBOOK_VERSION label, falling back to the hash prefix.
+
+## Inactive template defaults and declared reference labels (29 October 2026)
+
+Explicit proposal quote lines, including an empty list, replace template defaults entirely. Playbook-supplied lines also bypass defaults. If lines are omitted, inactive, legacy or missing defaults are skipped; creation warnings are returned to AI, stored on the draft and recorded on its first event. Staff see skipped-default warnings in the editor. Sending still validates the actual proposal quote.
+
+Template warnings are derived from the current catalogue rather than stored flags, covering manual and sync-driven deactivation without deleting template references. Both the template and Settings → Pricing list affected defaults with links for repair.
+
+Reference version labels accept bare assignments and const/let/var declarations, either quote style and Unicode text. Existing immutable versions retain their recorded labels; Refresh now (or the hourly refresh) extracts the corrected label for a new fetched version.
