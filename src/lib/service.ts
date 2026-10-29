@@ -1,3 +1,4 @@
+import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
 import { readiness } from "./quote";
@@ -133,7 +134,16 @@ export class ProposalService {
     const p: Proposal = {
       id: randomUUID(),
       workspace_id: this.repo.workspaceId,
-      workspace_settings: structuredClone(settings),
+      workspace_settings: {
+        ...structuredClone(settings),
+        company_signatory: settings.company_signatory
+          ? {
+              ...settings.company_signatory,
+              image: null,
+              authorized_user_ids: [],
+            }
+          : null,
+      },
       revision: 0,
       client,
       template_id: template.id,
@@ -343,7 +353,7 @@ export class ProposalService {
   }
   async sign(
     id: string,
-    raw: SignatureInput,
+    raw: unknown,
     role: "client" | "company",
     actor: Actor,
     access?: { token: string; password: string },
@@ -353,7 +363,18 @@ export class ProposalService {
       "AI assistants cannot sign proposals",
       403,
     );
-    const input = SignatureSchema.parse(raw);
+    const settings =
+      role === "company"
+        ? (await this.repo.entities<WorkspaceSettings>("workspace_settings"))[0]
+        : undefined;
+    if (role === "company") check(settings, "Workspace settings required");
+    const company =
+      role === "company"
+        ? await companySignature(raw, actor, settings!)
+        : undefined;
+    const input: SignatureInput = company
+      ? { ...company.input, ...company.signature }
+      : SignatureSchema.parse(raw);
     if (input.kind === "drawn") {
       const { PDFDocument } = await import("pdf-lib");
       const doc = await PDFDocument.create();
@@ -416,6 +437,7 @@ export class ProposalService {
       } = input;
       p.signers.push({
         ...signature,
+        ...company?.signature,
         ...actor,
         role,
         signed_at: now,
@@ -438,7 +460,21 @@ export class ProposalService {
         p,
         role === "client" ? "signed" : "counter_signed",
         actor,
-        { role, version_hash: v.content_hash },
+        {
+          role,
+          version_hash: v.content_hash,
+          ...(company
+            ? {
+                application_statement: company.signature.application_statement,
+                applied_by: company.signature.applied_by,
+                signatory_name: company.signature.name,
+                signatory_title: company.signature.title,
+                company: company.signature.company,
+                authorization_text:
+                  company.signature.authorization_text ?? null,
+              }
+            : {}),
+        },
         now,
       );
       queue(
@@ -533,6 +569,8 @@ export function publicResult(p: Proposal) {
     signers: p.signers.map((s) => ({
       role: s.role,
       name: s.name,
+      title: s.title,
+      company: s.company,
       signed_at: s.signed_at,
       kind: s.kind,
       typed_name: s.typed_name,
@@ -574,6 +612,8 @@ export function publicResult(p: Proposal) {
     company: p.workspace_settings
       ? {
           name: p.workspace_settings.company_name,
+          signatory_name: p.workspace_settings.company_signatory?.name,
+          signatory_title: p.workspace_settings.company_signatory?.title,
           logo: p.workspace_settings.logo,
           accent_colour: p.workspace_settings.accent_colour,
           email: p.workspace_settings.email,

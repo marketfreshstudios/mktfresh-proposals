@@ -1,3 +1,4 @@
+import { testSignatory } from "../tests/helpers";
 import { connectAssistant } from "./mcp-client";
 import { catalogLine, type Item } from "../src/lib/model";
 import { test, expect } from "@playwright/test";
@@ -20,6 +21,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
       "workspace_settings",
       {
         company_name: "Example Studio",
+        company_signatory: testSignatory,
         owner: "Alex",
         email: "owner@example.test",
         phone: "",
@@ -207,12 +209,10 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     data: {
       revision: p.revision,
       reviewed_hash: p.versions.at(-1).content_hash,
-      name: "Jonathan",
-      email: "staff@example.test",
-      title: "Owner",
+      signatory_version: (
+        await (await request.get("/api/auth/session", { headers })).json()
+      ).signatory_version,
       consent: true,
-      kind: "typed",
-      typed_name: "Jonathan",
     },
   });
   expect(r.ok(), await r.text()).toBe(true);

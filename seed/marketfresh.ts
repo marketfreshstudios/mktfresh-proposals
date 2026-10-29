@@ -9,8 +9,16 @@ export async function seed(repo: Repository, mockMappings = false) {
   if (!(await repo.entities("workspace_settings")).length)
     await repo.put("workspace_settings", {
       id: repo.workspaceId,
-      company_name: "MarketFresh",
-      owner: "Jonathan",
+      company_name: "MarketFresh Studios",
+      owner: "Jonathan Garces",
+      company_signatory: {
+        user_id: null,
+        name: "Jonathan Garces",
+        title: "Owner",
+        email: "owner@example.test",
+        image: null,
+        authorized_user_ids: [],
+      },
       email: "owner@example.test",
       phone: "",
       address: "",

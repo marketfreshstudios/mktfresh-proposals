@@ -17,7 +17,11 @@ const config = parseEnv(await readFile(envPath, "utf8"));
 const key = config.STRIPE_SECRET_KEY ?? "";
 requireTestStripeKey(key); // Never fall back to any shell or CLI credentials.
 process.env.BILLING_MODE = "test";
-const required = ["hosted-standard-100", "oiot-monthly-175", "hosting-upgrade-60"];
+const required = [
+  "hosted-standard-100",
+  "oiot-monthly-175",
+  "hosting-upgrade-60",
+];
 const report: Record<string, unknown> = {
   at: new Date().toISOString(),
   key_check: "Passed: test-mode prefix (value withheld)",

@@ -1,9 +1,24 @@
 import { z } from "zod";
 export const LOCAL_WORKSPACE_ID = "00000000-0000-4000-8000-000000000001";
+export const CompanySignatorySchema = z.object({
+  user_id: z.string().uuid().nullable(),
+  name: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(200),
+  email: z.email(),
+  image: z
+    .string()
+    .max(500000)
+    .regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/)
+    .nullable(),
+  authorized_user_ids: z.array(z.string().uuid()).max(100),
+});
+export const onBehalfText = (name: string, company: string) =>
+  `I'm authorized to sign on behalf of ${name} for ${company}.`;
 export const WorkspaceSettingsSchema = z.object({
   id: z.string().uuid(),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
+  company_signatory: CompanySignatorySchema.nullable().optional(),
   email: z.email(),
   phone: z.string().max(100),
   address: z.string().max(2000),

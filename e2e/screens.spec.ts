@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
-import { setup, staff, clientActor, signature } from "../tests/helpers";
+import {
+  setup,
+  staff,
+  clientActor,
+  signature,
+  companyConsent,
+} from "../tests/helpers";
 import { publicResult } from "../src/lib/service";
 import type { Proposal } from "../src/lib/model";
 test("all screen states in both themes, with explicit visual fixtures", async ({
@@ -9,7 +15,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
   // The 72 full-page captures need additional time on shared CI runners.
   test.setTimeout(600000);
   page.setDefaultTimeout(15000);
-  const { repo, service, draft } = await setup();
+  const { repo, service, draft, settings } = await setup();
   draft.workspace_settings = {
     ...draft.workspace_settings!,
     company_name: "Example Studio",
@@ -35,7 +41,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
   );
   const completed = await service.sign(
     draft.id,
-    signature(signed.revision, "alex@example.test"),
+    companyConsent(signed.revision, settings),
     "company",
     staff,
   );
@@ -150,7 +156,19 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         value = publicResult(p);
       }
     } else if (path[0] === "auth")
-      value = { user: staff, settings: draft.workspace_settings };
+      value = {
+        user: staff,
+        settings,
+        signatory_version: companyConsent(0, settings).signatory_version,
+        staff: [
+          {
+            user_id: staff.actor.slice(6),
+            name: staff.staff_name,
+            email: staff.staff_email,
+            role: "owner",
+          },
+        ],
+      };
     else if (path[0] === "proposals")
       value = path[1]
         ? active
@@ -216,7 +234,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         )
           await expect(page.locator(".client-signature")).toHaveCount(2);
         if (name === "client-completed")
-          await expect(page.locator(".typed-signature")).toHaveCount(2);
+          await expect(page.locator(".typed-signature")).toHaveCount(1);
         if (name === "client-reading") {
           await page.evaluate(() =>
             window.scrollTo(0, document.body.scrollHeight),

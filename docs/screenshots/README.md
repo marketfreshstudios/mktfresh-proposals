@@ -32,3 +32,5 @@ Rendered from the real app using neutral visual fixtures. Provider-specific stat
 | client-signed | [desktop light](client-signed-desktop-light.png) | [desktop dark](client-signed-desktop-dark.png) | [phone light](client-signed-phone-light.png) | [phone dark](client-signed-phone-dark.png) |
 | client-completed | [desktop light](client-completed-desktop-light.png) | [desktop dark](client-completed-desktop-dark.png) | [phone light](client-completed-phone-light.png) | [phone dark](client-completed-phone-dark.png) |
 | client-ended | [desktop light](client-ended-desktop-light.png) | [desktop dark](client-ended-desktop-dark.png) | [phone light](client-ended-phone-light.png) | [phone dark](client-ended-phone-dark.png) |
+
+Company signatory review: [delegated counter-sign](company-delegation.png). The fixture uses a synthetic one-pixel PNG, not a real person's signature. Settings, counter-sign, audit and client captures were refreshed for designated-signatory display.

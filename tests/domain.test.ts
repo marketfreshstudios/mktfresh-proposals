@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { setup, staff, clientActor, signature } from "./helpers";
+import {
+  setup,
+  staff,
+  clientActor,
+  signature,
+  companyConsent,
+} from "./helpers";
 import {
   canonical,
   hashPassword,
@@ -13,7 +19,7 @@ import { publicResult } from "../src/lib/service";
 import { mutate } from "../src/lib/repository";
 describe("proposal lifecycle", () => {
   it("sends, views, changes optional pricing, signs and countersigns immutable version", async () => {
-    const { repo, service, draft } = await setup();
+    const { repo, service, draft, settings } = await setup();
     let p = await service.send(draft.id, staff);
     expect(p.token).toHaveLength(43);
     p = await service.view(p.token!, "", clientActor);
@@ -45,7 +51,7 @@ describe("proposal lifecycle", () => {
     ).rejects.toThrow("frozen");
     p = await service.sign(
       p.id,
-      signature(p.revision, "staff@example.test"),
+      companyConsent(p.revision, settings),
       "company",
       staff,
     );
@@ -58,7 +64,7 @@ describe("proposal lifecycle", () => {
     ).toBe(true);
   });
   it("blocks required toggles, stale signatures, wrong email, false consent and out-of-order countersign", async () => {
-    const { service, draft } = await setup();
+    const { service, draft, settings } = await setup();
     const p = await service.send(draft.id, staff);
     await expect(
       service.toggle(
@@ -93,11 +99,16 @@ describe("proposal lifecycle", () => {
       ),
     ).rejects.toThrow();
     await expect(
-      service.sign(p.id, signature(p.revision), "company", staff),
+      service.sign(
+        p.id,
+        companyConsent(p.revision, settings),
+        "company",
+        staff,
+      ),
     ).rejects.toThrow("order");
   });
   it("only one concurrent signature can succeed", async () => {
-    const { service, draft } = await setup();
+    const { service, draft, settings } = await setup();
     const p = await service.send(draft.id, staff);
     const results = await Promise.allSettled(
       [1, 2].map(() =>
@@ -110,7 +121,7 @@ describe("proposal lifecycle", () => {
     expect(results.filter((x) => x.status === "fulfilled")).toHaveLength(1);
   });
   it("password checks every public operation; expired and declined links fail", async () => {
-    const { repo, service, draft } = await setup();
+    const { repo, service, draft, settings } = await setup();
     await mutate(
       repo,
       draft.id,
@@ -127,7 +138,7 @@ describe("proposal lifecycle", () => {
     );
   });
   it("blocks missing provider mappings and unresolved variables at send", async () => {
-    const { repo, service, draft } = await setup();
+    const { repo, service, draft, settings } = await setup();
     await mutate(repo, draft.id, (p) => (p.quote[1].stripe_lookup_key = null));
     await expect(service.send(draft.id, staff)).rejects.toThrow("lookup key");
     await mutate(repo, draft.id, (p) => {
@@ -137,7 +148,7 @@ describe("proposal lifecycle", () => {
     await expect(service.send(draft.id, staff)).rejects.toThrow("Unresolved");
   });
   it("resending rotates link and retains prior version", async () => {
-    const { service, draft } = await setup();
+    const { service, draft, settings } = await setup();
     const p = await service.send(draft.id, staff),
       next = await service.send(draft.id, staff);
     expect(next.versions).toHaveLength(2);
@@ -145,7 +156,7 @@ describe("proposal lifecycle", () => {
     await expect(service.byToken(p.token!)).rejects.toThrow("Not found");
   });
   it("schedules reminders once and expires only unsigned proposals", async () => {
-    const { repo, service, draft } = await setup();
+    const { repo, service, draft, settings } = await setup();
     const p = await service.send(draft.id, staff);
     service.clock = () => new Date(Date.now() + 4 * 86400000);
     await service.tick();

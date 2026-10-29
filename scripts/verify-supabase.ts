@@ -10,6 +10,8 @@ import { ClientSchema, type Item, type Template } from "../src/lib/model";
 import { Worker, MockMailer } from "../src/lib/jobs";
 import { MockBillingProvider } from "../src/lib/billing";
 import { seed, seedIds } from "../seed/marketfresh";
+import { companyConsent, testSignatory } from "../tests/helpers";
+import type { WorkspaceSettings } from "../src/lib/workspace";
 import { staff as authorize } from "../src/lib/auth";
 const config = JSON.parse(await readFile(".data/supabase-status.json", "utf8"));
 assert.equal(
@@ -27,7 +29,12 @@ const db = createClient(config.API_URL, config.SERVICE_ROLE_KEY, {
   anon = createClient(config.API_URL, config.ANON_KEY, {
     auth: { persistSession: false },
   });
-const repo = new SupabaseRepository(db),
+const workspaceId = randomUUID();
+const workspace = await db
+  .from("workspaces")
+  .insert({ id: workspaceId, name: "Isolated signing acceptance" });
+if (workspace.error) throw workspace.error;
+const repo = new SupabaseRepository(db, workspaceId),
   storage = new SupabaseStorage(db),
   service = new ProposalService(repo),
   worker = new Worker(repo, storage, new MockMailer(), {
@@ -44,7 +51,7 @@ const user = await db.auth.admin.createUser({
 if (user.error) throw user.error;
 const member = await db.from("staff_users").insert({
   user_id: user.data.user!.id,
-  workspace_id: "00000000-0000-4000-8000-000000000001",
+  workspace_id: workspaceId,
   role: "owner",
 });
 if (member.error) throw member.error;
@@ -59,7 +66,7 @@ const actor = await authorize(
   }),
 );
 // Use fresh test catalogue rows; do not overwrite the owner's existing defaults.
-const fixture = new MemoryRepository();
+const fixture = new MemoryRepository(workspaceId);
 await seed(fixture, true);
 const ids = new Map<string, string>();
 for (const item of await fixture.entities<Item>("pricing_items")) {
@@ -78,11 +85,16 @@ template.default_quote = template.default_quote.map((l) => ({
   pricing_item_id: ids.get(l.pricing_item_id)!,
 }));
 await repo.put("templates", template);
-for (const settings of await fixture.entities<{ id: string }>(
-  "workspace_settings",
-))
-  if (!(await repo.entities("workspace_settings")).length)
-    await repo.put("workspace_settings", settings);
+const settings = (
+  await fixture.entities<WorkspaceSettings>("workspace_settings")
+)[0];
+settings.company_signatory = {
+  ...testSignatory,
+  user_id: user.data.user!.id,
+  email: user.data.user!.email!,
+  authorized_user_ids: [user.data.user!.id],
+};
+await repo.put("workspace_settings", settings);
 const client = ClientSchema.parse({
   id: randomUUID(),
   company: "Supabase Acceptance " + suffix,
@@ -127,13 +139,7 @@ assert(p.billing_links.every((l) => l.status === "succeeded"));
 p = await service.sign(
   p.id,
   {
-    revision: p.revision,
-    name: "Jonathan",
-    email: user.data.user!.email!,
-    title: "Owner",
-    consent: true,
-    kind: "typed",
-    typed_name: "Jonathan",
+    ...companyConsent(p.revision, settings),
   },
   "company",
   actor,
