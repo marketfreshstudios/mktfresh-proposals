@@ -6,6 +6,7 @@ import {
 } from "node:crypto";
 import {
   AppError,
+  readLine,
   check,
   type Block,
   type Line,
@@ -49,12 +50,17 @@ export function passwordMatches(password: string, hash: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 export function totals(lines: Line[]) {
-  const out = { one_time_total: 0, monthly_total: 0 };
-  for (const line of lines) {
+  const out = { one_time_total: 0, monthly_total: 0, yearly_total: 0 };
+  for (const raw of lines) {
+    const line = readLine(raw);
     if (!line.optional || line.selected) {
       const key =
-        line.billing === "monthly" ? "monthly_total" : "one_time_total";
-      out[key] += line.unit_price * line.qty;
+        line.interval === "month"
+          ? "monthly_total"
+          : line.interval === "year"
+            ? "yearly_total"
+            : "one_time_total";
+      out[key] += line.amount * line.qty;
       check(Number.isSafeInteger(out[key]), "Quote total overflow");
     }
   }
@@ -73,19 +79,25 @@ export function variables(p: Proposal, quote = p.quote) {
     "proposal.title": p.title,
     "proposal.valid_until": p.valid_until.slice(0, 10),
     "proposal.date": (p.sent_at ?? p.created_at).slice(0, 10),
-    "company.name": process.env.COMPANY_NAME ?? "MarketFresh",
-    "company.owner": process.env.COMPANY_OWNER ?? "",
-    "company.email": process.env.COMPANY_EMAIL ?? "",
-    "company.phone": process.env.COMPANY_PHONE ?? "",
+    "company.name": p.workspace_settings?.company_name ?? "",
+    "company.owner": p.workspace_settings?.owner ?? "",
+    "company.email": p.workspace_settings?.email ?? "",
+    "company.phone": p.workspace_settings?.phone ?? "",
     "quote.one_time_total": money(t.one_time_total, p.currency),
     "quote.monthly_total": money(t.monthly_total, p.currency),
+    "quote.yearly_total": money(t.yearly_total, p.currency),
     "quote.selected_items": quote
       .filter((l) => !l.optional || l.selected)
       .map((l) => l.name)
       .join(", "),
   });
-  for (const l of quote)
-    map[`quote.item.${l.sku}.price`] = money(l.unit_price, p.currency);
+  for (const raw of quote) {
+    const l = readLine(raw);
+    map[`quote.item.${l.stripe_lookup_key ?? l.id}.price`] = money(
+      l.amount,
+      p.currency,
+    );
+  }
   return map;
 }
 export function resolve(text: string, map: Record<string, string>) {
@@ -164,13 +176,14 @@ export function renderBlocks(
           return (
             "<table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>" +
             quote
+              .map(readLine)
               .filter((l) => !l.optional || l.selected)
               .map(
                 (l) =>
-                  `<tr><td>${escape(l.name)} (${l.billing})</td><td>${l.qty}</td><td>${money(l.unit_price * l.qty, currency)}</td></tr>`,
+                  `<tr><td>${escape(l.name)} (${l.interval})<p>${escape(l.description)}</p>${l.min_term_months ? `<p>${l.min_term_months}-month minimum</p>` : ""}</td><td>${l.qty}</td><td>${money(l.amount * l.qty, currency)}</td></tr>`,
               )
               .join("") +
-            `</tbody></table><p>One time: ${money(totals(quote).one_time_total, currency)} · Monthly: ${money(totals(quote).monthly_total, currency)}</p>`
+            `</tbody></table><p>One time: ${money(totals(quote).one_time_total, currency)} · Monthly: ${money(totals(quote).monthly_total, currency)} · Yearly: ${money(totals(quote).yearly_total, currency)}</p>`
           );
         default:
           throw new AppError(400, "Unsupported content block");

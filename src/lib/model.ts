@@ -1,3 +1,4 @@
+import type { WorkspaceSettings } from "./workspace";
 import { z } from "zod";
 export const ClientSchema = z.object({
   id: z.string().uuid(),
@@ -12,24 +13,69 @@ export const ClientSchema = z.object({
   stripe_customer_id: z.string().nullable().default(null),
 });
 export type Client = z.infer<typeof ClientSchema>;
+const cents = z.number().int().min(0).max(100000000);
+export const ScheduleSchema = z.object({
+  after_paid_invoices: z.number().int().positive(),
+  then: z.object({ amount: cents, lookup_key: z.string().min(1) }),
+});
 export const ItemSchema = z.object({
   id: z.string().uuid(),
   sku: z.string().regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1).max(200),
-  description: z.string().max(5000).default(""),
-  unit_price: z.number().int().min(0).max(100000000),
-  billing: z.enum(["one_time", "monthly"]),
-  qbo_item_id: z.string().nullable().default(null),
-  stripe_price_id: z.string().nullable().default(null),
+  description: z.string().max(10000).default(""),
+  amount: cents,
+  interval: z.enum(["one_time", "month", "year"]),
+  stripe_lookup_key: z.string().nullable().default(null),
+  qbo_item_ref: z.string().nullable().default(null),
   active: z.boolean().default(true),
+  legacy: z.boolean().default(false),
+  min_term_months: z.number().int().positive().nullable().default(null),
+  schedule: ScheduleSchema.nullable().default(null),
+  plan_terms: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .nullable()
+    .default(null),
 });
 export type Item = z.infer<typeof ItemSchema>;
-export const LineSchema = ItemSchema.extend({
+export const LineSchema = ItemSchema.omit({
+  active: true,
+  legacy: true,
+  sku: true,
+}).extend({
+  pricing_item_id: z.string().uuid().nullable().default(null),
+  custom_family_id: z.string().uuid().nullable().default(null),
+  list_amount: cents.nullable().default(null),
+  group: z.string().max(200).nullable().default(null),
   qty: z.number().int().min(1).max(10000),
   optional: z.boolean(),
   selected: z.boolean(),
 });
 export type Line = z.infer<typeof LineSchema>;
+// Read compatibility only. Never rewrite a previously signed version or its hash.
+export function readLine(raw: Line): Line {
+  if ("amount" in raw) return raw;
+  const old = raw as unknown as Record<string, unknown>;
+  return LineSchema.parse({
+    ...old,
+    amount: old.unit_price,
+    interval: old.billing === "monthly" ? "month" : "one_time",
+    pricing_item_id: old.id,
+    list_amount: old.unit_price,
+    qbo_item_ref: old.qbo_item_id,
+  });
+}
+export function catalogLine(
+  item: Item,
+  options: { qty: number; optional: boolean; selected: boolean },
+): Line {
+  return LineSchema.parse({
+    ...item,
+    ...options,
+    pricing_item_id: item.id,
+    list_amount: item.amount,
+    selected: options.optional ? options.selected : true,
+  });
+}
 export type Block = {
   type:
     | "heading"
@@ -85,7 +131,12 @@ export const SignatureSchema = z
       c.addIssue({ code: "custom", message: "PNG signature required" });
   });
 export type SignatureInput = z.infer<typeof SignatureSchema>;
-export type Actor = { actor: string; ip: string; user_agent: string };
+export type Actor = {
+  workspace_id?: string;
+  actor: string;
+  ip: string;
+  user_agent: string;
+};
 export type Signer = Omit<SignatureInput, "consent" | "revision"> &
   Actor & {
     role: "client" | "company";
@@ -141,6 +192,8 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  workspace_id?: string;
+  workspace_settings?: WorkspaceSettings;
   id: string;
   revision: number;
   client: Client;
@@ -160,6 +213,7 @@ export type Proposal = {
   valid_until: string;
   currency: string;
   source: "native" | "proposify_import";
+  origin?: { source: "playbook"; source_version: string };
   proposify_id: string | null;
   created_by: string;
   created_at: string;
@@ -177,7 +231,6 @@ export type Proposal = {
   billing_links: BillingLink[];
   jobs: Job[];
   search_text: string;
-  oiot?: { full_price: number; kickoff: number; pages: number };
 };
 export class AppError extends Error {
   constructor(

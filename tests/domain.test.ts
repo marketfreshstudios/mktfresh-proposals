@@ -26,6 +26,7 @@ describe("proposal lifecycle", () => {
     expect(totals(p.quote)).toEqual({
       one_time_total: 275000,
       monthly_total: 0,
+      yearly_total: 0,
     });
     expect(publicResult(p).html).toContain("$0.00");
     p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
@@ -127,10 +128,10 @@ describe("proposal lifecycle", () => {
   });
   it("blocks missing provider mappings and unresolved variables at send", async () => {
     const { repo, service, draft } = await setup();
-    await mutate(repo, draft.id, (p) => (p.quote[0].qbo_item_id = null));
-    await expect(service.send(draft.id, staff)).rejects.toThrow("mapping");
+    await mutate(repo, draft.id, (p) => (p.quote[1].stripe_lookup_key = null));
+    await expect(service.send(draft.id, staff)).rejects.toThrow("lookup key");
     await mutate(repo, draft.id, (p) => {
-      p.quote[0].qbo_item_id = "item";
+      p.quote[1].stripe_lookup_key = "test-monthly";
       p.content = [{ type: "paragraph", text: "{{missing.variable}}" }];
     });
     await expect(service.send(draft.id, staff)).rejects.toThrow("Unresolved");

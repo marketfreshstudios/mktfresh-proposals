@@ -1,5 +1,6 @@
 import {
   check,
+  readLine,
   type BillingLink,
   type Client,
   type Line,
@@ -18,33 +19,25 @@ export interface BillingProvider {
     metadata: Record<string, unknown>,
   ): Promise<{ id: string; metadata: Record<string, unknown> }>;
 }
-export function oiOTSchedule(
-  fullPrice: number,
-  kickoff: number,
-  paidInvoices: { amount_paid: number; status: string }[],
+export function paidInvoiceProgress(
+  line: Line,
+  invoices: { id: string; amount_paid: number; status: string }[],
 ) {
-  check(
-    Number.isSafeInteger(fullPrice) &&
-      Number.isSafeInteger(kickoff) &&
-      kickoff > 0 &&
-      fullPrice > kickoff,
-    "Valid OIOT buyout amounts required",
-  );
-  const needed = Math.ceil((fullPrice - kickoff) / 7500),
-    paid = paidInvoices.filter(
-      (i) => i.status === "paid" && i.amount_paid >= 17500,
-    ).length;
+  check(line.schedule, "Scheduled line required");
+  const paid = new Set(
+    invoices
+      .filter(
+        (i) => i.status === "paid" && i.amount_paid >= line.amount * line.qty,
+      )
+      .map((i) => i.id),
+  ).size;
   return {
-    payments_needed: needed,
     paid,
-    remaining: Math.max(needed - paid, 0),
-    monthly_cents: 17500,
-    after_cents: 10000,
-    build_credit_cents: 7500,
-    proration_behavior: "none",
-    minimum_term_months: 12,
-    action: needed <= paid ? "switch_now" : "schedule",
-    end_behavior: "release",
+    remaining: Math.max(0, line.schedule.after_paid_invoices - paid),
+    action:
+      paid >= line.schedule.after_paid_invoices ? "switch_now" : "schedule",
+    then: line.schedule.then,
+    plan_terms: line.plan_terms,
   };
 }
 export class MockBillingProvider implements BillingProvider {
@@ -117,10 +110,13 @@ export async function bill(
 ): Promise<BillingLink> {
   const lines = p.versions
     .at(-1)!
-    .quote.filter(
+    .quote.map(readLine)
+    .filter(
       (l) =>
         (!l.optional || l.selected) &&
-        l.billing === (provider === "qbo" ? "one_time" : "monthly"),
+        (provider === "qbo"
+          ? l.interval === "one_time"
+          : l.interval !== "one_time"),
     );
   const previous = p.billing_links.find((x) => x.provider === provider);
   if (previous?.status === "succeeded") return previous;
@@ -142,10 +138,15 @@ export async function bill(
       );
     if (emailMatches.length > 1)
       throw new NeedsReview("Multiple customers with recipient email");
-    let customer = emailMatches[0];
+    const storedId =
+      provider === "stripe"
+        ? p.client.stripe_customer_id
+        : p.client.qbo_customer_id;
+    let customer =
+      (storedId ? matches.find((c) => c.id === storedId) : undefined) ??
+      emailMatches[0];
     if (
       !customer &&
-      provider === "qbo" &&
       matches.some(
         (x) => x.company.toLowerCase() === p.client.company.toLowerCase(),
       )
@@ -162,22 +163,25 @@ export async function bill(
       provider === "qbo"
         ? { email_status: "NotSet", send_invoice: false }
         : { billing_start: "on_signature", trial_days: 0 };
-    if (provider === "stripe" && lines.some((l) => l.sku === "oiot-monthly")) {
-      if (!p.oiot)
-        throw new NeedsReview(
-          "OIOT full price, kickoff and page count are required",
-        );
-      metadata.oiot = {
-        ...p.oiot,
-        ...oiOTSchedule(p.oiot.full_price, p.oiot.kickoff, []),
-        kickoff_billed_in: "qbo",
-        schedule_after: "successful payment",
-        other_monthly_items: "preserve during step-down",
-      };
-    }
+    metadata.proposal_id = p.id;
+    metadata.proposal_title = p.title;
+    metadata.currency = p.currency.toLowerCase();
+    metadata.schedules = lines
+      .filter((l) => l.schedule)
+      .map((l) => ({ line_id: l.id, ...paidInvoiceProgress(l, []) }));
     const result = await adapter.createObject(
       customer,
-      lines,
+      lines.map((l) =>
+        provider === "qbo"
+          ? {
+              ...l,
+              qbo_item_ref:
+                l.qbo_item_ref ??
+                p.workspace_settings?.qbo_custom_item_ref ??
+                null,
+            }
+          : l,
+      ),
       p.id + ":" + provider + ":v" + p.versions.at(-1)!.version_no,
       metadata,
     );

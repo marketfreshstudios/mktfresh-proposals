@@ -1,3 +1,4 @@
+import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { AppError, type Actor } from "./model";
@@ -29,7 +30,10 @@ export async function staff(request: Request) {
     !process.env.VERCEL &&
     equalSecret(token, process.env.DEV_STAFF_TOKEN ?? "")
   )
-    return actor(request, "staff:00000000-0000-4000-8000-000000000001");
+    return {
+      ...actor(request, "staff:00000000-0000-4000-8000-000000000001"),
+      workspace_id: LOCAL_WORKSPACE_ID,
+    };
   if (!token || !process.env.SUPABASE_URL)
     throw new AppError(401, "Staff login required");
   const db = supabase(),
@@ -37,12 +41,15 @@ export async function staff(request: Request) {
   if (error || !data.user) throw new AppError(401, "Invalid session");
   const member = await db
     .from("staff_users")
-    .select("user_id")
+    .select("user_id,workspace_id,role")
     .eq("user_id", data.user.id)
     .maybeSingle();
   if (member.error || !member.data)
     throw new AppError(403, "Staff access required");
-  return actor(request, "staff:" + data.user.id);
+  return {
+    ...actor(request, "staff:" + data.user.id),
+    workspace_id: member.data.workspace_id,
+  };
 }
 export async function login(email: string, password: string) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY)
@@ -56,7 +63,7 @@ export async function login(email: string, password: string) {
   if (error || !data.session) throw new AppError(401, "Invalid credentials");
   const member = await supabase()
     .from("staff_users")
-    .select("user_id")
+    .select("user_id,workspace_id,role")
     .eq("user_id", data.user.id)
     .maybeSingle();
   if (member.error || !member.data)

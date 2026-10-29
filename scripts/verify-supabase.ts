@@ -9,7 +9,7 @@ import { ProposalService } from "../src/lib/service";
 import { ClientSchema } from "../src/lib/model";
 import { Worker, MockMailer } from "../src/lib/jobs";
 import { MockBillingProvider } from "../src/lib/billing";
-import { seed, seedIds } from "../src/lib/seed";
+import { seed, seedIds } from "../seed/marketfresh";
 import { staff as authorize } from "../src/lib/auth";
 const config = JSON.parse(await readFile(".data/supabase-status.json", "utf8"));
 assert.equal(
@@ -44,7 +44,11 @@ const user = await db.auth.admin.createUser({
 if (user.error) throw user.error;
 const member = await db
   .from("staff_users")
-  .insert({ user_id: user.data.user!.id });
+  .insert({
+    user_id: user.data.user!.id,
+    workspace_id: "00000000-0000-4000-8000-000000000001",
+    role: "owner",
+  });
 if (member.error) throw member.error;
 const session = await anon.auth.signInWithPassword({
   email: user.data.user!.email!,

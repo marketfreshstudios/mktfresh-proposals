@@ -15,6 +15,28 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
     templateId = randomUUID();
   for (const [path, data] of [
     [
+      "workspace_settings",
+      {
+        company_name: "Example Studio",
+        owner: "Alex",
+        email: "owner@example.test",
+        phone: "",
+        address: "",
+        logo: null,
+        accent_colour: "#365C4A",
+        email_sender_name: "Example Studio",
+        email_sender_address: "proposals@example.test",
+        consent_text:
+          "I consent to electronic records and signatures and agree to this proposal.",
+        reminder_days: [3, 7],
+        default_validity_days: 30,
+        timezone: "UTC",
+        client_url: "http://127.0.0.1:3100",
+        qbo_custom_item_ref: "mock-custom",
+        collection_method: "charge_automatically",
+      },
+    ],
+    [
       "clients",
       {
         id: clientId,
@@ -30,9 +52,9 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
         id: itemId,
         sku: "build-" + itemId,
         name: "Website build",
-        unit_price: 275000,
-        billing: "one_time",
-        qbo_item_id: "mock_build",
+        amount: 275000,
+        interval: "one_time",
+        qbo_item_ref: "mock_build",
       },
     ],
     [
@@ -41,9 +63,9 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
         id: monthlyId,
         sku: "hosting-" + monthlyId,
         name: "Hosting",
-        unit_price: 2500,
-        billing: "monthly",
-        stripe_price_id: "mock_hosting",
+        amount: 2500,
+        interval: "month",
+        stripe_lookup_key: "mock_hosting",
       },
     ],
     [
@@ -52,9 +74,9 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
         id: optionalId,
         sku: "optional-" + optionalId,
         name: "Optional care",
-        unit_price: 4900,
-        billing: "monthly",
-        stripe_price_id: "mock_care",
+        amount: 4900,
+        interval: "month",
+        stripe_lookup_key: "mock_care",
       },
     ],
     [
