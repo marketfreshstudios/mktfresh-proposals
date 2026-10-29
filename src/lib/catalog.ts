@@ -1,3 +1,4 @@
+import { sha256 } from "./content";
 import { randomUUID } from "node:crypto";
 import { ItemSchema, check, type Item } from "./model";
 import type { Repository } from "./repository";
@@ -102,29 +103,46 @@ export async function createCustomFamily(
     "Family names describe services, not clients",
   );
   let cursor = "";
+  let recovered: StripeProduct | undefined;
   do {
     const page = await api.get<StripePage<StripeProduct>>("/v1/products", {
       active: "true",
       limit: "100",
       ...(cursor ? { starting_after: cursor } : {}),
     });
-    check(
-      !page.data.some(
-        (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase(),
-      ),
-      "An active product with this name already exists",
+    const duplicate = page.data.find(
+      (p) => p.name.trim().toLowerCase() === name.trim().toLowerCase(),
     );
+    if (duplicate) {
+      check(
+        duplicate.metadata?.request_key === sha256(key) &&
+          duplicate.metadata?.workspace_id === repo.workspaceId,
+        "An active product with this name already exists",
+      );
+      recovered = duplicate;
+    }
     if (!page.has_more) break;
     check(page.data.length, "Stripe returned empty paginated page");
     cursor = page.data.at(-1)!.id;
   } while (true);
-  const product = await api.post<StripeProduct>(
-    "/v1/products",
-    { name: name.trim(), metadata: { custom_family: "true" } },
-    key,
-  );
+  const product =
+    recovered ??
+    (await api.post<StripeProduct>(
+      "/v1/products",
+      {
+        name: name.trim(),
+        metadata: {
+          custom_family: "true",
+          request_key: sha256(key),
+          workspace_id: repo.workspaceId,
+        },
+      },
+      key,
+    ));
   const family = {
-    id: randomUUID(),
+    id: sha256(repo.workspaceId + product.id)
+      .slice(0, 32)
+      .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5"),
     name: product.name,
     stripe_product_id: product.id,
     active: true,

@@ -1,3 +1,6 @@
+import { StripeHttp } from "./providers/stripe-http";
+import { StripeProvider } from "./providers/stripe";
+import { QboProvider } from "./providers/qbo";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { check } from "./model";
 import { join } from "node:path";
@@ -23,13 +26,35 @@ function createRuntime(workspaceId: string) {
     storage = db
       ? new SupabaseStorage(db)
       : new LocalStorage(join(dir, "files"));
+  const test = process.env.BILLING_MODE === "test";
+  if (test)
+    check(
+      workspaceId === LOCAL_WORKSPACE_ID,
+      "Environment test credentials are assigned only to workspace 1",
+    );
   const providers = {
-    qbo: local
-      ? new MockBillingProvider("qbo")
-      : new UnconfiguredBillingProvider("QuickBooks"),
-    stripe: local
-      ? new MockBillingProvider("stripe")
-      : new UnconfiguredBillingProvider("Stripe"),
+    qbo:
+      test && process.env.QBO_CLIENT_ID
+        ? new QboProvider(repo, {
+            clientId: process.env.QBO_CLIENT_ID,
+            clientSecret: process.env.QBO_CLIENT_SECRET ?? "",
+            refreshToken: process.env.QBO_REFRESH_TOKEN,
+            realm: process.env.QBO_REALM_ID ?? "",
+            environment: process.env.QBO_ENVIRONMENT ?? "",
+            encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY ?? "",
+          })
+        : local
+          ? new MockBillingProvider("qbo")
+          : new UnconfiguredBillingProvider("QuickBooks"),
+    stripe:
+      test && process.env.STRIPE_SECRET_KEY
+        ? new StripeProvider(
+            new StripeHttp(process.env.STRIPE_SECRET_KEY, repo),
+            repo,
+          )
+        : local
+          ? new MockBillingProvider("stripe")
+          : new UnconfiguredBillingProvider("Stripe"),
   };
   return {
     repo,

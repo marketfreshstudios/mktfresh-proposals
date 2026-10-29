@@ -115,3 +115,13 @@ location.href = `${proposalOrigin}/proposals/new?draft=${draft}`;
 ```
 
 The create API accepts the validated payload as `playbook` alongside selected `client_id`, `template_id`, title and validity. It preserves the original payload on the first audit event and sets the source/version badge data. The owner deploys the playbook button separately.
+
+### Test-only billing adapters
+
+Keep `BILLING_MODE=mock` until test credentials are ready. Set it to `test` to enable the Stripe/QuickBooks adapters for workspace 1. Stripe accepts only `sk_test_` or `rk_test_`; the shell's `STRIPE_KEY` is never read. QuickBooks requires `QBO_ENVIRONMENT=sandbox` and a base64 32-byte `INTEGRATION_ENCRYPTION_KEY` for its encrypted refresh-token store. Run catalogue sync with:
+
+```sh
+node --env-file=.env.local --import tsx scripts/sync-stripe-catalog.ts
+```
+
+Stripe sends snapshot webhooks (API version `2024-06-20`) to `/api/webhooks/stripe/00000000-0000-4000-8000-000000000001`. Subscribe to `checkout.session.completed`, `invoice.paid`, and `invoice.payment_failed`. Set `STRIPE_WEBHOOK_SECRET` from `stripe listen` for local testing. The endpoint verifies and queues receipts; the authenticated cron drains them. Do not substitute live credentials. Actual sandbox acceptance is pending owner setup.

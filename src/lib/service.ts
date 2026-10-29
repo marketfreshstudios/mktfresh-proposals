@@ -499,6 +499,31 @@ export function publicResult(p: Proposal) {
         }),
       ),
     totals: totals(v.quote),
+    company: p.workspace_settings
+      ? {
+          name: p.workspace_settings.company_name,
+          logo: p.workspace_settings.logo,
+          accent_colour: p.workspace_settings.accent_colour,
+          email: p.workspace_settings.email,
+        }
+      : {
+          name: v.variables_resolved["company.name"] ?? "",
+          logo: null,
+          accent_colour: "#365C4A",
+          email: "",
+        },
+    billing: p.client_signed_at
+      ? p.billing_links
+          .filter((l) => l.provider === "stripe")
+          .map((l) => ({
+            status: l.status,
+            requires_checkout: l.metadata?.requires_checkout === true,
+            checkout: ((l.metadata?.checkout ?? []) as { url: string }[]).map(
+              (s) => ({ url: s.url }),
+            ),
+            added_existing: l.metadata?.added_existing ?? [],
+          }))
+      : [],
     consent_text: p.workspace_settings?.consent_text ?? CONSENT,
     version_hash: v.content_hash,
     files: p.files
