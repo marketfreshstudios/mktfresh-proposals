@@ -1,4 +1,5 @@
 "use client";
+import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { TemplateWarnings } from "./template-warnings";
 import { inactiveTemplateItems } from "../lib/template-quote";
@@ -245,6 +246,7 @@ export function StaffApp({
         action === "edit" && p.status === "draft" ? (
           <ProposalEditor
             initial={p}
+            settings={data.settings}
             catalog={data.catalog}
             families={data.families}
             library={data.library}
@@ -1074,6 +1076,7 @@ function SendProposal({
   data: Data;
   onSent: (p: Proposal) => void;
 }) {
+  p = withDraftSettings(p, data.settings);
   const [confirmed, setConfirmed] = useState(false),
     [rotate, setRotate] = useState(false),
     [busy, setBusy] = useState(false),

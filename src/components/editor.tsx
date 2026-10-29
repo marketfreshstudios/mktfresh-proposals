@@ -1,4 +1,6 @@
 "use client";
+import { withDraftSettings } from "../lib/proposal-settings";
+import type { WorkspaceSettings } from "../lib/workspace";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -270,12 +272,14 @@ export function BlocksEditor({
 }
 export function ProposalEditor({
   initial,
+  settings,
   catalog,
   families,
   library,
   onSaved,
 }: {
   initial: Proposal;
+  settings?: WorkspaceSettings | null;
   catalog: Item[];
   families: { id: string; name: string; active: boolean }[];
   library: { id: string; name: string; block: Block }[];
@@ -340,8 +344,9 @@ export function ProposalEditor({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const ready = readiness(p, catalog),
-    map = variables(p);
+  const current = withDraftSettings(p, settings);
+  const ready = readiness(current, catalog),
+    map = variables(current);
   return (
     <div className="stack">
       {p.origin && (

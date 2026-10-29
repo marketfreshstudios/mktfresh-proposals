@@ -231,7 +231,10 @@ export async function aiTool(
   check(p, "Not found", 404);
   if (name === "get_proposal") return proposalView(p);
   if (name === "check_ready")
-    return readiness(p, await repo.entities<Item>("pricing_items"));
+    return readiness(
+      await service.forRead(p),
+      await repo.entities<Item>("pricing_items"),
+    );
   check(p.status === "draft", "AI assistants may only modify drafts", 403);
   const content =
     input.content_markdown === undefined

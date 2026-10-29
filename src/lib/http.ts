@@ -564,7 +564,7 @@ export async function handle(req: Request, path: string[]) {
       if (method === "GET" && !action) {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);
-        return json(p);
+        return json(await rt.service.forRead(p));
       }
       if (method === "PATCH" && !action) {
         const input = z
@@ -591,7 +591,10 @@ export async function handle(req: Request, path: string[]) {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);
         return json(
-          readiness(p, await rt.repo.entities<Item>("pricing_items")),
+          readiness(
+            await rt.service.forRead(p),
+            await rt.repo.entities<Item>("pricing_items"),
+          ),
         );
       }
       if (method === "POST" && action === "send") {
