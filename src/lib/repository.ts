@@ -1,10 +1,18 @@
+import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, type Proposal } from "./model";
 export type EntityTable =
-  "clients" | "pricing_items" | "templates" | "content_library";
+  | "clients"
+  | "pricing_items"
+  | "templates"
+  | "content_library"
+  | "workspace_settings"
+  | "workspace_documents"
+  | "custom_families";
 export interface Repository {
+  readonly workspaceId: string;
   get(id: string): Promise<Proposal | null>;
   byToken(token: string): Promise<Proposal | null>;
   list(search?: string): Promise<Proposal[]>;
@@ -13,32 +21,49 @@ export interface Repository {
   put<T extends { id: string }>(table: EntityTable, entity: T): Promise<void>;
 }
 export class MemoryRepository implements Repository {
+  constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
   async get(id: string) {
-    return structuredClone(this.rows.get(id) ?? null);
+    const p = this.rows.get(id);
+    return structuredClone(
+      p && (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId
+        ? p
+        : null,
+    );
   }
   async byToken(token: string) {
     return structuredClone(
-      [...this.rows.values()].find((p) => p.token === token) ?? null,
+      [...this.rows.values()].find(
+        (p) =>
+          p.token === token &&
+          (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId,
+      ) ?? null,
     );
   }
   async list(search?: string) {
     const terms = (search ?? "").toLowerCase().split(/\s+/).filter(Boolean);
     return structuredClone(
-      [...this.rows.values()].filter((p) =>
-        terms.every((t) =>
-          `${p.title} ${p.client.company} ${p.client.email} ${p.search_text}`
-            .toLowerCase()
-            .includes(t),
-        ),
+      [...this.rows.values()].filter(
+        (p) =>
+          (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId &&
+          terms.every((t) =>
+            `${p.title} ${p.client.company} ${p.client.email} ${p.search_text}`
+              .toLowerCase()
+              .includes(t),
+          ),
       ),
     );
   }
   async save(p: Proposal, expected: number) {
     if ((this.rows.get(p.id)?.revision ?? -1) !== expected)
       throw new AppError(409, "Proposal changed; reload and try again");
-    this.rows.set(p.id, structuredClone(p));
+    if (p.workspace_id && p.workspace_id !== this.workspaceId)
+      throw new AppError(403, "Workspace mismatch");
+    this.rows.set(
+      p.id,
+      structuredClone({ ...p, workspace_id: this.workspaceId }),
+    );
   }
   async entities<T>(table: EntityTable) {
     return structuredClone([
@@ -54,8 +79,11 @@ export class MemoryRepository implements Repository {
 export class LocalRepository extends MemoryRepository {
   private ready: Promise<void>;
   private tail: Promise<unknown> = Promise.resolve();
-  constructor(private dir: string) {
-    super();
+  constructor(
+    private dir: string,
+    workspaceId = LOCAL_WORKSPACE_ID,
+  ) {
+    super(workspaceId);
     this.ready = this.load();
   }
   private async load() {
@@ -120,11 +148,15 @@ export class LocalRepository extends MemoryRepository {
   }
 }
 export class SupabaseRepository implements Repository {
-  constructor(public db: SupabaseClient) {}
+  constructor(
+    public db: SupabaseClient,
+    public readonly workspaceId = LOCAL_WORKSPACE_ID,
+  ) {}
   async get(id: string) {
     const { data, error } = await this.db
       .from("proposals")
       .select("state")
+      .eq("workspace_id", this.workspaceId)
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
@@ -134,6 +166,7 @@ export class SupabaseRepository implements Repository {
     const { data, error } = await this.db
       .from("proposals")
       .select("state")
+      .eq("workspace_id", this.workspaceId)
       .eq("token", token)
       .maybeSingle();
     if (error) throw error;
@@ -145,6 +178,7 @@ export class SupabaseRepository implements Repository {
       let query = this.db
         .from("proposals")
         .select("state")
+        .eq("workspace_id", this.workspaceId)
         .order("id")
         .range(from, from + 499);
       if (search)
@@ -160,7 +194,7 @@ export class SupabaseRepository implements Repository {
   }
   async save(p: Proposal, expected: number) {
     const { error } = await this.db.rpc("save_proposal", {
-      document: p,
+      document: { ...p, workspace_id: this.workspaceId },
       expected_revision: expected,
     });
     if (error) {
@@ -170,14 +204,17 @@ export class SupabaseRepository implements Repository {
     }
   }
   async entities<T>(table: EntityTable) {
-    const { data, error } = await this.db.from(table).select("data");
+    const { data, error } = await this.db
+      .from(table)
+      .select("data")
+      .eq("workspace_id", this.workspaceId);
     if (error) throw error;
     return data.map((x) => x.data as T);
   }
   async put<T extends { id: string }>(table: EntityTable, entity: T) {
     const { error } = await this.db
       .from(table)
-      .upsert({ id: entity.id, data: entity });
+      .upsert({ id: entity.id, workspace_id: this.workspaceId, data: entity });
     if (error) throw error;
   }
 }

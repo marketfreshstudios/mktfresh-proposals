@@ -1,5 +1,5 @@
 import { MemoryRepository } from "../src/lib/repository";
-import { seed, seedIds } from "../src/lib/seed";
+import { seed, seedIds } from "../seed/marketfresh";
 import { ProposalService } from "../src/lib/service";
 import { ClientSchema, type Actor } from "../src/lib/model";
 export const staff: Actor = {

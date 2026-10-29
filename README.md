@@ -98,3 +98,20 @@ For drawn signatures use `kind: "drawn"` and `image: "data:image/png;base64,..."
 - **Proposify:** CSV/PDF import is tested with fixtures. Browser exporter requires actual account selectors and a dedicated authenticated profile. See [import instructions](scripts/proposify-import/README.md).
 
 Do not treat a passing mocked billing flow as a live-provider acceptance test. Keep the `mock_` object identifiers visible in development.
+
+## Phase 2 workspace and quote foundation
+
+Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including the sender, consent, client URL, and fallback QuickBooks item. Development mode always mocks email and billing.
+
+New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalogue/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
+
+The playbook handoff is `GET /proposals/new?draft=<base64url JSON>` with a staff session. Schema: `/schemas/quote-draft.v1.json`. A payload has `source: "playbook"`, `source_version: "v1.17 · 15 October 2026"`, optional title/client/notes, and a `lines` array using the schema. For example, create the URL in the playbook using UTF-8 encoding:
+
+```js
+const bytes = new TextEncoder().encode(JSON.stringify(payload));
+const draft = btoa(String.fromCharCode(...bytes))
+  .replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+location.href = `${proposalOrigin}/proposals/new?draft=${draft}`;
+```
+
+The create API accepts the validated payload as `playbook` alongside selected `client_id`, `template_id`, title and validity. It preserves the original payload on the first audit event and sets the source/version badge data. The owner deploys the playbook button separately.

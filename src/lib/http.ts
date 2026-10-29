@@ -1,3 +1,7 @@
+import { readiness } from "./quote";
+import { PlaybookDraftSchema } from "./playbook";
+import type { Item } from "./model";
+import { WorkspaceSettingsSchema } from "./workspace";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -11,7 +15,7 @@ import {
   type Template,
 } from "./model";
 import { actor, equalSecret, login, staff } from "./auth";
-import { runtime } from "./runtime";
+import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
 import { CONSENT, htmlDocument } from "./content";
@@ -46,7 +50,7 @@ export async function handle(req: Request, path: string[]) {
       const token = path[1],
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
-        rt = runtime();
+        rt = await publicRuntime(token);
       if (method === "GET" && !action)
         return json(
           publicResult(await rt.service.view(token, password, actor(req))),
@@ -110,16 +114,25 @@ export async function handle(req: Request, path: string[]) {
         401,
       );
       check(method === "GET" || method === "POST", "Method not allowed", 405);
-      const rt = runtime();
-      await rt.service.tick();
-      return json(await rt.worker.drain());
+      const results = [];
+      for (const rt of await allRuntimes()) {
+        await rt.service.tick();
+        results.push(await rt.worker.drain());
+      }
+      return json(results);
     }
     const user = await staff(req),
-      rt = runtime();
+      rt = runtime(user.workspace_id);
     if (
-      ["clients", "pricing_items", "templates", "content_library"].includes(
-        path[0],
-      )
+      [
+        "clients",
+        "pricing_items",
+        "templates",
+        "content_library",
+        "workspace_settings",
+        "workspace_documents",
+        "custom_families",
+      ].includes(path[0])
     ) {
       const table = path[0] as EntityTable;
       if (method === "GET") return json(await rt.repo.entities(table));
@@ -127,7 +140,26 @@ export async function handle(req: Request, path: string[]) {
         const raw = await body(req);
         raw.id ??= randomUUID();
         let entity;
-        if (table === "clients") entity = ClientSchema.parse(raw);
+        if (table === "workspace_settings") {
+          raw.id = rt.repo.workspaceId;
+          entity = WorkspaceSettingsSchema.parse(raw);
+        } else if (table === "workspace_documents") {
+          entity = z
+            .object({
+              id: uuid,
+              name: z.string().min(1).max(200),
+              version: z.string().min(1).max(100),
+              format: z.enum(["markdown", "json"]),
+              content: z.string().max(1000000),
+            })
+            .parse(raw);
+          if (entity.format === "json") JSON.parse(entity.content);
+        } else if (table === "custom_families") {
+          throw new AppError(
+            405,
+            "Create custom families through the verified Stripe action",
+          );
+        } else if (table === "clients") entity = ClientSchema.parse(raw);
         else if (table === "pricing_items") entity = ItemSchema.parse(raw);
         else if (table === "templates") {
           entity = z
@@ -198,13 +230,7 @@ export async function handle(req: Request, path: string[]) {
             valid_until: z.string(),
             currency: z.string().length(3).optional(),
             password: z.string().min(8).max(200).optional(),
-            oiot: z
-              .object({
-                full_price: z.number().int().positive(),
-                kickoff: z.number().int().positive(),
-                pages: z.number().int().positive(),
-              })
-              .optional(),
+            playbook: PlaybookDraftSchema.optional(),
           })
           .parse(await body(req));
         return json(await rt.service.create(input, user), 201);
@@ -234,6 +260,13 @@ export async function handle(req: Request, path: string[]) {
             input as { revision: number; content?: Block[] },
             user,
           ),
+        );
+      }
+      if (method === "GET" && action === "ready") {
+        const p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        return json(
+          readiness(p, await rt.repo.entities<Item>("pricing_items")),
         );
       }
       if (method === "POST" && action === "send")
@@ -282,7 +315,7 @@ export async function handle(req: Request, path: string[]) {
 }
 export async function publicPage(req: Request, token: string) {
   try {
-    const rt = runtime(),
+    const rt = await publicRuntime(token),
       password = req.headers.get("x-proposal-password") ?? "";
     const p = await rt.service.view(token, password, actor(req));
     const data = publicResult(p);

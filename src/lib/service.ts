@@ -1,6 +1,11 @@
+import { PlaybookDraftSchema } from "./playbook";
+import type { WorkspaceSettings } from "./workspace";
+import { readiness } from "./quote";
 import { randomBytes, randomUUID } from "node:crypto";
 import {
   AppError,
+  catalogLine,
+  readLine,
   check,
   SignatureSchema,
   type Actor,
@@ -59,7 +64,7 @@ export function queue(
 }
 export function notify(p: Proposal, type: string) {
   queue(p, "email", "notify:" + type + ":" + p.events.length, {
-    to: process.env.STAFF_EMAIL ?? "staff@example.test",
+    to: p.workspace_settings?.email ?? "",
     subject: `Proposal ${type}: ${p.title}`,
     text: `${p.title} for ${p.client.company}: ${type}`,
   });
@@ -93,7 +98,7 @@ export class ProposalService {
       valid_until: string;
       currency?: string;
       password?: string;
-      oiot?: Proposal["oiot"];
+      playbook?: unknown;
     },
     actor: Actor,
   ) {
@@ -115,16 +120,17 @@ export class ProposalService {
     const quote = template.default_quote.map((q) => {
       const item = catalog.find((i) => i.id === q.pricing_item_id && i.active);
       check(item, "Inactive or missing pricing item");
-      return {
-        ...item,
-        qty: q.qty,
-        optional: q.optional,
-        selected: q.optional ? q.selected : true,
-      };
+      return catalogLine(item, q);
     });
+    const settings = (
+      await this.repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0];
+    check(settings, "Workspace settings required");
     const now = this.clock().toISOString();
     const p: Proposal = {
       id: randomUUID(),
+      workspace_id: this.repo.workspaceId,
+      workspace_settings: structuredClone(settings),
       revision: 0,
       client,
       template_id: template.id,
@@ -152,9 +158,19 @@ export class ProposalService {
       billing_links: [],
       jobs: [],
       search_text: "",
-      ...(input.oiot ? { oiot: input.oiot } : {}),
     };
-    event(p, "created", actor, {}, now);
+    if (input.playbook) {
+      const payload = PlaybookDraftSchema.parse(input.playbook);
+      p.quote = payload.lines;
+      p.origin = {
+        source: payload.source,
+        source_version: payload.source_version,
+      };
+      if (payload.title) p.title = payload.title;
+      if (payload.notes)
+        p.content.unshift({ type: "paragraph", text: payload.notes });
+      event(p, "created", actor, { playbook: payload }, now);
+    } else event(p, "created", actor, {}, now);
     await this.repo.save(p, -1);
     return p;
   }
@@ -186,24 +202,21 @@ export class ProposalService {
     });
   }
   async send(id: string, actor: Actor) {
+    const catalog = await this.repo.entities<Item>("pricing_items");
     return mutate(this.repo, id, (p) => {
       check(
         ["draft", "sent", "viewed"].includes(p.status),
         "Cannot send signed or closed proposal",
         409,
       );
-      check(new Date(p.valid_until) > this.clock(), "Proposal expired");
+      const ready = readiness(p, catalog, this.clock());
+      check(ready.ready, ready.errors.join("; "));
       check(p.quote.length > 0, "Quote required");
       check(
         new Set(p.quote.map((l) => l.id)).size === p.quote.length,
         "Duplicate quote items must be combined using quantity",
       );
       for (const l of p.quote) {
-        check(l.active, "Inactive pricing item");
-        check(
-          l.billing === "monthly" ? l.stripe_price_id : l.qbo_item_id,
-          `Missing ${l.billing === "monthly" ? "Stripe price" : "QBO item"} mapping for ${l.sku}`,
-        );
         check(l.optional || l.selected, "Required items must be selected");
       }
       const now = this.clock().toISOString();
@@ -238,7 +251,7 @@ export class ProposalService {
           to: p.client.email,
           subject: p.title,
           send_version: version.version_no,
-          text: `Review your proposal: ${process.env.APP_URL ?? "http://127.0.0.1:3000"}/p/${p.token}`,
+          text: `Review your proposal: ${p.workspace_settings?.client_url ?? process.env.APP_URL}/p/${p.token}`,
         },
         now,
       );
@@ -362,14 +375,20 @@ export class ProposalService {
         role,
         signed_at: now,
         consent_at: now,
-        consent_text: CONSENT,
+        consent_text: p.workspace_settings?.consent_text ?? CONSENT,
         ...(input.kind === "drawn"
           ? {
               signature_image_path: `${p.id}/${sha256(Buffer.from(input.image!.split(",")[1], "base64"))}.png`,
             }
           : {}),
       });
-      event(p, "consent_given", actor, { role, consent_text: CONSENT }, now);
+      event(
+        p,
+        "consent_given",
+        actor,
+        { role, consent_text: p.workspace_settings?.consent_text ?? CONSENT },
+        now,
+      );
       event(
         p,
         role === "client" ? "signed" : "counter_signed",
@@ -418,7 +437,7 @@ export class ProposalService {
           return;
         }
         const age = (now.getTime() - Date.parse(p.sent_at!)) / 86400000;
-        for (const day of [3, 7])
+        for (const day of p.workspace_settings?.reminder_days ?? [3, 7])
           if (
             age >= day &&
             !p.events.some(
@@ -435,7 +454,7 @@ export class ProposalService {
               {
                 to: p.client.email,
                 subject: `Reminder: ${p.title}`,
-                text: `Review your proposal: ${process.env.APP_URL}/p/${p.token}`,
+                text: `Review your proposal: ${p.workspace_settings?.client_url ?? process.env.APP_URL}/p/${p.token}`,
                 reminder_day: day,
                 version: p.versions.length,
               },
@@ -456,29 +475,31 @@ export function publicResult(p: Proposal) {
     valid_until: p.valid_until,
     currency: p.currency,
     html: renderBlocks(v.content, v.quote, v.variables_resolved, p.currency),
-    quote: v.quote.map(
-      ({
-        id,
-        name,
-        description,
-        unit_price,
-        qty,
-        optional,
-        selected,
-        billing,
-      }) => ({
-        id,
-        name,
-        description,
-        unit_price,
-        qty,
-        optional,
-        selected,
-        billing,
-      }),
-    ),
+    quote: v.quote
+      .map(readLine)
+      .map(
+        ({
+          id,
+          name,
+          description,
+          amount,
+          qty,
+          optional,
+          selected,
+          interval,
+        }) => ({
+          id,
+          name,
+          description,
+          amount,
+          qty,
+          optional,
+          selected,
+          interval,
+        }),
+      ),
     totals: totals(v.quote),
-    consent_text: CONSENT,
+    consent_text: p.workspace_settings?.consent_text ?? CONSENT,
     version_hash: v.content_hash,
     files: p.files
       .filter((f) => f.kind === "sealed")

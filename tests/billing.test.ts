@@ -2,30 +2,29 @@ import { expect, it } from "vitest";
 import {
   bill,
   MockBillingProvider,
-  oiOTSchedule,
+  paidInvoiceProgress,
   UnconfiguredBillingProvider,
 } from "../src/lib/billing";
 import { setup, staff, clientActor, signature } from "./helpers";
-it("ports legacy and current OIOT buyout math without credits for unpaid invoices", () => {
-  expect(oiOTSchedule(375000, 112500, []).remaining).toBe(35);
-  expect(oiOTSchedule(275000, 50000, []).remaining).toBe(30);
+it("counts unique paid invoices against supplied schedule, never calculates a price", async () => {
+  const { draft } = await setup();
+  const line = {
+    ...draft.quote[1],
+    amount: 20000,
+    schedule: {
+      after_paid_invoices: 35,
+      then: { amount: 9000, lookup_key: "maintenance-90" },
+    },
+  };
+  expect(paidInvoiceProgress(line, []).remaining).toBe(35);
   expect(
-    oiOTSchedule(275000, 50000, [
-      { amount_paid: 17500, status: "paid" },
-      { amount_paid: 10000, status: "paid" },
-      { amount_paid: 17500, status: "open" },
+    paidInvoiceProgress(line, [
+      { id: "a", amount_paid: 20000, status: "paid" },
+      { id: "a", amount_paid: 20000, status: "paid" },
+      { id: "b", amount_paid: 10000, status: "paid" },
+      { id: "c", amount_paid: 20000, status: "open" },
     ]).remaining,
-  ).toBe(29);
-  expect(
-    oiOTSchedule(
-      275000,
-      50000,
-      Array.from({ length: 30 }, () => ({
-        amount_paid: 17500,
-        status: "paid",
-      })),
-    ).action,
-  ).toBe("switch_now");
+  ).toBe(34);
 });
 it("routes one-time vs monthly, matches customers, blocks near-match, and is idempotent", async () => {
   const { service, draft } = await setup();
@@ -43,8 +42,8 @@ it("routes one-time vs monthly, matches customers, blocks near-match, and is ide
   const sub = await bill(p, "stripe", stripe);
   expect(sub.status).toBe("succeeded");
   expect(
-    (sub.metadata!.lines as { billing: string }[]).every(
-      (l) => l.billing === "monthly",
+    (sub.metadata!.lines as { interval: string }[]).every(
+      (l) => l.interval === "month",
     ),
   ).toBe(true);
   await bill(p, "stripe", stripe);
@@ -53,8 +52,8 @@ it("routes one-time vs monthly, matches customers, blocks near-match, and is ide
   const invoice = await bill(p, "qbo", qbo);
   expect(invoice.metadata!.send_invoice).toBe(false);
   expect(
-    (invoice.metadata!.lines as { billing: string }[]).every(
-      (l) => l.billing === "one_time",
+    (invoice.metadata!.lines as { interval: string }[]).every(
+      (l) => l.interval === "one_time",
     ),
   ).toBe(true);
   qbo.failure = new Error("temporary failure");
@@ -64,42 +63,28 @@ it("routes one-time vs monthly, matches customers, blocks near-match, and is ide
   ).toBe("needs_review");
 });
 
-it("preserves OIOT kickoff separation and subscription scheduling metadata", async () => {
+it("keeps supplied schedule terms and separate one-time billing", async () => {
   const { repo, service, draft } = await setup();
-  const items =
-    await repo.entities<import("../src/lib/model").Item>("pricing_items");
-  const kickoff = items.find((i) => i.sku === "oiot-kickoff")!,
-    monthly = items.find((i) => i.sku === "oiot-monthly")!;
   const { mutate } = await import("../src/lib/repository");
   await mutate(repo, draft.id, (p) => {
-    p.quote = [kickoff, monthly].map((i) => ({
-      ...i,
-      qty: 1,
-      optional: false,
-      selected: true,
-    }));
-    p.oiot = { full_price: 275000, kickoff: 50000, pages: 5 };
+    p.quote[1].schedule = {
+      after_paid_invoices: 30,
+      then: { amount: 10000, lookup_key: "maintenance-100" },
+    };
+    p.quote[1].plan_terms = {
+      full_price: 275000,
+      kickoff_qbo: 50000,
+      build_credit_mo: 7500,
+      payoff_months: 30,
+    };
   });
   let p = await service.send(draft.id, staff);
   p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
     token: p.token!,
     password: "",
   });
-  const qbo = await bill(p, "qbo", new MockBillingProvider("qbo")),
-    stripe = await bill(p, "stripe", new MockBillingProvider("stripe"));
-  expect(
-    (qbo.metadata!.lines as { unit_price: number }[]).map((l) => l.unit_price),
-  ).toEqual([50000]);
-  expect(
-    (stripe.metadata!.lines as { unit_price: number }[]).map(
-      (l) => l.unit_price,
-    ),
-  ).toEqual([17500]);
-  expect(stripe.metadata!.oiot).toMatchObject({
-    remaining: 30,
-    after_cents: 10000,
-    build_credit_cents: 7500,
-    proration_behavior: "none",
-    kickoff_billed_in: "qbo",
-  });
+  const result = await bill(p, "stripe", new MockBillingProvider("stripe"));
+  expect(result.metadata!.schedules).toMatchObject([
+    { remaining: 30, then: { amount: 10000, lookup_key: "maintenance-100" } },
+  ]);
 });

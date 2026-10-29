@@ -1,5 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { expect, it } from "vitest";
 import { setup, staff, clientActor, signature } from "./helpers";
 it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit and frozen versions", async () => {
@@ -10,15 +10,22 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   await db.exec(
     await readFile("supabase/migrations/20260918190502_phase1.sql", "utf8"),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/20261029154748_workspace_isolation.sql",
+      "utf8",
+    ),
+  );
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
   p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
     token: p.token!,
     password: "",
   });
-  await db.query("insert into clients(id,data) values($1,$2)", [
+  await db.query("insert into clients(id,data,workspace_id) values($1,$2,$3)", [
     p.client.id,
     JSON.stringify(p.client),
+    repo.workspaceId,
   ]);
   const document = { ...p, revision: 0 };
   await db.query("select save_proposal($1::jsonb,-1)", [
@@ -48,7 +55,10 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   ).rejects.toThrow("permission denied");
   await db.exec("reset role");
   await db.query("insert into auth.users values($1)", [staff.actor.slice(6)]);
-  await db.query("insert into staff_users values($1)", [staff.actor.slice(6)]);
+  await db.query(
+    "insert into staff_users(user_id,workspace_id) values($1,'00000000-0000-4000-8000-000000000001')",
+    [staff.actor.slice(6)],
+  );
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
     staff.actor.slice(6),
   ]);
@@ -60,12 +70,44 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   await db.exec("reset role");
   const changed = structuredClone(document);
   changed.revision = 1;
-  changed.versions[0].quote[0].unit_price = 1;
+  changed.versions[0].quote[0].amount = 1;
   await expect(
     db.query("select save_proposal($1::jsonb,0)", [JSON.stringify(changed)]),
   ).rejects.toThrow("Frozen evidence");
   await db.query("select save_proposal($1::jsonb,0)", [
     JSON.stringify({ ...document, revision: 1 }),
   ]);
+  await db.exec(
+    "insert into workspaces values('00000000-0000-4000-8000-000000000002','Other workspace')",
+  );
+  await db.query(
+    "insert into clients(id,workspace_id,data) values('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000002',$1)",
+    [
+      JSON.stringify({
+        ...p.client,
+        id: "00000000-0000-4000-8000-000000000011",
+      }),
+    ],
+  );
+  await db.exec("set role authenticated");
+  expect((await db.query("select * from clients")).rows).toHaveLength(1);
+  expect((await db.query("select * from workspaces")).rows).toHaveLength(1);
+  await db.exec("reset role");
+  await expect(
+    db.exec(
+      "update clients set workspace_id='00000000-0000-4000-8000-000000000002' where id='" +
+        p.client.id +
+        "'",
+    ),
+  ).rejects.toThrow("Workspace is immutable");
+  await expect(
+    db.query("select save_proposal($1::jsonb,1)", [
+      JSON.stringify({
+        ...document,
+        revision: 2,
+        workspace_id: "00000000-0000-4000-8000-000000000002",
+      }),
+    ]),
+  ).rejects.toThrow("Workspace mismatch");
   await db.close();
 });
