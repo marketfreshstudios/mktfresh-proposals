@@ -17,6 +17,10 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  finishDocumentRefresh<T extends { id: string }>(
+    document: T,
+    attempt: string,
+  ): Promise<boolean>;
   get(id: string): Promise<Proposal | null>;
   byToken(token: string): Promise<Proposal | null>;
   list(search?: string): Promise<Proposal[]>;
@@ -73,6 +77,19 @@ export class MemoryRepository implements Repository {
     return structuredClone([
       ...(this.catalog.get(table)?.values() ?? []),
     ]) as T[];
+  }
+  async finishDocumentRefresh<T extends { id: string }>(
+    document: T,
+    attempt: string,
+  ) {
+    const current = this.catalog
+      .get("workspace_documents")
+      ?.get(document.id) as { refresh_id?: string } | undefined;
+    if (current?.refresh_id !== attempt) return false;
+    this.catalog
+      .get("workspace_documents")!
+      .set(document.id, structuredClone(document));
+    return true;
   }
   async put<T extends { id: string }>(table: EntityTable, entity: T) {
     if (!this.catalog.has(table)) this.catalog.set(table, new Map());
@@ -140,6 +157,19 @@ export class LocalRepository extends MemoryRepository {
     });
     this.tail = run.catch(() => {});
     await run;
+  }
+  override async finishDocumentRefresh<T extends { id: string }>(
+    document: T,
+    attempt: string,
+  ) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const saved = await super.finishDocumentRefresh(document, attempt);
+      if (saved) await this.persist();
+      return saved;
+    });
+    this.tail = run.catch(() => {});
+    return run;
   }
   override async put<T extends { id: string }>(t: EntityTable, e: T) {
     await this.ready;
@@ -220,6 +250,20 @@ export class SupabaseRepository implements Repository {
       all.push(...data.map((x) => x.data as T));
       if (data.length < 500) return all;
     }
+  }
+  async finishDocumentRefresh<T extends { id: string }>(
+    document: T,
+    attempt: string,
+  ) {
+    const { data, error } = await this.db
+      .from("workspace_documents")
+      .update({ data: document })
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", document.id)
+      .eq("data->>refresh_id", attempt)
+      .select("id");
+    if (error) throw error;
+    return !!data?.length;
   }
   async put<T extends { id: string }>(table: EntityTable, entity: T) {
     const { error } = await this.db

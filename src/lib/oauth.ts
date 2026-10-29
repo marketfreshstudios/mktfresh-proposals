@@ -231,6 +231,7 @@ export class OAuthServer {
     return {
       actor: {
         actor: "ai:" + grant.data.connector_name,
+        connector_id: grant.id,
         workspace_id: grant.workspace_id,
         ip: "",
         user_agent: "MCP",

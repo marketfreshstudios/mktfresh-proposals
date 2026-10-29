@@ -109,6 +109,28 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
       }),
     ],
   );
+  // Linked references reuse these protected tables: credentials stay private and versions append-only.
+  await db.exec(`
+    insert into workspace_documents values
+      ('00000000-0000-4000-8000-000000000081','00000000-0000-4000-8000-000000000001','{"content":"own reference"}'),
+      ('00000000-0000-4000-8000-000000000082','00000000-0000-4000-8000-000000000002','{"content":"other reference"}');
+    insert into provider_credentials values ('00000000-0000-4000-8000-000000000081','00000000-0000-4000-8000-000000000001','{"ciphertext":"encrypted"}');
+    insert into workspace_events values ('00000000-0000-4000-8000-000000000083','00000000-0000-4000-8000-000000000001','{"type":"document_version","content":"frozen"}');
+  `);
+  await expect(
+    db.exec("update workspace_events set data='{}'"),
+  ).rejects.toThrow("Append-only");
+  await db.exec("set role authenticated");
+  expect(
+    (await db.query("select * from workspace_documents")).rows,
+  ).toHaveLength(1);
+  await expect(db.exec("select * from provider_credentials")).rejects.toThrow(
+    "permission denied",
+  );
+  await expect(db.exec("select * from provider_actions")).rejects.toThrow(
+    "permission denied",
+  );
+  await db.exec("reset role");
   await db.exec("set role authenticated");
   expect((await db.query("select * from clients")).rows).toHaveLength(1);
   expect((await db.query("select * from workspaces")).rows).toHaveLength(1);

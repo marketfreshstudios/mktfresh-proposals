@@ -1,3 +1,8 @@
+import {
+  documents,
+  recordDocumentRead,
+  readDocumentsForDraft,
+} from "./documents";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -132,21 +137,18 @@ export async function aiTool(
   if (name === "list_templates") return repo.entities<Template>("templates");
   if (name === "list_catalog") return repo.entities<Item>("pricing_items");
   if (name === "list_documents")
-    return (
-      await repo.entities<{
-        id: string;
-        name: string;
-        version: string;
-        format: string;
-      }>("workspace_documents")
-    ).map(({ id, name, version, format }) => ({ id, name, version, format }));
-  if (["get_client", "get_template", "get_document"].includes(name)) {
-    const table =
-      name === "get_client"
-        ? "clients"
-        : name === "get_template"
-          ? "templates"
-          : "workspace_documents";
+    return (await documents(repo)).map(
+      ({ content: _content, url: _url, has_auth: _auth, ...doc }) => doc,
+    );
+  if (name === "get_document") {
+    const doc = (await documents(repo)).find((d) => d.id === input.id);
+    check(doc && doc.content_hash, "Reference has no successful version", 404);
+    await recordDocumentRead(repo, actor, doc);
+    const { url: _url, has_auth: _auth, ...view } = doc;
+    return view;
+  }
+  if (["get_client", "get_template"].includes(name)) {
+    const table = name === "get_client" ? "clients" : "templates";
     const entity = (await repo.entities<{ id: string }>(table)).find(
       (e) => e.id === input.id,
     );
@@ -198,6 +200,7 @@ export async function aiTool(
           Date.now() + settings.default_validity_days * 86400000,
         ).toISOString(),
         brief: input.brief,
+        document_versions: await readDocumentsForDraft(repo, actor),
         content: [
           ...blocks,
           { type: "pricing_table" },
