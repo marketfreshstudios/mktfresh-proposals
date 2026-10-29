@@ -1,6 +1,6 @@
 # Phase 2 handoff — STOP 1
 
-29 October 2026. Phase 2 is implemented through the pre-hosting checkpoint. **No hosted resources were created and no live credentials were used.** The owner explicitly instructed completion with mocks because Stripe test and QuickBooks sandbox credentials do not yet exist. The actual provider and hosted checks below remain pending; this is not a live-billing launch approval. STOP 2 imports require a separate owner-initiated run.
+29 October 2026. Phase 2 is implemented through the pre-hosting checkpoint. **No hosted resources were created and no live credentials were used.** Initial implementation used mocks. The owner subsequently supplied a Stripe restricted test key; the post-review catalogue check ran and stopped on a missing lookup key, as detailed below. QuickBooks sandbox credentials remain unavailable. The remaining provider and hosted checks are pending; this is not a live-billing launch approval. STOP 2 imports require a separate owner-initiated run.
 
 ## What is delivered
 
@@ -27,8 +27,8 @@
 
 “Live verification” here means actual **test-mode/sandbox/hosted** services, not permission to use production billing credentials.
 
-1. **Stripe test catalogue:** owner copies lookup keys (including `hosted-standard-100`) into test mode. Run catalogue sync with pagination; confirm legacy entries inactive and unknown/missing mappings visible. Compare imported names, amounts and intervals with the owner's catalogue.
-2. **D2:** existing test customer with active monthly subscription and working card. Sign a proposal; confirm original items unchanged, one new item per selected line, no proration, correct customer company/title/plan metadata, no Checkout link, and accurate new recurring totals/email. Repeat for yearly items, mixed intervals and retry/replay.
+1. **Stripe test catalogue:** sync passed on 29 October (41 imported), but the acceptance gate stopped because `storage-30gb-60` is missing. `hosted-standard-100` and `oiot-monthly-175` are present. Owner must copy the missing price; the platform must not create it. Then rerun the catalogue gate. Actual pagination and legacy exclusion still need test data (this response was one page and no imported prices carried `metadata[legacy]=true`). Compare names, amounts and intervals with the owner's catalogue.
+2. **D2:** existing test customer with active monthly subscription and working card. Sign a proposal; confirm original items unchanged, one new item per selected line, no proration, correct customer company and plan metadata, unchanged existing subscription description/collection method, no Checkout link, and accurate new recurring totals/email. Repeat for yearly items, mixed intervals and retry/replay.
 3. **D3:** no card/no usable subscription/new customer. Confirm Checkout uses the same stored customer; complete it using Stripe test payment data; deliver the signed snapshot webhook and confirm no duplicate subscription on replay. Test abandoned/expired sessions and correction/retry behavior.
 4. **Scheduled subscriptions:** test clocks/payment failures/paid invoices, supplied 18/30 and legacy 35-payment terms, month ends, phase metadata, separate subscription, generic step-down key/amount, retry after failed payment, and `send_invoice` first-invoice finalize/send. Mock contracts cannot establish Stripe's acceptance of schedule phase updates.
 5. **Custom retainer:** $2,000/month under an existing Custom Retainer family, full sign → billing → PDF flow. Confirm entered amount/scope, no new product/lookup-key price, correct inline price and plan metadata. Duplicate family names must be refused across all product pages. Check restricted-key permissions with actual test requests.
@@ -122,3 +122,30 @@ See [DECISIONS.md](DECISIONS.md) for the complete rationale and official connect
 - Staff quote intervals and job labels use human wording. Pending/running/failed/review jobs use the supplied design system's JobState structure, tokens, spinner and Retry/Resolve behavior; successful jobs show Complete.
 - Validation: 40 unit/database tests, three browser tests, type checks, production build, neutrality and formatting. Browser assertions cover one totals group, hidden absent-yearly totals, both signature blocks, typed final signatures and the last document line scrolling above the sticky bar at both widths/themes. Affected screenshots were regenerated.
 - Actual Stripe checks are authorized only after these fixes merge. `scripts/verify-stripe-catalogue.ts` reads only the explicitly selected repository `.env.local`, validates the test prefix before every request, sets `BILLING_MODE=test`, syncs read-only and stops on missing required lookup keys. No catalogue price creation is permitted. QuickBooks remains pending credentials.
+
+
+## Post-merge Stripe test-mode verification — 29 October 2026
+
+Review fixes merged in [PR #6](https://github.com/marketfreshstudios/mktfresh-proposals/pull/6), commit `50b013d`, after both CI runs passed. The screenshot test was corrected to click the optional checkbox and assert the revision warning, since that warning replaces the checkbox. All 40 unit/database tests and three browser tests pass; typecheck, build and neutrality checks pass. Affected screenshots are committed in `docs/screenshots/`.
+
+The actual provider run started at **17:32:45 UTC**, after the merge, with `BILLING_MODE=test` and API version `2024-06-20`. It read only `STRIPE_SECRET_KEY` from the original repository's ignored `.env.local`. The test-key prefix guard passed before the run and before the request. No shell `STRIPE_KEY`, external credential file or CLI account credentials were read.
+
+| Check | Result |
+|---|---|
+| Test-key guard | Passed; secret value withheld. |
+| Read-only catalogue sync | Passed: `GET /v1/prices` returned HTTP 200; 41 recurring catalogue entries imported locally. One page exhausted the result. No live-mode objects returned. |
+| `hosted-standard-100` | Present, active: $100/month. |
+| `oiot-monthly-175` | Present, active: $175/month. |
+| `storage-30gb-60` | **Missing from the active catalogue. Acceptance gate stopped (exit 2).** This is the D2 addition key from the owner's review example. |
+| Restricted-key permission errors | None on the catalogue read. Write/Checkout/schedule permissions remain untested. |
+| Legacy exclusion / pagination | Pending actual test data: no imported entries were flagged legacy and only one page was returned. Keys containing `legacy` are not by themselves the required metadata flag; confirm those test prices' metadata during the owner's catalogue copy. Mock tests cover these paths. |
+| D2 existing working-card customer | Not run: stopped at the missing-catalogue gate. |
+| D3 new customer / completed Checkout | Not run: stopped at the missing-catalogue gate. |
+| Own It Over Time schedule | Not run: stopped at the missing-catalogue gate. |
+| $2,000/month Custom Retainer | Not run: stopped at the missing-catalogue gate. |
+| Webhook delivery | Pending. Stripe CLI 1.53.1 is available, but `stripe listen` was not started after the required stop. `STRIPE_WEBHOOK_SECRET` remains unset. Use the explicit repository test key when resuming, not a saved CLI account. |
+| QuickBooks sandbox | Pending: credentials do not exist. |
+
+**Zero Stripe writes:** no customers, subscriptions, products, catalogue prices or webhook endpoints were created. The sanitized local result is `.data/stripe-review/catalogue-check.json` in the review checkout (ignored, no secret values). Work was performed in `mktfresh-proposals-review` to preserve unrelated untracked duplicate files in the original checkout.
+
+Next owner action: copy `storage-30gb-60` into Stripe test mode. On a separately requested continuation, rerun `BILLING_MODE=test node --import tsx scripts/verify-stripe-catalogue.ts <original-repository>/.env.local`, then proceed to the pending provider scenarios only if the catalogue gate passes. **Stopped as instructed; no provider writes or hosted setup followed the missing-key result.**
