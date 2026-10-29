@@ -60,3 +60,25 @@ it("only an owner can change the signatory; validates workspace membership and d
   settings.company_signatory!.user_id = "00000000-0000-4000-8000-000000000099";
   expect((await save()).status).toBe(400);
 });
+it("only an owner can change the verified sending domain", async () => {
+  const { repo, service, settings } = await setup();
+  mocked.runtime.mockReturnValue({ repo, service });
+  mocked.staff.mockResolvedValue({
+    ...staff,
+    workspace_id: repo.workspaceId,
+    staff_role: "member",
+  });
+  settings.sending_domain = "different.test";
+  const response = await handle(
+    new Request("http://localhost/api/workspace_settings", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(settings),
+    }),
+    ["workspace_settings"],
+  );
+  expect(response.status).toBe(403);
+  expect(
+    (await repo.entities<any>("workspace_settings"))[0].sending_domain,
+  ).toBe("example.test");
+});

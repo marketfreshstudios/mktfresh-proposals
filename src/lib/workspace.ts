@@ -24,8 +24,13 @@ export const WorkspaceSettingsSchema = z.object({
   address: z.string().max(2000),
   logo: z.string().nullable(),
   accent_colour: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  email_sender_name: z.string().min(1),
-  email_sender_address: z.email(),
+  sending_domain: z
+    .string()
+    .max(253)
+    .trim()
+    .toLowerCase()
+    .regex(/^$|^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)
+    .default(""),
   consent_text: z.string().min(20).max(10000),
   reminder_days: z.array(z.number().int().positive()).max(10),
   default_validity_days: z.number().int().min(1).max(365),
@@ -37,15 +42,12 @@ export const WorkspaceSettingsSchema = z.object({
       return false;
     }
   }),
-  client_url: z.url().refine((value) => {
-    const u = new URL(value);
-    return (
-      u.protocol === "https:" ||
-      (u.protocol === "http:" &&
-        ["localhost", "127.0.0.1"].includes(u.hostname))
-    );
-  }),
   qbo_custom_item_ref: z.string().nullable(),
   collection_method: z.enum(["charge_automatically", "send_invoice"]),
 });
-export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
+export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema> & {
+  /** Read-only compatibility for historical proposal snapshots. */
+  client_url?: string;
+  email_sender_name?: string;
+  email_sender_address?: string;
+};

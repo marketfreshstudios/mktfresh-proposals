@@ -1,3 +1,4 @@
+import { appOrigin } from "./links";
 import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
@@ -27,6 +28,7 @@ import {
   staff,
   sameOrigin,
   workspaceStaff,
+  updateStaffDisplayName,
 } from "./auth";
 import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
@@ -226,10 +228,24 @@ export async function handle(req: Request, path: string[]) {
         null;
       return json({
         user,
-        settings,
+        app_url: appOrigin(),
+        settings: settings ? WorkspaceSettingsSchema.parse(settings) : null,
         signatory_version: signatoryVersion(settings),
         staff: await workspaceStaff(user.workspace_id),
       });
+    }
+    if (path[0] === "team" && path[1] && method === "POST") {
+      const input = z
+        .object({ display_name: z.string() })
+        .strict()
+        .parse(await body(req));
+      return json(
+        await updateStaffDisplayName(
+          user,
+          uuid.parse(path[1]),
+          input.display_name,
+        ),
+      );
     }
     if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
       const response = json({ signed_out: true });
@@ -356,6 +372,12 @@ export async function handle(req: Request, path: string[]) {
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          if (entity.sending_domain !== (previous?.sending_domain ?? ""))
+            check(
+              user.staff_role === "owner",
+              "Only workspace owners can change the verified sending domain",
+              403,
+            );
           if (
             JSON.stringify(entity.company_signatory ?? null) !==
             JSON.stringify(previous?.company_signatory ?? null)
@@ -553,7 +575,14 @@ export async function handle(req: Request, path: string[]) {
           ? await body(req)
           : {};
         return json(
-          await rt.service.send(id, user, input.confirm_ai_review === true),
+          await rt.service.send(
+            id,
+            user,
+            input.confirm_ai_review === true,
+            input.sender_user_id === undefined
+              ? undefined
+              : uuid.parse(input.sender_user_id),
+          ),
         );
       }
       if (method === "POST" && action === "countersign")

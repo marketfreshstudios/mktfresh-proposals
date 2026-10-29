@@ -21,9 +21,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
     company_name: "Example Studio",
     owner: "Alex Morgan",
     email: "alex@example.test",
-    email_sender_name: "Example Studio",
-    email_sender_address: "proposals@example.test",
-    client_url: "http://127.0.0.1:3100",
+    sending_domain: "example.test",
   };
   draft.title = "A better website for Acme";
   draft.brief = "Refresh the website and establish a clear monthly care plan.";
@@ -158,12 +156,14 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
     } else if (path[0] === "auth")
       value = {
         user: staff,
+        app_url: "http://127.0.0.1:3100",
         settings,
         signatory_version: companyConsent(0, settings).signatory_version,
         staff: [
           {
             user_id: staff.actor.slice(6),
             name: staff.staff_name,
+            display_name: staff.staff_name,
             email: staff.staff_email,
             role: "owner",
           },
@@ -279,6 +279,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
     ["content-library", "/library"],
     ["imports", "/imports"],
     ["settings", "/settings"],
+    ["team", "/settings/team"],
     ["assistants", "/settings/ai"],
     ["integrations", "/integrations"],
   ])

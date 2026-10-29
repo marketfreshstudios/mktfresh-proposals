@@ -215,6 +215,8 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  sender?: import("./email-identity").ProposalSender;
+  notification_emails?: string[];
   workspace_id?: string;
   workspace_settings?: WorkspaceSettings;
   id: string;

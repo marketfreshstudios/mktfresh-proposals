@@ -1,3 +1,4 @@
+import { emailIdentity, staffRecipients } from "./email-identity";
 import { emailHtml } from "./branding";
 import { StripeProvider } from "./providers/stripe";
 import { executeStripeWebhook } from "./providers/webhook";
@@ -20,6 +21,7 @@ export interface Mailer {
   send(
     input: {
       from?: string;
+      reply_to?: string;
       to: string;
       subject: string;
       text: string;
@@ -39,6 +41,7 @@ export class ResendMailer implements Mailer {
   async send(
     input: {
       from?: string;
+      reply_to?: string;
       to: string;
       subject: string;
       text: string;
@@ -149,9 +152,10 @@ export class Worker {
         : undefined;
       await this.mailer.send(
         {
-          from: p.workspace_settings
-            ? `${p.workspace_settings.email_sender_name} <${p.workspace_settings.email_sender_address}>`
-            : undefined,
+          ...(typeof payload.from === "string" &&
+          typeof payload.reply_to === "string"
+            ? { from: payload.from, reply_to: payload.reply_to }
+            : emailIdentity(p)),
           to: String(payload.to),
           subject: String(payload.subject),
           text: String(payload.text),
@@ -323,10 +327,7 @@ export class Worker {
             stage: signer.role,
           });
         }
-        for (const to of new Set([
-          p.client.email,
-          process.env.STAFF_EMAIL ?? "staff@example.test",
-        ]))
+        for (const to of new Set([p.client.email, ...staffRecipients(p)]))
           queue(p, "email", `copy:${stage}:${to}`, {
             to,
             subject: `Signed copy: ${p.title}`,

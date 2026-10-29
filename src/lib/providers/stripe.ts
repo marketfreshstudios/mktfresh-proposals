@@ -1,3 +1,4 @@
+import { appOrigin, AppUrlSchema } from "../links";
 import { check, type Client, type Line, type Item } from "../model";
 import {
   NeedsReview,
@@ -184,6 +185,9 @@ export class StripeProvider implements BillingProvider {
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const returnOrigin = metadata.client_origin
+      ? AppUrlSchema.parse(metadata.client_origin).replace(/\/+$/, "")
+      : appOrigin();
     const currency = String(metadata.currency),
       proposal = String(metadata.proposal_id),
       title = String(metadata.proposal_title);
@@ -319,8 +323,8 @@ export class StripeProvider implements BillingProvider {
               line_ids: JSON.stringify(group.map((l) => l.id)),
               workspace_id: this.repo.workspaceId,
             },
-            success_url: settings.client_url + "/billing/complete",
-            cancel_url: settings.client_url + "/billing/pending",
+            success_url: returnOrigin + "/billing/complete",
+            cancel_url: returnOrigin + "/billing/pending",
           },
           key + ":checkout:" + interval,
         );
@@ -361,8 +365,8 @@ export class StripeProvider implements BillingProvider {
             line_ids: JSON.stringify([line.id]),
             workspace_id: this.repo.workspaceId,
           },
-          success_url: settings.client_url + "/billing/complete",
-          cancel_url: settings.client_url + "/billing/pending",
+          success_url: returnOrigin + "/billing/complete",
+          cancel_url: returnOrigin + "/billing/pending",
         },
         key + ":schedule-setup:" + line.id,
       );

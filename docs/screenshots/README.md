@@ -34,3 +34,5 @@ Rendered from the real app using neutral visual fixtures. Provider-specific stat
 | client-ended | [desktop light](client-ended-desktop-light.png) | [desktop dark](client-ended-desktop-dark.png) | [phone light](client-ended-phone-light.png) | [phone dark](client-ended-phone-dark.png) |
 
 Company signatory review: [delegated counter-sign](company-delegation.png). The fixture uses a synthetic one-pixel PNG, not a real person's signature. Settings, counter-sign, audit and client captures were refreshed for designated-signatory display.
+
+Staff sender update: Settings and Send refreshed; new [Team (light)](team-desktop-light.png) and [Team (dark)](team-desktop-dark.png) captures show display-name management.

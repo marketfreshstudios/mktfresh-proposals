@@ -23,6 +23,7 @@ process.env.SUPABASE_URL = config.API_URL;
 process.env.SUPABASE_SERVICE_ROLE_KEY = config.SERVICE_ROLE_KEY;
 process.env.SUPABASE_ANON_KEY = config.ANON_KEY;
 process.env.APP_MODE = "supabase";
+process.env.APP_URL = "http://127.0.0.1:3100";
 const db = createClient(config.API_URL, config.SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   }),
@@ -88,6 +89,7 @@ await repo.put("templates", template);
 const settings = (
   await fixture.entities<WorkspaceSettings>("workspace_settings")
 )[0];
+settings.sending_domain = "example.test";
 settings.company_signatory = {
   ...testSignatory,
   user_id: user.data.user!.id,

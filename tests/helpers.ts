@@ -43,6 +43,7 @@ export async function setup() {
     await repo.entities<WorkspaceSettings>("workspace_settings")
   )[0];
   settings.company_name = "Example Studio";
+  settings.sending_domain = "example.test";
   settings.company_signatory = structuredClone(testSignatory);
   await repo.put("workspace_settings", settings);
   await repo.put(
@@ -55,7 +56,16 @@ export async function setup() {
       email: "jane@example.test",
     }),
   );
-  const service = new ProposalService(repo);
+  const members = [
+    {
+      user_id: staff.actor.slice(6),
+      display_name: staff.staff_name!,
+      name: staff.staff_name!,
+      email: staff.staff_email!,
+      role: "owner",
+    },
+  ];
+  const service = new ProposalService(repo, undefined, async () => members);
   const draft = await service.create(
     {
       client_id: seedIds.client,
@@ -65,7 +75,7 @@ export async function setup() {
     },
     staff,
   );
-  return { repo, service, draft, settings };
+  return { repo, service, draft, settings, members };
 }
 export const signature = (revision: number, email = "jane@example.test") => ({
   revision,

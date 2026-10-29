@@ -28,14 +28,12 @@ test("full headless flow through the client interface, both PDFs, billing, downl
         address: "",
         logo: null,
         accent_colour: "#365C4A",
-        email_sender_name: "Example Studio",
-        email_sender_address: "proposals@example.test",
+        sending_domain: "example.test",
         consent_text:
           "I consent to electronic records and signatures and agree to this proposal.",
         reminder_days: [3, 7],
         default_validity_days: 30,
         timezone: "UTC",
-        client_url: "http://127.0.0.1:3100",
         qbo_custom_item_ref: "mock-custom",
         collection_method: "charge_automatically",
       },
@@ -147,12 +145,31 @@ test("full headless flow through the client interface, both PDFs, billing, downl
       sameSite: "Lax",
     },
   ]);
+  await page.goto("/settings/team");
+  await page.getByLabel("Display name", { exact: true }).fill("Alex Sender");
+  await page.getByRole("button", { name: "Save display name" }).click();
+  await expect
+    .poll(
+      async () =>
+        (await (await request.get("/api/auth/session", { headers })).json())
+          .staff[0].display_name,
+    )
+    .toBe("Alex Sender");
+  await page.goto("/settings");
+  await expect(
+    page.getByText("Client website URL", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Sender name", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Sender email", { exact: true })).toHaveCount(0);
   await page.goto(`/proposals/${p.id}/edit`);
   await page.getByLabel("Amount (USD)", { exact: true }).first().fill("2751");
   await expect(
     page.getByText("All changes saved", { exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Continue to send" }).click();
+  await expect(
+    page.getByRole("combobox", { name: "From", exact: true }),
+  ).toHaveValue("00000000-0000-4000-8000-000000000001");
   await page
     .getByRole("button", { name: "Send proposal", exact: true })
     .click();
@@ -161,6 +178,10 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   p = await r.json();
   expect(p.quote[0].amount).toBe(275100);
   expect(p.token).toHaveLength(43);
+  expect(p.sender).toMatchObject({
+    display_name: "Alex Sender",
+    email: "staff@example.test",
+  });
   let publicState = await (await request.get(`/api/public/${p.token}`)).json();
   r = await request.post(`/api/public/${p.token}/quote`, {
     data: {

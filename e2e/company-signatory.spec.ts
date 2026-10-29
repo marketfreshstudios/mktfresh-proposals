@@ -36,6 +36,7 @@ test("delegated company signing requires authorization in the UI and seals actua
     if (path === "/api/auth/session")
       data = {
         user: delegate,
+        app_url: "http://127.0.0.1:3100",
         settings,
         signatory_version: companyConsent(0, settings).signatory_version,
         staff: [],

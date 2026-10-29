@@ -1,3 +1,7 @@
+import { workspaceStaff } from "./auth";
+import { proposalLink } from "./links";
+import { emailIdentity, staffRecipients } from "./email-identity";
+import { WorkspaceSettingsSchema } from "./workspace";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
@@ -57,18 +61,19 @@ export function queue(
     p.jobs.push({
       id,
       kind,
-      payload,
+      payload: kind === "email" ? { ...payload, ...emailIdentity(p) } : payload,
       status: "pending",
       attempts: 0,
       available_at: now,
     });
 }
 export function notify(p: Proposal, type: string) {
-  queue(p, "email", "notify:" + type + ":" + p.events.length, {
-    to: p.workspace_settings?.email ?? "",
-    subject: `Proposal ${type}: ${p.title}`,
-    text: `${p.title} for ${p.client.company}: ${type}`,
-  });
+  for (const to of staffRecipients(p))
+    queue(p, "email", "notify:" + type + ":" + p.events.length + ":" + to, {
+      to,
+      subject: `Proposal ${type}: ${p.title}`,
+      text: `${p.title} for ${p.client.company}: ${type}`,
+    });
 }
 export function publicAccess(p: Proposal, password = "", now = new Date()) {
   check(p.source === "native" && p.token, "Not found", 404);
@@ -90,6 +95,7 @@ export class ProposalService {
   constructor(
     public repo: Repository,
     public clock = () => new Date(),
+    private members = workspaceStaff,
   ) {}
   async create(
     input: {
@@ -135,7 +141,7 @@ export class ProposalService {
       id: randomUUID(),
       workspace_id: this.repo.workspaceId,
       workspace_settings: {
-        ...structuredClone(settings),
+        ...WorkspaceSettingsSchema.parse(structuredClone(settings)),
         company_signatory: settings.company_signatory
           ? {
               ...settings.company_signatory,
@@ -223,12 +229,44 @@ export class ProposalService {
       event(p, "edited", actor);
     });
   }
-  async send(id: string, actor: Actor, confirmAiReview = false) {
+  async send(
+    id: string,
+    actor: Actor,
+    confirmAiReview = false,
+    senderId = actor.actor.slice(6),
+  ) {
     check(
       !actor.actor.startsWith("ai:"),
       "AI assistants cannot send proposals",
       403,
     );
+    check(
+      actor.actor.startsWith("staff:"),
+      "Staff authorization required",
+      403,
+    );
+    const members = await this.members(this.repo.workspaceId);
+    const selected = members.find((m) => m.user_id === senderId);
+    check(selected, "Choose a sender who belongs to this workspace", 400);
+    const settings = (
+      await this.repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0];
+    const domain = settings?.sending_domain?.toLowerCase();
+    check(
+      domain,
+      "Set the workspace's verified sending domain in Settings before sending",
+    );
+    check(
+      selected.email.split("@")[1]?.toLowerCase() === domain,
+      `Sender ${selected.email} must use the workspace's verified sending domain (${domain})`,
+    );
+    const sender = {
+      user_id: selected.user_id,
+      display_name: selected.display_name,
+      email: selected.email,
+      company_name: settings.company_name,
+      sending_domain: domain,
+    };
     const catalog = await this.repo.entities<Item>("pricing_items");
     return mutate(this.repo, id, (p) => {
       check(
@@ -251,6 +289,16 @@ export class ProposalService {
         check(l.optional || l.selected, "Required items must be selected");
       }
       const now = this.clock().toISOString();
+      p.sender = sender;
+      p.notification_emails = [
+        ...new Set(
+          [
+            selected.email,
+            actor.staff_email,
+            members.find((m) => "staff:" + m.user_id === p.created_by)?.email,
+          ].filter((email): email is string => !!email),
+        ),
+      ];
       p.ai_unreviewed = false;
       p.sent_at = now;
       p.token = randomBytes(32).toString("base64url");
@@ -274,7 +322,7 @@ export class ProposalService {
         variables_resolved: map,
       });
       p.versions.push(version);
-      event(p, "sent", actor, { version: version.version_no }, now);
+      event(p, "sent", actor, { version: version.version_no, sender }, now);
       queue(
         p,
         "email",
@@ -283,7 +331,7 @@ export class ProposalService {
           to: p.client.email,
           subject: p.title,
           send_version: version.version_no,
-          text: `Review your proposal: ${p.workspace_settings?.client_url ?? process.env.APP_URL}/p/${p.token}`,
+          text: `Review your proposal: ${proposalLink(p)}`,
         },
         now,
       );
@@ -490,6 +538,10 @@ export class ProposalService {
         now,
       );
       if (role === "client") queue(p, "billing", "billing", {}, now);
+      if (role === "company" && actor.staff_email)
+        p.notification_emails = [
+          ...new Set([...staffRecipients(p), actor.staff_email]),
+        ];
       notify(p, role === "client" ? "signed" : "completed");
     });
   }
@@ -540,7 +592,7 @@ export class ProposalService {
               {
                 to: p.client.email,
                 subject: `Reminder: ${p.title}`,
-                text: `Review your proposal: ${p.workspace_settings?.client_url ?? process.env.APP_URL}/p/${p.token}`,
+                text: `Review your proposal: ${proposalLink(p)}`,
                 reminder_day: day,
                 version: p.versions.length,
               },
