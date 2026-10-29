@@ -917,3 +917,52 @@ select:hover:not(:disabled),
   --select-chevron: var(--select-chevron-light-muted);
   --select-chevron-hover: var(--select-chevron-light-ink);
 }
+.preview-controls {
+  position: sticky;
+  top: 0;
+  z-index: 800;
+  padding: 12px 20px;
+  background: var(--warning-soft);
+  color: var(--ink);
+  border-bottom: 1px solid var(--warning);
+}
+.preview-controls .toolbar {
+  flex-wrap: wrap;
+}
+.preview-phone .client-app {
+  width: min(390px, 100%);
+  margin-inline: auto;
+}
+.preview-phone .client-bar {
+  width: min(390px, 100%);
+}
+/* Apply the client phone layout when staff select a narrow preview on desktop. */
+.preview-phone .paper {
+  padding: 24px 18px;
+  border-radius: 8px;
+}
+.preview-phone .client-body {
+  padding: 14px 12px;
+}
+.preview-phone .client-app h1 {
+  font-size: 28px;
+  line-height: 34px;
+}
+.preview-phone .client-bar .totals {
+  gap: 14px;
+}
+.preview-phone .client-bar .totals strong {
+  font-size: 15px;
+}
+.preview-phone .totals {
+  gap: 16px;
+}
+.preview-phone .signature-slots {
+  gap: 14px;
+}
+.preview-phone .theme-toggle {
+  font-size: 12px !important;
+}
+.preview-phone .row {
+  gap: 10px;
+}

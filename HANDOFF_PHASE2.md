@@ -290,3 +290,13 @@ Templates display warnings for inactive/missing catalogue references, and Settin
 PLAYBOOK_VERSION extraction recognizes const/let/var and bare assignments, single/double quotes and non-ASCII labels such as v1.17 · 15 October 2026. Refresh the linked document to create a correctly labelled fetched version; historical version records remain immutable.
 
 Validation: 103 unit/database tests, seven browser tests, typecheck, formatting, neutrality and production build/PDF trace pass locally. New browser coverage runs a real mocked Stripe catalogue sync to retire a template default, verifies warnings on template and Pricing settings, and checks they clear after repair. Updated affected screenshots and added warning fixtures in both themes.
+
+## Client preview, catalogue display names and manual invoices (29 October 2026)
+
+Editor and record Preview as client open the real client-page component at /p/<id>?preview=1, including drafts before send. Staff-authenticated preview data and logo loaders are scoped to the workspace and read only; draft versions are built in memory. Preview has persistent Preview, not sent branding, desktop/phone controls, working optional selections and totals, and reading/signing/billing layouts. Signing and checkout are disabled; client submit helpers are guarded, and no public view, client write, email or billing action occurs.
+
+Catalogue pickers share alphabetical effective display-name ordering and hide inactive/legacy items. Display name can be edited in the catalogue; it defaults to the synced name when blank, survives sync, and is copied into newly created proposal lines. No schema migration is required. The requested oiot-monthly-175 override is Website Build — Own It Over Time; the live workspace correction is applied after merge. Existing proposal snapshots are preserved.
+
+Absent QuickBooks item mappings no longer block send. Unconfigured or unmapped one-time billing becomes an Invoice manually needs-review item after signature, without calling QuickBooks. Mapped/connected invoice creation is unchanged.
+
+Validation: 108 unit/database tests, eight browser tests, typecheck, format, neutrality and production build/PDF trace passed locally. Coverage checks preview authentication and state preservation, no public requests/writes, optional totals, filled signature form remaining disabled (including Enter), preview width controls, catalogue filtering/order, display-name sync persistence and snapshotting, and manual invoice send/sign/billing behavior. Added 12 preview screenshots across reading/signing/billing, desktop/phone, light/dark, and refreshed affected staff screenshots.

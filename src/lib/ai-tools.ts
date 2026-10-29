@@ -1,3 +1,4 @@
+import { itemDisplayName, sellableCatalogue } from "./catalogue-display";
 import { templateDefaultQuote } from "./template-quote";
 import {
   documents,
@@ -137,7 +138,10 @@ export async function aiTool(
       )
       .slice(0, 50);
   if (name === "list_templates") return repo.entities<Template>("templates");
-  if (name === "list_catalog") return repo.entities<Item>("pricing_items");
+  if (name === "list_catalog")
+    return sellableCatalogue(await repo.entities<Item>("pricing_items")).map(
+      (i) => ({ ...i, synced_name: i.name, name: itemDisplayName(i) }),
+    );
   if (name === "list_documents")
     return (await documents(repo)).map(
       ({ content: _content, url: _url, has_auth: _auth, ...doc }) => doc,

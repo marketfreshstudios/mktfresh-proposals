@@ -132,6 +132,22 @@ export async function bill(
       status: "succeeded",
       metadata: { skipped: "No selected items" },
     };
+  if (
+    provider === "qbo" &&
+    (adapter instanceof UnconfiguredBillingProvider ||
+      lines.some(
+        (l) => !l.qbo_item_ref && !p.workspace_settings?.qbo_custom_item_ref,
+      ))
+  )
+    return {
+      ...base,
+      status: "needs_review",
+      last_error: "Invoice manually",
+      metadata: {
+        action: "Invoice manually",
+        line_ids: lines.map((l) => l.id),
+      },
+    };
   try {
     const matches = await adapter.findCustomers(p.client),
       emailMatches = matches.filter(

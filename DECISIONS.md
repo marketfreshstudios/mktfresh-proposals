@@ -110,3 +110,11 @@ Explicit proposal quote lines, including an empty list, replace template default
 Template warnings are derived from the current catalogue rather than stored flags, covering manual and sync-driven deactivation without deleting template references. Both the template and Settings → Pricing list affected defaults with links for repair.
 
 Reference version labels accept bare assignments and const/let/var declarations, either quote style and Unicode text. Existing immutable versions retain their recorded labels; Refresh now (or the hourly refresh) extracts the corrected label for a new fetched version.
+
+## Client preview, catalogue labels and manual invoices (29 October 2026)
+
+Staff preview uses the actual /p/... client component with a preview query flag, a workspace-scoped staff-only read endpoint and no public token. It materializes drafts in memory using current workspace settings; sent previews use their sent version and branding. Selections and view-step navigation are browser-local. Signature submission is disabled in both the form and submit handler; checkout is a disabled placeholder. No public-client APIs, view events, email, signature acceptance or billing jobs run. Desktop and phone controls retain the same rendering component.
+
+Catalogue display_name is optional app-only JSON data; effective name falls back to the synced name. Sync preserves overrides. New catalogue-based lines snapshot the effective name; signed/existing proposal snapshots remain untouched. All catalogue pickers sort effective names alphabetically and hide inactive/legacy rows.
+
+One-time lines with absent QuickBooks mappings warn rather than block sending. Billing records Invoice manually with needs_review for an unconfigured QuickBooks adapter or missing line/workspace mapping. This is an explicit review item, with no QuickBooks customer/invoice write attempted. A configured, mapped provider keeps its normal invoice flow.

@@ -1,3 +1,4 @@
+import { previewResult } from "./preview";
 import {
   documents,
   saveDocument,
@@ -538,6 +539,28 @@ export async function handle(req: Request, path: string[]) {
         return json(await rt.service.create(input, user), 201);
       }
       uuid.parse(id);
+      if (method === "GET" && ["preview", "preview-logo"].includes(action)) {
+        const p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        const settings = (
+          await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+        )[0];
+        check(settings, "Workspace settings required");
+        if (action === "preview-logo") {
+          const logo = (
+            p.status === "draft" ? settings : (p.workspace_settings ?? settings)
+          ).logo;
+          check(
+            logo && logo.startsWith(rt.repo.workspaceId + "/"),
+            "Logo unavailable",
+            404,
+          );
+          return new Response(Buffer.from(await rt.storage.get(logo)), {
+            headers: { ...headers, "Content-Type": "image/png" },
+          });
+        }
+        return json(previewResult(p, settings));
+      }
       if (method === "GET" && !action) {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);

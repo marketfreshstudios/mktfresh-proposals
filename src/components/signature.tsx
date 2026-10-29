@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Button, Field, Banner } from "./ui";
 import type { SignatureInput } from "../lib/model";
 export function SignatureForm({
+  preview = false,
   consentText,
   name = "",
   email = "",
@@ -11,6 +12,7 @@ export function SignatureForm({
   label = "Sign and accept",
   onSign,
 }: {
+  preview?: boolean;
   consentText: string;
   name?: string;
   email?: string;
@@ -52,7 +54,7 @@ export function SignatureForm({
       className="stack"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (busy) return;
+        if (busy || preview) return;
         setError("");
         setBusy(true);
         try {
@@ -189,7 +191,9 @@ export function SignatureForm({
         variant="primary"
         type="submit"
         busy={busy}
-        disabled={!consent || (mode === "drawn" ? !drawn : !typed.trim())}
+        disabled={
+          preview || !consent || (mode === "drawn" ? !drawn : !typed.trim())
+        }
         note={
           !consent
             ? "Agree to the consent text before signing."

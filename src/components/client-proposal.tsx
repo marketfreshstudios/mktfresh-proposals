@@ -17,7 +17,14 @@ import { money, totals, renderBlocks } from "../lib/presentation";
 import type { Line, SignatureInput } from "../lib/model";
 import type { publicResult } from "../lib/service";
 type PublicProposal = ReturnType<typeof publicResult>;
-export function ClientProposal({ token }: { token: string }) {
+export function ClientProposal({
+  token,
+  preview = false,
+}: {
+  token: string;
+  preview?: boolean;
+}) {
+  const [phonePreview, setPhonePreview] = useState(false);
   const [p, setP] = useState<PublicProposal | null>(null),
     [password, setPassword] = useState(""),
     [locked, setLocked] = useState(false),
@@ -61,9 +68,12 @@ export function ClientProposal({ token }: { token: string }) {
     setBusy(true);
     setError("");
     try {
-      const value = await api<PublicProposal>(`/api/public/${token}`, {
-        headers,
-      });
+      const value = await api<PublicProposal>(
+        preview ? `/api/proposals/${token}/preview` : `/api/public/${token}`,
+        {
+          headers,
+        },
+      );
       setP(value);
       setBrand(value.company);
       setLocked(false);
@@ -80,12 +90,14 @@ export function ClientProposal({ token }: { token: string }) {
   }
   useEffect(() => {
     void load();
-    void api(`/api/public/${token}/brand`)
-      .then(setBrand)
-      .catch(() => {});
-  }, [token]);
+    if (!preview)
+      void api(`/api/public/${token}/brand`)
+        .then(setBrand)
+        .catch(() => {});
+  }, [token, preview]);
   useEffect(() => {
-    if (!p || !["signed_by_client", "completed"].includes(p.status)) return;
+    if (preview || !p || !["signed_by_client", "completed"].includes(p.status))
+      return;
     let remaining = 20;
     const timer = setInterval(() => {
       if (--remaining < 0) {
@@ -100,14 +112,26 @@ export function ClientProposal({ token }: { token: string }) {
   }, [p?.status, token, password]);
   // Password travels in a header, never in the URL or local storage.
   async function submit(path: string, data: unknown) {
+    if (preview) throw new Error("Preview cannot submit client actions");
     return api<PublicProposal>(`/api/public/${token}/${path}`, {
       method: "POST",
       headers,
       body: JSON.stringify(data),
     });
   }
-  const signed = p && ["signed_by_client", "completed"].includes(p.status),
-    billing = p?.billing[0];
+  const signed =
+      p &&
+      (step === "billing" ||
+        ["signed_by_client", "completed"].includes(p.status)),
+    billing =
+      preview && step === "billing"
+        ? {
+            requires_checkout: true,
+            checkout: [],
+            status: "pending",
+            added_existing: [],
+          }
+        : p?.billing[0];
   async function toggle(id: string, selected: boolean) {
     if (!p || busy || stale) return;
     const previous = p;
@@ -130,6 +154,7 @@ export function ClientProposal({ token }: { token: string }) {
       variables: map,
       html: renderBlocks(p.content, quote as Line[], map, p.currency),
     });
+    if (preview) return;
     setBusy(true);
     try {
       setP(
@@ -169,298 +194,346 @@ export function ClientProposal({ token }: { token: string }) {
     latest = files.find((f) => f.stage === "company") ?? files[0];
   return (
     <div
-      className="client-app"
-      style={
-        {
-          "--workspace-accent": brand.accent_colour ?? "#245547",
-          "--workspace-on-accent": accentText(brand.accent_colour ?? "#245547"),
-        } as React.CSSProperties
+      className={
+        preview
+          ? `client-preview ${phonePreview ? "preview-phone" : ""}`
+          : undefined
       }
     >
-      <header className="client-header">
-        <div>
-          {brand.logo && <img src={`/api/public/${token}/brand/logo`} alt="" />}
-          <strong>{brand.name}</strong>
-          {p && !locked && (
-            <small style={{ display: "block" }}>{p.recipient.company}</small>
-          )}
-        </div>
-        <ThemeToggle />
-      </header>
-      <main
-        className="client-body stack"
-        style={{ paddingBottom: barHeight + 24 }}
+      {preview && (
+        <aside className="preview-controls" aria-label="Preview controls">
+          <strong>Preview, not sent</strong>
+          <div className="toolbar">
+            <Button onClick={() => setStep("read")}>Reading view</Button>
+            <Button onClick={() => setStep("sign")}>Signing step</Button>
+            <Button onClick={() => setStep("billing")}>Billing step</Button>
+            <Button onClick={() => setPhonePreview(false)}>
+              Desktop width
+            </Button>
+            <Button onClick={() => setPhonePreview(true)}>Phone width</Button>
+          </div>
+        </aside>
+      )}
+      <div
+        className="client-app"
+        style={
+          {
+            "--workspace-accent": brand.accent_colour ?? "#245547",
+            "--workspace-on-accent": accentText(
+              brand.accent_colour ?? "#245547",
+            ),
+          } as React.CSSProperties
+        }
       >
-        {error && (
-          <Banner tone="danger" title="Please try again">
-            {error}
-          </Banner>
-        )}
-        {ended ? (
-          <div className="card">
-            <h1>This link is no longer active</h1>
-            <p>
-              Please use the most recent email, or get in touch for a fresh
-              link.
-            </p>
-            {brand.email && <a href={`mailto:${brand.email}`}>{brand.email}</a>}
-          </div>
-        ) : locked ? (
-          <div className="card">
-            <Icon name="lock" />
-            <h1>This proposal is password protected</h1>
-            <p>Enter the password we sent you to open it.</p>
-            <form
-              className="form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void load();
-              }}
-            >
-              <label className="field">
-                Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </label>
-              <Button type="submit" variant="primary" busy={busy}>
-                Open proposal
-              </Button>
-            </form>
-          </div>
-        ) : !p ? (
-          <p role="status">Opening your proposal…</p>
-        ) : (
-          <>
-            {stale && (
-              <Banner
-                tone="warning"
-                title="This proposal changed while you were reading it"
-                action={<Button onClick={load}>Reload and review</Button>}
-              >
-                The pricing or wording is different from what is on your screen.
-                Reload to see the current version before you sign.
-              </Banner>
+        <header className="client-header">
+          <div>
+            {brand.logo && (
+              <img
+                src={
+                  preview
+                    ? `/api/proposals/${token}/preview-logo`
+                    : `/api/public/${token}/brand/logo`
+                }
+                alt=""
+              />
             )}
-            {signed ? (
-              <>
-                <Banner
-                  tone="success"
-                  title={
-                    p.status === "completed"
-                      ? "Both signatures are complete"
-                      : "Your proposal is signed"
-                  }
-                >
-                  {p.status === "completed"
-                    ? "Your final copy is sealed and available below."
-                    : `${brand.name} will counter-sign and send your final copy.`}
-                </Banner>
-                {billing?.requires_checkout ? (
-                  <section className="card stack">
-                    <h2>One more step: set up your recurring billing</h2>
-                    <p>
-                      Your proposal is already accepted. One-time items are
-                      invoiced separately.
-                    </p>
-                    {billing.checkout.map((s, i) => (
-                      <a className="btn primary" key={s.url} href={s.url}>
-                        Set up billing{" "}
-                        {billing.checkout.length > 1 ? i + 1 : ""}
-                      </a>
-                    ))}
-                    <small>
-                      The same link is in your email, so you can finish later.
-                    </small>
-                  </section>
-                ) : Array.isArray(billing?.added_existing) &&
-                  billing.added_existing.length > 0 ? (
-                  <Banner tone="success" title="Added to your existing billing">
-                    New monthly total:{" "}
-                    {money(
-                      billing.added_existing.reduce(
-                        (s: number, v: any) => s + v.monthly_total,
-                        0,
-                      ),
-                      p.currency,
-                    )}
-                    {hasYearly && (
-                      <>
-                        . New yearly total:{" "}
-                        {money(
-                          billing.added_existing.reduce(
-                            (sum, entry) => sum + entry.yearly_total,
-                            0,
-                          ),
-                          p.currency,
-                        )}
-                      </>
-                    )}
-                    . No additional billing setup is needed.
-                  </Banner>
-                ) : (
-                  <p className="muted">
-                    {billing?.status === "needs_review"
-                      ? "We will review billing separately. Your signature is safe."
-                      : billing?.status === "succeeded"
-                        ? "Billing is arranged. One-time items are invoiced separately."
-                        : "Your signed copy and billing details are being prepared."}
-                  </p>
-                )}
-                <div className="card stack">
-                  <h2>Your signed copies</h2>
-                  {files.length ? (
-                    files.map((f) => (
-                      <Button
-                        key={f.id}
-                        icon="download"
-                        onClick={() => download(f.id)}
-                      >
-                        {f.stage === "company"
-                          ? "Download the final copy"
-                          : "Download your signed copy"}
-                      </Button>
-                    ))
-                  ) : (
-                    <p role="status">
-                      Your signed copy is being sealed. It will also arrive by
-                      email.
-                    </p>
-                  )}
-                  {latest && (
-                    <Button
-                      onClick={async () => {
-                        try {
-                          const result = await api<{ valid: boolean }>(
-                            `/api/public/${token}/files/${latest.id}/verify`,
-                            { headers },
-                          );
-                          setVerify(
-                            result.valid
-                              ? "Matches — this file is unchanged since sealing."
-                              : "Verification failed — please contact us.",
-                          );
-                        } catch {
-                          setVerify(
-                            "Unable to verify right now. Please try again.",
-                          );
-                        }
-                      }}
-                    >
-                      Verify this document
-                    </Button>
-                  )}
-                  {verify && <p role="status">{verify}</p>}
-                </div>
-                <ClientDocument proposal={p} frozen />
-              </>
-            ) : step === "sign" ? (
-              <>
-                <div className="paper">
-                  <span className="eyebrow">What you are accepting</span>
-                  <h1>{p.title}</h1>
-                  <Quote
-                    lines={p.quote as Line[]}
-                    currency={p.currency}
-                    frozen
+            <strong>{brand.name}</strong>
+            {p && !locked && (
+              <small style={{ display: "block" }}>{p.recipient.company}</small>
+            )}
+          </div>
+          <ThemeToggle />
+        </header>
+        <main
+          className="client-body stack"
+          style={{ paddingBottom: barHeight + 24 }}
+        >
+          {error && (
+            <Banner tone="danger" title="Please try again">
+              {error}
+            </Banner>
+          )}
+          {ended ? (
+            <div className="card">
+              <h1>This link is no longer active</h1>
+              <p>
+                Please use the most recent email, or get in touch for a fresh
+                link.
+              </p>
+              {brand.email && (
+                <a href={`mailto:${brand.email}`}>{brand.email}</a>
+              )}
+            </div>
+          ) : locked ? (
+            <div className="card">
+              <Icon name="lock" />
+              <h1>This proposal is password protected</h1>
+              <p>Enter the password we sent you to open it.</p>
+              <form
+                className="form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void load();
+                }}
+              >
+                <label className="field">
+                  Password
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
-                  <Totals
-                    value={p.totals}
-                    currency={p.currency}
-                    showYearly={hasYearly}
-                  />
-                </div>
-                {!stale && (
-                  <SignatureForm
-                    consentText={p.consent_text}
-                    name={p.recipient.name}
-                    email={p.recipient.email}
-                    revision={p.revision}
-                    reviewedHash={p.reviewed_hash}
-                    onSign={async (value) => {
-                      try {
-                        setP(await submit("sign", value));
-                      } catch (e) {
-                        if (e instanceof ApiError && e.status === 409)
-                          setStale(true);
-                        throw e;
-                      }
-                    }}
-                  />
-                )}
-                <Button onClick={() => setStep("read")}>
-                  Back to proposal
+                </label>
+                <Button type="submit" variant="primary" busy={busy}>
+                  Open proposal
                 </Button>
-              </>
-            ) : (
-              <>
-                <ClientDocument
-                  proposal={p}
-                  frozen={stale}
-                  busy={busy}
-                  onToggle={toggle}
-                  showTotals={!sticky}
-                />
-                {declining && (
-                  <section className="card">
-                    <h2>Decline this proposal?</h2>
-                    <p>
-                      This closes the proposal. Contact us if you need a revised
-                      scope instead.
+              </form>
+            </div>
+          ) : !p ? (
+            <p role="status">Opening your proposal…</p>
+          ) : (
+            <>
+              {stale && (
+                <Banner
+                  tone="warning"
+                  title="This proposal changed while you were reading it"
+                  action={<Button onClick={load}>Reload and review</Button>}
+                >
+                  The pricing or wording is different from what is on your
+                  screen. Reload to see the current version before you sign.
+                </Banner>
+              )}
+              {signed ? (
+                <>
+                  <Banner
+                    tone="success"
+                    title={
+                      preview
+                        ? "Billing step preview"
+                        : p.status === "completed"
+                          ? "Both signatures are complete"
+                          : "Your proposal is signed"
+                    }
+                  >
+                    {preview
+                      ? "This is a preview. No signature or billing has been submitted."
+                      : p.status === "completed"
+                        ? "Your final copy is sealed and available below."
+                        : `${brand.name} will counter-sign and send your final copy.`}
+                  </Banner>
+                  {billing?.requires_checkout ? (
+                    <section className="card stack">
+                      <h2>One more step: set up your recurring billing</h2>
+                      <p>
+                        Your proposal is already accepted. One-time items are
+                        invoiced separately.
+                      </p>
+                      {preview && (
+                        <Button disabled>Set up billing (preview)</Button>
+                      )}
+                      {billing.checkout.map((s, i) => (
+                        <a className="btn primary" key={s.url} href={s.url}>
+                          Set up billing{" "}
+                          {billing.checkout.length > 1 ? i + 1 : ""}
+                        </a>
+                      ))}
+                      <small>
+                        The same link is in your email, so you can finish later.
+                      </small>
+                    </section>
+                  ) : Array.isArray(billing?.added_existing) &&
+                    billing.added_existing.length > 0 ? (
+                    <Banner
+                      tone="success"
+                      title="Added to your existing billing"
+                    >
+                      New monthly total:{" "}
+                      {money(
+                        billing.added_existing.reduce(
+                          (s: number, v: any) => s + v.monthly_total,
+                          0,
+                        ),
+                        p.currency,
+                      )}
+                      {hasYearly && (
+                        <>
+                          . New yearly total:{" "}
+                          {money(
+                            billing.added_existing.reduce(
+                              (sum, entry) => sum + entry.yearly_total,
+                              0,
+                            ),
+                            p.currency,
+                          )}
+                        </>
+                      )}
+                      . No additional billing setup is needed.
+                    </Banner>
+                  ) : (
+                    <p className="muted">
+                      {billing?.status === "needs_review"
+                        ? "We will review billing separately. Your signature is safe."
+                        : billing?.status === "succeeded"
+                          ? "Billing is arranged. One-time items are invoiced separately."
+                          : "Your signed copy and billing details are being prepared."}
                     </p>
-                    <div className="actions">
+                  )}
+                  <div className="card stack">
+                    <h2>Your signed copies</h2>
+                    {files.length ? (
+                      files.map((f) => (
+                        <Button
+                          key={f.id}
+                          icon="download"
+                          onClick={() => download(f.id)}
+                        >
+                          {f.stage === "company"
+                            ? "Download the final copy"
+                            : "Download your signed copy"}
+                        </Button>
+                      ))
+                    ) : (
+                      <p role="status">
+                        Your signed copy is being sealed. It will also arrive by
+                        email.
+                      </p>
+                    )}
+                    {latest && (
                       <Button
-                        variant="danger"
                         onClick={async () => {
                           try {
-                            await submit("decline", {});
-                            setEnded(true);
-                          } catch (e) {
-                            setError(String(e));
+                            const result = await api<{ valid: boolean }>(
+                              `/api/public/${token}/files/${latest.id}/verify`,
+                              { headers },
+                            );
+                            setVerify(
+                              result.valid
+                                ? "Matches — this file is unchanged since sealing."
+                                : "Verification failed — please contact us.",
+                            );
+                          } catch {
+                            setVerify(
+                              "Unable to verify right now. Please try again.",
+                            );
                           }
                         }}
                       >
-                        Decline proposal
+                        Verify this document
                       </Button>
-                      <Button onClick={() => setDeclining(false)}>
-                        Keep reviewing
-                      </Button>
-                    </div>
-                  </section>
-                )}
-                {sticky && (
-                  <div className="client-bar" ref={bar}>
+                    )}
+                    {verify && <p role="status">{verify}</p>}
+                  </div>
+                  <ClientDocument proposal={p} frozen />
+                </>
+              ) : step === "sign" ? (
+                <>
+                  <div className="paper">
+                    <span className="eyebrow">What you are accepting</span>
+                    <h1>{p.title}</h1>
+                    <Quote
+                      lines={p.quote as Line[]}
+                      currency={p.currency}
+                      frozen
+                    />
                     <Totals
                       value={p.totals}
                       currency={p.currency}
                       showYearly={hasYearly}
                     />
-                    <div className="actions">
-                      <Button
-                        variant="primary"
-                        disabled={busy}
-                        note={busy ? "Saving your selection…" : undefined}
-                        onClick={() => setStep("sign")}
-                      >
-                        Accept &amp; sign
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setDeclining(true)}
-                      >
-                        Decline
-                      </Button>
-                    </div>
                   </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </main>
+                  {!stale && (
+                    <SignatureForm
+                      preview={preview}
+                      consentText={p.consent_text}
+                      name={p.recipient.name}
+                      email={p.recipient.email}
+                      revision={p.revision}
+                      reviewedHash={p.reviewed_hash}
+                      onSign={async (value) => {
+                        if (preview) return;
+                        try {
+                          setP(await submit("sign", value));
+                        } catch (e) {
+                          if (e instanceof ApiError && e.status === 409)
+                            setStale(true);
+                          throw e;
+                        }
+                      }}
+                    />
+                  )}
+                  <Button onClick={() => setStep("read")}>
+                    Back to proposal
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <ClientDocument
+                    proposal={p}
+                    frozen={stale}
+                    busy={busy}
+                    onToggle={toggle}
+                    showTotals={!sticky}
+                  />
+                  {declining && (
+                    <section className="card">
+                      <h2>Decline this proposal?</h2>
+                      <p>
+                        This closes the proposal. Contact us if you need a
+                        revised scope instead.
+                      </p>
+                      <div className="actions">
+                        <Button
+                          variant="danger"
+                          onClick={async () => {
+                            try {
+                              await submit("decline", {});
+                              setEnded(true);
+                            } catch (e) {
+                              setError(String(e));
+                            }
+                          }}
+                        >
+                          Decline proposal
+                        </Button>
+                        <Button onClick={() => setDeclining(false)}>
+                          Keep reviewing
+                        </Button>
+                      </div>
+                    </section>
+                  )}
+                  {sticky && (
+                    <div className="client-bar" ref={bar}>
+                      <Totals
+                        value={p.totals}
+                        currency={p.currency}
+                        showYearly={hasYearly}
+                      />
+                      <div className="actions">
+                        <Button
+                          variant="primary"
+                          disabled={busy}
+                          note={busy ? "Saving your selection…" : undefined}
+                          onClick={() => setStep("sign")}
+                        >
+                          Accept &amp; sign
+                        </Button>
+                        <Button
+                          disabled={preview}
+                          variant="ghost"
+                          onClick={() => setDeclining(true)}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
