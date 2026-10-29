@@ -27,7 +27,7 @@
 
 “Live verification” here means actual **test-mode/sandbox/hosted** services, not permission to use production billing credentials.
 
-1. **Stripe test catalogue:** sync passed on 29 October (41 imported), but the acceptance gate stopped because `storage-30gb-60` is missing. `hosted-standard-100` and `oiot-monthly-175` are present. Owner must copy the missing price; the platform must not create it. Then rerun the catalogue gate. Actual pagination and legacy exclusion still need test data (this response was one page and no imported prices carried `metadata[legacy]=true`). Compare names, amounts and intervals with the owner's catalogue.
+1. **Stripe test catalogue:** sync passed on 29 October (41 imported), but the initial acceptance gate incorrectly required the retired illustrative key `storage-30gb-60`. The owner clarified that `hosting-upgrade-60` is its replacement and is present in test mode. `hosted-standard-100` and `oiot-monthly-175` are present. No catalogue copy is needed. Rerun the corrected catalogue gate. Actual pagination and legacy exclusion still need test data (this response was one page and no imported prices carried `metadata[legacy]=true`). Compare names, amounts and intervals with the owner's catalogue.
 2. **D2:** existing test customer with active monthly subscription and working card. Sign a proposal; confirm original items unchanged, one new item per selected line, no proration, correct customer company and plan metadata, unchanged existing subscription description/collection method, no Checkout link, and accurate new recurring totals/email. Repeat for yearly items, mixed intervals and retry/replay.
 3. **D3:** no card/no usable subscription/new customer. Confirm Checkout uses the same stored customer; complete it using Stripe test payment data; deliver the signed snapshot webhook and confirm no duplicate subscription on replay. Test abandoned/expired sessions and correction/retry behavior.
 4. **Scheduled subscriptions:** test clocks/payment failures/paid invoices, supplied 18/30 and legacy 35-payment terms, month ends, phase metadata, separate subscription, generic step-down key/amount, retry after failed payment, and `send_invoice` first-invoice finalize/send. Mock contracts cannot establish Stripe's acceptance of schedule phase updates.
@@ -136,7 +136,7 @@ The actual provider run started at **17:32:45 UTC**, after the merge, with `BILL
 | Read-only catalogue sync | Passed: `GET /v1/prices` returned HTTP 200; 41 recurring catalogue entries imported locally. One page exhausted the result. No live-mode objects returned. |
 | `hosted-standard-100` | Present, active: $100/month. |
 | `oiot-monthly-175` | Present, active: $175/month. |
-| `storage-30gb-60` | **Missing from the active catalogue. Acceptance gate stopped (exit 2).** This is the D2 addition key from the owner's review example. |
+| `storage-30gb-60` | Retired 15 October; illustrative example only. The initial gate incorrectly required it and stopped (exit 2). Use `hosting-upgrade-60`, already present; do not copy the retired price. |
 | Restricted-key permission errors | None on the catalogue read. Write/Checkout/schedule permissions remain untested. |
 | Legacy exclusion / pagination | Pending actual test data: no imported entries were flagged legacy and only one page was returned. Keys containing `legacy` are not by themselves the required metadata flag; confirm those test prices' metadata during the owner's catalogue copy. Mock tests cover these paths. |
 | D2 existing working-card customer | Not run: stopped at the missing-catalogue gate. |
@@ -148,4 +148,9 @@ The actual provider run started at **17:32:45 UTC**, after the merge, with `BILL
 
 **Zero Stripe writes:** no customers, subscriptions, products, catalogue prices or webhook endpoints were created. The sanitized local result is `.data/stripe-review/catalogue-check.json` in the review checkout (ignored, no secret values). Work was performed in `mktfresh-proposals-review` to preserve unrelated untracked duplicate files in the original checkout.
 
-Next owner action: copy `storage-30gb-60` into Stripe test mode. On a separately requested continuation, rerun `BILLING_MODE=test node --import tsx scripts/verify-stripe-catalogue.ts <original-repository>/.env.local`, then proceed to the pending provider scenarios only if the catalogue gate passes. **Stopped as instructed; no provider writes or hosted setup followed the missing-key result.**
+Owner correction: use `hosting-upgrade-60`; no catalogue copying is required. The authorized continuation will rerun `BILLING_MODE=test node --import tsx scripts/verify-stripe-catalogue.ts <original-repository>/.env.local`, then proceed to the pending provider scenarios only if the catalogue gate passes. **Stopped as instructed; no provider writes or hosted setup followed the missing-key result.**
+
+
+## Current-key correction
+
+The owner confirmed that `storage-30gb-60` was retired on 15 October and used only as an illustrative CSV example. The catalogue gate and provider regression fixtures now use `hosting-upgrade-60`. The earlier missing-key stop was caused by this incorrect acceptance prerequisite, not a missing required catalogue price. After this correction merges, rerun the gate and continue the authorized test-mode billing scenarios.
