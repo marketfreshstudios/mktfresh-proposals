@@ -113,3 +113,27 @@ it("draft edits cannot change a sent proposal", async () => {
     service.edit(p.id, { revision: p.revision, title: "Tampered" }, staff),
   ).rejects.toThrow("Only drafts");
 });
+it("accepts same-origin posts that browsers send with a null or missing Origin, and nothing else", async () => {
+  const { sameOrigin } = await import("../src/lib/auth");
+  const url = "https://proposals.example.test/oauth/authorize";
+  const req = (headers: Record<string, string>) =>
+    new Request(url, { method: "POST", headers });
+  expect(sameOrigin(req({ origin: "https://proposals.example.test" }))).toBe(
+    true,
+  );
+  expect(
+    sameOrigin(req({ origin: "null", "sec-fetch-site": "same-origin" })),
+  ).toBe(true);
+  expect(sameOrigin(req({ "sec-fetch-site": "same-origin" }))).toBe(true);
+  expect(
+    sameOrigin(req({ origin: "null", "sec-fetch-site": "cross-site" })),
+  ).toBe(false);
+  expect(sameOrigin(req({ origin: "null" }))).toBe(false);
+  expect(sameOrigin(req({}))).toBe(false);
+  expect(sameOrigin(req({ origin: "https://evil.example" }))).toBe(false);
+  expect(
+    sameOrigin(
+      req({ origin: "https://evil.example", "sec-fetch-site": "same-origin" }),
+    ),
+  ).toBe(false);
+});

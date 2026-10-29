@@ -14,7 +14,9 @@ const config: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Referrer-Policy", value: "no-referrer" },
+          // same-origin: no referrer leaves the app, so proposal tokens in /p/ URLs never
+          // leak to other sites, but same-origin form posts keep a real Origin header.
+          { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],

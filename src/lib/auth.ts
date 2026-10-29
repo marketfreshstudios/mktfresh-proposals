@@ -33,18 +33,23 @@ export function cookie(request: Request, name: string) {
 }
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  return (
-    !!origin &&
-    [new URL(request.url).origin, process.env.APP_URL, process.env.OAUTH_ISSUER]
-      .filter(Boolean)
-      .some((value) => {
-        try {
-          return new URL(value!).origin === origin;
-        } catch {
-          return false;
-        }
-      })
-  );
+  // Browsers send "Origin: null" (or omit it) for some same-origin form posts,
+  // e.g. under a strict referrer policy. Fetch Metadata is the reliable signal then.
+  if (!origin || origin === "null")
+    return request.headers.get("sec-fetch-site") === "same-origin";
+  return [
+    new URL(request.url).origin,
+    process.env.APP_URL,
+    process.env.OAUTH_ISSUER,
+  ]
+    .filter(Boolean)
+    .some((value) => {
+      try {
+        return new URL(value!).origin === origin;
+      } catch {
+        return false;
+      }
+    });
 }
 export async function staff(request: Request) {
   const authorization = request.headers.get("authorization");
