@@ -62,6 +62,10 @@ async function handler(
         return Response.redirect(await s.authorize(params, actor), 303);
       }
       const csrf = randomBytes(32).toString("hex");
+      // The consent form posts to this page, which then redirects to the client's
+      // registered callback. CSP form-action also governs that redirect, so allow
+      // exactly the validated callback origin, never a wildcard.
+      const callbackOrigin = new URL(params.redirect_uri).origin;
       const hidden = Object.entries({ ...params, csrf })
         .map(
           ([k, v]) =>
@@ -74,8 +78,7 @@ async function handler(
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-store",
-            "Content-Security-Policy":
-              "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+            "Content-Security-Policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${callbackOrigin}; frame-ancestors 'none'`,
             "Set-Cookie": `oauth_csrf=${csrf}; HttpOnly; SameSite=Lax; Path=/oauth; Max-Age=600${s.issuer.startsWith("https:") ? "; Secure" : ""}`,
           },
         },
