@@ -62,3 +62,24 @@ it("round-trips playbook entered lines without calculating prices", async () => 
     decodePlaybook(Buffer.from(JSON.stringify(payload)).toString("base64url")),
   ).toEqual(payload);
 });
+it("new family identifiers are valid UUIDs usable by quote lines", async () => {
+  const api = {
+    get: vi.fn().mockResolvedValue({ data: [], has_more: false }),
+    post: vi
+      .fn()
+      .mockResolvedValue({
+        id: "prod_family",
+        name: "Custom Retainer",
+        active: true,
+      }),
+  } as unknown as StripeTransport;
+  const result = await createCustomFamily(
+    new MemoryRepository(),
+    api,
+    "Custom Retainer",
+    "unique-request",
+  );
+  expect(result.id).toMatch(
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-8[a-f0-9]{3}-[a-f0-9]{12}$/,
+  );
+});

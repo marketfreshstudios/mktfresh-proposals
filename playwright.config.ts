@@ -11,6 +11,7 @@ export default defineConfig({
     timeout: 120000,
     env: {
       APP_MODE: "local",
+      BILLING_MODE: "mock",
       OAUTH_ISSUER: "http://127.0.0.1:3100",
       DATA_DIR: ".data/e2e",
       DEV_STAFF_TOKEN: "e2e-staff-secret-only",

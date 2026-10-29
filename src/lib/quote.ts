@@ -1,5 +1,5 @@
 import { LineSchema, type Item, type Proposal } from "./model";
-import { renderBlocks, variables } from "./content";
+import { renderBlocks, variables } from "./presentation";
 
 /** One shared readiness result for the editor, send endpoint and MCP. */
 export function readiness(

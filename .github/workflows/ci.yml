@@ -1,4 +1,4 @@
-name: Phase 1 validation
+name: Proposal system validation
 on:
   push:
   pull_request:
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: phase1-test-evidence
+          name: proposal-system-evidence
           path: |
             test-results/
             .data/evidence/

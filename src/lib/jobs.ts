@@ -1,3 +1,4 @@
+import { emailHtml } from "./branding";
 import { StripeProvider } from "./providers/stripe";
 import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
@@ -11,6 +12,7 @@ import {
   type Audit,
   type Job,
   type Proposal,
+  type Client,
   type Signer,
   type Version,
 } from "./model";
@@ -22,6 +24,7 @@ export interface Mailer {
       to: string;
       subject: string;
       text: string;
+      html?: string;
       attachments?: { filename: string; content: string }[];
     },
     key: string,
@@ -40,6 +43,7 @@ export class ResendMailer implements Mailer {
       to: string;
       subject: string;
       text: string;
+      html?: string;
       attachments?: { filename: string; content: string }[];
     },
     key: string,
@@ -152,6 +156,7 @@ export class Worker {
           to: String(payload.to),
           subject: String(payload.subject),
           text: String(payload.text),
+          html: emailHtml(p, String(payload.text)),
           ...(attachments ? { attachments } : {}),
         },
         j.id,
@@ -170,6 +175,16 @@ export class Worker {
       for (const provider of ["qbo", "stripe"] as const) {
         const fresh = (await this.repo.get(p.id))!,
           old = fresh.billing_links.find((l) => l.provider === provider);
+        const currentClient = (
+          await this.repo.entities<Client>("clients")
+        ).find((c) => c.id === fresh.client.id);
+        // Only reviewed provider mappings may change after signing, never contract identity/content.
+        if (currentClient)
+          fresh.client = {
+            ...fresh.client,
+            stripe_customer_id: currentClient.stripe_customer_id,
+            qbo_customer_id: currentClient.qbo_customer_id,
+          };
         const link = await bill(fresh, provider, this.providers[provider]);
         await mutate(this.repo, p.id, (p) => {
           if (
@@ -182,6 +197,7 @@ export class Worker {
             }[];
             const added = (link.metadata?.added_existing ?? []) as {
               monthly_total: number;
+              yearly_total?: number;
             }[];
             if (checkout.length)
               queue(p, "email", "billing-setup", {
@@ -195,6 +211,9 @@ export class Worker {
                 subject: `Billing updated: ${p.title}`,
                 text: `Your signed services have been added to your billing. New monthly total: ${money(
                   added.reduce((sum, s) => sum + s.monthly_total, 0),
+                  p.currency,
+                )}. New yearly total: ${money(
+                  added.reduce((sum, s) => sum + (s.yearly_total ?? 0), 0),
                   p.currency,
                 )}.`,
               });
@@ -239,6 +258,15 @@ export class Worker {
         j.payload.signers as Signer[],
         j.payload.events as Audit[],
         p.currency,
+        {
+          settings: p.workspace_settings,
+          logo: p.workspace_settings?.logo
+            ? "data:image/png;base64," +
+              Buffer.from(
+                await this.storage.get(p.workspace_settings.logo),
+              ).toString("base64")
+            : undefined,
+        },
       );
       const bodyPath = `${p.id}/${rendered.bodyHash}.pdf`,
         hash = sha256(rendered.pdf),

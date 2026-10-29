@@ -241,6 +241,7 @@ export class ProposalService {
         check(l.optional || l.selected, "Required items must be selected");
       }
       const now = this.clock().toISOString();
+      p.ai_unreviewed = false;
       p.sent_at = now;
       p.token = randomBytes(32).toString("base64url");
       p.status = "sent";
@@ -301,7 +302,12 @@ export class ProposalService {
   async toggle(
     token: string,
     password: string,
-    input: { revision: number; item_id: string; selected: boolean },
+    input: {
+      revision: number;
+      reviewed_hash?: string;
+      item_id: string;
+      selected: boolean;
+    },
     actor: Actor,
   ) {
     const p = await this.byToken(token, password);
@@ -309,7 +315,13 @@ export class ProposalService {
       publicAccess(p, password, this.clock());
       check(p.token === token, "Link superseded", 410);
       check(["sent", "viewed"].includes(p.status), "Quote is frozen", 409);
-      check(p.revision === input.revision, "Quote changed; reload", 409);
+      check(
+        input.reviewed_hash
+          ? p.versions.at(-1)?.content_hash === input.reviewed_hash
+          : p.revision === input.revision,
+        "Quote changed; reload",
+        409,
+      );
       const l = p.quote.find((x) => x.id === input.item_id);
       check(l?.optional, "Only optional items can be toggled");
       l.selected = input.selected;
@@ -358,7 +370,9 @@ export class ProposalService {
         check(access.token === p.token, "Link superseded", 410);
       }
       check(
-        p.revision === input.revision,
+        input.reviewed_hash
+          ? p.versions.at(-1)?.content_hash === input.reviewed_hash
+          : p.revision === input.revision,
         "Proposal changed; reload before signing",
         409,
       );
@@ -394,7 +408,12 @@ export class ProposalService {
         p.completed_at = now;
         p.status = "completed";
       }
-      const { revision: _, consent: __, ...signature } = input;
+      const {
+        revision: _,
+        consent: __,
+        reviewed_hash: ___,
+        ...signature
+      } = input;
       p.signers.push({
         ...signature,
         ...actor,
@@ -503,8 +522,21 @@ export function publicResult(p: Proposal) {
     title: p.title,
     status: p.status,
     revision: p.revision,
+    reviewed_hash: v.content_hash,
     valid_until: p.valid_until,
     currency: p.currency,
+    recipient: {
+      name: p.client.first_name + " " + p.client.last_name,
+      email: p.client.email,
+      company: p.client.company,
+    },
+    signers: p.signers.map((s) => ({
+      role: s.role,
+      name: s.name,
+      signed_at: s.signed_at,
+    })),
+    content: v.content,
+    variables: v.variables_resolved,
     html: renderBlocks(v.content, v.quote, v.variables_resolved, p.currency),
     quote: v.quote
       .map(readLine)
@@ -518,6 +550,9 @@ export function publicResult(p: Proposal) {
           optional,
           selected,
           interval,
+          min_term_months,
+          schedule,
+          group,
         }) => ({
           id,
           name,
@@ -527,6 +562,9 @@ export function publicResult(p: Proposal) {
           optional,
           selected,
           interval,
+          min_term_months,
+          schedule,
+          group,
         }),
       ),
     totals: totals(v.quote),
@@ -552,7 +590,15 @@ export function publicResult(p: Proposal) {
             checkout: ((l.metadata?.checkout ?? []) as { url: string }[]).map(
               (s) => ({ url: s.url }),
             ),
-            added_existing: l.metadata?.added_existing ?? [],
+            added_existing: (
+              (l.metadata?.added_existing ?? []) as {
+                monthly_total: number;
+                yearly_total?: number;
+              }[]
+            ).map((s) => ({
+              monthly_total: s.monthly_total,
+              yearly_total: s.yearly_total ?? 0,
+            })),
           }))
       : [],
     consent_text: p.workspace_settings?.consent_text ?? CONSENT,

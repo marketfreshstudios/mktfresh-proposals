@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { PDFDocument } from "pdf-lib";
-test("full headless flow through dev signing harness, both PDFs, billing, download, verification", async ({
+test("full headless flow through the client interface, both PDFs, billing, download, verification", async ({
   page,
   request,
 }) => {
@@ -136,20 +136,34 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
     lines,
   });
   expect(p.ai_unreviewed).toBe(true);
-  lines[0].amount += 100;
-  let r = await request.patch(`/api/proposals/${p.id}`, {
-    headers,
-    data: { revision: p.revision, quote: lines },
-  });
-  expect(r.ok(), await r.text()).toBe(true);
+  await page.context().addCookies([
+    {
+      name: "proposal_session",
+      value: "e2e-staff-secret-only",
+      url: "http://127.0.0.1:3100",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
+  await page.goto(`/proposals/${p.id}/edit`);
+  await page.getByLabel("Amount (USD)", { exact: true }).first().fill("2751");
+  await expect(
+    page.getByText("All changes saved", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Continue to send" }).click();
+  await page
+    .getByRole("button", { name: "Send proposal", exact: true })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/proposals/${p.id}$`));
+  let r = await request.get(`/api/proposals/${p.id}`, { headers });
   p = await r.json();
-  r = await request.post(`/api/proposals/${p.id}/send`, { headers });
-  p = await r.json();
+  expect(p.quote[0].amount).toBe(275100);
   expect(p.token).toHaveLength(43);
   let publicState = await (await request.get(`/api/public/${p.token}`)).json();
   r = await request.post(`/api/public/${p.token}/quote`, {
     data: {
       revision: publicState.revision,
+      reviewed_hash: publicState.reviewed_hash,
       item_id: optionalId,
       selected: false,
     },
@@ -161,11 +175,23 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
   await expect(
     page.getByRole("heading", { name: "Website partnership" }),
   ).toBeVisible();
-  await page.getByLabel("Name", { exact: true }).fill("Jane Doe");
-  await page.getByLabel("Email", { exact: true }).fill("jane@example.test");
+  await page.getByRole("button", { name: "Accept & sign" }).click();
+  await page.getByLabel("Full name", { exact: true }).fill("Jane Doe");
+  await page.getByLabel("Your signature", { exact: true }).fill("Jane Doe");
+  await page.getByLabel("Email address").fill("jane@example.test");
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Sign", exact: true }).click();
-  await expect(page.locator("#result")).toContainText("signed_by_client");
+  await page.getByRole("button", { name: "Sign and accept" }).click();
+  await expect(
+    page.getByText("Your proposal is signed", { exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(async () => {
+      const result = await (
+        await request.get(`/api/proposals/${p.id}`, { headers })
+      ).json();
+      return result.files.filter((f: any) => f.kind === "sealed").length;
+    })
+    .toBe(1);
   r = await request.post(`/api/proposals/${p.id}/jobs`, { headers });
   expect(r.ok(), await r.text()).toBe(true);
   p = await (await request.get(`/api/proposals/${p.id}`, { headers })).json();
@@ -180,6 +206,7 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
     headers,
     data: {
       revision: p.revision,
+      reviewed_hash: p.versions.at(-1).content_hash,
       name: "Jonathan",
       email: "staff@example.test",
       title: "Owner",
@@ -190,6 +217,16 @@ test("full headless flow through dev signing harness, both PDFs, billing, downlo
   });
   expect(r.ok(), await r.text()).toBe(true);
   await request.post(`/api/proposals/${p.id}/jobs`, { headers });
+  await expect
+    .poll(async () => {
+      const result = await (
+        await request.get(`/api/proposals/${p.id}`, { headers })
+      ).json();
+      return result.files.some(
+        (f: any) => f.kind === "sealed" && f.stage === "company",
+      );
+    })
+    .toBe(true);
   p = await (await request.get(`/api/proposals/${p.id}`, { headers })).json();
   expect(p.status).toBe("completed");
   const file = p.files.find(

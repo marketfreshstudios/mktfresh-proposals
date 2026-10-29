@@ -319,3 +319,75 @@ it("rejects forged/stale/live webhook payloads and queues each verified receipt 
     (await repo.get(p.id))!.jobs.filter((j) => j.kind === "stripe_webhook"),
   ).toHaveLength(1);
 });
+it("scheduled plans preserve the phase anchor, count paid invoices and explicitly send the first invoice", async () => {
+  const { repo, draft } = await setup();
+  const settings = (await repo.entities<any>("workspace_settings"))[0];
+  await repo.put("workspace_settings", {
+    ...settings,
+    collection_method: "send_invoice",
+  });
+  const line = LineSchema.parse({
+    ...draft.quote[1],
+    schedule: {
+      after_paid_invoices: 3,
+      then: { amount: 2500, lookup_key: "next-plan" },
+    },
+    plan_terms: { term_months: 18, payoff_months: 3 },
+  });
+  const base = transport(false);
+  const start = Date.UTC(2026, 0, 31) / 1000,
+    end = Date.UTC(2026, 1, 28) / 1000;
+  const sub = {
+    id: "sub_own",
+    customer: "cus_test",
+    schedule: null,
+    latest_invoice: "in_first",
+    current_period_start: start,
+    current_period_end: end,
+    items: { data: [{ price: { id: "price_initial" }, quantity: 1 }] },
+  };
+  const api: StripeTransport = {
+    async get<T>(path: string, params: Record<string, string>) {
+      if (path === "/v1/invoices")
+        return {
+          data: [{ id: "in_first", status: "paid", amount_paid: 2500 }],
+          has_more: false,
+        } as T;
+      return base.api.get<T>(path, params);
+    },
+    async post<T>(path: string, params: Record<string, unknown>, key: string) {
+      await base.api.post(path, params, key);
+      return (
+        path === "/v1/subscriptions"
+          ? sub
+          : path === "/v1/subscription_schedules"
+            ? { id: "sched_own", current_phase: { start_date: start } }
+            : { id: "ok" }
+      ) as T;
+    },
+  };
+  await new StripeProvider(api, repo).finishSetup(
+    "cus_test",
+    [line],
+    "pm_test",
+    "setup",
+    { currency: "usd", proposal_id: draft.id, proposal_title: draft.title },
+  );
+  expect(
+    base.calls.find((c) => c.path === "/v1/subscriptions")?.params,
+  ).toMatchObject({
+    collection_method: "send_invoice",
+    description: draft.title,
+    metadata: { term_months: "18", payoff_months: "3" },
+  });
+  expect(base.calls.map((c) => c.path)).toContain(
+    "/v1/invoices/in_first/finalize",
+  );
+  expect(base.calls.map((c) => c.path)).toContain("/v1/invoices/in_first/send");
+  const phases = base.calls.find(
+    (c) => c.path === "/v1/subscription_schedules/sched_own",
+  )!.params.phases;
+  expect(phases[0].start_date).toBe(start);
+  expect(phases[0].end_date).toBe(Date.UTC(2026, 3, 30) / 1000);
+  expect(phases[1].metadata.plan).toBe("next-plan");
+});

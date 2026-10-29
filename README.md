@@ -1,6 +1,6 @@
 # MarketFresh proposal system
 
-Phase 1 backend for proposals, required countersignatures, sealed PDF evidence, retryable integrations, and historical Proposify imports. The product UI is intentionally deferred to the separate wireframes. The original brief is in [AGENTS.md](AGENTS.md); tradeoffs and source discrepancies are in [DECISIONS.md](DECISIONS.md).
+Phase 2 proposal workspace with staff authoring, client signing, required countersignatures, sealed PDF evidence, test-only billing adapters, OAuth MCP drafting and historical imports. STOP 1 deployment and verification instructions are in [HANDOFF_PHASE2.md](HANDOFF_PHASE2.md). The original brief is in [AGENTS.md](AGENTS.md); tradeoffs and source discrepancies are in [DECISIONS.md](DECISIONS.md).
 
 ## Local development
 
@@ -26,7 +26,7 @@ npm run build
 npm run test:e2e
 ```
 
-Playwright starts an isolated server on port 3100, creates fixture records, signs in a real Chromium browser through the unstyled development harness, processes PDFs and mock billing, countersigns, downloads the final PDF, and verifies its hashes. Artifacts are in `.data/evidence/`. CI runs the same commands and uploads the evidence.
+Playwright starts an isolated server on port 3100, creates fixture records, signs in a real Chromium browser through the client interface after MCP drafting and staff editing, processes PDFs and mock billing, countersigns, downloads the final PDF, and verifies its hashes. Artifacts are in `.data/evidence/`. CI runs the same commands and uploads the evidence.
 
 ### Fresh local Supabase acceptance
 
@@ -53,7 +53,7 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | `GET, POST, PUT /api/templates`               | Block content and default quote line references                                       |
 | `GET, POST, PUT /api/content_library`         | Reusable named blocks                                                                 |
 | `GET /api/proposals`                          | Filters: `status`, `client`, `source`, `from`, `to`, `q`, `offset`, `limit` (max 100) |
-| `POST /api/proposals`                         | `{client_id,template_id,title,valid_until,currency?,password?,oiot?}`                 |
+| `POST /api/proposals`                         | `{client_id,template_id,title,valid_until,currency?,password?,playbook?}`                 |
 | `GET /api/proposals/:id`                      | Full internal aggregate: versions, signers, events, jobs, billing, files              |
 | `PATCH /api/proposals/:id`                    | Draft-only changes with `revision`; title/content/quote/expiry                        |
 | `POST /api/proposals/:id/send`                | Validate mappings/variables, write a version, rotate token, queue email               |
@@ -62,9 +62,9 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | `POST /api/proposals/:id/retry`               | Requeue failed/pending integrations and drain; successful billing stays idempotent    |
 | `GET /api/proposals/:id/files/:fileId`        | Authorized download, including imported PDFs                                          |
 | `GET /api/proposals/:id/files/:fileId/verify` | Verify sealed file, original body, and frozen version hashes                          |
-| `GET /p/:token`                               | Rendered current proposal; unstyled signing harness in local mode only                |
+| `GET /p/:token`                               | Branded client reading, optional quote, signing and signed-copy interface                |
 | `GET /api/public/:token`                      | Safe rendered proposal, optional quote lines, revision, consent, sealed-file IDs      |
-| `POST /api/public/:token/quote`               | `{revision,item_id,selected}`; optional items only                                    |
+| `POST /api/public/:token/quote`               | `{revision,reviewed_hash?,item_id,selected}`; optional items only                                    |
 | `POST /api/public/:token/sign`                | Client signature payload, email must match recipient                                  |
 | `POST /api/public/:token/decline`             | Close an unsigned proposal                                                            |
 | `GET /api/public/:token/files/:fileId`        | Download a sealed copy after token/password authorization                             |
@@ -93,15 +93,15 @@ For drawn signatures use `kind: "drawn"` and `image: "data:image/png;base64,..."
 
 - **Supabase:** real repository, Auth, private Storage, and full-text search adapter. Production requires a new dedicated project, migrations, two auth users, and their IDs in `staff_users`.
 - **Resend:** real HTTP adapter with deterministic idempotency keys; local mock unless configured. Production needs a verified sending domain and API key. It was not exercised against a live account.
-- **QuickBooks and Stripe:** interface-based mocks, as permitted by the brief when credentials are absent. Supabase/production mode uses explicit `needs_review` adapters; setting keys alone does not enable live billing. Customer matching, one-time/monthly routing, idempotency, retries, and OIOT buyout/schedule rules are implemented and tested. Production HTTP adapters and sandbox acceptance are an activation task; no real invoices, subscriptions, or payment requests were created.
-- **PDF:** Playwright/Chromium + pdf-lib. Configure a compatible Chromium binary or move the renderer behind the same interface to a worker before Vercel deployment. Vercel cron configuration is included; no deployment was made.
+- **QuickBooks and Stripe:** real HTTP adapters are implemented behind `BILLING_MODE=test`, with contract tests for D2, D3, custom services, scheduled step-downs and unsent invoices. Stripe refuses live keys; QuickBooks refuses production. Actual provider acceptance is pending owner-supplied test credentials.
+- **PDF:** Playwright locally, bundled `@sparticuz/chromium` on Vercel, with embedded fonts and workspace branding. Hosted size/runtime acceptance remains pending.
 - **Proposify:** CSV/PDF import is tested with fixtures. Browser exporter requires actual account selectors and a dedicated authenticated profile. See [import instructions](scripts/proposify-import/README.md).
 
 Do not treat a passing mocked billing flow as a live-provider acceptance test. Keep the `mock_` object identifiers visible in development.
 
 ## Phase 2 workspace and quote foundation
 
-Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including the sender, consent, client URL, and fallback QuickBooks item. Development mode always mocks email and billing.
+Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including the sender, consent, client URL, and fallback QuickBooks item. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
 
 New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalogue/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
 
@@ -125,3 +125,8 @@ node --env-file=.env.local --import tsx scripts/sync-stripe-catalog.ts
 ```
 
 Stripe sends snapshot webhooks (API version `2024-06-20`) to `/api/webhooks/stripe/00000000-0000-4000-8000-000000000001`. Subscribe to `checkout.session.completed`, `invoice.paid`, and `invoice.payment_failed`. Set `STRIPE_WEBHOOK_SECRET` from `stripe listen` for local testing. The endpoint verifies and queues receipts; the authenticated cron drains them. Do not substitute live credentials. Actual sandbox acceptance is pending owner setup.
+
+### Staff interface and review checks
+Open `/login` and use the local token form while developing; hosted sessions use Supabase email/password and an HttpOnly cookie. Start at `/`, then `/proposals/new`. All content edits autosave with a revision check. Public toggles/signatures additionally send `reviewed_hash` from the API: it binds acceptance to the actual reviewed document while allowing unrelated background job updates. A changed hash requires explicit reload/re-review.
+
+Successful send/sign/countersign responses schedule an immediate durable-job drain with Next `after`; the authenticated hourly cron remains recovery. Settings and provider IDs are staff-only. Historical PDF imports are read-only at `/archives/:id`. Screenshots are indexed in `docs/screenshots/README.md`.

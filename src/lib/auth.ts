@@ -28,10 +28,25 @@ export function cookie(request: Request, name: string) {
       ?.slice(name.length + 1) ?? ""
   );
 }
+export function sameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return (
+    !!origin &&
+    [new URL(request.url).origin, process.env.APP_URL, process.env.OAUTH_ISSUER]
+      .filter(Boolean)
+      .some((value) => {
+        try {
+          return new URL(value!).origin === origin;
+        } catch {
+          return false;
+        }
+      })
+  );
+}
 export async function staff(request: Request) {
   const authorization = request.headers.get("authorization");
   if (!authorization && !["GET", "HEAD"].includes(request.method)) {
-    if (request.headers.get("origin") !== new URL(request.url).origin)
+    if (!sameOrigin(request))
       throw new AppError(403, "Same-origin request required");
   }
   const token = (authorization ?? cookie(request, "proposal_session")).replace(

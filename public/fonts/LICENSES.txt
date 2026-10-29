@@ -1,0 +1,1 @@
+Public Sans, Source Serif 4 and IBM Plex Mono are licensed under the SIL Open Font License 1.1. Font files were supplied in design/system/fonts/. Full upstream copyright and license texts are included here in PublicSans-OFL.txt, SourceSerif4-OFL.txt and IBMPlexMono-OFL.txt.

@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { createClient } from "@supabase/supabase-js";
-import { SupabaseRepository } from "../src/lib/repository";
+import { MemoryRepository, SupabaseRepository } from "../src/lib/repository";
 import { SupabaseStorage } from "../src/lib/storage";
 import { ProposalService } from "../src/lib/service";
-import { ClientSchema } from "../src/lib/model";
+import { ClientSchema, type Item, type Template } from "../src/lib/model";
 import { Worker, MockMailer } from "../src/lib/jobs";
 import { MockBillingProvider } from "../src/lib/billing";
 import { seed, seedIds } from "../seed/marketfresh";
@@ -58,7 +58,31 @@ const actor = await authorize(
     headers: { Authorization: `Bearer ${session.data.session!.access_token}` },
   }),
 );
-await seed(repo, true);
+// Use fresh test catalogue rows; do not overwrite the owner's existing defaults.
+const fixture = new MemoryRepository();
+await seed(fixture, true);
+const ids = new Map<string, string>();
+for (const item of await fixture.entities<Item>("pricing_items")) {
+  const id = randomUUID();
+  ids.set(item.id, id);
+  await repo.put("pricing_items", {
+    ...item,
+    id,
+    sku: item.sku + "-" + suffix,
+  });
+}
+const template = (await fixture.entities<Template>("templates"))[0];
+template.id = randomUUID();
+template.default_quote = template.default_quote.map((l) => ({
+  ...l,
+  pricing_item_id: ids.get(l.pricing_item_id)!,
+}));
+await repo.put("templates", template);
+for (const settings of await fixture.entities<{ id: string }>(
+  "workspace_settings",
+))
+  if (!(await repo.entities("workspace_settings")).length)
+    await repo.put("workspace_settings", settings);
 const client = ClientSchema.parse({
   id: randomUUID(),
   company: "Supabase Acceptance " + suffix,
@@ -70,7 +94,7 @@ await repo.put("clients", client);
 let p = await service.create(
   {
     client_id: client.id,
-    template_id: seedIds.template,
+    template_id: template.id,
     title: "Fresh Supabase signing test",
     valid_until: new Date(Date.now() + 86400000).toISOString(),
   },

@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import type { WorkspaceSettings } from "./workspace";
 import { chromium } from "playwright";
 import { PDFDocument } from "pdf-lib";
 import { escape, htmlDocument, renderBlocks, sha256 } from "./content";
@@ -9,6 +12,7 @@ export async function sealedPdf(
   signers: Signer[],
   events: Audit[],
   currency: string,
+  brand?: { settings?: WorkspaceSettings; logo?: string },
 ) {
   const serverless = process.env.VERCEL
     ? (await import("@sparticuz/chromium")).default
@@ -26,6 +30,11 @@ export async function sealedPdf(
       : {}),
   });
   try {
+    const font = await readFile(
+      join(process.cwd(), "public/fonts/SourceSerif4-Variable.woff2"),
+    );
+    const style = `<style>@font-face{font-family:ProposalSerif;src:url(data:font/woff2;base64,${font.toString("base64")})}body{font-family:ProposalSerif,Georgia,serif}header{border-bottom:3px solid ${brand?.settings?.accent_colour ?? "#245547"};padding-bottom:16px;margin-bottom:24px}</style>`;
+    const heading = `<header>${brand?.logo ? `<img alt="" src="${brand.logo}" style="max-height:60px">` : ""}<h2>${escape(brand?.settings?.company_name ?? version.variables_resolved["company.name"] ?? "Proposal")}</h2></header>`;
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());
     const signatures = signers
@@ -36,14 +45,18 @@ export async function sealedPdf(
       .join("");
     await page.setContent(
       htmlDocument(
-        renderBlocks(
-          version.content,
-          version.quote,
-          version.variables_resolved,
-          currency,
-        ) + signatures,
+        style +
+          heading +
+          renderBlocks(
+            version.content,
+            version.quote,
+            version.variables_resolved,
+            currency,
+          ) +
+          signatures,
       ),
     );
+    await page.evaluate(() => document.fonts.ready);
     const body = await page.pdf({
       format: "Letter",
       printBackground: true,
@@ -65,7 +78,7 @@ export async function sealedPdf(
             `<section style="break-inside:avoid;border-top:1px solid #ddd;padding-top:8px"><p><strong>${escape(e.type)}</strong> · ${escape(e.created_at)}<br>Actor: ${escape(e.actor)}<br>IP: ${escape(e.ip || "Not available")}<br>User agent: ${escape(e.user_agent)}</p><pre>${escape(JSON.stringify(e.metadata))}</pre></section>`,
         )
         .join("");
-    await page.setContent(htmlDocument(audit));
+    await page.setContent(htmlDocument(style + heading + audit));
     const auditBytes = await page.pdf({
       format: "Letter",
       printBackground: true,

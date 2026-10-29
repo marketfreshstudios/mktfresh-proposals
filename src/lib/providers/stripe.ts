@@ -93,6 +93,8 @@ export class StripeProvider implements BillingProvider {
   private async item(line: Line, currency: string) {
     if (line.stripe_lookup_key) {
       const price = await resolveLookup(this.api, line.stripe_lookup_key);
+      if (price.currency && price.currency !== currency)
+        throw new NeedsReview("Catalogue currency differs from proposal");
       if (price.recurring?.interval !== line.interval)
         throw new NeedsReview(`${line.name}: catalogue interval changed`);
       if (
@@ -209,8 +211,12 @@ export class StripeProvider implements BillingProvider {
       cursor = page.data.at(-1)!.id;
     } while (true);
     const checkout: { id: string; url: string; line_ids: string[] }[] = [];
-    const added: { id: string; line_ids: string[]; monthly_total: number }[] =
-      [];
+    const added: {
+      id: string;
+      line_ids: string[];
+      monthly_total: number;
+      yearly_total: number;
+    }[] = [];
     const ordinary = lines.filter((l) => !l.schedule);
     // Mixed intervals are separate Checkout sessions to avoid interval conversion.
     for (const interval of ["month", "year"] as const) {
@@ -275,6 +281,9 @@ export class StripeProvider implements BillingProvider {
           id: existing.id,
           line_ids: group.map((l) => l.id),
           monthly_total: total,
+          yearly_total: current.items.data
+            .filter((i) => i.price.recurring.interval === "year")
+            .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0),
         });
       } else {
         const session = await this.api.post<{ id: string; url: string }>(
@@ -332,6 +341,7 @@ export class StripeProvider implements BillingProvider {
           id: subscriptions[0],
           line_ids: [line.id],
           monthly_total: line.interval === "month" ? line.amount * line.qty : 0,
+          yearly_total: line.interval === "year" ? line.amount * line.qty : 0,
         });
         continue;
       }
@@ -441,59 +451,66 @@ export class StripeProvider implements BillingProvider {
     } while (true);
     const progress = paidInvoiceProgress(line, paid);
     const next = await resolveLookup(this.api, line.schedule.then.lookup_key);
+    if (next.recurring?.interval !== line.interval)
+      throw new NeedsReview(
+        "Step-down billing interval differs from signed terms",
+      );
     if (next.unit_amount !== line.schedule.then.amount)
       throw new NeedsReview(
         "Scheduled step-down amount differs from catalogue",
       );
     const schedule = sub.schedule
-      ? { id: sub.schedule }
-      : await this.api.post<{ id: string }>(
+      ? await this.api.get<{
+          id: string;
+          current_phase?: { start_date: number };
+        }>(`/v1/subscription_schedules/${sub.schedule}`, {})
+      : await this.api.post<{
+          id: string;
+          current_phase?: { start_date: number };
+        }>(
           "/v1/subscription_schedules",
           { from_subscription: sub.id },
           key + ":schedule-create",
         );
-    // Recompute at invoice events using paid invoices, never derive terms from prices.
-    const phase = {
-      items: sub.items.data.map((i) => ({
-        price: i.price.id,
-        quantity: i.quantity,
-      })),
-      start_date: sub.current_period_start,
-      end_date: sub.current_period_end,
-      metadata: this.terms(line, proposal),
-      proration_behavior: "none",
-    };
-    const phases =
-      progress.remaining === 0
-        ? [
-            phase,
-            {
-              items: [{ price: next.id, quantity: line.qty }],
-              iterations: 1,
-              metadata: {
-                plan: line.schedule.then.lookup_key,
-                proposal_id: proposal,
-              },
-              proration_behavior: "none",
-            },
-          ]
-        : [
-            {
-              ...phase,
-              end_date: undefined,
-              iterations: Math.max(1, progress.remaining + 1),
-              metadata: this.terms(line, proposal),
-            },
-            {
-              items: [{ price: next.id, quantity: line.qty }],
-              iterations: 1,
-              metadata: {
-                plan: line.schedule.then.lookup_key,
-                proposal_id: proposal,
-              },
-              proration_behavior: "none",
-            },
-          ];
+    // Preserve the actual schedule phase anchor. A subscription billing period moves
+    // each month; replacing the phase start with it would rewrite an active phase.
+    const currentPaid = paid.some((i) => i.id === sub.latest_invoice);
+    const periods = Math.max(1, progress.remaining + (currentPaid ? 1 : 0));
+    const end = new Date(sub.current_period_start * 1000);
+    const day = end.getUTCDate();
+    end.setUTCDate(1);
+    end.setUTCMonth(
+      end.getUTCMonth() + periods * (line.interval === "year" ? 12 : 1),
+    );
+    const lastDay = new Date(
+      Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    end.setUTCDate(Math.min(day, lastDay));
+    const phases = [
+      {
+        items: sub.items.data.map((i) => ({
+          price: i.price.id,
+          quantity: i.quantity,
+        })),
+        start_date:
+          schedule.current_phase?.start_date ?? sub.current_period_start,
+        end_date:
+          progress.remaining === 0
+            ? sub.current_period_end
+            : Math.floor(end.getTime() / 1000),
+        metadata: this.terms(line, proposal),
+        proration_behavior: "none",
+      },
+      {
+        items: [{ price: next.id, quantity: line.qty }],
+        iterations: 1,
+        metadata: {
+          plan: line.schedule.then.lookup_key,
+          proposal_id: proposal,
+        },
+        proration_behavior: "none",
+      },
+    ];
     await this.api.post(
       `/v1/subscription_schedules/${schedule.id}`,
       { end_behavior: "release", proration_behavior: "none", phases },
