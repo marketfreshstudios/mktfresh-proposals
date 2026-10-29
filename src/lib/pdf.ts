@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { WorkspaceSettings } from "./workspace";
-import { chromium } from "playwright";
+import { chromium } from "playwright-core";
 import { PDFDocument } from "pdf-lib";
 import { escape, htmlDocument, renderBlocks, sha256 } from "./content";
 import type { Audit, Signer, Version } from "./model";

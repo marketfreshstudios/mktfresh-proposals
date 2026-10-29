@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
-  serverExternalPackages: ["playwright", "@sparticuz/chromium"],
-  outputFileTracingIncludes: { "/api/*": ["./public/fonts/*.woff2"] },
+  serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
+  outputFileTracingIncludes: {
+    "/api/**": [
+      "./public/fonts/*.woff2",
+      // External packages contain runtime-loaded files that static tracing misses.
+      "./node_modules/playwright-core/**/*",
+      "./node_modules/@sparticuz/chromium/**/*",
+    ],
+  },
   async headers() {
     return [
       {
