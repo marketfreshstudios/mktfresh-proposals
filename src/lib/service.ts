@@ -106,6 +106,7 @@ export class ProposalService {
       currency?: string;
       password?: string;
       playbook?: unknown;
+      document_versions?: Record<string, unknown>[];
       brief?: string;
       content?: Block[];
       quote?: Proposal["quote"];
@@ -194,7 +195,16 @@ export class ProposalService {
       if (payload.notes)
         p.content.unshift({ type: "paragraph", text: payload.notes });
       event(p, "created", actor, { playbook: payload }, now);
-    } else event(p, "created", actor, {}, now);
+    } else
+      event(
+        p,
+        "created",
+        actor,
+        actor.actor.startsWith("ai:")
+          ? { document_versions: input.document_versions ?? [] }
+          : {},
+        now,
+      );
     await this.repo.save(p, -1);
     return p;
   }

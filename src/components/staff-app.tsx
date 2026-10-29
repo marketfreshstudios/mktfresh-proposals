@@ -1,4 +1,6 @@
 "use client";
+import type { ReferenceDocument } from "../lib/documents";
+import { ReferenceDocuments, ReferenceStatus } from "./reference-documents";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   api,
@@ -65,13 +67,7 @@ type Data = {
   templates: Template[];
   library: { id: string; name: string; block: Block }[];
   families: { id: string; name: string; active: boolean }[];
-  documents: {
-    id: string;
-    name: string;
-    version: string;
-    format: string;
-    content: string;
-  }[];
+  documents: ReferenceDocument[];
   assistants: {
     id: string;
     name: string;
@@ -570,6 +566,7 @@ function Dashboard({ data }: { data: Data }) {
     ai = rows.filter((p) => p.ai_unreviewed);
   return (
     <>
+      <ReferenceStatus documents={data.documents} />
       <div className="metrics">
         {[
           [
@@ -2315,45 +2312,7 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
           <Button type="submit">Create in Stripe test mode</Button>
         </form>
       </section>
-      <section className="card stack">
-        <h2>Pricing reference for assistants</h2>
-        {data.documents.map((d) => (
-          <details key={d.id}>
-            <summary>
-              {d.name} · {d.version}
-            </summary>
-            <pre>{d.content}</pre>
-          </details>
-        ))}
-        <form
-          className="form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            void run(
-              () => post("/api/workspace_documents", Object.fromEntries(f)),
-              "Pricing reference saved",
-            );
-          }}
-        >
-          <Field label="Reference name">
-            <input name="name" required />
-          </Field>
-          <Field label="Version">
-            <input name="version" required />
-          </Field>
-          <Field label="Format">
-            <select name="format">
-              <option value="markdown">Markdown</option>
-              <option value="json">JSON</option>
-            </select>
-          </Field>
-          <Field label="Pricing reference content">
-            <textarea rows={8} name="content" required />
-          </Field>
-          <Button type="submit">Save reference</Button>
-        </form>
-      </section>
+      <ReferenceDocuments documents={data.documents} run={run} />
     </div>
   );
 }

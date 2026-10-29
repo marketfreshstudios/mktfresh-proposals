@@ -1,3 +1,9 @@
+import {
+  documents,
+  saveDocument,
+  refreshDocument,
+  refreshDueDocuments,
+} from "./documents";
 import { appOrigin } from "./links";
 import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { oauthServer } from "./oauth-runtime";
@@ -215,6 +221,7 @@ export async function handle(req: Request, path: string[]) {
       check(method === "GET" || method === "POST", "Method not allowed", 405);
       const results = [];
       for (const rt of await allRuntimes()) {
+        await refreshDueDocuments(rt.repo);
         await rt.service.tick();
         results.push(await rt.worker.drain());
       }
@@ -349,6 +356,14 @@ export async function handle(req: Request, path: string[]) {
       );
     }
 
+    if (path[0] === "workspace_documents") {
+      if (method === "GET") return json(await documents(rt.repo));
+      if (method === "POST" && path[2] === "refresh")
+        return json(await refreshDocument(rt.repo, uuid.parse(path[1])));
+      if (method === "POST" || method === "PUT")
+        return json(await saveDocument(rt.repo, await body(req)), 201);
+    }
+
     if (
       [
         "clients",
@@ -356,7 +371,6 @@ export async function handle(req: Request, path: string[]) {
         "templates",
         "content_library",
         "workspace_settings",
-        "workspace_documents",
         "custom_families",
       ].includes(path[0])
     ) {
@@ -413,17 +427,6 @@ export async function handle(req: Request, path: string[]) {
             !entity.logo || entity.logo.startsWith(rt.repo.workspaceId + "/"),
             "Logo must belong to this workspace",
           );
-        } else if (table === "workspace_documents") {
-          entity = z
-            .object({
-              id: uuid,
-              name: z.string().min(1).max(200),
-              version: z.string().min(1).max(100),
-              format: z.enum(["markdown", "json"]),
-              content: z.string().max(1000000),
-            })
-            .parse(raw);
-          if (entity.format === "json") JSON.parse(entity.content);
         } else if (table === "custom_families") {
           throw new AppError(
             405,

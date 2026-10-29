@@ -147,6 +147,7 @@ export const CounterSignatureSchema = z.object({
   authorization_text: z.string().max(1000).optional(),
 });
 export type Actor = {
+  connector_id?: string;
   staff_name?: string;
   staff_email?: string;
   staff_role?: "owner" | "member";

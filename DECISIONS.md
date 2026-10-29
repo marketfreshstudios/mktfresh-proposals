@@ -94,3 +94,11 @@ Native select arrows are replaced globally by the design system's Font Awesome S
 ## Catalogue legacy metadata (29 October 2026)
 
 Stripe price metadata `legacy` accepts `yes`, `true` and `1`, case-insensitively with surrounding whitespace ignored. Sync sets these entries to legacy/inactive, and lookup resolution rejects the same values before billing. Other values or an absent flag are not legacy. Superseded seed rows were deactivated as a workspace-specific data correction, not a rule that disables arbitrary items without lookup keys; Audit and Build stay active. Seed reruns preserve existing rows.
+
+## Linked pricing references (29 October 2026)
+
+References support pasted text and linked HTTPS sources. Successful fetched versions live in the existing append-only workspace event store; the workspace document points to the current good version. Credentials use the existing service-role-only provider credential table with workspace/document-bound AES-256-GCM. No new tables or hosted resources are needed. No fetched content is evaluated, imported or rendered as HTML.
+
+Fetches enforce a total 15-second deadline, a 1 MiB UTF-8 limit, public IPs only, DNS pinning, and at most three redirects on the same HTTPS origin. Compression is refused. A refresh generation condition prevents an older in-flight refresh from replacing a newer result. Failures preserve the last successful version. The hourly cron refreshes linked references once per UTC hour; explicit refresh always fetches.
+
+Document read receipts are private and scoped to the OAuth grant, not the connector's display name. Each unique document version returned by get_document is retained; create_proposal_draft snapshots those receipts on its first event. Listing metadata alone does not imply the document content was read. Pasted versions have no fetch timestamp; linked versions carry the successful fetch time and an extracted PLAYBOOK_VERSION label, falling back to the hash prefix.
