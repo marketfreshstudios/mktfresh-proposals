@@ -27,6 +27,9 @@ type Price = {
   product: StripeProduct;
   metadata: Record<string, string>;
 };
+function isLegacy(value: string | undefined) {
+  return ["yes", "true", "1"].includes(value?.trim().toLowerCase() ?? "");
+}
 export async function syncStripeCatalog(
   repo: Repository,
   api: StripeTransport,
@@ -51,7 +54,7 @@ export async function syncStripeCatalog(
       const old = existing.find(
         (i) => i.stripe_lookup_key === price.lookup_key,
       );
-      const legacy = price.metadata.legacy === "true";
+      const legacy = isLegacy(price.metadata.legacy);
       const item = ItemSchema.parse({
         ...old,
         id: old?.id ?? randomUUID(),
@@ -83,7 +86,7 @@ export async function resolveLookup(api: StripeTransport, key: string) {
   });
   check(page.data.length === 1, `Lookup key ${key} does not resolve uniquely`);
   const price = page.data[0];
-  check(price.metadata.legacy !== "true", `Legacy lookup key ${key}`);
+  check(!isLegacy(price.metadata.legacy), `Legacy lookup key ${key}`);
   check(price.product.active, "Catalogue product is inactive");
   return price;
 }

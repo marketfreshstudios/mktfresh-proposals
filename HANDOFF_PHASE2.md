@@ -258,3 +258,13 @@ Validation: 55 unit/database tests, five browser tests, typecheck, format, neutr
 ## Dropdown spacing follow-up (29 October 2026)
 
 Global select styling now covers fields, toolbars, paper and client surfaces with theme-aware 12px chevrons and 36px right padding. Refreshed affected desktop screenshots in both themes, including Send's From dropdown. Browser coverage checks visible selects across screen captures and verifies From hover, focus and disabled behavior. Validation: 55 unit tests, five browser tests, typecheck, formatting, neutrality and production build/renderer trace passed locally.
+
+## Catalogue sync correction (29 October 2026)
+
+Updated sync and billing lookup to recognize `legacy=yes/true/1` case-insensitively. Regression tests cover an already sellable row becoming legacy without changing its ID, rejection at lookup, and false/missing flags remaining sellable.
+
+Re-ran the corrected sync on app project `btvcyrixxswuedrnjbfh`, workspace `00000000-0000-4000-8000-000000000001`, at 21:20 UTC using only the repository's test-mode Stripe key and GET requests. All 41 existing synced lookup keys were present in the source. All 12 retired plans are now legacy/inactive; no Stripe objects were modified.
+
+The workspace actually contained 14 seeded items total, including Audit and Build: ten active superseded placeholders were deactivated and two already inactive placeholders retained. Verified final catalogue: 55 rows, 31 active, 12 legacy/inactive, 12 inactive placeholders; Audit and Build are the only active items without lookup keys. No proposal/version rows changed (both tables were empty before and after). Local before/after catalogue evidence is saved under `.data/catalogue-before.json` and `.data/catalogue-after-sync.json` (the latter precedes the separate placeholder cleanup).
+
+Validation: 69 unit tests, five browser tests, typecheck, formatting, neutrality and production build/renderer tracing passed locally.

@@ -90,3 +90,7 @@ The 29 October review supersedes the earlier instruction to update every touched
 ## Shared select chevrons (29 October 2026)
 
 Native select arrows are replaced globally by the design system's Font Awesome Solid chevron, rotated down at 12px. Image tokens mirror each theme's ink-muted and ink colors; white paper keeps the light variants. All controls reserve 36px on the right with the arrow inset 12px. Hover excludes disabled controls and existing focus styles remain intact.
+
+## Catalogue legacy metadata (29 October 2026)
+
+Stripe price metadata `legacy` accepts `yes`, `true` and `1`, case-insensitively with surrounding whitespace ignored. Sync sets these entries to legacy/inactive, and lookup resolution rejects the same values before billing. Other values or an absent flag are not legacy. Superseded seed rows were deactivated as a workspace-specific data correction, not a rule that disables arbitrary items without lookup keys; Audit and Build stay active. Seed reruns preserve existing rows.

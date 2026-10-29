@@ -81,3 +81,70 @@ it("new family identifiers are valid UUIDs usable by quote lines", async () => {
     /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-8[a-f0-9]{3}-[a-f0-9]{12}$/,
   );
 });
+
+it.each(["yes", "YES", "YeS", "true", "TRUE", "1", " yes "])(
+  "resync marks legacy=%s inactive and lookup refuses it",
+  async (legacy) => {
+    const repo = new MemoryRepository();
+    const price = {
+      id: "price_retired",
+      lookup_key: "retired-plan",
+      unit_amount: 7000,
+      nickname: null,
+      recurring: { interval: "month" },
+      product: { id: "prod", name: "Retired plan", active: true },
+      metadata: { legacy: "false" },
+    };
+    const api = {
+      get: vi
+        .fn()
+        .mockImplementation(async () => ({ data: [price], has_more: false })),
+      post: vi.fn(),
+    } as unknown as StripeTransport;
+    await syncStripeCatalog(repo, api);
+    const [before] = await repo.entities<Item>("pricing_items");
+    expect(before.active).toBe(true);
+    price.metadata.legacy = legacy;
+    await syncStripeCatalog(repo, api);
+    const items = await repo.entities<Item>("pricing_items");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      id: before.id,
+      legacy: true,
+      active: false,
+    });
+    await expect(resolveLookup(api, "retired-plan")).rejects.toThrow(
+      "Legacy lookup key",
+    );
+    expect(api.post).not.toHaveBeenCalled();
+  },
+);
+it.each([undefined, "", "false", "FALSE", "0", "no", "yesterday"])(
+  "keeps nonlegacy metadata %s sellable",
+  async (legacy) => {
+    const repo = new MemoryRepository();
+    const api = {
+      get: vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: "price_current",
+            lookup_key: "current-plan",
+            unit_amount: 10000,
+            nickname: null,
+            recurring: { interval: "month" },
+            product: { id: "prod", name: "Current plan", active: true },
+            metadata: legacy === undefined ? {} : { legacy },
+          },
+        ],
+        has_more: false,
+      }),
+      post: vi.fn(),
+    } as unknown as StripeTransport;
+    await syncStripeCatalog(repo, api);
+    expect((await repo.entities<Item>("pricing_items"))[0]).toMatchObject({
+      legacy: false,
+      active: true,
+    });
+    await expect(resolveLookup(api, "current-plan")).resolves.toBeDefined();
+  },
+);
