@@ -1,8 +1,8 @@
+import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
 import { proposalLink } from "./links";
 import { emailIdentity, staffRecipients } from "./email-identity";
-import { WorkspaceSettingsSchema } from "./workspace";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
@@ -143,16 +143,6 @@ export class ProposalService {
     const p: Proposal = {
       id: randomUUID(),
       workspace_id: this.repo.workspaceId,
-      workspace_settings: {
-        ...WorkspaceSettingsSchema.parse(structuredClone(settings)),
-        company_signatory: settings.company_signatory
-          ? {
-              ...settings.company_signatory,
-              image: null,
-              authorized_user_ids: [],
-            }
-          : null,
-      },
       revision: 0,
       client,
       template_id: template.id,
@@ -212,7 +202,15 @@ export class ProposalService {
         now,
       );
     await this.repo.save(p, -1);
-    return p;
+    return withDraftSettings(p, settings);
+  }
+  async forRead(p: Proposal) {
+    if (p.status !== "draft") return p;
+    const current = (
+      await this.repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0];
+    check(current, "Workspace settings required");
+    return withDraftSettings(p, current);
   }
   async edit(
     id: string,
@@ -226,9 +224,10 @@ export class ProposalService {
     },
     actor: Actor,
   ) {
-    return mutate(this.repo, id, (p) => {
+    const result = await mutate(this.repo, id, (p) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       check(p.status === "draft", "Only drafts can be edited", 409);
+      delete p.workspace_settings;
       if (input.title) p.title = input.title;
       if (input.brief !== undefined) p.brief = input.brief;
       p.ai_unreviewed = actor.actor.startsWith("ai:");
@@ -244,6 +243,7 @@ export class ProposalService {
       }
       event(p, "edited", actor);
     });
+    return this.forRead(result);
   }
   async send(
     id: string,
@@ -294,6 +294,7 @@ export class ProposalService {
         !p.ai_unreviewed || confirmAiReview,
         "Confirm review of AI changes before sending",
       );
+      p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);
       check(ready.ready, ready.errors.join("; "));
       check(p.quote.length > 0, "Quote required");

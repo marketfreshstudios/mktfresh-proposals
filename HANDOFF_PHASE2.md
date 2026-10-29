@@ -300,3 +300,11 @@ Catalogue pickers share alphabetical effective display-name ordering and hide in
 Absent QuickBooks item mappings no longer block send. Unconfigured or unmapped one-time billing becomes an Invoice manually needs-review item after signature, without calling QuickBooks. Mapped/connected invoice creation is unchanged.
 
 Validation: 108 unit/database tests, eight browser tests, typecheck, format, neutrality and production build/PDF trace passed locally. Coverage checks preview authentication and state preservation, no public requests/writes, optional totals, filled signature form remaining disabled (including Enter), preview width controls, catalogue filtering/order, display-name sync persistence and snapshotting, and manual invoice send/sign/billing behavior. Added 12 preview screenshots across reading/signing/billing, desktop/phone, light/dark, and refreshed affected staff screenshots.
+
+## Send-time settings snapshots (29 October 2026)
+
+Moved persisted workspace_settings capture from draft creation to SEND. Re-send refreshes the snapshot before readiness and variable resolution. New drafts store no settings snapshot; staff API reads/edits return a transient current-settings view, and editing a legacy draft removes its stale stored snapshot. Draft editor/send-screen readiness, the readiness endpoint and AI check_ready all use current workspace settings. Client preview already resolves current settings for drafts.
+
+Signed proposals keep their saved settings and versions when the workspace changes, and the existing resend guard prevents changing signed snapshots. Existing sent versions' resolved variables remain unchanged by later re-sends.
+
+Validation: 113 unit/database tests, eight browser tests, typecheck, format, neutrality and production build/PDF tracing passed locally. Added tests for absent persisted draft snapshots, current read/preview values, current staff/AI/API readiness (including a value becoming unresolved), send/re-send settings and variable updates, unchanged earlier versions, and signed snapshot preservation. No migration is required.

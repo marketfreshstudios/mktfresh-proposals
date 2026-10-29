@@ -118,3 +118,7 @@ Staff preview uses the actual /p/... client component with a preview query flag,
 Catalogue display_name is optional app-only JSON data; effective name falls back to the synced name. Sync preserves overrides. New catalogue-based lines snapshot the effective name; signed/existing proposal snapshots remain untouched. All catalogue pickers sort effective names alphabetically and hide inactive/legacy rows.
 
 One-time lines with absent QuickBooks mappings warn rather than block sending. Billing records Invoice manually with needs_review for an unconfigured QuickBooks adapter or missing line/workspace mapping. This is an explicit review item, with no QuickBooks customer/invoice write attempted. A configured, mapped provider keeps its normal invoice flow.
+
+## Workspace settings snapshot timing (29 October 2026)
+
+New drafts persist no workspace_settings snapshot. Staff reads/edits and draft readiness resolve a transient view from current workspace settings; old draft snapshots are ignored and removed on edit. The editor and send screen also use the current session settings for draft variables/readiness. SEND and re-send capture a fresh sanitized settings snapshot before readiness validation and variable resolution. Existing signature-image/authorization redaction is retained. Signed and closed records keep their stored snapshot and cannot be re-sent.
