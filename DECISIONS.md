@@ -60,3 +60,5 @@ Use authenticated Streamable HTTP with protected-resource metadata, authorizatio
 ## Phase 2 owner review corrections
 
 The 29 October review supersedes the earlier instruction to update every touched subscription's description/collection method: D2 changes only plan metadata and adds items. New subscriptions still use the proposal description and workspace collection method. Stripe reports require comma-separated plan_items, including expansion of existing multi metadata. Client totals use one group per state; absent yearly lines hide the yearly group, and a measured bar spacer prevents final content occlusion. JobState is a typed port of the supplied design-system component. Original checkout contained untracked duplicate “2” files; they were left untouched and development used a clean clone of the same repository.
+
+- Post-review actual Stripe acceptance stopped at the catalogue gate on 29 October 2026: 41 prices imported, but the owner-example D2 addition key `storage-30gb-60` was absent. No substitute key or catalogue price was created; all later Stripe scenarios and webhook forwarding remain pending per the owner's explicit stop rule.
