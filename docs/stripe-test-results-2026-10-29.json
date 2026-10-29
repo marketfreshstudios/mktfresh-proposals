@@ -1,0 +1,352 @@
+{
+  "run": "phase2-1793296829900",
+  "api_version": "2024-06-20",
+  "catalogue": {
+    "imported": 41,
+    "required_keys": [
+      "hosted-standard-100",
+      "hosting-upgrade-60",
+      "oiot-monthly-175"
+    ],
+    "result": "passed"
+  },
+  "scenarios": {
+    "d2": {
+      "at": "2026-10-29T18:01:32.491Z",
+      "key_check": "test prefix passed",
+      "billing_mode": "test",
+      "result": {
+        "status": "passed",
+        "customer": "cus_VX1hcn6P6Sb3CU",
+        "subscription": "sub_1UVxdhCyTuAwrO6j2KMhkswt",
+        "monthly_total": 16000,
+        "description_preserved": true,
+        "collection_preserved": true,
+        "original_item_preserved": true,
+        "retry_no_duplicate": true,
+        "plan_items": "hosted-standard-100,hosting-upgrade-60"
+      },
+      "errors": [],
+      "requests": [
+        {
+          "path": "/v1/customers",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/payment_methods/pm_card_visa/attach",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/payment_methods/pm_1UVxdfCyTuAwrO6j06oqSmOX",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscription_items",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxdhCyTuAwrO6j2KMhkswt",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxdhCyTuAwrO6j2KMhkswt",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxdhCyTuAwrO6j2KMhkswt",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/payment_methods/pm_1UVxdfCyTuAwrO6j06oqSmOX",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxdhCyTuAwrO6j2KMhkswt",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxdhCyTuAwrO6j2KMhkswt",
+          "method": "GET",
+          "status": 200
+        }
+      ]
+    },
+    "d3-verify": {
+      "at": "2026-10-29T18:02:52.204Z",
+      "key_check": "test prefix passed",
+      "billing_mode": "test",
+      "result": {
+        "status": "passed",
+        "session": "cs_test_a1PiBVmO3Tt9bqI3hUqLtz1SNMnmWl3J7XmlCD5nB2iUGxUJIL3Tygxj9j",
+        "customer": "cus_VX1hlufHgdHDx7",
+        "subscription": "sub_1UVxemCyTuAwrO6j9phL1NaT",
+        "payment_status": "paid",
+        "plan": "hosted-standard-100"
+      },
+      "errors": [],
+      "requests": [
+        {
+          "path": "/v1/checkout/sessions/cs_test_a1PiBVmO3Tt9bqI3hUqLtz1SNMnmWl3J7XmlCD5nB2iUGxUJIL3Tygxj9j",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxemCyTuAwrO6j9phL1NaT",
+          "method": "GET",
+          "status": 200
+        }
+      ]
+    },
+    "schedule": {
+      "at": "2026-10-29T18:02:44.205Z",
+      "key_check": "test prefix passed",
+      "billing_mode": "test",
+      "result": {
+        "status": "passed",
+        "subscription": "sub_1UVxerCyTuAwrO6j8eQ9rX8r",
+        "schedule": "sub_sched_1UVxewCyTuAwrO6j5JwrEvW7",
+        "phases": [
+          {
+            "start": 1793296957,
+            "end": 1872180157,
+            "metadata": {
+              "build_credit_mo": "7500",
+              "buyout_at_signing": "225000",
+              "full_price": "275000",
+              "kickoff_qbo": "50000",
+              "payoff_months": "30",
+              "plan": "oiot-monthly-175",
+              "proposal_id": "00000000-0000-4000-8000-000000000303",
+              "term_months": "18"
+            },
+            "items": [
+              {
+                "billing_thresholds": null,
+                "discounts": [],
+                "metadata": {},
+                "plan": "price_1UVx51CyTuAwrO6jxzPIWJ8Y",
+                "price": "price_1UVx51CyTuAwrO6jxzPIWJ8Y",
+                "quantity": 1,
+                "tax_rates": []
+              }
+            ]
+          },
+          {
+            "start": 1872180157,
+            "end": 1874772157,
+            "metadata": {
+              "plan": "hosted-standard-100",
+              "proposal_id": "00000000-0000-4000-8000-000000000303"
+            },
+            "items": [
+              {
+                "billing_thresholds": null,
+                "discounts": [],
+                "metadata": {},
+                "plan": "price_1UVx4vCyTuAwrO6jIg5Yuu20",
+                "price": "price_1UVx4vCyTuAwrO6jIg5Yuu20",
+                "quantity": 1,
+                "tax_rates": []
+              }
+            ]
+          }
+        ],
+        "end_behavior": "release",
+        "paid_invoice_progression": "pending: no time advancement"
+      },
+      "errors": [],
+      "requests": [
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/payment_methods/pm_1UVxdfCyTuAwrO6j06oqSmOX",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/invoices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscription_schedules",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscription_schedules/sub_sched_1UVxewCyTuAwrO6j5JwrEvW7",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxerCyTuAwrO6j8eQ9rX8r",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscription_schedules/sub_sched_1UVxewCyTuAwrO6j5JwrEvW7",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/prices",
+          "method": "GET",
+          "status": 200
+        }
+      ]
+    },
+    "custom": {
+      "at": "2026-10-29T18:03:02.126Z",
+      "key_check": "test prefix passed",
+      "billing_mode": "test",
+      "result": {
+        "status": "passed",
+        "subscription": "sub_1UVxfDCyTuAwrO6j4ILDBWhG",
+        "product": "prod_VX1iT46oNV26LR",
+        "family": "Custom Retainer",
+        "amount": 200000,
+        "interval": "month",
+        "lookup_key": null,
+        "plan": "custom:5096d0aa-9a44-4071-8b6f-7058aaf0757b"
+      },
+      "errors": [],
+      "requests": [
+        {
+          "path": "/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/products",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/customers/cus_VX1hcn6P6Sb3CU",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/products/prod_VX1iT46oNV26LR",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/v1/subscriptions/sub_1UVxfDCyTuAwrO6j4ILDBWhG",
+          "method": "GET",
+          "status": 200
+        }
+      ]
+    }
+  },
+  "webhook": {
+    "cli_version": "1.53.1",
+    "authentication": "repository test key; no live key available",
+    "result": "pending",
+    "permission_error": "Debugging Tools Write (stripecli_session_write) required for stripe listen",
+    "events_received": 0
+  },
+  "quickbooks": "pending: no sandbox credentials"
+}
