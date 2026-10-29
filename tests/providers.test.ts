@@ -15,7 +15,7 @@ import { type StripeTransport } from "../src/lib/catalog";
 import { type Line, LineSchema } from "../src/lib/model";
 import { setup, staff, signature, clientActor } from "./helpers";
 import { bill } from "../src/lib/billing";
-function transport(existing = false) {
+function transport(existing = false, multi = false) {
   const calls: { path: string; params: any; key: string }[] = [];
   const sub = {
     id: "sub_existing",
@@ -27,7 +27,11 @@ function transport(existing = false) {
     latest_invoice: null,
     current_period_start: 100,
     current_period_end: 200,
-    metadata: { plan: "old-plan" },
+    description: "Original description",
+    collection_method: "send_invoice",
+    metadata: multi
+      ? { plan: "multi", plan_items: "hosted-standard-100,storage-30gb-60" }
+      : { plan: "old-plan" },
     items: {
       data: [
         {
@@ -36,7 +40,7 @@ function transport(existing = false) {
           price: {
             id: "price_old",
             unit_amount: 10000,
-            lookup_key: "old-plan",
+            lookup_key: multi ? null : "old-plan",
             recurring: { interval: "month" },
             currency: "usd",
           },
@@ -90,7 +94,10 @@ function transport(existing = false) {
           card: { exp_year: 2099, exp_month: 1 },
         };
       else if (path === "/v1/subscriptions")
-        result = { data: existing ? [sub] : [], has_more: false };
+        result = {
+          data: existing ? [structuredClone(sub)] : [],
+          has_more: false,
+        };
       else if (path === "/v1/subscriptions/sub_existing") result = sub;
       else throw new Error("Unexpected GET " + path);
       return result as T;
@@ -159,9 +166,17 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
         proration_behavior: "none",
         subscription: "sub_existing",
       });
-      expect(
-        calls.find((c) => c.path === "/v1/subscriptions/sub_existing")?.params,
-      ).not.toHaveProperty("items");
+      const update = calls.find(
+        (c) => c.path === "/v1/subscriptions/sub_existing",
+      )!.params;
+      expect(Object.keys(update)).toEqual(["metadata"]);
+      expect(Object.keys(update.metadata).sort()).toEqual([
+        "plan",
+        "plan_items",
+      ]);
+      expect(update).not.toHaveProperty("description");
+      expect(update).not.toHaveProperty("collection_method");
+      expect(update.metadata.plan_items).toBe("old-plan,hosting-essentials-25");
       expect(calls.some((c) => c.path.includes("checkout"))).toBe(false);
       expect(result.metadata!.requires_checkout).toBe(false);
     } else
@@ -390,4 +405,25 @@ it("scheduled plans preserve the phase anchor, count paid invoices and explicitl
   expect(phases[0].start_date).toBe(start);
   expect(phases[0].end_date).toBe(Date.UTC(2026, 3, 30) / 1000);
   expect(phases[1].metadata.plan).toBe("next-plan");
+});
+
+it("D2 preserves existing multi plan keys without a multi sentinel or JSON", async () => {
+  const { repo, service, draft } = await setup();
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const { api, calls } = transport(true, true);
+  const result = await bill(p, "stripe", new StripeProvider(api, repo));
+  expect(result.status).toBe("succeeded");
+  const update = calls.find(
+    (c) => c.path === "/v1/subscriptions/sub_existing",
+  )!.params;
+  expect(update).toEqual({
+    metadata: {
+      plan: "multi",
+      plan_items: "hosted-standard-100,storage-30gb-60,hosting-essentials-25",
+    },
+  });
 });

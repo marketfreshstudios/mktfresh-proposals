@@ -116,7 +116,9 @@ export function Totals({
   lines,
   currency = "USD",
   value,
+  showYearly = true,
 }: {
+  showYearly?: boolean;
   lines?: Line[];
   currency?: string;
   value?: {
@@ -127,20 +129,22 @@ export function Totals({
 }) {
   const t = value ?? totals(lines ?? []);
   return (
-    <div className="totals">
+    <div className="totals" aria-label="Proposal totals">
       {[
         ["One-time", t.one_time_total, ""],
         ["Monthly", t.monthly_total, "/month"],
         ["Yearly", t.yearly_total, "/year"],
-      ].map(([label, amount, suffix]) => (
-        <div key={label}>
-          <span className="eyebrow">{label}</span>
-          <strong>
-            {money(Number(amount), currency)}
-            <small>{suffix}</small>
-          </strong>
-        </div>
-      ))}
+      ]
+        .filter(([label]) => label !== "Yearly" || showYearly)
+        .map(([label, amount, suffix]) => (
+          <div key={label}>
+            <span className="eyebrow">{label}</span>
+            <strong>
+              {money(Number(amount), currency)}
+              <small>{suffix}</small>
+            </strong>
+          </div>
+        ))}
     </div>
   );
 }
@@ -269,3 +273,51 @@ export async function api<T = any>(
 }
 export const post = <T = any,>(path: string, data: unknown = {}) =>
   api<T>(path, { method: "POST", body: JSON.stringify(data) });
+
+// Typed port of design/system/components/JobState, using the supplied ps-* styles.
+export function JobState({
+  state,
+  label,
+  error,
+  attempts,
+  onRetry,
+  className = "",
+}: {
+  state: "queued" | "running" | "failed" | "review";
+  label: string;
+  error?: string;
+  attempts?: number;
+  onRetry?: () => void;
+  className?: string;
+}) {
+  const def = {
+    queued: { tone: "neutral", icon: "clock", label: "Queued" },
+    running: { tone: "info", icon: "retry", label: "Running" },
+    failed: { tone: "danger", icon: "failed", label: "Failed" },
+    review: { tone: "warning", icon: "review", label: "Needs review" },
+  }[state];
+  return (
+    <div className={`ps-job ${className}`}>
+      <span className={`ps-pill ps-tone-${def.tone}`}>
+        <span className={state === "running" ? "ps-job__spin" : ""}>
+          <Icon name={def.icon as keyof typeof icons} />
+        </span>
+        <span>{def.label}</span>
+      </span>
+      <div className="ps-job__body">
+        <div className="ps-job__label">{label}</div>
+        {error && (
+          <div className="ps-job__error">
+            {error}
+            {attempts ? ` · attempt ${attempts}` : ""}
+          </div>
+        )}
+      </div>
+      {["failed", "review"].includes(state) && onRetry && (
+        <Button onClick={onRetry} icon="retry">
+          {state === "review" ? "Resolve" : "Retry"}
+        </Button>
+      )}
+    </div>
+  );
+}

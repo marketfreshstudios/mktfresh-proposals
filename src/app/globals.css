@@ -870,3 +870,25 @@ pre {
   border-radius: 5px;
   max-width: 100%;
 }
+/* Reserve the measured action-bar height so the last document block can scroll above it. */
+.client-app {
+  padding-bottom: 0;
+}
+.client-signature {
+  border-top: 1px solid var(--paper-border);
+  margin-top: 28px;
+  padding-top: 16px;
+  break-inside: avoid;
+}
+.client-signature img {
+  display: block;
+  max-height: 140px;
+  max-width: 100%;
+}
+.typed-signature {
+  font: italic 28px/1.5 var(--font-serif);
+  margin: 16px 0;
+}
+.client-signature small {
+  display: block;
+}
