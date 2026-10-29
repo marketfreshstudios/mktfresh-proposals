@@ -280,3 +280,13 @@ The AI tools expose current version metadata and text. get_document records a gr
 Coverage includes successful fetch, encrypted Basic auth and removal, fallback after failure, empty first-fetch failure, declared/streamed size limits, DNS/body timeout, public-address checks (including encoded and mapped IPs), redirect restrictions and DNS rebinding, hourly refresh, overlapping refreshes, AI provenance and grant isolation. Browser coverage exercises saving/editing without revealing credentials, refresh failure, last-good content and dashboard status. Updated Settings/dashboard screenshots and added linked-reference failure screenshots in both themes. No owner URL or credentials were supplied, so owner-host acceptance remains to be checked after adding the reference in Settings; automated tests use controlled fixtures.
 
 Validation: 95 unit/database tests and six browser tests pass locally, along with typecheck, formatting, neutrality and production build/renderer tracing. Existing RLS tests now explicitly verify document tenant isolation, append-only fetched versions and denial of staff reads from credential/receipt stores.
+
+## Template defaults and reference label fixes (29 October 2026)
+
+create_proposal_draft now accepts omitted lines. Supplied lines replace defaults completely, including an explicitly empty list, so inactive template defaults cannot block creation. Without supplied lines, defaults are filtered to active, nonlegacy catalogue items. Skipped inactive/missing entries are returned as warnings, saved as creation_warnings, recorded on the first event and shown in the staff editor. Playbook replacements also bypass defaults. Existing send validation remains in effect for the actual quote.
+
+Templates display warnings for inactive/missing catalogue references, and Settings → Pricing lists affected templates and item names. Warnings derive from current catalogue data and therefore include sync deactivations; they clear after references are repaired or items reactivated.
+
+PLAYBOOK_VERSION extraction recognizes const/let/var and bare assignments, single/double quotes and non-ASCII labels such as v1.17 · 15 October 2026. Refresh the linked document to create a correctly labelled fetched version; historical version records remain immutable.
+
+Validation: 103 unit/database tests, seven browser tests, typecheck, formatting, neutrality and production build/PDF trace pass locally. New browser coverage runs a real mocked Stripe catalogue sync to retire a template default, verifies warnings on template and Pricing settings, and checks they clear after repair. Updated affected screenshots and added warning fixtures in both themes.

@@ -1,3 +1,4 @@
+import { templateDefaultQuote } from "./template-quote";
 import {
   documents,
   recordDocumentRead,
@@ -60,7 +61,7 @@ const schemas: Record<string, z.ZodType> = {
     client_id: id,
     title: z.string().min(1).max(300),
     content_markdown: z.string().max(100000),
-    lines: z.array(LineSchema).max(100),
+    lines: z.array(LineSchema).max(100).optional(),
   }),
   update_proposal_draft: z.object({
     id,
@@ -99,6 +100,7 @@ function proposalView(p: Proposal) {
     client: p.client,
     content: p.content,
     quote: p.quote,
+    warnings: p.creation_warnings ?? [],
     brief: p.brief,
     ai_unreviewed: p.ai_unreviewed,
     search_text: p.search_text.slice(0, 50000),
@@ -181,11 +183,19 @@ export async function aiTool(
       (c) => c.id === input.client_id,
     );
     check(client, "Client not found", 404);
+    const template = (await repo.entities<Template>("templates")).find(
+      (t) => t.id === input.template_id && t.active,
+    );
+    check(template, "Active template required");
+    const quoteForVariables =
+      input.lines ??
+      templateDefaultQuote(template, await repo.entities<Item>("pricing_items"))
+        .quote;
     const allowed = Object.keys(
       variables({
         client,
         title: input.title,
-        quote: input.lines,
+        quote: quoteForVariables,
         currency: "USD",
         valid_until: new Date().toISOString(),
         created_at: new Date().toISOString(),

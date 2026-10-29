@@ -353,6 +353,15 @@ export function ProposalEditor({
           Review the supplied scope and entered prices before sending.
         </Banner>
       )}
+      {!!p.creation_warnings?.length && (
+        <Banner tone="warning" title="Template defaults skipped">
+          <ul>
+            {p.creation_warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </Banner>
+      )}
       {p.ai_unreviewed && (
         <Banner tone="ai" title="Drafted by an assistant — not yet reviewed">
           Review the scope and marked prices. Saving the draft records your

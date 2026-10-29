@@ -64,7 +64,7 @@ export async function documents(repo: Repository) {
   );
 }
 function label(content: string) {
-  return /^\s*PLAYBOOK_VERSION\s*=\s*(['"])([^\r\n]*?)\1\s*;?\s*$/m
+  return /^\s*(?:(?:const|let|var)\s+)?PLAYBOOK_VERSION\s*=\s*(['"])([^\r\n]*?)\1\s*;?\s*$/m
     .exec(content)?.[2]
     ?.slice(0, 200);
 }

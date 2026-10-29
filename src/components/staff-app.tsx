@@ -1,4 +1,6 @@
 "use client";
+import { TemplateWarnings } from "./template-warnings";
+import { inactiveTemplateItems } from "../lib/template-quote";
 import type { ReferenceDocument } from "../lib/documents";
 import { ReferenceDocuments, ReferenceStatus } from "./reference-documents";
 import { useEffect, useState, type ReactNode } from "react";
@@ -1730,6 +1732,9 @@ function Templates({
             <a className="btn" href={`/templates/${t.id}/edit`} key={t.id}>
               {t.name}
               {!t.active ? " · inactive" : ""}
+              {inactiveTemplateItems(t, data.catalog).length
+                ? " · defaults need review"
+                : ""}
             </a>
           ))}
           <a className="btn" href="/templates/new">
@@ -1737,6 +1742,12 @@ function Templates({
           </a>
         </div>
       </section>
+      <TemplateWarnings
+        templates={
+          original ? [{ ...original, default_quote: quote }] : data.templates
+        }
+        catalog={data.catalog}
+      />
       <form
         className="card form"
         onSubmit={(e) => {
@@ -2274,6 +2285,10 @@ function Settings({ data, run }: { data: Data; run: Runner }) {
           Save workspace settings
         </Button>
       </form>
+      <section className="stack" aria-label="Pricing settings">
+        <h2>Pricing</h2>
+        <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+      </section>
       <section className="card stack">
         <h2>Custom service families</h2>
         <p>
