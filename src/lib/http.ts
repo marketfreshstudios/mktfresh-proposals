@@ -1,3 +1,7 @@
+import { StripeProvider } from "./providers/stripe";
+import { QboProvider } from "./providers/qbo";
+import { receiveStripeWebhook } from "./providers/webhook";
+import { syncStripeCatalog, createCustomFamily } from "./catalog";
 import { readiness } from "./quote";
 import { PlaybookDraftSchema } from "./playbook";
 import type { Item } from "./model";
@@ -45,6 +49,25 @@ export async function handle(req: Request, path: string[]) {
         .object({ email: z.email(), password: z.string().min(1).max(200) })
         .parse(await body(req));
       return json(await login(input.email, input.password));
+    }
+    if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
+      const rt = runtime(uuid.parse(path[2]));
+      check(
+        rt.worker.providers.stripe instanceof StripeProvider,
+        "Stripe test adapter not configured",
+        503,
+      );
+      const raw = await req.text();
+      check(Buffer.byteLength(raw) < 2000000, "Request too large", 413);
+      return json(
+        await receiveStripeWebhook(
+          rt.repo,
+          rt.worker.providers.stripe,
+          raw,
+          req.headers.get("stripe-signature") ?? "",
+          process.env.STRIPE_WEBHOOK_SECRET ?? "",
+        ),
+      );
     }
     if (path[0] === "public") {
       const token = path[1],
@@ -123,6 +146,45 @@ export async function handle(req: Request, path: string[]) {
     }
     const user = await staff(req),
       rt = runtime(user.workspace_id);
+    if (path[0] === "catalog-sync" && method === "POST") {
+      const provider = path[1];
+      if (provider === "stripe") {
+        check(
+          rt.worker.providers.stripe instanceof StripeProvider,
+          "Stripe test credentials required",
+          503,
+        );
+        return json(
+          await syncStripeCatalog(rt.repo, rt.worker.providers.stripe.api),
+        );
+      }
+      check(
+        provider === "qbo" && rt.worker.providers.qbo instanceof QboProvider,
+        "QuickBooks sandbox credentials required",
+        503,
+      );
+      return json(await rt.worker.providers.qbo.syncCatalog());
+    }
+    if (path[0] === "custom-families" && method === "POST") {
+      check(
+        rt.worker.providers.stripe instanceof StripeProvider,
+        "Stripe test credentials required",
+        503,
+      );
+      const input = z
+        .object({ name: z.string().min(3).max(100), request_id: uuid })
+        .parse(await body(req));
+      return json(
+        await createCustomFamily(
+          rt.repo,
+          rt.worker.providers.stripe.api,
+          input.name,
+          "family:" + input.request_id,
+        ),
+        201,
+      );
+    }
+
     if (
       [
         "clients",

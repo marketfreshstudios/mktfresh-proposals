@@ -1,5 +1,7 @@
+import { StripeProvider } from "./providers/stripe";
+import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
-import { sha256, versionHash } from "./content";
+import { sha256, versionHash, money } from "./content";
 import { bill, type BillingProvider } from "./billing";
 import { sealedPdf } from "./pdf";
 import { mutate, type Repository } from "./repository";
@@ -16,6 +18,7 @@ import type { Storage } from "./storage";
 export interface Mailer {
   send(
     input: {
+      from?: string;
       to: string;
       subject: string;
       text: string;
@@ -33,6 +36,7 @@ export class MockMailer implements Mailer {
 export class ResendMailer implements Mailer {
   async send(
     input: {
+      from?: string;
       to: string;
       subject: string;
       text: string;
@@ -40,7 +44,7 @@ export class ResendMailer implements Mailer {
     },
     key: string,
   ) {
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM)
+    if (!process.env.RESEND_API_KEY || !input.from)
       throw new Error("Resend credentials/from address missing");
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -49,7 +53,7 @@ export class ResendMailer implements Mailer {
         "Content-Type": "application/json",
         "Idempotency-Key": sha256(key),
       },
-      body: JSON.stringify({ ...input, from: process.env.EMAIL_FROM }),
+      body: JSON.stringify({ ...input, from: input.from }),
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) throw new Error(`Resend delivery failed (${res.status})`);
@@ -120,6 +124,12 @@ export class Worker {
     return results;
   }
   private async execute(p: Proposal, j: Job) {
+    if (j.kind === "stripe_webhook") {
+      if (!(this.providers.stripe instanceof StripeProvider))
+        throw new Error("Stripe test provider required");
+      await executeStripeWebhook(this.repo, this.providers.stripe, p, j);
+      return;
+    }
     if (j.kind === "email") {
       const payload = j.payload;
       if (payload.send_version && payload.send_version !== p.versions.length)
@@ -136,6 +146,9 @@ export class Worker {
         : undefined;
       await this.mailer.send(
         {
+          from: p.workspace_settings
+            ? `${p.workspace_settings.email_sender_name} <${p.workspace_settings.email_sender_address}>`
+            : undefined,
           to: String(payload.to),
           subject: String(payload.subject),
           text: String(payload.text),
@@ -159,6 +172,33 @@ export class Worker {
           old = fresh.billing_links.find((l) => l.provider === provider);
         const link = await bill(fresh, provider, this.providers[provider]);
         await mutate(this.repo, p.id, (p) => {
+          if (
+            provider === "stripe" &&
+            link.status === "succeeded" &&
+            old?.status !== "succeeded"
+          ) {
+            const checkout = (link.metadata?.checkout ?? []) as {
+              url: string;
+            }[];
+            const added = (link.metadata?.added_existing ?? []) as {
+              monthly_total: number;
+            }[];
+            if (checkout.length)
+              queue(p, "email", "billing-setup", {
+                to: p.client.email,
+                subject: `Billing setup: ${p.title}`,
+                text: `Your proposal is signed. Complete billing setup: ${checkout.map((s) => s.url).join("\n")}`,
+              });
+            if (added.length)
+              queue(p, "email", "billing-added", {
+                to: p.client.email,
+                subject: `Billing updated: ${p.title}`,
+                text: `Your signed services have been added to your billing. New monthly total: ${money(
+                  added.reduce((sum, s) => sum + s.monthly_total, 0),
+                  p.currency,
+                )}.`,
+              });
+          }
           p.billing_links = p.billing_links
             .filter((l) => l.provider !== provider)
             .concat(link);

@@ -183,7 +183,7 @@ export type BillingLink = {
 };
 export type Job = {
   id: string;
-  kind: "email" | "pdf" | "billing";
+  kind: "email" | "pdf" | "billing" | "stripe_webhook";
   payload: Record<string, unknown>;
   status: "pending" | "running" | "done" | "failed";
   attempts: number;

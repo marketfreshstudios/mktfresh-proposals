@@ -10,7 +10,16 @@ export async function sealedPdf(
   events: Audit[],
   currency: string,
 ) {
+  const serverless = process.env.VERCEL
+    ? (await import("@sparticuz/chromium")).default
+    : null;
   const browser = await chromium.launch({
+    ...(serverless
+      ? {
+          args: serverless.args,
+          executablePath: await serverless.executablePath(),
+        }
+      : {}),
     headless: true,
     ...(process.env.CHROMIUM_EXECUTABLE_PATH
       ? { executablePath: process.env.CHROMIUM_EXECUTABLE_PATH }

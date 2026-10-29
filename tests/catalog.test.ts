@@ -38,12 +38,10 @@ it("paginates catalogue reads, flags legacy, and resolves with lookup_keys filte
 it("refuses duplicate family names before writing Stripe", async () => {
   const post = vi.fn();
   const api = {
-    get: vi
-      .fn()
-      .mockResolvedValue({
-        data: [{ id: "prod", name: "Custom Retainer", active: true }],
-        has_more: false,
-      }),
+    get: vi.fn().mockResolvedValue({
+      data: [{ id: "prod", name: "Custom Retainer", active: true }],
+      has_more: false,
+    }),
     post,
   } as unknown as StripeTransport;
   await expect(

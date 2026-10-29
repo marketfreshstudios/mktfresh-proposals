@@ -10,7 +10,10 @@ export type EntityTable =
   | "content_library"
   | "workspace_settings"
   | "workspace_documents"
-  | "custom_families";
+  | "custom_families"
+  | "provider_credentials"
+  | "webhook_events"
+  | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
   get(id: string): Promise<Proposal | null>;
