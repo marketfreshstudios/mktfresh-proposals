@@ -1,0 +1,803 @@
+{
+  "scope": "Client flow Phase 2. Flat quote contract retained until Phase 3.",
+  "captures": [
+    {
+      "file": "review-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "review-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "review-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "review-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "review-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "review-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1a/1c/5b/5a",
+      "state": "review"
+    },
+    {
+      "file": "sign-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1d/5d/5c",
+      "state": "sign"
+    },
+    {
+      "file": "sealing-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1d",
+      "state": "sealing"
+    },
+    {
+      "file": "billing-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1e",
+      "state": "billing"
+    },
+    {
+      "file": "signed-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1g",
+      "state": "signed"
+    },
+    {
+      "file": "existing-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1f",
+      "state": "existing"
+    },
+    {
+      "file": "failed-billing-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8o",
+      "state": "failed-billing"
+    },
+    {
+      "file": "completed-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8r",
+      "state": "completed"
+    },
+    {
+      "file": "stale-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1h",
+      "state": "stale"
+    },
+    {
+      "file": "password-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1b",
+      "state": "password"
+    },
+    {
+      "file": "expired-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "expired"
+    },
+    {
+      "file": "declined-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "1i",
+      "state": "declined"
+    },
+    {
+      "file": "replaced-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8p",
+      "state": "replaced"
+    },
+    {
+      "file": "decline-confirm-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8q",
+      "state": "decline-confirm"
+    },
+    {
+      "file": "offline-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8n",
+      "state": "offline"
+    },
+    {
+      "file": "loading-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "8m",
+      "state": "loading"
+    },
+    {
+      "file": "home-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-375-light.png",
+      "width": 375,
+      "theme": "light",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    },
+    {
+      "file": "home-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-768-light.png",
+      "width": 768,
+      "theme": "light",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    },
+    {
+      "file": "home-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-1440-light.png",
+      "width": 1440,
+      "theme": "light",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    },
+    {
+      "file": "home-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-375-dark.png",
+      "width": 375,
+      "theme": "dark",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    },
+    {
+      "file": "home-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-768-dark.png",
+      "width": 768,
+      "theme": "dark",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    },
+    {
+      "file": "home-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "3d/3e/3f",
+      "state": "home"
+    },
+    {
+      "file": "studio-menu-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "04",
+      "state": "studio-menu"
+    },
+    {
+      "file": "client-1440-dark.png",
+      "width": 1440,
+      "theme": "dark",
+      "frames": "6d/6e/6f",
+      "state": "client"
+    }
+  ]
+}

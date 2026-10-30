@@ -188,6 +188,9 @@ export class StripeProvider implements BillingProvider {
     const returnOrigin = metadata.client_origin
       ? AppUrlSchema.parse(metadata.client_origin).replace(/\/+$/, "")
       : appOrigin();
+    const clientReturn = metadata.client_return_url
+      ? AppUrlSchema.parse(metadata.client_return_url)
+      : null;
     const currency = String(metadata.currency),
       proposal = String(metadata.proposal_id),
       title = String(metadata.proposal_title);
@@ -323,8 +326,12 @@ export class StripeProvider implements BillingProvider {
               line_ids: JSON.stringify(group.map((l) => l.id)),
               workspace_id: this.repo.workspaceId,
             },
-            success_url: returnOrigin + "/billing/complete",
-            cancel_url: returnOrigin + "/billing/pending",
+            success_url: clientReturn
+              ? clientReturn + "?billing=returned"
+              : returnOrigin + "/billing/complete",
+            cancel_url: clientReturn
+              ? clientReturn + "?billing=pending"
+              : returnOrigin + "/billing/pending",
           },
           key + ":checkout:" + interval,
         );
@@ -365,8 +372,12 @@ export class StripeProvider implements BillingProvider {
             line_ids: JSON.stringify([line.id]),
             workspace_id: this.repo.workspaceId,
           },
-          success_url: returnOrigin + "/billing/complete",
-          cancel_url: returnOrigin + "/billing/pending",
+          success_url: clientReturn
+            ? clientReturn + "?billing=returned"
+            : returnOrigin + "/billing/complete",
+          cancel_url: clientReturn
+            ? clientReturn + "?billing=pending"
+            : returnOrigin + "/billing/pending",
         },
         key + ":schedule-setup:" + line.id,
       );

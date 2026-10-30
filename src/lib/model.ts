@@ -5,6 +5,7 @@ export const ClientSchema = z.object({
   company: z.string().min(1).max(200),
   first_name: z.string().max(100),
   last_name: z.string().max(100),
+  title: z.string().max(200).optional(),
   email: z.email(),
   phone: z.string().max(80).default(""),
   address: z.record(z.string(), z.string()).default({}),
@@ -179,6 +180,7 @@ export type Audit = Actor & {
   metadata: Record<string, unknown>;
 };
 export type Version = {
+  client_flow_version?: 2;
   id: string;
   version_no: number;
   content: Block[];

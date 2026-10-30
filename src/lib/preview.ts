@@ -10,6 +10,7 @@ export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
     const version = {
       id: p.id,
       version_no: 0,
+      client_flow_version: 2 as const,
       content: p.content,
       quote: p.quote,
       variables_resolved: variables(p),

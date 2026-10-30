@@ -697,6 +697,9 @@ function Dashboard({ data }: { data: Data }) {
 }
 function ProposalTable({ proposals }: { proposals: Proposal[] }) {
   const money = useMoney();
+  const hasYearly = proposals.some((p) =>
+    p.quote?.some((line) => line.interval === "year"),
+  );
   return proposals.length ? (
     <div className="table-wrap">
       <table>
@@ -706,7 +709,7 @@ function ProposalTable({ proposals }: { proposals: Proposal[] }) {
             <th>Status and signatures</th>
             <th>One-time</th>
             <th>Monthly</th>
-            <th>Yearly</th>
+            {hasYearly && <th>Yearly</th>}
             <th>Sent</th>
           </tr>
         </thead>
@@ -763,7 +766,7 @@ function ProposalTable({ proposals }: { proposals: Proposal[] }) {
                 </td>
                 <td>{money(t.one_time_total, p.currency)}</td>
                 <td>{money(t.monthly_total, p.currency)}/mo</td>
-                <td>{money(t.yearly_total, p.currency)}/yr</td>
+                {hasYearly && <td>{money(t.yearly_total, p.currency)}/yr</td>}
                 <td>{date(p.sent_at)}</td>
               </tr>
             );
@@ -1611,6 +1614,7 @@ function Clients({
             ["company", "Company"],
             ["first_name", "First name"],
             ["last_name", "Last name"],
+            ["title", "Title (optional)"],
             ["email", "Email address"],
             ["phone", "Phone"],
             ["notes", "Notes"],

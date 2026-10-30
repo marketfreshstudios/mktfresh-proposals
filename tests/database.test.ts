@@ -55,6 +55,13 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   expect((await db.query("select * from proposal_versions")).rows).toHaveLength(
     1,
   );
+  expect(
+    (
+      await db.query<{ data: { client_flow_version: number } }>(
+        "select data from proposal_versions",
+      )
+    ).rows[0].data.client_flow_version,
+  ).toBe(2);
   await expect(db.exec("update events set actor='tampered'")).rejects.toThrow(
     "Append-only",
   );

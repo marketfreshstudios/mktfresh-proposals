@@ -326,6 +326,7 @@ export class ProposalService {
       const version = {
         id: randomUUID(),
         version_no: p.versions.length + 1,
+        client_flow_version: 2 as const,
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -562,11 +563,15 @@ export class ProposalService {
       notify(p, role === "client" ? "signed" : "completed");
     });
   }
-  async decline(token: string, password: string, actor: Actor) {
+  async decline(token: string, password: string, actor: Actor, note = "") {
     check(
       !actor.actor.startsWith("ai:"),
       "AI assistants cannot decline proposals",
       403,
+    );
+    check(
+      typeof note === "string" && note.length <= 2000,
+      "Note must be at most 2000 characters",
     );
     const p = await this.byToken(token, password);
     return mutate(this.repo, p.id, (p) => {
@@ -577,7 +582,8 @@ export class ProposalService {
         409,
       );
       p.status = "declined";
-      event(p, "declined", actor);
+      event(p, "declined", actor, note ? { note } : {});
+      notify(p, "declined");
     });
   }
   async tick() {
@@ -624,6 +630,13 @@ export function publicResult(p: Proposal) {
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
+    client_flow_version: v.client_flow_version,
+    sent_at: v.created_at,
+    money_cents: p.workspace_settings?.money?.cents ?? "auto",
+    contact: {
+      name: p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
+      email: p.sender?.email ?? p.workspace_settings?.email ?? "",
+    },
     title: p.title,
     status: p.status,
     revision: p.revision,
@@ -633,6 +646,7 @@ export function publicResult(p: Proposal) {
     recipient: {
       name: p.client.first_name + " " + p.client.last_name,
       email: p.client.email,
+      title: p.client.title ?? "",
       company: p.client.company,
     },
     signers: p.signers.map((s) => ({
