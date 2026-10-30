@@ -1,13 +1,18 @@
 export type StaffQuery = Record<string, string | string[] | undefined>;
 export const studioRoutes = [
   ["/studio/templates", "Templates & blocks"],
-  ["/studio/catalog", "Catalog"],
+  ["/studio/products", "Products"],
   ["/studio/connections", "Connections"],
   ["/studio/workspace", "Workspace"],
   ["/studio/activity", "Activity log"],
 ] as const;
 export function legacyStaffRedirect(path: string[]) {
   const [section, id, action] = path;
+  if (section === "studio" && id === "catalog")
+    return (
+      "/studio/products" +
+      (path.length > 2 ? "/" + path.slice(2).join("/") : "")
+    );
   if (section === "dashboard") return "/";
   if (section === "proposals" && id === "new") return "/proposals?new=1";
   if (section === "proposals" && id && action) {
@@ -19,7 +24,7 @@ export function legacyStaffRedirect(path: string[]) {
   if (section === "archives")
     return id ? `/proposals/${id}?view=archive` : "/proposals?view=archived";
   const root: Record<string, string> = {
-    catalogue: "/studio/catalog",
+    catalogue: "/studio/products",
     assistants: "/studio/connections?view=assistants",
     library: "/studio/templates?view=blocks",
     integrations: "/studio/connections",
@@ -42,6 +47,7 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
     const mapping: Record<string, string> = {
       templates: query.view === "blocks" ? "library" : "templates",
       catalog: "catalogue",
+      products: "catalogue",
       connections:
         query.view === "assistants"
           ? "assistants"

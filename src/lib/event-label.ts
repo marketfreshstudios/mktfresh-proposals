@@ -46,7 +46,7 @@ export function eventLabel(
     client_saved: "Client details saved",
     client_deleted: `Client deleted${e.metadata.company ? `: ${e.metadata.company}` : ""}`,
     workspace_settings_saved: "Workspace settings saved",
-    pricing_items_saved: "Catalog item saved",
+    pricing_items_saved: "Product saved",
     templates_saved: "Template saved",
     content_library_saved: "Reusable block saved",
     font_uploaded: "Proposal font uploaded",

@@ -146,7 +146,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         } else value = await service.forRead((await repo.get(parts[1]))!);
       } else if (parts[0] === "pricing_items" && scenario === "catalog-error") {
         status = 503;
-        value = { error: "Catalog is temporarily unavailable" };
+        value = { error: "Products are temporarily unavailable" };
       } else if (req.method() === "POST") {
         const input = req.postDataJSON();
         value = { ...input, id: input.id ?? crypto.randomUUID() };
@@ -377,7 +377,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       scenario = "normal";
       for (const [name, url, frame] of [
         ["templates", "/studio/templates", width === 768 ? "7f" : "7a"],
-        ["catalog", "/studio/catalog", "7b"],
+        ["catalog", "/studio/products", "7b"],
         ["connections", "/studio/connections", "7c"],
         ["workspace", "/studio/workspace", "7d"],
         ["activity", "/studio/activity", "7e"],
@@ -524,7 +524,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await page.goto(`/proposals/${editing.id}`);
       await expect(
         page.getByText(
-          "We couldn’t load the catalog. Your saved lines are unchanged.",
+          "We couldn’t load the products. Your saved lines are unchanged.",
         ),
       ).toBeVisible();
       await capture("catalog-error", "8g", width, theme);

@@ -1,1 +1,13 @@
 Source Serif 4, Instrument Sans and IBM Plex Mono are licensed under the SIL Open Font License 1.1. Full upstream copyright and license texts are included in SourceSerif4-OFL.txt, InstrumentSans-OFL.txt and IBMPlexMono-OFL.txt. Instrument Sans provenance is recorded in InstrumentSans-SOURCE.md. All fonts are self-hosted; no font service is contacted at runtime.
+
+Additional curated fonts from Google Fonts (SIL Open Font License 1.1):
+Playfair Display: PlayfairDisplay-OFL.txt
+Fraunces: Fraunces-OFL.txt
+Lora: Lora-OFL.txt
+Merriweather: Merriweather-OFL.txt
+Inter: Inter-OFL.txt
+Montserrat: Montserrat-OFL.txt
+Poppins: Poppins-OFL.txt
+DM Sans: DMSans-OFL.txt
+Space Grotesk: SpaceGrotesk-OFL.txt
+Pinned upstream commit: 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec. Source URLs, SHA-256 fingerprints, weight ranges and retained axes are in GOOGLE-FONTS-SOURCES.json. Assets are served locally and embedded as data URLs in PDFs; no Google requests occur at runtime.

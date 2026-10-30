@@ -320,17 +320,9 @@ export async function handle(req: Request, path: string[]) {
       );
     }
     if (path[0] === "connections" && method === "GET") {
-      const assigned =
-        rt.repo.workspaceId === "00000000-0000-4000-8000-000000000001";
       return json({
-        stripe:
-          assigned &&
-          process.env.BILLING_MODE === "test" &&
-          /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? ""),
-        qbo:
-          assigned &&
-          process.env.QBO_ENVIRONMENT === "sandbox" &&
-          !!process.env.QBO_REFRESH_TOKEN,
+        stripe: rt.worker.providers.stripe instanceof StripeProvider,
+        qbo: rt.worker.providers.qbo instanceof QboProvider,
         email: !!process.env.RESEND_API_KEY,
         mock: process.env.APP_MODE === "local",
       });

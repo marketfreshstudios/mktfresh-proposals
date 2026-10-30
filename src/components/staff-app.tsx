@@ -1,4 +1,9 @@
 "use client";
+import {
+  connectionStatus,
+  type ConnectionStatus,
+} from "../lib/workspace-setup";
+import { ContactToast } from "./contact-value";
 import { HomeV4, ProposalListV4, RecordV4, ClientsV4 } from "./records";
 import {
   WorkspaceStudio,
@@ -45,7 +50,7 @@ const nav = [
   ["", "Dashboard"],
   ["proposals", "Proposals"],
   ["clients", "Clients"],
-  ["catalogue", "Pricing"],
+  ["catalogue", "Products"],
   ["templates", "Templates"],
   ["library", "Content library"],
   ["integrations", "Integrations"],
@@ -56,6 +61,7 @@ const nav = [
 ];
 export type Data = {
   app_url: string;
+  connections?: ConnectionStatus | null;
   user: Actor;
   signatory_version: string;
   staff: {
@@ -119,6 +125,7 @@ export function StaffApp({
         families,
         documents,
         assistants,
+        connections,
       ] = await Promise.all([
         allProposals(),
         api("/api/clients"),
@@ -128,6 +135,9 @@ export function StaffApp({
         api("/api/custom_families"),
         api("/api/workspace_documents"),
         api("/api/assistants"),
+        api("/api/connections")
+          .then(connectionStatus)
+          .catch(() => null),
       ]);
       setData({
         settings: session.settings,
@@ -147,6 +157,7 @@ export function StaffApp({
         families,
         documents,
         assistants,
+        connections,
       });
       if (["proposals", "archives"].includes(section) && id && id !== "new")
         setP(await api(`/api/proposals/${id}`));
@@ -214,7 +225,7 @@ export function StaffApp({
       path[0] === "studio"
         ? ({
             templates: "Templates & blocks",
-            catalog: "Catalog",
+            products: "Products",
             connections: "Connections",
             workspace: "Workspace",
             activity: "Activity log",
@@ -387,6 +398,7 @@ export function StaffApp({
         location.href = "/login";
       }}
     >
+      <ContactToast />
       <header className="page-header">
         <div>
           <h1>{title}</h1>
@@ -407,7 +419,7 @@ export function StaffApp({
         {data?.catalog_error && (
           <Banner
             tone="warning"
-            title="We couldn’t load the catalog. Your saved lines are unchanged."
+            title="We couldn’t load the products. Your saved lines are unchanged."
             action={
               <Button
                 onClick={async () => {
@@ -418,7 +430,7 @@ export function StaffApp({
                     setError(
                       e instanceof Error
                         ? e.message
-                        : "Try loading the catalog again",
+                        : "Try loading the products again",
                     );
                   }
                 }}
@@ -427,7 +439,7 @@ export function StaffApp({
               </Button>
             }
           >
-            You can keep writing or add a custom item while the catalog is
+            You can keep writing or add a custom item while the products is
             unavailable.
           </Banner>
         )}

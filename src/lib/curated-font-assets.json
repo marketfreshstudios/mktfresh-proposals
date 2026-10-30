@@ -1,0 +1,188 @@
+[
+  {
+    "id": "playfair-display",
+    "name": "Playfair Display",
+    "category": "Serif",
+    "family": "\"Playfair Display\", serif",
+    "file": "PlayfairDisplay-Variable.woff2",
+    "faces": [
+      {
+        "file": "PlayfairDisplay-Variable.woff2",
+        "style": "normal",
+        "weight": "400 900"
+      },
+      {
+        "file": "PlayfairDisplay-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "400 900"
+      }
+    ]
+  },
+  {
+    "id": "fraunces",
+    "name": "Fraunces",
+    "category": "Serif",
+    "family": "\"Fraunces\", serif",
+    "file": "Fraunces-Variable.woff2",
+    "faces": [
+      {
+        "file": "Fraunces-Variable.woff2",
+        "style": "normal",
+        "weight": "100 900"
+      },
+      {
+        "file": "Fraunces-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "100 900"
+      }
+    ]
+  },
+  {
+    "id": "lora",
+    "name": "Lora",
+    "category": "Serif",
+    "family": "\"Lora\", serif",
+    "file": "Lora-Variable.woff2",
+    "faces": [
+      {
+        "file": "Lora-Variable.woff2",
+        "style": "normal",
+        "weight": "400 700"
+      },
+      {
+        "file": "Lora-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "400 700"
+      }
+    ]
+  },
+  {
+    "id": "merriweather",
+    "name": "Merriweather",
+    "category": "Serif",
+    "family": "\"Merriweather\", serif",
+    "file": "Merriweather-Variable.woff2",
+    "faces": [
+      {
+        "file": "Merriweather-Variable.woff2",
+        "style": "normal",
+        "weight": "300 900"
+      },
+      {
+        "file": "Merriweather-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "300 900"
+      }
+    ]
+  },
+  {
+    "id": "inter",
+    "name": "Inter",
+    "category": "Sans",
+    "family": "\"Inter\", sans-serif",
+    "file": "Inter-Variable.woff2",
+    "faces": [
+      {
+        "file": "Inter-Variable.woff2",
+        "style": "normal",
+        "weight": "100 900"
+      },
+      {
+        "file": "Inter-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "100 900"
+      }
+    ]
+  },
+  {
+    "id": "montserrat",
+    "name": "Montserrat",
+    "category": "Sans",
+    "family": "\"Montserrat\", sans-serif",
+    "file": "Montserrat-Variable.woff2",
+    "faces": [
+      {
+        "file": "Montserrat-Variable.woff2",
+        "style": "normal",
+        "weight": "100 900"
+      },
+      {
+        "file": "Montserrat-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "100 900"
+      }
+    ]
+  },
+  {
+    "id": "poppins",
+    "name": "Poppins",
+    "category": "Sans",
+    "family": "\"Poppins\", sans-serif",
+    "file": "Poppins-Regular.woff2",
+    "faces": [
+      {
+        "file": "Poppins-Regular.woff2",
+        "style": "normal",
+        "weight": "400"
+      },
+      {
+        "file": "Poppins-SemiBold.woff2",
+        "style": "normal",
+        "weight": "600"
+      },
+      {
+        "file": "Poppins-Bold.woff2",
+        "style": "normal",
+        "weight": "700"
+      },
+      {
+        "file": "Poppins-Italic.woff2",
+        "style": "italic",
+        "weight": "400"
+      },
+      {
+        "file": "Poppins-SemiBoldItalic.woff2",
+        "style": "italic",
+        "weight": "600"
+      },
+      {
+        "file": "Poppins-BoldItalic.woff2",
+        "style": "italic",
+        "weight": "700"
+      }
+    ]
+  },
+  {
+    "id": "dm-sans",
+    "name": "DM Sans",
+    "category": "Sans",
+    "family": "\"DM Sans\", sans-serif",
+    "file": "DMSans-Variable.woff2",
+    "faces": [
+      {
+        "file": "DMSans-Variable.woff2",
+        "style": "normal",
+        "weight": "100 1000"
+      },
+      {
+        "file": "DMSans-Italic-Variable.woff2",
+        "style": "italic",
+        "weight": "100 1000"
+      }
+    ]
+  },
+  {
+    "id": "space-grotesk",
+    "name": "Space Grotesk",
+    "category": "Sans",
+    "family": "\"Space Grotesk\", sans-serif",
+    "file": "SpaceGrotesk-Variable.woff2",
+    "faces": [
+      {
+        "file": "SpaceGrotesk-Variable.woff2",
+        "style": "normal",
+        "weight": "300 700"
+      }
+    ]
+  }
+]

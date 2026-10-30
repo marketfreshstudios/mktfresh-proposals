@@ -807,7 +807,7 @@ export function QuoteEditor({
                 <p>{i.min_term_months}-month minimum commitment</p>
               )}
               <pre>{JSON.stringify(i.plan_terms, null, 2)}</pre>
-              <small>Terms and schedule come from the catalogue.</small>
+              <small>Terms and schedule come from the products.</small>
             </details>
           </>
         ) : (
@@ -904,7 +904,7 @@ export function QuoteEditor({
             </Sortable>
           ))}
         </Reorder>
-        <Field label="Add from catalog">
+        <Field label="Add from products">
           <select
             value=""
             onChange={(e) => {

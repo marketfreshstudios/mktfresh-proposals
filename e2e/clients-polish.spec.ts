@@ -285,7 +285,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         theme,
       );
       await expect(
-        row.getByRole("link", { name: client.email }),
+        row.getByRole("link", { name: `Open in Mail: ${client.email}` }),
       ).toHaveAttribute("href", `mailto:${client.email}`);
       await link.press("Enter");
       await expect(page.locator(".client-contact-card")).toContainText(

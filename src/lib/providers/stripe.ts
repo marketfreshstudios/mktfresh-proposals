@@ -107,15 +107,15 @@ export class StripeProvider implements BillingProvider {
     if (line.stripe_lookup_key) {
       const price = await resolveLookup(this.api, line.stripe_lookup_key);
       if (price.currency && price.currency !== currency)
-        throw new NeedsReview("Catalogue currency differs from proposal");
+        throw new NeedsReview("Product currency differs from proposal");
       if (price.recurring?.interval !== line.interval)
-        throw new NeedsReview(`${line.name}: catalogue interval changed`);
+        throw new NeedsReview(`${line.name}: product interval changed`);
       if (
         price.unit_amount !== line.list_amount &&
         price.unit_amount !== line.amount
       )
         throw new NeedsReview(
-          `${line.name}: catalogue price changed after drafting`,
+          `${line.name}: product price changed after drafting`,
         );
       if (price.unit_amount === line.amount)
         return { price: price.id, quantity: line.qty };
@@ -488,9 +488,7 @@ export class StripeProvider implements BillingProvider {
         "Step-down billing interval differs from signed terms",
       );
     if (next.unit_amount !== line.schedule.then.amount)
-      throw new NeedsReview(
-        "Scheduled step-down amount differs from catalogue",
-      );
+      throw new NeedsReview("Scheduled step-down amount differs from products");
     const schedule = sub.schedule
       ? await this.api.get<{
           id: string;

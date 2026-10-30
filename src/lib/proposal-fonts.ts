@@ -1,3 +1,4 @@
+import assets from "./curated-font-assets.json" with { type: "json" };
 import { z } from "zod";
 export const FontSchema = z.object({
   id: z.string().uuid(),
@@ -7,30 +8,89 @@ export const FontSchema = z.object({
   hash: z.string().regex(/^[a-f0-9]{64}$/),
 });
 export type ProposalFont = z.infer<typeof FontSchema>;
-export const curatedFonts = [
+export const curatedFontIds = [
+  "serif",
+  "sans",
+  "mono",
+  "playfair-display",
+  "fraunces",
+  "lora",
+  "merriweather",
+  "inter",
+  "montserrat",
+  "poppins",
+  "dm-sans",
+  "space-grotesk",
+] as const;
+export type CuratedFont = {
+  id: (typeof curatedFontIds)[number];
+  name: string;
+  family: string;
+  category: "Serif" | "Sans" | "Monospace";
+  file: string;
+  faces: { file: string; style: string; weight: string }[];
+};
+export const curatedFonts: CuratedFont[] = [
   {
     id: "serif",
     name: "Source Serif 4",
     family: '"Source Serif 4", Georgia, serif',
+    category: "Serif",
     file: "SourceSerif4-Variable.woff2",
+    faces: [
+      {
+        file: "SourceSerif4-Variable.woff2",
+        style: "normal",
+        weight: "200 900",
+      },
+      {
+        file: "SourceSerif4-VariableItalic.woff2",
+        style: "italic",
+        weight: "200 900",
+      },
+    ],
   },
   {
     id: "sans",
     name: "Instrument Sans",
     family: '"Instrument Sans", system-ui, sans-serif',
+    category: "Sans",
     file: "InstrumentSans-Variable.woff2",
+    faces: [
+      {
+        file: "InstrumentSans-Variable.woff2",
+        style: "normal",
+        weight: "400 700",
+      },
+    ],
   },
   {
     id: "mono",
     name: "IBM Plex Mono",
     family: '"IBM Plex Mono", monospace',
+    category: "Monospace",
     file: "IBMPlexMono-Regular.woff2",
+    faces: [
+      { file: "IBMPlexMono-Regular.woff2", style: "normal", weight: "400" },
+      { file: "IBMPlexMono-Medium.woff2", style: "normal", weight: "500" },
+    ],
   },
-] as const;
-export const fontChoice = z.union([
-  z.enum(["serif", "sans", "mono"]),
-  FontSchema,
-]);
+  ...(assets as CuratedFont[]),
+];
+export function curatedFontFaces(
+  fonts: CuratedFont[],
+  url = (file: string) => `/fonts/${file}`,
+) {
+  return fonts
+    .flatMap((f) =>
+      f.faces.map(
+        (face) =>
+          `@font-face{font-family:${f.family.split(",")[0]};src:url("${url(face.file)}") format("woff2");font-style:${face.style};font-weight:${face.weight};font-display:swap;}`,
+      ),
+    )
+    .join("");
+}
+export const fontChoice = z.union([z.enum(curatedFontIds), FontSchema]);
 export type FontChoice = z.infer<typeof fontChoice>;
 export type FontSettings = {
   proposal_fonts?: { heading: FontChoice; body: FontChoice };

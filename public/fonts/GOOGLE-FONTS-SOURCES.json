@@ -1,0 +1,364 @@
+{
+  "repository": "https://github.com/google/fonts",
+  "commit": "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec",
+  "conversion": "Lossless WOFF2 packaging with fontTools 4.62.1 and brotli 1.2.0; source outlines, names, glyph coverage and variation axes retained. Space Grotesk upstream has no italic; browser synthesis is retained for that family.",
+  "assets": [
+    {
+      "asset": "PlayfairDisplay-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf",
+      "source_sha256": "a5e26dc5e2e77fb2803a0bf02fd4f81ee136ec8dea863ccdb0c59a263b21378b",
+      "sha256": "07dd1cb3a11ed07a7d706e25b64b1a1a46c0ab1bbd53f7e4b5dff9052fc6dd26",
+      "license": "PlayfairDisplay-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "max": 900.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "PlayfairDisplay-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
+      "source_sha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6",
+      "sha256": "4297e9ec39f1b8157623d048fb99eab03c90e482669599e8fc662ee178994c49",
+      "license": "PlayfairDisplay-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "max": 900.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "Fraunces-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/fraunces/Fraunces-Italic%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf",
+      "source_sha256": "b24448c43702fac4ee856781d461a0dfba8d8e594b6e8e190234b75fed2c0e01",
+      "sha256": "c062311e85f013dce1c4f125884e3d2119e31b272fcd6dc55ff5f535e0d2e2a0",
+      "license": "Fraunces-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 9.0,
+          "max": 144.0,
+          "default": 9.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 900.0
+        },
+        {
+          "tag": "SOFT",
+          "min": 0.0,
+          "max": 100.0,
+          "default": 0.0
+        },
+        {
+          "tag": "WONK",
+          "min": 0.0,
+          "max": 1.0,
+          "default": 1.0
+        }
+      ]
+    },
+    {
+      "asset": "Fraunces-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/fraunces/Fraunces%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf",
+      "source_sha256": "177ff6c0f14e5550a3c624247cd1189611d4eb65d000b14944c63d967958abbb",
+      "sha256": "7dc0dd18aeeae3204d5cc26679b5f41d8be1e622bd3bd39fef574346c99508e8",
+      "license": "Fraunces-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 9.0,
+          "max": 144.0,
+          "default": 9.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 900.0
+        },
+        {
+          "tag": "SOFT",
+          "min": 0.0,
+          "max": 100.0,
+          "default": 0.0
+        },
+        {
+          "tag": "WONK",
+          "min": 0.0,
+          "max": 1.0,
+          "default": 1.0
+        }
+      ]
+    },
+    {
+      "asset": "Lora-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/lora/Lora-Italic%5Bwght%5D.ttf",
+      "source_sha256": "22d8d8854b53807aa664ca34f2031a9ed57a1d0dea296b8b96cdd3aad937a2b3",
+      "sha256": "6cda7d220aebc862d9de3cdbd6e5068b64477aca6f284dbb1ca6e00114744faf",
+      "license": "Lora-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "max": 700.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "Lora-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/lora/Lora%5Bwght%5D.ttf",
+      "source_sha256": "822a6621ccbe8d97d20ac88c1c41f5615c9c2c202eaa75f272cd452aac6475a7",
+      "sha256": "7c514f026f03de1b0fc344c0c0f0df141fcf16b6f9ab672db191908ba740dab6",
+      "license": "Lora-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 400.0,
+          "max": 700.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "Merriweather-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/merriweather/Merriweather-Italic%5Bopsz%2Cwdth%2Cwght%5D.ttf",
+      "source_sha256": "f68a8f4989258679e4fbaf50aa42400132b5373c2d9d2514ba82ef6e85947a0b",
+      "sha256": "f640520e317d970c3b2eedbdc75021aa97c12642d39f2dfd921ed93e32e67045",
+      "license": "Merriweather-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "max": 900.0,
+          "default": 300.0
+        },
+        {
+          "tag": "wdth",
+          "min": 87.0,
+          "max": 112.0,
+          "default": 100.0
+        },
+        {
+          "tag": "opsz",
+          "min": 18.0,
+          "max": 144.0,
+          "default": 18.0
+        }
+      ]
+    },
+    {
+      "asset": "Merriweather-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/merriweather/Merriweather%5Bopsz%2Cwdth%2Cwght%5D.ttf",
+      "source_sha256": "d0ed0e359e396af7ad05e73dffd11a3a4c326ea0d0283c56bd9361cb2cc86a96",
+      "sha256": "0e157d94a790a245659b8444eef67466ff9d0a4754318a4f1252852ab3e2fcd0",
+      "license": "Merriweather-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "max": 900.0,
+          "default": 300.0
+        },
+        {
+          "tag": "wdth",
+          "min": 87.0,
+          "max": 112.0,
+          "default": 100.0
+        },
+        {
+          "tag": "opsz",
+          "min": 18.0,
+          "max": 144.0,
+          "default": 18.0
+        }
+      ]
+    },
+    {
+      "asset": "Inter-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/inter/Inter-Italic%5Bopsz%2Cwght%5D.ttf",
+      "source_sha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6",
+      "sha256": "cad8fca9a8eee76c402bff11e14b95999d99cc7a64541785f94fabd25bea1dcf",
+      "license": "Inter-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 14.0,
+          "max": 32.0,
+          "default": 14.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "Inter-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+      "source_sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "sha256": "13b4cddc57045d40b411008e61588c8f81aa0bd72fe884624831a0ff9c4d159a",
+      "license": "Inter-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 14.0,
+          "max": 32.0,
+          "default": 14.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "Montserrat-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/montserrat/Montserrat-Italic%5Bwght%5D.ttf",
+      "source_sha256": "51607f316bc020e59f03cbf51543eecffbea501c0b31d73e5b82927c5cca442c",
+      "sha256": "191561514cdc9d900c0f708017f82e47543448db81c54ee721e8d8a34503a76c",
+      "license": "Montserrat-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 100.0
+        }
+      ]
+    },
+    {
+      "asset": "Montserrat-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/montserrat/Montserrat%5Bwght%5D.ttf",
+      "source_sha256": "0f7b311b2f3279e4eef9b2f968bcdbab6e28f4daeb1f049f4f278a902bcd82f7",
+      "sha256": "6e712eafc11f23dc2b0651c0849c1a331aa81a3a4499ba61ef5091e5c123c796",
+      "license": "Montserrat-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 900.0,
+          "default": 100.0
+        }
+      ]
+    },
+    {
+      "asset": "Poppins-Regular.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-Regular.ttf",
+      "source_sha256": "7e65201e9b79159e2300267cc885e16c8dcef2424cdfa09a29bfb0980a94a7ba",
+      "sha256": "4e0089bafe3d8e98638031d515bf6f7782d7429897888d885a6b7a6c24a9f5da",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "Poppins-Italic.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-Italic.ttf",
+      "source_sha256": "4fa76ae75b40f926420514044722cb97f32186cafd3b38263cc34dad7174d46d",
+      "sha256": "7fbe735495a3bedc58e4d3687f3cd1f6ca2f1c7fb4fff1f7217c5c4b8a08db95",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "Poppins-SemiBold.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-SemiBold.ttf",
+      "source_sha256": "d3bf1bdaf0550e83da9ac0b1d1d9fe6db086835a83aa28578e609a394b9a0286",
+      "sha256": "9757d1991bdbe8a4fc58ef4e1a6180cb36045e402003a3013024522622a8df2a",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "Poppins-SemiBoldItalic.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-SemiBoldItalic.ttf",
+      "source_sha256": "16bb118aa232c9a13fa238027d24d7854dd1a1d9cbaf99b17fec4388d56b432c",
+      "sha256": "f8f026de69feb6cfc1a23fd61f6f2758690dfea68f115e710fa45167be4a7dfd",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "Poppins-Bold.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-Bold.ttf",
+      "source_sha256": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+      "sha256": "8cb425dd6e6315b7512b680abaaba07bbfcab0e235ae035e9ddde71a656cfb8d",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "Poppins-BoldItalic.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/poppins/Poppins-BoldItalic.ttf",
+      "source_sha256": "3572ac8116a0ac7317d342262b29937bcbaf94d8f03f90df6fe666fa7e2fb43a",
+      "sha256": "5a9b7bf974ef29ecbbc744bd85a3c834bea47dfba190053f7563a98e2cfd9bce",
+      "license": "Poppins-OFL.txt",
+      "axes": []
+    },
+    {
+      "asset": "DMSans-Italic-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/dmsans/DMSans-Italic%5Bopsz%2Cwght%5D.ttf",
+      "source_sha256": "22259c0cc8237221b80f44c76ba8d36e6bce3cda72779f5b2773643d499720ae",
+      "sha256": "a6e3a6c8cc9f20797b6b159e817147c620ad91e2d89f0c4f40025b9f16a40ce0",
+      "license": "DMSans-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 9.0,
+          "max": 40.0,
+          "default": 9.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 1000.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "DMSans-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf",
+      "source_sha256": "8cd08d97e89c24d0aa92edd2f0f4c8ee6195eee9b7c9f154865a58b02f0c1c0d",
+      "sha256": "40c3837c53c103a38fbce7faaa590b76edd61a8ede14672eb1e2f7eab0e0c6a4",
+      "license": "DMSans-OFL.txt",
+      "axes": [
+        {
+          "tag": "opsz",
+          "min": 9.0,
+          "max": 40.0,
+          "default": 9.0
+        },
+        {
+          "tag": "wght",
+          "min": 100.0,
+          "max": 1000.0,
+          "default": 400.0
+        }
+      ]
+    },
+    {
+      "asset": "SpaceGrotesk-Variable.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf",
+      "source_sha256": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72",
+      "sha256": "8e085aa438094f11487a836652edd5c054fa6a96f63fc7c282105ee3a4b08c07",
+      "license": "SpaceGrotesk-OFL.txt",
+      "axes": [
+        {
+          "tag": "wght",
+          "min": 300.0,
+          "max": 700.0,
+          "default": 300.0
+        }
+      ]
+    }
+  ]
+}
