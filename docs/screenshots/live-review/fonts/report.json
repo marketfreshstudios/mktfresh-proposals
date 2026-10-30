@@ -1,0 +1,184 @@
+[
+  {
+    "id": "serif",
+    "name": "Source Serif 4",
+    "embeddedFontNames": [
+      "AAAAAA+SourceSerif4-Regular_wght2BC0000",
+      "BAAAAA+SourceSerif4-Regular",
+      "CAAAAA+SourceSerif4-Italic",
+      "DAAAAA+SourceSerif4-Regular_wght2BC0000",
+      "EAAAAA+SourceSerif4-Italic_wght2BC0000",
+      "BAAAAA+SourceSerif4-Regular_wght2BC0000",
+      "CAAAAA+SourceSerif4-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 117578,
+    "versionHash": "e9e8dc5b985905a6cbbd4f10c582df73cc5f876900b81aa99ef6a1ea9d840015"
+  },
+  {
+    "id": "sans",
+    "name": "Instrument Sans",
+    "embeddedFontNames": [
+      "AAAAAA+InstrumentSans-Regular_Bold",
+      "BAAAAA+InstrumentSans-Regular",
+      "CAAAAA+InstrumentSans-Regular",
+      "DAAAAA+InstrumentSans-Regular_Bold",
+      "EAAAAA+InstrumentSans-Regular_Bold",
+      "BAAAAA+InstrumentSans-Regular_Bold",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 67455,
+    "versionHash": "d0a0c547519972b821ba1d57e0e40221cf5e8fb38c09a716a99b6368660218ad"
+  },
+  {
+    "id": "mono",
+    "name": "IBM Plex Mono",
+    "embeddedFontNames": [
+      "AAAAAA+IBMPlexMono-Medium",
+      "BAAAAA+IBMPlexMono-Regular",
+      "CAAAAA+Courier"
+    ],
+    "bytes": 82309,
+    "versionHash": "e7eeb7c8673baa910a6fcc617fd184fa218e8127b6a0dad76365ade0247bbca3"
+  },
+  {
+    "id": "playfair-display",
+    "name": "Playfair Display",
+    "embeddedFontNames": [
+      "AAAAAA+PlayfairDisplayRoman-Bold",
+      "BAAAAA+PlayfairDisplay-Regular",
+      "CAAAAA+PlayfairDisplay-Italic",
+      "DAAAAA+PlayfairDisplayRoman-Bold",
+      "EAAAAA+PlayfairDisplayItalic-Bold",
+      "BAAAAA+PlayfairDisplayRoman-Bold",
+      "CAAAAA+PlayfairDisplay-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 134605,
+    "versionHash": "906522fc6b3354663c32712e397508043a676782a38515ca51b816d2582bb599"
+  },
+  {
+    "id": "fraunces",
+    "name": "Fraunces",
+    "embeddedFontNames": [
+      "AAAAAA+Fraunces-9ptBlack_opsz150000_wght2BC0000_SOFT_WONK",
+      "BAAAAA+Fraunces-9ptBlack_opszE0000_wght1900000_SOFT_WONK",
+      "CAAAAA+Fraunces-9ptBlackItalic_opszE0000_wght1900000_SOFT_WONK",
+      "DAAAAA+Fraunces-9ptBlack_opszE0000_wght2BC0000_SOFT_WONK",
+      "EAAAAA+Fraunces-9ptBlackItalic_opszE0000_wght2BC0000_SOFT_WONK",
+      "BAAAAA+Fraunces-9ptBlack_opsz1C0000_wght2BC0000_SOFT_WONK",
+      "CAAAAA+Fraunces-9ptBlack_opszE0000_wght1900000_SOFT_WONK",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 190880,
+    "versionHash": "b5416fd9a1b87fa4e4c4bc6372261b3f337baea5af5ac3b81180f3d1e3138abe"
+  },
+  {
+    "id": "lora",
+    "name": "Lora",
+    "embeddedFontNames": [
+      "AAAAAA+Lora-Regular_Bold",
+      "BAAAAA+Lora-Regular",
+      "CAAAAA+Lora-Italic",
+      "DAAAAA+Lora-Regular_Bold",
+      "EAAAAA+Lora-Italic_Bold-Italic",
+      "BAAAAA+Lora-Regular_Bold",
+      "CAAAAA+Lora-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 119492,
+    "versionHash": "ae644356ac386ee8f613c00da93321c37db1c2c41c679955a543428255c340c0"
+  },
+  {
+    "id": "merriweather",
+    "name": "Merriweather",
+    "embeddedFontNames": [
+      "AAAAAA+Merriweather-Light_wght2BC0000_wdth_opsz150000",
+      "BAAAAA+Merriweather-Regular",
+      "CAAAAA+Merriweather-Italic",
+      "DAAAAA+Merriweather-Bold",
+      "EAAAAA+Merriweather-BoldItalic",
+      "BAAAAA+Merriweather-Light_wght2BC0000_wdth_opsz1C0000",
+      "CAAAAA+Merriweather-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 149518,
+    "versionHash": "ab3b44091032873e7ba1a6f6a153c188073ffa85aada002c0de498673a074ba7"
+  },
+  {
+    "id": "inter",
+    "name": "Inter",
+    "embeddedFontNames": [
+      "AAAAAA+Inter-Regular_opsz150000_wght2BC0000",
+      "BAAAAA+Inter-Regular",
+      "CAAAAA+Inter-Italic",
+      "DAAAAA+Inter-Regular_Bold",
+      "EAAAAA+Inter-Italic_Bold-Italic",
+      "BAAAAA+Inter-Regular_opsz1C0000_wght2BC0000",
+      "CAAAAA+Inter-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 124312,
+    "versionHash": "9dec8e6d1a98f8cd810a1a78812a79f93fb89392a5a86ca1ee9fd641ef543759"
+  },
+  {
+    "id": "montserrat",
+    "name": "Montserrat",
+    "embeddedFontNames": [
+      "AAAAAA+Montserrat-Bold",
+      "BAAAAA+Montserrat-Regular",
+      "CAAAAA+Montserrat-Italic",
+      "DAAAAA+Montserrat-Bold",
+      "EAAAAA+Montserrat-BoldItalic",
+      "BAAAAA+Montserrat-Bold",
+      "CAAAAA+Montserrat-Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 111830,
+    "versionHash": "36c98506b5041dc0e85827443cd9b4942dc4c21f5873ed4151bf3f504bff2c92"
+  },
+  {
+    "id": "poppins",
+    "name": "Poppins",
+    "embeddedFontNames": [
+      "AAAAAA+Poppins-Bold",
+      "BAAAAA+Poppins-Regular",
+      "CAAAAA+Poppins-Italic",
+      "DAAAAA+Poppins-BoldItalic",
+      "CAAAAA+Courier"
+    ],
+    "bytes": 24158,
+    "versionHash": "315732d7b24b29af73545154a1e449d2867e309b4588b65a68e46a09548b37a4"
+  },
+  {
+    "id": "dm-sans",
+    "name": "DM Sans",
+    "embeddedFontNames": [
+      "AAAAAA+DMSans-9ptRegular_opsz150000_wght2BC0000",
+      "BAAAAA+DMSans-9ptRegular_Regular",
+      "CAAAAA+DMSans-9ptItalic_Italic",
+      "DAAAAA+DMSans-9ptRegular_Bold",
+      "EAAAAA+DMSans-9ptItalic_Bold-Italic",
+      "BAAAAA+DMSans-9ptRegular_opsz1C0000_wght2BC0000",
+      "CAAAAA+DMSans-9ptRegular_Regular",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 98054,
+    "versionHash": "90a57cc529a30d6d3b390cea9a6b5cc60cc1e64dd0817a9694e35b63b6a1af30"
+  },
+  {
+    "id": "space-grotesk",
+    "name": "Space Grotesk",
+    "embeddedFontNames": [
+      "AAAAAA+SpaceGrotesk-Light_Bold",
+      "BAAAAA+SpaceGrotesk-Light_Regular",
+      "CAAAAA+SpaceGrotesk-Light_Regular",
+      "DAAAAA+SpaceGrotesk-Light_Bold",
+      "EAAAAA+SpaceGrotesk-Light_Bold",
+      "BAAAAA+SpaceGrotesk-Light_Bold",
+      "DAAAAA+Courier"
+    ],
+    "bytes": 89258,
+    "versionHash": "f1fbb5e06cfb28edeedfafcf3b3d584fac930aeacad42572777601ca93826ebc"
+  }
+]

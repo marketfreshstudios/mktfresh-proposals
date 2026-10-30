@@ -1,0 +1,559 @@
+{
+  "captures": [
+    {
+      "file": "contact-list-copy-375-light.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "unlink-confirm-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-empty-375-light.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-partial-375-light.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-complete-375-light.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "products-and-mapping-375-light.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-manual-375-light.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-qbo-warning-375-light.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-inline-controls-375-light.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "font-upload-license-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "editor-products-picker-375-light.png",
+      "frame": "2d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "editor-shared-switch-375-light.png",
+      "frame": "2e",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "studio-products-navigation-375-light.png",
+      "frame": "7g",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "contact-list-copy-375-dark.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "unlink-confirm-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-empty-375-dark.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-partial-375-dark.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-complete-375-dark.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "products-and-mapping-375-dark.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-manual-375-dark.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-qbo-warning-375-dark.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-inline-controls-375-dark.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "font-upload-license-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-products-picker-375-dark.png",
+      "frame": "2d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-shared-switch-375-dark.png",
+      "frame": "2e",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-products-navigation-375-dark.png",
+      "frame": "7g",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "contact-list-copy-768-light.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "unlink-confirm-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-empty-768-light.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-partial-768-light.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-complete-768-light.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "products-and-mapping-768-light.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-manual-768-light.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-qbo-warning-768-light.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "template-inline-controls-768-light.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "font-upload-license-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "editor-products-picker-768-light.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "editor-shared-switch-768-light.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "studio-products-navigation-768-light.png",
+      "frame": "7g",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "contact-list-copy-768-dark.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "unlink-confirm-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-empty-768-dark.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-partial-768-dark.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-complete-768-dark.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "products-and-mapping-768-dark.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-manual-768-dark.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-qbo-warning-768-dark.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "template-inline-controls-768-dark.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "font-upload-license-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-products-picker-768-dark.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-shared-switch-768-dark.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-products-navigation-768-dark.png",
+      "frame": "7g",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "contact-list-copy-1440-light.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "unlink-confirm-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-empty-1440-light.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-partial-1440-light.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "home-setup-complete-1440-light.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "products-and-mapping-1440-light.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-manual-1440-light.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "product-detail-qbo-warning-1440-light.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-inline-controls-1440-light.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "font-upload-license-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "editor-products-picker-1440-light.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "editor-shared-switch-1440-light.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "studio-products-navigation-1440-light.png",
+      "frame": "7g",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "contact-list-copy-1440-dark.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-customer-and-contact-copy-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "unlink-confirm-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-empty-1440-dark.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-partial-1440-dark.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "home-setup-complete-1440-dark.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "products-and-mapping-1440-dark.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-manual-1440-dark.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "product-detail-qbo-warning-1440-dark.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-inline-controls-1440-dark.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "font-upload-license-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-products-picker-1440-dark.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-shared-switch-1440-dark.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-products-navigation-1440-dark.png",
+      "frame": "7g",
+      "width": 1440,
+      "theme": "dark"
+    }
+  ],
+  "identicalSourceVariants": [
+    "2d",
+    "2e",
+    "5h",
+    "6b",
+    "6c",
+    "6d",
+    "6e",
+    "6f",
+    "7b",
+    "7d",
+    "7f",
+    "7g",
+    "8a"
+  ]
+}
