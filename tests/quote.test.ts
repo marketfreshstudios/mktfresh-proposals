@@ -1,3 +1,4 @@
+import { flatQuote, quoteItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { setup, staff } from "./helpers";
 import { LineSchema, type Item, readLine } from "../src/lib/model";
@@ -7,7 +8,7 @@ import { totals, versionHash, renderBlocks } from "../src/lib/content";
 it("keeps three totals, entered overrides and custom scope without deriving prices", async () => {
   const { draft } = await setup();
   const custom = LineSchema.parse({
-    ...draft.quote[1],
+    ...flatQuote(draft.quote)[1],
     pricing_item_id: null,
     custom_family_id: "00000000-0000-4000-8000-000000000099",
     amount: 200000,
@@ -32,8 +33,10 @@ it("keeps three totals, entered overrides and custom scope without deriving pric
 });
 it("warns on inconsistencies and unknown keys, but blocks legacy keys at send", async () => {
   const { draft, repo, service } = await setup();
-  draft.quote[1].amount = 9000;
-  draft.quote[1].stripe_lookup_key = "new-unknown";
+  draft.quote = flatQuote(draft.quote);
+  (draft.quote[1] as import("../src/lib/model").Line).amount = 9000;
+  (draft.quote[1] as import("../src/lib/model").Line).stripe_lookup_key =
+    "new-unknown";
   draft.quote[1].plan_terms = {
     kickoff_qbo: 100,
     payoff_months: 2,
@@ -42,7 +45,7 @@ it("warns on inconsistencies and unknown keys, but blocks legacy keys at send", 
   };
   const catalog = await repo.entities<Item>("pricing_items");
   expect(readiness(draft, catalog)).toMatchObject({ ready: true });
-  expect(readiness(draft, catalog).warnings).toHaveLength(3);
+  expect(readiness(draft, catalog).warnings).toHaveLength(4);
   const legacy = { ...catalog[4], legacy: true };
   await repo.put("pricing_items", legacy);
   await expect(service.send(draft.id, staff)).rejects.toThrow("legacy");

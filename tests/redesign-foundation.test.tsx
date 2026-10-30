@@ -1,3 +1,6 @@
+import { flatQuote } from "../src/lib/quote-model";
+import { mutate } from "../src/lib/repository";
+import { variables } from "../src/lib/presentation";
 import { expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { formatMoney, intervalSuffix } from "../src/lib/money";
@@ -92,7 +95,22 @@ it("current money preferences parse while old sent/signed rendering, quote shape
     WorkspaceSettingsSchema.parse({ ...settings, money: { cents: "always" } })
       .money?.cents,
   ).toBe("always");
-  const sent = await service.send(draft.id, staff);
+  let sent = await service.send(draft.id, staff);
+  // Explicit pre-redesign fixture: the old flat evidence, fixed cents and no new flags.
+  sent = await mutate(repo, sent.id, (p) => {
+    p.quote = flatQuote(p.quote);
+    delete p.quote_model_version;
+    const v = p.versions[0];
+    v.quote = flatQuote(v.quote);
+    delete v.quote_model_version;
+    delete v.money_format_version;
+    v.variables_resolved = variables(p, v.quote, false);
+    v.content_hash = versionHash({
+      content: v.content,
+      quote: v.quote,
+      variables_resolved: v.variables_resolved,
+    });
+  });
   const signed = await service.sign(
     sent.id,
     signature(sent.revision),

@@ -1,4 +1,11 @@
 "use client";
+import {
+  chooseItem,
+  flatQuote,
+  orderedItems,
+  selectedContent,
+} from "../lib/quote-model";
+import type { QuoteItem } from "../lib/model";
 import { useEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
@@ -10,7 +17,7 @@ import {
   ClientSignatureBlock,
 } from "./legacy-client-proposal";
 import { SignatureForm } from "./signature";
-import { api, ApiError, Banner, Button, Icon, ThemeToggle, date } from "./ui";
+import { api, ApiError, Banner, Button, Icon, date } from "./ui";
 import { Skeleton } from "./foundation";
 export type PublicProposal = ReturnType<typeof publicResult>;
 type Brand = {
@@ -37,6 +44,12 @@ export function ClientProposal({
     legacy: boolean;
   } | null>(null);
   const [failure, setFailure] = useState(false);
+  useEffect(() => {
+    const preference = localStorage.getItem("proposal-theme");
+    document.documentElement.dataset.theme =
+      preference ??
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }, []);
   useEffect(() => {
     let active = true;
     setRoute(null);
@@ -245,13 +258,24 @@ function NewClientFlow({
   async function toggle(id: string, selected: boolean) {
     if (!p || pending.current || stale || signed) return;
     const previous = p,
-      quote = p.quote.map((l) => (l.id === id ? { ...l, selected } : l)),
+      items =
+        p.quote_model_version === 3
+          ? chooseItem(p.items as QuoteItem[], id, selected)
+          : p.items,
+      quote =
+        p.quote_model_version === 3
+          ? flatQuote(items as QuoteItem[])
+          : p.quote.map((l) => (l.id === id ? { ...l, selected } : l)),
       t = totals(quote as Line[]);
+    const fmt = (n: number) =>
+      p.money_format_version === 2
+        ? formatMoney(n, p.currency, p.money_cents)
+        : money(n, p.currency);
     const variables = {
       ...p.variables,
-      "quote.one_time_total": money(t.one_time_total, p.currency),
-      "quote.monthly_total": money(t.monthly_total, p.currency),
-      "quote.yearly_total": money(t.yearly_total, p.currency),
+      "quote.one_time_total": fmt(t.one_time_total),
+      "quote.monthly_total": fmt(t.monthly_total),
+      "quote.yearly_total": fmt(t.yearly_total),
       "quote.selected_items": quote
         .filter((l) => !l.optional || l.selected)
         .map((l) => l.name)
@@ -260,6 +284,7 @@ function NewClientFlow({
     setP({
       ...p,
       quote,
+      items,
       totals: t,
       variables,
       html: renderBlocks(p.content, quote as Line[], variables, p.currency),
@@ -312,8 +337,20 @@ function NewClientFlow({
   }
   const hasContract = p?.content.some(
     (b) =>
-      b.type === "heading" && /contract|statement of work/i.test(b.text ?? ""),
+      b.type === "contract" ||
+      (b.type === "heading" &&
+        /contract|statement of work/i.test(b.text ?? "")),
   );
+  const missingChoice =
+    !!p &&
+    p.quote_model_version === 3 &&
+    p.items.some(
+      (i) =>
+        i.choice_group_id &&
+        !p.items.some(
+          (v) => v.choice_group_id === i.choice_group_id && v.selected,
+        ),
+    );
   const go = (value: typeof step) => {
     setError("");
     setStep(value);
@@ -707,7 +744,7 @@ function NewClientFlow({
                         : "Download your signed copy"}
                     </Button>
                   ))}
-                  {!p.files.length && (
+                  {step === "done" && !p.files.length && (
                     <p role="status">
                       Your signature is saved. Your signed copy is being sealed
                       and will arrive by email.
@@ -779,10 +816,11 @@ function NewClientFlow({
                           setReadSection(
                             p.content.findIndex(
                               (b) =>
-                                b.type === "heading" &&
-                                /contract|statement of work/i.test(
-                                  b.text ?? "",
-                                ),
+                                b.type === "contract" ||
+                                (b.type === "heading" &&
+                                  /contract|statement of work/i.test(
+                                    b.text ?? "",
+                                  )),
                             ),
                           );
                           go("read");
@@ -805,7 +843,12 @@ function NewClientFlow({
                   contactName={contact.name}
                   contactEmail={contact.email}
                   company={brand.name}
-                  blocked={stale || busy}
+                  blocked={stale || busy || missingChoice}
+                  blockedReason={
+                    missingChoice
+                      ? "Go back and choose one item in each choice group."
+                      : undefined
+                  }
                   onSign={async (value) => {
                     if (preview || stale || busy) return;
                     try {
@@ -945,9 +988,6 @@ function NewClientFlow({
             )}
           </>
         )}
-        <footer className="flow-theme">
-          <ThemeToggle />
-        </footer>
       </main>
     </div>
   );
@@ -1006,6 +1046,37 @@ function ChosenItems({
   proposal: PublicProposal;
   terms?: boolean;
 }) {
+  if (p.quote_model_version === 3)
+    return (
+      <ul className="flow-chosen">
+        {orderedItems(p.items as QuoteItem[])
+          .filter((i) => !i.optional || i.selected)
+          .map((i) => (
+            <li key={i.id}>
+              <span>
+                {i.name}
+                {terms && (
+                  <Terms
+                    line={
+                      flatQuote([i]).find((l) => l.interval !== "one_time") ??
+                      flatQuote([i])[0]
+                    }
+                    currency={p.currency}
+                  />
+                )}
+              </span>
+              <span>
+                {i.sublines.map((s) => (
+                  <span key={s.id} style={{ display: "block" }}>
+                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+                    {intervalSuffix(s.interval)}
+                  </span>
+                ))}
+              </span>
+            </li>
+          ))}
+      </ul>
+    );
   return (
     <ul className="flow-chosen">
       {p.quote
@@ -1072,7 +1143,11 @@ function FlowDocument({
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
 }) {
-  const sections = p.content
+  const content =
+    p.quote_model_version === 3
+      ? selectedContent(p.content, p.items as QuoteItem[])
+      : p.content;
+  const sections = content
     .map((block, index) => ({ block, index }))
     .filter(
       ({ block, index }) =>
@@ -1104,7 +1179,7 @@ function FlowDocument({
           </nav>
         </details>
       )}
-      {p.content.map((block, index) =>
+      {content.map((block, index) =>
         index === 0 &&
         block.type === "heading" &&
         resolve(block.text ?? "", p.variables) ===
@@ -1115,53 +1190,78 @@ function FlowDocument({
               <p>Optional items are your choice. Totals update as you go.</p>
             )}
             <div className="flow-quote">
-              {p.quote.map((l) => {
-                const line = (
-                  <>
-                    <div className="flow-line-title">
-                      <strong>{l.name}</strong>
-                      <span className="amount">
-                        {formatMoney(
-                          l.amount * l.qty,
-                          p.currency,
-                          p.money_cents,
-                        )}
-                        {intervalSuffix(l.interval)}
-                      </span>
+              {p.quote_model_version === 3 ? (
+                <ClientItems
+                  proposal={p}
+                  frozen={frozen}
+                  busy={busy}
+                  onToggle={onToggle}
+                />
+              ) : (
+                p.quote.map((l) => {
+                  const line = (
+                    <>
+                      <div className="flow-line-title">
+                        <strong>{l.name}</strong>
+                        <span className="amount">
+                          {formatMoney(
+                            l.amount * l.qty,
+                            p.currency,
+                            p.money_cents,
+                          )}
+                          {intervalSuffix(l.interval)}
+                        </span>
+                      </div>
+                      {l.description && <p>{l.description}</p>}
+                      <Terms line={l as Line} currency={p.currency} />
+                      {l.qty !== 1 && <small>Quantity {l.qty}</small>}
+                      <small>
+                        {l.optional
+                          ? l.selected
+                            ? "Optional · included"
+                            : "Optional · not included"
+                          : "Required"}
+                      </small>
+                    </>
+                  );
+                  return l.optional && !frozen ? (
+                    <label
+                      className={`flow-quote-line ${l.selected ? "selected" : ""}`}
+                      key={l.id}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={l.selected}
+                        disabled={busy}
+                        onChange={(e) => onToggle?.(l.id, e.target.checked)}
+                      />
+                      <div>{line}</div>
+                    </label>
+                  ) : (
+                    <div className="flow-quote-line" key={l.id}>
+                      <Icon name="lock" />
+                      <div>{line}</div>
                     </div>
-                    {l.description && <p>{l.description}</p>}
-                    <Terms line={l as Line} currency={p.currency} />
-                    {l.qty !== 1 && <small>Quantity {l.qty}</small>}
-                    <small>
-                      {l.optional
-                        ? l.selected
-                          ? "Optional · included"
-                          : "Optional · not included"
-                        : "Required"}
-                    </small>
-                  </>
-                );
-                return l.optional && !frozen ? (
-                  <label
-                    className={`flow-quote-line ${l.selected ? "selected" : ""}`}
-                    key={l.id}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={l.selected}
-                      disabled={busy}
-                      onChange={(e) => onToggle?.(l.id, e.target.checked)}
-                    />
-                    <div>{line}</div>
-                  </label>
-                ) : (
-                  <div className="flow-quote-line" key={l.id}>
-                    <Icon name="lock" />
-                    <div>{line}</div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
+          </section>
+        ) : block.type === "contract" ? (
+          <section
+            key={index}
+            id={`section-${index}`}
+            className="flow-contract"
+          >
+            <h2>{block.text || "Statement of Work & Contract"}</h2>
+            {(block.clauses ?? []).map((c) => (
+              <details key={c.id}>
+                <summary>{resolve(c.heading, p.variables)}</summary>
+                <p style={{ whiteSpace: "pre-wrap" }}>
+                  {resolve(c.body, p.variables)}
+                </p>
+              </details>
+            ))}
           </section>
         ) : block.type === "signature_block" ? (
           <ClientSignatureBlock
@@ -1188,5 +1288,109 @@ function FlowDocument({
         Valid until {date(p.valid_until)} · From {p.company.name}
       </p>
     </article>
+  );
+}
+
+function ClientItems({
+  proposal: p,
+  frozen,
+  busy,
+  onToggle,
+}: {
+  proposal: PublicProposal;
+  frozen: boolean;
+  busy: boolean;
+  onToggle?: (id: string, value: boolean) => void;
+}) {
+  const items = orderedItems(p.items as QuoteItem[]),
+    units = Array.from(new Set(items.map((i) => i.choice_group_id ?? i.id)));
+  function option(i: QuoteItem) {
+    const active = !i.optional || !!i.selected;
+    const body = (
+      <div>
+        <div className="flow-line-title">
+          <strong>{i.name}</strong>
+        </div>
+        {i.description && <p>{i.description}</p>}
+        {i.sublines.map((s) => (
+          <div className="flow-subline" key={s.id}>
+            <span>
+              {s.label ||
+                (s.interval === "one_time"
+                  ? "One-time"
+                  : s.interval === "month"
+                    ? "Monthly"
+                    : "Yearly")}
+              {s.qty !== 1 && ` × ${s.qty}`}
+            </span>
+            <strong>
+              {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+              {intervalSuffix(s.interval)}
+            </strong>
+          </div>
+        ))}
+        {i.schedule && (
+          <p className="flow-terms">
+            {formatMoney(
+              i.sublines.find((s) => s.interval !== "one_time")?.amount ?? 0,
+              p.currency,
+              p.money_cents,
+            )}
+            /{i.sublines.some((s) => s.interval === "year") ? "year" : "month"}{" "}
+            for {i.schedule.after_paid_invoices} paid invoices, then{" "}
+            {formatMoney(i.schedule.then.amount, p.currency, p.money_cents)}/
+            {i.sublines.some((s) => s.interval === "year") ? "year" : "month"}.
+          </p>
+        )}
+        {i.min_term_months && (
+          <p className="flow-terms">
+            {i.min_term_months}-month minimum commitment.
+          </p>
+        )}
+        <small>
+          {i.optional ? (active ? "Included" : "Not included") : "Required"}
+        </small>
+      </div>
+    );
+    return i.optional && !frozen ? (
+      <label
+        className={`flow-quote-line ${active ? "selected" : ""}`}
+        key={i.id}
+      >
+        <input
+          type={i.choice_group_id ? "radio" : "checkbox"}
+          name={i.choice_group_id ?? i.id}
+          checked={active}
+          disabled={busy}
+          onChange={(e) => onToggle?.(i.id, e.target.checked)}
+        />
+        {body}
+      </label>
+    ) : (
+      <div className="flow-quote-line" key={i.id}>
+        <Icon name="lock" />
+        {body}
+      </div>
+    );
+  }
+  return (
+    <>
+      {units.map((id) => {
+        const group = items.filter((i) => (i.choice_group_id ?? i.id) === id);
+        return group[0].choice_group_id ? (
+          <div
+            role="radiogroup"
+            aria-label="Choose one"
+            className="flow-choice-group"
+            key={id}
+          >
+            <h3>Choose one</h3>
+            {group.map(option)}
+          </div>
+        ) : (
+          option(group[0])
+        );
+      })}
+    </>
   );
 }

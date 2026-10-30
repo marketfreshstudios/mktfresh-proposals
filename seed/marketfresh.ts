@@ -66,6 +66,34 @@ export async function seed(repo: Repository, mockMappings = false) {
         interval,
         active,
         description: "",
+        ...(sku === "oiot-monthly"
+          ? {
+              display_name: "Website Build — Own It Over Time",
+              sublines: [
+                {
+                  id: "00000000-0000-4000-8000-000000009001",
+                  label: "Kickoff",
+                  amount: 50000,
+                  interval: "one_time",
+                  qty: 1,
+                  qbo_item_ref: mockMappings ? "mock_item_oiot-kickoff" : null,
+                },
+                {
+                  id: "00000000-0000-4000-8000-000000009002",
+                  label: "Monthly",
+                  amount: 17500,
+                  interval: "month",
+                  qty: 1,
+                  stripe_lookup_key: mockMappings ? "oiot-monthly-175" : null,
+                },
+              ],
+              min_term_months: 18,
+              schedule: {
+                after_paid_invoices: 30,
+                then: { amount: 10000, lookup_key: "hosted-standard-100" },
+              },
+            }
+          : {}),
         qbo_item_ref:
           mockMappings && interval === "one_time" ? "mock_item_" + sku : null,
         stripe_lookup_key:
@@ -86,6 +114,28 @@ export async function seed(repo: Repository, mockMappings = false) {
         text: "Prepared for {{client.company}}. Your investment is {{quote.one_time_total}} and {{quote.monthly_total}} per month.",
       },
       { type: "pricing_table" },
+      {
+        type: "contract",
+        text: "Statement of Work & Contract",
+        clauses: [
+          {
+            id: "scope",
+            heading: "1. Scope of work",
+            body: "The agreed scope is described in this proposal. Changes require written agreement.",
+            show_when: null,
+          },
+          {
+            id: "payment-plan",
+            heading: "4.4 Own It Over Time",
+            body: "If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, {{workspace.name}} may take the website offline.",
+            show_when: {
+              kind: "item_selected",
+              pricing_item_id: "00000000-0000-4000-8000-000000000103",
+            },
+            draft: true,
+          },
+        ],
+      },
       { type: "signature_block", role: "client" },
       { type: "signature_block", role: "company" },
     ],

@@ -15,6 +15,7 @@ export function SignatureForm({
   contactEmail = "",
   company = "",
   blocked = false,
+  blockedReason,
   onSign,
 }: {
   preview?: boolean;
@@ -29,6 +30,7 @@ export function SignatureForm({
   contactEmail?: string;
   company?: string;
   blocked?: boolean;
+  blockedReason?: string;
   onSign: (value: SignatureInput) => Promise<void>;
 }) {
   const [mode, setMode] = useState<"typed" | "drawn">("typed"),
@@ -53,23 +55,25 @@ export function SignatureForm({
       ((e.clientY - r.top) * c.height) / r.height,
     ] as const;
   }
-  const reason = preview
-    ? "Preview, not sent. Signing is disabled."
-    : blocked
-      ? "Reload and review the current proposal before signing."
-      : !fullName.trim()
-        ? "Enter your full name before signing."
-        : mode === "drawn"
-          ? !drawn
-            ? "Draw your signature or choose Type."
-            : !consent
-              ? "Tick the agreement before signing."
-              : ""
-          : !typed.trim()
-            ? "Type your signature before signing."
-            : !consent
-              ? "Tick the agreement before signing."
-              : "";
+  const reason =
+    blockedReason ||
+    (preview
+      ? "Preview, not sent. Signing is disabled."
+      : blocked
+        ? "Reload and review the current proposal before signing."
+        : !fullName.trim()
+          ? "Enter your full name before signing."
+          : mode === "drawn"
+            ? !drawn
+              ? "Draw your signature or choose Type."
+              : !consent
+                ? "Tick the agreement before signing."
+                : ""
+            : !typed.trim()
+              ? "Type your signature before signing."
+              : !consent
+                ? "Tick the agreement before signing."
+                : "");
   function clear() {
     setDrawn(false);
     setTyped("");

@@ -23,6 +23,7 @@ import {
   ClientSchema,
   ItemSchema,
   LineSchema,
+  QuoteSchema,
   SignatureSchema,
   check,
   type Block,
@@ -460,6 +461,7 @@ export async function handle(req: Request, path: string[]) {
               id: uuid,
               name: z.string().min(1).max(200),
               content: z.array(z.record(z.string(), z.unknown())).max(300),
+              default_items: QuoteSchema.optional(),
               default_quote: z
                 .array(
                   z.object({
@@ -594,7 +596,7 @@ export async function handle(req: Request, path: string[]) {
               .array(z.record(z.string(), z.unknown()))
               .max(300)
               .optional(),
-            quote: z.array(LineSchema).max(100).optional(),
+            quote: QuoteSchema.optional(),
             valid_until: z.string().optional(),
           })
           .parse(await body(req));
@@ -630,6 +632,16 @@ export async function handle(req: Request, path: string[]) {
             input.sender_user_id === undefined
               ? undefined
               : uuid.parse(input.sender_user_id),
+            {
+              note: z.string().max(4000).optional().parse(input.note),
+              password: z
+                .string()
+                .min(8)
+                .max(200)
+                .nullable()
+                .optional()
+                .parse(input.password),
+            },
           ),
         );
       }

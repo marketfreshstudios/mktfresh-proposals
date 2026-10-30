@@ -1,3 +1,4 @@
+import { flatQuote, quoteItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { setup, staff, signature, clientActor } from "./helpers";
@@ -76,7 +77,7 @@ it("requires PKCE/audience, consumes codes once, rotates refresh tokens and revo
     tokens.access_token,
   );
 });
-it("AI creates a review-required draft; human save unlocks send and frozen proposals reject AI edits", async () => {
+it("AI creates a review-required draft; explicit section review unlocks send and frozen proposals reject AI edits", async () => {
   const { repo, service, draft } = await setup();
   const ai = {
     actor: "ai:Claude",
@@ -95,7 +96,7 @@ it("AI creates a review-required draft; human save unlocks send and frozen propo
       title: "AI draft",
       content_markdown:
         "# Scope\n\nHello {{client.first_name}}.\n\n- Design\n- Build",
-      lines: draft.quote,
+      lines: flatQuote(draft.quote),
     },
     scopes,
   )) as { id: string; revision: number };
@@ -111,7 +112,15 @@ it("AI creates a review-required draft; human save unlocks send and frozen propo
   );
   let p = await service.edit(
     created.id,
-    { revision: created.revision, title: "Reviewed proposal" },
+    {
+      revision: created.revision,
+      title: "Reviewed proposal",
+      content: created.content.map((b) =>
+        b.ai_review
+          ? { ...b, ai_review: { ...b.ai_review, reviewed: true } }
+          : b,
+      ),
+    },
     staff,
   );
   expect(p.ai_unreviewed).toBe(false);
@@ -121,7 +130,7 @@ it("AI creates a review-required draft; human save unlocks send and frozen propo
       repo,
       ai,
       "set_quote_lines",
-      { id: p.id, revision: p.revision, lines: p.quote },
+      { id: p.id, revision: p.revision, lines: flatQuote(p.quote) },
       scopes,
     ),
   ).rejects.toThrow("only modify drafts");

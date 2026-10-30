@@ -1,4 +1,5 @@
 "use client";
+import { flatQuote } from "../lib/quote-model";
 import { intervalSuffix } from "../lib/money";
 import { statusDisplay } from "../lib/status-display";
 import { StaffShell } from "./staff-shell";
@@ -274,13 +275,18 @@ export function StaffApp({
         </div>
       );
       content =
-        (!action || action === "edit") && p.status === "draft" ? (
+        (!action || action === "edit" || action === "send") &&
+        p.status === "draft" ? (
           <ProposalEditor
             initial={p}
+            initialTab={action === "send" ? "Review & send" : "Quote"}
             settings={data.settings}
             catalog={data.catalog}
             families={data.families}
             library={data.library}
+            staff={data.staff}
+            user={data.user}
+            documents={data.documents}
             onSaved={setP}
           />
         ) : action === "send" ? (
@@ -698,7 +704,7 @@ function Dashboard({ data }: { data: Data }) {
 function ProposalTable({ proposals }: { proposals: Proposal[] }) {
   const money = useMoney();
   const hasYearly = proposals.some((p) =>
-    p.quote?.some((line) => line.interval === "year"),
+    flatQuote(p.quote ?? []).some((line) => line.interval === "year"),
   );
   return proposals.length ? (
     <div className="table-wrap">
@@ -1125,6 +1131,7 @@ function Document({ p }: { p: Proposal }) {
       v?.quote ?? p.quote,
       v?.variables_resolved ?? variables(p),
       p.currency,
+      p.workspace_settings?.money?.cents ?? "auto",
     );
   } catch (e) {
     html = "Preview unavailable until unresolved variables are fixed.";

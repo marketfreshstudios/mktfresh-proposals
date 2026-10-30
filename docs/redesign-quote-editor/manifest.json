@@ -1,0 +1,310 @@
+[
+  {
+    "file": "sections-375-light.png",
+    "frame": "2c",
+    "width": 375,
+    "theme": "light",
+    "state": "sections"
+  },
+  {
+    "file": "section-edit-375-light.png",
+    "frame": "2c",
+    "width": 375,
+    "theme": "light",
+    "state": "section-edit"
+  },
+  {
+    "file": "quote-375-light.png",
+    "frame": "2d",
+    "width": 375,
+    "theme": "light",
+    "state": "quote"
+  },
+  {
+    "file": "reference-375-light.png",
+    "frame": "2e",
+    "width": 375,
+    "theme": "light",
+    "state": "reference"
+  },
+  {
+    "file": "line-edit-375-light.png",
+    "frame": "2e",
+    "width": 375,
+    "theme": "light",
+    "state": "line-edit"
+  },
+  {
+    "file": "send-375-light.png",
+    "frame": "2f",
+    "width": 375,
+    "theme": "light",
+    "state": "send"
+  },
+  {
+    "file": "tablet-document-768-light.png",
+    "frame": "5g",
+    "width": 768,
+    "theme": "light",
+    "state": "tablet-document"
+  },
+  {
+    "file": "quote-768-light.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "light",
+    "state": "quote"
+  },
+  {
+    "file": "reference-768-light.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "light",
+    "state": "reference"
+  },
+  {
+    "file": "send-768-light.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "light",
+    "state": "send"
+  },
+  {
+    "file": "quote-1440-light.png",
+    "frame": "2a",
+    "width": 1440,
+    "theme": "light",
+    "state": "quote"
+  },
+  {
+    "file": "reference-1440-light.png",
+    "frame": "2b",
+    "width": 1440,
+    "theme": "light",
+    "state": "reference"
+  },
+  {
+    "file": "send-1440-light.png",
+    "frame": "2b",
+    "width": 1440,
+    "theme": "light",
+    "state": "send"
+  },
+  {
+    "file": "sections-375-dark.png",
+    "frame": "2c",
+    "width": 375,
+    "theme": "dark",
+    "state": "sections"
+  },
+  {
+    "file": "section-edit-375-dark.png",
+    "frame": "2c",
+    "width": 375,
+    "theme": "dark",
+    "state": "section-edit"
+  },
+  {
+    "file": "quote-375-dark.png",
+    "frame": "2d",
+    "width": 375,
+    "theme": "dark",
+    "state": "quote"
+  },
+  {
+    "file": "reference-375-dark.png",
+    "frame": "2e",
+    "width": 375,
+    "theme": "dark",
+    "state": "reference"
+  },
+  {
+    "file": "line-edit-375-dark.png",
+    "frame": "2e",
+    "width": 375,
+    "theme": "dark",
+    "state": "line-edit"
+  },
+  {
+    "file": "send-375-dark.png",
+    "frame": "2f",
+    "width": 375,
+    "theme": "dark",
+    "state": "send"
+  },
+  {
+    "file": "tablet-document-768-dark.png",
+    "frame": "5g",
+    "width": 768,
+    "theme": "dark",
+    "state": "tablet-document"
+  },
+  {
+    "file": "quote-768-dark.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "dark",
+    "state": "quote"
+  },
+  {
+    "file": "reference-768-dark.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "dark",
+    "state": "reference"
+  },
+  {
+    "file": "send-768-dark.png",
+    "frame": "5h",
+    "width": 768,
+    "theme": "dark",
+    "state": "send"
+  },
+  {
+    "file": "quote-1440-dark.png",
+    "frame": "2a",
+    "width": 1440,
+    "theme": "dark",
+    "state": "quote"
+  },
+  {
+    "file": "reference-1440-dark.png",
+    "frame": "2b",
+    "width": 1440,
+    "theme": "dark",
+    "state": "reference"
+  },
+  {
+    "file": "send-1440-dark.png",
+    "frame": "2b",
+    "width": 1440,
+    "theme": "dark",
+    "state": "send"
+  },
+  {
+    "file": "client-choice-375-light.png",
+    "frame": "2a client counterpart",
+    "width": 375,
+    "theme": "light",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-choice-768-light.png",
+    "frame": "2a client counterpart",
+    "width": 768,
+    "theme": "light",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-choice-1440-light.png",
+    "frame": "2a client counterpart",
+    "width": 1440,
+    "theme": "light",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-choice-375-dark.png",
+    "frame": "2a client counterpart",
+    "width": 375,
+    "theme": "dark",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-choice-768-dark.png",
+    "frame": "2a client counterpart",
+    "width": 768,
+    "theme": "dark",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-choice-1440-dark.png",
+    "frame": "2a client counterpart",
+    "width": 1440,
+    "theme": "dark",
+    "state": "client-choice"
+  },
+  {
+    "file": "client-billing-375-light.png",
+    "frame": "5e",
+    "width": 375,
+    "theme": "light",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-375-light.png",
+    "frame": "5f",
+    "width": 375,
+    "theme": "light",
+    "state": "client-signed"
+  },
+  {
+    "file": "client-billing-768-light.png",
+    "frame": "5e",
+    "width": 768,
+    "theme": "light",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-768-light.png",
+    "frame": "5f",
+    "width": 768,
+    "theme": "light",
+    "state": "client-signed"
+  },
+  {
+    "file": "client-billing-1440-light.png",
+    "frame": "5e",
+    "width": 1440,
+    "theme": "light",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-1440-light.png",
+    "frame": "5f",
+    "width": 1440,
+    "theme": "light",
+    "state": "client-signed"
+  },
+  {
+    "file": "client-billing-375-dark.png",
+    "frame": "5e",
+    "width": 375,
+    "theme": "dark",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-375-dark.png",
+    "frame": "5f",
+    "width": 375,
+    "theme": "dark",
+    "state": "client-signed"
+  },
+  {
+    "file": "client-billing-768-dark.png",
+    "frame": "5e",
+    "width": 768,
+    "theme": "dark",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-768-dark.png",
+    "frame": "5f",
+    "width": 768,
+    "theme": "dark",
+    "state": "client-signed"
+  },
+  {
+    "file": "client-billing-1440-dark.png",
+    "frame": "5e",
+    "width": 1440,
+    "theme": "dark",
+    "state": "client-billing"
+  },
+  {
+    "file": "client-signed-1440-dark.png",
+    "frame": "5f",
+    "width": 1440,
+    "theme": "dark",
+    "state": "client-signed"
+  }
+]

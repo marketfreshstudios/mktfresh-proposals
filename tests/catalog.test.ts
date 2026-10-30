@@ -1,3 +1,4 @@
+import { flatQuote, quoteItems } from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import {
   syncStripeCatalog,
@@ -55,7 +56,7 @@ it("round-trips playbook entered lines without calculating prices", async () => 
     source: "playbook",
     source_version: "v1.17 · 15 October 2026",
     title: "From discovery",
-    lines: draft.quote,
+    lines: flatQuote(draft.quote),
     notes: "Client requirements",
   };
   expect(

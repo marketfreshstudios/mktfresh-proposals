@@ -1,17 +1,7 @@
 "use client";
 import { accentText } from "../lib/branding";
 import { useEffect, useState, useRef } from "react";
-import {
-  api,
-  post,
-  ApiError,
-  Banner,
-  Button,
-  Totals,
-  ThemeToggle,
-  Icon,
-  date,
-} from "./ui";
+import { api, post, ApiError, Banner, Button, Totals, Icon, date } from "./ui";
 import { SignatureForm } from "./legacy-signature";
 import { money, totals, renderBlocks } from "../lib/presentation";
 import type { Line, SignatureInput } from "../lib/model";
@@ -242,7 +232,6 @@ export function LegacyClientProposal({
               <small style={{ display: "block" }}>{p.recipient.company}</small>
             )}
           </div>
-          <ThemeToggle />
         </header>
         <main
           className="client-body stack"

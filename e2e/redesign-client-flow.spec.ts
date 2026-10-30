@@ -1,3 +1,5 @@
+import { chooseItem, flatQuote } from "../src/lib/quote-model";
+import type { QuoteItem } from "../src/lib/model";
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { setup, staff, clientActor, signature } from "../tests/helpers";
@@ -99,9 +101,12 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
           json: { error: "Revision changed" },
         });
       const { item_id, selected } = req.postDataJSON();
-      current.quote = current.quote.map((l) =>
-        l.id === item_id ? { ...l, selected } : l,
+      current.items = chooseItem(
+        current.items as QuoteItem[],
+        item_id,
+        selected,
       );
+      current.quote = flatQuote(current.items as QuoteItem[]);
       const { totals, money } = await import("../src/lib/presentation");
       current.totals = totals(current.quote as any);
       current.variables["quote.monthly_total"] = money(
@@ -514,10 +519,11 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
     }
   }
   const withYear = structuredClone(sent);
+  withYear.quote = flatQuote(withYear.quote);
   withYear.quote.push({
-    ...withYear.quote[0],
+    ...flatQuote(withYear.quote)[0],
     id: "year",
-    interval: "year",
+    interval: "year" as const,
     amount: 0,
   });
   staffRows = [withYear];

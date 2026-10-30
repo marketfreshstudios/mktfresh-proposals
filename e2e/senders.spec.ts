@@ -27,6 +27,8 @@ test("From lists the workspace team, defaults to the current user and submits a 
       const input = route.request().postDataJSON();
       expect(Object.keys(input).sort()).toEqual([
         "confirm_ai_review",
+        "note",
+        "password",
         "sender_user_id",
       ]);
       p = await service.send(
@@ -47,8 +49,6 @@ test("From lists the workspace team, defaults to the current user and submits a 
   await expect(from).toHaveValue(staff.actor.slice(6));
   await expect(from.locator("option")).toHaveCount(2);
   await from.selectOption(members[1].user_id);
-  await page
-    .getByRole("button", { name: "Send proposal", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Send to Jane", exact: true }).click();
   await expect.poll(() => p.sender?.email).toBe("franz@example.test");
 });

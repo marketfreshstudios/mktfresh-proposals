@@ -52,6 +52,7 @@ export async function sealedPdf(
             version.quote,
             version.variables_resolved,
             currency,
+            brand?.settings?.money?.cents ?? "auto",
           ) +
           signatures,
       ),

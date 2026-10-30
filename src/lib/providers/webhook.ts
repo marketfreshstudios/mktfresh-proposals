@@ -1,3 +1,4 @@
+import { billingLines } from "../quote-model";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { check, type Proposal, type Job } from "../model";
 import { event, queue, system } from "../service";
@@ -136,9 +137,9 @@ export async function executeStripeWebhook(
     }[];
     const expected = sessions.find((s) => s.id === session.id);
     check(expected, "Checkout was not created for this proposal");
-    const lines = p.versions
-      .at(-1)!
-      .quote.filter((l) => expected.line_ids.includes(l.id));
+    const lines = billingLines(p.versions.at(-1)!.quote).filter((l) =>
+      expected.line_ids.includes(l.id),
+    );
     if (session.mode === "setup") {
       const intent = await provider.api.get<{
         status: string;
@@ -183,14 +184,12 @@ export async function executeStripeWebhook(
       `/v1/subscriptions/${object.subscription}`,
       {},
     );
-    const line = p.versions
-      .at(-1)!
-      .quote.find(
-        (l) =>
-          l.schedule &&
-          (l.stripe_lookup_key ?? `custom:${l.custom_family_id}`) ===
-            sub.metadata.plan,
-      );
+    const line = billingLines(p.versions.at(-1)!.quote).find(
+      (l) =>
+        l.schedule &&
+        (l.stripe_lookup_key ?? `custom:${l.custom_family_id}`) ===
+          sub.metadata.plan,
+    );
     if (line) await provider.configureSchedule(sub, line, j.id, p.id);
     await mutate(repo, p.id, (current) => {
       if (
