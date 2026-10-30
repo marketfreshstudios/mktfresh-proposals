@@ -50,9 +50,12 @@ export function variables(p: Proposal, quote = p.quote) {
     map["client." + field] = p.client[field];
   Object.assign(map, {
     "proposal.title": p.title,
-    "proposal.valid_until": readableDate(p.valid_until),
+    "proposal.valid_until": readableDate(
+      p.valid_until,
+      p.workspace_settings?.timezone,
+    ),
     "proposal.validity": p.valid_until
-      ? `This proposal is valid until ${readableDate(p.valid_until)}.`
+      ? `This proposal is valid until ${readableDate(p.valid_until, p.workspace_settings?.timezone)}.`
       : "",
     "proposal.date": new Intl.DateTimeFormat("en-US", {
       month: "long",
@@ -208,7 +211,7 @@ export function renderBlocks(
                     (i) => (i.choice_group_id ?? i.id) === id,
                   ),
                   grouped = !!options[0].choice_group_id;
-                return `<section style="${grouped ? "border:2px solid #8baba0;padding:12px;border-radius:8px;" : ""}margin:14px 0">${grouped ? "<h3>Choose one</h3>" : ""}${options.map((i) => `<section style="break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0"><h3>${escape(i.name)} · ${selected(i) ? "Included" : "Not included"}</h3><p>${escape(i.description)}</p><table><tbody>${i.sublines.map((s) => `<tr><td>${escape(s.label || intervalLabel(s.interval))}</td><td>× ${s.qty}</td><td>${fmt(s.amount * s.qty)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}</td></tr>`).join("")}</tbody></table>${i.min_term_months ? `<p>${i.min_term_months}-month minimum commitment.</p>` : ""}${i.schedule ? `<p>After ${i.schedule.after_paid_invoices} paid invoices: ${fmt(i.schedule.then.amount)} per recurring period.</p>` : ""}</section>`).join("")}</section>`;
+                return `<section style="${grouped ? "border:2px solid #8baba0;padding:12px;border-radius:8px;" : ""}margin:14px 0">${grouped ? "<h3>Choose one</h3>" : ""}${options.map((i) => `<section style="break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0"><h3>${escape(i.name)} · ${selected(i) ? "Included" : "Not included"}</h3><p>${escape(i.description)}</p><table><tbody>${i.sublines.map((s) => `<tr><td>${escape(s.label || intervalLabel(s.interval))}</td><td>× ${s.qty}</td><td>${fmt(s.amount * s.qty)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}</td></tr>`).join("")}</tbody></table>${typeof i.plan_terms?.client_copy === "string" && i.plan_terms.client_copy ? `<p>${escape(i.plan_terms.client_copy)}</p>` : ""}${i.min_term_months ? `<p>${i.min_term_months}-month minimum commitment.</p>` : ""}${i.schedule ? `<p>After ${i.schedule.after_paid_invoices} paid invoices: ${fmt(i.schedule.then.amount)} per recurring period.</p>` : ""}</section>`).join("")}</section>`;
               })
               .join("") +
             `<p>One-time: ${fmt(t.one_time_total)} · Monthly: ${fmt(t.monthly_total)}/mo${items.some((i) => i.sublines.some((s) => s.interval === "year")) ? ` · Yearly: ${fmt(t.yearly_total)}/yr` : ""}</p>`

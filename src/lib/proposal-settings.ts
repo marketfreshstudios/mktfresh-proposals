@@ -8,6 +8,8 @@ export function settingsSnapshot(
   const parsed = WorkspaceSettingsSchema.parse(structuredClone(settings));
   return {
     ...parsed,
+    default_password_hash: undefined,
+    default_password_enabled: undefined,
     company_signatory: parsed.company_signatory
       ? { ...parsed.company_signatory, image: null, authorized_user_ids: [] }
       : null,

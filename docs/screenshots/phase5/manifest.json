@@ -1,0 +1,1145 @@
+{
+  "captures": [
+    {
+      "file": "templates-375-light.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-375-light.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-375-light.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-terms-375-light.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "connections-375-light.png",
+      "frame": "7c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-client-links-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-team-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "activity-375-light.png",
+      "frame": "7e",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "studio-375-light.png",
+      "frame": "7g",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "first-run-375-light.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "all-clear-375-light.png",
+      "frame": "8b",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "loading-375-light.png",
+      "frame": "8c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "editor-offline-375-light.png",
+      "frame": "8e",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "editor-conflict-375-light.png",
+      "frame": "8f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "ai-draft-review-375-light.png",
+      "frame": "8d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-error-375-light.png",
+      "frame": "8g",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "pdf-failed-375-light.png",
+      "frame": "8h",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "checkout-pending-375-light.png",
+      "frame": "8i",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "already-countersigned-375-light.png",
+      "frame": "8j",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "assistant-offline-375-light.png",
+      "frame": "8k",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "send-checks-375-light.png",
+      "frame": "8l",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "stored-signature-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "missing-signature-375-light.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "templates-768-light.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-768-light.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-768-light.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-terms-768-light.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "connections-768-light.png",
+      "frame": "7c",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-client-links-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-team-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "activity-768-light.png",
+      "frame": "7e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "studio-768-light.png",
+      "frame": "7g",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "first-run-768-light.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "all-clear-768-light.png",
+      "frame": "8b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "loading-768-light.png",
+      "frame": "8c",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "editor-offline-768-light.png",
+      "frame": "8e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "editor-conflict-768-light.png",
+      "frame": "8f",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "ai-draft-review-768-light.png",
+      "frame": "8d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-error-768-light.png",
+      "frame": "8g",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "pdf-failed-768-light.png",
+      "frame": "8h",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "checkout-pending-768-light.png",
+      "frame": "8i",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "already-countersigned-768-light.png",
+      "frame": "8j",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "assistant-offline-768-light.png",
+      "frame": "8k",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "send-checks-768-light.png",
+      "frame": "8l",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "stored-signature-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "missing-signature-768-light.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "templates-1440-light.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-1440-light.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-1440-light.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-terms-1440-light.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "connections-1440-light.png",
+      "frame": "7c",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-fonts-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-client-links-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "workspace-team-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "activity-1440-light.png",
+      "frame": "7e",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "studio-1440-light.png",
+      "frame": "7g",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "first-run-1440-light.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "all-clear-1440-light.png",
+      "frame": "8b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "loading-1440-light.png",
+      "frame": "8c",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "editor-offline-1440-light.png",
+      "frame": "8e",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "editor-conflict-1440-light.png",
+      "frame": "8f",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "ai-draft-review-1440-light.png",
+      "frame": "8d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "catalog-error-1440-light.png",
+      "frame": "8g",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "pdf-failed-1440-light.png",
+      "frame": "8h",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "checkout-pending-1440-light.png",
+      "frame": "8i",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "already-countersigned-1440-light.png",
+      "frame": "8j",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "assistant-offline-1440-light.png",
+      "frame": "8k",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "send-checks-1440-light.png",
+      "frame": "8l",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "stored-signature-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "missing-signature-1440-light.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "templates-375-dark.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-375-dark.png",
+      "frame": "7a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-375-dark.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-terms-375-dark.png",
+      "frame": "7b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "connections-375-dark.png",
+      "frame": "7c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-client-links-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-team-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-375-dark.png",
+      "frame": "7e",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-375-dark.png",
+      "frame": "7g",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "first-run-375-dark.png",
+      "frame": "8a",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "all-clear-375-dark.png",
+      "frame": "8b",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "loading-375-dark.png",
+      "frame": "8c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-offline-375-dark.png",
+      "frame": "8e",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-conflict-375-dark.png",
+      "frame": "8f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "ai-draft-review-375-dark.png",
+      "frame": "8d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-error-375-dark.png",
+      "frame": "8g",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "pdf-failed-375-dark.png",
+      "frame": "8h",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "checkout-pending-375-dark.png",
+      "frame": "8i",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "already-countersigned-375-dark.png",
+      "frame": "8j",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "assistant-offline-375-dark.png",
+      "frame": "8k",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "send-checks-375-dark.png",
+      "frame": "8l",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "stored-signature-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "missing-signature-375-dark.png",
+      "frame": "7d",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "templates-768-dark.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-768-dark.png",
+      "frame": "7f",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-768-dark.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-terms-768-dark.png",
+      "frame": "7b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "connections-768-dark.png",
+      "frame": "7c",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-client-links-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-team-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-768-dark.png",
+      "frame": "7e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-768-dark.png",
+      "frame": "7g",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "first-run-768-dark.png",
+      "frame": "8a",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "all-clear-768-dark.png",
+      "frame": "8b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "loading-768-dark.png",
+      "frame": "8c",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-offline-768-dark.png",
+      "frame": "8e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-conflict-768-dark.png",
+      "frame": "8f",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "ai-draft-review-768-dark.png",
+      "frame": "8d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-error-768-dark.png",
+      "frame": "8g",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "pdf-failed-768-dark.png",
+      "frame": "8h",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "checkout-pending-768-dark.png",
+      "frame": "8i",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "already-countersigned-768-dark.png",
+      "frame": "8j",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "assistant-offline-768-dark.png",
+      "frame": "8k",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "send-checks-768-dark.png",
+      "frame": "8l",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "stored-signature-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "missing-signature-768-dark.png",
+      "frame": "7d",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "templates-1440-dark.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-1440-dark.png",
+      "frame": "7a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-1440-dark.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-terms-1440-dark.png",
+      "frame": "7b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "connections-1440-dark.png",
+      "frame": "7c",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-fonts-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-client-links-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "workspace-team-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-1440-dark.png",
+      "frame": "7e",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "studio-1440-dark.png",
+      "frame": "7g",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "first-run-1440-dark.png",
+      "frame": "8a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "all-clear-1440-dark.png",
+      "frame": "8b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "loading-1440-dark.png",
+      "frame": "8c",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-offline-1440-dark.png",
+      "frame": "8e",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "editor-conflict-1440-dark.png",
+      "frame": "8f",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "ai-draft-review-1440-dark.png",
+      "frame": "8d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "catalog-error-1440-dark.png",
+      "frame": "8g",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "pdf-failed-1440-dark.png",
+      "frame": "8h",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "checkout-pending-1440-dark.png",
+      "frame": "8i",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "already-countersigned-1440-dark.png",
+      "frame": "8j",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "assistant-offline-1440-dark.png",
+      "frame": "8k",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "send-checks-1440-dark.png",
+      "frame": "8l",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "stored-signature-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "missing-signature-1440-dark.png",
+      "frame": "7d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-failed-billing-375-light.png",
+      "frame": "8o",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-completed-375-light.png",
+      "frame": "8r",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-replaced-375-light.png",
+      "frame": "8p",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-decline-confirm-375-light.png",
+      "frame": "8q",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-offline-375-light.png",
+      "frame": "8n",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-loading-375-light.png",
+      "frame": "8m",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "client-failed-billing-768-light.png",
+      "frame": "8o",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-completed-768-light.png",
+      "frame": "8r",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-replaced-768-light.png",
+      "frame": "8p",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-decline-confirm-768-light.png",
+      "frame": "8q",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-offline-768-light.png",
+      "frame": "8n",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-loading-768-light.png",
+      "frame": "8m",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "client-failed-billing-1440-light.png",
+      "frame": "8o",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-completed-1440-light.png",
+      "frame": "8r",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-replaced-1440-light.png",
+      "frame": "8p",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-decline-confirm-1440-light.png",
+      "frame": "8q",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-offline-1440-light.png",
+      "frame": "8n",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-loading-1440-light.png",
+      "frame": "8m",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "client-failed-billing-375-dark.png",
+      "frame": "8o",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-completed-375-dark.png",
+      "frame": "8r",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-replaced-375-dark.png",
+      "frame": "8p",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-decline-confirm-375-dark.png",
+      "frame": "8q",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-offline-375-dark.png",
+      "frame": "8n",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-loading-375-dark.png",
+      "frame": "8m",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "client-failed-billing-768-dark.png",
+      "frame": "8o",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-completed-768-dark.png",
+      "frame": "8r",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-replaced-768-dark.png",
+      "frame": "8p",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-decline-confirm-768-dark.png",
+      "frame": "8q",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-offline-768-dark.png",
+      "frame": "8n",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-loading-768-dark.png",
+      "frame": "8m",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "client-failed-billing-1440-dark.png",
+      "frame": "8o",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-completed-1440-dark.png",
+      "frame": "8r",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-replaced-1440-dark.png",
+      "frame": "8p",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-decline-confirm-1440-dark.png",
+      "frame": "8q",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-offline-1440-dark.png",
+      "frame": "8n",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "client-loading-1440-dark.png",
+      "frame": "8m",
+      "width": 1440,
+      "theme": "dark"
+    }
+  ],
+  "identicalSourceVariants": [
+    "reference-7b-dark.png",
+    "reference-7c-dark.png",
+    "reference-7d-dark.png",
+    "reference-7e-dark.png",
+    "reference-7f-dark.png",
+    "reference-7g-dark.png",
+    "reference-8b-dark.png",
+    "reference-8c-dark.png",
+    "reference-8d-dark.png",
+    "reference-8e-dark.png",
+    "reference-8f-dark.png",
+    "reference-8g-dark.png",
+    "reference-8h-dark.png",
+    "reference-8i-dark.png",
+    "reference-8j-dark.png",
+    "reference-8k-dark.png",
+    "reference-8l-dark.png",
+    "reference-8m-dark.png",
+    "reference-8n-dark.png",
+    "reference-8o-dark.png",
+    "reference-8p-dark.png",
+    "reference-8q-dark.png",
+    "reference-8r-dark.png"
+  ]
+}

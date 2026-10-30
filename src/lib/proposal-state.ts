@@ -28,8 +28,9 @@ export const billingIssues = (p: Proposal) =>
     (j) => j.kind === "billing" && !!j.last_error && j.status !== "done",
   );
 export const billingOpen = (p: Proposal) =>
-  p.billing_links.some((l) => l.status !== "succeeded") ||
-  p.jobs.some((j) => j.kind === "billing" && j.status !== "done");
+  p.billing_links.some(
+    (l) => l.status !== "succeeded" || l.metadata?.requires_checkout === true,
+  ) || p.jobs.some((j) => j.kind === "billing" && j.status !== "done");
 export const canCountersign = (
   p: Proposal,
   user: Actor,

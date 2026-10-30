@@ -8,7 +8,7 @@ import { proposalAction } from "../src/lib/proposal-actions";
 import { saveClient, DuplicateClient } from "../src/lib/clients";
 import { publicResult } from "../src/lib/service";
 import type { Proposal, Client } from "../src/lib/model";
-import { defaultValidUntil } from "../src/lib/validity";
+import { defaultValidUntil, calendarDate } from "../src/lib/validity";
 test("Phase 4: records, guarded countersign, list actions, clients, indefinite dates and Studio across widths/themes", async ({
   page,
   context,
@@ -334,7 +334,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         .getByRole("combobox", { name: "Template", exact: true })
         .selectOption(draft.template_id!);
       await expect(page.getByLabel("Valid until", { exact: true })).toHaveValue(
-        defaultValidUntil(settings).slice(0, 10),
+        calendarDate(defaultValidUntil(settings), settings.timezone),
       );
       await page
         .getByRole("button", { name: "Clear valid until; never expires" })

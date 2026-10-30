@@ -79,7 +79,12 @@ export async function syncStripeCatalog(
           : {}),
         legacy,
         active: !legacy && price.product.active,
-        plan_terms: Object.keys(price.metadata).length ? price.metadata : null,
+        plan_terms: {
+          ...price.metadata,
+          ...(old?.plan_terms?.client_copy
+            ? { client_copy: old.plan_terms.client_copy }
+            : {}),
+        },
       });
       await repo.put("pricing_items", item);
       imported++;

@@ -1,28 +1,20 @@
 "use client";
+import { HomeV4, ProposalListV4, RecordV4, ClientsV4 } from "./records";
 import {
-  HomeV4,
-  ProposalListV4,
-  RecordV4,
-  ClientsV4,
-  ProposalRows,
-  WorkspaceActivityV4,
-} from "./records";
+  WorkspaceStudio,
+  CatalogStudio,
+  TemplatesStudio,
+  ConnectionsStudio,
+  ActivityStudio,
+} from "./studio";
 import { ClientPicker } from "./client-picker";
 import { ValidityField } from "./validity-field";
 import { defaultValidUntil } from "../lib/validity";
-import { quoteSublines } from "../lib/quote-model";
-import { intervalSuffix } from "../lib/money";
-import { statusDisplay } from "../lib/status-display";
 import { StaffShell } from "./staff-shell";
 import { Sheet, Skeleton } from "./foundation";
 import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
-import { useMoney } from "./money-context";
 import { withDraftSettings } from "../lib/proposal-settings";
-import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
-import { TemplateWarnings } from "./template-warnings";
-import { inactiveTemplateItems } from "../lib/template-quote";
 import type { ReferenceDocument } from "../lib/documents";
-import { ReferenceDocuments, ReferenceStatus } from "./reference-documents";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   api,
@@ -32,17 +24,12 @@ import {
   Banner,
   Field,
   Empty,
-  Totals,
-  JobState,
-  Status,
-  Signatures,
   ThemeToggle,
   date,
   Icon,
 } from "./ui";
-import { ProposalEditor, BlocksEditor } from "./editor";
-import { StoredSignatureEditor } from "./company-signature";
-import { renderBlocks, variables, totals } from "../lib/presentation";
+import { ProposalEditor } from "./editor";
+import { renderBlocks, variables } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { PlaybookDraftSchema } from "../lib/playbook";
 import type {
@@ -83,6 +70,7 @@ export type Data = {
   total: number;
   clients: Client[];
   catalog: Item[];
+  catalog_error?: string;
   templates: Template[];
   library: { id: string; name: string; block: Block }[];
   families: { id: string; name: string; active: boolean }[];
@@ -111,8 +99,8 @@ export function StaffApp({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [notice, setNotice] = useState("");
-  async function load() {
-    setLoading(true);
+  async function load(preservePage = false) {
+    if (!preservePage) setLoading(true);
     setError("");
     try {
       const session = await api<{
@@ -134,7 +122,7 @@ export function StaffApp({
       ] = await Promise.all([
         allProposals(),
         api("/api/clients"),
-        api("/api/pricing_items"),
+        api("/api/pricing_items").catch((e) => ({ load_error: e.message })),
         api("/api/templates"),
         api("/api/content_library"),
         api("/api/custom_families"),
@@ -150,7 +138,10 @@ export function StaffApp({
         proposals: proposals.items,
         total: proposals.total,
         clients,
-        catalog,
+        catalog: Array.isArray(catalog) ? catalog : [],
+        catalog_error: Array.isArray(catalog)
+          ? undefined
+          : (catalog as { load_error: string }).load_error,
         templates,
         library,
         families,
@@ -209,13 +200,12 @@ export function StaffApp({
         </p>
       </div>
     );
-  const company = data?.settings?.company_name ?? "Your workspace";
   const run = async (fn: () => Promise<unknown>, success = "Saved") => {
     try {
       setError("");
       await fn();
       setNotice(success);
-      await load();
+      await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to complete action");
     }
@@ -339,81 +329,44 @@ export function StaffApp({
       content = <ClientsV4 data={data} selected={id} onRefresh={load} />;
     } else if (section === "catalogue") {
       headerAction = null;
-      content = <Catalogue data={data} run={run} />;
+      content = <CatalogStudio data={data} run={run} />;
     } else if (section === "templates") {
       headerAction = null;
-      content = <Templates data={data} selected={id} run={run} />;
+      content = <TemplatesStudio data={data} selected={id} run={run} />;
     } else if (section === "library") {
       headerAction = null;
-      content = <Library data={data} run={run} />;
+      content = <TemplatesStudio data={data} run={run} blocksOnly />;
     } else if (section === "imports") {
       headerAction = null;
-      content = (
-        <div className="stack">
-          <Banner title="Imported proposals are read-only">
-            Imports are run separately in small batches. This screen reports
-            their state.
-          </Banner>
-          <div className="card">
-            <h2>Archive report</h2>
-            <p>
-              Run the CSV import, export, upload and reconciliation scripts
-              described in README from your Mac. Match PDFs by the original
-              proposal ID; review missing and unmatched files before another
-              batch.
-            </p>
-            <p>
-              {
-                data.proposals.filter((p) => p.source === "proposify_import")
-                  .length
-              }{" "}
-              imported records.{" "}
-              {
-                data.proposals.filter(
-                  (p) =>
-                    p.source === "proposify_import" &&
-                    p.files?.some((f) => f.kind === "import"),
-                ).length
-              }{" "}
-              have PDFs attached.{" "}
-              {
-                data.proposals.filter(
-                  (p) =>
-                    p.source === "proposify_import" &&
-                    !p.files?.some((f) => f.kind === "import"),
-                ).length
-              }{" "}
-              are missing PDFs.
-            </p>
-          </div>
-          <ProposalRows
-            data={data}
-            proposals={data.proposals.filter(
-              (p) => p.source === "proposify_import",
-            )}
-          />
-        </div>
-      );
+      content = <ConnectionsStudio data={data} run={run} initial="imports" />;
     } else if (section === "integrations") {
       headerAction = null;
-      content = <Integrations data={data} run={run} />;
+      content = (
+        <ConnectionsStudio
+          data={data}
+          run={run}
+          initial={query.view === "reference" ? "reference" : undefined}
+        />
+      );
     } else if (section === "settings" && id === "team") {
       title = "Team";
       headerAction = null;
-      content = <Team data={data} run={run} />;
+      content = <WorkspaceStudio data={data} run={run} />;
     } else if (section === "settings" && id === "ai") {
       title = "AI assistants";
       subtitle =
         "Read reference data and draft proposals. A person always reviews and sends.";
       headerAction = null;
-      content = <Assistants data={data} run={run} />;
+      content = (
+        <ConnectionsStudio data={data} run={run} initial="assistants" />
+      );
     } else if (section === "activity") {
       title = "Activity log";
       headerAction = null;
-      content = <WorkspaceActivityV4 data={data} />;
+      content = <ActivityStudio data={data} />;
     } else if (section === "settings") {
       headerAction = null;
-      content = <Settings data={data} run={run} />;
+      content = <WorkspaceStudio data={data} run={run} />;
     } else
       content = (
         <Empty
@@ -442,36 +395,40 @@ export function StaffApp({
         {headerAction}
       </header>
       <div className="page-body stack">
-        {path[0] === "studio" && (
-          <nav className="studio-subnav" aria-label="Studio views">
-            {path[1] === "templates" && (
-              <>
-                <a href="/studio/templates">Templates</a>
-                <a href="/studio/templates?view=blocks">Reusable blocks</a>
-              </>
-            )}
-            {path[1] === "connections" && (
-              <>
-                <a href="/studio/connections">Connections</a>
-                <a href="/studio/connections?view=assistants">AI assistants</a>
-                <a href="/studio/connections?view=imports">Proposify import</a>
-              </>
-            )}
-            {path[1] === "workspace" && (
-              <>
-                <a href="/studio/workspace">Workspace</a>
-                <a href="/studio/workspace?view=team">Team</a>
-              </>
-            )}
-          </nav>
-        )}
         {error && (
           <Banner
             tone="danger"
             title="Unable to complete this action"
-            action={<Button onClick={load}>Reload</Button>}
+            action={<Button onClick={() => void load()}>Reload</Button>}
           >
             {error}
+          </Banner>
+        )}
+        {data?.catalog_error && (
+          <Banner
+            tone="warning"
+            title="We couldn’t load the catalog. Your saved lines are unchanged."
+            action={
+              <Button
+                onClick={async () => {
+                  try {
+                    const catalog = await api<Item[]>("/api/pricing_items");
+                    setData({ ...data, catalog, catalog_error: undefined });
+                  } catch (e) {
+                    setError(
+                      e instanceof Error
+                        ? e.message
+                        : "Try loading the catalog again",
+                    );
+                  }
+                }}
+              >
+                Try again
+              </Button>
+            }
+          >
+            You can keep writing or add a custom item while the catalog is
+            unavailable.
           </Banner>
         )}
         {notice && <Banner tone="success" title={notice} />}{" "}
@@ -639,7 +596,7 @@ function NewProposal({ data }: { data: Data }) {
                 template_id: f.get("template"),
                 title: f.get("title"),
                 valid_until: f.get("valid_until")
-                  ? String(f.get("valid_until")) + "T23:59:59.999Z"
+                  ? String(f.get("valid_until"))
                   : null,
                 ...(f.get("password") ? { password: f.get("password") } : {}),
                 ...(payload ? { playbook: payload } : {}),
@@ -687,6 +644,7 @@ function NewProposal({ data }: { data: Data }) {
           </Field>
           <Field label="Valid until">
             <ValidityField
+              timezone={data.settings?.timezone ?? "UTC"}
               defaultValue={defaultValidUntil(
                 data.settings ?? { timezone: "UTC", default_validity_days: 30 },
               )}
@@ -763,6 +721,7 @@ function SendProposal({
 }: {
   p: Proposal;
   catalog: Item[];
+  catalog_error?: string;
   data: Data;
   onSent: (p: Proposal) => void;
 }) {
@@ -959,7 +918,7 @@ function Audit({ p }: { p: Proposal }) {
           </thead>
           <tbody>
             {p.events.map((e) => (
-              <tr key={e.id}>
+              <tr key={e.id} id={`event-${e.id}`}>
                 <td>{new Date(e.created_at).toLocaleString()}</td>
                 <td>{e.type}</td>
                 <td>{String(e.metadata.application_statement ?? e.actor)}</td>
@@ -978,833 +937,6 @@ function Audit({ p }: { p: Proposal }) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-type Runner = (fn: () => Promise<unknown>, success?: string) => Promise<void>;
-function Catalogue({ data, run }: { data: Data; run: Runner }) {
-  const money = useMoney();
-  const [selected, setSelected] = useState<Item | null>(null),
-    [query, setQuery] = useState("");
-  return (
-    <div className="stack">
-      <Banner title="Catalogue defaults">
-        Prices are entered values. Stripe catalogue sync reads all pages;
-        billing resolves the exact lookup key. Legacy entries cannot be sent.
-      </Banner>
-      <div className="actions">
-        <Button
-          onClick={() =>
-            run(
-              () => post("/api/catalog-sync/stripe"),
-              "Stripe catalogue synced",
-            )
-          }
-        >
-          Sync Stripe test catalogue
-        </Button>
-        <Button
-          onClick={() =>
-            run(() => post("/api/catalog-sync/qbo"), "QuickBooks items synced")
-          }
-        >
-          Sync QuickBooks sandbox
-        </Button>
-        <Button onClick={() => setSelected(null)}>New item</Button>
-      </div>
-      <div className="grid">
-        <section className="card">
-          <Field label="Search catalogue">
-            <input value={query} onChange={(e) => setQuery(e.target.value)} />
-          </Field>
-          {data.catalog
-            .filter((i) =>
-              (itemDisplayName(i) + i.name + i.sku)
-                .toLowerCase()
-                .includes(query.toLowerCase()),
-            )
-            .map((i) => (
-              <button
-                className="row catalogue-row"
-                key={i.id}
-                onClick={() => setSelected(i)}
-              >
-                <span>
-                  <strong>{itemDisplayName(i)}</strong>
-                  <small>
-                    {i.stripe_lookup_key ?? i.qbo_item_ref ?? "Mapping needed"}{" "}
-                    · {i.legacy ? "Legacy" : i.active ? "Active" : "Inactive"}
-                  </small>
-                </span>
-                <span>
-                  {money(i.amount)}
-                  {intervalSuffix(i.interval)}
-                </span>
-              </button>
-            ))}
-        </section>
-        <form
-          key={selected?.id ?? "new"}
-          className="card form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            void run(() =>
-              post("/api/pricing_items", {
-                ...selected,
-                ...Object.fromEntries(f),
-                display_name: f.get("display_name") || undefined,
-                amount: Math.round(Number(f.get("price")) * 100),
-                active: f.get("active") === "on",
-                legacy: f.get("legacy") === "on",
-                stripe_lookup_key: f.get("stripe_lookup_key") || null,
-                qbo_item_ref: f.get("qbo_item_ref") || null,
-              }),
-            );
-          }}
-        >
-          <h2>{selected ? "Edit catalogue item" : "New catalogue item"}</h2>
-          {[
-            ["name", "Name"],
-            ["display_name", "Display name"],
-            ["sku", "SKU"],
-            ["description", "Description"],
-            ["stripe_lookup_key", "Stripe lookup key"],
-            ["qbo_item_ref", "QuickBooks item reference"],
-          ].map(([key, label]) => (
-            <Field key={key} label={label}>
-              <input
-                name={key}
-                required={["name", "sku"].includes(key)}
-                placeholder={
-                  key === "display_name" ? selected?.name : undefined
-                }
-                defaultValue={String(selected?.[key as keyof Item] ?? "")}
-              />
-            </Field>
-          ))}
-          <small>
-            Display name is used on new proposal lines and in dropdowns. Leave
-            it blank to use the synced name. Stripe sync preserves your
-            override.
-          </small>
-          <Field label="Price (USD)">
-            <input
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              defaultValue={(selected?.amount ?? 0) / 100}
-            />
-          </Field>
-          <Field label="Billing interval">
-            <select
-              name="interval"
-              defaultValue={selected?.interval ?? "one_time"}
-            >
-              <option value="one_time">One-time</option>
-              <option value="month">Monthly</option>
-              <option value="year">Yearly</option>
-            </select>
-          </Field>
-          <label>
-            <input
-              name="active"
-              type="checkbox"
-              defaultChecked={selected?.active ?? true}
-            />{" "}
-            Active
-          </label>
-          <label>
-            <input
-              name="legacy"
-              type="checkbox"
-              defaultChecked={selected?.legacy ?? false}
-            />{" "}
-            Legacy
-          </label>
-          <Button type="submit" variant="primary">
-            Save item
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
-}
-function Templates({
-  data,
-  selected,
-  run,
-}: {
-  data: Data;
-  selected?: string;
-  run: Runner;
-}) {
-  const original = data.templates.find((t) => t.id === selected);
-  const [blocks, setBlocks] = useState<Block[]>(
-      original?.content ?? [
-        { type: "heading", text: "{{proposal.title}}" },
-        { type: "paragraph", text: "Prepared for {{client.company}}." },
-        { type: "pricing_table" },
-        { type: "signature_block", role: "client" },
-        { type: "signature_block", role: "company" },
-      ],
-    ),
-    [quote, setQuote] = useState<Template["default_quote"]>(
-      original?.default_quote ?? [],
-    );
-  return (
-    <div className="stack">
-      <section className="card">
-        <h2>Templates</h2>
-        <div className="actions">
-          {data.templates.map((t) => (
-            <a className="btn" href={`/templates/${t.id}/edit`} key={t.id}>
-              {t.name}
-              {!t.active ? " · inactive" : ""}
-              {inactiveTemplateItems(t, data.catalog).length
-                ? " · defaults need review"
-                : ""}
-            </a>
-          ))}
-          <a className="btn" href="/templates/new">
-            New template
-          </a>
-        </div>
-      </section>
-      <TemplateWarnings
-        templates={
-          original ? [{ ...original, default_quote: quote }] : data.templates
-        }
-        catalog={data.catalog}
-      />
-      <form
-        className="card form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const f = new FormData(e.currentTarget);
-          void run(
-            () =>
-              post("/api/templates", {
-                id: original?.id,
-                name: f.get("name"),
-                content: blocks,
-                default_quote: quote,
-                active: f.get("active") === "on",
-              }),
-            "Template saved",
-          );
-        }}
-      >
-        <h2>{original ? "Edit template" : "Create template"}</h2>
-        <Field label="Template name">
-          <input name="name" required defaultValue={original?.name} />
-        </Field>
-        <label>
-          <input
-            name="active"
-            type="checkbox"
-            defaultChecked={original?.active ?? true}
-          />{" "}
-          Active
-        </label>
-        <BlocksEditor
-          content={blocks}
-          onChange={setBlocks}
-          map={{
-            "proposal.title": "Example proposal",
-            "client.company": "Example client",
-            "company.name": data.settings?.company_name ?? "Company",
-          }}
-          library={data.library}
-        />
-        <h3>Default quote</h3>
-        {quote.map((line, index) => (
-          <div className="row" key={index}>
-            <span>
-              {data.catalog.find((i) => i.id === line.pricing_item_id)?.name ??
-                "Unavailable item"}
-            </span>
-            <Field label="Quantity">
-              <input
-                type="number"
-                min="1"
-                value={line.qty}
-                onChange={(e) =>
-                  setQuote(
-                    quote.map((q, i) =>
-                      i === index ? { ...q, qty: Number(e.target.value) } : q,
-                    ),
-                  )
-                }
-              />
-            </Field>
-            <label>
-              <input
-                type="checkbox"
-                checked={line.optional}
-                onChange={(e) =>
-                  setQuote(
-                    quote.map((q, i) =>
-                      i === index
-                        ? { ...q, optional: e.target.checked, selected: true }
-                        : q,
-                    ),
-                  )
-                }
-              />{" "}
-              Optional
-            </label>
-            <Button
-              onClick={() => setQuote(quote.filter((_, i) => i !== index))}
-            >
-              Remove
-            </Button>
-          </div>
-        ))}
-        <Field label="Add catalogue default">
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value)
-                setQuote([
-                  ...quote,
-                  {
-                    pricing_item_id: e.target.value,
-                    qty: 1,
-                    optional: false,
-                    selected: true,
-                  },
-                ]);
-            }}
-          >
-            <option value="">Choose an item</option>
-            {sellableCatalogue(data.catalog).map((i) => (
-              <option key={i.id} value={i.id}>
-                {itemDisplayName(i)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Button variant="primary" type="submit">
-          Save template
-        </Button>
-      </form>
-    </div>
-  );
-}
-function Library({ data, run }: { data: Data; run: Runner }) {
-  const [selected, setSelected] = useState<string>(""),
-    [blocks, setBlocks] = useState<Block[]>([{ type: "paragraph", text: "" }]);
-  const item = data.library.find((i) => i.id === selected);
-  return (
-    <div className="grid">
-      <section className="card stack">
-        <h2>Reusable content</h2>
-        {data.library.map((i) => (
-          <Button
-            key={i.id}
-            onClick={() => {
-              setSelected(i.id);
-              setBlocks([i.block]);
-            }}
-          >
-            {i.name}
-          </Button>
-        ))}
-        <Button
-          onClick={() => {
-            setSelected("");
-            setBlocks([{ type: "paragraph", text: "" }]);
-          }}
-        >
-          New reusable block
-        </Button>
-      </section>
-      <form
-        key={selected}
-        className="card form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const f = new FormData(e.currentTarget);
-          void run(() =>
-            post("/api/content_library", {
-              id: item?.id,
-              name: f.get("name"),
-              block: blocks[0],
-            }),
-          );
-        }}
-      >
-        <Field label="Block name">
-          <input name="name" required defaultValue={item?.name} />
-        </Field>
-        <BlocksEditor
-          content={blocks}
-          onChange={setBlocks}
-          map={{}}
-          library={[]}
-        />
-        <Button
-          type="submit"
-          disabled={blocks.length !== 1}
-          note={
-            blocks.length !== 1
-              ? "Keep one block per library entry."
-              : undefined
-          }
-        >
-          Save reusable block
-        </Button>
-      </form>
-    </div>
-  );
-}
-function Integrations({ data, run }: { data: Data; run: Runner }) {
-  return (
-    <div className="stack">
-      <Banner title="Development providers">
-        The app defaults to mocks. Actual Stripe test mode and QuickBooks
-        sandbox require explicit configuration. No live billing is enabled.
-      </Banner>
-      <div className="grid">
-        {["Stripe", "QuickBooks"].map((name) => (
-          <section className="card" key={name}>
-            <h2>{name}</h2>
-            <p>
-              {name === "Stripe"
-                ? "Catalogue lookup, recurring billing and payment setup"
-                : "One-time invoices, created without sending"}
-            </p>
-            <Button
-              onClick={() =>
-                run(
-                  () =>
-                    post(
-                      `/api/catalog-sync/${name === "Stripe" ? "stripe" : "qbo"}`,
-                    ),
-                  "Catalogue synced",
-                )
-              }
-            >
-              Sync test catalogue
-            </Button>
-          </section>
-        ))}
-      </div>
-      <section className="card">
-        <h2>Billing and delivery queue</h2>
-        {data.proposals
-          .filter(
-            (p) =>
-              p.billing_links?.length ||
-              p.jobs?.some((j) => j.status === "failed"),
-          )
-          .map((p) => (
-            <div className="stack" key={p.id}>
-              <h3>
-                <a href={`/proposals/${p.id}`}>{p.title}</a>
-              </h3>
-              {p.billing_links?.map((l) => (
-                <div className="row" key={l.provider}>
-                  <span>
-                    {l.provider} · {l.status}
-                    <small>{l.last_error ?? ""}</small>
-                  </span>
-                  <a href={`/clients/${p.client.id}`}>Review customer match</a>
-                </div>
-              ))}
-              <Button
-                onClick={() =>
-                  run(
-                    () => post(`/api/proposals/${p.id}/retry`),
-                    "Retry processed",
-                  )
-                }
-              >
-                Retry after correction
-              </Button>
-            </div>
-          ))}
-        {!data.proposals.some((p) => p.billing_links?.length) && (
-          <Empty title="Nothing needs attention">
-            Your billing queue is clear.
-          </Empty>
-        )}
-      </section>
-    </div>
-  );
-}
-function Assistants({ data, run }: { data: Data; run: Runner }) {
-  return (
-    <div className="stack">
-      <Banner tone="ai" title="You stay in control">
-        Assistants can read your catalogue and pricing reference, create clients
-        and draft proposals. Sending, signing, deleting and billing actions are
-        denied by the server.
-      </Banner>
-      <section className="card">
-        <h2>Connect an assistant</h2>
-        <p>
-          Add this remote MCP endpoint in Claude or ChatGPT, choose automatic
-          registration, then sign in and approve its access.
-        </p>
-        <code>
-          {typeof location !== "undefined"
-            ? location.origin
-            : "https://your-domain"}
-          /mcp
-        </code>
-        <p>
-          Local addresses are for protocol testing. Hosted assistants need your
-          deployed HTTPS domain.
-        </p>
-        <p>Access: proposals:read · proposals:draft</p>
-      </section>
-      <section className="card">
-        <h2>Connected assistants</h2>
-        {data.assistants.length ? (
-          data.assistants.map((a) => (
-            <div className="row" key={a.id}>
-              <div>
-                <strong>{a.name}</strong>
-                <small>
-                  {a.scopes.join(" · ")} · Last used {date(a.last_used)}
-                </small>
-              </div>
-              {a.revoked ? (
-                <span className="pill">Revoked</span>
-              ) : (
-                <Button
-                  variant="danger"
-                  onClick={() =>
-                    run(
-                      () => post(`/api/assistants/${a.id}/revoke`),
-                      "Assistant revoked",
-                    )
-                  }
-                >
-                  Revoke access
-                </Button>
-              )}
-            </div>
-          ))
-        ) : (
-          <Empty title="No assistants connected">
-            A connection appears after you authorize it.
-          </Empty>
-        )}
-      </section>
-    </div>
-  );
-}
-function Settings({ data, run }: { data: Data; run: Runner }) {
-  const s = data.settings,
-    [logo, setLogo] = useState<string | null>(s?.logo ?? null),
-    [error, setError] = useState("");
-  const [signatoryImage, setSignatoryImage] = useState(
-    s?.company_signatory?.image ?? null,
-  );
-  const [allowed, setAllowed] = useState(
-    s?.company_signatory?.authorized_user_ids ?? [],
-  );
-  const owner = data.user?.staff_role === "owner";
-  return (
-    <div className="stack">
-      <form
-        className="card form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const f = new FormData(e.currentTarget);
-          void run(() =>
-            post("/api/workspace_settings", {
-              ...s,
-              ...Object.fromEntries(f),
-              logo,
-              company_signatory: owner
-                ? {
-                    name: String(f.get("signatory_name")),
-                    title: String(f.get("signatory_title")),
-                    user_id: f.get("signatory_user_id") || null,
-                    email:
-                      data.staff.find(
-                        (m) => m.user_id === f.get("signatory_user_id"),
-                      )?.email ?? s?.email,
-                    image: signatoryImage,
-                    authorized_user_ids: allowed,
-                  }
-                : s?.company_signatory,
-              default_validity_days: Number(f.get("default_validity_days")),
-              reminder_days: String(f.get("reminder_days"))
-                .split(",")
-                .filter(Boolean)
-                .map(Number),
-              qbo_custom_item_ref: f.get("qbo_custom_item_ref") || null,
-            }),
-          );
-        }}
-      >
-        <h2>Workspace identity and sending</h2>
-        <p>
-          Enter the domain already verified with your email provider. Staff
-          sender names are managed in <a href="/settings/team">Team</a>. Client
-          links use the deployment’s canonical address.
-        </p>
-        {[
-          ["company_name", "Company name"],
-          ["owner", "Owner contact name"],
-          ["email", "Contact email"],
-          ["phone", "Phone"],
-          ["address", "Address"],
-          ["sending_domain", "Verified sending domain"],
-          ["timezone", "Timezone"],
-          ["qbo_custom_item_ref", "QuickBooks Custom services item reference"],
-        ].map(([key, label]) => (
-          <Field key={key} label={label}>
-            <input
-              name={key}
-              readOnly={key === "sending_domain" && !owner}
-              defaultValue={String(
-                s?.[key as keyof WorkspaceSettings] ??
-                  (key === "timezone" ? "America/New_York" : ""),
-              )}
-              required={["company_name", "email", "timezone"].includes(key)}
-            />
-          </Field>
-        ))}
-        <Field label="Accent colour">
-          <input
-            name="accent_colour"
-            type="color"
-            defaultValue={s?.accent_colour ?? "#245547"}
-          />
-        </Field>
-        <Field label="Logo (PNG, under 750 KB)">
-          <input
-            type="file"
-            accept="image/png"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                const image = await new Promise<string>((resolve, reject) => {
-                  const reader = new FileReader();
-                  reader.onload = () => resolve(String(reader.result));
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                setLogo((await post("/api/workspace-logo", { image })).path);
-                setError("");
-              } catch (e) {
-                setError(String(e));
-              }
-            }}
-          />
-        </Field>
-        {error && (
-          <Banner tone="danger" title="Logo could not be uploaded">
-            {error}
-          </Banner>
-        )}
-        <fieldset className="stack" disabled={!owner}>
-          <legend>Company signatory</legend>
-          {!owner && (
-            <p>
-              Only a workspace owner can change the signatory and authorized
-              staff.
-            </p>
-          )}
-          <Field label="Signatory name">
-            <input
-              name="signatory_name"
-              required
-              defaultValue={s?.company_signatory?.name ?? s?.owner ?? ""}
-            />
-          </Field>
-          <Field label="Signatory title">
-            <input
-              name="signatory_title"
-              required
-              defaultValue={s?.company_signatory?.title ?? "Owner"}
-            />
-          </Field>
-          <Field label="Signatory staff account">
-            <select
-              name="signatory_user_id"
-              defaultValue={s?.company_signatory?.user_id ?? ""}
-            >
-              <option value="">Choose the signatory’s staff account</option>
-              {data.staff.map((m) => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.name} [{m.email}]
-                </option>
-              ))}
-            </select>
-          </Field>
-          <StoredSignatureEditor
-            value={signatoryImage}
-            onChange={setSignatoryImage}
-          />
-          <p>
-            Staff authorized to apply this signature (include the signatory if
-            they will sign):
-          </p>
-          {data.staff.map((m) => (
-            <label className="check" key={m.user_id}>
-              <input
-                type="checkbox"
-                checked={allowed.includes(m.user_id)}
-                onChange={(e) =>
-                  setAllowed(
-                    e.target.checked
-                      ? [...allowed, m.user_id]
-                      : allowed.filter((id) => id !== m.user_id),
-                  )
-                }
-              />
-              {m.name} [{m.email}]
-            </label>
-          ))}
-        </fieldset>
-        <Field label="Electronic signature consent">
-          <textarea
-            name="consent_text"
-            required
-            rows={5}
-            defaultValue={
-              s?.consent_text ??
-              "I consent to use electronic records and signatures for this agreement and can retain a copy."
-            }
-          />
-        </Field>
-        <Field label="Reminder days after sending (comma separated)">
-          <input
-            name="reminder_days"
-            defaultValue={s?.reminder_days.join(", ") ?? "3, 7"}
-          />
-        </Field>
-        <Field label="Default validity (days)">
-          <input
-            name="default_validity_days"
-            type="number"
-            min="1"
-            max="365"
-            defaultValue={s?.default_validity_days ?? 30}
-          />
-        </Field>
-        <Field label="Collection method">
-          <select
-            name="collection_method"
-            defaultValue={s?.collection_method ?? "charge_automatically"}
-          >
-            <option value="charge_automatically">
-              Charge saved payment method
-            </option>
-            <option value="send_invoice">Send invoice</option>
-          </select>
-        </Field>
-        <p className="muted">
-          Identity and consent changes apply to new proposals. Signatory changes
-          apply to future counter-signatures, including proposals already
-          awaiting signing. Completed agreements retain their saved identity and
-          consent. Add staff through your own authentication administration.
-        </p>
-        <Button variant="primary" type="submit">
-          Save workspace settings
-        </Button>
-      </form>
-      <section className="stack" aria-label="Pricing settings">
-        <h2>Pricing</h2>
-        <TemplateWarnings templates={data.templates} catalog={data.catalog} />
-      </section>
-      <section className="card stack">
-        <h2>Custom service families</h2>
-        <p>
-          Use a service name, never a client name. Creation checks every active
-          Stripe product for duplicates.
-        </p>
-        {data.families.map((f) => (
-          <div className="row" key={f.id}>
-            {f.name}
-            <span>{f.active ? "Active" : "Inactive"}</span>
-          </div>
-        ))}
-        <form
-          className="form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const name = new FormData(e.currentTarget).get("name");
-            void run(
-              () =>
-                post("/api/custom-families", {
-                  name,
-                  request_id: crypto.randomUUID(),
-                }),
-              "Custom family created",
-            );
-          }}
-        >
-          <Field label="Service family name">
-            <input
-              name="name"
-              minLength={3}
-              required
-              placeholder="Custom Retainer"
-            />
-          </Field>
-          <Button type="submit">Create in Stripe test mode</Button>
-        </form>
-      </section>
-      <ReferenceDocuments documents={data.documents} run={run} />
-    </div>
-  );
-}
-
-function Team({ data, run }: { data: Data; run: Runner }) {
-  return (
-    <div className="stack">
-      <p>
-        Display names appear in proposal emails. Email addresses come from staff
-        login accounts. Owners can edit everyone; members can edit their own
-        name.
-      </p>
-      {data.staff.map((member) => (
-        <form
-          className="card form"
-          key={member.user_id}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const name = new FormData(e.currentTarget).get("display_name");
-            void run(() =>
-              post(`/api/team/${member.user_id}`, { display_name: name }),
-            );
-          }}
-        >
-          <h2>{member.email}</h2>
-          <Field label="Display name">
-            <input
-              name="display_name"
-              required
-              maxLength={200}
-              defaultValue={member.display_name}
-              disabled={
-                data.user.staff_role !== "owner" &&
-                data.user.actor !== "staff:" + member.user_id
-              }
-            />
-          </Field>
-          <Button
-            type="submit"
-            disabled={
-              data.user.staff_role !== "owner" &&
-              data.user.actor !== "staff:" + member.user_id
-            }
-          >
-            Save display name
-          </Button>
-        </form>
-      ))}
     </div>
   );
 }

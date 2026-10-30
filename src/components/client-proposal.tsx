@@ -1,4 +1,6 @@
 "use client";
+import { fontCss } from "../lib/proposal-fonts";
+import { readableDate } from "../lib/validity";
 import {
   chooseItem,
   quoteSublines,
@@ -356,6 +358,15 @@ function NewClientFlow({
         } as React.CSSProperties
       }
     >
+      {p && (
+        <style>
+          {fontCss({ proposal_fonts: p.proposal_fonts }, (f) =>
+            preview
+              ? `/api/workspace-fonts/${f.id}`
+              : `/api/public/${token}/fonts/${f.id}`,
+          )}
+        </style>
+      )}
       {preview && (
         <aside className="preview-controls" aria-label="Preview controls">
           <strong>Preview, not sent</strong>
@@ -903,7 +914,7 @@ function NewClientFlow({
                       </Button>
                       {p.valid_until && (
                         <small className="flow-desktop-choices">
-                          Valid until {date(p.valid_until)}
+                          Valid until {readableDate(p.valid_until, p.timezone)}
                         </small>
                       )}
                     </>
@@ -1124,12 +1135,17 @@ function FlowDocument({
         !(index === 0 && resolve(block.text ?? "", p.variables) === p.title),
     );
   return (
-    <article className="paper flow-document" id="proposal-document">
+    <article
+      className="paper flow-document proposal-typography"
+      id="proposal-document"
+    >
       <p className="flow-eyebrow">Proposal for {p.recipient.company}</p>
       <h1>{p.title}</h1>
       <p className="flow-byline">
         From {p.contact.name || p.company.name}
-        {p.valid_until && <> · Valid until {date(p.valid_until)}</>}
+        {p.valid_until && (
+          <> · Valid until {readableDate(p.valid_until, p.timezone)}</>
+        )}
       </p>
       {sections.length > 1 && (
         <details className="flow-outline">
@@ -1205,8 +1221,10 @@ function FlowDocument({
         ),
       )}
       <p className="muted document-end">
-        {p.valid_until && <>Valid until {date(p.valid_until)} · </>}From{" "}
-        {p.company.name}
+        {p.valid_until && (
+          <>Valid until {readableDate(p.valid_until, p.timezone)} · </>
+        )}
+        From {p.company.name}
       </p>
     </article>
   );
@@ -1263,6 +1281,10 @@ function ClientItems({
             {i.sublines.some((s) => s.interval === "year") ? "year" : "month"}.
           </p>
         )}
+        {typeof i.plan_terms?.client_copy === "string" &&
+          i.plan_terms.client_copy && (
+            <p className="flow-terms">{i.plan_terms.client_copy}</p>
+          )}
         {i.min_term_months && (
           <p className="flow-terms">
             {i.min_term_months}-month minimum commitment.
