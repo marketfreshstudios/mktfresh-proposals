@@ -59,11 +59,25 @@ export async function clientBilling(
         "Stripe is not connected. Current subscription and card details are unavailable.",
     };
   check(ids.length <= 1, "Multiple Stripe customer records need review", 409);
+  if (!ids.length) {
+    const matches = await api.get<
+      StripePage<{ id: string; email: string | null }>
+    >("/v1/customers", { email: client.email, limit: "100" });
+    const exact = matches.data.filter(
+      (c) => c.email?.toLowerCase() === client.email.toLowerCase(),
+    );
+    check(
+      !matches.has_more && exact.length <= 1,
+      "Multiple Stripe customers match this email; verify the customer ID",
+      409,
+    );
+    if (exact.length) ids.push(exact[0].id);
+  }
   if (!ids.length)
     return {
       ...result,
       notice:
-        "No verified Stripe customer is linked. Billing will be checked after signature.",
+        "No Stripe customer matches this email. Billing will be checked after signature.",
     };
   const id = ids[0];
   check(/^cus_[A-Za-z0-9]+$/.test(id), "Invalid Stripe customer ID");
@@ -173,6 +187,11 @@ export async function clientBilling(
               i.stripe_lookup_key === price.lookup_key ||
               i.sublines?.some((s) => s.stripe_lookup_key === price.lookup_key),
           );
+        check(
+          price.unit_amount !== null,
+          "A variable-price subscription needs review in Stripe",
+          409,
+        );
         result.items.push({
           id: entry.id,
           name: known
@@ -182,7 +201,7 @@ export async function clientBilling(
                 ? price.product.name
                 : price.lookup_key) ||
               "Subscription item",
-          amount: price.unit_amount ?? 0,
+          amount: price.unit_amount,
           currency: price.currency.toUpperCase(),
           interval: price.recurring.interval,
           interval_count: price.recurring.interval_count,

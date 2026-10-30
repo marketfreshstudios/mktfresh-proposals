@@ -669,3 +669,55 @@ it("mark as sent again reopens an unsigned lost proposal with a rotated link, cu
     ),
   ).rejects.toThrow();
 });
+it("finds an existing subscriber by exact email before a customer ID is stored, refuses ambiguous matches and performs no writes", async () => {
+  const { repo, draft } = await setup(),
+    calls: string[] = [];
+  const api = {
+    get: async <T>(path: string) => {
+      calls.push(path);
+      if (path === "/v1/customers")
+        return {
+          data: [{ id: "cus_existing", email: draft.client.email }],
+          has_more: false,
+        } as T;
+      if (path.includes("/v1/customers/"))
+        return { livemode: false, email: draft.client.email } as T;
+      return {
+        data: [
+          {
+            id: "sub_existing",
+            livemode: false,
+            status: "active",
+            items: { data: [] },
+          },
+        ],
+        has_more: false,
+      } as T;
+    },
+    post: async () => {
+      throw new Error("Must not create a customer");
+    },
+  };
+  expect((await clientBilling(repo, draft.client, api)).subscriber).toBe(true);
+  expect(calls).toEqual([
+    "/v1/customers",
+    "/v1/customers/cus_existing",
+    "/v1/subscriptions",
+  ]);
+  expect(
+    (await repo.entities<any>("clients"))[0].stripe_customer_id,
+  ).toBeNull();
+  await expect(
+    clientBilling(repo, draft.client, {
+      ...api,
+      get: async <T>() =>
+        ({
+          data: [
+            { id: "cus_one", email: draft.client.email },
+            { id: "cus_two", email: draft.client.email },
+          ],
+          has_more: false,
+        }) as T,
+    }),
+  ).rejects.toThrow("Multiple Stripe customers");
+});
