@@ -1,0 +1,558 @@
+{
+  "captures": [
+    {
+      "file": "clients-375-light.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "contact-and-many-matches-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "link-confirm-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "linked-billing-error-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "edit-client-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "one-match-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "no-match-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "delete-confirm-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "phone-error-and-address-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "address-fields-375-light.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposals-focus-375-light.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "home-focus-375-light.png",
+      "frame": "3f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "address-document-field-375-light.png",
+      "frame": "2c",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "send-customer-blocker-375-light.png",
+      "frame": "2f",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "activity-focus-375-light.png",
+      "frame": "7e",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "clients-375-dark.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "contact-and-many-matches-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "link-confirm-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-billing-error-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "edit-client-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "one-match-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "no-match-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "delete-confirm-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "phone-error-and-address-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "address-fields-375-dark.png",
+      "frame": "6f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposals-focus-375-dark.png",
+      "frame": "6c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "home-focus-375-dark.png",
+      "frame": "3f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "address-document-field-375-dark.png",
+      "frame": "2c",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "send-customer-blocker-375-dark.png",
+      "frame": "2f",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-focus-375-dark.png",
+      "frame": "7e",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "clients-768-light.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "contact-and-many-matches-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "link-confirm-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "linked-billing-error-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "edit-client-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "one-match-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "no-match-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "delete-confirm-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "phone-error-and-address-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "address-fields-768-light.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "proposals-focus-768-light.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "home-focus-768-light.png",
+      "frame": "3e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "address-document-field-768-light.png",
+      "frame": "5g",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "send-customer-blocker-768-light.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "activity-focus-768-light.png",
+      "frame": "7e",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "clients-768-dark.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "contact-and-many-matches-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "link-confirm-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-billing-error-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "edit-client-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "one-match-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "no-match-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "delete-confirm-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "phone-error-and-address-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "address-fields-768-dark.png",
+      "frame": "6e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "proposals-focus-768-dark.png",
+      "frame": "6b",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "home-focus-768-dark.png",
+      "frame": "3e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "address-document-field-768-dark.png",
+      "frame": "5g",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "send-customer-blocker-768-dark.png",
+      "frame": "5h",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-focus-768-dark.png",
+      "frame": "7e",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "clients-1440-light.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "contact-and-many-matches-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "link-confirm-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "linked-billing-error-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "edit-client-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "one-match-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "no-match-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "delete-confirm-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "phone-error-and-address-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "address-fields-1440-light.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposals-focus-1440-light.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "home-focus-1440-light.png",
+      "frame": "3d",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "address-document-field-1440-light.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "send-customer-blocker-1440-light.png",
+      "frame": "2b",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "activity-focus-1440-light.png",
+      "frame": "7e",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "clients-1440-dark.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "contact-and-many-matches-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "link-confirm-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "linked-billing-error-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "edit-client-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "one-match-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "no-match-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "delete-confirm-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "phone-error-and-address-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "address-fields-1440-dark.png",
+      "frame": "6d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposals-focus-1440-dark.png",
+      "frame": "6a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "home-focus-1440-dark.png",
+      "frame": "3d",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "address-document-field-1440-dark.png",
+      "frame": "2a",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "send-customer-blocker-1440-dark.png",
+      "frame": "2b",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "activity-focus-1440-dark.png",
+      "frame": "7e",
+      "width": 1440,
+      "theme": "dark"
+    }
+  ],
+  "identicalSourceVariants": [
+    "2b",
+    "2c",
+    "2f",
+    "5g",
+    "5h",
+    "6a",
+    "6b",
+    "6c",
+    "6d",
+    "6e",
+    "6f",
+    "7e"
+  ]
+}

@@ -95,3 +95,15 @@ AI assistants cannot delete clients or proposals, change outcomes, archive recor
 
 
 Validity: `create_proposal_draft` and `update_proposal_draft` accept optional `valid_until` (ISO timestamp or null). Omit it on create for the workspace validity default (30 days); pass null to make a draft indefinite. Proposal responses include `valid_until`. `{{proposal.date}}` and `{{proposal.valid_until}}` resolve to readable dates. Prefer `{{proposal.validity}}` for a complete sentence that disappears when indefinite. `check_ready` warns about custom expiry wording on an indefinite proposal. No provider dates, signatures or frozen versions can be edited through these tools.
+
+## Client contact data
+
+`create_client`, `get_client`, `search_clients` and `update_client` expose contact information. `update_client` takes an `id` and the contact fields to change; it requires the draft scope. For example:
+
+```json
+{"id":"CLIENT_UUID","phone":"(704) 555-0123","address":{"line1":"123 Main St","line2":"Suite 2","city":"Charlotte","region":"NC","postal_code":"28202","country":"US"}}
+```
+
+Phone input defaults to US; international input requires `+country code`. Saving validates and stores E.164. Client responses include `phone` plus `phone_formatted`; a pre-existing invalid unsaved number returns `phone: null`, its original display value, and `phone_needs_review: true`. Address fields are all optional strings; `country` is an alpha-2 country code and defaults to `US`. Supplying an address replaces its contents; use empty strings to clear fields. `address_formatted` and `{{client.address}}` use multiple lines, with no blank paragraph for an absent address.
+
+AI tools cannot set Stripe/QuickBooks customer IDs, link/unlink customers, or delete clients. Staff review Stripe matches on the client page. `check_ready` reports ambiguous unlinked matches with `customerChoiceUrl`; the staff send endpoint repeats that check. New provider customers receive the saved phone/address. Existing provider addresses are never overwritten.
