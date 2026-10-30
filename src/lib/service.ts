@@ -1,3 +1,15 @@
+import { reviewBlocks, pendingSections } from "./ai-review";
+import {
+  quoteItems,
+  draftItems,
+  chooseItem,
+  flatQuote,
+  selected as itemSelected,
+  prepareQuote,
+  billingLines,
+  selectedContent,
+  isQuoteItem,
+} from "./quote-model";
 import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
@@ -68,11 +80,15 @@ export function queue(
     });
 }
 export function notify(p: Proposal, type: string) {
+  const declineNote =
+    type === "declined"
+      ? p.events.findLast((e) => e.type === "declined")?.metadata.note
+      : undefined;
   for (const to of staffRecipients(p))
     queue(p, "email", "notify:" + type + ":" + p.events.length + ":" + to, {
       to,
       subject: `Proposal ${type}: ${p.title}`,
-      text: `${p.title} for ${p.client.company}: ${type}`,
+      text: `${p.title} for ${p.client.company}: ${type}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
     });
 }
 export function publicAccess(p: Proposal, password = "", now = new Date()) {
@@ -161,8 +177,16 @@ export class ProposalService {
       first_viewed_at: null,
       client_signed_at: null,
       completed_at: null,
-      content: input.content ?? structuredClone(template.content),
-      quote: input.quote ?? defaults.quote,
+      content: reviewBlocks(
+        input.content ?? structuredClone(template.content),
+        actor.actor.startsWith("ai:"),
+      ),
+      quote: prepareQuote(
+        input.quote ?? defaults.quote,
+        await this.repo.entities<Item>("pricing_items"),
+        actor.actor.startsWith("ai:"),
+      ),
+      quote_model_version: 3,
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -179,7 +203,11 @@ export class ProposalService {
     };
     if (input.playbook) {
       const payload = PlaybookDraftSchema.parse(input.playbook);
-      p.quote = payload.lines;
+      p.quote = prepareQuote(
+        payload.lines,
+        await this.repo.entities<Item>("pricing_items"),
+        actor.actor.startsWith("ai:"),
+      );
       p.origin = {
         source: payload.source,
         source_version: payload.source_version,
@@ -206,6 +234,7 @@ export class ProposalService {
   }
   async forRead(p: Proposal) {
     if (p.status !== "draft") return p;
+    p = { ...p, quote: draftItems(p.quote), quote_model_version: 3 };
     const current = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
@@ -224,16 +253,56 @@ export class ProposalService {
     },
     actor: Actor,
   ) {
+    const catalog = await this.repo.entities<Item>("pricing_items");
     const result = await mutate(this.repo, id, (p) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       check(p.status === "draft", "Only drafts can be edited", 409);
       delete p.workspace_settings;
       if (input.title) p.title = input.title;
       if (input.brief !== undefined) p.brief = input.brief;
-      p.ai_unreviewed = actor.actor.startsWith("ai:");
-      if (p.ai_unreviewed) p.ai_connector = actor.actor.slice(3);
-      if (input.content) p.content = input.content;
-      if (input.quote) p.quote = input.quote;
+      if (actor.actor.startsWith("ai:")) p.ai_connector = actor.actor.slice(3);
+      if (input.content)
+        p.content = reviewBlocks(input.content, actor.actor.startsWith("ai:"));
+      p.ai_unreviewed =
+        actor.actor.startsWith("ai:") || pendingSections(p).length > 0;
+      if (input.quote)
+        p.quote = prepareQuote(
+          input.quote,
+          catalog,
+          actor.actor.startsWith("ai:"),
+        );
+      else p.quote = draftItems(p.quote);
+      if (input.quote && actor.actor.startsWith("ai:")) {
+        // Quote-only assistant edits must have a visible section to review.
+        if (!p.content.some((b) => b.type === "pricing_table"))
+          p.content.push({ id: randomUUID(), type: "pricing_table" });
+        p.content = p.content.map((b) =>
+          b.type === "pricing_table"
+            ? { ...b, ai_review: { source: "assistant", reviewed: false } }
+            : b,
+        );
+      }
+      if (
+        actor.actor.startsWith("ai:") &&
+        !p.content.some((b) => b.ai_review && !b.ai_review.reviewed)
+      ) {
+        const target = p.content.findIndex(
+          (b) =>
+            !["contract", "signature_block", "page_break"].includes(b.type),
+        );
+        if (target >= 0)
+          p.content[target] = {
+            ...p.content[target],
+            ai_review: { source: "assistant", reviewed: false },
+          };
+        else
+          p.content.push({
+            id: randomUUID(),
+            type: "pricing_table",
+            ai_review: { source: "assistant", reviewed: false },
+          });
+      }
+      p.quote_model_version = 3;
       if (input.valid_until) {
         check(
           Date.parse(input.valid_until) > this.clock().getTime(),
@@ -241,7 +310,11 @@ export class ProposalService {
         );
         p.valid_until = new Date(input.valid_until).toISOString();
       }
-      event(p, "edited", actor);
+      event(p, "edited", actor, {
+        price_decisions: quoteItems(p.quote)
+          .filter((i) => i.price_review && Object.keys(i.price_review).length)
+          .map((i) => ({ item_id: i.id, decisions: i.price_review })),
+      });
     });
     return this.forRead(result);
   }
@@ -250,6 +323,7 @@ export class ProposalService {
     actor: Actor,
     confirmAiReview = false,
     senderId = actor.actor.slice(6),
+    options: { note?: string; password?: string | null } = {},
   ) {
     check(
       !actor.actor.startsWith("ai:"),
@@ -294,6 +368,8 @@ export class ProposalService {
         !p.ai_unreviewed || confirmAiReview,
         "Confirm review of AI changes before sending",
       );
+      p.quote = draftItems(p.quote);
+      p.quote_model_version = 3;
       p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);
       check(ready.ready, ready.errors.join("; "));
@@ -302,8 +378,8 @@ export class ProposalService {
         new Set(p.quote.map((l) => l.id)).size === p.quote.length,
         "Duplicate quote items must be combined using quantity",
       );
-      for (const l of p.quote) {
-        check(l.optional || l.selected, "Required items must be selected");
+      for (const l of quoteItems(p.quote)) {
+        check(l.optional || itemSelected(l), "Required items must be selected");
       }
       const now = this.clock().toISOString();
       p.sender = sender;
@@ -316,17 +392,29 @@ export class ProposalService {
           ].filter((email): email is string => !!email),
         ),
       ];
+      const confirmedSections = pendingSections(p);
+      if (confirmAiReview)
+        p.content = p.content.map((b) =>
+          b.ai_review
+            ? { ...b, ai_review: { ...b.ai_review, reviewed: true } }
+            : b,
+        );
       p.ai_unreviewed = false;
+      if (options.password !== undefined)
+        p.password_hash =
+          options.password === null ? null : hashPassword(options.password);
       p.sent_at = now;
       p.token = randomBytes(32).toString("base64url");
       p.status = "sent";
       p.first_viewed_at = null;
-      const map = variables(p);
+      const map = variables(p, p.quote, true);
       renderBlocks(p.content, p.quote, map, p.currency);
       const version = {
         id: randomUUID(),
         version_no: p.versions.length + 1,
         client_flow_version: 2 as const,
+        quote_model_version: 3 as const,
+        money_format_version: 2 as const,
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -340,7 +428,17 @@ export class ProposalService {
         variables_resolved: map,
       });
       p.versions.push(version);
-      event(p, "sent", actor, { version: version.version_no, sender }, now);
+      event(
+        p,
+        "sent",
+        actor,
+        {
+          version: version.version_no,
+          sender,
+          confirmed_sections: confirmedSections,
+        },
+        now,
+      );
       queue(
         p,
         "email",
@@ -349,7 +447,7 @@ export class ProposalService {
           to: p.client.email,
           subject: p.title,
           send_version: version.version_no,
-          text: `Review your proposal: ${proposalLink(p)}`,
+          text: `${options.note ? options.note + "\n\n" : ""}Review your proposal: ${proposalLink(p)}`,
         },
         now,
       );
@@ -398,21 +496,37 @@ export class ProposalService {
         "Quote changed; reload",
         409,
       );
-      const l = p.quote.find((x) => x.id === input.item_id);
-      check(l?.optional, "Only optional items can be toggled");
-      l.selected = input.selected;
+      if (p.versions.at(-1)?.quote_model_version === 3)
+        p.quote = chooseItem(p.quote, input.item_id, input.selected);
+      else {
+        const l = (p.quote as import("./model").Line[]).find(
+          (x) => x.id === input.item_id,
+        );
+        check(l?.optional, "Only optional items can be toggled");
+        l.selected = input.selected;
+      }
       const v = p.versions.at(-1)!;
       v.quote = structuredClone(p.quote);
-      v.variables_resolved = variables(p);
-      renderBlocks(v.content, v.quote, v.variables_resolved, p.currency);
+      v.variables_resolved = variables(
+        p,
+        p.quote,
+        v.money_format_version === 2,
+      );
+      renderBlocks(
+        v.content,
+        v.quote,
+        v.variables_resolved,
+        p.currency,
+        p.workspace_settings?.money?.cents ?? "auto",
+      );
       v.content_hash = versionHash({
         content: v.content,
         quote: v.quote,
         variables_resolved: v.variables_resolved,
       });
       event(p, "quote_changed", actor, {
-        item_id: l.id,
-        selected: l.selected,
+        item_id: input.item_id,
+        selected: input.selected,
         totals: totals(p.quote),
       });
     });
@@ -483,6 +597,9 @@ export class ProposalService {
       const now = this.clock().toISOString(),
         v = p.versions.at(-1)!;
       if (role === "client") {
+        billingLines(v.quote);
+        if (v.quote_model_version === 3)
+          v.content = selectedContent(v.content, v.quote);
         v.frozen = true;
         v.content_hash = versionHash({
           content: v.content,
@@ -555,7 +672,19 @@ export class ProposalService {
         },
         now,
       );
-      if (role === "client") queue(p, "billing", "billing", {}, now);
+      if (role === "client")
+        queue(
+          p,
+          "billing",
+          "billing",
+          {
+            selected_item_ids: quoteItems(v.quote)
+              .filter(itemSelected)
+              .map((i) => i.id),
+            lines: billingLines(v.quote),
+          },
+          now,
+        );
       if (role === "company" && actor.staff_email)
         p.notification_emails = [
           ...new Set([...staffRecipients(p), actor.staff_email]),
@@ -631,6 +760,21 @@ export function publicResult(p: Proposal) {
   return {
     id: p.id,
     client_flow_version: v.client_flow_version,
+    quote_model_version: v.quote_model_version,
+    money_format_version: v.money_format_version,
+    items: quoteItems(v.quote).map(
+      ({
+        plan_terms: _plan,
+        custom_family_id: _family,
+        price_review: _review,
+        ...item
+      }) => ({
+        ...item,
+        sublines: item.sublines.map(
+          ({ stripe_lookup_key: _key, qbo_item_ref: _qbo, ...s }) => s,
+        ),
+      }),
+    ),
     sent_at: v.created_at,
     money_cents: p.workspace_settings?.money?.cents ?? "auto",
     contact: {
@@ -661,8 +805,14 @@ export function publicResult(p: Proposal) {
     })),
     content: v.content,
     variables: v.variables_resolved,
-    html: renderBlocks(v.content, v.quote, v.variables_resolved, p.currency),
-    quote: v.quote
+    html: renderBlocks(
+      v.content,
+      v.quote,
+      v.variables_resolved,
+      p.currency,
+      p.workspace_settings?.money?.cents ?? "auto",
+    ),
+    quote: flatQuote(v.quote)
       .map(readLine)
       .map(
         ({

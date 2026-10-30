@@ -1,3 +1,4 @@
+import { billingLines } from "./quote-model";
 import { proposalOrigin, proposalLink } from "./links";
 import {
   check,
@@ -109,16 +110,9 @@ export async function bill(
   provider: "qbo" | "stripe",
   adapter: BillingProvider,
 ): Promise<BillingLink> {
-  const lines = p.versions
-    .at(-1)!
-    .quote.map(readLine)
-    .filter(
-      (l) =>
-        (!l.optional || l.selected) &&
-        (provider === "qbo"
-          ? l.interval === "one_time"
-          : l.interval !== "one_time"),
-    );
+  const lines = billingLines(p.versions.at(-1)!.quote).filter((l) =>
+    provider === "qbo" ? l.interval === "one_time" : l.interval !== "one_time",
+  );
   const previous = p.billing_links.find((x) => x.provider === provider);
   if (previous?.status === "succeeded") return previous;
   const base: BillingLink = {

@@ -156,3 +156,9 @@ The staff interface now uses scoped redesign tokens and self-hosted Instrument S
 Phase 1 introduces display-only status mapping, money auto/always formatting and skeleton primitives. It deliberately retains current feature content until its planned redesign phase. Review screenshots and scoped comparisons in docs/redesign-foundation/index.html and COMPARISON.md. No migration or hosted configuration is required.
 
 Redesign Phase 2 adds the client Review → Sign → Billing flow for new sends, with legacy client rendering preserved per saved version. Review screenshots and source-frame comparisons in docs/redesign-client-flow/index.html; implementation, checks and deferred Phase 3 work are recorded in HANDOFF_PHASE2.md.
+
+### Quote editor redesign
+
+Phase 3 uses item/sub-line quotes for drafts and retains a pure adapter for historic flat snapshots. Apply the committed drafts-only migration as part of releasing this phase; it does not rewrite sent/signed version evidence. MCP callers can supply new `items` or legacy flat `lines` for one release (see [connector guide](docs/ai-connector.md)). Choice groups must resolve before billing is queued, and AI prices/content remain subject to staff review.
+
+The responsive comparison gallery is [docs/redesign-quote-editor/index.html](docs/redesign-quote-editor/index.html); validation and release notes are in [HANDOFF_PHASE2.md](HANDOFF_PHASE2.md).

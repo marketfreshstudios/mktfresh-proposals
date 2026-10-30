@@ -1,15 +1,25 @@
 import {
+  flatQuote,
+  quoteItems,
+  selected,
+  selectedContent,
+  isQuoteItem,
+  orderedItems,
+} from "./quote-model";
+import { formatMoney } from "./money";
+import {
   AppError,
   check,
   readLine,
   type Block,
   type Line,
+  type Quote,
   type Proposal,
   type RichText,
 } from "./model";
-export function totals(lines: Line[]) {
+export function totals(lines: Quote) {
   const out = { one_time_total: 0, monthly_total: 0, yearly_total: 0 };
-  for (const raw of lines) {
+  for (const raw of flatQuote(lines)) {
     const line = readLine(raw);
     if (!line.optional || line.selected) {
       const key =
@@ -30,7 +40,20 @@ export const money = (cents: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
     cents / 100,
   );
-export function variables(p: Proposal, quote = p.quote) {
+export function variables(
+  p: Proposal,
+  quote = p.quote,
+  modern = p.status === "draft" ||
+    p.versions?.at(-1)?.money_format_version === 2,
+) {
+  const fmt = (amount: number) =>
+    modern
+      ? formatMoney(
+          amount,
+          p.currency,
+          p.workspace_settings?.money?.cents ?? "auto",
+        )
+      : money(amount, p.currency);
   const t = totals(quote);
   const map: Record<string, string> = {};
   for (const field of ["first_name", "last_name", "company", "email"] as const)
@@ -43,20 +66,26 @@ export function variables(p: Proposal, quote = p.quote) {
     "company.owner": p.workspace_settings?.owner ?? "",
     "company.email": p.workspace_settings?.email ?? "",
     "company.phone": p.workspace_settings?.phone ?? "",
-    "quote.one_time_total": money(t.one_time_total, p.currency),
-    "quote.monthly_total": money(t.monthly_total, p.currency),
-    "quote.yearly_total": money(t.yearly_total, p.currency),
-    "quote.selected_items": quote
-      .filter((l) => !l.optional || l.selected)
+    "quote.one_time_total": fmt(t.one_time_total),
+    "quote.monthly_total": fmt(t.monthly_total),
+    "quote.yearly_total": fmt(t.yearly_total),
+    "quote.selected_items": quoteItems(quote)
+      .filter(selected)
       .map((l) => l.name)
       .join(", "),
   });
-  for (const raw of quote) {
+  if (modern)
+    Object.assign(map, {
+      "client.full_name": [p.client.first_name, p.client.last_name]
+        .filter(Boolean)
+        .join(" "),
+      "workspace.name": p.workspace_settings?.company_name ?? "",
+      "sender.name":
+        p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
+    });
+  for (const raw of flatQuote(quote)) {
     const l = readLine(raw);
-    map[`quote.item.${l.stripe_lookup_key ?? l.id}.price`] = money(
-      l.amount,
-      p.currency,
-    );
+    map[`quote.item.${l.stripe_lookup_key ?? l.id}.price`] = fmt(l.amount);
   }
   return map;
 }
@@ -79,6 +108,8 @@ export const escape = (text: string) =>
   );
 function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   check(depth < 30, "Content nesting too deep");
+  if (node.type === "variable")
+    return `<span class="field-chip">${escape(resolve("{{" + (node.attrs?.path ?? "") + "}}", map))}</span>`;
   if (node.type === "text") {
     let s = escape(resolve(node.text ?? "", map));
     for (const m of node.marks ?? [])
@@ -100,9 +131,10 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
 }
 export function renderBlocks(
   blocks: Block[],
-  quote: Line[],
+  quote: Quote,
   map: Record<string, string>,
   currency = "USD",
+  centsMode: "auto" | "always" = "auto",
 ): string {
   check(Array.isArray(blocks) && blocks.length <= 300, "Invalid content");
   return blocks
@@ -132,10 +164,48 @@ export function renderBlocks(
             "Images must be embedded PNG/JPEG (no remote requests)",
           );
           return `<img src="${b.src}" alt="${escape(b.alt ?? "")}" />`;
+        case "contract": {
+          check(
+            Array.isArray(b.clauses) && b.clauses.length <= 50,
+            "Contract requires at most 50 clauses",
+          );
+          const clauses = selectedContent([b], quote)[0].clauses!;
+          return `<section class="contract"><h2>${escape(b.text || "Statement of Work & Contract")}</h2>${clauses
+            .map((c) => {
+              check(
+                typeof c.heading === "string" &&
+                  typeof c.body === "string" &&
+                  c.body.length <= 20000,
+                "Invalid contract clause",
+              );
+              return `<section><h3>${escape(resolve(c.heading, map))}</h3><p>${escape(resolve(c.body, map)).replace(/\n/g, "<br>")}</p></section>`;
+            })
+            .join("")}</section>`;
+        }
         case "pricing_table":
+          if (quote.some(isQuoteItem)) {
+            const items = orderedItems(quote),
+              groups = Array.from(
+                new Set(items.map((i) => i.choice_group_id ?? i.id)),
+              ),
+              fmt = (v: number) => formatMoney(v, currency, centsMode),
+              t = totals(quote);
+            return (
+              groups
+                .map((id) => {
+                  const options = items.filter(
+                      (i) => (i.choice_group_id ?? i.id) === id,
+                    ),
+                    grouped = !!options[0].choice_group_id;
+                  return `<section style="${grouped ? "border:2px solid #8baba0;padding:12px;border-radius:8px;" : ""}margin:14px 0">${grouped ? "<h3>Choose one</h3>" : ""}${options.map((i) => `<section style="break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0"><h3>${escape(i.name)} · ${selected(i) ? "Included" : "Not included"}</h3><p>${escape(i.description)}</p><table><tbody>${i.sublines.map((s) => `<tr><td>${escape(s.label || intervalLabel(s.interval))}</td><td>× ${s.qty}</td><td>${fmt(s.amount * s.qty)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}</td></tr>`).join("")}</tbody></table>${i.min_term_months ? `<p>${i.min_term_months}-month minimum commitment.</p>` : ""}${i.schedule ? `<p>After ${i.schedule.after_paid_invoices} paid invoices: ${fmt(i.schedule.then.amount)} per recurring period.</p>` : ""}</section>`).join("")}</section>`;
+                })
+                .join("") +
+              `<p>One-time: ${fmt(t.one_time_total)} · Monthly: ${fmt(t.monthly_total)}/mo${items.some((i) => i.sublines.some((s) => s.interval === "year")) ? ` · Yearly: ${fmt(t.yearly_total)}/yr` : ""}</p>`
+            );
+          }
           return (
             "<table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>" +
-            quote
+            flatQuote(quote)
               .map(readLine)
               .filter((l) => !l.optional || l.selected)
               .map(

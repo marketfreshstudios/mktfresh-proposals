@@ -1,3 +1,4 @@
+import { quoteItems, flatQuote } from "./quote-model";
 import { itemDisplayName, sellableCatalogue } from "./catalogue-display";
 import { templateDefaultQuote } from "./template-quote";
 import {
@@ -10,6 +11,7 @@ import { z } from "zod";
 import {
   ClientSchema,
   LineSchema,
+  QuoteItemSchema,
   check,
   type Actor,
   type Client,
@@ -63,6 +65,7 @@ const schemas: Record<string, z.ZodType> = {
     title: z.string().min(1).max(300),
     content_markdown: z.string().max(100000),
     lines: z.array(LineSchema).max(100).optional(),
+    items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   update_proposal_draft: z.object({
     id,
@@ -70,18 +73,21 @@ const schemas: Record<string, z.ZodType> = {
     title: z.string().min(1).max(300).optional(),
     brief: z.string().max(50000).optional(),
     content_markdown: z.string().max(100000).optional(),
+    lines: z.array(LineSchema).max(100).optional(),
+    items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   set_quote_lines: z.object({
     id,
     revision: z.number().int(),
-    lines: z.array(LineSchema).max(100),
+    lines: z.array(LineSchema).max(100).optional(),
+    items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   check_ready: z.object({ id }),
 };
 export const toolDefinitions = Object.entries(schemas).map(
   ([name, schema]) => ({
     name,
-    description: `${name.replaceAll("_", " ")}. Workspace-scoped. ${WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
+    description: `${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply items OR legacy flat lines (converted for one release), never both. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name.replaceAll("_", " ")}. Workspace-scoped. ${WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
     inputSchema: z.toJSONSchema(schema, { target: "draft-7" }),
     annotations: {
       readOnlyHint:
@@ -100,7 +106,9 @@ function proposalView(p: Proposal) {
     status: p.status,
     client: p.client,
     content: p.content,
-    quote: p.quote,
+    quote: quoteItems(p.quote),
+    items: quoteItems(p.quote),
+    lines: flatQuote(p.quote),
     warnings: p.creation_warnings ?? [],
     brief: p.brief,
     ai_unreviewed: p.ai_unreviewed,
@@ -128,6 +136,15 @@ export async function aiTool(
     403,
   );
   const input = schemas[name].parse(raw) as any;
+  check(
+    !(input.items !== undefined && input.lines !== undefined),
+    "Supply items or legacy lines, not both",
+  );
+  if (name === "set_quote_lines")
+    check(
+      input.items !== undefined || input.lines !== undefined,
+      "Items or legacy lines required",
+    );
   const service = new ProposalService(repo);
   if (name === "search_clients")
     return (await repo.entities<Client>("clients"))
@@ -140,7 +157,26 @@ export async function aiTool(
   if (name === "list_templates") return repo.entities<Template>("templates");
   if (name === "list_catalog")
     return sellableCatalogue(await repo.entities<Item>("pricing_items")).map(
-      (i) => ({ ...i, synced_name: i.name, name: itemDisplayName(i) }),
+      (i) => ({
+        ...i,
+        synced_name: i.name,
+        name: itemDisplayName(i),
+        sublines: i.sublines ?? [
+          {
+            id: i.id,
+            amount: i.amount,
+            list_amount: i.amount,
+            interval: i.interval,
+            qty: 1,
+            stripe_lookup_key: i.stripe_lookup_key,
+            qbo_item_ref: i.qbo_item_ref,
+          },
+        ],
+        optional: false,
+        default_selected: true,
+        choice_group_id: null,
+        order: 0,
+      }),
     );
   if (name === "list_documents")
     return (await documents(repo)).map(
@@ -192,6 +228,7 @@ export async function aiTool(
     );
     check(template, "Active template required");
     const quoteForVariables =
+      input.items ??
       input.lines ??
       templateDefaultQuote(template, await repo.entities<Item>("pricing_items"))
         .quote;
@@ -217,11 +254,12 @@ export async function aiTool(
         document_versions: await readDocumentsForDraft(repo, actor),
         content: [
           ...blocks,
+          ...template.content.filter((b) => b.type === "contract"),
           { type: "pricing_table" },
           { type: "signature_block", role: "client" },
           { type: "signature_block", role: "company" },
         ],
-        quote: input.lines,
+        quote: input.items ?? input.lines,
       },
       actor,
     );
@@ -241,6 +279,7 @@ export async function aiTool(
       ? undefined
       : [
           ...markdownBlocks(input.content_markdown, Object.keys(variables(p))),
+          ...p.content.filter((b) => b.type === "contract"),
           { type: "pricing_table" as const },
           { type: "signature_block" as const, role: "client" as const },
           { type: "signature_block" as const, role: "company" as const },
@@ -253,7 +292,7 @@ export async function aiTool(
         title: input.title,
         brief: input.brief,
         content,
-        quote: input.lines,
+        quote: input.items ?? input.lines,
       },
       actor,
     ),

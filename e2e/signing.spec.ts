@@ -162,21 +162,33 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await expect(page.getByText("Sender name", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Sender email", { exact: true })).toHaveCount(0);
   await page.goto(`/proposals/${p.id}/edit`);
-  await page.getByLabel("Amount (USD)", { exact: true }).first().fill("2751");
+  await page
+    .getByRole("spinbutton", { name: "Amount Website build", exact: true })
+    .first()
+    .fill("2751");
   await expect(
     page.getByText("All changes saved", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Continue to send" }).click();
+  await page.getByRole("button", { name: "Keep $2,751", exact: true }).click();
+  await expect(
+    page.getByText("All changes saved", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Review & send", exact: true })
+    .click();
+  await page
+    .getByRole("checkbox", {
+      name: /I have reviewed these AI-written sections/,
+    })
+    .check();
   await expect(
     page.getByRole("combobox", { name: "From", exact: true }),
   ).toHaveValue("00000000-0000-4000-8000-000000000001");
-  await page
-    .getByRole("button", { name: "Send proposal", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Send to Jane", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/proposals/${p.id}$`));
   let r = await request.get(`/api/proposals/${p.id}`, { headers });
   p = await r.json();
-  expect(p.quote[0].amount).toBe(275100);
+  expect(p.quote[0].sublines[0].amount).toBe(275100);
   expect(p.token).toHaveLength(43);
   expect(p.sender).toMatchObject({
     display_name: "Alex Sender",

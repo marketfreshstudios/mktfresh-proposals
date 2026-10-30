@@ -1,3 +1,4 @@
+import { quoteItems } from "../src/lib/quote-model";
 import { describe, it, expect } from "vitest";
 import {
   setup,
@@ -34,7 +35,7 @@ describe("proposal lifecycle", () => {
       monthly_total: 0,
       yearly_total: 0,
     });
-    expect(publicResult(p).html).toContain("$0.00");
+    expect(publicResult(p).html).toContain("Monthly: $0/mo");
     p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
       token: p.token!,
       password: "",
@@ -139,10 +140,16 @@ describe("proposal lifecycle", () => {
   });
   it("blocks missing provider mappings and unresolved variables at send", async () => {
     const { repo, service, draft, settings } = await setup();
-    await mutate(repo, draft.id, (p) => (p.quote[1].stripe_lookup_key = null));
+    await mutate(repo, draft.id, (p) => {
+      const items = quoteItems(p.quote);
+      items[1].sublines[0].stripe_lookup_key = null;
+      p.quote = items;
+    });
     await expect(service.send(draft.id, staff)).rejects.toThrow("lookup key");
     await mutate(repo, draft.id, (p) => {
-      p.quote[1].stripe_lookup_key = "test-monthly";
+      const items = quoteItems(p.quote);
+      items[1].sublines[0].stripe_lookup_key = "test-monthly";
+      p.quote = items;
       p.content = [{ type: "paragraph", text: "{{missing.variable}}" }];
     });
     await expect(service.send(draft.id, staff)).rejects.toThrow("Unresolved");

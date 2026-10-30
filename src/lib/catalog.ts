@@ -64,6 +64,19 @@ export async function syncStripeCatalog(
         amount: price.unit_amount,
         interval: price.recurring!.interval,
         stripe_lookup_key: price.lookup_key,
+        ...(old?.sublines
+          ? {
+              sublines: old.sublines.map((s) =>
+                s.stripe_lookup_key === price.lookup_key
+                  ? {
+                      ...s,
+                      amount: price.unit_amount,
+                      interval: price.recurring!.interval,
+                    }
+                  : s,
+              ),
+            }
+          : {}),
         legacy,
         active: !legacy && price.product.active,
         plan_terms: Object.keys(price.metadata).length ? price.metadata : null,

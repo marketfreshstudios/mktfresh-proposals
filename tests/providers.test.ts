@@ -1,3 +1,4 @@
+import { flatQuote, quoteItems } from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import { randomBytes, createHmac } from "node:crypto";
 import { StripeProvider } from "../src/lib/providers/stripe";
@@ -199,7 +200,7 @@ it("custom retainer bills entered 2000/month inline on existing family, without 
     active: true,
   });
   const line = LineSchema.parse({
-    ...draft.quote[1],
+    ...flatQuote(draft.quote)[1],
     pricing_item_id: null,
     custom_family_id: family,
     stripe_lookup_key: null,
@@ -281,7 +282,7 @@ it("encrypts OAuth state with workspace binding and creates only an unsent QBO i
   );
   await qbo.createObject(
     { id: "customer", email: "", company: "" },
-    [draft.quote[0]],
+    [flatQuote(draft.quote)[0]],
     "invoice",
     { proposal_id: draft.id },
   );
@@ -347,7 +348,7 @@ it("scheduled plans preserve the phase anchor, count paid invoices and explicitl
     collection_method: "send_invoice",
   });
   const line = LineSchema.parse({
-    ...draft.quote[1],
+    ...flatQuote(draft.quote)[1],
     schedule: {
       after_paid_invoices: 3,
       then: { amount: 2500, lookup_key: "next-plan" },

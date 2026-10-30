@@ -1,4 +1,6 @@
 import { LineSchema, type Item, type Proposal } from "./model";
+import { flatQuote, quoteItems, validateItems } from "./quote-model";
+import { pendingSections } from "./ai-review";
 import { renderBlocks, variables } from "./presentation";
 
 /** One shared readiness result for the editor, send endpoint and MCP. */
@@ -12,8 +14,46 @@ export function readiness(
     warnings: string[] = [];
   if (Date.parse(p.valid_until) <= now.getTime())
     errors.push("Proposal expired");
-  if (p.ai_unreviewed && !confirmAiReview)
-    errors.push("Confirm review of AI changes before sending");
+  const pending = pendingSections(p);
+  if (pending.length && !confirmAiReview)
+    errors.push(
+      `Confirm review of AI changes before sending: ${pending.join(", ")}`,
+    );
+  try {
+    validateItems(p.quote);
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : "Invalid quote items");
+  }
+  for (const i of quoteItems(p.quote)) {
+    if (
+      i.choice_group_id &&
+      !quoteItems(p.quote).some(
+        (v) => v.choice_group_id === i.choice_group_id && v.default_selected,
+      )
+    )
+      warnings.push(
+        `${i.name}: choice group has no default; client must choose`,
+      );
+    for (const s of i.sublines)
+      if (
+        (i.ai_entered || p.ai_unreviewed) &&
+        s.list_amount !== null &&
+        s.amount !== s.list_amount &&
+        !i.price_review?.[s.id]
+      )
+        errors.push(`${i.name}: review AI price with Use list price or Keep`);
+  }
+  for (const block of p.content) {
+    if (block.type === "contract") {
+      if (block.contract_edited)
+        warnings.push("Contract edited for this proposal");
+      for (const c of block.clauses ?? [])
+        if (c.draft)
+          warnings.push(
+            `Contract clause ${c.heading.match(/^[0-9.]+/)?.[0] ?? c.heading} is draft wording`,
+          );
+    }
+  }
   if (!p.quote.length) errors.push("Quote required");
   if (new Set(p.quote.map((l) => l.id)).size !== p.quote.length)
     errors.push("Duplicate line IDs");
@@ -23,7 +63,7 @@ export function readiness(
         .length !== 1
     )
       errors.push(`Exactly one ${role} signature block required`);
-  for (const raw of p.quote) {
+  for (const raw of flatQuote(p.quote)) {
     const parsed = LineSchema.safeParse(raw);
     if (!parsed.success) {
       errors.push(`${raw.name}: invalid quote line`);

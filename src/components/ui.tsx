@@ -1,4 +1,5 @@
 "use client";
+import { flatQuote } from "../lib/quote-model";
 import { useMoney, useFoundationMoney } from "./money-context";
 import { statusDisplay } from "../lib/status-display";
 import {
@@ -10,7 +11,7 @@ import {
 } from "react";
 import icons from "./icons.json";
 import { totals } from "../lib/presentation";
-import type { Line, Proposal } from "../lib/model";
+import type { Line, Proposal, Quote } from "../lib/model";
 export function Icon({ name }: { name: keyof typeof icons }) {
   const i = icons[name];
   return (
@@ -135,7 +136,7 @@ export function Totals({
   showYearly = true,
 }: {
   showYearly?: boolean;
-  lines?: Line[];
+  lines?: Quote;
   currency?: string;
   value?: {
     one_time_total: number;
@@ -159,7 +160,7 @@ export function Totals({
             (showYearly &&
               (!modern ||
                 t.yearly_total !== 0 ||
-                lines?.some((l) => l.interval === "year"))),
+                flatQuote(lines ?? []).some((l) => l.interval === "year"))),
         )
         .map(([label, amount, suffix]) => (
           <div key={label}>

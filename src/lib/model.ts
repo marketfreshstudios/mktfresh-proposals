@@ -19,8 +19,20 @@ export const ScheduleSchema = z.object({
   after_paid_invoices: z.number().int().positive(),
   then: z.object({ amount: cents, lookup_key: z.string().min(1) }),
 });
+export const SublineSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().max(200).optional(),
+  amount: cents,
+  list_amount: cents.nullable().default(null),
+  interval: z.enum(["one_time", "month", "year"]),
+  qty: z.number().int().min(1).max(10000),
+  stripe_lookup_key: z.string().nullable().default(null),
+  qbo_item_ref: z.string().nullable().default(null),
+});
+export type Subline = z.infer<typeof SublineSchema>;
 export const ItemSchema = z.object({
   id: z.string().uuid(),
+  sublines: z.array(SublineSchema).max(20).optional(),
   display_name: z.string().trim().min(1).max(200).optional(),
   sku: z.string().regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1).max(200),
@@ -38,8 +50,33 @@ export const ItemSchema = z.object({
     .nullable()
     .default(null),
 });
+export const QuoteItemSchema = z.object({
+  id: z.string().uuid(),
+  order: z.number().int().nonnegative(),
+  name: z.string().min(1).max(200),
+  description: z.string().max(10000).default(""),
+  source: z.enum(["catalog", "custom"]),
+  pricing_item_id: z.string().uuid().nullable().default(null),
+  custom_family_id: z.string().uuid().nullable().default(null),
+  sublines: z.array(SublineSchema).min(1).max(20),
+  optional: z.boolean(),
+  default_selected: z.boolean(),
+  selected: z.boolean().optional(),
+  choice_group_id: z.string().uuid().nullable().default(null),
+  min_term_months: z.number().int().positive().nullable().default(null),
+  schedule: ScheduleSchema.nullable().default(null),
+  plan_terms: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .nullable()
+    .default(null),
+  ai_entered: z.boolean().optional(),
+  price_review: z.record(z.string(), z.enum(["keep", "list"])).optional(),
+  legacy_group: z.string().max(200).nullable().optional(),
+});
+export type QuoteItem = z.infer<typeof QuoteItemSchema>;
 export type Item = z.infer<typeof ItemSchema>;
 export const LineSchema = ItemSchema.omit({
+  sublines: true,
   display_name: true,
   active: true,
   legacy: true,
@@ -54,6 +91,10 @@ export const LineSchema = ItemSchema.omit({
   selected: z.boolean(),
 });
 export type Line = z.infer<typeof LineSchema>;
+export type Quote = (Line | QuoteItem)[];
+export const QuoteSchema = z
+  .array(z.union([QuoteItemSchema, LineSchema]))
+  .max(100);
 // Read compatibility only. Never rewrite a previously signed version or its hash.
 export function readLine(raw: Line): Line {
   if ("amount" in raw) return raw;
@@ -80,6 +121,18 @@ export function catalogLine(
     selected: options.optional ? options.selected : true,
   });
 }
+export const ContractClauseSchema = z.object({
+  id: z.string().min(1).max(200),
+  heading: z.string().min(1).max(300),
+  body: z.string().max(30000),
+  show_when: z
+    .object({
+      kind: z.literal("item_selected"),
+      pricing_item_id: z.string().uuid(),
+    })
+    .nullable(),
+  draft: z.boolean().optional(),
+});
 export type Block = {
   type:
     | "heading"
@@ -88,19 +141,31 @@ export type Block = {
     | "pricing_table"
     | "signature_block"
     | "page_break"
-    | "variable";
+    | "variable"
+    | "contract";
   text?: string;
   content?: RichText;
   src?: string;
   alt?: string;
   role?: "client" | "company";
   path?: string;
+  id?: string;
+  ai_review?: { source: string; reviewed: boolean };
+  clauses?: {
+    id: string;
+    heading: string;
+    body: string;
+    show_when: null | { kind: "item_selected"; pricing_item_id: string };
+    draft?: boolean;
+  }[];
+  contract_edited?: boolean;
 };
 export type RichText = {
   type: string;
   text?: string;
   content?: RichText[];
   marks?: { type: string }[];
+  attrs?: { path?: string };
 };
 export type Template = {
   id: string;
@@ -113,6 +178,7 @@ export type Template = {
     selected: boolean;
   }[];
   active: boolean;
+  default_items?: QuoteItem[];
 };
 export const SignatureSchema = z
   .object({
@@ -181,10 +247,12 @@ export type Audit = Actor & {
 };
 export type Version = {
   client_flow_version?: 2;
+  quote_model_version?: 3;
+  money_format_version?: 2;
   id: string;
   version_no: number;
   content: Block[];
-  quote: Line[];
+  quote: Quote;
   variables_resolved: Record<string, string>;
   content_hash: string;
   created_at: string;
@@ -221,6 +289,7 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  quote_model_version?: 3;
   creation_warnings?: string[];
   sender?: import("./email-identity").ProposalSender;
   notification_emails?: string[];
@@ -258,7 +327,7 @@ export type Proposal = {
   client_signed_at: string | null;
   completed_at: string | null;
   content: Block[];
-  quote: Line[];
+  quote: Quote;
   versions: Version[];
   signers: Signer[];
   events: Audit[];
