@@ -88,6 +88,13 @@ label:has(> input:disabled) {
   border-radius: 6px;
   flex: none;
 }
+button.contact-open {
+  appearance: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
 .contact-open:hover {
   background: var(--row-hover);
 }
