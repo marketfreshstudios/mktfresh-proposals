@@ -409,3 +409,5 @@ Visual evidence: [committed Phase 4 comparison gallery](docs/screenshots/phase4/
 Stop: one Phase 4 PR for Jonathan's review. No Phase 5 work, hosted purge, hosted migration or merge was performed.
 
 Final billing-panel follow-up: before a verified Stripe ID has been stored, an exact-email read can identify an existing subscriber. Ambiguous email matches are refused, the lookup is not persisted automatically, and no customer is created. A variable-price item is reported for review rather than displayed as a false $0. The added regression check passed locally with the full 159-check unit/database suite, TypeScript, formatting and production/PDF tracing.
+
+Final record-state verification: archived drafts open as read-only records and return to the editor only after unarchiving; readiness blocks sending while archived. Home recent proposals omit archived/imported records. Completed jobs are omitted from the queue display, running/retry states are explicit, and failed PDF/email work retains retry controls. The expanded record browser test passed and the 73 affected Phase 4 captures were regenerated.

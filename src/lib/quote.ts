@@ -12,6 +12,7 @@ export function readiness(
 ) {
   const errors: string[] = [],
     warnings: string[] = [];
+  if (p.archived_at) errors.push("Unarchive this proposal before sending");
   if (p.valid_until && Date.parse(p.valid_until) <= now.getTime())
     errors.push("Proposal expired");
   if (!p.valid_until && /proposal\.valid_until/.test(JSON.stringify(p.content)))

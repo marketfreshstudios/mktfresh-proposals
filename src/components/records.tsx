@@ -13,6 +13,7 @@ import {
   listViews,
   viewKey,
   expiringWithinSevenDays,
+  unfinishedJobs,
 } from "../lib/proposal-state";
 import type { ProposalAction } from "../lib/proposal-actions";
 import type { ClientBilling } from "../lib/client-billing";
@@ -759,6 +760,7 @@ export function HomeV4({ data }: { data: Data }) {
         </header>
         <ProposalRows
           proposals={rows
+            .filter((p) => inView(p, "all"))
             .toSorted(
               (a, b) =>
                 Date.parse(b.updated_at ?? b.created_at) -
@@ -1313,7 +1315,8 @@ export function RecordV4({
                     <span
                       className={`pill ${link.status === "succeeded" ? "success" : link.status === "failed" ? "danger" : "warning"}`}
                     >
-                      {link.metadata?.manual_invoice
+                      {link.metadata?.manual_invoice &&
+                      link.status === "succeeded"
                         ? "Invoiced manually"
                         : link.provider === "qbo" &&
                             link.status === "needs_review"
@@ -1344,16 +1347,21 @@ export function RecordV4({
               </>
             )}
             <div className="record-jobs">
-              {p.jobs
-                .filter((j) => j.kind !== "email" || !!j.last_error)
+              {unfinishedJobs(p)
+                .filter(
+                  (j) =>
+                    j.kind !== "email" ||
+                    j.payload.to === p.client.email ||
+                    !!j.last_error,
+                )
                 .map((j) => (
                   <JobState
                     key={j.id}
                     state={
-                      j.status === "failed" || j.last_error
-                        ? "failed"
-                        : j.status === "running"
-                          ? "running"
+                      j.status === "running"
+                        ? "running"
+                        : j.status === "failed" || j.last_error
+                          ? "failed"
                           : "queued"
                     }
                     label={
@@ -1361,10 +1369,22 @@ export function RecordV4({
                         ? "Sealed PDF"
                         : j.kind === "billing"
                           ? "Billing"
-                          : "Email to client"
+                          : j.payload.to === p.client.email
+                            ? "Email to client"
+                            : "Staff notification"
                     }
                     error={j.last_error}
                     attempts={j.attempts}
+                    onRetry={
+                      j.status !== "running" &&
+                      (j.status === "failed" || j.last_error)
+                        ? () => {
+                            void post(`/api/proposals/${p.id}/retry`)
+                              .then(onRefresh)
+                              .catch((e) => setError(e.message));
+                          }
+                        : undefined
+                    }
                   />
                 ))}
             </div>

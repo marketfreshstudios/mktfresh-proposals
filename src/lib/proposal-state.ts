@@ -86,3 +86,6 @@ export const expiringWithinSevenDays = (p: Proposal, now = Date.now()) =>
   ["sent", "viewed"].includes(p.status) &&
   Date.parse(p.valid_until) > now &&
   Date.parse(p.valid_until) <= now + 7 * 86400000;
+
+export const unfinishedJobs = (p: Proposal) =>
+  p.jobs.filter((j) => j.status !== "done");

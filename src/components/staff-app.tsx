@@ -287,44 +287,45 @@ export function StaffApp({
         (p.sender ? ` · Sent by ${p.sender.display_name}` : "") +
         (p.valid_until ? " · " + date(p.valid_until) : "");
       headerAction = null;
-      content =
-        (!action || action === "edit" || action === "send") &&
+      content = p.archived_at ? (
+        <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
+      ) : (!action || action === "edit" || action === "send") &&
         p.status === "draft" ? (
-          <ProposalEditor
-            initial={p}
-            initialTab={action === "send" ? "Review & send" : "Quote"}
-            settings={data.settings}
-            catalog={data.catalog}
-            families={data.families}
-            library={data.library}
-            staff={data.staff}
-            user={data.user}
-            documents={data.documents}
-            onSaved={setP}
-          />
-        ) : action === "send" ? (
-          <SendProposal
-            data={data}
-            p={p}
-            catalog={data.catalog}
-            onSent={(next) => {
-              setP(next);
-              location.href = `/proposals/${p.id}`;
-            }}
-          />
-        ) : action === "countersign" ? (
-          <RecordV4
-            p={p}
-            data={data}
-            onChanged={setP}
-            onRefresh={load}
-            countersign
-          />
-        ) : action === "audit" ? (
-          <Audit p={p} />
-        ) : (
-          <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
-        );
+        <ProposalEditor
+          initial={p}
+          initialTab={action === "send" ? "Review & send" : "Quote"}
+          settings={data.settings}
+          catalog={data.catalog}
+          families={data.families}
+          library={data.library}
+          staff={data.staff}
+          user={data.user}
+          documents={data.documents}
+          onSaved={setP}
+        />
+      ) : action === "send" ? (
+        <SendProposal
+          data={data}
+          p={p}
+          catalog={data.catalog}
+          onSent={(next) => {
+            setP(next);
+            location.href = `/proposals/${p.id}`;
+          }}
+        />
+      ) : action === "countersign" ? (
+        <RecordV4
+          p={p}
+          data={data}
+          onChanged={setP}
+          onRefresh={load}
+          countersign
+        />
+      ) : action === "audit" ? (
+        <Audit p={p} />
+      ) : (
+        <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
+      );
     } else if (section === "proposals") {
       subtitle = `${data.total} proposals`;
       content = (

@@ -11,6 +11,7 @@ import {
   needsCountersign,
   canCountersign,
   expiringWithinSevenDays,
+  unfinishedJobs,
 } from "../src/lib/proposal-state";
 import { aiTool } from "../src/lib/ai-tools";
 import { saveClient, DuplicateClient } from "../src/lib/clients";
@@ -188,6 +189,9 @@ it("manual outcomes create no signature or billing, archive is reversible, and s
   expect(archived.status).toBe("completed");
   expect(inView(archived, "all")).toBe(false);
   expect(inView(archived, "archived")).toBe(true);
+  expect(
+    readiness(archived, await repo.entities("pricing_items")).errors,
+  ).toContain("Unarchive this proposal before sending");
   const restored = await proposalAction(
     repo,
     won.id,
@@ -512,6 +516,7 @@ it("preview PDFs stay in PDF jobs, use current branding, and never queue mail on
   expect(renderSettings).toMatchObject({ company_name: settings.company_name });
   expect(rendered.files.every((f) => f.kind === "render")).toBe(true);
   expect(rendered.jobs.some((j) => j.kind === "email")).toBe(false);
+  expect(unfinishedJobs(rendered)).toEqual([]);
   expect(mailer.sent.size).toBe(0);
   const oldStage = rendered.jobs[0].payload.stage;
   await repo.put("workspace_settings", {

@@ -45,7 +45,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       status: "needs_review",
       attempts: 0,
       last_error: "Invoice manually: no QuickBooks mapping",
-      metadata: { manual_invoice: true },
+      metadata: { action: "Invoice manually" },
     },
     {
       provider: "stripe",
@@ -512,6 +512,21 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await expect(
     page.getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: `More actions for ${ai.client.company}` })
+    .click();
+  await page.getByRole("button", { name: "Archive", exact: true }).click();
+  await page.goto("/proposals?view=archived");
+  await page
+    .getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` })
+    .click();
+  await expect(page.locator(".record-v4")).toBeVisible();
+  await expect(page.locator(".quote-workspace")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: `More actions for ${ai.client.company}` })
+    .click();
+  await page.getByRole("button", { name: "Unarchive", exact: true }).click();
+  await expect(page.locator(".quote-workspace")).toBeVisible();
   await page.goto(`/clients/${draft.client.id}`);
   await page
     .locator(".client-detail-v4 > header")
