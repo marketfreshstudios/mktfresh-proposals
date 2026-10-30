@@ -2,6 +2,10 @@
 
 *Written 29 October 2026. Phase 1 (`HANDOFF_PHASE1.md`, `DECISIONS.md`) is the starting point: read both, plus `README.md`, before changing anything. Where this brief contradicts the pricing section of the 7 October Phase 1 brief, this brief wins.*
 
+## Current redesign model — owner update, 30 October 2026
+
+The redesign brief/spec and the owner's confirmed test-data reset supersede the old flat Line proposal shape and its compatibility/migration instructions. Proposals and MCP accept current `items` with `sublines`; provider billing lines are internal DTOs only. Native test proposals are purged by the owner, never by an implementation task, and Proposify imports are excluded. Future signed versions/hashes stay immutable. Playbook payloads use `/schemas/quote-draft.v2.json`. Validity may be null for an indefinite proposal; omitted creation validity uses the workspace default.
+
 ## Confirmed by the owner (29 October 2026) — not open questions
 
 1. **Existing subscriber with a working card:** new monthly lines are added to their existing subscription with no billing link; the signed proposal is the authority and the client is emailed the new monthly total. Everyone else gets a Stripe Checkout link (D2 / D3).
@@ -79,7 +83,7 @@ The owner's Stripe account is the shared catalogue. Since 15 October 2026 every 
 5. **Calculator handoff.** The playbook (static pages, password-protected, not in this repo) will get a "Start proposal" button. Define and document the contract it calls:
    `GET /proposals/new?draft=<base64url JSON>` (staff session required), payload
    `{ "source": "playbook", "source_version": "v1.17 · 15 October 2026", "title?", "client?": {company, first_name, last_name, email}, "lines": [Line…], "notes?": "markdown" }`
-   using the Line shape above. The platform validates it, shows a "From playbook v1.17" badge on the draft, and stores the payload on the proposal's first event. Ship a JSON Schema for it at `public/schemas/quote-draft.v1.json` and an example in README. The playbook-side button is a separate change the owner deploys; do not attempt it.
+   using the current item/sub-line shape in the redesign spec. The platform validates it, shows a "From playbook v1.17" badge on the draft, and stores the payload on the proposal's first event. Ship a JSON Schema for it at `public/schemas/quote-draft.v2.json` and an example in README. The playbook-side button is a separate change the owner deploys; do not attempt it.
 6. **Pricing reference for AI drafting.** `workspace_documents` (markdown or JSON, named, versioned). MarketFresh's first one is the playbook's `pricing.js` and plan rules, uploaded by the owner. The AI connector (F) exposes these read-only so Claude prices from the same numbers the calculator uses.
 
 ## Workstream D — Live billing providers (behind the existing interfaces)

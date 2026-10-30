@@ -1,3 +1,4 @@
+import { saveClient } from "./clients";
 import { cloneQuote, quoteSublines } from "./quote-model";
 import { itemDisplayName, sellableCatalogue } from "./catalogue-display";
 import { templateDefaultQuote } from "./template-quote";
@@ -62,6 +63,7 @@ const schemas: Record<string, z.ZodType> = {
     template_id: id,
     client_id: id,
     title: z.string().min(1).max(300),
+    valid_until: z.string().nullable().optional(),
     content_markdown: z.string().max(100000),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
@@ -70,13 +72,14 @@ const schemas: Record<string, z.ZodType> = {
     revision: z.number().int(),
     title: z.string().min(1).max(300).optional(),
     brief: z.string().max(50000).optional(),
+    valid_until: z.string().nullable().optional(),
     content_markdown: z.string().max(100000).optional(),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   set_quote_lines: z.object({
     id,
     revision: z.number().int(),
-    items: z.array(QuoteItemSchema).max(100).optional(),
+    items: z.array(QuoteItemSchema).max(100),
   }),
   check_ready: z.object({ id }),
 };
@@ -100,6 +103,7 @@ function proposalView(p: Proposal) {
     revision: p.revision,
     title: p.title,
     status: p.status,
+    valid_until: p.valid_until,
     client: p.client,
     content: p.content,
     quote: cloneQuote(p.quote),
@@ -130,11 +134,11 @@ export async function aiTool(
     "Insufficient connector scope",
     403,
   );
-  const input = schemas[name].parse(raw) as any;
   check(
     !(raw && typeof raw === "object" && "lines" in raw),
     "Flat lines are no longer supported; supply items with sublines",
   );
+  const input = schemas[name].parse(raw) as any;
   if (name === "set_quote_lines")
     check(input.items !== undefined, "Items required");
   const service = new ProposalService(repo);
@@ -193,7 +197,7 @@ export async function aiTool(
     return (await repo.list(input.query)).slice(0, 30).map(proposalView);
   if (name === "create_client") {
     const client = ClientSchema.parse({ ...input, id: randomUUID() });
-    await repo.put("clients", client);
+    await saveClient(repo, client);
     await repo.put("workspace_events", {
       id: randomUUID(),
       type: "client_created",
@@ -238,9 +242,7 @@ export async function aiTool(
     const p = await service.create(
       {
         ...input,
-        valid_until: new Date(
-          Date.now() + settings.default_validity_days * 86400000,
-        ).toISOString(),
+        valid_until: input.valid_until,
         brief: input.brief,
         document_versions: await readDocumentsForDraft(repo, actor),
         content: [
@@ -283,6 +285,7 @@ export async function aiTool(
         title: input.title,
         brief: input.brief,
         content,
+        valid_until: input.valid_until,
         quote: input.items,
       },
       actor,

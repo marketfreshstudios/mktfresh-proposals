@@ -901,9 +901,11 @@ function NewClientFlow({
                       >
                         Review and sign
                       </Button>
-                      <small className="flow-desktop-choices">
-                        Valid until {date(p.valid_until)}
-                      </small>
+                      {p.valid_until && (
+                        <small className="flow-desktop-choices">
+                          Valid until {date(p.valid_until)}
+                        </small>
+                      )}
                     </>
                   )}
                 </aside>
@@ -1126,8 +1128,8 @@ function FlowDocument({
       <p className="flow-eyebrow">Proposal for {p.recipient.company}</p>
       <h1>{p.title}</h1>
       <p className="flow-byline">
-        From {p.contact.name || p.company.name} · Valid until{" "}
-        {date(p.valid_until)}
+        From {p.contact.name || p.company.name}
+        {p.valid_until && <> · Valid until {date(p.valid_until)}</>}
       </p>
       {sections.length > 1 && (
         <details className="flow-outline">
@@ -1203,7 +1205,8 @@ function FlowDocument({
         ),
       )}
       <p className="muted document-end">
-        Valid until {date(p.valid_until)} · From {p.company.name}
+        {p.valid_until && <>Valid until {date(p.valid_until)} · </>}From{" "}
+        {p.company.name}
       </p>
     </article>
   );

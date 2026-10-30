@@ -12,8 +12,12 @@ export function readiness(
 ) {
   const errors: string[] = [],
     warnings: string[] = [];
-  if (Date.parse(p.valid_until) <= now.getTime())
+  if (p.valid_until && Date.parse(p.valid_until) <= now.getTime())
     errors.push("Proposal expired");
+  if (!p.valid_until && /proposal\.valid_until/.test(JSON.stringify(p.content)))
+    warnings.push(
+      "Valid until is used in the text but this proposal never expires — use {{proposal.validity}} instead",
+    );
   const pending = pendingSections(p);
   if (pending.length && !confirmAiReview)
     errors.push(

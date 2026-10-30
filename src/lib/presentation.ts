@@ -1,3 +1,4 @@
+import { readableDate } from "./validity";
 import {
   quoteSublines,
   cloneQuote,
@@ -49,8 +50,16 @@ export function variables(p: Proposal, quote = p.quote) {
     map["client." + field] = p.client[field];
   Object.assign(map, {
     "proposal.title": p.title,
-    "proposal.valid_until": p.valid_until.slice(0, 10),
-    "proposal.date": (p.sent_at ?? p.created_at).slice(0, 10),
+    "proposal.valid_until": readableDate(p.valid_until),
+    "proposal.validity": p.valid_until
+      ? `This proposal is valid until ${readableDate(p.valid_until)}.`
+      : "",
+    "proposal.date": new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: p.workspace_settings?.timezone ?? "UTC",
+    }).format(new Date(p.sent_at ?? p.created_at)),
     "company.name": p.workspace_settings?.company_name ?? "",
     "company.owner": p.workspace_settings?.owner ?? "",
     "company.email": p.workspace_settings?.email ?? "",
@@ -79,7 +88,9 @@ export function variables(p: Proposal, quote = p.quote) {
 export function resolve(text: string, map: Record<string, string>) {
   return text.replace(/{{\s*([\w.-]+)\s*}}/g, (_, path) => {
     check(
-      map[path] !== undefined && map[path] !== "",
+      map[path] !== undefined &&
+        (map[path] !== "" ||
+          ["proposal.validity", "proposal.valid_until"].includes(path)),
       `Unresolved variable: ${path}`,
     );
     return map[path];
@@ -96,7 +107,9 @@ export const escape = (text: string) =>
 function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   check(depth < 30, "Content nesting too deep");
   if (node.type === "variable")
-    return `<span class="field-chip">${escape(resolve("{{" + (node.attrs?.path ?? "") + "}}", map))}</span>`;
+    return resolve("{{" + (node.attrs?.path ?? "") + "}}", map)
+      ? `<span class="field-chip">${escape(resolve("{{" + (node.attrs?.path ?? "") + "}}", map))}</span>`
+      : "";
   if (node.type === "text") {
     let s = escape(resolve(node.text ?? "", map));
     for (const m of node.marks ?? [])
@@ -114,7 +127,15 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   };
   const tag = tags[node.type];
   check(tag, "Unsupported rich text node");
-  return `<${tag}>${(node.content ?? []).map((n) => rich(n, map, depth + 1)).join("")}</${tag}>`;
+  const body = (node.content ?? [])
+    .map((n) => rich(n, map, depth + 1))
+    .join("");
+  if (!body.trim() && tag === "div") return "";
+  return tag === "p" &&
+    !body.replace(/<[^>]*>/g, "").trim() &&
+    JSON.stringify(node).includes("proposal.valid")
+    ? ""
+    : `<${tag}>${body}</${tag}>`;
 }
 export function renderBlocks(
   blocks: Block[],
@@ -132,9 +153,13 @@ export function renderBlocks(
         case "paragraph":
           return b.content
             ? rich(b.content, map)
-            : `<p>${escape(resolve(b.text ?? "", map))}</p>`;
+            : resolve(b.text ?? "", map).trim()
+              ? `<p>${escape(resolve(b.text ?? "", map))}</p>`
+              : "";
         case "variable":
-          return `<span>${escape(resolve("{{" + b.path + "}}", map))}</span>`;
+          return resolve("{{" + b.path + "}}", map)
+            ? `<span>${escape(resolve("{{" + b.path + "}}", map))}</span>`
+            : "";
         case "page_break":
           return '<div class="page-break"></div>';
         case "signature_block":
@@ -193,6 +218,7 @@ export function renderBlocks(
           throw new AppError(400, "Unsupported content block");
       }
     })
+    .filter(Boolean)
     .join("\n");
 }
 export const htmlDocument = (body: string) =>

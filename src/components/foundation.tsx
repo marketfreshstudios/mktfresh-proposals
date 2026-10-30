@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useRef, useId, useState, type ReactNode } from "react";
 export function Skeleton({
   kind = "rows",
   label = "Loading your workspace…",
@@ -31,11 +32,19 @@ export function Sheet({
 }) {
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
+  const [host, setHost] = useState<Element | null>(null);
   useEffect(() => {
-    ref.current?.showModal();
-    return () => ref.current?.close();
+    setHost(document.querySelector(".staff-foundation") ?? document.body);
   }, []);
-  return (
+  useEffect(() => {
+    if (!host) return;
+    const dialog = ref.current!;
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("h2")?.focus();
+    return () => dialog.close();
+  }, [host]);
+  if (!host) return null;
+  return createPortal(
     <dialog
       aria-labelledby={titleId}
       className="foundation-sheet"
@@ -46,12 +55,15 @@ export function Sheet({
       }}
     >
       <header>
-        <h2 id={titleId}>{title}</h2>
-        <button className="btn ghost" onClick={onClose}>
+        <h2 id={titleId} tabIndex={-1}>
+          {title}
+        </h2>
+        <button type="button" className="btn ghost" onClick={onClose}>
           Close
         </button>
       </header>
       {children}
-    </dialog>
+    </dialog>,
+    host,
   );
 }

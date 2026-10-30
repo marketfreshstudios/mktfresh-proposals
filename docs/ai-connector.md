@@ -92,3 +92,6 @@ Use UUIDs for item/sub-line/group identities. Intervals are `one_time`, `month`,
 Amounts are supplied by the author; the app only sums them. AI text remains pending per section. AI-entered catalogue overrides require a staff **Use list price** or **Keep** decision; send confirmation cannot bypass those price holds. Ordinary saving does not mark sections reviewed. An AI tool cannot send, sign, countersign, choose the email sender or approve its own changes. Contract clauses come from the template; conditional clauses are evaluated against selected catalogue item IDs and frozen at signature.
 
 AI assistants cannot delete clients or proposals, change outcomes, archive records, send or sign.
+
+
+Validity: `create_proposal_draft` and `update_proposal_draft` accept optional `valid_until` (ISO timestamp or null). Omit it on create for the workspace validity default (30 days); pass null to make a draft indefinite. Proposal responses include `valid_until`. `{{proposal.date}}` and `{{proposal.valid_until}}` resolve to readable dates. Prefer `{{proposal.validity}}` for a complete sentence that disappears when indefinite. `check_ready` warns about custom expiry wording on an indefinite proposal. No provider dates, signatures or frozen versions can be edited through these tools.

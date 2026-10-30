@@ -257,6 +257,12 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  archived_at?: string | null;
+  archived_by?: string;
+  marked_won_by?: string;
+  marked_lost_by?: string;
+  /** Read-only list summary; full evidence is loaded on the record. */
+  version_count?: number;
   creation_warnings?: string[];
   sender?: import("./email-identity").ProposalSender;
   notification_emails?: string[];
@@ -278,7 +284,7 @@ export type Proposal = {
     | "archived";
   token: string | null;
   password_hash: string | null;
-  valid_until: string;
+  valid_until: string | null;
   currency: string;
   source: "native" | "proposify_import";
   brief?: string;

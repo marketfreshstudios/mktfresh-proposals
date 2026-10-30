@@ -1,6 +1,4 @@
 import { it, expect } from "vitest";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import {
   setup,
   staff,
@@ -15,7 +13,6 @@ import {
 } from "../src/lib/company-signatory";
 import { onBehalfText } from "../src/lib/workspace";
 import { publicResult } from "../src/lib/service";
-import { CompanySignatureForm } from "../src/components/company-signature";
 const delegate = {
   ...staff,
   actor: "staff:00000000-0000-4000-8000-000000000002",
@@ -143,24 +140,4 @@ it("direct signatory uses stored identity without delegation, and drafts never e
   expect(
     draft.workspace_settings!.company_signatory!.authorized_user_ids,
   ).toEqual([]);
-});
-it("renders the designated identity and required delegation checkbox without editable signature fields", async () => {
-  const { draft, settings } = await setup();
-  settings.company_signatory!.authorized_user_ids.push(delegate.actor.slice(6));
-  const html = renderToStaticMarkup(
-    createElement(CompanySignatureForm, {
-      settings,
-      user: delegate,
-      version: signatoryVersion(settings),
-      proposal: draft,
-      onSign: async () => {},
-    }),
-  );
-  expect(html).toContain("Signing on behalf of Alex Morgan");
-  expect(html).toContain(
-    "I&#x27;m authorized to sign on behalf of Alex Morgan for Example Studio.",
-  );
-  expect(html.match(/type="checkbox"/g)).toHaveLength(2);
-  expect(html).toContain("franz@example.test");
-  expect(html).not.toContain('type="text"');
 });

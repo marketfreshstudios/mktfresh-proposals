@@ -12,7 +12,13 @@ test("full headless flow through the client interface, both PDFs, billing, downl
 }) => {
   const headers = { Authorization: "Bearer e2e-staff-secret-only" };
   expect((await request.get("/api/proposals")).status()).toBe(401);
-  const clientId = randomUUID(),
+  const existingClients = await (
+    await request.get("/api/clients", { headers })
+  ).json();
+  const clientId =
+      existingClients.find(
+        (c: { id: string; email: string }) => c.email === "jane@example.test",
+      )?.id ?? randomUUID(),
     itemId = randomUUID(),
     monthlyId = randomUUID(),
     optionalId = randomUUID(),

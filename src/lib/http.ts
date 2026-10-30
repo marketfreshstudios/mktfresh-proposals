@@ -1,3 +1,6 @@
+import { clientBilling } from "./client-billing";
+import { DuplicateClient, saveClient } from "./clients";
+import { proposalAction, proposalActions } from "./proposal-actions";
 import { previewResult } from "./preview";
 import {
   documents,
@@ -159,6 +162,7 @@ export async function handle(req: Request, path: string[]) {
               ? "declined"
               : p.status === "expired" ||
                   (["sent", "viewed"].includes(p.status) &&
+                    !!p.valid_until &&
                     Date.parse(p.valid_until) <= Date.now())
                 ? "expired"
                 : null,
@@ -385,6 +389,27 @@ export async function handle(req: Request, path: string[]) {
         return json(await saveDocument(rt.repo, await body(req)), 201);
     }
 
+    if (method === "GET" && path[0] === "clients" && path[2] === "billing") {
+      const client = (
+        await rt.repo.entities<import("./model").Client>("clients")
+      ).find((c) => c.id === uuid.parse(path[1]));
+      check(client, "Client not found", 404);
+      return json(
+        await clientBilling(
+          rt.repo,
+          client,
+          rt.worker.providers.stripe instanceof StripeProvider
+            ? rt.worker.providers.stripe.api
+            : undefined,
+        ),
+      );
+    }
+    if (method === "GET" && path[0] === "workspace_events")
+      return json(await rt.repo.entities("workspace_events"));
+    if (method === "DELETE" && path[0] === "clients" && path[1]) {
+      await rt.repo.deleteClient(uuid.parse(path[1]), user);
+      return json({ deleted: true });
+    }
     if (
       [
         "clients",
@@ -453,7 +478,8 @@ export async function handle(req: Request, path: string[]) {
             405,
             "Create custom families through the verified Stripe action",
           );
-        } else if (table === "clients") entity = ClientSchema.parse(raw);
+        } else if (table === "clients")
+          return json(await saveClient(rt.repo, raw), 201);
         else if (table === "pricing_items") entity = ItemSchema.parse(raw);
         else if (table === "templates") {
           entity = z
@@ -504,45 +530,15 @@ export async function handle(req: Request, path: string[]) {
           limit = Math.min(100, Math.max(1, Number(q.get("limit")) || 50));
         return json({
           total: list.length,
-          items: list
-            .slice(offset, offset + limit)
-            .map(
-              ({
-                id,
-                title,
-                status,
-                client,
-                created_at,
-                currency,
-                source,
-                files,
-                quote,
-                signers,
-                jobs,
-                ai_unreviewed,
-                valid_until,
-                sent_at,
-                billing_links,
-                origin,
-              }) => ({
-                id,
-                title,
-                status,
-                client,
-                created_at,
-                currency,
-                source,
-                files,
-                quote,
-                signers,
-                jobs,
-                ai_unreviewed,
-                valid_until,
-                sent_at,
-                billing_links,
-                origin,
-              }),
+          items: list.slice(offset, offset + limit).map((p) => ({
+            ...p,
+            content: [],
+            version_count: p.versions.length,
+            versions: [],
+            events: p.events.filter((e) =>
+              ["viewed", "marked_won", "marked_lost"].includes(e.type),
             ),
+          })),
         });
       }
       if (method === "POST" && !id) {
@@ -551,7 +547,7 @@ export async function handle(req: Request, path: string[]) {
             client_id: uuid,
             template_id: uuid,
             title: z.string().min(1).max(300),
-            valid_until: z.string(),
+            valid_until: z.string().nullable().optional(),
             currency: z.string().length(3).optional(),
             password: z.string().min(8).max(200).optional(),
             playbook: PlaybookDraftSchema.optional(),
@@ -597,7 +593,7 @@ export async function handle(req: Request, path: string[]) {
               .max(300)
               .optional(),
             quote: QuoteSchema.optional(),
-            valid_until: z.string().optional(),
+            valid_until: z.string().nullable().optional(),
           })
           .parse(await body(req));
         return json(
@@ -645,6 +641,60 @@ export async function handle(req: Request, path: string[]) {
           ),
         );
       }
+      if (method === "GET" && action === "download") {
+        let p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        let file = p.files.findLast(
+          (f) => f.kind === "sealed" || f.kind === "import",
+        );
+        if (!file || (!p.client_signed_at && p.source === "native")) {
+          p = await proposalAction(
+            rt.repo,
+            id,
+            p.revision,
+            "preview_pdf",
+            user,
+          );
+          const stage = p.jobs.findLast(
+            (j) => j.kind === "pdf" && j.payload.preview,
+          )?.payload.stage;
+          await rt.worker.drain(id, "pdf");
+          p = (await rt.repo.get(id))!;
+          file = p.files.findLast((f) => f.stage === stage && !!f.version_hash);
+        }
+        check(file, "PDF is being prepared; retry shortly", 503);
+        return new Response(
+          Buffer.from(await rt.storage.get(file.storage_path)),
+          {
+            headers: {
+              ...headers,
+              "Content-Type": "application/pdf",
+              "Content-Disposition": 'attachment; filename="proposal.pdf"',
+            },
+          },
+        );
+      }
+      if (method === "POST" && action === "actions") {
+        const input = z
+          .object({
+            revision: z.number().int(),
+            action: z.enum(proposalActions),
+            note: z.string().max(4000).default(""),
+          })
+          .parse(await body(req));
+        return json(
+          await proposalAction(
+            rt.repo,
+            id,
+            input.revision,
+            input.action,
+            user,
+            input.note,
+            new Date(),
+            rt.service,
+          ),
+        );
+      }
       if (method === "POST" && action === "countersign")
         return json(
           await rt.service.sign(id, await body(req), "company", user),
@@ -675,6 +725,8 @@ export async function handle(req: Request, path: string[]) {
     }
     throw new AppError(404, "Route not found");
   } catch (e) {
+    if (e instanceof DuplicateClient)
+      return json({ error: e.message, existing_client: e.existing }, 409);
     if (e instanceof AppError) return json({ error: e.message }, e.status);
     if (e instanceof z.ZodError)
       return json({ error: "Invalid request", issues: e.issues }, 400);

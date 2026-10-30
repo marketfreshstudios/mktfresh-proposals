@@ -6,7 +6,7 @@ import { setup, staff, clientActor, signature } from "../tests/helpers";
 import { publicResult } from "../src/lib/service";
 import { mutate } from "../src/lib/repository";
 import type { PublicProposal } from "../src/components/client-proposal";
-test("client redesign: every responsive state, frozen legacy renderer, safe preview and signature retries", async ({
+test("client redesign: every responsive state, safe preview and signature retries", async ({
   page,
   context,
 }) => {
@@ -468,16 +468,27 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
             settings,
             app_url: "http://127.0.0.1:3100",
           }
-        : path === "/api/proposals"
-          ? { items: staffRows, total: staffRows.length }
-          : [
-                "clients",
-                "pricing_items",
-                "templates",
-                "content_library",
-              ].includes(entity)
-            ? await repo.entities(entity as any)
-            : [];
+        : path.endsWith("/billing")
+          ? {
+              available: false,
+              subscriber: false,
+              items: [],
+              card: null,
+              next_invoice: null,
+              stripe_url: null,
+              qbo_url: null,
+              notice: "Stripe is not connected.",
+            }
+          : path === "/api/proposals"
+            ? { items: staffRows, total: staffRows.length }
+            : [
+                  "clients",
+                  "pricing_items",
+                  "templates",
+                  "content_library",
+                ].includes(entity)
+              ? await repo.entities(entity as any)
+              : [];
     await route.fulfill({ json: value });
   });
   for (const theme of ["light", "dark"]) {
@@ -492,7 +503,7 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
         page.getByRole("heading", { name: "Recent proposals", exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole("columnheader", { name: "Yearly", exact: true }),
+        page.locator(".proposal-row-head").getByText("Yearly", { exact: true }),
       ).toHaveCount(0);
       if (width >= 700) {
         for (const label of [
@@ -506,13 +517,18 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
           ).toHaveCSS("border-top-style", "solid");
       }
       await capture("home", width, theme, "3d/3e/3f");
-      await page.getByRole("button", { name: "Studio", exact: true }).click();
-      await expect(page.getByRole("dialog")).toBeVisible();
+      if (width === 768) {
+        await page.getByRole("button", { name: "Studio", exact: true }).click();
+        await expect(page.locator(".studio-popover")).toBeVisible();
+      } else if (width === 375) {
+        await page.getByRole("link", { name: "Studio", exact: true }).click();
+        await expect(page.locator(".studio-page")).toBeVisible();
+      } else await expect(page.locator(".desktop-studio")).toBeVisible();
       await capture("studio-menu", width, theme, "04");
       await page.keyboard.press("Escape");
       await page.goto(`/clients/${sent.client.id}`);
       await expect(
-        page.getByRole("textbox", { name: "Title (optional)", exact: true }),
+        page.getByRole("heading", { name: "How they’re billed", exact: true }),
       ).toBeVisible();
       await capture("client", width, theme, "6d/6e/6f");
     }
@@ -533,7 +549,7 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
   staffRows = [withYear];
   await page.goto("/");
   await expect(
-    page.getByRole("columnheader", { name: "Yearly", exact: true }),
+    page.locator(".proposal-row-head").getByText("Yearly", { exact: true }),
   ).toBeVisible();
   expect(externalFonts).toEqual([]);
   expect(signPosts).toBe(12);
@@ -543,8 +559,7 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
     `${dir}/manifest.json`,
     JSON.stringify(
       {
-        scope:
-          "Client flow Phase 2. Flat quote contract retained until Phase 3.",
+        scope: "Current-model client flow and responsive staff navigation.",
         captures,
       },
       null,

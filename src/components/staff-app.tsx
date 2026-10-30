@@ -1,10 +1,21 @@
 "use client";
+import {
+  HomeV4,
+  ProposalListV4,
+  RecordV4,
+  ClientsV4,
+  ProposalRows,
+  WorkspaceActivityV4,
+} from "./records";
+import { ClientPicker } from "./client-picker";
+import { ValidityField } from "./validity-field";
+import { defaultValidUntil } from "../lib/validity";
 import { quoteSublines } from "../lib/quote-model";
 import { intervalSuffix } from "../lib/money";
 import { statusDisplay } from "../lib/status-display";
 import { StaffShell } from "./staff-shell";
 import { Sheet, Skeleton } from "./foundation";
-import { staffRoute, type StaffQuery } from "../lib/staff-routes";
+import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
 import { useMoney } from "./money-context";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
@@ -30,10 +41,7 @@ import {
   Icon,
 } from "./ui";
 import { ProposalEditor, BlocksEditor } from "./editor";
-import {
-  CompanySignatureForm,
-  StoredSignatureEditor,
-} from "./company-signature";
+import { StoredSignatureEditor } from "./company-signature";
 import { renderBlocks, variables, totals } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { PlaybookDraftSchema } from "../lib/playbook";
@@ -59,7 +67,7 @@ const nav = [
   ["settings/team", "Team"],
   ["settings/ai", "AI assistants"],
 ];
-type Data = {
+export type Data = {
   app_url: string;
   user: Actor;
   signatory_version: string;
@@ -226,7 +234,29 @@ export function StaffApp({
     content: ReactNode = null,
     headerAction: ReactNode = null;
   if (data) {
-    if (section === "") {
+    if (section === "studio") {
+      title = "Studio";
+      content = (
+        <nav className="studio-page" aria-label="Studio navigation">
+          {studioRoutes.map(([href, label]) => (
+            <a key={href} href={href}>
+              <Icon name="studio" />
+              {label}
+              <span aria-hidden="true">→</span>
+            </a>
+          ))}
+          <ThemeToggle />
+          <Button
+            onClick={async () => {
+              await post("/api/auth/logout");
+              location.href = "/login";
+            }}
+          >
+            Sign out
+          </Button>
+        </nav>
+      );
+    } else if (section === "") {
       title = "Home";
       subtitle = new Date().toLocaleDateString(undefined, {
         weekday: "long",
@@ -234,7 +264,7 @@ export function StaffApp({
         month: "long",
         year: "numeric",
       });
-      content = <Dashboard data={data} />;
+      content = <HomeV4 data={data} />;
     } else if (section === "proposals" && id === "new") {
       title = "New proposal";
       subtitle =
@@ -249,31 +279,14 @@ export function StaffApp({
       title =
         action === "send"
           ? "Send this proposal"
-          : action === "countersign"
-            ? "Counter-sign"
-            : action === "audit"
-              ? "Audit trail"
-              : p.title;
-      subtitle = p.client.company + " · " + date(p.valid_until);
-      headerAction = (
-        <div className="actions">
-          {p.status === "signed_by_client" && action !== "countersign" ? (
-            <a className="btn primary" href={`/proposals/${p.id}/countersign`}>
-              Counter-sign
-            </a>
-          ) : p.status === "draft" && action !== "edit" ? (
-            <a className="btn primary" href={`/proposals/${p.id}/edit`}>
-              Edit draft
-            </a>
-          ) : null}
-          <a
-            className="btn"
-            href={`/proposals/${p.id}${action ? "" : "/audit"}`}
-          >
-            {action ? "Back to record" : "Audit"}
-          </a>
-        </div>
-      );
+          : action === "audit"
+            ? "Audit trail"
+            : p.title;
+      subtitle =
+        p.client.company +
+        (p.sender ? ` · Sent by ${p.sender.display_name}` : "") +
+        (p.valid_until ? " · " + date(p.valid_until) : "");
+      headerAction = null;
       content =
         (!action || action === "edit" || action === "send") &&
         p.status === "draft" ? (
@@ -300,55 +313,29 @@ export function StaffApp({
             }}
           />
         ) : action === "countersign" ? (
-          <div className="grid">
-            <div className="stack">
-              <Banner tone="info" title="Frozen client-signed document">
-                The client’s selected scope and prices cannot change.
-              </Banner>
-              <Document p={p} />
-            </div>
-            <div className="card stack">
-              <h2>Company signature</h2>
-              <Signatures proposal={p} />
-              {p.status === "signed_by_client" ? (
-                <CompanySignatureForm
-                  settings={data.settings}
-                  user={data.user}
-                  version={data.signatory_version}
-                  proposal={p}
-                  onSign={async (value) => {
-                    await post(`/api/proposals/${p.id}/countersign`, value);
-                    location.href = `/proposals/${p.id}`;
-                  }}
-                />
-              ) : (
-                <Banner
-                  tone="warning"
-                  title="Counter-signature is not available"
-                >
-                  The client must sign first.
-                </Banner>
-              )}
-            </div>
-          </div>
+          <RecordV4
+            p={p}
+            data={data}
+            onChanged={setP}
+            onRefresh={load}
+            countersign
+          />
         ) : action === "audit" ? (
           <Audit p={p} />
         ) : (
-          <Record p={p} refresh={load} appUrl={data.app_url} />
+          <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
         );
     } else if (section === "proposals") {
       subtitle = `${data.total} proposals`;
       content = (
-        <ProposalList
-          initial={data.proposals}
-          total={data.total}
-          clients={data.clients}
-          initialView={typeof query.view === "string" ? query.view : ""}
+        <ProposalListV4
+          data={data}
+          initialView={typeof query.view === "string" ? query.view : "all"}
         />
       );
     } else if (section === "clients") {
       headerAction = null;
-      content = <Clients data={data} selected={id} save={run} />;
+      content = <ClientsV4 data={data} selected={id} onRefresh={load} />;
     } else if (section === "catalogue") {
       headerAction = null;
       content = <Catalogue data={data} run={run} />;
@@ -398,7 +385,8 @@ export function StaffApp({
               are missing PDFs.
             </p>
           </div>
-          <ProposalTable
+          <ProposalRows
+            data={data}
             proposals={data.proposals.filter(
               (p) => p.source === "proposify_import",
             )}
@@ -421,12 +409,7 @@ export function StaffApp({
     } else if (section === "activity") {
       title = "Activity log";
       headerAction = null;
-      content = (
-        <section className="card">
-          <p>Open a proposal record to see its activity and evidence.</p>
-          <p>Proposal evidence remains available from each record.</p>
-        </section>
-      );
+      content = <WorkspaceActivityV4 data={data} />;
     } else if (section === "settings") {
       headerAction = null;
       content = <Settings data={data} run={run} />;
@@ -602,363 +585,6 @@ function Login({ local }: { local: boolean }) {
     </main>
   );
 }
-function Dashboard({ data }: { data: Data }) {
-  const rows = data.proposals,
-    signed = rows.filter((p) => p.status === "signed_by_client"),
-    issues = rows.filter(
-      (p) =>
-        p.jobs?.some((j) => j.status === "failed") ||
-        p.billing_links?.some((l) =>
-          ["failed", "needs_review"].includes(l.status),
-        ),
-    ),
-    viewed = rows.filter((p) => p.status === "viewed"),
-    expiring = rows.filter(
-      (p) =>
-        ["sent", "viewed"].includes(p.status) &&
-        Date.parse(p.valid_until) < Date.now() + 7 * 86400000,
-    ),
-    ai = rows.filter((p) => p.ai_unreviewed);
-  return (
-    <>
-      <ReferenceStatus documents={data.documents} />
-      <div className="metrics">
-        {[
-          [
-            signed,
-            "Awaiting your counter-signature",
-            "Client has already signed",
-            "warning",
-          ],
-          [issues, "Billing needs review", "Signatures remain safe", "warning"],
-          [viewed, "Viewed but unsigned", "Ready for a follow-up", "info"],
-          [
-            expiring,
-            "Expiring within 7 days",
-            "Review validity dates",
-            "neutral",
-          ],
-          [ai, "Drafted by AI, unreviewed", "Read scope and prices", "ai"],
-        ].map(([list, label, note, tone]) => (
-          <a
-            className="card metric"
-            href={
-              label === "Billing needs review" ? "/integrations" : "/proposals"
-            }
-            key={String(label)}
-          >
-            <strong className={String(tone)}>
-              {(list as Proposal[]).length}
-            </strong>
-            <b>{String(label)}</b>
-            <p className="muted">{String(note)}</p>
-          </a>
-        ))}
-      </div>
-      <div className="grid">
-        <section className="card">
-          <h2>Counter-sign now</h2>
-          {signed.length ? (
-            signed.map((p) => (
-              <div className="row" key={p.id}>
-                <div>
-                  <strong>{p.client.company}</strong>
-                  <p>{p.title}</p>
-                  <Status status={p.status} />
-                </div>
-                <a
-                  className="btn primary"
-                  href={`/proposals/${p.id}/countersign`}
-                >
-                  Counter-sign
-                </a>
-              </div>
-            ))
-          ) : (
-            <Empty title="No signatures waiting">You’re up to date.</Empty>
-          )}
-        </section>
-        <section className="card">
-          <h2>Needs review</h2>
-          {issues.length ? (
-            issues.map((p) => (
-              <div className="row" key={p.id}>
-                <a href={`/proposals/${p.id}`}>{p.title}</a>
-                <span className="pill warning">Billing review</span>
-              </div>
-            ))
-          ) : (
-            <Empty title="Nothing needs attention">
-              Your integration queue is clear.
-            </Empty>
-          )}
-        </section>
-      </div>
-      <section className="card">
-        <h2>Recent proposals</h2>
-        <ProposalTable proposals={rows.slice(-6).reverse()} />
-      </section>
-    </>
-  );
-}
-function ProposalTable({ proposals }: { proposals: Proposal[] }) {
-  const money = useMoney();
-  const hasYearly = proposals.some((p) =>
-    quoteSublines(p.quote ?? []).some((line) => line.interval === "year"),
-  );
-  return proposals.length ? (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Client / proposal</th>
-            <th>Status and signatures</th>
-            <th>One-time</th>
-            <th>Monthly</th>
-            {hasYearly && <th>Yearly</th>}
-            <th>Sent</th>
-          </tr>
-        </thead>
-        <tbody>
-          {proposals.map((p) => {
-            const t = totals(p.quote ?? []);
-            return (
-              <tr key={p.id}>
-                <td>
-                  <a
-                    href={`/${p.source === "proposify_import" ? "archives" : "proposals"}/${p.id}`}
-                  >
-                    <strong>{p.client.company}</strong>
-                    {p.title}
-                  </a>
-                  <small>
-                    {p.client.first_name} {p.client.last_name} ·{" "}
-                    {p.client.email}
-                  </small>
-                  {p.source === "proposify_import" && (
-                    <span className="pill">Imported · read-only</span>
-                  )}
-                </td>
-                <td>
-                  <Status
-                    status={p.status}
-                    ai={p.ai_unreviewed}
-                    billingPending={
-                      p.jobs?.some(
-                        (j) => j.kind === "billing" && j.status !== "done",
-                      ) ||
-                      p.billing_links?.some((l) => l.status !== "succeeded")
-                    }
-                  />
-                  {p.jobs?.some((j) => j.status === "failed") ||
-                  p.billing_links?.some((l) =>
-                    ["failed", "needs_review"].includes(l.status),
-                  ) ? (
-                    <a className="pill warning" href={`/proposals/${p.id}`}>
-                      Work needs attention
-                    </a>
-                  ) : null}
-                  <small>
-                    Client —{" "}
-                    {p.signers?.some((s) => s.role === "client")
-                      ? "signed"
-                      : "waiting"}
-                    <br />
-                    Company —{" "}
-                    {p.signers?.some((s) => s.role === "company")
-                      ? "signed"
-                      : "waiting"}
-                  </small>
-                </td>
-                <td>{money(t.one_time_total, p.currency)}</td>
-                <td>{money(t.monthly_total, p.currency)}/mo</td>
-                {hasYearly && <td>{money(t.yearly_total, p.currency)}/yr</td>}
-                <td>{date(p.sent_at)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  ) : (
-    <Empty
-      title="No proposals here yet"
-      action={
-        <a className="btn primary" href="/proposals/new">
-          Create a proposal
-        </a>
-      }
-    >
-      Try different filters, or start a new draft.
-    </Empty>
-  );
-}
-function ProposalList({
-  initial,
-  total,
-  clients,
-  initialView = "",
-}: {
-  initial: Proposal[];
-  total: number;
-  clients: Client[];
-  initialView?: string;
-}) {
-  const [rows, setRows] = useState(initial),
-    [count, setCount] = useState(total),
-    [q, setQ] = useState(""),
-    [status, setStatus] = useState(
-      initialView === "archived" ? "archived" : "",
-    ),
-    [client, setClient] = useState(""),
-    [source, setSource] = useState(""),
-    [from, setFrom] = useState(""),
-    [to, setTo] = useState(""),
-    [page, setPage] = useState(0),
-    [error, setError] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void api<{ items: Proposal[]; total: number }>(
-        `/api/proposals?limit=25&offset=${page * 25}&q=${encodeURIComponent(q)}&status=${status}&client=${client}&source=${source}&from=${from}&to=${to ? to + "T23:59:59.999Z" : ""}`,
-      )
-        .then((r) => {
-          setRows(r.items);
-          setCount(r.total);
-        })
-        .catch((e) => setError(e.message));
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [q, status, client, source, from, to, page]);
-  return (
-    <div className="stack">
-      <div className="toolbar">
-        <Field label="Search proposals">
-          <input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(0);
-            }}
-            placeholder="Client, title or archived wording"
-          />
-        </Field>
-        <Field label="Status">
-          <select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(0);
-            }}
-          >
-            <option value="">All statuses</option>
-            {[
-              "draft",
-              "sent",
-              "viewed",
-              "signed_by_client",
-              "completed",
-              "declined",
-              "expired",
-              "archived",
-            ].map((s) => (
-              <option key={s} value={s}>
-                {statusDisplay(s).name}
-                {s === "signed_by_client"
-                  ? " — Needs countersign"
-                  : s === "completed"
-                    ? " — Countersigned"
-                    : ""}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Client">
-          <select
-            value={client}
-            onChange={(e) => {
-              setClient(e.target.value);
-              setPage(0);
-            }}
-          >
-            <option value="">All clients</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.company}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Source">
-          <select value={source} onChange={(e) => setSource(e.target.value)}>
-            <option value="">All sources</option>
-            <option value="native">Native</option>
-            <option value="proposify_import">Imported</option>
-          </select>
-        </Field>
-        <Field label="Created from">
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setPage(0);
-            }}
-          />
-        </Field>
-        <Field label="Created through">
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setPage(0);
-            }}
-          />
-        </Field>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setFrom("");
-            setTo("");
-            setQ("");
-            setStatus("");
-            setClient("");
-            setSource("");
-            setPage(0);
-          }}
-        >
-          Clear filters
-        </Button>
-      </div>
-      {error && (
-        <Banner title="Unable to load proposals" tone="danger">
-          {error}
-        </Banner>
-      )}
-      {rows.length ? (
-        <ProposalTable proposals={rows} />
-      ) : (
-        <Empty title="No proposals match these filters">
-          Clear the filters or try a different search.
-        </Empty>
-      )}
-      <div className="actions">
-        <span>
-          {count} proposals · page {page + 1}
-        </span>
-        <Button disabled={!page} onClick={() => setPage(page - 1)}>
-          Previous
-        </Button>
-        <Button
-          disabled={(page + 1) * 25 >= count}
-          onClick={() => setPage(page + 1)}
-        >
-          Next
-        </Button>
-      </div>
-    </div>
-  );
-}
 function NewProposal({ data }: { data: Data }) {
   const [error, setError] = useState(""),
     [payload, setPayload] = useState<ReturnType<
@@ -1011,9 +637,9 @@ function NewProposal({ data }: { data: Data }) {
                 client_id: client,
                 template_id: f.get("template"),
                 title: f.get("title"),
-                valid_until: new Date(
-                  String(f.get("valid_until")) + "T23:59:59",
-                ).toISOString(),
+                valid_until: f.get("valid_until")
+                  ? String(f.get("valid_until")) + "T23:59:59.999Z"
+                  : null,
                 ...(f.get("password") ? { password: f.get("password") } : {}),
                 ...(payload ? { playbook: payload } : {}),
               });
@@ -1028,21 +654,15 @@ function NewProposal({ data }: { data: Data }) {
           }}
         >
           <h2>Client</h2>
-          <Field label="Client">
-            <select name="client" required={!payload?.client}>
-              <option value="">
-                {payload?.client
-                  ? `Create ${payload.client.company}`
-                  : "Choose a client"}
-              </option>
-              {data.clients.map((c) => (
-                <option value={c.id} key={c.id}>
-                  {c.company} · {c.email}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <a href="/clients/new">Create a new client instead</a>
+          <ClientPicker
+            clients={data.clients}
+            initial={
+              typeof window !== "undefined"
+                ? (new URL(location.href).searchParams.get("client") ?? "")
+                : ""
+            }
+            required={!payload?.client}
+          />
           <h2>Proposal</h2>
           <Field label="Title">
             <input
@@ -1065,16 +685,10 @@ function NewProposal({ data }: { data: Data }) {
             </select>
           </Field>
           <Field label="Valid until">
-            <input
-              name="valid_until"
-              type="date"
-              defaultValue={new Date(
-                Date.now() +
-                  (data.settings?.default_validity_days ?? 30) * 86400000,
-              )
-                .toISOString()
-                .slice(0, 10)}
-              required
+            <ValidityField
+              defaultValue={defaultValidUntil(
+                data.settings ?? { timezone: "UTC", default_validity_days: 30 },
+              )}
             />
           </Field>
           <Field label="Proposal password (optional)">
@@ -1196,7 +810,7 @@ function SendProposal({
             {p.client.first_name} {p.client.last_name}
           </strong>
           <span>{p.client.email}</span>
-          <small>Valid until {date(p.valid_until)}</small>
+          {p.valid_until && <small>Valid until {date(p.valid_until)}</small>}
           {p.ai_unreviewed && (
             <label className="check">
               <input
@@ -1268,196 +882,6 @@ function SendProposal({
         <h2>What the client will see</h2>
         <Document p={p} />
       </section>
-    </div>
-  );
-}
-function Record({
-  p,
-  refresh,
-  appUrl,
-}: {
-  p: Proposal;
-  refresh: () => Promise<void>;
-  appUrl: string;
-}) {
-  const [message, setMessage] = useState("");
-  return (
-    <div className="stack">
-      <div className="card stack">
-        <Status
-          status={p.status}
-          ai={p.ai_unreviewed}
-          billingPending={
-            p.jobs?.some((j) => j.kind === "billing" && j.status !== "done") ||
-            p.billing_links?.some((l) => l.status !== "succeeded")
-          }
-        />
-        {p.origin && (
-          <span className="pill">From playbook {p.origin.source_version}</span>
-        )}
-        <Totals lines={p.quote} currency={p.currency} />
-        <Signatures proposal={p} />
-        <div className="actions">
-          {p.source === "native" && (
-            <a
-              className="btn"
-              href={`/p/${p.id}?preview=1`}
-              target="_blank"
-              rel="noopener"
-            >
-              Preview as client
-            </a>
-          )}
-          {p.token && (
-            <Button
-              onClick={async () => {
-                await navigator.clipboard.writeText(appUrl + "/p/" + p.token);
-                setMessage("Private link copied");
-              }}
-            >
-              Copy link
-            </Button>
-          )}
-          {["sent", "viewed"].includes(p.status) && (
-            <a className="btn" href={`/proposals/${p.id}/send`}>
-              Re-send proposal
-            </a>
-          )}
-          <span role="status">{message}</span>
-        </div>
-      </div>
-      {p.status !== "draft" && p.source !== "proposify_import" && (
-        <Banner
-          title={
-            p.client_signed_at
-              ? "The document and quote are frozen"
-              : "The client link is ready"
-          }
-        >
-          {p.client_signed_at
-            ? "Nothing about the accepted scope can change now."
-            : "The client can choose optional items and sign."}
-        </Banner>
-      )}
-      <div className="grid">
-        <div className="stack">
-          {p.source === "proposify_import" ? (
-            <div className="card">
-              <h2>Archived proposal</h2>
-              <p>This imported record is read-only.</p>
-              {p.files
-                .filter((f) => f.kind === "import")
-                .map((f) => (
-                  <iframe
-                    key={f.id}
-                    title="Archived PDF"
-                    src={`/api/proposals/${p.id}/files/${f.id}?inline=1`}
-                    style={{ width: "100%", height: 600, border: 0 }}
-                  />
-                ))}
-              <pre style={{ whiteSpace: "pre-wrap" }}>{p.search_text}</pre>
-            </div>
-          ) : (
-            <Document p={p} />
-          )}
-        </div>
-        <aside className="stack">
-          <section className="card">
-            <h2>Files</h2>
-            {p.files
-              .filter((f) => ["sealed", "import"].includes(f.kind))
-              .map((f) => (
-                <div className="row" key={f.id}>
-                  <div>
-                    <strong>
-                      {f.kind === "import"
-                        ? "Imported PDF"
-                        : f.stage === "company"
-                          ? "Fully countersigned copy"
-                          : "Client-signed copy"}
-                    </strong>
-                    <small>
-                      {date(f.created_at)} · {Math.ceil(f.bytes / 1024)} KB
-                    </small>
-                  </div>
-                  <a
-                    className="btn"
-                    href={`/api/proposals/${p.id}/files/${f.id}`}
-                  >
-                    Download
-                  </a>
-                </div>
-              ))}
-            {!p.files.length && (
-              <p className="muted">Sealed files appear after signing.</p>
-            )}
-          </section>
-          {p.source !== "proposify_import" && (
-            <section className="card">
-              <h2>Jobs and billing</h2>
-              <p className="muted">
-                A billing failure never undoes a signature.
-              </p>
-              {p.jobs.map((j) => {
-                const label =
-                  j.kind === "email"
-                    ? j.payload.to === p.client.email
-                      ? "Email to client"
-                      : "Email to staff"
-                    : j.kind === "pdf"
-                      ? "Sealed PDF"
-                      : "Billing";
-                const review =
-                  j.kind === "billing" &&
-                  p.billing_links.some((l) => l.status === "needs_review");
-                return j.status === "done" ? (
-                  <div className="row" key={j.id}>
-                    <strong>{label}</strong>
-                    <span className="pill success">Complete</span>
-                  </div>
-                ) : (
-                  <JobState
-                    key={j.id}
-                    state={
-                      review
-                        ? "review"
-                        : j.status === "pending"
-                          ? "queued"
-                          : j.status
-                    }
-                    label={label}
-                    error={j.last_error}
-                    attempts={j.attempts}
-                    onRetry={() => {
-                      if (review) location.href = `/clients/${p.client.id}`;
-                      else
-                        void post(`/api/proposals/${p.id}/retry`)
-                          .then(refresh)
-                          .catch((e) => setMessage(String(e)));
-                    }}
-                  />
-                );
-              })}
-              <Button
-                onClick={async () => {
-                  await post(`/api/proposals/${p.id}/jobs`);
-                  await refresh();
-                }}
-              >
-                Process pending jobs
-              </Button>
-              <Button
-                onClick={async () => {
-                  await post(`/api/proposals/${p.id}/retry`);
-                  await refresh();
-                }}
-              >
-                Retry failed work
-              </Button>
-            </section>
-          )}
-        </aside>
-      </div>
     </div>
   );
 }
@@ -1557,102 +981,6 @@ function Audit({ p }: { p: Proposal }) {
   );
 }
 type Runner = (fn: () => Promise<unknown>, success?: string) => Promise<void>;
-function Clients({
-  data,
-  selected,
-  save,
-}: {
-  data: Data;
-  selected?: string;
-  save: Runner;
-}) {
-  const client = data.clients.find((c) => c.id === selected),
-    [query, setQuery] = useState("");
-  return (
-    <div className="grid">
-      <section className="card stack">
-        <div className="actions">
-          <h2>Clients</h2>
-          <a className="btn" href="/clients/new">
-            New client
-          </a>
-        </div>
-        <Field label="Find a client">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} />
-        </Field>
-        {data.clients
-          .filter((c) =>
-            (c.company + c.email).toLowerCase().includes(query.toLowerCase()),
-          )
-          .map((c) => (
-            <a className="row" key={c.id} href={`/clients/${c.id}`}>
-              <strong>{c.company}</strong>
-              <span>{c.email}</span>
-            </a>
-          ))}
-      </section>
-      <section className="card stack">
-        <h2>{client ? client.company : "New client"}</h2>
-        <form
-          className="form"
-          key={client?.id ?? "new"}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            void save(() =>
-              post("/api/clients", {
-                ...client,
-                ...Object.fromEntries(f),
-                address: { formatted: f.get("address") },
-                qbo_customer_id: f.get("qbo_customer_id") || null,
-                stripe_customer_id: f.get("stripe_customer_id") || null,
-              }),
-            );
-          }}
-        >
-          {[
-            ["company", "Company"],
-            ["first_name", "First name"],
-            ["last_name", "Last name"],
-            ["title", "Title (optional)"],
-            ["email", "Email address"],
-            ["phone", "Phone"],
-            ["notes", "Notes"],
-            ["stripe_customer_id", "Verified Stripe customer ID"],
-            ["qbo_customer_id", "Verified QuickBooks customer ID"],
-          ].map(([key, label]) => (
-            <Field key={key} label={label}>
-              <input
-                name={key}
-                type={key === "email" ? "email" : "text"}
-                required={["company", "email"].includes(key)}
-                defaultValue={String(client?.[key as keyof Client] ?? "")}
-              />
-            </Field>
-          ))}
-          <Field label="Address">
-            <textarea
-              name="address"
-              defaultValue={client?.address.formatted ?? ""}
-            />
-          </Field>
-          <p className="muted">
-            Only enter provider IDs after checking the customer’s identity.
-            Same-company email mismatches require review.
-          </p>
-          <Button type="submit" variant="primary">
-            Save client
-          </Button>
-        </form>
-        {client && (
-          <ProposalTable
-            proposals={data.proposals.filter((p) => p.client.id === client.id)}
-          />
-        )}
-      </section>
-    </div>
-  );
-}
 function Catalogue({ data, run }: { data: Data; run: Runner }) {
   const money = useMoney();
   const [selected, setSelected] = useState<Item | null>(null),

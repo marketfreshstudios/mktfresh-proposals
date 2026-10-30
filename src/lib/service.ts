@@ -1,3 +1,4 @@
+import { defaultValidUntil } from "./validity";
 import { reviewBlocks, pendingSections } from "./ai-review";
 import {
   cloneQuote,
@@ -12,7 +13,7 @@ import {
 import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
-import { proposalLink } from "./links";
+import { proposalLink, appOrigin } from "./links";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
@@ -86,17 +87,18 @@ export function notify(p: Proposal, type: string) {
     queue(p, "email", "notify:" + type + ":" + p.events.length + ":" + to, {
       to,
       subject: `Proposal ${type}: ${p.title}`,
-      text: `${p.title} for ${p.client.company}: ${type}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
+      text: `${p.title} for ${p.client.company}: ${type}${type === "signed" ? `\n\nReview and countersign: ${appOrigin()}/proposals/${p.id}?action=countersign` : ""}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
     });
 }
 export function publicAccess(p: Proposal, password = "", now = new Date()) {
   check(p.source === "native" && p.token, "Not found", 404);
   check(
-    !["draft", "expired", "declined", "archived"].includes(p.status),
+    !p.archived_at &&
+      !["draft", "expired", "declined", "archived"].includes(p.status),
     "Proposal unavailable",
     410,
   );
-  if (["sent", "viewed"].includes(p.status))
+  if (p.valid_until && ["sent", "viewed"].includes(p.status))
     check(new Date(p.valid_until) > now, "Proposal expired", 410);
   if (p.password_hash)
     check(
@@ -116,7 +118,7 @@ export class ProposalService {
       client_id: string;
       template_id: string;
       title: string;
-      valid_until: string;
+      valid_until?: string | null;
       currency?: string;
       password?: string;
       playbook?: unknown;
@@ -135,11 +137,6 @@ export class ProposalService {
       );
     check(client && template, "Client and active template required");
     check(input.title?.trim() && input.title.length <= 300, "Title required");
-    check(
-      Number.isFinite(Date.parse(input.valid_until)) &&
-        new Date(input.valid_until) > this.clock(),
-      "Future expiry required",
-    );
     check(/^[A-Z]{3}$/.test(input.currency ?? "USD"), "Currency required");
     // Explicit lines (including an empty list) and playbook lines fully replace defaults.
     const supplied = input.quote !== undefined || input.playbook !== undefined;
@@ -153,6 +150,16 @@ export class ProposalService {
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const validity =
+      input.valid_until === undefined
+        ? defaultValidUntil(settings, this.clock())
+        : input.valid_until;
+    check(
+      validity === null ||
+        (Number.isFinite(Date.parse(validity)) &&
+          new Date(validity) > this.clock()),
+      "Future expiry required",
+    );
     const now = this.clock().toISOString();
     const p: Proposal = {
       id: randomUUID(),
@@ -164,7 +171,7 @@ export class ProposalService {
       status: "draft",
       token: null,
       password_hash: input.password ? hashPassword(input.password) : null,
-      valid_until: new Date(input.valid_until).toISOString(),
+      valid_until: validity === null ? null : new Date(validity).toISOString(),
       currency: input.currency ?? "USD",
       source: "native",
       proposify_id: null,
@@ -247,14 +254,18 @@ export class ProposalService {
       brief?: string;
       content?: Block[];
       quote?: Proposal["quote"];
-      valid_until?: string;
+      valid_until?: string | null;
     },
     actor: Actor,
   ) {
     const catalog = await this.repo.entities<Item>("pricing_items");
     const result = await mutate(this.repo, id, (p) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
-      check(p.status === "draft", "Only drafts can be edited", 409);
+      check(
+        p.source === "native" && p.status === "draft" && !p.archived_at,
+        "Only drafts can be edited; archived and imported proposals are read-only",
+        409,
+      );
       delete p.workspace_settings;
       if (input.title) p.title = input.title;
       if (input.brief !== undefined) p.brief = input.brief;
@@ -301,12 +312,16 @@ export class ProposalService {
           });
       }
 
-      if (input.valid_until) {
+      if (input.valid_until !== undefined) {
         check(
-          Date.parse(input.valid_until) > this.clock().getTime(),
+          input.valid_until === null ||
+            Date.parse(input.valid_until) > this.clock().getTime(),
           "Future expiry required",
         );
-        p.valid_until = new Date(input.valid_until).toISOString();
+        p.valid_until =
+          input.valid_until === null
+            ? null
+            : new Date(input.valid_until).toISOString();
       }
       event(p, "edited", actor, {
         price_decisions: cloneQuote(p.quote)
@@ -321,7 +336,12 @@ export class ProposalService {
     actor: Actor,
     confirmAiReview = false,
     senderId = actor.actor.slice(6),
-    options: { note?: string; password?: string | null } = {},
+    options: {
+      note?: string;
+      password?: string | null;
+      reopen?: boolean;
+      expected_revision?: number;
+    } = {},
   ) {
     check(
       !actor.actor.startsWith("ai:"),
@@ -358,7 +378,23 @@ export class ProposalService {
     const catalog = await this.repo.entities<Item>("pricing_items");
     return mutate(this.repo, id, (p) => {
       check(
-        ["draft", "sent", "viewed"].includes(p.status),
+        !p.archived_at && p.source === "native",
+        "Unarchive a native proposal before sending",
+        409,
+      );
+      if (options.expected_revision !== undefined)
+        check(
+          p.revision === options.expected_revision,
+          "Proposal changed; reload and try again",
+          409,
+        );
+      const reopening =
+        options.reopen === true &&
+        p.status === "declined" &&
+        !p.signers.length &&
+        p.versions.length > 0;
+      check(
+        ["draft", "sent", "viewed"].includes(p.status) || reopening,
         "Cannot send signed or closed proposal",
         409,
       );
@@ -380,6 +416,10 @@ export class ProposalService {
         check(l.optional || itemSelected(l), "Required items must be selected");
       }
       const now = this.clock().toISOString();
+      if (reopening) {
+        delete p.marked_lost_by;
+        event(p, "reopened", actor, { previous_status: "declined" }, now);
+      }
       p.sender = sender;
       p.notification_emails = [
         ...new Set(
@@ -485,6 +525,7 @@ export class ProposalService {
       publicAccess(p, password, this.clock());
       check(p.token === token, "Link superseded", 410);
       check(["sent", "viewed"].includes(p.status), "Quote is frozen", 409);
+      check(!p.archived_at, "Archived proposals cannot be signed", 409);
       check(
         input.reviewed_hash
           ? p.versions.at(-1)?.content_hash === input.reviewed_hash
@@ -554,6 +595,7 @@ export class ProposalService {
         publicAccess(p, access.password, this.clock());
         check(access.token === p.token, "Link superseded", 410);
       }
+      check(!p.archived_at, "Archived proposals cannot be signed", 409);
       check(
         input.reviewed_hash
           ? p.versions.at(-1)?.content_hash === input.reviewed_hash
@@ -700,11 +742,12 @@ export class ProposalService {
   }
   async tick() {
     for (const item of await this.repo.list()) {
-      if (!["sent", "viewed"].includes(item.status)) continue;
+      if (item.archived_at || !["sent", "viewed"].includes(item.status))
+        continue;
       await mutate(this.repo, item.id, (p) => {
         if (!["sent", "viewed"].includes(p.status)) return;
         const now = this.clock();
-        if (new Date(p.valid_until) <= now) {
+        if (p.valid_until && new Date(p.valid_until) <= now) {
           p.status = "expired";
           event(p, "expired", system, {}, now.toISOString());
           return;

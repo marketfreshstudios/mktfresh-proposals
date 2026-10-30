@@ -101,7 +101,7 @@ Do not treat a passing mocked billing flow as a live-provider acceptance test. K
 
 ## Phase 2 workspace and quote foundation
 
-Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including the sender, consent, client URL, and fallback QuickBooks item. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
+Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including consent, sending domain and fallback QuickBooks item. The deployment origin comes from APP_URL; the send screen chooses a staff sender. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
 
 New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalogue/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
 
@@ -162,3 +162,10 @@ Redesign Phase 2 adds the client Review → Sign → Billing flow for new sends,
 All proposals use the current item/sub-line quote shape. MCP callers supply `items`; flat `lines` input is no longer supported (see [connector guide](docs/ai-connector.md)). The owner confirmed every native hosted proposal is disposable test data; run the [owner maintenance purge](docs/purge-test-proposals.md) before deploying the current-model-only release. Imported Proposify records remain supported and are excluded from the purge. Choice groups must resolve before billing is queued, and AI prices/content remain subject to staff review.
 
 The responsive comparison gallery is [docs/redesign-quote-editor/index.html](docs/redesign-quote-editor/index.html); validation and release notes are in [HANDOFF_PHASE2.md](HANDOFF_PHASE2.md).
+
+
+### Redesign Phase 4
+
+Proposals use the current item/sub-line model only. Run the owner-maintenance purge before the current-only release; never delete Proposify imports. Signed evidence created from now on remains frozen. See the latest sections of `DECISIONS.md` and `HANDOFF_PHASE2.md`.
+
+An omitted `valid_until` defaults to the workspace validity (30 days); explicit null means indefinite. `{{proposal.validity}}` inserts a complete dated validity sentence or disappears cleanly. The custom date field `{{proposal.valid_until}}` remains supported. Staff actions use revision-checked `/api/proposals/:id/actions`; AI cannot send, sign, change outcomes, archive or delete. Client deletion is reference-guarded and audited.

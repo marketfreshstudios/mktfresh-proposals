@@ -32,7 +32,14 @@ export function canonical(value: unknown): string {
 }
 export const versionHash = (
   v: Pick<Version, "content" | "quote" | "variables_resolved">,
-) => sha256(canonical(v));
+) =>
+  sha256(
+    canonical({
+      content: v.content,
+      quote: v.quote,
+      variables_resolved: v.variables_resolved,
+    }),
+  );
 export function hashPassword(password: string) {
   check(
     password.length >= 8 && password.length <= 200,

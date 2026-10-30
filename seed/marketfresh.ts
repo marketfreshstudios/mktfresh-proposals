@@ -113,6 +113,7 @@ export async function seed(repo: Repository, mockMappings = false) {
         type: "paragraph",
         text: "Prepared for {{client.company}}. Your investment is {{quote.one_time_total}} and {{quote.monthly_total}} per month.",
       },
+      { type: "paragraph", text: "{{proposal.validity}}" },
       { type: "pricing_table" },
       {
         type: "contract",

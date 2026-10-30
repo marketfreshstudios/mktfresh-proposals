@@ -51,7 +51,7 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
       workspace: query.view === "team" ? "team" : "settings",
       activity: "activity",
     };
-    section = mapping[id] ?? "missing";
+    section = id ? (mapping[id] ?? "missing") : "studio";
     id = path[2];
     action = path[3];
     if (section === "team") {
