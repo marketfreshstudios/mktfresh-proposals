@@ -12,6 +12,12 @@
     "theme": "light"
   },
   {
+    "file": "proposal-menu-375-light.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
     "file": "client-375-light.png",
     "frame": "6f",
     "width": 375,
@@ -19,6 +25,12 @@
   },
   {
     "file": "record-375-light.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-375-light.png",
     "frame": "3c",
     "width": 375,
     "theme": "light"
@@ -84,6 +96,12 @@
     "theme": "light"
   },
   {
+    "file": "proposal-menu-768-light.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
     "file": "client-768-light.png",
     "frame": "6e",
     "width": 768,
@@ -91,6 +109,12 @@
   },
   {
     "file": "record-768-light.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-768-light.png",
     "frame": "3b",
     "width": 768,
     "theme": "light"
@@ -156,6 +180,12 @@
     "theme": "light"
   },
   {
+    "file": "proposal-menu-1440-light.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
     "file": "client-1440-light.png",
     "frame": "6d",
     "width": 1440,
@@ -163,6 +193,12 @@
   },
   {
     "file": "record-1440-light.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-1440-light.png",
     "frame": "3a",
     "width": 1440,
     "theme": "light"
@@ -228,6 +264,12 @@
     "theme": "dark"
   },
   {
+    "file": "proposal-menu-375-dark.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
     "file": "client-375-dark.png",
     "frame": "6f",
     "width": 375,
@@ -235,6 +277,12 @@
   },
   {
     "file": "record-375-dark.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-375-dark.png",
     "frame": "3c",
     "width": 375,
     "theme": "dark"
@@ -300,6 +348,12 @@
     "theme": "dark"
   },
   {
+    "file": "proposal-menu-768-dark.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
     "file": "client-768-dark.png",
     "frame": "6e",
     "width": 768,
@@ -307,6 +361,12 @@
   },
   {
     "file": "record-768-dark.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-768-dark.png",
     "frame": "3b",
     "width": 768,
     "theme": "dark"
@@ -372,6 +432,12 @@
     "theme": "dark"
   },
   {
+    "file": "proposal-menu-1440-dark.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
     "file": "client-1440-dark.png",
     "frame": "6d",
     "width": 1440,
@@ -379,6 +445,12 @@
   },
   {
     "file": "record-1440-dark.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-1440-dark.png",
     "frame": "3a",
     "width": 1440,
     "theme": "dark"

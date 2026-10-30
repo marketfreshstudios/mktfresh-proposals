@@ -89,6 +89,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   };
   await repo.put("clients", unused);
   let stale = false,
+    rejectInvoice = false,
     signCalls = 0,
     createCalls = 0;
   const billing = {
@@ -151,18 +152,25 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
               })),
               total: (await repo.list()).length,
             };
-        } else if (path[2] === "actions")
-          value = await proposalAction(
-            repo,
-            path[1],
-            request.postDataJSON().revision,
-            request.postDataJSON().action,
-            delegate,
-            request.postDataJSON().note,
-            new Date(),
-            service,
-          );
-        else if (path[2] === "countersign") {
+        } else if (path[2] === "actions") {
+          if (
+            rejectInvoice &&
+            request.postDataJSON().action === "invoice_manually"
+          ) {
+            status = 409;
+            value = { error: "Proposal changed; reload and try again" };
+          } else
+            value = await proposalAction(
+              repo,
+              path[1],
+              request.postDataJSON().revision,
+              request.postDataJSON().action,
+              delegate,
+              request.postDataJSON().note,
+              new Date(),
+              service,
+            );
+        } else if (path[2] === "countersign") {
           signCalls++;
           if (stale) {
             status = 409;
@@ -274,6 +282,22 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
           page.getByText("Loading your workspace…", { exact: true }),
         ).toHaveCount(0);
         await capture(name, frame, width, theme);
+        if (name === "proposals") {
+          await page
+            .locator(".proposal-row")
+            .first()
+            .getByRole("button", { name: /More actions/ })
+            .click();
+          await capture("proposal-menu", frame, width, theme);
+          await page.keyboard.press("Escape");
+        }
+        if (name === "record") {
+          await page
+            .getByRole("button", { name: "Mark as invoiced", exact: true })
+            .click();
+          await capture("manual-invoice", frame, width, theme);
+          await page.keyboard.press("Escape");
+        }
       }
       await page.goto(`/proposals/${signed.id}?action=countersign`);
       const sheet = page.getByRole("dialog");
@@ -357,6 +381,19 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         "",
       );
       expect(createCalls).toBe(0);
+      await page
+        .getByRole("button", { name: "Create new client instead" })
+        .click();
+      await expect(
+        page.getByRole("dialog", { name: "New client", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("dialog", { name: "New proposal", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByLabel("Title", { exact: true })).toHaveValue(
+        "Keep this title",
+      );
       await page.keyboard.press("Escape");
       if (width === 375) {
         await page.getByRole("link", { name: "Studio", exact: true }).click();
@@ -495,6 +532,34 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(signCalls).toBe(2);
+  await page.goto(`/proposals/${signed.id}`);
+  await page
+    .getByRole("button", { name: "Mark as invoiced", exact: true })
+    .click();
+  const invoiceDialog = page.getByRole("dialog", {
+    name: "Mark as invoiced",
+    exact: true,
+  });
+  await invoiceDialog
+    .getByLabel("Invoice reference (optional)")
+    .fill("INV-KEEP");
+  rejectInvoice = true;
+  await invoiceDialog
+    .getByRole("button", { name: "Mark as invoiced", exact: true })
+    .click();
+  await expect(
+    invoiceDialog.getByText("Proposal changed; reload and try again", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    invoiceDialog.getByLabel("Invoice reference (optional)"),
+  ).toHaveValue("INV-KEEP");
+  rejectInvoice = false;
+  await invoiceDialog
+    .getByRole("button", { name: "Mark as invoiced", exact: true })
+    .click();
+  await expect(invoiceDialog).toHaveCount(0);
   // Archived rows disappear from All but the undo toast survives their removal.
   await page.goto("/proposals?view=drafts");
   await page

@@ -108,6 +108,7 @@ export function ProposalMenu({
   onChanged?: (p: Proposal) => void;
   showUndo?: boolean;
 }) {
+  const anchor = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false),
     [confirm, setConfirm] = useState<ProposalAction | null>(null),
     [busy, setBusy] = useState(false),
@@ -152,6 +153,7 @@ export function ProposalMenu({
     <>
       <button
         type="button"
+        ref={anchor}
         className="btn ghost more-control"
         aria-label={`More actions for ${p.client.company}`}
         aria-haspopup="dialog"
@@ -185,6 +187,8 @@ export function ProposalMenu({
       {open && (
         <Sheet
           title={`Actions · ${p.client.company}`}
+          menu={!confirm}
+          anchor={anchor.current}
           onClose={() => {
             if (!busy) {
               setOpen(false);
@@ -1080,6 +1084,7 @@ export function RecordV4({
     [already, setAlready] = useState(""),
     [returnUrl, setReturnUrl] = useState("/proposals"),
     [invoice, setInvoice] = useState(false),
+    [invoiceBusy, setInvoiceBusy] = useState(false),
     [error, setError] = useState("");
   const company = p.signers.find((s) => s.role === "company"),
     actualSigned = !!p.client_signed_at,
@@ -1338,7 +1343,12 @@ export function RecordV4({
                       )}
                     {link.provider === "qbo" &&
                       link.status === "needs_review" && (
-                        <Button onClick={() => setInvoice(true)}>
+                        <Button
+                          onClick={() => {
+                            setError("");
+                            setInvoice(true);
+                          }}
+                        >
                           Mark as invoiced
                         </Button>
                       )}
@@ -1478,11 +1488,19 @@ export function RecordV4({
         </Sheet>
       )}
       {invoice && (
-        <Sheet title="Mark as invoiced" onClose={() => setInvoice(false)}>
+        <Sheet
+          title="Mark as invoiced"
+          onClose={() => {
+            if (!invoiceBusy) setInvoice(false);
+          }}
+        >
           <form
             className="form"
             onSubmit={async (e) => {
               e.preventDefault();
+              if (invoiceBusy) return;
+              setInvoiceBusy(true);
+              setError("");
               try {
                 onChanged(
                   await post<Proposal>(`/api/proposals/${p.id}/actions`, {
@@ -1494,9 +1512,16 @@ export function RecordV4({
                 setInvoice(false);
               } catch (e) {
                 setError((e as Error).message);
+              } finally {
+                setInvoiceBusy(false);
               }
             }}
           >
+            {error && (
+              <Banner tone="danger" title="Invoice could not be recorded">
+                {error}
+              </Banner>
+            )}
             <p>
               Record a one-time invoice you created manually. No invoice will be
               created or emailed by this action.
@@ -1504,7 +1529,7 @@ export function RecordV4({
             <Field label="Invoice reference (optional)">
               <input name="reference" maxLength={4000} />
             </Field>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" busy={invoiceBusy}>
               Mark as invoiced
             </Button>
           </form>
@@ -1533,6 +1558,7 @@ export function ClientsV4({
   selected?: string;
   onRefresh: () => Promise<void>;
 }) {
+  const menuAnchor = useRef<HTMLButtonElement>(null);
   const client = data.clients.find((c) => c.id === selected),
     [menu, setMenu] = useState(false),
     [confirm, setConfirm] = useState(false),
@@ -1630,6 +1656,7 @@ export function ClientsV4({
             Email {client.first_name || "client"}
           </a>
           <button
+            ref={menuAnchor}
             className="btn ghost more-control"
             aria-label={`More actions for ${client.company}`}
             onClick={() => setMenu(true)}
@@ -1802,6 +1829,8 @@ export function ClientsV4({
       </section>
       {menu && (
         <Sheet
+          menu
+          anchor={menuAnchor.current}
           title={`Actions · ${client.company}`}
           onClose={() => setMenu(false)}
         >
