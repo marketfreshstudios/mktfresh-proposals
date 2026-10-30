@@ -369,6 +369,16 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await expect(
         row.getByRole("link", { name: `Open in Mail: ${client.email}` }),
       ).toHaveAttribute("href", `mailto:${client.email}`);
+      await page.evaluate(() => navigator.clipboard.writeText(""));
+      await row
+        .getByRole("button", {
+          name: `Copy email: ${client.email}`,
+          exact: true,
+        })
+        .click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        client.email,
+      );
       if (width >= 700) {
         await row
           .getByRole("button", {

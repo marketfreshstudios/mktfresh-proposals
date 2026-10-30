@@ -72,6 +72,15 @@ export function ContactValue({
           {shown}
         </a>
       )}
+      <button
+        type="button"
+        className="contact-open contact-copy-icon"
+        aria-label={`Copy ${kind}: ${shown}`}
+        title={`Copy ${kind}`}
+        onClick={() => void copy()}
+      >
+        <Icon name="copy" />
+      </button>
       <a
         className="contact-open"
         href={href}
