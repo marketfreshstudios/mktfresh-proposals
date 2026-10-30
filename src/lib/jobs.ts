@@ -1,3 +1,4 @@
+import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { emailHtml } from "./branding";
 import { StripeProvider } from "./providers/stripe";
@@ -286,6 +287,18 @@ export class Worker {
         p.currency,
         {
           settings: renderSettings,
+          fonts: await Promise.all(
+            Object.values(renderSettings?.proposal_fonts ?? {})
+              .filter((f) => typeof f !== "string")
+              .map(async (f) => {
+                return {
+                  ...f,
+                  data: Buffer.from(
+                    await readFont(this.storage, f, this.repo.workspaceId),
+                  ).toString("base64"),
+                };
+              }),
+          ),
           logo: renderSettings?.logo
             ? "data:image/png;base64," +
               Buffer.from(await this.storage.get(renderSettings.logo)).toString(

@@ -1,3 +1,13 @@
+import {
+  activity,
+  activityCsv,
+  uploadFont,
+  uploadedFonts,
+  readFont,
+  validateFonts,
+  workspaceEvent,
+} from "./studio";
+import { whiteContrast, accessibleAccent } from "./brand";
 import { clientBilling } from "./client-billing";
 import { DuplicateClient, saveClient } from "./clients";
 import { proposalAction, proposalActions } from "./proposal-actions";
@@ -44,7 +54,7 @@ import {
 import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
-import { sha256 } from "./content";
+import { hashPassword, sha256 } from "./content";
 const uuid = z.string().uuid();
 const headers = {
   "Cache-Control": "no-store",
@@ -171,6 +181,26 @@ export async function handle(req: Request, path: string[]) {
           accent_colour: settings?.accent_colour ?? "#245547",
         });
       }
+      if (method === "GET" && action === "fonts") {
+        const p = await rt.repo.byToken(token);
+        check(p, "Font unavailable", 404);
+        const font = Object.values(
+          p.workspace_settings?.proposal_fonts ?? {},
+        ).find((f) => typeof f !== "string" && f.id === path[3]);
+        check(
+          font &&
+            typeof font !== "string" &&
+            font.path.startsWith(rt.repo.workspaceId + "/fonts/"),
+          "Font unavailable",
+          404,
+        );
+        return new Response(
+          Buffer.from(await readFont(rt.storage, font, rt.repo.workspaceId)),
+          {
+            headers: { ...headers, "Content-Type": `font/${font.format}` },
+          },
+        );
+      }
       if (method === "GET" && !action)
         return json(
           publicResult(await rt.service.view(token, password, actor(req))),
@@ -261,9 +291,49 @@ export async function handle(req: Request, path: string[]) {
       return json({
         user,
         app_url: appOrigin(),
-        settings: settings ? WorkspaceSettingsSchema.parse(settings) : null,
+        settings: settings
+          ? {
+              ...WorkspaceSettingsSchema.parse(settings),
+              default_password_hash: undefined,
+              default_password_enabled: !!settings.default_password_hash,
+            }
+          : null,
         signatory_version: signatoryVersion(settings),
         staff: await workspaceStaff(user.workspace_id),
+      });
+    }
+    if (path[0] === "workspace-fonts") {
+      if (method === "POST") {
+        return json(
+          await uploadFont(rt.repo, rt.storage, user, await body(req)),
+          201,
+        );
+      }
+      const fonts = await uploadedFonts(rt.repo);
+      if (!path[1]) return json(fonts);
+      const font = fonts.find((f) => f.id === path[1]);
+      check(font, "Font unavailable", 404);
+      return new Response(
+        Buffer.from(await readFont(rt.storage, font, rt.repo.workspaceId)),
+        {
+          headers: { ...headers, "Content-Type": `font/${font.format}` },
+        },
+      );
+    }
+    if (path[0] === "connections" && method === "GET") {
+      const assigned =
+        rt.repo.workspaceId === "00000000-0000-4000-8000-000000000001";
+      return json({
+        stripe:
+          assigned &&
+          process.env.BILLING_MODE === "test" &&
+          /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? ""),
+        qbo:
+          assigned &&
+          process.env.QBO_ENVIRONMENT === "sandbox" &&
+          !!process.env.QBO_REFRESH_TOKEN,
+        email: !!process.env.RESEND_API_KEY,
+        mock: process.env.APP_MODE === "local",
       });
     }
     if (path[0] === "team" && path[1] && method === "POST") {
@@ -271,13 +341,16 @@ export async function handle(req: Request, path: string[]) {
         .object({ display_name: z.string() })
         .strict()
         .parse(await body(req));
-      return json(
-        await updateStaffDisplayName(
-          user,
-          uuid.parse(path[1]),
-          input.display_name,
-        ),
+      const updated = await updateStaffDisplayName(
+        user,
+        uuid.parse(path[1]),
+        input.display_name,
       );
+      await workspaceEvent(rt.repo, user, "team_updated", {
+        user_id: path[1],
+        name: input.display_name,
+      });
+      return json(updated);
     }
     if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
       const response = json({ signed_out: true });
@@ -404,8 +477,25 @@ export async function handle(req: Request, path: string[]) {
         ),
       );
     }
-    if (method === "GET" && path[0] === "workspace_events")
-      return json(await rt.repo.entities("workspace_events"));
+    if (method === "GET" && path[0] === "workspace_events") {
+      const query = new URL(req.url).searchParams;
+      const rows = (await activity(rt.repo)).filter(
+        (e) =>
+          (!query.get("actor") || query.get("actor") === e.actor) &&
+          (!query.get("type") || query.get("type") === e.type) &&
+          (!query.get("since") || e.created_at >= query.get("since")!),
+      );
+      if (query.get("format") === "csv")
+        return new Response(activityCsv(rows), {
+          headers: {
+            ...headers,
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition":
+              'attachment; filename="workspace-activity.csv"',
+          },
+        });
+      return json(rows);
+    }
     if (method === "DELETE" && path[0] === "clients" && path[1]) {
       await rt.repo.deleteClient(uuid.parse(path[1]), user);
       return json({ deleted: true });
@@ -421,7 +511,18 @@ export async function handle(req: Request, path: string[]) {
       ].includes(path[0])
     ) {
       const table = path[0] as EntityTable;
-      if (method === "GET") return json(await rt.repo.entities(table));
+      if (method === "GET") {
+        const entities = await rt.repo.entities<Record<string, unknown>>(table);
+        return json(
+          table === "workspace_settings"
+            ? entities.map((e) => ({
+                ...e,
+                default_password_hash: undefined,
+                default_password_enabled: !!e.default_password_hash,
+              }))
+            : entities,
+        );
+      }
       if (method === "POST" || method === "PUT") {
         const raw = await body(req);
         raw.id ??= randomUUID();
@@ -432,6 +533,31 @@ export async function handle(req: Request, path: string[]) {
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          entity.default_password_hash =
+            previous?.default_password_hash ?? null;
+          if (raw.default_password !== undefined) {
+            check(
+              user.staff_role === "owner",
+              "Only workspace owners can change the default password",
+              403,
+            );
+            check(
+              raw.default_password === null ||
+                typeof raw.default_password === "string",
+              "Invalid default password",
+            );
+            entity.default_password_hash =
+              raw.default_password === null
+                ? null
+                : hashPassword(raw.default_password);
+          }
+          delete entity.default_password_enabled;
+          await validateFonts(rt.repo, entity.proposal_fonts);
+          check(
+            whiteContrast(entity.accent_colour) >= 4.5 ||
+              previous?.accent_colour === entity.accent_colour,
+            `Accent needs 4.5:1 contrast with white. Try ${accessibleAccent(entity.accent_colour)}.`,
+          );
           if (entity.sending_domain !== (previous?.sending_domain ?? ""))
             check(
               user.staff_role === "owner",
@@ -478,9 +604,14 @@ export async function handle(req: Request, path: string[]) {
             405,
             "Create custom families through the verified Stripe action",
           );
-        } else if (table === "clients")
-          return json(await saveClient(rt.repo, raw), 201);
-        else if (table === "pricing_items") entity = ItemSchema.parse(raw);
+        } else if (table === "clients") {
+          const client = await saveClient(rt.repo, raw);
+          await workspaceEvent(rt.repo, user, "client_saved", {
+            name: client.company,
+            client_id: client.id,
+          });
+          return json(client, 201);
+        } else if (table === "pricing_items") entity = ItemSchema.parse(raw);
         else if (table === "templates") {
           entity = z
             .object({
@@ -510,7 +641,21 @@ export async function handle(req: Request, path: string[]) {
             })
             .parse(raw);
         await rt.repo.put(table, entity);
-        return json(entity, 201);
+        await workspaceEvent(rt.repo, user, `${table}_saved`, {
+          name:
+            "name" in entity
+              ? entity.name
+              : "company_name" in entity
+                ? entity.company_name
+                : table,
+          entity_id: entity.id,
+        });
+        return json(
+          table === "workspace_settings"
+            ? { ...entity, default_password_hash: undefined }
+            : entity,
+          201,
+        );
       }
     }
     if (path[0] === "proposals") {
@@ -728,8 +873,35 @@ export async function handle(req: Request, path: string[]) {
     if (e instanceof DuplicateClient)
       return json({ error: e.message, existing_client: e.existing }, 409);
     if (e instanceof AppError) return json({ error: e.message }, e.status);
-    if (e instanceof z.ZodError)
-      return json({ error: "Invalid request", issues: e.issues }, 400);
+    if (e instanceof z.ZodError) {
+      const hints: Record<string, string> = {
+        timezone: "Enter a timezone such as America/New_York.",
+        reminder_days: "Use up to 10 positive whole numbers for reminder days.",
+        default_validity_days:
+          "Link validity must be a whole number from 1 to 365 days.",
+        sending_domain:
+          "Enter a domain such as example.com, without a URL or email address.",
+        consent_text:
+          "Electronic signature consent must have at least 20 characters.",
+        email: "Enter a valid contact email.",
+        company_signatory:
+          "Check the signatory name, title, staff account and signature image.",
+        company_name: "Enter the workspace name.",
+        proposal_fonts: "Choose a font from this workspace.",
+        currency: "Choose one of the supported currencies.",
+      };
+      return json(
+        {
+          error:
+            path[0] === "workspace_settings"
+              ? (hints[String(e.issues[0]?.path[0])] ??
+                "Check the workspace fields and try saving again.")
+              : "Invalid request",
+          issues: e.issues,
+        },
+        400,
+      );
+    }
     console.error(
       "Request failed",
       e instanceof Error ? e.message : "Unknown error",

@@ -67,7 +67,7 @@ test("sync-deactivated defaults warn on templates and Pricing settings and clear
     );
     for (const [name, url] of [
       ["template-inactive-defaults", `/templates/${template.id}/edit`],
-      ["pricing-template-warnings", "/settings"],
+      ["pricing-template-warnings", "/studio/catalog"],
     ]) {
       await page.goto(url);
       const warning = page.getByRole("region", {
@@ -90,7 +90,7 @@ test("sync-deactivated defaults warn on templates and Pricing settings and clear
   await repo.put("pricing_items", { ...item, active: true });
   await page.reload();
   await expect(warning).toHaveCount(0);
-  await page.goto("/settings");
+  await page.goto("/studio/catalog");
   await expect(
     page.getByRole("region", { name: "Inactive template defaults" }),
   ).toHaveCount(0);

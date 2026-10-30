@@ -1,3 +1,4 @@
+import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { WorkspaceSettings } from "./workspace";
@@ -12,7 +13,11 @@ export async function sealedPdf(
   signers: Signer[],
   events: Audit[],
   currency: string,
-  brand?: { settings?: WorkspaceSettings; logo?: string },
+  brand?: {
+    settings?: WorkspaceSettings;
+    logo?: string;
+    fonts?: (ProposalFont & { data: string })[];
+  },
 ) {
   const serverless = process.env.VERCEL
     ? (await import("@sparticuz/chromium")).default
@@ -30,10 +35,19 @@ export async function sealedPdf(
       : {}),
   });
   try {
-    const font = await readFile(
-      join(process.cwd(), "public/fonts/SourceSerif4-Variable.woff2"),
+    const families = await Promise.all(
+      curatedFonts.map(
+        async (f) =>
+          `@font-face{font-family:${f.family.split(",")[0]};src:url(data:font/woff2;base64,${(await readFile(join(process.cwd(), "public/fonts", f.file))).toString("base64")})}`,
+      ),
     );
-    const style = `<style>@font-face{font-family:ProposalSerif;src:url(data:font/woff2;base64,${font.toString("base64")})}body{font-family:ProposalSerif,Georgia,serif}header{border-bottom:3px solid ${brand?.settings?.accent_colour ?? "#245547"};padding-bottom:16px;margin-bottom:24px}</style>`;
+    const custom = (brand?.fonts ?? [])
+      .map(
+        (f) =>
+          `@font-face{font-family:"Proposal-${f.id}";src:url(data:font/${f.format};base64,${f.data})}`,
+      )
+      .join("");
+    const style = `<style>${families.join("")}${custom}body{font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}header{border-bottom:3px solid ${brand?.settings?.accent_colour ?? "#245547"};padding-bottom:16px;margin-bottom:24px}</style>`;
     const heading = `<header>${brand?.logo ? `<img alt="" src="${brand.logo}" style="max-height:60px">` : ""}<h2>${escape(brand?.settings?.company_name ?? version.variables_resolved["company.name"] ?? "Proposal")}</h2></header>`;
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());

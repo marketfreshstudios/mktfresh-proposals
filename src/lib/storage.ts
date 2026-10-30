@@ -8,7 +8,7 @@ export interface Storage {
 export class LocalStorage implements Storage {
   constructor(private root: string) {}
   private path(path: string) {
-    if (!/^[\w/-]+\.(pdf|png)$/.test(path) || path.includes(".."))
+    if (!/^[\w/-]+\.(pdf|png|woff2|ttf)$/.test(path) || path.includes(".."))
       throw new Error("Invalid storage path");
     return join(this.root, path);
   }
@@ -34,7 +34,13 @@ export class SupabaseStorage implements Storage {
     const { error } = await this.db.storage
       .from(this.bucket)
       .upload(path, bytes, {
-        contentType: path.endsWith(".png") ? "image/png" : "application/pdf",
+        contentType: path.endsWith(".png")
+          ? "image/png"
+          : path.endsWith(".woff2")
+            ? "font/woff2"
+            : path.endsWith(".ttf")
+              ? "font/ttf"
+              : "application/pdf",
         upsert: false,
       });
     if (error && !/already exists|duplicate/i.test(error.message)) throw error;

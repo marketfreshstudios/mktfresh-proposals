@@ -1,4 +1,5 @@
 "use client";
+import { fontCss } from "../lib/proposal-fonts";
 import { ValidityField } from "./validity-field";
 import { readableDate } from "../lib/validity";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -37,7 +38,7 @@ import { FieldEditor } from "./field-editor";
 import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
-function Sortable({
+export function Sortable({
   id,
   label,
   children,
@@ -77,7 +78,7 @@ function Sortable({
     </div>
   );
 }
-function Reorder({
+export function Reorder({
   ids,
   onMove,
   children,
@@ -189,6 +190,45 @@ export function QuoteEditor({
     [protectedLink, setProtected] = useState(!!initial.password_hash),
     [password, setPassword] = useState(""),
     [sending, setSending] = useState(false);
+  const cacheKey = `proposal-unsaved:${initial.workspace_id ?? "workspace"}:${initial.id}`;
+  const [offline, setOffline] = useState(false),
+    [recovery, setRecovery] = useState<Partial<Proposal> | null>(null),
+    [deviceSaved, setDeviceSaved] = useState(false);
+  useEffect(() => {
+    const online = () => {
+      setOffline(!navigator.onLine);
+      if (navigator.onLine) setError("");
+    };
+    online();
+    window.addEventListener("online", online);
+    window.addEventListener("offline", online);
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) ?? "null");
+      if (cached) setRecovery(cached);
+    } catch {}
+    return () => {
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", online);
+    };
+  }, [cacheKey]);
+  useEffect(() => {
+    if (!dirty) return;
+    try {
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          revision: p.revision,
+          title: p.title,
+          content: p.content,
+          quote: p.quote,
+          valid_until: p.valid_until,
+        }),
+      );
+      setDeviceSaved(true);
+    } catch {
+      setDeviceSaved(false);
+    }
+  }, [p, dirty, cacheKey]);
   const generation = useRef(0),
     revision = useRef(initial.revision),
     savingRef = useRef(false),
@@ -200,7 +240,7 @@ export function QuoteEditor({
     setP((current) => ({ ...current, ...update }));
   }
   async function save() {
-    if (savingRef.current || stale) return false;
+    if (savingRef.current || stale || offline) return false;
     if (!dirty) return true;
     savingRef.current = true;
     setSaving(true);
@@ -221,6 +261,10 @@ export function QuoteEditor({
       if (captured === generation.current) {
         setP({ ...result, quote: draftItems(result.quote) });
         setDirty(false);
+        try {
+          localStorage.removeItem(cacheKey);
+        } catch {}
+        setRecovery(null);
         onSaved(result);
       } else setP((v) => ({ ...v, revision: result.revision }));
       setError("");
@@ -235,10 +279,10 @@ export function QuoteEditor({
     }
   }
   useEffect(() => {
-    if (!dirty || saving || stale || error) return;
+    if (!dirty || saving || stale || error || offline) return;
     const id = setTimeout(() => void save(), 900);
     return () => clearTimeout(id);
-  }, [p, dirty, saving, stale, error]);
+  }, [p, dirty, saving, stale, error, offline]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) {
@@ -978,6 +1022,7 @@ export function QuoteEditor({
           disabled={
             !ready.ready ||
             stale ||
+            offline ||
             saving ||
             sending ||
             (protectedLink && !p.password_hash && password.length < 8)
@@ -1452,6 +1497,63 @@ export function QuoteEditor({
           Review & send
         </Button>
       </header>
+      {p.ai_unreviewed && (
+        <Banner tone="ai" title="Assistant draft — ready for your review">
+          Read the saved sections as they appear. A person reviews the content
+          and entered prices before sending.
+        </Banner>
+      )}
+      {offline && (
+        <Banner tone="warning" title="You’re offline. Sending is paused.">
+          {deviceSaved
+            ? "Your changes are kept on this device."
+            : "Keep this page open to retain your changes."}{" "}
+          We’ll save them when you’re back online.
+        </Banner>
+      )}
+      {recovery && (
+        <Banner
+          tone="warning"
+          title="Your unsaved edits were kept as a suggestion."
+        >
+          <p>
+            Review the current draft before restoring your edits. Nothing has
+            been overwritten.
+          </p>
+          <details>
+            <summary>See my saved changes</summary>
+            <div className="recovery-copy">
+              <h3>{recovery.title}</h3>
+              {recovery.content?.map((b, n) => (
+                <p key={n}>
+                  {b.text ||
+                    (b.type === "contract" &&
+                      b.clauses?.map((c) => c.heading).join(" · ")) ||
+                    "Document section"}
+                </p>
+              ))}
+              <p>{recovery.quote?.length ?? 0} saved quote items.</p>
+            </div>
+          </details>
+          <Button
+            onClick={() => {
+              const { revision: ignored, ...edits } = recovery;
+              change(edits);
+              setRecovery(null);
+            }}
+          >
+            Restore my edits
+          </Button>
+          <Button
+            onClick={() => {
+              localStorage.removeItem(cacheKey);
+              setRecovery(null);
+            }}
+          >
+            Keep current draft
+          </Button>
+        </Banner>
+      )}
       {error && (
         <Banner
           tone="danger"
@@ -1462,8 +1564,38 @@ export function QuoteEditor({
           }
         >
           {error}
-          <Button onClick={() => (stale ? location.reload() : void save())}>
-            {stale ? "Reload and review" : "Try saving again"}
+          <Button
+            onClick={() =>
+              stale
+                ? void (async () => {
+                    try {
+                      const edits = {
+                        title: p.title,
+                        content: p.content,
+                        quote: p.quote,
+                        valid_until: p.valid_until,
+                      };
+                      const current = await api<Proposal>(
+                        `/api/proposals/${p.id}`,
+                      );
+                      setRecovery(edits);
+                      revision.current = current.revision;
+                      setP({ ...current, quote: draftItems(current.quote) });
+                      setDirty(false);
+                      setStale(false);
+                      setError("");
+                    } catch (e) {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Unable to load the current draft",
+                      );
+                    }
+                  })()
+                : void save()
+            }
+          >
+            {stale ? "Reload and keep mine" : "Try saving again"}
           </Button>
         </Banner>
       )}
@@ -1580,7 +1712,8 @@ export function QuoteEditor({
               </Button>
             </div>
           </div>
-          <article className="paper editor-paper">
+          <article className="paper editor-paper proposal-typography">
+            <style>{fontCss(p.workspace_settings)}</style>
             <header className="editor-cover">
               <p className="eyebrow">Proposal for {p.client.company}</p>
               <h1>{p.title}</h1>
@@ -1591,7 +1724,10 @@ export function QuoteEditor({
                     {" "}
                     · Valid until{" "}
                     <span className="field-chip">
-                      {readableDate(p.valid_until)}
+                      {readableDate(
+                        p.valid_until,
+                        p.workspace_settings?.timezone,
+                      )}
                     </span>
                   </>
                 )}
@@ -1688,6 +1824,7 @@ export function QuoteEditor({
             )}
             <Field label="Valid until">
               <ValidityField
+                timezone={p.workspace_settings?.timezone ?? "UTC"}
                 value={p.valid_until}
                 onChange={(valid_until) => change({ valid_until })}
               />

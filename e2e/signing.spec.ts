@@ -158,8 +158,8 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     },
   ]);
   await page.goto("/settings/team");
-  await page.getByLabel("Display name", { exact: true }).fill("Alex Sender");
-  await page.getByRole("button", { name: "Save display name" }).click();
+  await page.getByLabel(/^Display name for /).fill("Alex Sender");
+  await page.getByRole("button", { name: "Save name" }).click();
   await expect
     .poll(
       async () =>

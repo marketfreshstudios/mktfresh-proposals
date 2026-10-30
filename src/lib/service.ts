@@ -170,9 +170,11 @@ export class ProposalService {
       title: input.title,
       status: "draft",
       token: null,
-      password_hash: input.password ? hashPassword(input.password) : null,
+      password_hash: input.password
+        ? hashPassword(input.password)
+        : (settings.default_password_hash ?? null),
       valid_until: validity === null ? null : new Date(validity).toISOString(),
-      currency: input.currency ?? "USD",
+      currency: input.currency ?? settings.currency ?? "USD",
       source: "native",
       proposify_id: null,
       created_by: actor.actor,
@@ -800,6 +802,8 @@ export function publicResult(p: Proposal) {
     ),
     sent_at: v.created_at,
     money_cents: p.workspace_settings?.money?.cents ?? "auto",
+    timezone: p.workspace_settings?.timezone ?? "UTC",
+    proposal_fonts: p.workspace_settings?.proposal_fonts,
     contact: {
       name: p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
       email: p.sender?.email ?? p.workspace_settings?.email ?? "",

@@ -257,7 +257,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   await page.keyboard.press("Escape");
   await page.goto("/studio/catalog");
   await page
-    .getByRole("textbox", { name: "Search catalogue", exact: true })
+    .getByRole("textbox", { name: "Search catalog", exact: true })
     .fill("n");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto("/proposals/new");

@@ -15,6 +15,7 @@ export const proposalActions = [
   "mark_won",
   "mark_lost",
   "remind",
+  "resend_billing_link",
   "mark_sent",
   "archive",
   "unarchive",
@@ -174,6 +175,31 @@ export async function proposalAction(
         action === "mark_won" ? "marked_won" : "marked_lost",
         actor,
         { reason: note },
+        timestamp,
+      );
+      return;
+    }
+    if (action === "resend_billing_link") {
+      check(
+        !!p.client_signed_at &&
+          !!p.token &&
+          p.billing_links.some(
+            (l) =>
+              l.provider === "stripe" && l.metadata?.requires_checkout === true,
+          ),
+        "No client payment setup is pending",
+        409,
+      );
+      event(p, "billing_link_resent", actor, {}, timestamp);
+      queue(
+        p,
+        "email",
+        "billing-link:" + p.events.at(-1)!.id,
+        {
+          to: p.client.email,
+          subject: `Finish billing setup: ${p.title}`,
+          text: `Your proposal is signed. Finish payment setup here: ${proposalLink(p)}`,
+        },
         timestamp,
       );
       return;

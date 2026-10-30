@@ -841,7 +841,7 @@ pre {
   color: var(--paper-ink);
 }
 :root {
-  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
   --font-serif: "Source Serif 4", Georgia, serif;
   --font-mono: "IBM Plex Mono", monospace;
 }
@@ -1826,4 +1826,25 @@ select:hover:not(:disabled),
   .quote-cards {
     min-height: 150px;
   }
+}
+.proposal-typography {
+  font-family: var(--proposal-body, "Source Serif 4", Georgia, serif);
+}
+.proposal-typography :is(h1, h2, h3, h4) {
+  font-family: var(--proposal-heading, "Source Serif 4", Georgia, serif);
+}
+.proposal-typography
+  :is(
+    button,
+    input,
+    select,
+    textarea,
+    .totals,
+    .flow-byline,
+    .flow-eyebrow,
+    .field-chip,
+    .block-actions,
+    .toolbar
+  ) {
+  font-family: var(--font-sans);
 }

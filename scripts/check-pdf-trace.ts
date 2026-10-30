@@ -18,6 +18,8 @@ for (const file of [
   "node_modules/playwright-core/package.json",
   "node_modules/@sparticuz/chromium/package.json",
   "public/fonts/SourceSerif4-Variable.woff2",
+  "public/fonts/InstrumentSans-Variable.woff2",
+  "public/fonts/IBMPlexMono-Regular.woff2",
 ])
   assert(files.has(resolve(file)), `API trace missing ${file}`);
 for (const file of await readdir("node_modules/@sparticuz/chromium/bin"))

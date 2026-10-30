@@ -39,7 +39,7 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
             );
     await route.fulfill({ json: value });
   });
-  await page.goto("/settings");
+  await page.goto("/studio/connections?view=reference");
   await page
     .getByRole("combobox", { name: "Source", exact: true })
     .selectOption("linked");
@@ -94,13 +94,13 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
     );
     for (const [screen, url] of [
       ["references-dashboard", "/"],
-      ["references-settings", "/settings"],
+      ["references-settings", "/studio/connections?view=reference"],
     ]) {
       await page.goto(url);
       await expect(
         page.getByRole("region", { name: "Pricing reference status" }),
       ).toContainText("HTTP 503");
-      if (url === "/settings")
+      if (url.includes("view=reference"))
         await page
           .getByRole("button", { name: "Edit Linked pricing", exact: true })
           .click();

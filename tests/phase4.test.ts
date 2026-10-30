@@ -25,7 +25,7 @@ it("defaults use the workspace calendar day and configured validity, while null 
       { ...settings, default_validity_days: 30 },
       new Date("2026-10-30T01:00:00Z"),
     ),
-  ).toBe("2026-11-28T23:59:59.999Z");
+  ).toBe("2026-11-29T04:59:59.999Z");
   const created = await service.create(
     {
       client_id: draft.client.id,

@@ -19,6 +19,8 @@ import type { ProposalAction } from "../lib/proposal-actions";
 import type { ClientBilling } from "../lib/client-billing";
 import { selected, orderedItems, draftItems } from "../lib/quote-model";
 import { totals, renderBlocks, variables } from "../lib/presentation";
+import { fontCss } from "../lib/proposal-fonts";
+import { eventLabel } from "../lib/event-label";
 import { readableDate } from "../lib/validity";
 import { onBehalfText } from "../lib/workspace";
 import {
@@ -633,6 +635,31 @@ export function HomeV4({ data }: { data: Data }) {
       );
     });
   }
+  if (!data.total)
+    return (
+      <div className="home-v4 stack">
+        <ReferenceStatus documents={data.documents} />
+        <section className="first-run card stack">
+          <h1>
+            Welcome, {(data.user.staff_name || "team").split(" ")[0]}. Let’s
+            send your first proposal.
+          </h1>
+          <p>
+            Connect Stripe so the catalog fills in, pick a template, and you’re
+            ready. Assistant drafts will appear here after you connect an
+            assistant.
+          </p>
+          <div className="actions">
+            <a className="btn primary" href="/proposals?new=1">
+              New proposal
+            </a>
+            <a className="btn" href="/studio/connections">
+              Connect Stripe
+            </a>
+          </div>
+        </section>
+      </div>
+    );
   return (
     <div className="home-v4 stack">
       <ReferenceStatus documents={data.documents} />
@@ -660,7 +687,19 @@ export function HomeV4({ data }: { data: Data }) {
       )}
       <div className="home-columns">
         <section className="action-groups">
-          {groups.map((g) => (
+          {!count && (
+            <section className="card stack">
+              <h2>Nothing needs you right now.</h2>
+              <p>
+                Drafts to review, signatures to countersign and billing problems
+                will appear here. {open.length} proposals are out with clients.
+              </p>
+              <a className="btn" href="/proposals">
+                See proposals
+              </a>
+            </section>
+          )}
+          {(count ? groups : []).map((g) => (
             <section className="action-group" key={g.label}>
               <header>
                 <h2>
@@ -914,9 +953,16 @@ export function CountersignSheet({
               )}
             </section>
             {!s?.image || !s.user_id ? (
-              <Banner tone="warning" title="Company signatory setup required">
-                An owner must save a designated signatory and signature in
-                Workspace.
+              <Banner
+                tone="warning"
+                title={
+                  !s?.image
+                    ? "No signature saved — add one in Workspace"
+                    : "Company signatory setup required"
+                }
+              >
+                <a href="/studio/workspace#signatory">Open Workspace</a> to save
+                the designated signatory and their signature.
               </Banner>
             ) : (
               <form
@@ -1040,30 +1086,7 @@ export function CountersignSheet({
   );
 }
 function eventTitle(e: Audit, data: Data) {
-  const labels: Record<string, string> = {
-    created: "Draft created",
-    edited: "Draft edited",
-    sent: "Proposal sent",
-    viewed: "Client opened the proposal",
-    quote_changed: "Client updated their choices",
-    signed: "Client signed",
-    counter_signed: "Company signature applied",
-    client_signed: "Client signed",
-    company_signed: "Company signature applied",
-    signed_by_client: "Client signed",
-    completed: "Company signature applied",
-    declined: "Client declined",
-    expired: "Proposal expired",
-    reminder_sent: "Reminder emailed",
-    marked_won: `Marked as won by ${person(e.actor, data)}`,
-    marked_lost: `Marked as lost by ${person(e.actor, data)}`,
-    archived: "Archived",
-    unarchived: "Unarchived",
-    manual_invoice_recorded: "Manual invoice recorded",
-    sync_failed: "Background work needs attention",
-    editing_new_version: "Started a new version",
-  };
-  return labels[e.type] ?? e.type.replaceAll("_", " ");
+  return eventLabel(e, person(e.actor, data));
 }
 export function RecordV4({
   p,
@@ -1161,6 +1184,27 @@ export function RecordV4({
           {error}
         </Banner>
       )}
+      {actualSigned &&
+        p.jobs.some((j) => j.kind === "pdf" && j.status === "failed") && (
+          <Banner
+            tone="warning"
+            title={`${p.client.first_name || "The client"}’s signature is saved. Sealing the PDF failed.`}
+            action={
+              <Button
+                onClick={() =>
+                  void post(`/api/proposals/${p.id}/retry`)
+                    .then(onRefresh)
+                    .catch((e) => setError(e.message))
+                }
+              >
+                Retry sealing
+              </Button>
+            }
+          >
+            The signed agreement is safe. Its copy will be emailed once sealing
+            works.
+          </Banner>
+        )}
       <section className={`next-card ${signature ? "needs-signature" : ""}`}>
         <div className="next-icon">
           <Icon
@@ -1269,15 +1313,9 @@ export function RecordV4({
                   <blockquote>{e.metadata.reason}</blockquote>
                 )}
                 <small>{timestamp(e.created_at, data)}</small>
-                <details>
-                  <summary>Evidence</summary>
-                  <code>{e.type}</code>
-                  <p>Actor: {e.actor}</p>
-                  <p>IP: {e.ip || "Not available"}</p>
-                  <pre className="hash">
-                    {JSON.stringify(e.metadata, null, 2)}
-                  </pre>
-                </details>
+                <a href={`/proposals/${p.id}?view=evidence#event-${e.id}`}>
+                  View evidence
+                </a>
               </div>
             </article>
           ))}
@@ -1333,6 +1371,37 @@ export function RecordV4({
                               : "In progress"}
                     </span>
                     {link.last_error && <p>{link.last_error}</p>}
+                    {link.provider === "stripe" &&
+                      link.metadata?.requires_checkout === true && (
+                        <div className="stack">
+                          <p>
+                            The proposal is signed. The client has not finished
+                            payment setup.
+                          </p>
+                          <Button
+                            onClick={async () => {
+                              try {
+                                const next = await post<Proposal>(
+                                  `/api/proposals/${p.id}/actions`,
+                                  {
+                                    revision: p.revision,
+                                    action: "resend_billing_link",
+                                  },
+                                );
+                                onChanged(next);
+                              } catch (e) {
+                                setError(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Unable to resend the billing link",
+                                );
+                              }
+                            }}
+                          >
+                            Resend billing link
+                          </Button>
+                        </div>
+                      )}
                     {link.provider === "stripe" &&
                       link.status === "succeeded" && (
                         <p>
@@ -1459,8 +1528,9 @@ export function RecordV4({
       </div>
       {document && (
         <Sheet title={p.title} onClose={() => setDocument(false)}>
+          <style>{fontCss(p.workspace_settings ?? data.settings)}</style>
           <article
-            className="paper record-document"
+            className="paper record-document proposal-typography"
             dangerouslySetInnerHTML={{
               __html: v
                 ? renderBlocks(
@@ -1966,53 +2036,5 @@ export function ClientsV4({
         </Sheet>
       )}
     </div>
-  );
-}
-
-export function WorkspaceActivityV4({ data }: { data: Data }) {
-  const [events, setEvents] = useState<Audit[] | null>(null),
-    [error, setError] = useState("");
-  useEffect(() => {
-    api<Audit[]>("/api/workspace_events")
-      .then(setEvents)
-      .catch((e) => setError(e.message));
-  }, []);
-  return (
-    <section className="card stack">
-      <h2>Workspace activity</h2>
-      {error ? (
-        <Banner tone="danger" title="Activity could not be loaded">
-          {error}
-        </Banner>
-      ) : events === null ? (
-        <Skeleton />
-      ) : events.length ? (
-        events
-          .toSorted(
-            (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
-          )
-          .slice(0, 100)
-          .map((e) => (
-            <article className="timeline-entry" key={e.id}>
-              <Icon name="document" />
-              <div>
-                <strong>
-                  {e.type === "client_deleted"
-                    ? `Client deleted: ${e.metadata.company}`
-                    : e.type.replaceAll("_", " ")}
-                </strong>
-                <p>
-                  {person(e.actor, data)} · {timestamp(e.created_at, data)}
-                </p>
-                <code>{e.type}</code>
-                <small> · IP {e.ip || "Not available"}</small>
-              </div>
-            </article>
-          ))
-      ) : (
-        <p>No workspace activity yet.</p>
-      )}
-      <p>Signature evidence remains available from each proposal record.</p>
-    </section>
   );
 }

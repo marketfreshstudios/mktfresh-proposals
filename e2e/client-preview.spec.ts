@@ -6,6 +6,7 @@ test("draft client preview has live local totals, branded steps and no client wr
   page,
 }) => {
   const { repo, draft, settings, members } = await setup();
+  settings.proposal_fonts = { heading: "mono", body: "sans" };
   const original = JSON.stringify(await repo.get(draft.id));
   const requests: string[] = [];
   await page.route("**/api/**", async (route) => {
@@ -50,6 +51,14 @@ test("draft client preview has live local totals, branded steps and no client wr
       ).toBeVisible();
       await expect(page.locator(".client-header")).toContainText(
         settings.company_name,
+      );
+      await expect(page.locator(".flow-document")).toHaveCSS(
+        "font-family",
+        /Instrument Sans/,
+      );
+      await expect(page.locator(".flow-document h1")).toHaveCSS(
+        "font-family",
+        /IBM Plex Mono/,
       );
       if (width === 1440) {
         await page

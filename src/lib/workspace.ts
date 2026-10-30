@@ -1,3 +1,4 @@
+import { fontChoice } from "./proposal-fonts";
 import { z } from "zod";
 export const LOCAL_WORKSPACE_ID = "00000000-0000-4000-8000-000000000001";
 export const CompanySignatorySchema = z.object({
@@ -16,6 +17,12 @@ export const onBehalfText = (name: string, company: string) =>
   `I'm authorized to sign on behalf of ${name} for ${company}.`;
 export const WorkspaceSettingsSchema = z.object({
   id: z.string().uuid(),
+  currency: z.enum(["USD", "CAD", "GBP", "EUR", "AUD"]).default("USD"),
+  proposal_fonts: z
+    .object({ heading: fontChoice, body: fontChoice })
+    .optional(),
+  default_password_hash: z.string().nullable().optional(),
+  default_password_enabled: z.boolean().optional(),
   money: z.object({ cents: z.enum(["auto", "always"]) }).optional(),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
