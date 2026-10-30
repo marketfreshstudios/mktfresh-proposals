@@ -360,5 +360,6 @@
         }
       ]
     }
-  ]
+  ],
+  "license_text": "Upstream license wording is retained; line endings are normalized to LF and trailing whitespace removed."
 }
