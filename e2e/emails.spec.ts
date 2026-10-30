@@ -149,10 +149,10 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   }
   // The new navigation item is shared by the desktop section, tablet popover and phone page.
   for (const theme of ["light", "dark"]) {
-    await context.addInitScript(
-      (t) => localStorage.setItem("proposal-theme", t),
-      theme,
-    );
+    await context.addInitScript((t) => {
+      if (window.top === window && location.origin === "http://127.0.0.1:3100")
+        localStorage.setItem("proposal-theme", t);
+    }, theme);
     for (const width of [375, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto("/studio/emails");

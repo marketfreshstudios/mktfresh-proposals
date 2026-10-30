@@ -1,0 +1,15 @@
+Example Studio
+
+Your next project
+
+Hi Jamie,
+
+Thank you for signing. Your signed copy is attached, and our company countersignature is next.
+
+You can also open the secure proposal to read or download your copy.
+
+View signed copy: http://127.0.0.1:3100/studio/emails/signed_copy
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

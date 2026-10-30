@@ -1,0 +1,17 @@
+Example Studio
+
+Your next project
+
+Hi Jamie,
+
+Here’s a reminder that your proposal is ready whenever you are.
+
+This proposal is valid until November 29, 2026.
+
+Please reply if you have any questions.
+
+View proposal: http://127.0.0.1:3100/studio/emails/reminder_unopened
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

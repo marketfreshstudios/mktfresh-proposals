@@ -1,0 +1,11 @@
+Example Studio
+
+Your next project
+
+Background work needs attention. Open the proposal record to review the billing or document job and retry when ready.
+
+Review proposal: http://127.0.0.1:3100/studio/emails/staff_billing_failed
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

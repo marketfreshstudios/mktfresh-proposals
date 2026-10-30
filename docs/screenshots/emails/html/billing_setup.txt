@@ -1,0 +1,15 @@
+Example Studio
+
+Your next project
+
+Hi Jamie,
+
+Your proposal is signed. There’s one more step to finish setting up the recurring services you chose.
+
+Open the secure proposal to review the billing details and continue.
+
+Finish billing setup: http://127.0.0.1:3100/studio/emails/billing_setup
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street
