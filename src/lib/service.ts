@@ -1,3 +1,5 @@
+import { stripeCustomerMatches } from "./client-billing";
+import type { StripeTransport } from "./catalog";
 import { defaultValidUntil } from "./validity";
 import { reviewBlocks, pendingSections } from "./ai-review";
 import {
@@ -112,7 +114,39 @@ export class ProposalService {
     public repo: Repository,
     public clock = () => new Date(),
     private members = workspaceStaff,
+    private stripeApi?: StripeTransport,
   ) {}
+  async checkReady(proposal: Proposal, confirmAiReview = false) {
+    const p = await this.forRead(proposal);
+    const ready = readiness(
+      p,
+      await this.repo.entities<Item>("pricing_items"),
+      this.clock(),
+      confirmAiReview,
+    );
+    const client =
+      (await this.repo.entities<Client>("clients")).find(
+        (c) => c.id === p.client.id,
+      ) ?? p.client;
+    let customerChoiceUrl: string | undefined;
+    if (this.stripeApi && !client.stripe_customer_id) {
+      try {
+        const matches = await stripeCustomerMatches(
+          { ...client, email: p.client.email },
+          this.stripeApi,
+        );
+        if (matches.length > 1) {
+          ready.errors.push("Choose which Stripe customer this client is");
+          customerChoiceUrl = `/clients/${client.id}#stripe-customers`;
+        }
+      } catch (e) {
+        ready.errors.push(
+          `Stripe customer check unavailable: ${(e as Error).message}`,
+        );
+      }
+    }
+    return { ...ready, ready: !ready.errors.length, customerChoiceUrl };
+  }
   async create(
     input: {
       client_id: string;
@@ -378,7 +412,19 @@ export class ProposalService {
       sending_domain: domain,
     };
     const catalog = await this.repo.entities<Item>("pricing_items");
+    const before = await this.repo.get(id);
+    check(before, "Not found", 404);
+    const preflight = await this.checkReady(
+      { ...before, workspace_settings: settingsSnapshot(settings) },
+      confirmAiReview,
+    );
+    check(preflight.ready, preflight.errors.join("; "));
     return mutate(this.repo, id, (p) => {
+      check(
+        p.revision === before.revision,
+        "Proposal changed; reload and try again",
+        409,
+      );
       check(
         !p.archived_at && p.source === "native",
         "Unarchive a native proposal before sending",

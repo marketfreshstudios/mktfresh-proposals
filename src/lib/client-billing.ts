@@ -3,7 +3,18 @@ import type { StripeTransport, StripePage } from "./catalog";
 import type { Repository } from "./repository";
 import { check } from "./model";
 import { itemDisplayName } from "./catalogue-display";
+export type CustomerCandidate = {
+  id: string;
+  name: string;
+  created: string | null;
+  card: string | null;
+  subscriptions: number;
+  monthly_totals: { currency: string; amount: number }[];
+};
 export type ClientBilling = {
+  candidates?: CustomerCandidate[];
+  linked_id?: string | null;
+  subscriptions?: number;
   available: boolean;
   subscriber: boolean;
   items: {
@@ -21,26 +32,11 @@ export type ClientBilling = {
   qbo_url: string | null;
   notice?: string;
 };
-export async function clientBilling(
+async function billingSummary(
   repo: Repository,
   client: Client,
   api?: StripeTransport,
 ): Promise<ClientBilling> {
-  const proposals = await repo.list();
-  const ids = [
-    ...new Set(
-      [
-        client.stripe_customer_id,
-        ...proposals
-          .filter((p) => p.client.id === client.id)
-          .flatMap((p) =>
-            p.billing_links
-              .filter((l) => l.provider === "stripe")
-              .map((l) => l.external_customer_id),
-          ),
-      ].filter((v): v is string => !!v && !v.startsWith("mock_")),
-    ),
-  ];
   const result: ClientBilling = {
     available: !!api,
     subscriber: false,
@@ -58,28 +54,8 @@ export async function clientBilling(
       notice:
         "Stripe is not connected. Current subscription and card details are unavailable.",
     };
-  check(ids.length <= 1, "Multiple Stripe customer records need review", 409);
-  if (!ids.length) {
-    const matches = await api.get<
-      StripePage<{ id: string; email: string | null }>
-    >("/v1/customers", { email: client.email, limit: "100" });
-    const exact = matches.data.filter(
-      (c) => c.email?.toLowerCase() === client.email.toLowerCase(),
-    );
-    check(
-      !matches.has_more && exact.length <= 1,
-      "Multiple Stripe customers match this email; verify the customer ID",
-      409,
-    );
-    if (exact.length) ids.push(exact[0].id);
-  }
-  if (!ids.length)
-    return {
-      ...result,
-      notice:
-        "No Stripe customer matches this email. Billing will be checked after signature.",
-    };
-  const id = ids[0];
+  const id = client.stripe_customer_id;
+  if (!id) return result;
   check(/^cus_[A-Za-z0-9]+$/.test(id), "Invalid Stripe customer ID");
   const customer = await api.get<{
     livemode: boolean;
@@ -156,6 +132,7 @@ export async function clientBilling(
       )
         continue;
       result.subscriber = true;
+      result.subscriptions = (result.subscriptions ?? 0) + 1;
       if (sub.default_payment_method?.card)
         cards.push(sub.default_payment_method.card);
       if (sub.current_period_end) {
@@ -213,8 +190,119 @@ export async function clientBilling(
     check(page.data.length, "Invalid subscription pagination");
     cursor = page.data.at(-1)!.id;
   } while (true);
-  const card =
+  let card =
     cards[0] ?? customer.invoice_settings?.default_payment_method?.card;
+  if (!card) {
+    const methods = await api.get<
+      StripePage<{
+        livemode: boolean;
+        card?: {
+          brand: string;
+          last4: string;
+          exp_year: number;
+          exp_month: number;
+        };
+      }>
+    >("/v1/payment_methods", { customer: id, type: "card", limit: "1" });
+    if (methods.data[0]?.card) {
+      check(
+        methods.data[0].livemode === false,
+        "Test-mode payment method required",
+      );
+      card = methods.data[0].card;
+    }
+  }
   if (card) result.card = `${card.brand} ending ${card.last4}`;
+  return result;
+}
+
+export async function stripeCustomerMatches(
+  client: Client,
+  api: StripeTransport,
+) {
+  const matches: { id: string; name?: string | null; created?: number }[] = [];
+  let cursor = "";
+  do {
+    const page = await api.get<
+      StripePage<{
+        id: string;
+        email: string | null;
+        name?: string | null;
+        created?: number;
+        livemode: boolean;
+        deleted?: boolean;
+      }>
+    >("/v1/customers", {
+      // Stripe’s email filter is case-sensitive; local clients are normalized.
+      // Scan test customers so differently cased duplicates cannot be missed.
+      limit: "100",
+      ...(cursor ? { starting_after: cursor } : {}),
+    });
+    for (const c of page.data) {
+      check(c.livemode === false && !c.deleted, "Test-mode customer required");
+      if (c.email?.toLowerCase() === client.email.toLowerCase())
+        matches.push(c);
+    }
+    if (!page.has_more) break;
+    check(
+      page.data.length && cursor !== page.data.at(-1)!.id,
+      "Invalid customer pagination",
+    );
+    cursor = page.data.at(-1)!.id;
+  } while (true);
+  return matches;
+}
+export async function clientBilling(
+  repo: Repository,
+  client: Client,
+  api?: StripeTransport,
+): Promise<ClientBilling> {
+  const result = await billingSummary(repo, client, api);
+  result.linked_id = client.stripe_customer_id;
+  result.candidates = [];
+  if (!api) return result;
+  const matches = await stripeCustomerMatches(client, api);
+  for (const c of matches) {
+    const details =
+      c.id === client.stripe_customer_id
+        ? result
+        : await billingSummary(
+            repo,
+            { ...client, stripe_customer_id: c.id },
+            api,
+          );
+    const currencies = [
+      ...new Set(
+        details.items
+          .filter((i) => i.interval === "month" && i.interval_count === 1)
+          .map((i) => i.currency),
+      ),
+    ];
+    result.candidates.push({
+      id: c.id,
+      name: c.name || client.company,
+      created: c.created ? new Date(c.created * 1000).toISOString() : null,
+      card: details.card,
+      subscriptions: details.subscriptions ?? 0,
+      monthly_totals: currencies.map((currency) => ({
+        currency,
+        amount: details.items
+          .filter(
+            (i) =>
+              i.currency === currency &&
+              i.interval === "month" &&
+              i.interval_count === 1,
+          )
+          .reduce((v, i) => v + i.amount * i.qty, 0),
+      })),
+    });
+  }
+  if (!client.stripe_customer_id)
+    result.notice =
+      matches.length === 0
+        ? "No Stripe customer yet; one is created at checkout"
+        : matches.length === 1
+          ? "Choose Link this customer to use this Stripe record."
+          : "Choose which Stripe customer this client is";
   return result;
 }

@@ -1,3 +1,5 @@
+import { stripeCustomerMatches } from "../client-billing";
+import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
 import { check, type Client, type BillingLine, type Item } from "../model";
 import {
@@ -18,6 +20,7 @@ type StripeCustomer = {
   email: string | null;
   name: string | null;
   deleted?: boolean;
+  livemode?: boolean;
   invoice_settings?: { default_payment_method: string | null };
 };
 type Subscription = {
@@ -61,19 +64,23 @@ export class StripeProvider implements BillingProvider {
         `/v1/customers/${c.stripe_customer_id}`,
         {},
       );
+      if (found.livemode !== false)
+        throw new NeedsReview("Test-mode customer required");
+      if (found.email?.toLowerCase() !== c.email.toLowerCase())
+        throw new NeedsReview(
+          "Linked Stripe customer email does not match this client",
+        );
       if (found.deleted)
         throw new NeedsReview("Stored Stripe customer was deleted");
       return [customer(found)];
     }
-    const exact = await this.api.get<StripePage<StripeCustomer>>(
-      "/v1/customers",
-      { email: c.email, limit: "100" },
-    );
-    if (exact.data.length || exact.has_more) {
-      if (exact.has_more)
-        throw new NeedsReview("Too many matching Stripe customers");
-      return exact.data.map(customer);
-    }
+    const exact = await stripeCustomerMatches(c, this.api);
+    if (exact.length)
+      return exact.map((found) => ({
+        id: found.id,
+        email: c.email,
+        company: found.name ?? "",
+      }));
     // Company matching is a review signal only, never an automatic link.
     const escaped = c.company.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const possible = await this.api.get<StripePage<StripeCustomer>>(
@@ -86,7 +93,12 @@ export class StripeProvider implements BillingProvider {
     return customer(
       await this.api.post<StripeCustomer>(
         "/v1/customers",
-        { email: c.email, name: c.company },
+        {
+          email: c.email,
+          name: c.company,
+          phone: normalizedPhone(c.phone) || undefined,
+          address: stripeAddress(c.address),
+        },
         key,
       ),
     );

@@ -1,4 +1,6 @@
 "use client";
+import { ClientContactFields, clientFormValues } from "./client-contact-fields";
+import { formattedPhone, formattedAddress } from "../lib/client-contact";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Data } from "./staff-app";
@@ -380,7 +382,7 @@ export function ProposalRows({
           proposals.map((p) => {
             const t = totals(p.quote);
             return (
-              <article className="proposal-row" key={p.id}>
+              <article className="proposal-row clickable-row" key={p.id}>
                 <a
                   className="proposal-row-link"
                   href={`/proposals/${p.id}`}
@@ -708,8 +710,11 @@ export function HomeV4({ data }: { data: Data }) {
               </header>
               {g.rows.length ? (
                 g.rows.map((p) => (
-                  <div className="home-action-row" key={p.id}>
-                    <a href={`/proposals/${p.id}`}>
+                  <div className="home-action-row clickable-row" key={p.id}>
+                    <a
+                      className="home-primary-link"
+                      href={`/proposals/${p.id}`}
+                    >
                       <strong>
                         {p.client.company} <ProposalBadges p={p} />
                       </strong>
@@ -1628,9 +1633,10 @@ export function ClientsV4({
   selected?: string;
   onRefresh: () => Promise<void>;
 }) {
-  const menuAnchor = useRef<HTMLButtonElement>(null);
   const client = data.clients.find((c) => c.id === selected),
-    [menu, setMenu] = useState(false),
+    [linkChoice, setLinkChoice] = useState<string | null | undefined>(
+      undefined,
+    ),
     [confirm, setConfirm] = useState(false),
     [edit, setEdit] = useState(false),
     [editClient, setEditClient] = useState(false),
@@ -1643,16 +1649,22 @@ export function ClientsV4({
     money = useMoney();
   useEffect(() => {
     if (!client) return;
+    let active = true;
     setBilling(null);
     setBillingError("");
     api<ClientBilling>(`/api/clients/${client.id}/billing`)
       .then((value) => {
         if (!Array.isArray(value.items))
           throw new Error("Billing details could not be loaded.");
-        setBilling(value);
+        if (active) setBilling(value);
       })
-      .catch((e) => setBillingError(e.message));
-  }, [client?.id]);
+      .catch((e) => {
+        if (active) setBillingError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [client?.id, client?.email, client?.stripe_customer_id]);
   if (!client)
     return (
       <section className="clients-v4 stack">
@@ -1668,7 +1680,20 @@ export function ClientsV4({
           </label>
           <Button onClick={() => setNewClient(true)}>New client</Button>
         </div>
-        <div className="client-directory">
+        <div className="client-directory client-table">
+          <div className="client-table-head">
+            {[
+              "Company",
+              "Contact",
+              "Title",
+              "Email",
+              "Phone",
+              "Billing",
+              "Proposals",
+            ].map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
           {data.clients
             .filter((c) =>
               `${c.company} ${c.email} ${c.first_name} ${c.last_name}`
@@ -1676,17 +1701,51 @@ export function ClientsV4({
                 .includes(search.toLowerCase()),
             )
             .map((c) => (
-              <a key={c.id} href={`/clients/${c.id}`}>
-                <span className="avatar">{c.company.slice(0, 1)}</span>
-                <div>
-                  <strong>{c.company}</strong>
-                  <p>
-                    {c.first_name} {c.last_name} · {c.email}
-                  </p>
-                </div>
-                <span aria-hidden="true">→</span>
-              </a>
+              <article key={c.id} className="client-table-row clickable-row">
+                <a
+                  className="whole-row-link"
+                  href={`/clients/${c.id}`}
+                  aria-label={`Open ${c.company}`}
+                />
+                <strong data-label="Company">{c.company}</strong>
+                <span data-label="Contact">
+                  {c.first_name} {c.last_name}
+                </span>
+                <span data-label="Title">{c.title || "—"}</span>
+                <a
+                  className="inner-action"
+                  data-label="Email"
+                  href={`mailto:${c.email}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {c.email}
+                </a>
+                <span data-label="Phone">
+                  {c.phone ? (
+                    <a
+                      className="inner-action"
+                      href={`tel:${c.phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {formattedPhone(c.phone)}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </span>
+                <span data-label="Billing">
+                  {c.stripe_customer_id ? "Stripe linked" : "Not linked"}
+                </span>
+                <span data-label="Proposals">
+                  {data.proposals.filter((p) => p.client.id === c.id).length}
+                </span>
+              </article>
             ))}
+          {!data.clients.length && (
+            <p className="empty-copy">
+              No clients yet. Create your first client to get started.
+            </p>
+          )}
         </div>
         {newClient && (
           <CreateClientModal
@@ -1712,7 +1771,7 @@ export function ClientsV4({
           <p>
             {client.first_name} {client.last_name}
             {client.title && ` · ${client.title}`} · {client.email}
-            {client.phone && ` · ${client.phone}`}
+            {client.phone && ` · ${formattedPhone(client.phone)}`}
           </p>
         </div>
         <div className="actions">
@@ -1725,14 +1784,20 @@ export function ClientsV4({
           <a className="btn" href={`mailto:${client.email}`}>
             Email {client.first_name || "client"}
           </a>
-          <button
-            ref={menuAnchor}
-            className="btn ghost more-control"
-            aria-label={`More actions for ${client.company}`}
-            onClick={() => setMenu(true)}
+          <Button onClick={() => setEditClient(true)}>Edit client</Button>
+          <Button
+            variant="danger"
+            disabled={count > 0}
+            aria-describedby={count ? "client-delete-reason" : undefined}
+            onClick={() => setConfirm(true)}
           >
-            ⋯
-          </button>
+            Delete client
+          </Button>
+          {count > 0 && (
+            <small id="client-delete-reason">
+              Has {count} proposals — archive them or keep the client
+            </small>
+          )}
         </div>
       </header>
       {error && (
@@ -1740,6 +1805,37 @@ export function ClientsV4({
           {error}
         </Banner>
       )}
+      <section className="card client-contact-card">
+        <h2>Contact details</h2>
+        <dl>
+          {[
+            ["Name", `${client.first_name} ${client.last_name}`.trim()],
+            ["Title", client.title],
+            [
+              "Email",
+              <a key="email" href={`mailto:${client.email}`}>
+                {client.email}
+              </a>,
+            ],
+            [
+              "Phone",
+              client.phone ? (
+                <a key="phone" href={`tel:${client.phone}`}>
+                  {formattedPhone(client.phone)}
+                </a>
+              ) : (
+                ""
+              ),
+            ],
+            ["Address", formattedAddress(client.address)],
+          ].map(([label, value]) => (
+            <div key={String(label)}>
+              <dt>{label}</dt>
+              <dd>{value || "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
       <section className="card client-billing">
         <header>
           <h2>How they’re billed</h2>
@@ -1750,11 +1846,19 @@ export function ClientsV4({
               {billing.subscriber
                 ? "Stripe subscriber"
                 : billing.available
-                  ? "No active subscription"
+                  ? billing.linked_id
+                    ? "No active subscription"
+                    : "Stripe customer not linked"
                   : "Stripe not connected"}
             </span>
           )}
         </header>
+        {billingError && client.stripe_customer_id && (
+          <p>
+            <code>{client.stripe_customer_id}</code>{" "}
+            <Button onClick={() => setLinkChoice(null)}>Unlink customer</Button>
+          </p>
+        )}
         {billingError ? (
           <Banner tone="warning" title="Current billing details unavailable">
             {billingError}
@@ -1783,53 +1887,119 @@ export function ClientsV4({
                 : billing.notice ||
                   "A new monthly plan starts through Checkout after signature."}
             </p>
-            <div className="current-subscription">
-              {billing.items.map((i) => (
-                <p key={i.id}>
+            <section
+              id="stripe-customers"
+              className="stripe-customer-chooser stack"
+              aria-label="Stripe customers"
+            >
+              <h3>
+                {billing.linked_id
+                  ? "Linked Stripe customer"
+                  : "Choose a Stripe customer"}
+              </h3>
+              {billing.linked_id && (
+                <p>
+                  <code>{billing.linked_id}</code>{" "}
+                  <Button onClick={() => setLinkChoice(null)}>
+                    Unlink customer
+                  </Button>
+                </p>
+              )}
+              <div className="customer-candidates">
+                {(billing.candidates ?? []).map((candidate) => (
+                  <article className="stripe-candidate" key={candidate.id}>
+                    <strong>{candidate.name}</strong>
+                    <code>{candidate.id}</code>
+                    <dl>
+                      <div>
+                        <dt>Created</dt>
+                        <dd>
+                          {candidate.created
+                            ? readableDate(candidate.created)
+                            : "Unavailable"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Card on file</dt>
+                        <dd>{candidate.card || "No default card recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Active subscriptions</dt>
+                        <dd>{candidate.subscriptions}</dd>
+                      </div>
+                      <div>
+                        <dt>Monthly total</dt>
+                        <dd>
+                          {candidate.monthly_totals.length
+                            ? candidate.monthly_totals
+                                .map((t) => `${money(t.amount, t.currency)}/mo`)
+                                .join(" · ")
+                            : money(0) + "/mo"}
+                        </dd>
+                      </div>
+                    </dl>
+                    {candidate.id === billing.linked_id ? (
+                      <span className="pill success">Linked</span>
+                    ) : (
+                      <Button onClick={() => setLinkChoice(candidate.id)}>
+                        {billing.linked_id
+                          ? "Use this customer"
+                          : "Link this customer"}
+                      </Button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+            <div className="linked-billing-summary" hidden={!billing.linked_id}>
+              <div className="current-subscription">
+                {billing.items.map((i) => (
+                  <p key={i.id}>
+                    <strong>
+                      {i.name}
+                      {i.qty !== 1 ? ` × ${i.qty}` : ""}
+                    </strong>
+                    <span>
+                      {money(i.amount * i.qty, i.currency)}/
+                      {i.interval_count > 1 ? i.interval_count : ""}
+                      {i.interval === "month"
+                        ? "mo"
+                        : i.interval === "year"
+                          ? "yr"
+                          : i.interval}
+                    </span>
+                  </p>
+                ))}
+              </div>
+              {currencyGroups.map((currency) => (
+                <p key={currency}>
                   <strong>
-                    {i.name}
-                    {i.qty !== 1 ? ` × ${i.qty}` : ""}
+                    Current monthly{" "}
+                    {money(
+                      billing.items
+                        .filter(
+                          (i) =>
+                            i.currency === currency &&
+                            i.interval === "month" &&
+                            i.interval_count === 1,
+                        )
+                        .reduce((v, i) => v + i.amount * i.qty, 0),
+                      currency,
+                    )}
+                    /mo
                   </strong>
-                  <span>
-                    {money(i.amount * i.qty, i.currency)}/
-                    {i.interval_count > 1 ? i.interval_count : ""}
-                    {i.interval === "month"
-                      ? "mo"
-                      : i.interval === "year"
-                        ? "yr"
-                        : i.interval}
-                  </span>
                 </p>
               ))}
+              <small>
+                Card on file:{" "}
+                {billing.card ??
+                  (billing.available
+                    ? "No default card recorded"
+                    : "Unavailable")}
+                {billing.next_invoice &&
+                  ` · Next period ends ${readableDate(billing.next_invoice)}`}
+              </small>
             </div>
-            {currencyGroups.map((currency) => (
-              <p key={currency}>
-                <strong>
-                  Current monthly{" "}
-                  {money(
-                    billing.items
-                      .filter(
-                        (i) =>
-                          i.currency === currency &&
-                          i.interval === "month" &&
-                          i.interval_count === 1,
-                      )
-                      .reduce((v, i) => v + i.amount * i.qty, 0),
-                    currency,
-                  )}
-                  /mo
-                </strong>
-              </p>
-            ))}
-            <small>
-              Card on file:{" "}
-              {billing.card ??
-                (billing.available
-                  ? "No default card recorded"
-                  : "Unavailable")}
-              {billing.next_invoice &&
-                ` · Next period ends ${readableDate(billing.next_invoice)}`}
-            </small>
             <div className="actions">
               {billing.stripe_url && (
                 <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
@@ -1897,35 +2067,54 @@ export function ClientsV4({
         )}
         <small>AI assistants can read these notes when drafting.</small>
       </section>
-      {menu && (
+      {linkChoice !== undefined && (
         <Sheet
-          menu
-          anchor={menuAnchor.current}
-          title={`Actions · ${client.company}`}
-          onClose={() => setMenu(false)}
+          title={
+            linkChoice ? "Link Stripe customer?" : "Unlink Stripe customer?"
+          }
+          onClose={() => {
+            if (!busy) setLinkChoice(undefined);
+          }}
         >
-          <nav className="action-menu">
-            <button
-              onClick={() => {
-                setMenu(false);
-                setEditClient(true);
-              }}
-            >
-              Edit client
-            </button>
-            <button
-              disabled={count > 0}
-              onClick={() => {
-                setMenu(false);
-                setConfirm(true);
-              }}
-            >
-              Delete client
-            </button>
-            {count > 0 && (
-              <p>Has {count} proposals — archive them or keep the client</p>
+          <div className="stack">
+            <p>
+              {linkChoice
+                ? `Link ${client.company} to ${linkChoice}? Future billing will use this customer only.`
+                : `Unlink ${client.company} from Stripe? Future billing will check for matching customers again.`}
+            </p>
+            {error && (
+              <Banner tone="danger" title="Link could not be changed">
+                {error}
+              </Banner>
             )}
-          </nav>
+            <div className="actions">
+              <Button disabled={busy} onClick={() => setLinkChoice(undefined)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                busy={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    await post(`/api/clients/${client.id}/stripe-customer`, {
+                      customer_id: linkChoice,
+                      expected_customer_id: client.stripe_customer_id,
+                    });
+                    setLinkChoice(undefined);
+                    await onRefresh();
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {linkChoice ? "Confirm link" : "Confirm unlink"}
+              </Button>
+            </div>
+          </div>
         </Sheet>
       )}
       {editClient && (
@@ -1942,13 +2131,13 @@ export function ClientsV4({
               if (busy) return;
               setBusy(true);
               setError("");
-              const values = Object.fromEntries(new FormData(e.currentTarget));
+              const values = clientFormValues(e.currentTarget);
               try {
                 await post("/api/clients", {
                   ...client,
                   ...values,
                   qbo_customer_id: values.qbo_customer_id || null,
-                  stripe_customer_id: values.stripe_customer_id || null,
+                  stripe_customer_id: client.stripe_customer_id,
                 });
                 setEditClient(false);
                 await onRefresh();
@@ -1964,27 +2153,16 @@ export function ClientsV4({
                 {error}
               </Banner>
             )}
-            {[
-              ["first_name", "First name"],
-              ["last_name", "Last name"],
-              ["title", "Title"],
-              ["email", "Email"],
-              ["company", "Company"],
-              ["phone", "Phone"],
-              ["stripe_customer_id", "Verified Stripe customer ID"],
-              ["qbo_customer_id", "Verified QuickBooks customer ID"],
-            ].map(([key, label]) => (
-              <Field key={key} label={label}>
-                <input
-                  name={key}
-                  type={key === "email" ? "email" : "text"}
-                  defaultValue={String(client[key as keyof Client] ?? "")}
-                  required={["email", "company"].includes(key)}
-                />
-              </Field>
-            ))}
+            <ClientContactFields client={client} />
+            <Field label="Verified QuickBooks customer ID">
+              <input
+                name="qbo_customer_id"
+                defaultValue={client.qbo_customer_id ?? ""}
+              />
+            </Field>
             <p>
-              Only enter provider IDs after checking this client’s identity.
+              Only enter a QuickBooks ID after checking this client’s identity.
+              Choose a Stripe customer in How they’re billed.
             </p>
             <Button type="submit" variant="primary" busy={busy}>
               Save client
