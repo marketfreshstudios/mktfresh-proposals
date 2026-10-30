@@ -197,6 +197,8 @@ export class Worker {
         if (currentClient)
           fresh.client = {
             ...fresh.client,
+            address: currentClient.address,
+            phone: currentClient.phone,
             stripe_customer_id: currentClient.stripe_customer_id,
             qbo_customer_id: currentClient.qbo_customer_id,
           };

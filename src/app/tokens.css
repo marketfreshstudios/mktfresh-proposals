@@ -319,3 +319,11 @@
   line-height: 16px;
   font-weight: 400;
 }
+
+:root,
+[data-theme="light"] {
+  --row-hover: #eeece6;
+}
+[data-theme="dark"] {
+  --row-hover: #2c2b27;
+}

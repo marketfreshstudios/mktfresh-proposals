@@ -1,3 +1,4 @@
+import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
 import { check, type Client, type BillingLine, type Item } from "../model";
 import {
@@ -18,6 +19,7 @@ type StripeCustomer = {
   email: string | null;
   name: string | null;
   deleted?: boolean;
+  livemode?: boolean;
   invoice_settings?: { default_payment_method: string | null };
 };
 type Subscription = {
@@ -61,6 +63,12 @@ export class StripeProvider implements BillingProvider {
         `/v1/customers/${c.stripe_customer_id}`,
         {},
       );
+      if (found.livemode !== false)
+        throw new NeedsReview("Test-mode customer required");
+      if (found.email?.toLowerCase() !== c.email.toLowerCase())
+        throw new NeedsReview(
+          "Linked Stripe customer email does not match this client",
+        );
       if (found.deleted)
         throw new NeedsReview("Stored Stripe customer was deleted");
       return [customer(found)];
@@ -86,7 +94,12 @@ export class StripeProvider implements BillingProvider {
     return customer(
       await this.api.post<StripeCustomer>(
         "/v1/customers",
-        { email: c.email, name: c.company },
+        {
+          email: c.email,
+          name: c.company,
+          phone: normalizedPhone(c.phone) || undefined,
+          address: stripeAddress(c.address),
+        },
         key,
       ),
     );

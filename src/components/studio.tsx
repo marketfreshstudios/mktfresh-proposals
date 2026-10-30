@@ -1073,6 +1073,7 @@ export function TemplatesStudio({
     "proposal.date": "October 30, 2026",
     "proposal.valid_until": "November 29, 2026",
     "proposal.validity": "This proposal is valid until November 29, 2026.",
+    "client.address": "123 Main St\nCharlotte, NC 28202\nUnited States",
     "client.first_name": "Client",
     "client.company": "Client company",
     "company.name": data.settings?.company_name ?? "Company",
@@ -2229,7 +2230,10 @@ export function ActivityStudio({ data }: { data: Data }) {
             <span>IP</span>
           </div>
           {filtered.map((e) => (
-            <article className="activity-row" key={e.id}>
+            <article
+              className={`activity-row ${e.proposal_id ? "clickable-row" : ""}`}
+              key={e.id}
+            >
               <time>
                 {new Date(e.created_at).toLocaleString("en-US", {
                   timeZone: data.settings?.timezone ?? "UTC",
@@ -2245,7 +2249,12 @@ export function ActivityStudio({ data }: { data: Data }) {
                 <code>{e.type}</code>
               </span>
               {e.proposal_id ? (
-                <a href={`/proposals/${e.proposal_id}`}>{e.detail}</a>
+                <a
+                  className="activity-primary-link"
+                  href={`/proposals/${e.proposal_id}`}
+                >
+                  {e.detail}
+                </a>
               ) : (
                 <span>{e.detail}</span>
               )}

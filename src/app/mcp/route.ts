@@ -51,6 +51,7 @@ async function handler(req: Request) {
           request.params.name,
           request.params.arguments ?? {},
           auth.scopes,
+          appRuntime(auth.actor.workspace_id).service,
         );
         const text = JSON.stringify(result);
         check(text.length < 140000, "Result is too large; narrow your search");

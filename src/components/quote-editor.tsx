@@ -170,6 +170,7 @@ export function QuoteEditor({
       ...initial,
       quote: draftItems(initial.quote),
     }),
+    [customerErrors, setCustomerErrors] = useState<string[]>([]),
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
@@ -293,6 +294,24 @@ export function QuoteEditor({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+  useEffect(() => {
+    let active = true;
+    api<{ errors: string[] }>(`/api/proposals/${p.id}/ready`)
+      .then((result) => {
+        if (active && Array.isArray(result.errors))
+          setCustomerErrors(
+            result.errors.filter(
+              (e) =>
+                e === "Choose which Stripe customer this client is" ||
+                e.startsWith("Stripe customer check unavailable:"),
+            ),
+          );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [p.id, p.revision]);
   const current = withDraftSettings(p, settings),
     items = orderedItems(p.quote),
     sections = contentSections(p.content),
@@ -309,6 +328,8 @@ export function QuoteEditor({
         : current.sender,
     }),
     ready = readiness(current, catalog, new Date(), confirmed);
+  ready.errors.push(...customerErrors);
+  ready.ready = !ready.errors.length;
   function setItems(next: QuoteItem[]) {
     change({
       quote: next.map((i, order) => ({
@@ -928,6 +949,11 @@ export function QuoteEditor({
             <div>
               <strong>Blocker</strong>
               <p>{e}</p>
+              {e === "Choose which Stripe customer this client is" && (
+                <a href={`/clients/${p.client.id}#stripe-customers`}>
+                  Choose Stripe customer
+                </a>
+              )}
             </div>
           </li>
         ))}
@@ -1653,6 +1679,7 @@ export function QuoteEditor({
             "proposal.date",
             "proposal.valid_until",
             "proposal.validity",
+            "client.address",
             "quote.one_time_total",
             "quote.monthly_total",
           ].map((k) => (

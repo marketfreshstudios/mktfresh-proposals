@@ -9,7 +9,7 @@ import {
 } from "./studio";
 import { whiteContrast, accessibleAccent } from "./brand";
 import { clientBilling } from "./client-billing";
-import { DuplicateClient, saveClient } from "./clients";
+import { DuplicateClient, saveClient, linkStripeCustomer } from "./clients";
 import { proposalAction, proposalActions } from "./proposal-actions";
 import { previewResult } from "./preview";
 import {
@@ -25,7 +25,6 @@ import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
 import { receiveStripeWebhook } from "./providers/webhook";
 import { syncStripeCatalog, createCustomFamily } from "./catalog";
-import { readiness } from "./quote";
 import { PlaybookDraftSchema } from "./playbook";
 import type { Item } from "./model";
 import { WorkspaceSettingsSchema, type WorkspaceSettings } from "./workspace";
@@ -462,6 +461,31 @@ export async function handle(req: Request, path: string[]) {
         return json(await saveDocument(rt.repo, await body(req)), 201);
     }
 
+    if (
+      method === "POST" &&
+      path[0] === "clients" &&
+      path[2] === "stripe-customer"
+    ) {
+      const input = z
+        .object({
+          customer_id: z.string().nullable(),
+          expected_customer_id: z.string().nullable(),
+        })
+        .strict()
+        .parse(await body(req));
+      return json(
+        await linkStripeCustomer(
+          rt.repo,
+          uuid.parse(path[1]),
+          input.customer_id,
+          input.expected_customer_id,
+          user,
+          rt.worker.providers.stripe instanceof StripeProvider
+            ? rt.worker.providers.stripe.api
+            : undefined,
+        ),
+      );
+    }
     if (method === "GET" && path[0] === "clients" && path[2] === "billing") {
       const client = (
         await rt.repo.entities<import("./model").Client>("clients")
@@ -605,6 +629,14 @@ export async function handle(req: Request, path: string[]) {
             "Create custom families through the verified Stripe action",
           );
         } else if (table === "clients") {
+          const previous = (
+            await rt.repo.entities<import("./model").Client>("clients")
+          ).find((c) => c.id === raw.id);
+          check(
+            (raw.stripe_customer_id ?? null) ===
+              (previous?.stripe_customer_id ?? null),
+            "Choose a Stripe customer from How they’re billed on the client page",
+          );
           const client = await saveClient(rt.repo, raw);
           await workspaceEvent(rt.repo, user, "client_saved", {
             name: client.company,
@@ -752,12 +784,7 @@ export async function handle(req: Request, path: string[]) {
       if (method === "GET" && action === "ready") {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);
-        return json(
-          readiness(
-            await rt.service.forRead(p),
-            await rt.repo.entities<Item>("pricing_items"),
-          ),
-        );
+        return json(await rt.service.checkReady(p));
       }
       if (method === "POST" && action === "send") {
         const input = req.headers
