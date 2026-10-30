@@ -233,7 +233,8 @@ export async function stripeCustomerMatches(
         deleted?: boolean;
       }>
     >("/v1/customers", {
-      email: client.email,
+      // Stripe’s email filter is case-sensitive; local clients are normalized.
+      // Scan test customers so differently cased duplicates cannot be missed.
       limit: "100",
       ...(cursor ? { starting_after: cursor } : {}),
     });
