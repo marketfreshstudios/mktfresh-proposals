@@ -161,6 +161,7 @@
 @media (pointer: coarse), (max-width: 699px) {
   .block-frame {
     padding-top: 56px;
+    padding-left: 30px;
   }
   .block-tools {
     height: 48px;
@@ -172,6 +173,8 @@
   }
   .block-sortable > .drag-handle {
     top: 56px;
+    left: -16px;
+    width: 44px;
     min-height: 44px;
     height: 44px;
   }

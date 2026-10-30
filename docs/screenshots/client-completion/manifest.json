@@ -505,18 +505,6 @@
       "state": "completion-certificate"
     },
     {
-      "file": "proposal-before-375-light.png",
-      "state": "proposal-before",
-      "width": 375,
-      "theme": "light"
-    },
-    {
-      "file": "proposal-clause-before-375-light.png",
-      "state": "proposal-clause-before",
-      "width": 375,
-      "theme": "light"
-    },
-    {
       "file": "proposal-after-375-light.png",
       "state": "proposal-after",
       "width": 375,
@@ -525,18 +513,6 @@
     {
       "file": "proposal-clause-after-375-light.png",
       "state": "proposal-clause-after",
-      "width": 375,
-      "theme": "light"
-    },
-    {
-      "file": "template-before-375-light.png",
-      "state": "template-before",
-      "width": 375,
-      "theme": "light"
-    },
-    {
-      "file": "template-clause-before-375-light.png",
-      "state": "template-clause-before",
       "width": 375,
       "theme": "light"
     },
@@ -577,18 +553,6 @@
       "theme": "light"
     },
     {
-      "file": "proposal-before-1440-light.png",
-      "state": "proposal-before",
-      "width": 1440,
-      "theme": "light"
-    },
-    {
-      "file": "proposal-clause-before-1440-light.png",
-      "state": "proposal-clause-before",
-      "width": 1440,
-      "theme": "light"
-    },
-    {
       "file": "proposal-after-1440-light.png",
       "state": "proposal-after",
       "width": 1440,
@@ -597,18 +561,6 @@
     {
       "file": "proposal-clause-after-1440-light.png",
       "state": "proposal-clause-after",
-      "width": 1440,
-      "theme": "light"
-    },
-    {
-      "file": "template-before-1440-light.png",
-      "state": "template-before",
-      "width": 1440,
-      "theme": "light"
-    },
-    {
-      "file": "template-clause-before-1440-light.png",
-      "state": "template-clause-before",
       "width": 1440,
       "theme": "light"
     },
@@ -625,18 +577,6 @@
       "theme": "light"
     },
     {
-      "file": "proposal-before-375-dark.png",
-      "state": "proposal-before",
-      "width": 375,
-      "theme": "dark"
-    },
-    {
-      "file": "proposal-clause-before-375-dark.png",
-      "state": "proposal-clause-before",
-      "width": 375,
-      "theme": "dark"
-    },
-    {
       "file": "proposal-after-375-dark.png",
       "state": "proposal-after",
       "width": 375,
@@ -645,18 +585,6 @@
     {
       "file": "proposal-clause-after-375-dark.png",
       "state": "proposal-clause-after",
-      "width": 375,
-      "theme": "dark"
-    },
-    {
-      "file": "template-before-375-dark.png",
-      "state": "template-before",
-      "width": 375,
-      "theme": "dark"
-    },
-    {
-      "file": "template-clause-before-375-dark.png",
-      "state": "template-clause-before",
       "width": 375,
       "theme": "dark"
     },
@@ -697,18 +625,6 @@
       "theme": "dark"
     },
     {
-      "file": "proposal-before-1440-dark.png",
-      "state": "proposal-before",
-      "width": 1440,
-      "theme": "dark"
-    },
-    {
-      "file": "proposal-clause-before-1440-dark.png",
-      "state": "proposal-clause-before",
-      "width": 1440,
-      "theme": "dark"
-    },
-    {
       "file": "proposal-after-1440-dark.png",
       "state": "proposal-after",
       "width": 1440,
@@ -717,18 +633,6 @@
     {
       "file": "proposal-clause-after-1440-dark.png",
       "state": "proposal-clause-after",
-      "width": 1440,
-      "theme": "dark"
-    },
-    {
-      "file": "template-before-1440-dark.png",
-      "state": "template-before",
-      "width": 1440,
-      "theme": "dark"
-    },
-    {
-      "file": "template-clause-before-1440-dark.png",
-      "state": "template-clause-before",
       "width": 1440,
       "theme": "dark"
     },
@@ -743,6 +647,102 @@
       "state": "template-clause-after",
       "width": 1440,
       "theme": "dark"
+    },
+    {
+      "file": "proposal-before-1440-dark.png",
+      "state": "proposal-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-before-1440-light.png",
+      "state": "proposal-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-before-375-dark.png",
+      "state": "proposal-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-before-375-light.png",
+      "state": "proposal-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-before-1440-dark.png",
+      "state": "proposal-clause-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-before-1440-light.png",
+      "state": "proposal-clause-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-before-375-dark.png",
+      "state": "proposal-clause-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-before-375-light.png",
+      "state": "proposal-clause-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-before-1440-dark.png",
+      "state": "template-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-before-1440-light.png",
+      "state": "template-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-before-375-dark.png",
+      "state": "template-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-before-375-light.png",
+      "state": "template-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-before-1440-dark.png",
+      "state": "template-clause-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-before-1440-light.png",
+      "state": "template-clause-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-before-375-dark.png",
+      "state": "template-clause-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-before-375-light.png",
+      "state": "template-clause-before",
+      "width": 375,
+      "theme": "light"
     }
   ],
   "identicalSourceVariants": [

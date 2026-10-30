@@ -207,7 +207,17 @@ test("block controls own one block and never move document content on hover, foc
           await expect(
             page.locator(".block-sortable > .drag-handle:visible"),
           ).toHaveCount(1);
-          await block.locator("..").locator(":scope > .drag-handle").hover();
+          const dragHandle = block
+            .locator("..")
+            .locator(":scope > .drag-handle");
+          await dragHandle.hover();
+          if (width === 375) {
+            const rect = (await dragHandle.boundingBox())!;
+            expect(rect.width).toBeGreaterThanOrEqual(44);
+            expect(rect.height).toBeGreaterThanOrEqual(44);
+            expect(rect.x).toBeGreaterThanOrEqual(0);
+          }
+
           await expect(block).toHaveAttribute("data-active", "true");
           await unchanged(before);
           await block.evaluate((el) =>
