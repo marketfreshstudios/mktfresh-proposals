@@ -1,4 +1,6 @@
 "use client";
+import { createPortal } from "react-dom";
+import { useBlockToolbar } from "./block-controls";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -42,6 +44,7 @@ export function FieldEditor({
   map: Record<string, string>;
   showNames: boolean;
 }) {
+  const toolbar = useBlockToolbar();
   const change = useRef(onChange),
     values = useRef(map),
     names = useRef(showNames),
@@ -133,31 +136,43 @@ export function FieldEditor({
   useEffect(() => {
     for (const paint of painters.current) paint();
   }, [showNames, JSON.stringify(map), editor]);
+  const formatting = (
+    <div className="rich-toolbar">
+      <Button
+        variant="ghost"
+        onClick={() => editor?.chain().focus().toggleBold().run()}
+      >
+        Bold
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => editor?.chain().focus().toggleItalic().run()}
+      >
+        Italic
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => editor?.chain().focus().toggleBulletList().run()}
+      >
+        List
+      </Button>
+      <Button variant="ghost" onClick={() => setPicker(!picker)}>
+        Insert field
+      </Button>
+    </div>
+  );
   return (
-    <div className="field-editor">
-      <div className="rich-toolbar">
-        <Button
-          variant="ghost"
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-        >
-          Bold
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-        >
-          Italic
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-        >
-          List
-        </Button>
-        <Button variant="ghost" onClick={() => setPicker(!picker)}>
-          Insert field
-        </Button>
-      </div>
+    <div
+      className="field-editor"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setPicker(false);
+      }}
+    >
+      {toolbar === undefined
+        ? formatting
+        : toolbar
+          ? createPortal(formatting, toolbar)
+          : null}
       <EditorContent editor={editor} />
       {picker && (
         <div className="field-picker">

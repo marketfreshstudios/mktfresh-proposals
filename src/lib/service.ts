@@ -1,3 +1,4 @@
+import { proposalEmailNote } from "./branding";
 import { stripeCustomerMatches } from "./client-billing";
 import type { StripeTransport } from "./catalog";
 import { defaultValidUntil } from "./validity";
@@ -531,6 +532,8 @@ export class ProposalService {
           to: p.client.email,
           subject: p.title,
           send_version: version.version_no,
+          proposal_email: true,
+          note: options.note ?? "",
           text: `${options.note ? options.note + "\n\n" : ""}Review your proposal: ${proposalLink(p)}`,
         },
         now,
@@ -819,6 +822,16 @@ export class ProposalService {
                 to: p.client.email,
                 subject: `Reminder: ${p.title}`,
                 text: `Review your proposal: ${proposalLink(p)}`,
+                proposal_email: true,
+                note: (() => {
+                  const sent = p.jobs.find(
+                    (j) => j.payload.send_version === p.versions.length,
+                  );
+                  return (
+                    sent?.payload.note ??
+                    proposalEmailNote(String(sent?.payload.text ?? ""))
+                  );
+                })(),
                 reminder_day: day,
                 version: p.versions.length,
               },
@@ -829,7 +842,7 @@ export class ProposalService {
     }
   }
 }
-export function publicResult(p: Proposal) {
+export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
@@ -901,23 +914,67 @@ export function publicResult(p: Proposal) {
           accent_colour: "#365C4A",
           email: "",
         },
+    invoice_method: p.billing_links.some(
+      (l) =>
+        l.provider === "qbo" &&
+        (l.last_error === "Invoice manually" ||
+          l.metadata?.action === "Invoice manually"),
+    )
+      ? ("manual" as const)
+      : options
+        ? options.qboConnected
+          ? ("quickbooks" as const)
+          : ("manual" as const)
+        : p.billing_links.some(
+              (l) => l.provider === "qbo" && l.external_object_id,
+            )
+          ? ("quickbooks" as const)
+          : ("manual" as const),
     billing: p.client_signed_at
       ? p.billing_links
           .filter((l) => l.provider === "stripe")
           .map((l) => ({
             status: l.status,
             requires_checkout: l.metadata?.requires_checkout === true,
-            checkout: ((l.metadata?.checkout ?? []) as { url: string }[]).map(
-              (s) => ({ url: s.url }),
-            ),
+            checkout: (
+              (l.metadata?.checkout ?? []) as {
+                url: string;
+                line_ids?: string[];
+                items?: { line_id: string; name: string }[];
+                mode?: "setup" | "subscription";
+              }[]
+            ).map((s) => ({
+              url: s.url,
+              ...(s.line_ids ? { line_ids: s.line_ids } : {}),
+              ...(s.items
+                ? {
+                    items: s.items.map((i) => ({
+                      line_id: i.line_id,
+                      name: i.name,
+                    })),
+                  }
+                : {}),
+              ...(s.mode ? { mode: s.mode } : {}),
+            })),
             added_existing: (
               (l.metadata?.added_existing ?? []) as {
                 monthly_total: number;
                 yearly_total?: number;
+                line_ids?: string[];
+                items?: { line_id: string; name: string }[];
               }[]
             ).map((s) => ({
               monthly_total: s.monthly_total,
               yearly_total: s.yearly_total ?? 0,
+              ...(s.line_ids ? { line_ids: s.line_ids } : {}),
+              ...(s.items
+                ? {
+                    items: s.items.map((i) => ({
+                      line_id: i.line_id,
+                      name: i.name,
+                    })),
+                  }
+                : {}),
             })),
           }))
       : [],

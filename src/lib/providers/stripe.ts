@@ -1,3 +1,4 @@
+import { formatMoney } from "../money";
 import { stripeCustomerMatches } from "../client-billing";
 import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
@@ -103,9 +104,14 @@ export class StripeProvider implements BillingProvider {
       ),
     );
   }
-  private async item(line: BillingLine, currency: string) {
+  private async item(
+    line: BillingLine,
+    currency: string,
+    names?: Map<string, string>,
+  ) {
     if (line.stripe_lookup_key) {
       const price = await resolveLookup(this.api, line.stripe_lookup_key);
+      names?.set(line.id, price.product.name || line.name);
       if (price.currency && price.currency !== currency)
         throw new NeedsReview("Product currency differs from proposal");
       if (price.recurring?.interval !== line.interval)
@@ -133,6 +139,7 @@ export class StripeProvider implements BillingProvider {
       await this.repo.entities<{
         id: string;
         stripe_product_id: string;
+        name?: string;
         active: boolean;
       }>("custom_families")
     ).find((f) => f.id === line.custom_family_id && f.active);
@@ -141,11 +148,13 @@ export class StripeProvider implements BillingProvider {
         `${line.name}: active custom product family required`,
       );
     const product = await this.api.get<{
+      name?: string;
       active: boolean;
       metadata: Record<string, string>;
     }>(`/v1/products/${family.stripe_product_id}`, {});
     if (!product.active || product.metadata.custom_family !== "true")
       throw new NeedsReview("Custom family is not active in Stripe");
+    names?.set(line.id, product.name || family.name || line.name);
     return {
       price_data: {
         product: family.stripe_product_id,
@@ -229,10 +238,35 @@ export class StripeProvider implements BillingProvider {
       check(page.data.length, "Empty Stripe subscription page");
       cursor = page.data.at(-1)!.id;
     } while (true);
-    const checkout: { id: string; url: string; line_ids: string[] }[] = [];
+    const names = new Map<string, string>();
+    const displayItems = (group: BillingLine[]) =>
+      group.map((l) => ({ line_id: l.id, name: names.get(l.id) || l.name }));
+    const setupMessage = (group: BillingLine[]) => {
+      const message =
+        group
+          .map(
+            (l) =>
+              `${names.get(l.id) || l.name} · ${formatMoney(l.amount * l.qty, currency)}/${l.interval === "year" ? "year" : "month"}`,
+          )
+          .join("; ") +
+        ". No payment is taken in this card setup step. Your subscription is arranged after you save your card.";
+      if (message.length > 1200)
+        throw new NeedsReview(
+          "Itemized card setup exceeds Stripe's text limit; staff must review billing",
+        );
+      return { submit: { message } };
+    };
+    const checkout: {
+      id: string;
+      url: string;
+      line_ids: string[];
+      items: { line_id: string; name: string }[];
+      mode: "setup" | "subscription";
+    }[] = [];
     const added: {
       id: string;
       line_ids: string[];
+      items: { line_id: string; name: string }[];
       monthly_total: number;
       yearly_total: number;
     }[] = [];
@@ -253,7 +287,9 @@ export class StripeProvider implements BillingProvider {
           existing = sub;
           break;
         }
-      const items = await Promise.all(group.map((l) => this.item(l, currency)));
+      const items = await Promise.all(
+        group.map((l) => this.item(l, currency, names)),
+      );
       if (existing) {
         const priorPlan = existing.metadata.plan;
         const priorKeys =
@@ -306,6 +342,7 @@ export class StripeProvider implements BillingProvider {
         added.push({
           id: existing.id,
           line_ids: group.map((l) => l.id),
+          items: displayItems(group),
           monthly_total: total,
           yearly_total: current.items.data
             .filter((i) => i.price.recurring.interval === "year")
@@ -321,7 +358,7 @@ export class StripeProvider implements BillingProvider {
                 ? "setup"
                 : "subscription",
             ...(settings.collection_method === "send_invoice"
-              ? { currency }
+              ? { currency, custom_text: setupMessage(group) }
               : {
                   line_items: items,
                   subscription_data: {
@@ -347,10 +384,19 @@ export class StripeProvider implements BillingProvider {
           },
           key + ":checkout:" + interval,
         );
-        checkout.push({ ...session, line_ids: group.map((l) => l.id) });
+        checkout.push({
+          ...session,
+          line_ids: group.map((l) => l.id),
+          items: displayItems(group),
+          mode:
+            settings.collection_method === "send_invoice"
+              ? "setup"
+              : "subscription",
+        });
       }
     }
     for (const line of lines.filter((l) => l.schedule)) {
+      await this.item(line, currency, names);
       const usable = all.find(
         (s) =>
           s.default_payment_method ||
@@ -368,6 +414,7 @@ export class StripeProvider implements BillingProvider {
         added.push({
           id: subscriptions[0],
           line_ids: [line.id],
+          items: displayItems([line]),
           monthly_total: line.interval === "month" ? line.amount * line.qty : 0,
           yearly_total: line.interval === "year" ? line.amount * line.qty : 0,
         });
@@ -379,6 +426,7 @@ export class StripeProvider implements BillingProvider {
           customer: c.id,
           mode: "setup",
           currency,
+          custom_text: setupMessage([line]),
           metadata: {
             proposal_id: proposal,
             line_ids: JSON.stringify([line.id]),
@@ -393,7 +441,12 @@ export class StripeProvider implements BillingProvider {
         },
         key + ":schedule-setup:" + line.id,
       );
-      checkout.push({ ...session, line_ids: [line.id] });
+      checkout.push({
+        ...session,
+        line_ids: [line.id],
+        items: displayItems([line]),
+        mode: "setup",
+      });
     }
     return {
       id: added[0]?.id ?? checkout[0]?.id,

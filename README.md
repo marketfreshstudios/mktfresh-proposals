@@ -185,3 +185,11 @@ Clients use validated E.164 phone numbers, formatted contact views and structure
 Products lives at `/studio/products`; `/studio/catalog` redirects and the MCP tool remains `list_catalog`. Home’s setup checklist reads provider configuration and workspace data rather than static connection instructions. Linked clients show only their selected Stripe customer until staff confirm an audited unlink. Contact values copy by default, with explicit Mail/dial icon links and phone-width dialing.
 
 The heading/body font picker has Serif/Sans groups and self-hosted previews. Nine added Google Fonts families retain their OFL licenses and pinned-source/hash provenance in `public/fonts/GOOGLE-FONTS-SOURCES.json`; `LICENSES.txt` lists every family. Source Serif 4 remains the default. Space Grotesk has no upstream italic and uses browser synthesis. `npm run verify:fonts` creates offline PDF specimens for all 12 curated families, checks embedding and frozen-version integrity, and runs in CI. No Google Fonts request is made at runtime.
+
+### Client completion and attached editor controls
+
+Proposal/reminder emails contain one View proposal button, the sender note and branding; prices and the printed HTML URL are omitted. Newly sealed PDFs end with a one-page completion certificate with the frozen content hash and signer/delegation facts. Existing sealed files and staff raw Evidence remain unchanged.
+
+Billing itemizes each pending Checkout separately from subscription additions and one-time invoices. It uses Stripe’s actual shared Product names, preserves catalogue Prices, and explains card-only setup. Signed document views keep the main reading width and a single sender contact footer.
+
+Proposal/template blocks and clauses share an attached toolbar, gutter drag handle and persistent selection with Escape to clear. Hover/focus actions never change block geometry. Reproduce the geometry/capture test with `npx playwright test e2e/block-controls.spec.ts`. The [comparison gallery](docs/screenshots/client-completion/index.html) also includes real main-branch before captures at 375/1440; all new surfaces include 375/768/1440 light/dark evidence. Package with `node --import tsx scripts/package-completion-evidence.ts`; email/billing/certificate captures come from `e2e/client-completion.spec.ts` (requires Poppler for PDF preview rendering).

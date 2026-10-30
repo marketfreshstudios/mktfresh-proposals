@@ -35,25 +35,6 @@ export function ContactValue({
 }) {
   const shown = kind === "phone" ? formattedPhone(value) : value;
   const href = `${kind === "email" ? "mailto" : "tel"}:${value}`;
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(shown);
-      window.dispatchEvent(
-        new CustomEvent(noticeEvent, {
-          detail: { text: "Copied", error: false },
-        }),
-      );
-    } catch {
-      window.dispatchEvent(
-        new CustomEvent(noticeEvent, {
-          detail: {
-            text: "Couldn’t copy. Select the text and copy it manually.",
-            error: true,
-          },
-        }),
-      );
-    }
-  }
   return (
     <span
       className={`contact-value inner-action contact-${kind}`}
@@ -63,7 +44,7 @@ export function ContactValue({
         type="button"
         className="contact-copy"
         aria-label={`Copy ${kind} ${shown}`}
-        onClick={() => void copy()}
+        onClick={() => void copyContactValue(shown)}
       >
         {shown}
       </button>
@@ -77,7 +58,7 @@ export function ContactValue({
         className="contact-open contact-copy-icon"
         aria-label={`Copy ${kind}: ${shown}`}
         title={`Copy ${kind}`}
-        onClick={() => void copy()}
+        onClick={() => void copyContactValue(shown)}
       >
         <Icon name="copy" />
       </button>
@@ -94,4 +75,24 @@ export function ContactValue({
       </a>
     </span>
   );
+}
+
+export async function copyContactValue(shown: string) {
+  try {
+    await navigator.clipboard.writeText(shown);
+    window.dispatchEvent(
+      new CustomEvent(noticeEvent, {
+        detail: { text: "Copied", error: false },
+      }),
+    );
+  } catch {
+    window.dispatchEvent(
+      new CustomEvent(noticeEvent, {
+        detail: {
+          text: "Couldn’t copy. Select the text and copy it manually.",
+          error: true,
+        },
+      }),
+    );
+  }
 }

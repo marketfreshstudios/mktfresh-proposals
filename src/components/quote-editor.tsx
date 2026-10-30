@@ -1,4 +1,11 @@
 "use client";
+import {
+  BlockScope,
+  BlockFrame,
+  BlockAction,
+  useBlockSelection,
+} from "./block-controls";
+import type { ComponentProps } from "react";
 import { fontCss } from "../lib/proposal-fonts";
 import { ValidityField } from "./validity-field";
 import { readableDate } from "../lib/validity";
@@ -42,11 +49,14 @@ export function Sortable({
   id,
   label,
   children,
+  block = false,
 }: {
   id: string;
   label: string;
+  block?: boolean;
   children: ReactNode;
 }) {
+  const selection = useBlockSelection();
   const {
     attributes,
     listeners,
@@ -58,17 +68,48 @@ export function Sortable({
   return (
     <div
       ref={setNodeRef}
+      onPointerLeave={() => {
+        if (block) selection.hover(null);
+      }}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
       }}
-      className="quote-sortable"
+      className={`quote-sortable ${block ? "block-sortable" : ""}`}
     >
       <button
         type="button"
         className="drag-handle"
         aria-label={`Drag ${label}`}
+        onPointerOver={(e) => {
+          if (block) {
+            e.stopPropagation();
+            const id =
+              e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                ":scope > .block-frame",
+              )?.dataset.blockId;
+            if (id) selection.hover(id);
+          }
+        }}
+        onFocus={(e) => {
+          if (block) {
+            const id =
+              e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                ":scope > .block-frame",
+              )?.dataset.blockId;
+            if (id) selection.select(id);
+          }
+        }}
+        onPointerDownCapture={(e) => {
+          if (block) {
+            const id =
+              e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                ":scope > .block-frame",
+              )?.dataset.blockId;
+            if (id) selection.select(id);
+          }
+        }}
         {...attributes}
         {...listeners}
       >
@@ -91,6 +132,7 @@ export function Reorder({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
+      scrollBehavior: "auto",
     }),
   );
   return (
@@ -142,7 +184,7 @@ function Sheet({
     </dialog>
   );
 }
-export function QuoteEditor({
+function QuoteEditorContent({
   initial,
   settings,
   catalog,
@@ -165,6 +207,7 @@ export function QuoteEditor({
   user?: Actor;
   documents?: ReferenceDocument[];
 }) {
+  const selection = useBlockSelection();
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
       ...initial,
@@ -1111,341 +1154,395 @@ export function QuoteEditor({
   );
   function blockEditor(b: Block, n: number) {
     return (
-      <div className="draft-block" key={b.id ?? n}>
-        {b.type === "heading" ? (
-          <input
-            className="document-heading"
-            aria-label={`Heading ${n + 1}`}
-            value={b.text ?? ""}
-            onChange={(e) => patchBlock(n, { ...b, text: e.target.value })}
-          />
-        ) : b.type === "paragraph" ? (
-          <FieldEditor
-            value={
-              b.content ?? {
-                type: "doc",
-                content: [
-                  {
-                    type: "paragraph",
-                    ...(b.text
-                      ? { content: [{ type: "text", text: b.text }] }
-                      : {}),
-                  },
-                ],
-              }
-            }
-            onChange={(content) =>
-              patchBlock(n, { ...b, content, text: undefined })
-            }
-            map={map}
-            showNames={names}
-          />
-        ) : b.type === "pricing_table" ? (
-          <div className="editor-investment">
-            <h2>Your investment</h2>
-            {units.map((id) => (
-              <div
-                key={id}
-                className={
-                  unitItems(id)[0].choice_group_id ? "editor-choice-group" : ""
+      <Sortable
+        block
+        id={`block-${b.id ?? n}`}
+        label={`block ${n + 1}`}
+        key={b.id ?? n}
+      >
+        <BlockFrame
+          id={`block-${b.id ?? n}`}
+          label={`Proposal block ${n + 1}`}
+          className="draft-block"
+          ai={!!b.ai_review && !b.ai_review.reviewed}
+          onReviewed={() => {
+            const section = sections.find((s) => s.indices.includes(n));
+            change({
+              content: p.content.map((v, j) =>
+                section?.indices.includes(j)
+                  ? {
+                      ...v,
+                      ai_review: {
+                        source: v.ai_review?.source ?? "assistant",
+                        reviewed: true,
+                      },
+                    }
+                  : v,
+              ),
+            });
+          }}
+          tools={
+            <>
+              <BlockAction
+                variant="ghost"
+                disabled={n === 0}
+                onClick={() => {
+                  const next = [...p.content];
+                  [next[n - 1], next[n]] = [next[n], next[n - 1]];
+                  change({ content: next });
+                }}
+              >
+                Move up
+              </BlockAction>
+              <BlockAction
+                variant="ghost"
+                disabled={n === p.content.length - 1}
+                onClick={() => {
+                  const next = [...p.content];
+                  [next[n + 1], next[n]] = [next[n], next[n + 1]];
+                  change({ content: next });
+                }}
+              >
+                Move down
+              </BlockAction>
+              <BlockAction
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    await post("/api/content_library", {
+                      id: uid(),
+                      name: b.text || `${b.type} block`,
+                      block: b,
+                    });
+                    setError("");
+                  } catch (e) {
+                    setError(
+                      e instanceof Error ? e.message : "Unable to save block",
+                    );
+                  }
+                }}
+              >
+                Save block for reuse
+              </BlockAction>
+              <BlockAction
+                variant="ghost"
+                onClick={() =>
+                  change({ content: p.content.filter((_, j) => j !== n) })
                 }
               >
-                {unitItems(id)[0].choice_group_id && (
-                  <p className="eyebrow">Choose one</p>
-                )}
-                {unitItems(id).map((i) => (
-                  <div className="document-item" key={i.id}>
-                    <span>
-                      {i.optional ? (i.default_selected ? "◉" : "○") : "✓"}
-                    </span>
-                    <div>
-                      <strong>{i.name}</strong>
-                      <p>{i.description}</p>
-                      {i.sublines.map((s) => (
-                        <p className="document-subline" key={s.id}>
-                          <span>{s.label || intervalLabel(s.interval)}</span>
-                          <strong>
-                            {money(s.amount * s.qty, p.currency)}
-                            {s.interval === "month"
-                              ? "/mo"
-                              : s.interval === "year"
-                                ? "/yr"
-                                : ""}
-                          </strong>
-                        </p>
-                      ))}
-                      {i.min_term_months && (
-                        <small>
-                          {i.min_term_months}-month minimum commitment.
-                        </small>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-            <Totals lines={items} currency={p.currency} />
-          </div>
-        ) : b.type === "contract" ? (
-          <div className="contract-editor">
-            <h2>{b.text || "Statement of Work & Contract"}</h2>
-            {b.contract_edited && (
-              <p className="warning">Contract edited for this proposal.</p>
-            )}
-            {(b.clauses ?? []).map((c, k) => (
-              <details key={c.id} open>
-                <summary>
-                  {c.heading}
-                  {c.draft && " · Draft wording"}
-                </summary>
-                <Field label="Clause heading">
-                  <input
-                    value={c.heading}
-                    onChange={(e) =>
-                      patchBlock(n, {
-                        ...b,
-                        contract_edited: true,
-                        clauses: b.clauses!.map((v, j) =>
-                          j === k ? { ...v, heading: e.target.value } : v,
-                        ),
-                      })
-                    }
-                  />
-                </Field>
-                <Field label="Clause body">
-                  <textarea
-                    value={c.body}
-                    onChange={(e) =>
-                      patchBlock(n, {
-                        ...b,
-                        contract_edited: true,
-                        clauses: b.clauses!.map((v, j) =>
-                          j === k ? { ...v, body: e.target.value } : v,
-                        ),
-                      })
-                    }
-                  />
-                </Field>
-                <Field label="Show when">
-                  <select
-                    value={c.show_when?.pricing_item_id ?? ""}
-                    onChange={(e) =>
-                      patchBlock(n, {
-                        ...b,
-                        contract_edited: true,
-                        clauses: b.clauses!.map((v, j) =>
-                          j === k
-                            ? {
-                                ...v,
-                                show_when: e.target.value
-                                  ? {
-                                      kind: "item_selected",
-                                      pricing_item_id: e.target.value,
-                                    }
-                                  : null,
-                              }
-                            : v,
-                        ),
-                      })
-                    }
-                  >
-                    <option value="">Always</option>
-                    {sellableCatalogue(catalog).map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {itemDisplayName(i)} is selected
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Button
-                  variant="ghost"
-                  onClick={() =>
-                    patchBlock(n, {
-                      ...b,
-                      contract_edited: true,
-                      clauses: b.clauses!.filter((_, j) => j !== k),
-                    })
-                  }
-                >
-                  Remove clause
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={k === 0}
-                  onClick={() => {
-                    const clauses = [...b.clauses!];
-                    [clauses[k - 1], clauses[k]] = [clauses[k], clauses[k - 1]];
-                    patchBlock(n, { ...b, contract_edited: true, clauses });
-                  }}
-                >
-                  Move clause up
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={k === b.clauses!.length - 1}
-                  onClick={() => {
-                    const clauses = [...b.clauses!];
-                    [clauses[k + 1], clauses[k]] = [clauses[k], clauses[k + 1]];
-                    patchBlock(n, { ...b, contract_edited: true, clauses });
-                  }}
-                >
-                  Move clause down
-                </Button>
-              </details>
-            ))}
-            <Button
-              onClick={() =>
-                patchBlock(n, {
-                  ...b,
-                  contract_edited: true,
-                  clauses: [
-                    ...(b.clauses ?? []),
+                Remove block
+              </BlockAction>
+            </>
+          }
+        >
+          {b.type === "heading" ? (
+            <input
+              className="document-heading"
+              aria-label={`Heading ${n + 1}`}
+              value={b.text ?? ""}
+              onChange={(e) => patchBlock(n, { ...b, text: e.target.value })}
+            />
+          ) : b.type === "paragraph" ? (
+            <FieldEditor
+              value={
+                b.content ?? {
+                  type: "doc",
+                  content: [
                     {
-                      id: uid(),
-                      heading: "New clause",
-                      body: "",
-                      show_when: null,
+                      type: "paragraph",
+                      ...(b.text
+                        ? { content: [{ type: "text", text: b.text }] }
+                        : {}),
                     },
                   ],
-                })
+                }
               }
-            >
-              + Clause
-            </Button>
-          </div>
-        ) : b.type === "signature_block" ? (
-          <div className="editor-signature">
-            <Field label="Signer role">
-              <select
-                value={b.role ?? "client"}
-                onChange={(e) =>
+              onChange={(content) =>
+                patchBlock(n, { ...b, content, text: undefined })
+              }
+              map={map}
+              showNames={names}
+            />
+          ) : b.type === "pricing_table" ? (
+            <div className="editor-investment">
+              <h2>Your investment</h2>
+              {units.map((id) => (
+                <div
+                  key={id}
+                  className={
+                    unitItems(id)[0].choice_group_id
+                      ? "editor-choice-group"
+                      : ""
+                  }
+                >
+                  {unitItems(id)[0].choice_group_id && (
+                    <p className="eyebrow">Choose one</p>
+                  )}
+                  {unitItems(id).map((i) => (
+                    <div className="document-item" key={i.id}>
+                      <span>
+                        {i.optional ? (i.default_selected ? "◉" : "○") : "✓"}
+                      </span>
+                      <div>
+                        <strong>{i.name}</strong>
+                        <p>{i.description}</p>
+                        {i.sublines.map((s) => (
+                          <p className="document-subline" key={s.id}>
+                            <span>{s.label || intervalLabel(s.interval)}</span>
+                            <strong>
+                              {money(s.amount * s.qty, p.currency)}
+                              {s.interval === "month"
+                                ? "/mo"
+                                : s.interval === "year"
+                                  ? "/yr"
+                                  : ""}
+                            </strong>
+                          </p>
+                        ))}
+                        {i.min_term_months && (
+                          <small>
+                            {i.min_term_months}-month minimum commitment.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <Totals lines={items} currency={p.currency} />
+            </div>
+          ) : b.type === "contract" ? (
+            <div className="contract-editor">
+              <h2>{b.text || "Statement of Work & Contract"}</h2>
+              {b.contract_edited && (
+                <p className="warning">Contract edited for this proposal.</p>
+              )}
+              <Reorder
+                ids={(b.clauses ?? []).map((c) => c.id)}
+                onMove={(from, to) => {
+                  selection.clear();
+                  const clauses = arrayMove(
+                    b.clauses!,
+                    b.clauses!.findIndex((c) => c.id === from),
+                    b.clauses!.findIndex((c) => c.id === to),
+                  );
+                  patchBlock(n, { ...b, contract_edited: true, clauses });
+                }}
+              >
+                {(b.clauses ?? []).map((c, k) => (
+                  <Sortable
+                    block
+                    key={c.id}
+                    id={c.id}
+                    label={`clause ${k + 1}`}
+                  >
+                    <BlockFrame
+                      id={`clause-${c.id}`}
+                      label={`Proposal clause ${k + 1}`}
+                      tools={
+                        <>
+                          {" "}
+                          <BlockAction
+                            variant="ghost"
+                            onClick={() =>
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses: b.clauses!.filter((_, j) => j !== k),
+                              })
+                            }
+                          >
+                            Remove clause
+                          </BlockAction>
+                          <BlockAction
+                            variant="ghost"
+                            disabled={k === 0}
+                            onClick={() => {
+                              const clauses = [...b.clauses!];
+                              [clauses[k - 1], clauses[k]] = [
+                                clauses[k],
+                                clauses[k - 1],
+                              ];
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses,
+                              });
+                            }}
+                          >
+                            Move clause up
+                          </BlockAction>
+                          <BlockAction
+                            variant="ghost"
+                            disabled={k === b.clauses!.length - 1}
+                            onClick={() => {
+                              const clauses = [...b.clauses!];
+                              [clauses[k + 1], clauses[k]] = [
+                                clauses[k],
+                                clauses[k + 1],
+                              ];
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses,
+                              });
+                            }}
+                          >
+                            Move clause down
+                          </BlockAction>
+                        </>
+                      }
+                    >
+                      <details open>
+                        <summary>
+                          {c.heading}
+                          {c.draft && " · Draft wording"}
+                        </summary>
+                        <Field label="Clause heading">
+                          <input
+                            value={c.heading}
+                            onChange={(e) =>
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses: b.clauses!.map((v, j) =>
+                                  j === k
+                                    ? { ...v, heading: e.target.value }
+                                    : v,
+                                ),
+                              })
+                            }
+                          />
+                        </Field>
+                        <Field label="Clause body">
+                          <textarea
+                            value={c.body}
+                            onChange={(e) =>
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses: b.clauses!.map((v, j) =>
+                                  j === k ? { ...v, body: e.target.value } : v,
+                                ),
+                              })
+                            }
+                          />
+                        </Field>
+                        <Field label="Show when">
+                          <select
+                            value={c.show_when?.pricing_item_id ?? ""}
+                            onChange={(e) =>
+                              patchBlock(n, {
+                                ...b,
+                                contract_edited: true,
+                                clauses: b.clauses!.map((v, j) =>
+                                  j === k
+                                    ? {
+                                        ...v,
+                                        show_when: e.target.value
+                                          ? {
+                                              kind: "item_selected",
+                                              pricing_item_id: e.target.value,
+                                            }
+                                          : null,
+                                      }
+                                    : v,
+                                ),
+                              })
+                            }
+                          >
+                            <option value="">Always</option>
+                            {sellableCatalogue(catalog).map((i) => (
+                              <option key={i.id} value={i.id}>
+                                {itemDisplayName(i)} is selected
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      </details>
+                    </BlockFrame>
+                  </Sortable>
+                ))}
+              </Reorder>
+              <Button
+                onClick={() =>
                   patchBlock(n, {
                     ...b,
-                    role: e.target.value as "client" | "company",
+                    contract_edited: true,
+                    clauses: [
+                      ...(b.clauses ?? []),
+                      {
+                        id: uid(),
+                        heading: "New clause",
+                        body: "",
+                        show_when: null,
+                      },
+                    ],
                   })
                 }
               >
-                <option value="client">Client</option>
-                <option value="company">Company</option>
-              </select>
-            </Field>
-            <p className="eyebrow">
-              {b.role === "client" ? "Client signature" : "Company signature"}
-            </p>
-            <strong>
-              {b.role === "client"
-                ? `${p.client.first_name} ${p.client.last_name}`
-                : settings?.company_signatory?.name || settings?.owner}
-            </strong>
-            <p>
-              {b.role === "client"
-                ? p.client.title
-                : settings?.company_signatory?.title}
-            </p>
-            <div className="signature-rule" />
-          </div>
-        ) : b.type === "image" ? (
-          <>
-            <img src={b.src} alt={b.alt ?? ""} />
-            <Field label="Image description">
-              <input
-                value={b.alt ?? ""}
-                onChange={(e) => patchBlock(n, { ...b, alt: e.target.value })}
-              />
-            </Field>
-          </>
-        ) : b.type === "variable" ? (
-          <span className="field-chip">
-            {names ? `{{${b.path}}}` : map[b.path ?? ""]}
-          </span>
-        ) : (
-          <hr />
-        )}
-        <div className="draft-block-actions">
-          <Button
-            variant="ghost"
-            disabled={n === 0}
-            onClick={() => {
-              const next = [...p.content];
-              [next[n - 1], next[n]] = [next[n], next[n - 1]];
-              change({ content: next });
-            }}
-          >
-            Move up
-          </Button>
-          <Button
-            variant="ghost"
-            disabled={n === p.content.length - 1}
-            onClick={() => {
-              const next = [...p.content];
-              [next[n + 1], next[n]] = [next[n], next[n + 1]];
-              change({ content: next });
-            }}
-          >
-            Move down
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={async () => {
-              try {
-                await post("/api/content_library", {
-                  id: uid(),
-                  name: b.text || `${b.type} block`,
-                  block: b,
-                });
-                setError("");
-              } catch (e) {
-                setError(
-                  e instanceof Error ? e.message : "Unable to save block",
-                );
-              }
-            }}
-          >
-            Save block for reuse
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() =>
-              change({ content: p.content.filter((_, j) => j !== n) })
-            }
-          >
-            Remove block
-          </Button>
-        </div>
-      </div>
+                + Clause
+              </Button>
+            </div>
+          ) : b.type === "signature_block" ? (
+            <div className="editor-signature">
+              <Field label="Signer role">
+                <select
+                  value={b.role ?? "client"}
+                  onChange={(e) =>
+                    patchBlock(n, {
+                      ...b,
+                      role: e.target.value as "client" | "company",
+                    })
+                  }
+                >
+                  <option value="client">Client</option>
+                  <option value="company">Company</option>
+                </select>
+              </Field>
+              <p className="eyebrow">
+                {b.role === "client" ? "Client signature" : "Company signature"}
+              </p>
+              <strong>
+                {b.role === "client"
+                  ? `${p.client.first_name} ${p.client.last_name}`
+                  : settings?.company_signatory?.name || settings?.owner}
+              </strong>
+              <p>
+                {b.role === "client"
+                  ? p.client.title
+                  : settings?.company_signatory?.title}
+              </p>
+              <div className="signature-rule" />
+            </div>
+          ) : b.type === "image" ? (
+            <>
+              <img src={b.src} alt={b.alt ?? ""} />
+              <Field label="Image description">
+                <input
+                  value={b.alt ?? ""}
+                  onChange={(e) => patchBlock(n, { ...b, alt: e.target.value })}
+                />
+              </Field>
+            </>
+          ) : b.type === "variable" ? (
+            <span className="field-chip">
+              {names ? `{{${b.path}}}` : map[b.path ?? ""]}
+            </span>
+          ) : (
+            <hr />
+          )}
+        </BlockFrame>
+      </Sortable>
     );
   }
   function sectionEditor(s: (typeof sections)[number], n: number) {
     return (
       <section
-        className={`document-section ${s.pending ? "ai-pending" : ""}`}
+        className="document-section"
         id={`draft-section-${n}`}
         key={s.id}
       >
-        {s.pending && (
-          <div className="section-review">
-            <span>AI-written · review this section</span>
-            <Button
-              onClick={() =>
-                change({
-                  content: p.content.map((b, j) =>
-                    s.indices.includes(j)
-                      ? {
-                          ...b,
-                          ai_review: {
-                            source: b.ai_review?.source ?? "assistant",
-                            reviewed: true,
-                          },
-                        }
-                      : b,
-                  ),
-                })
-              }
-            >
-              Mark reviewed
-            </Button>
-          </div>
-        )}
         {s.indices.map((j) => blockEditor(p.content[j], j))}
       </section>
     );
@@ -1760,14 +1857,29 @@ export function QuoteEditor({
                 )}
               </p>
             </header>
-            {sections.map((s, n) => (
-              <div
-                className={section === n ? "phone-active-section" : ""}
-                key={s.id}
-              >
-                {sectionEditor(s, n)}
-              </div>
-            ))}
+            <Reorder
+              ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
+              onMove={(from, to) => {
+                selection.clear();
+                const ids = p.content.map((b, n) => `block-${b.id ?? n}`);
+                change({
+                  content: arrayMove(
+                    p.content,
+                    ids.indexOf(from),
+                    ids.indexOf(to),
+                  ),
+                });
+              }}
+            >
+              {sections.map((s, n) => (
+                <div
+                  className={section === n ? "phone-active-section" : ""}
+                  key={s.id}
+                >
+                  {sectionEditor(s, n)}
+                </div>
+              ))}{" "}
+            </Reorder>
           </article>
           <div className="editor-insert">
             <label className="btn">
@@ -1884,5 +1996,13 @@ export function QuoteEditor({
         </Sheet>
       )}
     </div>
+  );
+}
+
+export function QuoteEditor(props: ComponentProps<typeof QuoteEditorContent>) {
+  return (
+    <BlockScope>
+      <QuoteEditorContent {...props} />
+    </BlockScope>
   );
 }

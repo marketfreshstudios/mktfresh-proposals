@@ -386,7 +386,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       await page.goto(`/p/${active.token}`);
       await expect(
         page.getByRole("heading", {
-          name: "One more step: set up your billing",
+          name: "Set up your monthly subscription",
         }),
       ).toBeVisible();
       await page.evaluate(

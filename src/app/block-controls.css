@@ -1,0 +1,214 @@
+/* Fixed geometry in every interaction state. Selection changes paint only. */
+.block-scope {
+  display: contents;
+}
+.block-frame {
+  position: relative;
+  padding: 48px 10px 10px;
+  margin: 12px 0;
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.block-frame[data-active="true"] {
+  outline-color: var(--block-active-outline);
+  background: var(--block-active-ground);
+}
+.block-frame[data-ai="true"]::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--ai);
+  border-radius: 3px;
+}
+.block-tools {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  max-width: calc(100% - 4px);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: 1px solid var(--block-active-outline);
+  border-radius: 7px;
+  background: var(--block-toolbar-ground);
+  box-shadow: 0 2px 8px #0001;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  z-index: 12;
+  color: var(--ink);
+  font: 12px var(--font-ui);
+}
+.block-frame[data-active="true"] > .block-tools {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+.block-action {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: inherit;
+  font: 18px/1 var(--font-ui);
+  cursor: pointer;
+}
+.block-action:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+.block-action:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.block-ai-marker {
+  font-size: 10px;
+  color: var(--ai);
+  padding-inline: 4px;
+  flex: none;
+}
+.block-sortable {
+  position: relative;
+  padding-left: 0 !important;
+}
+.block-sortable > .drag-handle {
+  position: absolute;
+  left: -26px;
+  top: 48px;
+  width: 24px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 13;
+}
+.block-sortable:has(> .block-frame[data-active="true"]) > .drag-handle {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Formatting controls share the attached bar, outside document flow. */
+.block-formatting-target {
+  display: contents;
+}
+.block-tools .rich-toolbar {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  height: 32px;
+  margin: 0;
+  overflow: visible;
+  opacity: 1;
+}
+.block-tools .rich-toolbar .btn {
+  height: 32px;
+  min-height: 32px;
+  white-space: nowrap;
+}
+.block-frame .field-picker {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  top: 84px;
+  max-width: 100%;
+  box-shadow: var(--shadow-menu);
+}
+.studio-block-card.block-frame {
+  border: 1px solid var(--border);
+  overflow: visible;
+  border-radius: 10px;
+}
+.studio-block-card.block-frame .block-open {
+  width: 100%;
+  min-width: 0;
+}
+.studio-block-card.block-frame .contract-clause-list {
+  padding-inline: 16px;
+}
+.studio-clause-frame .clause-open {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.studio-clause-frame p {
+  font: 14px/1.6 var(--font-doc-body);
+}
+.contract-editor .block-frame details {
+  margin: 0;
+}
+@media (pointer: coarse), (max-width: 699px) {
+  .block-frame {
+    padding-top: 56px;
+    padding-left: 30px;
+  }
+  .block-tools {
+    height: 48px;
+  }
+  .block-action {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .block-sortable > .drag-handle {
+    top: 56px;
+    left: -16px;
+    width: 44px;
+    min-height: 44px;
+    height: 44px;
+  }
+  .block-ai-marker {
+    font-size: 10px;
+  }
+}
+
+/* The document keeps paper ink in both themes; tools use app chrome ink. */
+.block-tools {
+  color: var(--block-toolbar-ink);
+  --ink: var(--block-toolbar-ink);
+  --ink-muted: var(--block-toolbar-ink);
+  --surface: var(--block-toolbar-ground);
+  --ai: var(--block-ai-ink);
+}
+@media (pointer: coarse), (max-width: 699px) {
+  .block-tools .rich-toolbar,
+  .block-tools .rich-toolbar .btn {
+    height: 44px;
+    min-height: 44px;
+  }
+}
+/* Inspector text editors keep their formatting row, including keyboard focus. */
+.field-editor > .rich-toolbar,
+.field-editor:hover > .rich-toolbar,
+.field-editor:focus-within > .rich-toolbar {
+  height: 44px;
+  min-height: 44px;
+  margin: 6px 0;
+  overflow: visible;
+  opacity: 1;
+}
+
+.block-tools :focus-visible {
+  outline-offset: -2px;
+}

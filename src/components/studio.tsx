@@ -1,4 +1,11 @@
 "use client";
+import {
+  BlockScope,
+  BlockFrame,
+  BlockAction,
+  useBlockSelection,
+} from "./block-controls";
+import type { ComponentProps } from "react";
 import { productMappings } from "../lib/workspace-setup";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
@@ -1081,7 +1088,7 @@ function CatalogItem({
     </form>
   );
 }
-export function TemplatesStudio({
+function TemplatesStudioContent({
   data,
   run,
   selected,
@@ -1092,6 +1099,7 @@ export function TemplatesStudio({
   selected?: string;
   blocksOnly?: boolean;
 }) {
+  const selection = useBlockSelection();
   const original = data.templates.find((t) => t.id === selected);
   const [mode, setMode] = useState(blocksOnly ? "blocks" : "templates"),
     [draft, setDraft] = useState<Template | null>(
@@ -1303,6 +1311,7 @@ export function TemplatesStudio({
             <Reorder
               ids={content.map((_, n) => String(n))}
               onMove={(from, to) => {
+                selection.clear();
                 const next = [...content];
                 const [moved] = next.splice(Number(from), 1);
                 next.splice(Number(to), 0, moved);
@@ -1313,96 +1322,239 @@ export function TemplatesStudio({
               <div className="studio-blocks">
                 {content.map((b, n) => (
                   <Sortable
+                    block
                     id={String(n)}
                     label={`block ${n + 1}`}
                     key={b.id ?? n}
                   >
-                    <article
-                      className={`studio-block-card ${index === n ? "selected" : ""}`}
-                      key={b.id ?? n}
+                    <BlockFrame
+                      id={`template-${b.id ?? n}`}
+                      label={`Template block ${n + 1}`}
+                      className="studio-block-card"
+                      ai={!!b.ai_review && !b.ai_review.reviewed}
+                      onReviewed={() =>
+                        patch(
+                          content.map((v, j) =>
+                            j === n
+                              ? {
+                                  ...v,
+                                  ai_review: {
+                                    source: v.ai_review?.source ?? "assistant",
+                                    reviewed: true,
+                                  },
+                                }
+                              : v,
+                          ),
+                        )
+                      }
+                      tools={
+                        <>
+                          <BlockAction
+                            aria-label="Block settings"
+                            onClick={() => {
+                              setClauseIndex(0);
+                              setIndex(n);
+                            }}
+                          >
+                            Block settings
+                          </BlockAction>
+                          {mode === "templates" && (
+                            <>
+                              <BlockAction
+                                aria-label={`Move block ${n + 1} up`}
+                                disabled={n === 0}
+                                onClick={() => {
+                                  const next = [...content];
+                                  [next[n - 1], next[n]] = [
+                                    next[n],
+                                    next[n - 1],
+                                  ];
+                                  patch(next);
+                                  setIndex(null);
+                                }}
+                              >
+                                Move up
+                              </BlockAction>
+                              <BlockAction
+                                aria-label={`Move block ${n + 1} down`}
+                                disabled={n === content.length - 1}
+                                onClick={() => {
+                                  const next = [...content];
+                                  [next[n + 1], next[n]] = [
+                                    next[n],
+                                    next[n + 1],
+                                  ];
+                                  patch(next);
+                                  setIndex(null);
+                                }}
+                              >
+                                Move down
+                              </BlockAction>
+                              <BlockAction
+                                aria-label={`Remove block ${n + 1}`}
+                                onClick={() => {
+                                  patch(content.filter((_, j) => j !== n));
+                                  setIndex(null);
+                                }}
+                              >
+                                Remove block
+                              </BlockAction>
+                            </>
+                          )}
+                        </>
+                      }
                     >
-                      <header>
-                        <button
-                          className="block-open"
-                          onClick={() => {
-                            setClauseIndex(0);
-                            setIndex(n);
+                      <button
+                        className="block-open"
+                        onClick={() =>
+                          selection.select(`template-${b.id ?? n}`)
+                        }
+                      >
+                        <strong>
+                          {b.type === "heading"
+                            ? b.text
+                            : b.type === "contract"
+                              ? b.text || "Statement of Work & Contract"
+                              : blockName(b)}
+                        </strong>
+                        <small>{blockName(b)}</small>
+                      </button>
+                      {b.type === "contract" && (
+                        <Reorder
+                          ids={(b.clauses ?? []).map((c) => c.id)}
+                          onMove={(from, to) => {
+                            selection.clear();
+                            const clauses = [...b.clauses!];
+                            const [moved] = clauses.splice(
+                              clauses.findIndex((c) => c.id === from),
+                              1,
+                            );
+                            clauses.splice(
+                              b.clauses!.findIndex((c) => c.id === to),
+                              0,
+                              moved,
+                            );
+                            patch(
+                              content.map((v, j) =>
+                                j === n ? { ...b, clauses } : v,
+                              ),
+                            );
+                            setIndex(null);
                           }}
                         >
-                          <strong>
-                            {b.type === "heading"
-                              ? b.text
-                              : b.type === "contract"
-                                ? b.text || "Statement of Work & Contract"
-                                : blockName(b)}
-                          </strong>
-                          <small>{blockName(b)}</small>
-                        </button>
-                        {mode === "templates" && (
-                          <div className="actions">
-                            <Button
-                              aria-label={`Move block ${n + 1} up`}
-                              disabled={n === 0}
-                              onClick={() => {
-                                const next = [...content];
-                                [next[n - 1], next[n]] = [next[n], next[n - 1]];
-                                patch(next);
-                                setIndex(null);
-                              }}
-                            >
-                              ↑
-                            </Button>
-                            <Button
-                              aria-label={`Move block ${n + 1} down`}
-                              disabled={n === content.length - 1}
-                              onClick={() => {
-                                const next = [...content];
-                                [next[n + 1], next[n]] = [next[n], next[n + 1]];
-                                patch(next);
-                                setIndex(null);
-                              }}
-                            >
-                              ↓
-                            </Button>
-                            <Button
-                              aria-label={`Remove block ${n + 1}`}
-                              onClick={() => {
-                                patch(content.filter((_, j) => j !== n));
-                                setIndex(null);
-                              }}
-                            >
-                              Remove
-                            </Button>
+                          <div className="contract-clause-list">
+                            {b.clauses?.map((c, k) => (
+                              <Sortable
+                                block
+                                id={c.id}
+                                label={`clause ${k + 1}`}
+                                key={c.id}
+                              >
+                                <BlockFrame
+                                  id={`template-clause-${c.id}`}
+                                  label={`Template clause ${k + 1}`}
+                                  className="studio-clause-frame"
+                                  tools={
+                                    <>
+                                      <BlockAction
+                                        aria-label="Clause settings"
+                                        onClick={() => {
+                                          setClauseIndex(k);
+                                          setIndex(n);
+                                        }}
+                                      >
+                                        Clause settings
+                                      </BlockAction>
+                                      <BlockAction
+                                        aria-label="Move clause up"
+                                        disabled={k === 0}
+                                        onClick={() => {
+                                          const clauses = [...b.clauses!];
+                                          [clauses[k - 1], clauses[k]] = [
+                                            clauses[k],
+                                            clauses[k - 1],
+                                          ];
+                                          patch(
+                                            content.map((v, j) =>
+                                              j === n ? { ...b, clauses } : v,
+                                            ),
+                                          );
+                                          setIndex(null);
+                                        }}
+                                      >
+                                        Move clause up
+                                      </BlockAction>
+                                      <BlockAction
+                                        aria-label="Move clause down"
+                                        disabled={k === b.clauses!.length - 1}
+                                        onClick={() => {
+                                          const clauses = [...b.clauses!];
+                                          [clauses[k + 1], clauses[k]] = [
+                                            clauses[k],
+                                            clauses[k + 1],
+                                          ];
+                                          patch(
+                                            content.map((v, j) =>
+                                              j === n ? { ...b, clauses } : v,
+                                            ),
+                                          );
+                                          setIndex(null);
+                                        }}
+                                      >
+                                        Move clause down
+                                      </BlockAction>
+                                      <BlockAction
+                                        aria-label="Remove clause"
+                                        onClick={() => {
+                                          patch(
+                                            content.map((v, j) =>
+                                              j === n
+                                                ? {
+                                                    ...b,
+                                                    clauses: b.clauses!.filter(
+                                                      (_, i) => i !== k,
+                                                    ),
+                                                  }
+                                                : v,
+                                            ),
+                                          );
+                                          setIndex(null);
+                                        }}
+                                      >
+                                        Remove clause
+                                      </BlockAction>
+                                    </>
+                                  }
+                                >
+                                  <button
+                                    className="clause-open"
+                                    onClick={() =>
+                                      selection.select(
+                                        `template-clause-${c.id}`,
+                                      )
+                                    }
+                                  >
+                                    <strong>{c.heading}</strong>
+                                    {c.show_when && (
+                                      <small>
+                                        Shown when ·{" "}
+                                        {data.catalog.find(
+                                          (i) =>
+                                            i.id ===
+                                            c.show_when?.pricing_item_id,
+                                        )?.name ?? "Unavailable item"}{" "}
+                                        selected
+                                      </small>
+                                    )}
+                                    <p>{c.body}</p>
+                                  </button>
+                                </BlockFrame>
+                              </Sortable>
+                            ))}
                           </div>
-                        )}
-                      </header>
-                      {b.type === "contract" && (
-                        <div className="contract-clause-list">
-                          {b.clauses?.map((c, k) => (
-                            <button
-                              key={c.id}
-                              onClick={() => {
-                                setClauseIndex(k);
-                                setIndex(n);
-                              }}
-                            >
-                              <strong>{c.heading}</strong>
-                              {c.show_when && (
-                                <small>
-                                  Shown when ·{" "}
-                                  {data.catalog.find(
-                                    (i) =>
-                                      i.id === c.show_when?.pricing_item_id,
-                                  )?.name ?? "Unavailable item"}{" "}
-                                  selected
-                                </small>
-                              )}
-                              <p>{c.body}</p>
-                            </button>
-                          ))}
-                        </div>
+                        </Reorder>
                       )}
-                    </article>
+                    </BlockFrame>
                   </Sortable>
                 ))}
               </div>
@@ -2395,5 +2547,15 @@ function ProductMappingDetails({
         </p>
       )}
     </section>
+  );
+}
+
+export function TemplatesStudio(
+  props: ComponentProps<typeof TemplatesStudioContent>,
+) {
+  return (
+    <BlockScope>
+      <TemplatesStudioContent {...props} />
+    </BlockScope>
   );
 }

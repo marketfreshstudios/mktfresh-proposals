@@ -1,6 +1,7 @@
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
-import { emailHtml } from "./branding";
+import { proposalLink } from "./links";
+import { emailHtml, proposalEmailNote } from "./branding";
 import { StripeProvider } from "./providers/stripe";
 import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
@@ -162,6 +163,15 @@ export class Worker {
       const attachments = payload.file_id
         ? await this.attachment(p, String(payload.file_id))
         : undefined;
+      const isProposalEmail = !!(
+        payload.proposal_email ||
+        payload.send_version ||
+        payload.reminder_day
+      );
+      const senderNote =
+        typeof payload.note === "string"
+          ? payload.note
+          : proposalEmailNote(String(payload.text));
       await this.mailer.send(
         {
           ...(typeof payload.from === "string" &&
@@ -170,8 +180,16 @@ export class Worker {
             : emailIdentity(p)),
           to: String(payload.to),
           subject: String(payload.subject),
-          text: String(payload.text),
-          html: emailHtml(p, String(payload.text)),
+          text: isProposalEmail
+            ? [
+                senderNote,
+                `Review your proposal: ${proposalLink(p)}`,
+                `Sent by ${p.sender?.display_name ?? p.workspace_settings?.owner ?? "your sender"} at ${p.workspace_settings?.company_name ?? "your workspace"}`,
+              ]
+                .filter(Boolean)
+                .join("\n\n")
+            : String(payload.text),
+          html: emailHtml(p, String(payload.text), isProposalEmail, senderNote),
           ...(attachments ? { attachments } : {}),
         },
         j.id,
@@ -289,6 +307,7 @@ export class Worker {
         p.currency,
         {
           settings: renderSettings,
+          document: { id: p.id, title: p.title },
           fonts: await Promise.all(
             Object.values(renderSettings?.proposal_fonts ?? {})
               .filter((f) => typeof f !== "string")

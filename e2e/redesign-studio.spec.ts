@@ -424,7 +424,13 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
             expect(ratio).toBeGreaterThanOrEqual(4.5);
         }
         if (name === "templates") {
-          await page.locator(".contract-clause-list button").last().click();
+          const clause = page
+            .getByRole("group", { name: /^Template clause/ })
+            .last();
+          await clause.locator(".clause-open").click();
+          await clause
+            .getByRole("button", { name: "Clause settings", exact: true })
+            .click();
           await expect(
             page.getByRole("textbox", { name: "Clause body", exact: true }),
           ).toBeVisible();

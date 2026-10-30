@@ -1,4 +1,4 @@
-/* Client UI v2 is opt-in per send version. Legacy client and PDF styles are unchanged. */
+/* Client-facing reading, signing and billing flow. */
 .client-flow {
   min-height: 100dvh;
   background: var(--surface-page);
@@ -462,7 +462,7 @@ label.flow-quote-line {
 .flow-result > a.btn {
   width: 100%;
 }
-.flow-result h1 {
+.flow-result-summary h1 {
   font-size: 34px;
 }
 .flow-success {
@@ -778,4 +778,89 @@ label.flow-quote-line {
 }
 .client-flow :focus-visible {
   outline-color: var(--accent-text);
+}
+
+/* The signed reading view uses the same document column as review. */
+.flow-result {
+  max-width: none;
+  margin-inline: 0;
+}
+.flow-result-summary {
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+}
+.flow-result > .flow-document {
+  width: 100%;
+  margin: 24px auto;
+}
+@media (min-width: 1100px) {
+  .flow-result > .flow-document {
+    width: calc(100% - 372px);
+  }
+}
+.flow-billing-items {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.flow-billing-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.flow-billing-items strong {
+  white-space: nowrap;
+  font-weight: 600;
+}
+.flow-billing-totals {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+}
+.flow-billing-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.flow-billing-totals dd {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.flow-checkout-group {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.flow-checkout-group .btn {
+  width: 100%;
+}
+.flow-separate-invoice {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.flow-sender-contact {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  margin: 32px auto 0;
+  font: 400 13px/1.5 var(--font-ui);
+}
+.flow-sender-contact .contact-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.flow-checkout-button {
+  text-align: center;
 }
