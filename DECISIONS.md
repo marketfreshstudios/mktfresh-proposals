@@ -122,3 +122,15 @@ One-time lines with absent QuickBooks mappings warn rather than block sending. B
 ## Workspace settings snapshot timing (29 October 2026)
 
 New drafts persist no workspace_settings snapshot. Staff reads/edits and draft readiness resolve a transient view from current workspace settings; old draft snapshots are ignored and removed on edit. The editor and send screen also use the current session settings for draft variables/readiness. SEND and re-send capture a fresh sanitized settings snapshot before readiness validation and variable resolution. Existing signature-image/authorization redaction is retained. Signed and closed records keep their stored snapshot and cannot be re-sent.
+
+## Redesign Phase 1: Foundation (30 October 2026)
+
+Precedence follows design/redesign/CODEX_BRIEF.md: safety/integrity first, then the redesign build spec, then the older system. Phase 1 is presentation/navigation only. Canonical Studio addresses and the unified proposal address adapt existing screens; send/evidence/countersign retain existing guarded behavior behind query views until their scheduled phases. Drafts open the editor by default. New proposal reuses the existing form in an accessible sheet and has the N shortcut.
+
+Foundation tokens are scoped to staff chrome so sent/signed client pages and sealed PDF rendering remain exact. Instrument Sans is self-hosted with its OFL license. Public Sans remains for historical/client/PDF compatibility. A new cents formatter supports auto/always in staff views; legacy document formatting stays fixed cents. Current workspace money.cents is optional, defaults to auto in the staff provider and does not mutate old snapshots.
+
+The spec's 232px/64px navigation dimensions override the prototype's content-box padding expansion. Full feature-layout, quote-model, MCP, billing-selection, contract, outcome and Studio/state changes remain in their listed phases. No data migration is appropriate in Foundation.
+
+Open-decision defaults are accepted for their future phases: clause 4.4 seed wording marked draft:true with the specified readiness warning; optional reason for manual Won, recorded in audit without a signature; Source Serif 4 heading/body defaults, a curated OFL list and uploaded-font PDF-embedding confirmation. None is prematurely exposed as a Phase 1 feature.
+
+Phase 1 is submitted as one PR for owner review. It is left unmerged and Phase 2 is not started.

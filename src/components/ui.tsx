@@ -1,4 +1,6 @@
 "use client";
+import { useMoney, useFoundationMoney } from "./money-context";
+import { statusDisplay } from "../lib/status-display";
 import {
   useEffect,
   useState,
@@ -7,7 +9,7 @@ import {
   type ButtonHTMLAttributes,
 } from "react";
 import icons from "./icons.json";
-import { money, totals } from "../lib/presentation";
+import { totals } from "../lib/presentation";
 import type { Line, Proposal } from "../lib/model";
 export function Icon({ name }: { name: keyof typeof icons }) {
   const i = icons[name];
@@ -92,21 +94,35 @@ const statuses: Record<
 export function Status({
   status,
   ai = false,
+  billingPending = false,
 }: {
   status: string;
   ai?: boolean;
+  billingPending?: boolean;
 }) {
-  const s = statuses[status] ?? statuses.draft;
+  const s = {
+    ...(statuses[status] ?? statuses.draft),
+    ...statusDisplay(status),
+  };
   return (
     <span className="pills">
       <span className={`pill ${s.tone}`}>
         <Icon name={s.icon} />
         {s.name}
       </span>
+      {billingPending && ["completed", "signed_by_client"].includes(status) && (
+        <span className="pill info">Billing to finish</span>
+      )}
+      {status === "signed_by_client" && (
+        <span className="pill warning">
+          <Icon name="signature" />
+          Needs countersign
+        </span>
+      )}
       {ai && (
         <span className="pill ai">
           <Icon name="ai" />
-          Needs AI review
+          AI
         </span>
       )}
     </span>
@@ -127,15 +143,24 @@ export function Totals({
     yearly_total: number;
   };
 }) {
+  const money = useMoney();
+  const modern = useFoundationMoney();
   const t = value ?? totals(lines ?? []);
   return (
     <div className="totals" aria-label="Proposal totals">
       {[
         ["One-time", t.one_time_total, ""],
-        ["Monthly", t.monthly_total, "/month"],
-        ["Yearly", t.yearly_total, "/year"],
+        ["Monthly", t.monthly_total, modern ? "/mo" : "/month"],
+        ["Yearly", t.yearly_total, modern ? "/yr" : "/year"],
       ]
-        .filter(([label]) => label !== "Yearly" || showYearly)
+        .filter(
+          ([label]) =>
+            label !== "Yearly" ||
+            (showYearly &&
+              (!modern ||
+                t.yearly_total !== 0 ||
+                lines?.some((l) => l.interval === "year"))),
+        )
         .map(([label, amount, suffix]) => (
           <div key={label}>
             <span className="eyebrow">{label}</span>

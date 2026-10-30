@@ -197,5 +197,24 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
     db.exec("update staff_users set display_name='forged',role='owner'"),
   ).rejects.toThrow("permission denied");
   await db.exec("reset role");
+  const frozenBefore = (
+    await db.query("select data from proposal_versions order by id")
+  ).rows;
+  await db.query(
+    "update workspace_settings set data=jsonb_set(data,'{money}',$1::jsonb) where workspace_id=$2",
+    [JSON.stringify({ cents: "always" }), repo.workspaceId],
+  );
+  expect((await db.query("select state from proposals")).rows).toEqual(before);
+  expect(
+    (await db.query("select data from proposal_versions order by id")).rows,
+  ).toEqual(frozenBefore);
+  expect(
+    (
+      await db.query(
+        "select data->'money' as money from workspace_settings where workspace_id=$1",
+        [repo.workspaceId],
+      )
+    ).rows,
+  ).toEqual([{ money: { cents: "always" } }]);
   await db.close();
 });

@@ -308,3 +308,26 @@ Moved persisted workspace_settings capture from draft creation to SEND. Re-send 
 Signed proposals keep their saved settings and versions when the workspace changes, and the existing resend guard prevents changing signed snapshots. Existing sent versions' resolved variables remain unchanged by later re-sends.
 
 Validation: 113 unit/database tests, eight browser tests, typecheck, format, neutrality and production build/PDF tracing passed locally. Added tests for absent persisted draft snapshots, current read/preview values, current staff/AI/API readiness (including a value becoming unresolved), send/re-send settings and variable updates, unchanged earlier versions, and signed snapshot preservation. No migration is required.
+
+## Redesign Phase 1 — Foundation (30 October 2026)
+
+Read design/redesign/CODEX_BRIEF.md and its full spec, served design/redesign locally and opened all eight Redesign 0X .dc.html files. Applied the brief's precedence and limited this PR to Foundation.
+
+Implemented:
+- Supplied theme/type/space tokens scoped to staff chrome; Instrument Sans variable WOFF2 self-hosted with OFL/source attribution. Source Serif 4 and IBM Plex Mono retained. Focus ring 2px/2px, reduced motion, accessible sheets and loading skeleton primitives.
+- Responsive shell: 232px sidebar ≥1100px, 64px labelled icon rail ≥700px, five phone slots below 700px. Phone proposal routes hide the global tabs; the current draft editor's Preview / Review & send actions remain available at the bottom.
+- Home / Proposals / Clients, global New proposal sheet with N shortcut, Studio menu and canonical Studio routes. Server redirects preserve access from old routes. Draft /proposals/:id opens the current editor; existing send, evidence, archive and countersign workflows are adapted to query views. Full feature layouts are deferred.
+- Display-only status pills/tags: Draft / Sent / Viewed / Won / Lost / Expired, Archived as legacy flag display, AI, Needs countersign and Billing to finish. No stored statuses or audit events were renamed.
+- Separate staff money formatter: auto whole dollars unless cents are present, always mode supported via optional workspace money.cents; /mo and /yr on rows and separate yearly values. Legacy document/client/PDF formatting remains fixed cents.
+
+Integrity: no quote/data migration, provider requests, live credentials, hosted configuration or signing/billing behavior changed. Public Sans remains necessary for current sent/signed client/PDF rendering and must not yet be dropped. Regression tests verify unchanged old HTML, flat quote shape, frozen hashes and database versions when money preferences change. The prior auth file received whitespace-only formatting to satisfy the repository-wide format check; its temporary design-preview behavior is unchanged.
+
+Evidence: docs/redesign-foundation/index.html provides a side-by-side reviewer; COMPARISON.md records actual matches and deliberate deferrals. 126 full-page application captures cover 19 staff surfaces plus New/Studio sheets at 375/768/1440 in light/dark, with six exact-height Home captures, 33 rendered references and one skeleton capture. Automated checks enforce geometry/colors/fonts, no horizontal page overflow, redirects, keyboard flow, reduced motion and no external font requests. Feature bodies are not claimed to match later-phase designs.
+
+Open defaults accepted for their appropriate phases: clause 4.4 uses studio draft wording as seed data with draft:true/readiness warning; manual Won reason optional and audited; Source Serif 4 proposal defaults with curated OFL fonts and PDF-embedding license confirmation for uploads.
+
+Deferred: Phase 2 client flow; Phase 3 item/sub-line/choice-group migration, old-snapshot adapter, MCP compatibility, contract/editor/review panels; Phase 4 record/countersign sheet/Home/lists/outcome audit; Phase 5 complete Studio and state layouts, workspace font/money controls and activity CSV. Activity currently points to per-proposal evidence. No new model migration/choice-group/MCP tests are applicable until those phases.
+
+Validation: 129 unit/database tests, nine Playwright tests, typecheck, formatting, neutrality and production build/PDF runtime tracing pass locally. The Foundation test itself captures all required widths/themes and renders the original frame sources. Existing signing, company delegation, sender selection, linked-reference, catalogue and client-preview browser flows remain green.
+
+Stop: Phase 1 only. Submit one PR, leave it open for Jonathan's review, and do not start Phase 2.
