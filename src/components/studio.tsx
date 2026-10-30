@@ -1051,6 +1051,7 @@ export function TemplatesStudio({
       block: Block;
     } | null>(null),
     [index, setIndex] = useState<number | null>(null),
+    [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
     [mobile, setMobile] = useState(false);
   const save = useSave(run);
@@ -1085,6 +1086,8 @@ export function TemplatesStudio({
       <BlockPanel
         key={content[index].id ?? index}
         block={content[index]}
+        clause={clauseIndex}
+        setClause={setClauseIndex}
         data={data}
         map={map}
         onChange={(b) => patch(content.map((v, n) => (n === index ? b : v)))}
@@ -1268,7 +1271,10 @@ export function TemplatesStudio({
                       <header>
                         <button
                           className="block-open"
-                          onClick={() => setIndex(n)}
+                          onClick={() => {
+                            setClauseIndex(0);
+                            setIndex(n);
+                          }}
                         >
                           <strong>
                             {b.type === "heading"
@@ -1319,8 +1325,14 @@ export function TemplatesStudio({
                       </header>
                       {b.type === "contract" && (
                         <div className="contract-clause-list">
-                          {b.clauses?.map((c) => (
-                            <button key={c.id} onClick={() => setIndex(n)}>
+                          {b.clauses?.map((c, k) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setClauseIndex(k);
+                                setIndex(n);
+                              }}
+                            >
                               <strong>{c.heading}</strong>
                               {c.show_when && (
                                 <small>
@@ -1481,14 +1493,17 @@ function BlockPanel({
   data,
   map,
   onSaveBlock,
+  clause,
+  setClause,
 }: {
+  clause: number;
+  setClause: (index: number) => void;
   block: Block;
   onChange: (b: Block) => void;
   data: Data;
   map: Record<string, string>;
   onSaveBlock: () => void;
 }) {
-  const [clause, setClause] = useState(0);
   if (b.type !== "contract")
     return (
       <div className="stack">

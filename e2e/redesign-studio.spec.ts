@@ -424,10 +424,16 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
             expect(ratio).toBeGreaterThanOrEqual(4.5);
         }
         if (name === "templates") {
-          await page.locator(".contract-clause-list button").first().click();
+          await page.locator(".contract-clause-list button").last().click();
           await expect(
             page.getByRole("textbox", { name: "Clause body", exact: true }),
           ).toBeVisible();
+          await expect(
+            page.getByRole("textbox", { name: "Clause heading", exact: true }),
+          ).toHaveValue("4.4 Own It Over Time");
+          await expect(
+            page.getByRole("radio", { name: "Only when…", exact: true }),
+          ).toBeChecked();
           await capture(
             "template-clause",
             width === 768 ? "7f" : "7a",
