@@ -272,6 +272,36 @@ export class ProposalService {
           actor.actor.startsWith("ai:"),
         );
       else p.quote = draftItems(p.quote);
+      if (input.quote && actor.actor.startsWith("ai:")) {
+        // Quote-only assistant edits must have a visible section to review.
+        if (!p.content.some((b) => b.type === "pricing_table"))
+          p.content.push({ id: randomUUID(), type: "pricing_table" });
+        p.content = p.content.map((b) =>
+          b.type === "pricing_table"
+            ? { ...b, ai_review: { source: "assistant", reviewed: false } }
+            : b,
+        );
+      }
+      if (
+        actor.actor.startsWith("ai:") &&
+        !p.content.some((b) => b.ai_review && !b.ai_review.reviewed)
+      ) {
+        const target = p.content.findIndex(
+          (b) =>
+            !["contract", "signature_block", "page_break"].includes(b.type),
+        );
+        if (target >= 0)
+          p.content[target] = {
+            ...p.content[target],
+            ai_review: { source: "assistant", reviewed: false },
+          };
+        else
+          p.content.push({
+            id: randomUUID(),
+            type: "pricing_table",
+            ai_review: { source: "assistant", reviewed: false },
+          });
+      }
       p.quote_model_version = 3;
       if (input.valid_until) {
         check(

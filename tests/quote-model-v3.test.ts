@@ -487,3 +487,68 @@ it("renders canonical item names once with separate sublines and alternatives; o
     renderBlocks([{ type: "pricing_table" }], old, {}, "USD", "auto"),
   ).toBe(renderBlocks([{ type: "pricing_table" }], old, {}, "USD", "always"));
 });
+it("quote-only MCP edits reopen the quote section while preserving reviewed text", async () => {
+  const { service, repo, draft } = await setup(),
+    ai = { ...staff, workspace_id: repo.workspaceId, actor: "ai:Assistant" },
+    scopes = ["proposals:read", "proposals:draft"];
+  let p = await service.edit(
+    draft.id,
+    { revision: draft.revision, content: draft.content },
+    ai,
+  );
+  p = await service.edit(
+    p.id,
+    {
+      revision: p.revision,
+      content: p.content.map((b) =>
+        b.ai_review
+          ? { ...b, ai_review: { ...b.ai_review, reviewed: true } }
+          : b,
+      ),
+    },
+    staff,
+  );
+  expect(p.ai_unreviewed).toBe(false);
+  p = await service.edit(
+    p.id,
+    { revision: p.revision, title: "Assistant title change" },
+    ai,
+  );
+  expect(p.content.some((b) => b.ai_review && !b.ai_review.reviewed)).toBe(
+    true,
+  );
+  p = await service.edit(
+    p.id,
+    {
+      revision: p.revision,
+      content: p.content.map((b) =>
+        b.ai_review
+          ? { ...b, ai_review: { ...b.ai_review, reviewed: true } }
+          : b,
+      ),
+    },
+    staff,
+  );
+  await aiTool(
+    repo,
+    ai,
+    "set_quote_lines",
+    { id: p.id, revision: p.revision, lines: flatQuote(p.quote) },
+    scopes,
+  );
+  p = (await repo.get(p.id))!;
+  expect(
+    p.content.find((b) => b.type === "pricing_table")!.ai_review?.reviewed,
+  ).toBe(false);
+  expect(p.content.find((b) => b.type === "heading")!.ai_review?.reviewed).toBe(
+    true,
+  );
+  p = await service.edit(
+    p.id,
+    { revision: p.revision, title: "Unrelated staff edit" },
+    staff,
+  );
+  expect(p.ai_unreviewed).toBe(true);
+  await expect(service.send(p.id, staff)).rejects.toThrow("Confirm review");
+  expect((await service.send(p.id, staff, true)).status).toBe("sent");
+});

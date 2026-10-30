@@ -301,6 +301,12 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
     .fill("Please review the scope and your choices.");
   await page.getByRole("button", { name: "Send to Jane", exact: true }).click();
   await expect.poll(() => active.status).toBe("sent");
+  // Sending reloads the same address into the record. Wait for that navigation
+  // before opening the client link, so two navigations cannot race on CI.
+  await expect(page.locator(".quote-workspace")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Preview as client", exact: true }),
+  ).toBeVisible();
   expect(
     active.jobs.some((j) =>
       String(j.payload.text).includes("Please review the scope"),
