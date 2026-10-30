@@ -478,7 +478,6 @@ function Login({ local }: { local: boolean }) {
     [busy, setBusy] = useState(false);
   return (
     <main className="login">
-      <ThemeToggle />
       <div className="card stack">
         <h1>Welcome back</h1>
         <p className="muted">Sign in to your proposal workspace.</p>
