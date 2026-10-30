@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button,input{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opt:target .dv-oid{background:#365C4A;color:#fff}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t6">
+<div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Proposals list · Client detail · at 1440 / 768 / 375</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;max-width:1440px;margin:0 0 36px">
+  <h1 style="margin:0;font:600 40px/46px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">One list, sorted by who acts next.</h1>
+  <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35"><b style="color:#365C4A">Change.</b> Views follow how you talk about deals: Drafts (AI drafts included, marked AI), Sent, Viewed, Not viewed, Won, Needs countersign and Lost. Won means the client signed; Lost is set by hand. Archive and Proposify imports are views too. The whole row opens the proposal; ⋯ holds Edit, Duplicate, Download PDF, Mark as and Archive.</div>
+  <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35"><b style="color:#365C4A">Change.</b> A client’s page leads with how they’re billed today (existing Stripe subscriber or not), because that decides whether a signed proposal adds to their subscription or sends them to Checkout.</div>
+</div>
+
+<div class="dv-opts">
+<sc-for list="{{ widths }}" as="w" hint-placeholder-count="3">
+<div class="dv-opt" id="{{ w.pid }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ w.pid }}">{{ w.pid }}</a>Proposals · {{ w.label }} · live: views, search, ⋯ actions</div>
+  <div onClick="{{ closeMenus }}" style="position:relative;width:{{ w.px }};height:{{ w.h }};border-radius:{{ w.radius }};border:1px solid #C9C3B7;background:#F3F0EA;overflow:hidden;display:flex;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <sc-if value="{{ w.isDesk }}">
+      <nav style="flex:none;width:232px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:18px 14px;display:flex;flex-direction:column;gap:4px">
+        <div style="font:600 15px/22px 'Instrument Sans';padding:0 8px 14px">MarketFresh Studios</div>
+        <div style="height:38px;border-radius:9px;background:#365C4A;color:#fff;font:600 14px/38px 'Instrument Sans';padding:0 12px;margin-bottom:10px">+ New proposal</div>
+        <div style="display:flex;justify-content:space-between;font:500 14px/36px 'Instrument Sans';padding:0 12px"><span>Home</span><span style="color:#5F5B53">6</span></div>
+        <div style="font:600 14px/36px 'Instrument Sans';padding:0 12px;border-radius:8px;background:#DDD8CE">Proposals</div>
+        <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Clients</div>
+        <div style="flex:1"></div>
+        <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:#5F5B53">Studio</div>
+      </nav>
+    </sc-if>
+    <sc-if value="{{ w.isTab }}">
+      <nav style="flex:none;width:64px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:10px;background:#365C4A;color:#fff;font:500 22px/40px 'Instrument Sans';text-align:center">+</div>
+        <div style="width:48px;height:44px;font:600 10px/44px 'Instrument Sans';text-align:center;color:#5F5B53">Home</div>
+        <div style="width:48px;height:44px;border-radius:10px;background:#DDD8CE;font:600 10px/44px 'Instrument Sans';text-align:center">Proposals</div>
+        <div style="width:48px;height:44px;font:600 10px/44px 'Instrument Sans';text-align:center;color:#5F5B53">Clients</div>
+      </nav>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex:none;padding:{{ w.headPad }};display:flex;flex-direction:column;gap:14px;border-bottom:1px solid #DDD8CE">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h1 style="margin:0;flex:1;font:600 30px/36px 'Source Serif 4',Georgia,serif">Proposals</h1>
+          <label style="flex:{{ w.searchFlex }};display:flex;align-items:center;gap:8px;height:40px;border:1px solid #DDD8CE;border-radius:10px;background:#FBFAF7;padding:0 12px"><svg width="14" height="14" viewBox="{{ ic.search.v }}"><path fill="#5F5B53" d="{{ ic.search.d }}"></path></svg><input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search client, title or amount" aria-label="Search proposals" style="flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 14px 'Instrument Sans';color:#1C1B18"></input></label>
+        </div>
+        <sc-if value="{{ w.isDesk }}" hint-placeholder-val="{{ true }}">
+        <div role="tablist" style="display:flex;gap:6px;flex-wrap:wrap">
+          <sc-for list="{{ views }}" as="v" hint-placeholder-count="9">
+            <button role="tab" aria-selected="{{ v.on }}" onClick="{{ v.go }}" style="flex:none;height:34px;padding:0 12px;border:1px solid {{ v.line }};border-radius:999px;background:{{ v.bg }};color:{{ v.ink }};font:600 13px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">{{ v.name }}<span style="font-weight:500;opacity:.75">{{ v.count }}</span></button>
+          </sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ w.isCompact }}">
+          <label style="display:flex;align-items:center;gap:10px">
+            <span style="font:600 13px 'Instrument Sans';color:#5F5B53">View</span>
+            <span style="position:relative;flex:{{ w.selFlex }};display:flex">
+              <select value="{{ view }}" onChange="{{ setView }}" aria-label="Filter proposals" style="appearance:none;-webkit-appearance:none;width:100%;height:44px;padding:0 40px 0 14px;border:1px solid #CFC9BE;border-radius:10px;background:#FBFAF7;font:600 15px 'Instrument Sans';color:#1C1B18;cursor:pointer">
+                <sc-for list="{{ views }}" as="v" hint-placeholder-count="11"><option value="{{ v.key }}">{{ v.optLabel }}</option></sc-for>
+              </select>
+              <span aria-hidden="true" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;font:600 12px 'Instrument Sans';color:#5F5B53">▼</span>
+            </span>
+          </label>
+        </sc-if>
+      </div>
+      <div style="flex:1;overflow:auto;padding:{{ w.bodyPad }}">
+        <sc-if value="{{ w.isTable }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px">
+            <div style="display:grid;grid-template-columns:{{ w.cols }};gap:16px;padding:10px 16px;border-bottom:1px solid #DDD8CE;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">
+              <span>Proposal</span><span>Status</span><sc-if value="{{ w.isDesk }}"><span>Next</span></sc-if><span style="text-align:right">One-time</span><span style="text-align:right">Monthly</span><sc-if value="{{ w.isDesk }}"><span style="text-align:right">Updated</span></sc-if><span></span>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+              <div role="link" tabindex="0" onClick="{{ r.open }}" aria-label="Open {{ r.client }}, {{ r.title }}" style="position:relative;display:grid;grid-template-columns:{{ w.cols }};gap:16px;padding:12px 16px;border-bottom:1px solid #E8E4DC;align-items:center;font:400 14px/20px 'Instrument Sans';cursor:pointer;background:{{ r.rowBg }}" style-hover="background:#F3F0EA">
+                <div style="min-width:0"><div style="font:600 14px/20px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.client }}</div><div style="color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</div></div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px"><span style="padding:1px 8px;border-radius:999px;background:{{ r.bg }};color:{{ r.ink }};font:600 12px/18px 'Instrument Sans';white-space:nowrap">{{ r.status }}</span><sc-if value="{{ r.ai }}"><span style="padding:1px 8px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 12px/18px 'Instrument Sans'">AI</span></sc-if><sc-if value="{{ r.needsCounter }}"><a href="{{ r.signHref }}" onClick="{{ stop }}" aria-label="Countersign {{ r.client }}: opens the proposal with the signature block" style="height:26px;padding:0 12px;border-radius:999px;background:#365C4A;color:#fff;font:600 12px/26px 'Instrument Sans';text-decoration:none;white-space:nowrap">Sign</a></sc-if></div>
+                <sc-if value="{{ w.isDesk }}"><div style="min-width:0;color:#3E3B35">{{ r.next }}</div></sc-if>
+                <div style="text-align:right;font-variant-numeric:tabular-nums">{{ r.one }}</div>
+                <div style="text-align:right;font-variant-numeric:tabular-nums">{{ r.mon }}</div>
+                <sc-if value="{{ w.isDesk }}"><div style="text-align:right;color:#5F5B53">{{ r.when }}</div></sc-if>
+                <button onClick="{{ r.toggleMenu }}" aria-haspopup="menu" aria-expanded="{{ r.menuOpen }}" aria-label="More actions for {{ r.client }}" style="width:36px;height:36px;border:1px solid {{ r.menuLine }};border-radius:9px;background:{{ r.menuBg }};font:700 16px/1 'Instrument Sans';color:#3E3B35;cursor:pointer">⋯</button>
+                <sc-if value="{{ r.menuOpen }}">
+                    <div role="menu" onClick="{{ stop }}" style="position:absolute;right:12px;top:48px;z-index:30;width:236px;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:12px;box-shadow:0 2px 4px rgba(20,18,14,.06),0 12px 24px rgba(20,18,14,.12);padding:6px;display:flex;flex-direction:column">
+                      <sc-for list="{{ r.actions }}" as="m" hint-placeholder-count="5">
+                        <button role="menuitem" onClick="{{ m.run }}" aria-disabled="{{ m.off }}" style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:38px;padding:0 10px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer;font:500 14px 'Instrument Sans';color:{{ m.ink }};opacity:{{ m.op }}" style-hover="background:#ECE8E1"><span>{{ m.label }}</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ m.hint }}</span></button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ empty }}">
+              <div style="padding:40px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:8px"><div style="font:600 20px 'Source Serif 4',Georgia,serif">{{ emptyTitle }}</div><div style="font:400 14px 'Instrument Sans';color:#5F5B53">{{ emptySub }}</div><sc-if value="{{ hasQ }}"><button onClick="{{ clearQ }}" style="height:40px;padding:0 14px;border:1px solid #DDD8CE;border-radius:10px;background:#F3F0EA;font:600 14px 'Instrument Sans';cursor:pointer">Clear search</button></sc-if></div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ hasToast }}"><div role="status" style="margin-top:12px;display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:#1C1B18;color:#fff;font:500 14px 'Instrument Sans'">{{ toast }}<button onClick="{{ undo }}" style="height:28px;padding:0 8px;border:0;background:none;color:#B9D3C6;font:600 14px 'Instrument Sans';cursor:pointer">Undo</button></div></sc-if>
+        </sc-if>
+        <sc-if value="{{ w.isPhone }}">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+              <div role="link" tabindex="0" onClick="{{ r.open }}" style="position:relative;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:14px 10px 14px 14px;display:flex;gap:8px;cursor:pointer">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span style="font:600 15px/21px 'Instrument Sans';margin-right:2px">{{ r.client }}</span><span style="padding:1px 8px;border-radius:999px;background:{{ r.bg }};color:{{ r.ink }};font:600 12px/18px 'Instrument Sans'">{{ r.status }}</span><sc-if value="{{ r.ai }}"><span style="padding:1px 8px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 12px/18px 'Instrument Sans'">AI</span></sc-if></div>
+                  <div style="font:400 14px/20px 'Instrument Sans';color:#3E3B35">{{ r.title }}</div>
+                  <div style="display:flex;justify-content:space-between;gap:8px;font:400 13px/18px 'Instrument Sans';color:#5F5B53"><span>{{ r.next }}</span><span style="font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.one }} · {{ r.mon }}</span></div>
+                  <sc-if value="{{ r.needsCounter }}"><a href="{{ r.signHref }}" onClick="{{ stop }}" style="margin-top:6px;height:44px;border-radius:10px;background:#365C4A;color:#fff;font:600 15px/44px 'Instrument Sans';text-align:center;text-decoration:none">Sign</a></sc-if>
+                </div>
+                <button onClick="{{ r.toggleSheet }}" aria-label="More actions for {{ r.client }}" style="flex:none;width:44px;height:44px;border:0;border-radius:10px;background:none;font:700 18px/1 'Instrument Sans';color:#3E3B35;cursor:pointer">⋯</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ empty }}"><div style="padding:24px 4px;font:400 14px/20px 'Instrument Sans';color:#5F5B53">{{ emptyTitle }}</div></sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <sc-if value="{{ w.sheetOpen }}">
+        <div onClick="{{ closeMenus }}" style="position:absolute;inset:0;z-index:40;background:rgba(20,18,14,.4);display:flex;align-items:flex-end">
+          <div role="menu" onClick="{{ stop }}" style="width:100%;background:#FBFAF7;border-radius:20px 20px 0 0;padding:8px 12px 24px;display:flex;flex-direction:column;gap:2px">
+            <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:#CFC9BE;margin-bottom:8px"></div>
+            <div style="padding:4px 8px 10px;font:600 15px 'Instrument Sans'">{{ sheetTitle }}</div>
+            <sc-for list="{{ sheetActions }}" as="m" hint-placeholder-count="5">
+              <button role="menuitem" onClick="{{ m.run }}" aria-disabled="{{ m.off }}" style="display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 10px;border:0;border-radius:10px;background:none;text-align:left;font:500 16px 'Instrument Sans';color:{{ m.ink }};opacity:{{ m.op }};cursor:pointer"><span>{{ m.label }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ m.hint }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ w.isPhone }}">
+        <div style="flex:none;height:64px;background:#FBFAF7;border-top:1px solid #DDD8CE;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;align-items:center;text-align:center;font:500 11px 'Instrument Sans';color:#5F5B53;padding:0 6px 6px"><span>Home</span><span style="color:#1C1B18;font-weight:700">Proposals</span><span><span style="display:inline-block;width:40px;height:40px;border-radius:20px;background:#365C4A;color:#fff;font:500 24px/40px 'Instrument Sans'">+</span></span><span>Clients</span><span>Studio</span></div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<div style="height:56px"></div>
+<div class="dv-opts">
+<sc-for list="{{ widths }}" as="w" hint-placeholder-count="3">
+<div class="dv-opt" id="{{ w.cid }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ w.cid }}">{{ w.cid }}</a>Client detail · {{ w.label }}</div>
+  <div style="width:{{ w.px }};height:{{ w.h }};border-radius:{{ w.radius }};border:1px solid #C9C3B7;background:#F3F0EA;overflow:hidden;display:flex;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <sc-if value="{{ w.isDesk }}">
+      <nav style="flex:none;width:232px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:18px 14px;display:flex;flex-direction:column;gap:4px">
+        <div style="font:600 15px/22px 'Instrument Sans';padding:0 8px 14px">MarketFresh Studios</div>
+        <div style="height:38px;border-radius:9px;background:#365C4A;color:#fff;font:600 14px/38px 'Instrument Sans';padding:0 12px;margin-bottom:10px">+ New proposal</div>
+        <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Home</div>
+        <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Proposals</div>
+        <div style="font:600 14px/36px 'Instrument Sans';padding:0 12px;border-radius:8px;background:#DDD8CE">Clients</div>
+      </nav>
+    </sc-if>
+    <sc-if value="{{ w.isTab }}">
+      <nav style="flex:none;width:64px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:10px;background:#365C4A;color:#fff;font:500 22px/40px 'Instrument Sans';text-align:center">+</div>
+        <div style="width:48px;height:44px;font:600 10px/44px 'Instrument Sans';text-align:center;color:#5F5B53">Home</div>
+        <div style="width:48px;height:44px;font:600 10px/44px 'Instrument Sans';text-align:center;color:#5F5B53">Proposals</div>
+        <div style="width:48px;height:44px;border-radius:10px;background:#DDD8CE;font:600 10px/44px 'Instrument Sans';text-align:center">Clients</div>
+      </nav>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex:1;overflow:auto;padding:{{ w.bodyPad2 }};display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 14px 'Instrument Sans';color:#5F5B53">← Clients</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end">
+          <div style="flex:1 1 280px;min-width:0"><h1 style="margin:0 0 4px;font:600 32px/38px 'Source Serif 4',Georgia,serif">Harbor Dental</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Dana Okafor · dana@harbordental.example · (941) 555-0142</div></div>
+          <div style="display:flex;gap:8px;flex:{{ w.actFlex }}"><button style="flex:1;height:44px;padding:0 16px;border:0;border-radius:10px;background:#365C4A;color:#fff;font:600 14px 'Instrument Sans'">New proposal</button><button style="flex:1;height:44px;padding:0 16px;border:1px solid #DDD8CE;border-radius:10px;background:#FBFAF7;font:600 14px 'Instrument Sans'">Email Dana</button></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+          <div style="flex:1 1 300px;min-width:0;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">How they’re billed</span><span style="padding:2px 8px;border-radius:999px;background:#E3F1E8;color:#146B3F;font:600 12px/18px 'Instrument Sans'">✓ Stripe subscriber</span></div>
+            <div style="font:400 14px/20px 'Instrument Sans';color:#3E3B35">New monthly items on a signed proposal are added to this subscription automatically. No checkout step for Dana.</div>
+            <div style="display:flex;flex-direction:column;border-top:1px solid #E8E4DC">
+              <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #E8E4DC;font:400 14px 'Instrument Sans'"><span>Care Standard</span><b style="font-weight:600">$85/mo</b></div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #E8E4DC;font:400 14px 'Instrument Sans'"><span>Hosted Standard</span><b style="font-weight:600">$100/mo</b></div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;font:600 14px 'Instrument Sans'"><span>Current monthly</span><span>$185/mo</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font:400 13px 'Instrument Sans';color:#5F5B53;flex-wrap:wrap;gap:6px"><span>Visa ending 4242 · next invoice Nov 1</span><span>QuickBooks: linked</span></div>
+          </div>
+          <div style="flex:2 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0;font:600 17px 'Instrument Sans'">Proposals</h2><span style="font:500 13px 'Instrument Sans';color:#5F5B53">3</span></div>
+            <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px">
+              <div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:14px 16px;border-bottom:1px solid #E8E4DC"><div style="flex:1 1 200px;min-width:0"><div style="font:600 14px 'Instrument Sans'">Care plan and hosting renewal</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53">Drafted by Claude 1 hour ago</div></div><span style="padding:1px 8px;border-radius:999px;background:#ECE8E1;color:#5F5B53;font:600 12px/18px 'Instrument Sans'">Draft</span><span style="padding:1px 8px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 12px/18px 'Instrument Sans'">AI</span><span style="font:500 13px 'Instrument Sans';font-variant-numeric:tabular-nums">$100/mo</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:14px 16px;border-bottom:1px solid #E8E4DC"><div style="flex:1 1 200px;min-width:0"><div style="font:600 14px 'Instrument Sans'">Website care plan</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53">Completed March 4, 2026</div></div><span style="padding:1px 8px;border-radius:999px;background:#E3F1E8;color:#146B3F;font:600 12px/18px 'Instrument Sans'">Completed</span><span style="font:500 13px 'Instrument Sans';font-variant-numeric:tabular-nums">$85/mo</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:14px 16px"><div style="flex:1 1 200px;min-width:0"><div style="font:600 14px 'Instrument Sans'">New website (2023)</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53">Imported from Proposify · read-only PDF</div></div><span style="padding:1px 8px;border-radius:999px;border:1px solid #DDD8CE;color:#5F5B53;font:500 12px/18px 'Instrument Sans'">Proposify import</span><span style="font:500 13px 'Instrument Sans';font-variant-numeric:tabular-nums">$3,200</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8px"><h2 style="margin:0;font:600 17px 'Instrument Sans'">Notes</h2><span style="font:600 13px 'Instrument Sans';color:#365C4A">Edit</span></div>
+            <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:14px 16px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">Prefers email. Two locations; second opens in spring. Claude can read these notes when drafting.</div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ w.isPhone }}">
+        <div style="flex:none;height:64px;background:#FBFAF7;border-top:1px solid #DDD8CE;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;align-items:center;text-align:center;font:500 11px 'Instrument Sans';color:#5F5B53;padding:0 6px 6px"><span>Home</span><span>Proposals</span><span><span style="display:inline-block;width:40px;height:40px;border-radius:20px;background:#365C4A;color:#fff;font:500 24px/40px 'Instrument Sans'">+</span></span><span style="color:#1C1B18;font-weight:700">Clients</span><span>Studio</span></div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<div id="spec-countersign" style="max-width:1100px;margin:56px 0 0;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:16px;padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+  <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Build spec</span><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif">“Sign” from the list opens the proposal; it never signs in place</h2></div>
+  <p style="margin:0;font:400 15px/23px 'Instrument Sans';color:#3E3B35;max-width:860px">A countersignature is a legal act. The person needs the client-signed document, the client’s signature and consent, the company signature preview and the on-behalf statement in front of them. The list only gets them there in one tap.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;font:400 14px/21px 'Instrument Sans';color:#1C1B18">
+    <div style="display:flex;flex-direction:column;gap:6px"><b>Where it appears</b><span>List row (desktop, tablet), card (phone), ⋯ menu, Home “Countersign” group, client page notification email.</span><span>Only when <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">status === 'won' &amp;&amp; !company_signed</code> and the viewer is in <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">company_signatory.authorized_user_ids</code>. Otherwise show the “Needs countersign” tag instead, no button.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><b>What it does</b><span>A plain link (<code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">&lt;Link&gt;</code>, not a button with a handler) to <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">/proposals/:id?action=countersign</code>. Row click and the Sign link are separate targets; the link stops propagation.</span><span>The record page reads the param, renders normally, then opens <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">CountersignSheet</code> (dialog on desktop and tablet, bottom sheet on phone) and moves focus to its heading. Closing the sheet removes the param with <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">router.replace</code>.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><b>What the sheet must show</b><span>1. Client-signed, frozen document summary: chosen items, both totals, version and hash.</span><span>2. Client signature image or typed name, name, title, email, timestamp.</span><span>3. Company signature preview: stored image, “Jonathan Garces”, title, today’s date.</span><span>4. If the viewer is not the signatory: the on-behalf statement checkbox naming the viewer.</span><span>5. Consent text in full with its checkbox. 6. “Countersign as Jonathan Garces”, disabled with a reason until both boxes are ticked.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><b>Guards</b><span>Send <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">revision</code> and <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">reviewed_hash</code> with <code style="font:400 12px 'IBM Plex Mono',monospace;background:#ECE8E1;padding:1px 4px;border-radius:4px">POST /api/proposals/:id/countersign</code>. On 409, show the stale banner in the sheet and block submit.</span><span>If already countersigned when the page loads (someone else did it), ignore the param and show a toast: “Franz already countersigned this at 4:31 PM.”</span><span>AI connectors never see this action.</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px"><b>After success</b><span>Sheet shows “Sealing the final copy…”, closes, record updates to Countersigned or Won. If the user came from the list, “Back to proposals” returns to the same view and scroll position; the row no longer shows Sign.</span></div>
+  </div>
+  <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">Try it: press Sign on Brightline Foods above. It opens <a href="Redesign 03 - Record and Home.dc.html?countersign=1#3a">the record (3a)</a> with the countersign sheet already open.</div>
+</div>
+
+<p class="dv-next">Next: Studio screens (Templates &amp; blocks with the contract, Catalog, Connections, Workspace, Activity log), then empty / loading / error states. Try: “add a Clients list view” · “on <a class="dv-oid" href="#6a">6a</a>, add bulk actions”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'all', q: '', ic: {}, menu: null, sheet: null, toast: null, prev: null, rows: [
+    { id: 1, client: 'Brightline Foods', title: 'A new website for Brightline Foods', s: 'won', counter: false, one: '$1,150', mon: '$260/mo', when: 'Today' },
+    { id: 2, client: 'Harbor Dental', title: 'Care plan and hosting renewal', s: 'draft', ai: true, one: '$0', mon: '$100/mo', when: '1h ago' },
+    { id: 3, client: 'Oak & Ember Bakery', title: 'Website refresh', s: 'draft', ai: true, one: '$2,750', mon: '$85/mo', when: 'Yesterday' },
+    { id: 4, client: 'Coastline Yoga', title: 'Website build', s: 'draft', one: '$2,750', mon: '$85/mo', when: 'Oct 28' },
+    { id: 5, client: 'Northside Fitness', title: 'Local visibility', s: 'viewed', one: '$0', mon: '$295/mo', when: 'Oct 27', views: 3 },
+    { id: 6, client: 'Lumen Law', title: 'Website build', s: 'viewed', one: '$500', mon: '$175/mo', when: 'Oct 22', views: 1 },
+    { id: 7, client: 'Gulf Coast Roofing', title: 'Website and local SEO', s: 'sent', one: '$2,750', mon: '$380/mo', when: 'Oct 25' },
+    { id: 8, client: 'Fairway Plumbing', title: 'Care Standard upgrade', s: 'won', counter: true, billing: true, one: '$0', mon: '$85/mo', when: 'Oct 26' },
+    { id: 9, client: 'Sarasota Charter Fishing', title: 'Web Design & Development', s: 'won', counter: true, one: '$1,900', mon: '$85/mo', when: 'Oct 2' },
+    { id: 10, client: 'Pine Street Books', title: 'Online store', s: 'lost', one: '$3,400', mon: '$25/mo', when: 'Sep 30' },
+    { id: 11, client: 'Harbor Dental', title: 'New website (2023)', s: 'imported', one: '$3,200', mon: '$0/mo', when: '2023' },
+    { id: 12, client: 'Bayfront Realty', title: 'Landing pages', s: 'lost', archived: true, one: '$900', mon: '$0/mo', when: 'Aug 14' },
+  ] };
+  componentDidMount() { fetch('src/components/icons.json').then(r => r.json()).then(j => { const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path }; this.setState({ ic }); }).catch(() => {}); }
+  countersign(r) { window.location.href = 'Redesign 03 - Record and Home.dc.html?countersign=1#3a'; }
+  patch(id, p, msg) { this.setState(s => ({ prev: s.rows, rows: s.rows.map(r => r.id === id ? { ...r, ...p, when: 'Just now' } : r), menu: null, sheet: null, toast: msg })); }
+  renderVals() {
+    const S = this.state, dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || dflt });
+    const P = { draft: ['Draft', '#ECE8E1', '#5F5B53'], sent: ['Sent', '#E2F2F5', '#0B5563'], viewed: ['Viewed', '#E2F2F5', '#0B5563'], won: ['Won', '#E3F1E8', '#146B3F'], lost: ['Lost', '#FBE9E7', '#A3261E'], imported: ['Proposify import', '#F3F0EA', '#5F5B53'] };
+    const V = {
+      all: r => !r.archived && r.s !== 'imported', drafts: r => !r.archived && r.s === 'draft', sent: r => !r.archived && (r.s === 'sent' || r.s === 'viewed'),
+      viewed: r => !r.archived && r.s === 'viewed', notviewed: r => !r.archived && r.s === 'sent', won: r => !r.archived && r.s === 'won',
+      counter: r => !r.archived && r.s === 'won' && !r.counter, lost: r => !r.archived && r.s === 'lost', billing: r => !r.archived && !!r.billing,
+      archived: r => !!r.archived, imported: r => r.s === 'imported' };
+    const defs = [['all', 'All'], ['drafts', 'Drafts'], ['sent', 'Sent'], ['viewed', 'Viewed'], ['notviewed', 'Not viewed'], ['won', 'Won'], ['counter', 'Needs countersign'], ['lost', 'Lost'], ['billing', 'Billing issues'], ['archived', 'Archived'], ['imported', 'Imported']];
+    const nextOf = r => r.s === 'draft' ? (r.ai ? 'You review the AI draft' : 'You finish and send') : r.s === 'sent' ? 'Client opens the link' : r.s === 'viewed' ? `Client decides · opened ${r.views}×` : r.s === 'won' ? (!r.counter ? 'You countersign' : r.billing ? 'You retry Stripe · card declined' : 'Nothing left to do') : r.s === 'lost' ? 'Duplicate to try again' : 'Read-only PDF';
+    const q = S.q.trim().toLowerCase();
+    const A = (label, run, hint = '', danger = false, off = false) => ({ label, hint, off, op: off ? 0.45 : 1, ink: danger ? '#A3261E' : '#1C1B18', run: e => { e && e.stopPropagation && e.stopPropagation(); if (!off) run(); } });
+    const actionsFor = r => {
+      const imp = r.s === 'imported', sentish = r.s === 'sent' || r.s === 'viewed';
+      const list = [];
+      if (r.s === 'won' && !r.counter) list.push(A('Sign', () => this.countersign(r), 'opens proposal'));
+      if (!imp) list.push(r.s === 'draft' ? A('Edit', () => this.setState({ menu: null, sheet: null, toast: 'Opening the editor…', prev: null })) : sentish ? A('Edit as new version', () => this.setState({ menu: null, sheet: null, toast: 'New version created. Re-sending rotates the link.', prev: null }), 'rotates link') : r.s === 'lost' ? A('Edit', () => {}, 'closed · duplicate to edit', false, true) : A('Edit', () => {}, 'signed · locked', false, true));
+      list.push(A('Duplicate', () => this.setState(s => ({ prev: s.rows, rows: [{ ...r, id: Date.now(), s: 'draft', counter: false, billing: false, archived: false, ai: false, title: r.title + ' (copy)', when: 'Just now' }, ...s.rows], menu: null, sheet: null, toast: 'Duplicated as a new draft.' }))));
+      list.push(A('Download PDF', () => this.setState({ menu: null, sheet: null, toast: r.s === 'won' ? 'Downloading the sealed PDF…' : 'Downloading a preview PDF…', prev: null }), r.s === 'won' ? 'sealed' : 'preview'));
+      if (!imp && r.s !== 'draft') {
+        if (r.s !== 'won') list.push(A('Mark as won', () => this.patch(r.id, { s: 'won', counter: false }, 'Marked as won. The record notes it was set by hand, with no client signature.'), 'by hand'));
+        if (r.s !== 'lost') list.push(A('Mark as lost', () => this.patch(r.id, { s: 'lost' }, 'Marked as lost. The client link now shows “no longer available”.'), r.s === 'won' ? '' : 'closes link', false, r.s === 'won'));
+        if (r.s === 'lost') list.push(A('Mark as sent again', () => this.patch(r.id, { s: 'sent' }, 'Reopened as sent. The link works again.')));
+      }
+      list.push(r.archived ? A('Unarchive', () => this.patch(r.id, { archived: false }, 'Moved out of the archive.')) : A('Archive', () => this.patch(r.id, { archived: true }, 'Archived. Find it under Archived.'), '', true));
+      return list;
+    };
+    const rows = S.rows.filter(r => V[S.view](r) && (!q || (r.client + ' ' + r.title + ' ' + r.one + ' ' + r.mon).toLowerCase().includes(q)))
+      .map(r => { const [status, bg, ink] = P[r.s]; const open = S.menu === r.id;
+        return { ...r, status, bg, ink, ai: !!r.ai, needsCounter: r.s === 'won' && !r.counter, next: nextOf(r), menuOpen: open, actions: actionsFor(r),
+          rowBg: open ? '#F3F0EA' : 'transparent', menuBg: open ? '#ECE8E1' : 'transparent', menuLine: open ? '#CFC9BE' : 'transparent',
+          open: () => this.setState({ menu: null, sheet: null, toast: r.s === 'draft' ? 'Opening the editor…' : 'Opening the record…', prev: null }),
+          signHref: 'Redesign 03 - Record and Home.dc.html?countersign=1#3a', toggleMenu: e => { e.stopPropagation(); this.setState(s => ({ menu: s.menu === r.id ? null : r.id, sheet: null })); },
+          toggleSheet: e => { e.stopPropagation(); this.setState({ sheet: r.id, menu: null }); } }; });
+    const views = defs.map(([k, name]) => { const on = S.view === k; return { key: k, optLabel: name + ' (' + S.rows.filter(V[k]).length + ')', name, count: String(S.rows.filter(V[k]).length), on, go: () => this.setState({ view: k, menu: null }),
+      bg: on ? '#1C1B18' : '#FBFAF7', ink: on ? '#fff' : '#1C1B18', line: on ? '#1C1B18' : '#DDD8CE' }; });
+    const sheetRow = S.rows.find(r => r.id === S.sheet);
+    const widths = [
+      { pid: '6a', cid: '6d', label: 'desktop 1440', px: '1440px', h: '880px', radius: '12px', isDesk: true, isTab: false, isPhone: false, isTable: true, isCompact: false, selFlex: 'none', headPad: '28px 40px 16px', bodyPad: '20px 40px 40px', bodyPad2: '28px 40px 40px', searchFlex: '0 1 360px', tabBleed: '0', cols: 'minmax(0,2fr) 190px minmax(0,1.5fr) 90px 90px 80px 36px', actFlex: 'none', sheetOpen: false },
+      { pid: '6b', cid: '6e', label: 'tablet 768', px: '768px', h: '1024px', radius: '24px', isDesk: false, isTab: true, isPhone: false, isTable: true, isCompact: true, selFlex: '0 1 300px', headPad: '24px 24px 14px', bodyPad: '16px 24px 32px', bodyPad2: '24px', searchFlex: '1 1 260px', tabBleed: '0', cols: 'minmax(0,2fr) 150px 80px 84px 36px', actFlex: 'none', sheetOpen: false },
+      { pid: '6c', cid: '6f', label: 'phone 375', px: '375px', h: '780px', radius: '38px', isDesk: false, isTab: false, isPhone: true, isTable: false, isCompact: true, selFlex: '1 1 auto', headPad: '20px 16px 12px', bodyPad: '12px 16px 24px', bodyPad2: '16px', searchFlex: '1 1 100%', tabBleed: '-16px;padding-left:16px', cols: '1fr', actFlex: '1 1 100%', sheetOpen: !!sheetRow },
+    ];
+    const emptyMsgs = { counter: ['Nothing to countersign.', 'Proposals land here as soon as a client signs.'], lost: ['No lost proposals.', 'Use ⋯ → Mark as lost when a client says no.'], archived: ['The archive is empty.', 'Archived proposals stay searchable here.'] };
+    const [et, es] = q ? [`No proposals match “${S.q}”.`, 'Search looks at client, title and amounts. Try fewer words, or clear the search.'] : (emptyMsgs[S.view] || ['Nothing here yet.', 'Proposals in this view will appear here.']);
+    return { ic, rows, views, widths, view: S.view, setView: e => this.setState({ view: e.target.value, menu: null }), q: S.q, hasQ: !!q, empty: rows.length === 0, emptyTitle: et, emptySub: es,
+      setQ: e => this.setState({ q: e.target.value }), clearQ: () => this.setState({ q: '' }),
+      closeMenus: () => { if (S.menu || S.sheet) this.setState({ menu: null, sheet: null }); }, stop: e => e.stopPropagation(),
+      sheetTitle: sheetRow ? sheetRow.client + ' · ' + sheetRow.title : '', sheetActions: sheetRow ? actionsFor(sheetRow) : [],
+      hasToast: !!S.toast, toast: S.toast || '', undo: () => this.setState(s => ({ rows: s.prev || s.rows, toast: null, prev: null })) };
+  }
+}
+</script>
+</body>
+</html>

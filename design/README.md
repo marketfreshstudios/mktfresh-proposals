@@ -1,5 +1,7 @@
 # Designs
 
+> **Superseded for UI by `redesign/` (29 October 2026).** Build from `redesign/specs/README.md` and the `redesign/Redesign 0X - *.dc.html` files; see `redesign/CODEX_BRIEF.md`. The material below remains the reference only where the redesign is silent.
+
 Exported from Claude Design on 29 October 2026. These are the visual source of truth for the Phase 2 UI (`PHASE2.md`, workstream E). Reference material, not application code: nothing here is built, imported or type-checked (`tsconfig.json` excludes this folder).
 
 ## `system/` — the design system

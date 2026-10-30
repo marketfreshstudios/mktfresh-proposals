@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opt:target .dv-oid{background:#365C4A;color:#fff}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t8">
+<div class="dv-thd"><a class="dv-tid" href="#t8">8</a><span class="dv-tname">Empty, loading, error and edge states</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;max-width:1440px;margin:0 0 36px">
+  <h1 style="margin:0;font:600 40px/46px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">Say what happened, what it means, and what to do.</h1>
+  <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Every state appears where the work is, not in a modal. Loading uses skeletons in the shape of the content. Errors keep what the person already did (a typed note, a signature) and offer one way forward.</div>
+  <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Billing or PDF problems never make a signature look in doubt. Client-facing states never mention tokens, codes or internal names, and always give a person to contact.</div>
+</div>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;max-width:1600px;margin:0 0 24px">
+  <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">{{ g.title }}</h2>
+  <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">{{ g.sub }}</span>
+</div>
+<div class="dv-opts" style="margin:0 0 56px">
+<sc-for list="{{ g.items }}" as="s" hint-placeholder-count="6">
+<div class="dv-opt" id="{{ s.id }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ s.id }}">{{ s.id }}</a>{{ s.label }}</div>
+  <div style="width:{{ s.w }};height:{{ s.h }};border:1px solid #C9C3B7;border-radius:{{ s.radius }};background:#F3F0EA;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 16px 32px rgba(20,18,14,.08)">
+    <div style="flex:none;height:52px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#FBFAF7;border-bottom:1px solid #DDD8CE"><span style="font:600 15px 'Instrument Sans'">{{ s.ctx }}</span><span style="flex:1"></span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ s.ctxRight }}</span></div>
+    <div style="flex:1;min-height:0;padding:18px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+      <sc-if value="{{ s.hasBanner }}">
+        <div role="{{ s.role }}" style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:{{ s.bg }};color:{{ s.ink }}">
+          <span style="flex:none;width:20px;height:20px;border-radius:10px;background:{{ s.ink }};color:{{ s.bg }};font:700 12px/20px 'Instrument Sans';text-align:center;margin-top:1px">{{ s.glyph }}</span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div style="font:600 15px/21px 'Instrument Sans'">{{ s.title }}</div><div style="font:400 14px/20px 'Instrument Sans'">{{ s.body }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"><sc-if value="{{ s.hasAct }}"><button style="height:36px;padding:0 14px;border:0;border-radius:9px;background:{{ s.ink }};color:{{ s.btnInk }};font:600 14px 'Instrument Sans';white-space:nowrap">{{ s.act }}</button></sc-if><sc-if value="{{ s.hasAct2 }}"><button style="height:36px;padding:0 12px;border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit;font:600 14px 'Instrument Sans';white-space:nowrap">{{ s.act2 }}</button></sc-if></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ s.isEmpty }}">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:10px;padding:0 6px">
+          <div style="font:600 24px/30px 'Source Serif 4',Georgia,serif;text-wrap:pretty">{{ s.title }}</div>
+          <div style="font:400 14px/21px 'Instrument Sans';color:#5F5B53;max-width:460px;text-wrap:pretty">{{ s.body }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"><sc-if value="{{ s.hasAct }}"><button style="height:44px;padding:0 16px;border:0;border-radius:10px;background:#365C4A;color:#fff;font:600 15px 'Instrument Sans';white-space:nowrap">{{ s.act }}</button></sc-if><sc-if value="{{ s.hasAct2 }}"><button style="height:44px;padding:0 14px;border:1px solid #DDD8CE;border-radius:10px;background:#FBFAF7;font:600 15px 'Instrument Sans';white-space:nowrap">{{ s.act2 }}</button></sc-if></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ s.isSkel }}">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-if value="{{ s.hasSkelNote }}"><div style="display:flex;gap:8px;align-items:center;font:500 13px 'Instrument Sans';color:{{ s.ink }}"><span style="width:8px;height:8px;border-radius:4px;background:{{ s.ink }}"></span>{{ s.skelNote }}</div></sc-if>
+          <sc-for list="{{ s.skel }}" as="k" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:8px;padding:{{ k.pad }};background:{{ k.bg }};border-radius:12px;border:{{ k.border }}"><div style="height:14px;width:{{ k.a }};border-radius:6px;background:#E2DDD3"></div><div style="height:10px;width:{{ k.b }};border-radius:5px;background:#ECE8E1"></div></div></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ s.hasContent }}">
+        <div style="display:flex;flex-direction:column;gap:8px;opacity:{{ s.contentOp }}">
+          <sc-for list="{{ s.lines }}" as="ln" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;gap:10px;padding:12px 14px;background:{{ s.lineBg }};border:1px solid #E8E4DC;border-radius:10px;font:400 14px 'Instrument Sans'"><span>{{ ln.a }}</span><span style="font-weight:600;color:#3E3B35;white-space:nowrap">{{ ln.b }}</span></div></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ s.hasToast }}"><div role="status" style="position:absolute;left:18px;right:18px;bottom:18px;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:12px;background:#1C1B18;color:#fff;font:500 14px/20px 'Instrument Sans'"><span style="flex:1">{{ s.toast }}</span><span style="font-weight:600;color:#B9D3C6;white-space:nowrap">{{ s.toastAct }}</span></div></sc-if>
+  </div>
+  <div style="max-width:{{ s.w }};font:400 13px/19px 'Instrument Sans';color:#3E3B35;text-wrap:pretty"><b>Rule.</b> {{ s.rule }}</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+
+<p class="dv-next">Next: one build spec for Claude and Codex covering every screen, component and data rule. Try: “add the offline state for the editor on phone” · “show <a class="dv-oid" href="#8j">8j</a> after the client comes back from a failed checkout”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const T = { warn: ['#FBEEDB', '#7A4800', '!'], bad: ['#FBE9E7', '#A3261E', '!'], info: ['#E2F2F5', '#0B5563', 'i'], ai: ['#EEE8FB', '#5B3FA8', '✦'], ok: ['#E3F1E8', '#146B3F', '✓'] };
+    const D = { w: '560px', h: '420px', radius: '14px' }, PH = { w: '375px', h: '600px', radius: '32px' };
+    const base = { skelNote: '', title: '', body: '', act: '', act2: '', toast: '', toastAct: '', hasBanner: false, isEmpty: false, isSkel: false, hasContent: false, hasToast: false, hasAct: false, hasAct2: false, hasSkelNote: false, contentOp: 1, lineBg: '#FBFAF7', lines: [], skel: [], role: 'status', ctxRight: '' };
+    const mk = (o) => { const t = T[o.tone] || T.info; return { ...base, ...(o.phone ? PH : D), ...o, bg: t[0], ink: t[1], glyph: t[2], btnInk: o.tone === 'ai' || o.tone === 'info' || o.tone === 'ok' ? '#fff' : '#fff', hasAct: !!o.act, hasAct2: !!o.act2, hasToast: !!o.toast, hasSkelNote: !!o.skelNote, role: o.tone === 'bad' ? 'alert' : 'status' }; };
+    const L = arr => arr.map(([a, b]) => ({ a, b }));
+    const skel = (n, card = true) => Array.from({ length: n }, (_, i) => ({ a: ['55%', '40%', '62%', '48%', '58%'][i % 5], b: ['80%', '65%', '72%', '85%', '60%'][i % 5], pad: card ? '14px' : '6px 0', bg: card ? '#FBFAF7' : 'transparent', border: card ? '1px solid #E8E4DC' : '0' }));
+    const staff = [
+      mk({ id: '8a', label: 'Home · first run', ctx: 'Home', isEmpty: true, title: 'Welcome, Jonathan. Let’s send your first proposal.', body: 'Connect Stripe so the catalog fills in, pick a template, and you’re ready. Claude drafts will also show up here once an assistant is connected.', act: 'New proposal', act2: 'Connect Stripe', rule: 'First run points at the two things that unlock the product, not a tour.' }),
+      mk({ id: '8b', label: 'Home · all clear · phone', phone: true, ctx: 'Home', isEmpty: true, title: 'Nothing needs you right now.', body: 'Drafts to review, signatures to countersign and billing problems will appear here. 5 proposals are out with clients.', act: 'New proposal', act2: 'See proposals', rule: 'An empty Home is the good state; it says so and shows what’s in flight.' }),
+      mk({ id: '8c', label: 'Proposals · loading', ctx: 'Proposals', isSkel: true, skel: skel(4), rule: 'Skeleton rows in the shape of the list. No spinner over content that already has a shape.' }),
+      mk({ id: '8d', label: 'Editor · Claude still drafting', ctx: 'Brightline Foods · Draft', ctxRight: 'Started 2:04 PM', isSkel: true, tone: 'ai', skelNote: 'Claude is drafting from Rowan’s email. Sections appear as they’re written; you can start reading the first ones.', skel: skel(4), rule: 'AI drafting is shown in the AI color, streams section by section, and can be read while it runs.' }),
+      mk({ id: '8e', label: 'Editor · offline, changes kept', ctx: 'Brightline Foods · Draft', ctxRight: 'Not saved', hasBanner: true, tone: 'warn', title: 'You’re offline. Your changes are kept on this device.', body: 'We’ll save them as soon as you’re back online. Sending is paused until then.', hasContent: true, contentOp: .7, lines: L([['Overview', 'edited'], ['Care Standard', '$85/mo'], ['Statement of Work', '']]), rule: 'Never lose typing. Say what’s paused and why.' }),
+      mk({ id: '8f', label: 'Editor · someone else saved', ctx: 'Brightline Foods · Draft', ctxRight: 'Franz is here', hasBanner: true, tone: 'warn', title: 'Franz saved this draft after you opened it.', body: 'He changed the quote. Reload to see his changes; your unsaved edits to Overview will be kept as a suggestion.', act: 'Reload and keep mine', act2: 'See what changed', rule: 'Revision conflict is a normal state with a named person, not “conflict detected”.' }),
+      mk({ id: '8g', label: 'Editor · catalog didn’t load', ctx: 'Quote', hasBanner: true, tone: 'bad', title: 'We couldn’t load the catalog from Stripe.', body: 'Your saved lines are unchanged. Try again, or add a custom line for now.', act: 'Try again', act2: 'Custom line', hasContent: true, lines: L([['Website Build — Own It Over Time', '$500 + $175/mo'], ['Care Standard', '$85/mo']]), rule: 'A failed lookup never empties the quote.' }),
+      mk({ id: '8h', label: 'Record · PDF seal failed', ctx: 'Brightline Foods', ctxRight: 'Won', hasBanner: true, tone: 'bad', title: 'Rowan’s signature is saved. Sealing the PDF failed.', body: 'Couldn’t create the PDF · attempt 2. Nothing about the signature is in doubt; the copy will be emailed once sealing works.', act: 'Retry sealing', hasContent: true, lines: L([['Rowan Vale signed', 'Oct 29, 4:12 PM'], ['Sealed PDF', 'Failed · attempt 2']]), rule: 'Billing and PDF problems sit beside the record and say the signature is safe first.' }),
+      mk({ id: '8i', label: 'Record · checkout not finished', ctx: 'Lumen Law', ctxRight: 'Won', hasBanner: true, tone: 'warn', title: 'Signed 3 days ago, billing not set up yet.', body: 'The client hasn’t finished Stripe Checkout. We sent a reminder on day 2. You can resend the link or switch to invoicing manually.', act: 'Resend billing link', act2: 'Invoice manually', rule: 'Needs review means a person decides; the two real options are right there.' }),
+      mk({ id: '8j', label: 'Countersign · already done', ctx: 'Brightline Foods', ctxRight: 'Won', hasContent: true, lines: L([['Countersigned by Franz', 'Oct 29, 4:31 PM'], ['Final sealed PDF', 'Emailed']]), toast: 'Franz already countersigned this at 4:31 PM.', toastAct: 'View', rule: 'Arriving from a stale Sign link opens the record normally and explains, instead of showing a sheet.' }),
+      mk({ id: '8k', label: 'Connections · AI assistant offline', ctx: 'Connections', hasBanner: true, tone: 'ai', title: 'Claude hasn’t connected since Oct 21.', body: 'Drafts from email won’t appear until it reconnects. Nothing else is affected; you can still write proposals by hand.', act: 'Reconnect Claude', act2: 'Revoke', rule: 'AI problems are framed as “drafts paused”, never as a product outage.' }),
+      mk({ id: '8l', label: 'Send · blocked', ctx: 'Review & send', hasBanner: true, tone: 'bad', title: '1 thing to fix before sending', body: 'Catering menu photography has no accounting item. Map it, or invoice it manually.', act: 'Invoice manually', act2: 'Map item', hasContent: true, lines: L([['AI content reviewed', '✓'], ['Both signature blocks', '✓']]), rule: 'A disabled Send always says why, and the fix is one tap.' }),
+    ];
+    const client = [
+      mk({ id: '8m', label: 'Proposal loading', phone: true, ctx: 'MarketFresh Studios', isSkel: true, skel: skel(5, false), rule: 'Paper-shaped skeleton; the sticky bar appears only once totals are known.' }),
+      mk({ id: '8n', label: 'Offline while signing', phone: true, ctx: 'MarketFresh Studios', ctxRight: 'Step 2 of 3', hasBanner: true, tone: 'warn', title: 'You’re offline. Your signature is still here.', body: 'We’ll send it when you’re connected again. Nothing has been signed yet.', act: 'Try again', rule: 'Keep the drawn signature and every tick; say plainly that nothing was submitted.' }),
+      mk({ id: '8o', label: 'Payment didn’t go through', phone: true, ctx: 'MarketFresh Studios', ctxRight: 'Step 3 of 3', hasBanner: true, tone: 'warn', title: 'Your proposal is signed. The card wasn’t accepted.', body: 'Your bank declined the payment. You can try another card, or ask Jonathan to invoice you instead.', act: 'Try another card', act2: 'Email Jonathan', rule: 'The signature comes first, the problem second, and there’s always a person.' }),
+      mk({ id: '8p', label: 'Link replaced', phone: true, ctx: 'MarketFresh Studios', isEmpty: true, title: 'This link has been replaced.', body: 'Jonathan sent you an updated version of this proposal. Check your email for the newest link, or reply to ask for it again.', act: 'Email Jonathan', rule: 'Rotated links get the calm dead-end pattern; no hint of what changed.' }),
+      mk({ id: '8q', label: 'Decline · confirm', phone: true, ctx: 'MarketFresh Studios', isEmpty: true, title: 'Decline this proposal?', body: 'Jonathan will be told you’ve decided not to go ahead. You can add a note if you like. The link will close.', act: 'Decline proposal', act2: 'Go back', rule: 'Decline is a confirmation, not one tap. It sets the proposal to Lost with “Client declined”.' }),
+      mk({ id: '8r', label: 'Already signed', phone: true, ctx: 'MarketFresh Studios', isEmpty: true, title: 'You signed this on Oct 29.', body: 'Your signed copy is below. Jonathan countersigned on Oct 29, and the final sealed copy was emailed to you.', act: 'Download signed copy', rule: 'Opening an old link after signing shows the result, never the form again.' }),
+    ];
+    return { groups: [
+      { title: 'Staff', sub: 'Shown in place on Home, Proposals, the editor, the record and Connections', items: staff },
+      { title: 'Client', sub: 'Phone-first; calm, one sentence, a person to contact', items: client },
+    ] };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-VariableItalic.woff2') format('woff2');font-weight:200 900;font-style:italic}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500}
+@keyframes seal{from{width:6%}to{width:96%}}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opt:target .dv-oid{background:#365C4A;color:#fff}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Information architecture · Client signing flow on phone</span></div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:48px;max-width:1360px;margin:0 0 56px">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">MarketFresh Proposals · Redesign</div>
+    <h1 style="margin:0;font:600 48px/52px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">From “client asked for X” to “proposal sent” in minutes, and from “opened the email” to “signed and paid” in four taps.</h1>
+    <p style="margin:0;font:400 17px/27px 'Instrument Sans';color:#3E3B35;max-width:620px;text-wrap:pretty">This first pass covers the navigation model and the full client flow on a 375px phone. The editor (desktop and phone) comes next, then the record, dashboard, the full design system and edge states at all three widths.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:24px">
+    <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">What I kept and what I changed</div>
+    <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font:400 15px/22px 'Instrument Sans';color:#1C1B18">
+      <li>Kept the repo's rules: two totals always, fixed status words, paper-white document, frozen after signing, AI never sends or signs, nothing auto-reloads.</li>
+      <li>Kept Source Serif 4 for the document and IBM Plex Mono for evidence. Replaced Public Sans with Instrument Sans for UI, and moved from cool grey to warm paper neutrals so the product reads editorial, not admin.</li>
+      <li>Money in compact UI reads “$85/mo”; in sentences and the PDF it reads “$85/month”.</li>
+      <li>Sample client is Brightline Foods (Rowan Vale). Products and amounts come from the seed catalog and are illustrative.</li>
+    </ul>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:20px;max-width:1360px;margin:0 0 64px">
+  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px">
+    <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">1 · Information architecture</h2>
+    <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">23 staff screens become 3 primary destinations, 1 proposal workspace and a Studio menu.</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Primary · always visible</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div><div style="font:600 17px/24px 'Instrument Sans'">Home</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">What needs me, grouped by who acts next. Pipeline split one-time and recurring.</div></div>
+        <div><div style="font:600 17px/24px 'Instrument Sans'">Proposals</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">One list with saved views: Drafts, AI drafts, Out for signature, Needs countersign, Billing, Completed, Ended, Imported.</div></div>
+        <div><div style="font:600 17px/24px 'Instrument Sans'">Clients</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Contact, billing status (Stripe subscriber or not), every proposal for them.</div></div>
+        <div><div style="font:600 17px/24px 'Instrument Sans'">New proposal</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">A global button and shortcut (N), not a page. Opens a sheet: pick client, then start from a template, a pasted brief, or a copy of a past proposal.</div></div>
+      </div>
+    </div>
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">One proposal, one address</div>
+      <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">/proposals/:id is the same place before and after sending. Its tabs change with the lifecycle.</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font:600 13px/18px 'Instrument Sans';color:#1C1B18">While a draft</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="padding:4px 10px;border:1px solid #CFC9BE;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Edit · document + quote</span><span style="padding:4px 10px;border:1px solid #CFC9BE;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Preview</span><span style="padding:4px 10px;background:#1C1B18;color:#fff;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Review &amp; send</span></div>
+        <div style="font:600 13px/18px 'Instrument Sans';color:#1C1B18;margin-top:6px">Once sent</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="padding:4px 10px;background:#1C1B18;color:#fff;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Status</span><span style="padding:4px 10px;border:1px solid #CFC9BE;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Document</span><span style="padding:4px 10px;border:1px solid #CFC9BE;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Timeline</span><span style="padding:4px 10px;border:1px solid #CFC9BE;border-radius:999px;font:500 13px/18px 'Instrument Sans'">Evidence</span></div>
+        <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">Countersign and billing are actions on Status, not pages.</div>
+      </div>
+    </div>
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Studio · behind the workspace menu</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font:400 14px/20px 'Instrument Sans';color:#5F5B53">
+        <div><span style="font:600 15px/22px 'Instrument Sans';color:#1C1B18">Templates &amp; blocks</span><br>Templates and the content library in one place; blocks are just reusable sections.</div>
+        <div><span style="font:600 15px/22px 'Instrument Sans';color:#1C1B18">Catalog</span><br>Stripe products, custom families, plan terms.</div>
+        <div><span style="font:600 15px/22px 'Instrument Sans';color:#1C1B18">Connections</span><br>Stripe, QuickBooks, email, pricing reference and AI assistants.</div>
+        <div><span style="font:600 15px/22px 'Instrument Sans';color:#1C1B18">Workspace</span><br>Brand (logo, accent), team, company signatory, client link defaults.</div>
+        <div><span style="font:600 15px/22px 'Instrument Sans';color:#1C1B18">Activity log</span><br>Workspace-wide audit, filterable by person or assistant.</div>
+      </div>
+    </div>
+    <div style="background:#F3F0EA;border:1px dashed #BDB6A8;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">No longer separate pages</div>
+      <div style="display:flex;flex-direction:column;gap:9px;font:400 14px/20px 'Instrument Sans';color:#1C1B18">
+        <div><b>Dashboard</b> → Home</div>
+        <div><b>New proposal page</b> → sheet</div>
+        <div><b>Send dialog</b> → Review &amp; send tab, with readiness, preview and sender together</div>
+        <div><b>Counter-sign page</b> → sheet on Status</div>
+        <div><b>Proposal audit page</b> → Evidence tab</div>
+        <div><b>Archive</b> → “Ended” and “Imported” views in Proposals</div>
+        <div><b>Content library</b> → Templates &amp; blocks</div>
+        <div><b>Integrations + AI assistants</b> → Connections</div>
+        <div><b>Imports</b> → one-time tool inside Connections</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:stretch">
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Desktop 1440 · sidebar</div>
+      <div style="display:flex;border:1px solid #DDD8CE;border-radius:10px;overflow:hidden;height:230px;background:#F3F0EA">
+        <div style="width:180px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:14px 12px;display:flex;flex-direction:column;gap:4px">
+          <div style="font:600 14px/20px 'Instrument Sans';margin-bottom:10px">MarketFresh Studios</div>
+          <div style="height:30px;border-radius:7px;background:#365C4A;color:#fff;font:600 13px/30px 'Instrument Sans';padding:0 10px">New proposal</div>
+          <div style="font:600 13px/28px 'Instrument Sans';padding:0 10px;background:#E8E4DC;border-radius:6px">Home <span style="float:right;font-weight:500;color:#5F5B53">5</span></div>
+          <div style="font:500 13px/28px 'Instrument Sans';padding:0 10px">Proposals</div>
+          <div style="font:500 13px/28px 'Instrument Sans';padding:0 10px">Clients</div>
+          <div style="flex:1"></div>
+          <div style="font:500 13px/28px 'Instrument Sans';padding:0 10px;color:#5F5B53">Studio ▾</div>
+        </div>
+        <div style="flex:1;padding:16px;font:400 12px 'IBM Plex Mono';color:#8A857B">page</div>
+      </div>
+      <div style="font:400 13px/18px 'Instrument Sans';color:#5F5B53">Three items, one action. Badge counts only what needs the signed-in person.</div>
+    </div>
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Tablet 768 · icon rail</div>
+      <div style="display:flex;border:1px solid #DDD8CE;border-radius:10px;overflow:hidden;height:230px;background:#F3F0EA">
+        <div style="width:56px;background:#FBFAF7;border-right:1px solid #DDD8CE;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:#365C4A;color:#fff;font:600 18px/32px 'Instrument Sans';text-align:center">+</div>
+          <div style="width:32px;height:32px;border-radius:8px;background:#E8E4DC"></div>
+          <div style="width:32px;height:32px;border-radius:8px;border:1px solid #DDD8CE"></div>
+          <div style="width:32px;height:32px;border-radius:8px;border:1px solid #DDD8CE"></div>
+        </div>
+        <div style="flex:1;padding:16px;font:400 12px 'IBM Plex Mono';color:#8A857B">page</div>
+      </div>
+      <div style="font:400 13px/18px 'Instrument Sans';color:#5F5B53">Labels show on hover and focus. Lists keep a compact table.</div>
+    </div>
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Phone 375 · bottom tabs</div>
+      <div style="display:flex;flex-direction:column;border:1px solid #DDD8CE;border-radius:10px;overflow:hidden;height:230px;background:#F3F0EA">
+        <div style="flex:1;padding:16px;font:400 12px 'IBM Plex Mono';color:#8A857B">page · tables become cards</div>
+        <div style="height:56px;background:#FBFAF7;border-top:1px solid #DDD8CE;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:0 6px;align-items:center;text-align:center;font:500 11px/14px 'Instrument Sans';color:#5F5B53">
+          <div style="color:#1C1B18;font-weight:600">Home</div><div>Proposals</div><div><span style="display:inline-block;width:36px;height:36px;border-radius:18px;background:#365C4A;color:#fff;font:500 22px/36px 'Instrument Sans'">+</span></div><div>Clients</div><div>Studio</div>
+        </div>
+      </div>
+      <div style="font:400 13px/18px 'Instrument Sans';color:#5F5B53">New sits in the thumb zone. Studio opens a sheet listing the settings pages.</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;max-width:1360px;margin:0 0 28px">
+  <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">2 · Client flow on phone</h2>
+  <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Review → Sign → Billing. The first frame is live: tick optional items, draw a signature, finish.</span>
+</div>
+
+<div class="dv-opts">
+<sc-for list="{{ frames }}" as="f" hint-placeholder-count="3">
+<div class="dv-opt" id="{{ f.id }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ f.id }}">{{ f.id }}</a>{{ f.label }}</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:var(--bg,#F3F0EA);overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(20,18,14,.06),0 24px 48px rgba(20,18,14,.10)">
+    <div style="height:38px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--surface,#FBFAF7);border-bottom:1px solid var(--line,#DDD8CE)">
+      <div style="font:400 11px/16px 'IBM Plex Mono',monospace;color:var(--muted,#5F5B53)">proposals.mktfresh.com</div>
+    </div>
+    <div data-frame-scroll="{{ f.scroll }}" style="flex:1;overflow-y:auto;overflow-x:hidden;position:relative;color:var(--ink,#1C1B18)">
+
+      <sc-if value="{{ f.hasHeader }}" hint-placeholder-val="{{ true }}">
+      <div style="position:sticky;top:0;z-index:5;background:var(--bg,#F3F0EA);border-bottom:1px solid var(--line,#DDD8CE);padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:28px">
+          <div style="font:600 16px/22px 'Instrument Sans';letter-spacing:-.005em">{{ brand }}</div>
+          <div style="font:500 12px/16px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ f.stepText }}</div>
+        </div>
+        <div style="display:flex;gap:4px" aria-hidden="true">
+          <div style="flex:1;height:3px;border-radius:2px;background:{{ f.s1 }}"></div>
+          <div style="flex:1;height:3px;border-radius:2px;background:{{ f.s2 }}"></div>
+          <div style="flex:1;height:3px;border-radius:2px;background:{{ f.s3 }}"></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isGate }}">
+      <div style="min-height:100%;display:flex;flex-direction:column;padding:28px 20px 32px;gap:28px">
+        <div style="font:600 18px/24px 'Instrument Sans'">{{ brand }}</div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px">
+          <div style="width:48px;height:48px;border-radius:24px;background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);display:flex;align-items:center;justify-content:center;color:var(--accent-text,#365C4A)"><svg width="18" height="18" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg></div>
+          <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Enter the password to open your proposal</h1>
+          <p style="margin:0;font:400 15px/22px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ brand }} sent the password separately from the link.</p>
+          <label style="display:flex;flex-direction:column;gap:8px">
+            <span style="font:600 14px/20px 'Instrument Sans'">Password</span>
+            <div style="display:flex;align-items:center;height:52px;border:1.5px solid var(--ink,#1C1B18);border-radius:10px;background:var(--surface,#FBFAF7);padding:0 6px 0 14px">
+              <span style="flex:1;font:400 20px/24px 'Instrument Sans';letter-spacing:.2em">••••••••</span>
+              <span style="height:40px;padding:0 12px;display:flex;align-items:center;font:600 14px 'Instrument Sans';color:var(--accent-text,#365C4A)">Show</span>
+            </div>
+            <span style="font:500 14px/20px 'Instrument Sans';color:#A3261E">That password doesn’t match.</span>
+          </label>
+          <button style="height:52px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer">Open proposal</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isRead }}">
+      <article style="background:#FFFFFF;color:#1C1B18;padding:28px 20px 36px">
+        <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--accent,#365C4A)">Proposal for Brightline Foods</div>
+        <h1 style="margin:10px 0 12px;font:600 35px/40px 'Source Serif 4',Georgia,serif;letter-spacing:-.015em;text-wrap:pretty">A new website for Brightline Foods</h1>
+        <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">From Jonathan Garces · Valid until November 28, 2026</div>
+        <div style="height:196px;margin:24px 0 20px;border-radius:12px;background:repeating-linear-gradient(135deg,#F2EFE9 0 8px,#EAE6DE 8px 16px);display:flex;align-items:flex-end;padding:12px;font:400 11px 'IBM Plex Mono',monospace;color:#6E6A61">template image</div>
+        <details style="border-top:1px solid #E8E4DC;border-bottom:1px solid #E8E4DC;margin:0 0 24px">
+          <summary style="list-style:none;min-height:48px;display:flex;align-items:center;justify-content:space-between;font:600 14px/20px 'Instrument Sans';cursor:pointer">On this page <span style="font-weight:500;color:#5F5B53">5 sections</span></summary>
+          <div style="display:flex;flex-direction:column;padding:0 0 12px;font:500 15px/44px 'Instrument Sans'"><span>Overview</span><span>What we’ll do</span><span>Your investment</span><span>Statement of Work &amp; Contract</span><span>Next steps</span></div>
+        </details>
+        <h2 style="margin:0 0 10px;font:600 24px/30px 'Source Serif 4',Georgia,serif">Overview</h2>
+        <p style="margin:0 0 16px;font:400 19px/30px 'Source Serif 4',Georgia,serif;text-wrap:pretty">Rowan, thank you for walking us through the new menu and the catering side of the business.</p>
+        <p style="margin:0 0 28px;font:400 17px/28px 'Source Serif 4',Georgia,serif;text-wrap:pretty">This proposal covers a new website you’ll own outright over time, ongoing care once it’s live, and two optional add-ons you can include if they suit you.</p>
+        <h2 style="margin:0 0 10px;font:600 24px/30px 'Source Serif 4',Georgia,serif">What we’ll do</h2>
+        <ul style="margin:0 0 32px;padding-left:20px;font:400 17px/28px 'Source Serif 4',Georgia,serif"><li>Design and build a site with online catering orders</li><li>Write and photograph the menu pages</li><li>Launch, then keep it updated and secure</li></ul>
+
+        <div data-anchor="inv"></div>
+        <h2 style="margin:0 0 6px;font:600 24px/30px 'Source Serif 4',Georgia,serif">Your investment</h2>
+        <p style="margin:0 0 20px;font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">Choose how you’d like to pay for the website, and tap any optional item to add or remove it. Totals update as you go.</p>
+        <div style="border-top:1.5px solid #1C1B18;margin:0 0 20px">
+        <sc-for list="{{ qBlocks }}" as="b" hint-placeholder-count="5">
+          <div role="{{ b.role }}" aria-label="{{ b.aria }}" style="margin:{{ b.margin }};padding:{{ b.pad }};border:{{ b.border }};background:{{ b.bg }};border-radius:16px;display:flex;flex-direction:column;gap:{{ b.gap }}">
+            <sc-if value="{{ b.isGroup }}"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 2px 2px"><span style="display:flex;align-items:center;gap:8px"><span style="font:700 13px/18px 'Instrument Sans';letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#365C4A)">Choose one</span></span><span style="font:500 13px/18px 'Instrument Sans';color:#3E3B35">{{ b.countText }}</span></div></sc-if>
+            <sc-for list="{{ b.items }}" as="q" hint-placeholder-count="1">
+              <div style="border-bottom:{{ q.sep }}">
+                <sc-if value="{{ q.isAlt }}">
+                  <button onClick="{{ q.pick }}" role="radio" aria-checked="{{ q.on }}" style="display:flex;gap:14px;width:100%;margin:0;padding:14px 12px;border:{{ q.border }};box-sizing:border-box;border-radius:12px;background:#FFFFFF;text-align:left;cursor:pointer;color:#1C1B18;align-items:flex-start;min-height:64px;box-shadow:{{ q.shadow }}">
+                    <span style="flex:none;width:26px;height:26px;margin-top:1px;border-radius:13px;border:2px solid {{ q.boxBorder }};background:#fff;display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ q.on }}"><span style="width:12px;height:12px;border-radius:6px;background:var(--accent,#365C4A)"></span></sc-if></span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                      <span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span>
+                      <span style="font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">{{ q.desc }}</span>
+                      <span style="display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:8px;border-top:1px solid #E8E4DC">
+                        <sc-for list="{{ q.subs }}" as="u" hint-placeholder-count="1"><span style="display:flex;justify-content:space-between;gap:10px;font:400 14px/20px 'Instrument Sans'"><span style="color:#3E3B35">{{ u.label }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.amt }}<span style="font-weight:400;color:#5F5B53">{{ u.per }}</span></span></span></sc-for>
+                      </span>
+                      <sc-if value="{{ q.hasTerms }}"><span style="margin-top:6px;padding:8px 10px;background:#F6F4EF;border-radius:8px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">{{ q.terms }}</span></sc-if>
+                      </span>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ q.opt }}">
+                  <button onClick="{{ q.toggle }}" role="checkbox" aria-checked="{{ q.on }}" style="display:flex;gap:14px;width:calc(100% + 20px);margin:6px -10px;padding:14px 10px;border:0;border-radius:10px;background:{{ q.bg }};text-align:left;cursor:pointer;color:#1C1B18;align-items:flex-start;min-height:64px">
+                    <span style="flex:none;width:26px;height:26px;margin-top:1px;border-radius:7px;border:2px solid {{ q.boxBorder }};background:{{ q.boxBg }};display:flex;align-items:center;justify-content:center">
+                      <sc-if value="{{ q.on }}"><svg width="14" height="14" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if>
+                    </span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                      <span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span>
+                      <span style="font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">{{ q.desc }}</span>
+                      <span style="font:600 12px/16px 'Instrument Sans';color:var(--accent,#365C4A);margin-top:2px">{{ q.tag }}</span>
+                    </span>
+                    <span style="flex:none;text-align:right;font:600 15px/21px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ q.amt }}<span style="font-weight:400;color:#5F5B53">{{ q.per }}</span></span>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ q.req }}">
+                  <div style="display:flex;gap:14px;padding:14px 0;align-items:flex-start">
+                    <span style="flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:#8A857B"><svg width="13" height="14" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg></span>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                      <span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span>
+                      <span style="font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">{{ q.desc }}</span>
+                      <sc-if value="{{ q.hasTerms }}"><span style="margin-top:6px;padding:8px 10px;background:#F6F4EF;border-radius:8px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">{{ q.terms }}</span></sc-if>
+                    </span>
+                    <span style="flex:none;text-align:right;font:600 15px/21px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ q.amt }}<span style="font-weight:400;color:#5F5B53">{{ q.per }}</span></span>
+                  </div>
+                </sc-if>
+              </div>
+        </sc-for>
+          </div>
+        </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#F6F4EF;border-radius:12px;padding:16px;margin:4px 0 16px">
+          <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.one }}</div></div>
+          <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.mon }}<span style="font:400 15px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+        </div>
+        <p style="margin:0 0 32px;font:400 17px/28px 'Source Serif 4',Georgia,serif">With your current choices, your investment is <b>{{ t.one }}</b> one-time and <b>{{ t.mon }}/month</b>.</p>
+        <h2 style="margin:0 0 6px;font:600 24px/30px 'Source Serif 4',Georgia,serif">Statement of Work &amp; Contract</h2>
+        <p style="margin:0 0 6px;font:400 15px/24px 'Source Serif 4',Georgia,serif;color:#5F5B53">Date: October 29, 2026. Between “us”, {{ brand }}, and “you”, Brightline Foods.</p>
+        <p style="margin:0 0 14px;font:400 17px/28px 'Source Serif 4',Georgia,serif">You, Brightline Foods, are hiring {{ brand }} to design and develop a new website for the estimated total price of {{ t.one }} one-time and {{ t.mon }}/month.</p>
+        <div style="border-top:1px solid #E8E4DC;margin:0 0 32px">
+          <sc-for list="{{ clauses }}" as="c" hint-placeholder-count="5">
+            <details style="border-bottom:1px solid #E8E4DC">
+              <summary style="list-style:none;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;font:600 15px/21px 'Instrument Sans';cursor:pointer">{{ c.h }}<span aria-hidden="true" style="font:500 18px 'Instrument Sans';color:#8A857B">+</span></summary>
+              <p style="margin:0 0 16px;font:400 15px/24px 'Source Serif 4',Georgia,serif">{{ c.b }}</p>
+            </details>
+          </sc-for>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;font:600 14px 'Instrument Sans';color:var(--accent,#365C4A)"><span>Read the full contract</span><span style="font-weight:500;color:#5F5B53">PDF · 6 pages</span></div>
+        </div>
+        <h2 style="margin:0 0 10px;font:600 24px/30px 'Source Serif 4',Georgia,serif">Next steps</h2>
+        <p style="margin:0 0 24px;font:400 17px/28px 'Source Serif 4',Georgia,serif">Sign below. Jonathan countersigns, then you’ll both receive a sealed copy by email.</p>
+        <div style="display:flex;flex-direction:column;gap:12px;margin:0 0 28px">
+          <div style="border:1px solid #E8E4DC;border-radius:12px;padding:14px 16px"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Client</div><div style="font:600 17px/24px 'Source Serif 4',Georgia,serif;margin-top:4px">Rowan Vale</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Owner, Brightline Foods · Awaiting your signature</div></div>
+          <div style="border:1px solid #E8E4DC;border-radius:12px;padding:14px 16px"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">{{ brand }}</div><div style="font:600 17px/24px 'Source Serif 4',Georgia,serif;margin-top:4px">Jonathan Garces</div><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Owner · Signs after you</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font:400 14px/20px 'Instrument Sans';color:#5F5B53;border-top:1px solid #E8E4DC;padding-top:20px">
+          <span>Questions? Reply to the email, or write to jonathan@mktfresh.com</span>
+          <span style="display:flex;align-items:center;min-height:44px;color:#1C1B18;text-decoration:underline;text-underline-offset:3px">Not right for you? Decline this proposal</span>
+        </div>
+      </article>
+
+      <div style="position:sticky;bottom:0;z-index:6;background:var(--surface,#FBFAF7);border-top:1px solid var(--line,#DDD8CE);box-shadow:0 -8px 24px rgba(20,18,14,.08);padding:12px 16px 18px">
+        <sc-if value="{{ f.notStale }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:24px;align-items:flex-end">
+            <div><div style="font:600 11px/14px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">One-time</div><div style="font:650 20px/26px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</div></div>
+            <div><div style="font:600 11px/14px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Monthly</div><div style="font:650 20px/26px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font:400 14px 'Instrument Sans';color:var(--muted,#5F5B53)">/mo</span></div></div>
+            <div style="flex:1;text-align:right;font:500 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ t.addons }}</div>
+          </div>
+          <button onClick="{{ f.toSign }}" style="height:52px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer">Review and sign</button>
+        </div>
+        </sc-if>
+        <sc-if value="{{ f.isStale }}">
+        <div style="display:flex;flex-direction:column;gap:10px;background:#FBEEDB;border-radius:12px;padding:14px;color:#6E4100">
+          <div style="display:flex;gap:10px;align-items:flex-start"><svg width="18" height="18" viewBox="{{ ic.stale.v }}" style="flex:none;margin-top:2px"><path fill="currentColor" d="{{ ic.stale.d }}"></path></svg><div><div style="font:600 15px/21px 'Instrument Sans'">This proposal changed while you were reading it.</div><div style="font:400 14px/20px 'Instrument Sans';margin-top:2px">The pricing or wording is different from what’s on your screen. Reload to see the current version before you sign.</div></div></div>
+          <button style="height:48px;border:0;border-radius:10px;background:#1C1B18;color:#fff;font:600 16px 'Instrument Sans';cursor:pointer">Reload and review</button>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isSign }}">
+      <div style="padding:8px 16px 32px;display:flex;flex-direction:column;gap:22px">
+        <button onClick="{{ f.toRead }}" style="align-self:flex-start;height:44px;padding:0 4px;border:0;background:none;font:600 15px 'Instrument Sans';color:var(--accent-text,#365C4A);cursor:pointer">← Back to proposal</button>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:-10px">
+          <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Sign the proposal</h1>
+          <p style="margin:0;font:400 15px/22px 'Instrument Sans';color:var(--muted,#5F5B53)">Check what you’re agreeing to, then sign with your finger.</p>
+        </div>
+        <div style="background:#FFFFFF;color:#1C1B18;border-radius:16px;padding:18px 16px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 10px 24px rgba(20,18,14,.06)">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">You’re accepting</div>
+          <div style="font:600 19px/26px 'Source Serif 4',Georgia,serif;margin:4px 0 12px">A new website for Brightline Foods</div>
+          <sc-for list="{{ selected }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #ECE8E1;font:400 14px/20px 'Instrument Sans'"><span>{{ s.name }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ s.amt }}{{ s.per }}</span></div>
+          </sc-for>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1.5px solid #1C1B18;padding-top:12px;margin-top:2px">
+            <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 20px/26px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</div></div>
+            <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 20px/26px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font:400 13px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+          </div>
+          <sc-if value="{{ t.hasTerms }}"><div style="font:400 13px/18px 'Instrument Sans';color:#5F5B53;margin-top:12px">{{ t.termsNote }}</div></sc-if>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #ECE8E1;font:400 14px/20px 'Instrument Sans'"><span>and the <b>Statement of Work &amp; Contract</b> dated October 29, 2026</span><span style="flex:none;font:600 14px 'Instrument Sans';color:var(--accent,#365C4A);min-height:44px;display:flex;align-items:center">Read</span></div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font:600 14px/20px 'Instrument Sans'">Signing as</div>
+          <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line,#DDD8CE)"><div><div style="font:600 16px/22px 'Instrument Sans'">Rowan Vale</div><div style="font:400 14px/20px 'Instrument Sans';color:var(--muted,#5F5B53)">Owner, Brightline Foods</div></div><span style="min-height:44px;display:flex;align-items:center;padding:0 4px;font:600 14px 'Instrument Sans';color:var(--accent-text,#365C4A)">Edit</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line,#DDD8CE);font:400 14px/20px 'Instrument Sans'"><span style="color:var(--muted,#5F5B53)">Email</span><span>r.vale@brightline.example</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;padding:12px 14px;font:400 14px/20px 'Instrument Sans'"><span style="color:var(--muted,#5F5B53)">Date</span><span>October 29, 2026</span></div>
+          </div>
+          <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">Not you? Ask Jonathan to re-send to the right person.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px/20px 'Instrument Sans'">Your signature</span>
+            <div role="tablist" style="display:flex;background:var(--line,#DDD8CE);border-radius:10px;padding:3px;gap:2px">
+              <button onClick="{{ f.tabDrawFn }}" role="tab" aria-selected="{{ f.tabDraw }}" style="height:38px;min-width:72px;border:0;border-radius:8px;background:{{ f.drawBg }};color:var(--ink,#1C1B18);font:600 14px 'Instrument Sans';cursor:pointer">Draw</button>
+              <button onClick="{{ f.tabTypeFn }}" role="tab" aria-selected="{{ f.tabType }}" style="height:38px;min-width:72px;border:0;border-radius:8px;background:{{ f.typeBg }};color:var(--ink,#1C1B18);font:600 14px 'Instrument Sans';cursor:pointer">Type</button>
+            </div>
+          </div>
+          <div style="position:relative;height:168px;background:#FFFFFF;border:1.5px solid #CFC9BE;border-radius:14px;overflow:hidden">
+            <sc-if value="{{ f.liveDraw }}">
+              <canvas ref="{{ padRef }}" width="680" height="330" onPointerDown="{{ padDown }}" onPointerMove="{{ padMove }}" onPointerUp="{{ padUp }}" onPointerLeave="{{ padUp }}" aria-label="Signature pad. Draw your signature with your finger or mouse." style="position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair"></canvas>
+            </sc-if>
+            <sc-if value="{{ f.showTyped }}">
+              <input value="{{ f.typedVal }}" onChange="{{ onTyped }}" aria-label="Type your full name as your signature" style="position:absolute;left:16px;right:16px;bottom:44px;border:0;outline:none;background:transparent;font:italic 400 34px/40px 'Source Serif 4',Georgia,serif;color:#1C1B18"></input>
+            </sc-if>
+            <sc-if value="{{ f.showDrawHint }}">
+              <div style="position:absolute;left:0;right:0;top:56px;text-align:center;font:400 15px 'Instrument Sans';color:#8A857B;pointer-events:none">Sign here with your finger</div>
+            </sc-if>
+            <div style="position:absolute;left:16px;right:16px;bottom:36px;border-top:1px solid #CFC9BE;pointer-events:none"></div>
+            <div style="position:absolute;left:16px;bottom:10px;font:400 12px 'Instrument Sans';color:#8A857B;pointer-events:none">Rowan Vale · October 29, 2026</div>
+            <button onClick="{{ padClear }}" style="position:absolute;right:6px;top:6px;height:40px;padding:0 12px;border:0;background:none;font:600 14px 'Instrument Sans';color:#5F5B53;cursor:pointer">Clear</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:4px;background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:12px;padding:14px">
+          <p style="margin:0 0 6px;font:400 14px/22px 'Source Serif 4',Georgia,serif">By signing electronically, I consent to electronic records and signatures, intend to sign this proposal, and agree that my electronic signature is the legal equivalent of my handwritten signature. I can download and retain a copy.</p>
+          <button onClick="{{ f.agreeFn }}" role="checkbox" aria-checked="{{ f.agreed }}" style="display:flex;gap:12px;align-items:center;min-height:48px;padding:0;border:0;background:none;text-align:left;cursor:pointer;color:var(--ink,#1C1B18)">
+            <span style="flex:none;width:26px;height:26px;border-radius:7px;border:2px solid {{ f.agreeBorder }};background:{{ f.agreeBg }};display:flex;align-items:center;justify-content:center"><sc-if value="{{ f.agreed }}"><svg width="14" height="14" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if></span>
+            <span style="font:600 15px/21px 'Instrument Sans'">I agree, and this is my electronic signature.</span>
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onClick="{{ f.submit }}" aria-disabled="{{ f.cantSign }}" style="height:56px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer;opacity:{{ f.btnOpacity }}">Sign proposal</button>
+          <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53);text-align:center">{{ f.reason }}</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isBillingAny }}">
+      <div style="padding:20px 16px 32px;display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;gap:12px;align-items:flex-start;background:#E3F1E8;color:#135C37;border-radius:12px;padding:14px">
+          <svg width="20" height="20" viewBox="{{ ic.verified.v }}" style="flex:none;margin-top:1px"><path fill="currentColor" d="{{ ic.verified.d }}"></path></svg>
+          <div><div style="font:600 15px/21px 'Instrument Sans'">Signed. Thank you, Rowan.</div><div style="font:400 13px/19px 'Instrument Sans';color:#1F4D33">October 29, 2026, 4:12 PM. Your copy is on its way to r.vale@brightline.example.</div></div>
+        </div>
+        <sc-if value="{{ f.isBilling }}">
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">One more step: set up your billing</h1>
+            <p style="margin:0;font:400 15px/22px 'Instrument Sans';color:var(--muted,#5F5B53)">You’ll add a card on Stripe’s secure page, then come straight back here.</p>
+          </div>
+          <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px">
+            <div style="display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line,#DDD8CE)"><span style="font:500 15px 'Instrument Sans'">One-time</span><span style="font:650 17px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line,#DDD8CE)"><span style="font:500 15px 'Instrument Sans'">Monthly</span><span style="font:650 17px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font-weight:400;color:var(--muted,#5F5B53)">/mo</span></span></div>
+            <sc-if value="{{ t.hasTerms }}"><div style="padding:12px 16px;font:400 13px/19px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ t.termsNote }}</div></sc-if>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button onClick="{{ f.toDone }}" style="height:56px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="14" height="16" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg>Continue to secure checkout</button>
+            <button onClick="{{ f.toDone }}" style="height:48px;border:0;background:none;font:600 15px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">I’ll do this later</button>
+            <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53);text-align:center">We’ve emailed you this link too, so you can finish any time.</div>
+          </div>
+        </div>
+        </sc-if>
+        <sc-if value="{{ f.isSub }}">
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Billing is already taken care of</h1>
+            <p style="margin:0;font:400 15px/22px 'Instrument Sans';color:var(--muted,#5F5B53)">These items have been added to your existing monthly billing. There’s nothing to pay here.</p>
+          </div>
+          <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px">
+            <div style="display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line,#DDD8CE)"><span style="font:500 15px 'Instrument Sans'">Added to your plan</span><span style="font:650 17px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font-weight:400;color:var(--muted,#5F5B53)">/mo</span></span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line,#DDD8CE)"><span style="font:500 15px 'Instrument Sans'">One-time, on your next invoice</span><span style="font:650 17px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:14px 16px;font:400 14px 'Instrument Sans'"><span style="color:var(--muted,#5F5B53)">Card on file</span><span>Visa ending 4242</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button onClick="{{ f.toDone }}" style="height:56px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer">Done</button>
+            <button style="height:48px;border:0;background:none;font:600 15px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">Use a different card</button>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isDone }}">
+      <div style="padding:24px 16px 32px;display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="align-self:flex-start;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#FBEEDB;color:#7A4800;font:600 13px/18px 'Instrument Sans'"><svg width="15" height="12" viewBox="{{ ic.signature.v }}"><path fill="currentColor" d="{{ ic.signature.d }}"></path></svg>Signed by you · awaiting countersignature</span>
+          <h1 style="margin:0;font:600 34px/40px 'Source Serif 4',Georgia,serif;letter-spacing:-.015em">You’re all set, Rowan.</h1>
+          <p style="margin:0;font:400 16px/24px 'Instrument Sans';color:var(--muted,#5F5B53)">Jonathan will countersign, then we’ll email the final sealed copy to r.vale@brightline.example.</p>
+        </div>
+        <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+          <li style="display:flex;gap:14px;padding:0 0 18px;position:relative"><span style="flex:none;width:24px;height:24px;border-radius:12px;background:var(--accent,#365C4A);display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span><div><div style="font:600 15px/22px 'Instrument Sans'">You signed</div><div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">October 29, 2026, 4:12 PM</div></div></li>
+          <li style="display:flex;gap:14px;padding:0 0 18px"><span style="flex:none;width:24px;height:24px;border-radius:12px;background:var(--accent,#365C4A);display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span><div><div style="font:600 15px/22px 'Instrument Sans'">Billing set up</div><div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ t.one }} one-time · {{ t.mon }}/month</div></div></li>
+          <li style="display:flex;gap:14px;padding:0 0 18px"><span style="flex:none;width:24px;height:24px;border-radius:12px;border:2px solid var(--ink,#1C1B18);box-sizing:border-box"></span><div><div style="font:600 15px/22px 'Instrument Sans'">Jonathan Garces countersigns</div><div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">For {{ brand }}. Nothing needed from you.</div></div></li>
+          <li style="display:flex;gap:14px"><span style="flex:none;width:24px;height:24px;border-radius:12px;border:2px solid var(--line,#DDD8CE);box-sizing:border-box"></span><div><div style="font:600 15px/22px 'Instrument Sans';color:var(--muted,#5F5B53)">Final sealed copy emailed to you</div></div></li>
+        </ol>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button style="height:52px;border:1.5px solid var(--ink,#1C1B18);border-radius:12px;background:transparent;color:var(--ink,#1C1B18);font:600 16px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="16" height="16" viewBox="{{ ic.download.v }}"><path fill="currentColor" d="{{ ic.download.d }}"></path></svg>Download your signed copy</button>
+          <button style="height:48px;border:0;background:none;font:600 15px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">View the signed proposal</button>
+        </div>
+        <button onClick="{{ f.restart }}" style="align-self:center;height:40px;border:0;background:none;font:500 12px 'IBM Plex Mono',monospace;color:var(--muted,#5F5B53);cursor:pointer">{{ f.restartLabel }}</button>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ f.isEnded }}">
+      <div style="min-height:100%;display:flex;flex-direction:column;padding:28px 20px 32px;gap:28px;box-sizing:border-box">
+        <div style="font:600 18px/24px 'Instrument Sans'">{{ brand }}</div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px">
+          <div style="width:48px;height:48px;border-radius:24px;background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);display:flex;align-items:center;justify-content:center;color:var(--muted,#5F5B53)"><svg width="14" height="18" viewBox="{{ ic.expired.v }}"><path fill="currentColor" d="{{ ic.expired.d }}"></path></svg></div>
+          <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">This proposal has expired</h1>
+          <p style="margin:0;font:400 16px/24px 'Instrument Sans';color:var(--muted,#5F5B53)">It was open until October 28, 2026. If you’d still like to go ahead, Jonathan can send you a current version.</p>
+          <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;padding:14px 16px"><div style="font:600 15px/22px 'Instrument Sans'">Jonathan Garces</div><div style="font:400 14px/20px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ brand }} · jonathan@mktfresh.com</div></div>
+          <button style="height:52px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:var(--on-accent,#fff);font:600 17px 'Instrument Sans';cursor:pointer">Email Jonathan</button>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+    <sc-if value="{{ f.isSealing }}">
+      <div style="position:absolute;inset:0;z-index:20;background:rgba(251,250,247,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center" role="status">
+        <div style="font:600 24px/30px 'Source Serif 4',Georgia,serif;color:#1C1B18">Sealing your signed copy…</div>
+        {{ sealBar }}
+        <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">This takes a few seconds. Please keep this page open.</div>
+      </div>
+    </sc-if>
+  </div>
+  <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+    <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35;text-wrap:pretty"><span style="font-weight:600;color:{{ f.noteColor }}">{{ f.noteKind }}</span> {{ f.note }}</div>
+  </sc-if>
+</div>
+</sc-for>
+
+<div class="dv-opt" id="1j">
+  <div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>Today, for comparison</div>
+  <div style="display:flex;gap:16px">
+    <img src="docs/screenshots/client-reading-phone-light.png" alt="Current client reading view on phone" style="width:230px;border-radius:14px;border:1px solid #C9C3B7;display:block"></img>
+    <img src="docs/screenshots/client-sign-phone-light.png" alt="Current client signing view on phone" style="width:230px;border-radius:14px;border:1px solid #C9C3B7;display:block;align-self:flex-start"></img>
+  </div>
+  <div style="width:476px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">Current build: the sticky bar covers the signature blocks, optional items are small checkboxes, signing is a long form with empty fields, and the button reads disabled with no step context.</div>
+</div>
+</div>
+
+<p class="dv-next">Next in this order: the editor on desktop and phone (quote sheet, pricing reference panel, AI review) · then record, dashboard, full design system, and edge states at 375 / 768 / 1440. Try: “make <a class="dv-oid" href="#1d">1d</a> a bottom sheet over the proposal instead of a page” · “show <a class="dv-oid" href="#1c">1c</a> in dark mode”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#365C4A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#365C4A&quot;,&quot;#7A2E2E&quot;,&quot;#1F3A5F&quot;,&quot;#8A4E0F&quot;],&quot;section&quot;:&quot;White-label&quot;},&quot;workspaceName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;MarketFresh Studios&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;White-label&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+class Component extends DCLogic {
+  state = { choice: 'oiot', step: 'read', sel: { audit: false, care: true, vis: false }, agree: false, hasSig: false, tab: 'draw', typed: 'Rowan Vale', ic: {} };
+  padRef = React.createRef();
+  componentDidMount() {
+    fetch('src/components/icons.json').then(r => r.json()).then(j => {
+      const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path };
+      this.setState({ ic });
+    }).catch(() => {});
+    this.applyTheme();
+    setTimeout(() => this.scrollFrames(), 400);
+  }
+  componentDidUpdate() { this.applyTheme(); }
+  scrollFrames() {
+    document.querySelectorAll('[data-frame-scroll="inv"]').forEach(el => {
+      const a = el.querySelector('[data-anchor="inv"]'); if (a) el.scrollTop = a.offsetTop - 90;
+    });
+  }
+  applyTheme() {
+    const a = this.props.accent ?? '#365C4A';
+    const dark = (this.props.theme ?? 'light') === 'dark';
+    const s = document.documentElement.style;
+    const v = dark ? {
+      '--bg': '#131311', '--surface': '#1C1B19', '--ink': '#F1EFEA', '--muted': '#ABA79E', '--line': '#302F2B',
+      '--accent': a, '--on-accent': '#FFFFFF', '--accent-text': `color-mix(in oklch, ${a} 55%, white)`, '--accent-soft': `color-mix(in oklch, ${a} 30%, #1C1B19)`
+    } : {
+      '--bg': '#F3F0EA', '--surface': '#FBFAF7', '--ink': '#1C1B18', '--muted': '#5F5B53', '--line': '#DDD8CE',
+      '--accent': a, '--on-accent': '#FFFFFF', '--accent-text': a, '--accent-soft': `color-mix(in oklch, ${a} 12%, white)`
+    };
+    for (const k in v) s.setProperty(k, v[k]);
+  }
+  fmt(c) { const always = (this.props.cents ?? 'auto') === 'always'; const d = always || c % 100 !== 0 ? 2 : 0; return '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  go(step) { this.setState({ step }); const el = document.querySelector('[data-frame-scroll="live"]'); if (el) el.scrollTop = 0; }
+  toggle(k) { this.setState(s => ({ sel: { ...s.sel, [k]: !s.sel[k] } })); }
+  pt(e) { const c = e.currentTarget, r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; }
+  padDown = e => { const c = e.currentTarget; c.setPointerCapture && c.setPointerCapture(e.pointerId); const ctx = c.getContext('2d'); const [x, y] = this.pt(e); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1C1B18'; ctx.beginPath(); ctx.moveTo(x, y); this.drawing = true; };
+  padMove = e => { if (!this.drawing) return; const ctx = e.currentTarget.getContext('2d'); const [x, y] = this.pt(e); ctx.lineTo(x, y); ctx.stroke(); if (!this.state.hasSig) this.setState({ hasSig: true }); };
+  padUp = () => { this.drawing = false; };
+  padClear = () => { const c = this.padRef.current; if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); this.setState({ hasSig: false, typed: this.state.tab === 'type' ? '' : this.state.typed }); };
+  renderVals() {
+    const S = this.state, sel = S.sel, fmt = c => this.fmt(c);
+    const noop = () => {};
+    const icDefault = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || icDefault });
+    const choice = S.choice || 'oiot';
+    const one = (choice === 'own' ? 275000 : 50000) + 65000 + (sel.audit ? 29500 : 0);
+    const mon = (choice === 'oiot' ? 17500 : 0) + (sel.care ? 8500 : 0) + (sel.vis ? 29500 : 0);
+    const addCount = ['audit', 'care', 'vis'].filter(k => sel[k]).length;
+    const termsNote = choice === 'oiot' ? 'Own It Over Time: $175/month for 30 months, then $100/month. 18-month minimum commitment.' : '';
+    const t = { one: fmt(one), mon: fmt(mon), addons: `${addCount} of 3 add-ons`, termsNote, hasTerms: !!termsNote };
+    const line = (o) => {
+      const on = o.opt ? !!sel[o.key] : true;
+      return { ...o, isChoice: false, req: !o.opt, opt: !!o.opt, on, hasTerms: !!o.terms, toggle: () => this.toggle(o.key),
+        bg: on && o.opt ? 'var(--accent-soft,#E4ECE7)' : 'transparent',
+        boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', boxBg: on ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        tag: o.opt ? (on ? 'Optional · included' : 'Optional · tap to add') : '' };
+    };
+    const alt = (o) => { const on = choice === o.key; return { ...o, isAlt: true, opt: false, req: false, on, hasTerms: !!o.terms, pick: () => this.setState({ choice: o.key }),
+      bg: on ? 'var(--accent-soft,#E4ECE7)' : 'transparent', boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', first: !!o.first, tag: '' }; };
+    const qItems = [
+      alt({ key: 'oiot', first: true, name: 'Website Build — Own It Over Time', desc: 'Spread the cost. You own the site once it’s paid off.', subs: [{ label: 'Kickoff', amt: '$500', per: '' }, { label: 'Monthly', amt: '$175', per: '/mo' }], terms: '$175/month for 30 months, then $100/month. 18-month minimum commitment.' }),
+      alt({ key: 'own', name: 'Website Build — Own It Now', desc: 'Pay once and own it from launch.', subs: [{ label: 'Website build', amt: '$2,750', per: '' }] }),
+      line({ key: 'photo', name: 'Catering menu photography', desc: 'Half-day shoot, 20 edited images.', amt: '$650', per: '' }),
+      line({ key: 'audit', opt: true, name: 'AI Search Readiness Audit', desc: 'How Brightline shows up in AI search, with a fix list.', amt: '$295', per: '' }),
+      line({ key: 'care', opt: true, name: 'Care Standard', desc: 'Updates, backups, security and small monthly edits.', amt: '$85', per: '/mo' }),
+      line({ key: 'vis', opt: true, name: 'Local Visibility Core', desc: 'Google Business Profile, reviews and local listings.', amt: '$295', per: '/mo' }),
+    ];
+    qItems.forEach(q => { q.sep = q.isAlt ? '0' : '1px solid #ECE8E1'; if (q.isAlt) { q.border = q.on ? '2px solid var(--accent,#365C4A)' : '1px solid #DDD8CE'; q.shadow = q.on ? '0 1px 2px rgba(20,18,14,.06)' : 'none'; } });
+    const qBlocks = []; let grp = null;
+    qItems.forEach(q => { if (q.isAlt) { if (!grp) { grp = { isGroup: true, items: [], role: 'radiogroup', aria: 'Choose one', margin: '16px -6px', pad: '14px 12px 12px', border: '2px solid color-mix(in oklch, var(--accent,#365C4A) 55%, white)', bg: 'color-mix(in oklch, var(--accent,#365C4A) 8%, white)', gap: '10px' }; qBlocks.push(grp); } grp.items.push(q); } else qBlocks.push({ isGroup: false, items: [q], role: 'group', aria: q.name, margin: '0', pad: '0', border: '0', bg: 'transparent', gap: '0' }); });
+    qBlocks.forEach(b => { if (b.isGroup) b.countText = b.items.length + ' options · pick one'; });
+    const chosen = qItems.find(q => q.isAlt && q.on);
+    const selected = [{ name: chosen.name, amt: chosen.subs.map(u => u.amt + u.per).join(' + '), per: '' }, ...qItems.filter(q => !q.isAlt && q.on)];
+    const oiotIn = choice === 'oiot';
+    const clauses = [
+      { h: '1.0 Services rendered', b: 'We create look-and-feel designs and flexible layouts that adapt to the capabilities of many devices and screen sizes. You’ll have weekly opportunities to review our work and provide feedback.' },
+      { h: '2.0 Mutual cooperation', b: 'We agree to use our best efforts to fulfill and exceed your expectation on the deliverables listed above. You agree to aid us in doing so by making available to us needed information pertaining to your website and to cooperate with us in expediting the work.' },
+      { h: '4.1 Billing schedule', b: `The total budget for this project is ${fmt(one)} one-time and ${fmt(mon)}/month. MarketFresh Studios will invoice Brightline Foods for fifty percent (50%) of the one-time total at point of this signed contract agreement which will act as the deposit. The remaining balance will be due upon completion.` },
+      ...(oiotIn ? [{ h: '4.4 Own It Over Time', b: 'If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, MarketFresh Studios may take the website offline.' }] : []),
+      { h: '7.0 Confidentiality', b: 'MarketFresh Studios acknowledges its responsibility, both during and after the term of its appointment, to use all reasonable efforts to preserve the confidentiality of any proprietary or confidential information or data developed by MarketFresh Studios on behalf of Brightline Foods or disclosed by Brightline Foods to MarketFresh Studios.' },
+      { h: '8.1 Period of agreement', b: 'This Agreement shall become effective as of October 29, 2026 and shall continue until terminated by either party upon not less than 60 days notice in writing given by either party to the other.' },
+      { h: '9.1 Governing law', b: 'This Agreement shall be governed and construed in accordance with the laws of North Carolina.' },
+    ];
+    const accentFill = 'var(--accent,#365C4A)', idle = 'var(--line,#DDD8CE)';
+    const stepMeta = {
+      gate: [0, ''], read: [1, 'Step 1 of 3 · Review'], stale: [1, 'Step 1 of 3 · Review'], sign: [2, 'Step 2 of 3 · Sign'],
+      sealing: [2, 'Step 2 of 3 · Sign'], billing: [3, 'Step 3 of 3 · Billing'], sub: [3, 'Step 3 of 3 · Billing'], done: [3, 'Done'], ended: [0, '']
+    };
+    const mk = (id, label, step, live, kind, note, extra = {}) => {
+      const [n, stepText] = stepMeta[step];
+      const tabType = live ? S.tab === 'type' : true;
+      const agreed = live ? S.agree : true;
+      const typedVal = live ? S.typed : 'Rowan Vale';
+      const hasSig = tabType ? typedVal.trim().length > 1 : (live ? S.hasSig : false);
+      const can = agreed && hasSig;
+      const isSealing = step === 'sealing';
+      return {
+        id, label, live, scroll: live ? 'live' : (extra.scroll || ''),
+        hasHeader: !['gate', 'ended'].includes(step), stepText,
+        s1: n >= 1 ? accentFill : idle, s2: n >= 2 ? accentFill : idle, s3: n >= 3 ? accentFill : idle,
+        isGate: step === 'gate', isRead: ['read', 'stale'].includes(step), isStale: step === 'stale', notStale: step !== 'stale',
+        isSign: ['sign', 'sealing'].includes(step), isSealing,
+        isBillingAny: ['billing', 'sub'].includes(step), isBilling: step === 'billing', isSub: step === 'sub',
+        isDone: step === 'done', isEnded: step === 'ended',
+        tabDraw: !tabType, tabType, drawBg: !tabType ? 'var(--surface,#FBFAF7)' : 'transparent', typeBg: tabType ? 'var(--surface,#FBFAF7)' : 'transparent',
+        liveDraw: live && !tabType, showTyped: tabType, typedVal, showDrawHint: !tabType && !(live && S.hasSig),
+        agreed, agreeBorder: agreed ? 'var(--accent,#365C4A)' : '#8A857B', agreeBg: agreed ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        cantSign: !can, btnOpacity: can ? 1 : 0.45,
+        reason: can ? 'Jonathan countersigns after you. You’ll both get a sealed PDF.' : (!hasSig && !agreed ? 'Add your signature and tick the agreement to continue.' : !hasSig ? 'Add your signature to continue.' : 'Tick the agreement to continue.'),
+        toSign: live ? () => this.go('sign') : noop, toRead: live ? () => this.go('read') : noop,
+        tabDrawFn: live ? () => this.setState({ tab: 'draw', hasSig: false }) : noop,
+        tabTypeFn: live ? () => this.setState({ tab: 'type' }) : noop,
+        agreeFn: live ? () => this.setState(s => ({ agree: !s.agree })) : noop,
+        submit: live ? () => { if (!can || this.sealing) return; this.sealing = true; this.go('sealing'); setTimeout(() => { this.sealing = false; this.go('billing'); }, 2200); } : noop,
+        toDone: live ? () => this.go('done') : noop,
+        restart: live ? () => this.setState({ step: 'read', agree: false, hasSig: false, tab: 'draw', typed: 'Rowan Vale' }) : noop,
+        restartLabel: live ? 'Restart prototype' : '',
+        noteKind: kind, noteColor: kind === 'Change.' ? '#365C4A' : '#1C1B18', note
+      };
+    };
+    const frames = [
+      mk('1a', 'Live prototype', S.step, true, 'Try it.', 'Tick or untick optional items and watch both totals and the sentence in the document update. Then Review and sign, draw a signature, agree, and finish.'),
+      mk('1b', 'Password gate', 'gate', false, 'Rule kept.', 'Nothing about the proposal appears before the password: no title, client or total. One field, one button, one failure line.'),
+      mk('1c', 'Reading · choosing optional items', 'read', false, 'Change.', 'Optional lines are whole-row tap targets with the price and interval on the row. Own It Over Time and Own It Now appear as linked “choose one” lines with radio buttons, and their kickoff and monthly fees are sub-lines. The contract has its own section with each clause expandable, and the sign step names it explicitly. Totals stay split one-time and monthly. The sticky bar keeps both totals and one action; secondary actions (contact, decline) move to the end of the document.', { scroll: 'inv' }),
+      mk('1d', 'Sign', 'sign', false, 'Change.', 'Name, title and email are prefilled from the recipient, and the email cannot be edited here. That removes the email-mismatch error entirely; a wrong recipient is fixed by re-sending. Order is: what you’re accepting → who is signing and the date → signature → consent directly above the button, so the agreement and the act sit together.'),
+      mk('1e', 'Billing · new client', 'billing', false, 'Rule kept.', '“Signed” comes first so a card form never makes the deal feel uncertain. “Later” is a real path: the same link is emailed.'),
+      mk('1f', 'Billing · existing subscriber', 'sub', false, 'Change.', 'No payment step and no button that implies one. The screen only explains what changes on their next invoice, so a new charge is never a surprise.'),
+      mk('1g', 'Signed, awaiting countersignature', 'done', false, 'Rule kept.', 'Signed and completed stay two moments. A four-step checklist shows what happened and what’s left; nothing is asked of the client. The same page becomes “Completed” after countersigning.'),
+      mk('1h', 'Updated while reading', 'stale', false, 'Rule kept.', 'Never auto-reloads. The action bar is replaced, not disabled, until the client reloads and re-reads.', { scroll: 'inv' }),
+      mk('1i', 'Expired · declined · ended', 'ended', false, 'Rule kept.', 'One calm pattern for every dead end; only the sentence changes. A named person to contact, nothing internal.'),
+    ];
+    const sealBar = React.createElement('div', { style: { width: 220, height: 4, borderRadius: 2, background: '#E2DDD3', overflow: 'hidden' } },
+      React.createElement('div', { style: { height: '100%', background: 'var(--accent,#365C4A)', animation: 'seal 2.2s ease-out forwards' } }));
+    return {
+      brand: this.props.workspaceName ?? 'MarketFresh Studios', showNotes: this.props.showNotes ?? true,
+      ic, t, qItems, qBlocks, selected, clauses, oneTxt: fmt(one), monTxt: fmt(mon), frames, sealBar,
+      padRef: this.padRef, padDown: this.padDown, padMove: this.padMove, padUp: this.padUp, padClear: this.padClear,
+      onTyped: e => this.setState({ typed: e.target.value }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
+ + (c / 100).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  go(step) { this.setState({ step }); const el = document.querySelector('[data-frame-scroll="live"]'); if (el) el.scrollTop = 0; }
+  toggle(k) { this.setState(s => ({ sel: { ...s.sel, [k]: !s.sel[k] } })); }
+  pt(e) { const c = e.currentTarget, r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; }
+  padDown = e => { const c = e.currentTarget; c.setPointerCapture && c.setPointerCapture(e.pointerId); const ctx = c.getContext('2d'); const [x, y] = this.pt(e); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1C1B18'; ctx.beginPath(); ctx.moveTo(x, y); this.drawing = true; };
+  padMove = e => { if (!this.drawing) return; const ctx = e.currentTarget.getContext('2d'); const [x, y] = this.pt(e); ctx.lineTo(x, y); ctx.stroke(); if (!this.state.hasSig) this.setState({ hasSig: true }); };
+  padUp = () => { this.drawing = false; };
+  padClear = () => { const c = this.padRef.current; if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); this.setState({ hasSig: false, typed: this.state.tab === 'type' ? '' : this.state.typed }); };
+  renderVals() {
+    const S = this.state, sel = S.sel, fmt = c => this.fmt(c);
+    const noop = () => {};
+    const icDefault = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || icDefault });
+    const choice = S.choice || 'oiot';
+    const one = (choice === 'own' ? 275000 : 50000) + 65000 + (sel.audit ? 29500 : 0);
+    const mon = (choice === 'oiot' ? 17500 : 0) + (sel.care ? 8500 : 0) + (sel.vis ? 29500 : 0);
+    const addCount = ['audit', 'care', 'vis'].filter(k => sel[k]).length;
+    const termsNote = choice === 'oiot' ? 'Own It Over Time: $175/month for 30 months, then $100/month. 18-month minimum commitment.' : '';
+    const t = { one: fmt(one), mon: fmt(mon), addons: `${addCount} of 3 add-ons`, termsNote, hasTerms: !!termsNote };
+    const line = (o) => {
+      const on = o.opt ? !!sel[o.key] : true;
+      return { ...o, isChoice: false, req: !o.opt, opt: !!o.opt, on, hasTerms: !!o.terms, toggle: () => this.toggle(o.key),
+        bg: on && o.opt ? 'var(--accent-soft,#E4ECE7)' : 'transparent',
+        boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', boxBg: on ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        tag: o.opt ? (on ? 'Optional · included' : 'Optional · tap to add') : '' };
+    };
+    const alt = (o) => { const on = choice === o.key; return { ...o, isAlt: true, opt: false, req: false, on, hasTerms: !!o.terms, pick: () => this.setState({ choice: o.key }),
+      bg: on ? 'var(--accent-soft,#E4ECE7)' : 'transparent', boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', tag: on ? 'Choose one · selected' : 'Choose one · tap to choose this instead' }; };
+    const qItems = [
+      alt({ key: 'oiot', name: 'Own It Over Time', desc: 'Spread the cost. You own the site once it’s paid off.', subs: [{ label: 'Kickoff', amt: '$500', per: '' }, { label: 'Monthly', amt: '$175', per: '/mo' }], terms: '$175/month for 30 months, then $100/month. 18-month minimum commitment.' }),
+      alt({ key: 'own', name: 'Website Build — Own It Now', desc: 'Pay once and own it from launch.', subs: [{ label: 'Website build', amt: '$2,750', per: '' }] }),
+      line({ key: 'photo', name: 'Catering menu photography', desc: 'Half-day shoot, 20 edited images.', amt: '$650', per: '' }),
+      line({ key: 'audit', opt: true, name: 'AI Search Readiness Audit', desc: 'How Brightline shows up in AI search, with a fix list.', amt: '$295', per: '' }),
+      line({ key: 'care', opt: true, name: 'Care Standard', desc: 'Updates, backups, security and small monthly edits.', amt: '$85', per: '/mo' }),
+      line({ key: 'vis', opt: true, name: 'Local Visibility Core', desc: 'Google Business Profile, reviews and local listings.', amt: '$295', per: '/mo' }),
+    ];
+    const chosen = qItems.find(q => q.isAlt && q.on);
+    const selected = [{ name: chosen.name, amt: chosen.subs.map(u => u.amt + u.per).join(' + '), per: '' }, ...qItems.filter(q => !q.isAlt && q.on)];
+    const oiotIn = choice === 'oiot';
+    const clauses = [
+      { h: '1.0 Services rendered', b: 'We create look-and-feel designs and flexible layouts that adapt to the capabilities of many devices and screen sizes. You’ll have weekly opportunities to review our work and provide feedback.' },
+      { h: '2.0 Mutual cooperation', b: 'We agree to use our best efforts to fulfill and exceed your expectation on the deliverables listed above. You agree to aid us in doing so by making available to us needed information pertaining to your website and to cooperate with us in expediting the work.' },
+      { h: '4.1 Billing schedule', b: `The total budget for this project is ${fmt(one)} one-time and ${fmt(mon)}/month. MarketFresh Studios will invoice Brightline Foods for fifty percent (50%) of the one-time total at point of this signed contract agreement which will act as the deposit. The remaining balance will be due upon completion.` },
+      ...(oiotIn ? [{ h: '4.4 Own It Over Time', b: 'If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, MarketFresh Studios may take the website offline.' }] : []),
+      { h: '7.0 Confidentiality', b: 'MarketFresh Studios acknowledges its responsibility, both during and after the term of its appointment, to use all reasonable efforts to preserve the confidentiality of any proprietary or confidential information or data developed by MarketFresh Studios on behalf of Brightline Foods or disclosed by Brightline Foods to MarketFresh Studios.' },
+      { h: '8.1 Period of agreement', b: 'This Agreement shall become effective as of October 29, 2026 and shall continue until terminated by either party upon not less than 60 days notice in writing given by either party to the other.' },
+      { h: '9.1 Governing law', b: 'This Agreement shall be governed and construed in accordance with the laws of North Carolina.' },
+    ];
+    const accentFill = 'var(--accent,#365C4A)', idle = 'var(--line,#DDD8CE)';
+    const stepMeta = {
+      gate: [0, ''], read: [1, 'Step 1 of 3 · Review'], stale: [1, 'Step 1 of 3 · Review'], sign: [2, 'Step 2 of 3 · Sign'],
+      sealing: [2, 'Step 2 of 3 · Sign'], billing: [3, 'Step 3 of 3 · Billing'], sub: [3, 'Step 3 of 3 · Billing'], done: [3, 'Done'], ended: [0, '']
+    };
+    const mk = (id, label, step, live, kind, note, extra = {}) => {
+      const [n, stepText] = stepMeta[step];
+      const tabType = live ? S.tab === 'type' : true;
+      const agreed = live ? S.agree : true;
+      const typedVal = live ? S.typed : 'Rowan Vale';
+      const hasSig = tabType ? typedVal.trim().length > 1 : (live ? S.hasSig : false);
+      const can = agreed && hasSig;
+      const isSealing = step === 'sealing';
+      return {
+        id, label, live, scroll: live ? 'live' : (extra.scroll || ''),
+        hasHeader: !['gate', 'ended'].includes(step), stepText,
+        s1: n >= 1 ? accentFill : idle, s2: n >= 2 ? accentFill : idle, s3: n >= 3 ? accentFill : idle,
+        isGate: step === 'gate', isRead: ['read', 'stale'].includes(step), isStale: step === 'stale', notStale: step !== 'stale',
+        isSign: ['sign', 'sealing'].includes(step), isSealing,
+        isBillingAny: ['billing', 'sub'].includes(step), isBilling: step === 'billing', isSub: step === 'sub',
+        isDone: step === 'done', isEnded: step === 'ended',
+        tabDraw: !tabType, tabType, drawBg: !tabType ? 'var(--surface,#FBFAF7)' : 'transparent', typeBg: tabType ? 'var(--surface,#FBFAF7)' : 'transparent',
+        liveDraw: live && !tabType, showTyped: tabType, typedVal, showDrawHint: !tabType && !(live && S.hasSig),
+        agreed, agreeBorder: agreed ? 'var(--accent,#365C4A)' : '#8A857B', agreeBg: agreed ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        cantSign: !can, btnOpacity: can ? 1 : 0.45,
+        reason: can ? 'Jonathan countersigns after you. You’ll both get a sealed PDF.' : (!hasSig && !agreed ? 'Add your signature and tick the agreement to continue.' : !hasSig ? 'Add your signature to continue.' : 'Tick the agreement to continue.'),
+        toSign: live ? () => this.go('sign') : noop, toRead: live ? () => this.go('read') : noop,
+        tabDrawFn: live ? () => this.setState({ tab: 'draw', hasSig: false }) : noop,
+        tabTypeFn: live ? () => this.setState({ tab: 'type' }) : noop,
+        agreeFn: live ? () => this.setState(s => ({ agree: !s.agree })) : noop,
+        submit: live ? () => { if (!can || this.sealing) return; this.sealing = true; this.go('sealing'); setTimeout(() => { this.sealing = false; this.go('billing'); }, 2200); } : noop,
+        toDone: live ? () => this.go('done') : noop,
+        restart: live ? () => this.setState({ step: 'read', agree: false, hasSig: false, tab: 'draw', typed: 'Rowan Vale' }) : noop,
+        restartLabel: live ? 'Restart prototype' : '',
+        noteKind: kind, noteColor: kind === 'Change.' ? '#365C4A' : '#1C1B18', note
+      };
+    };
+    const frames = [
+      mk('1a', 'Live prototype', S.step, true, 'Try it.', 'Tick or untick optional items and watch both totals and the sentence in the document update. Then Review and sign, draw a signature, agree, and finish.'),
+      mk('1b', 'Password gate', 'gate', false, 'Rule kept.', 'Nothing about the proposal appears before the password: no title, client or total. One field, one button, one failure line.'),
+      mk('1c', 'Reading · choosing optional items', 'read', false, 'Change.', 'Optional lines are whole-row tap targets with the price and interval on the row. Own It Over Time and Own It Now appear as linked “choose one” lines with radio buttons, and their kickoff and monthly fees are sub-lines. The contract has its own section with each clause expandable, and the sign step names it explicitly. Totals stay split one-time and monthly. The sticky bar keeps both totals and one action; secondary actions (contact, decline) move to the end of the document.', { scroll: 'inv' }),
+      mk('1d', 'Sign', 'sign', false, 'Change.', 'Name, title and email are prefilled from the recipient, and the email cannot be edited here. That removes the email-mismatch error entirely; a wrong recipient is fixed by re-sending. Order is: what you’re accepting → who is signing and the date → signature → consent directly above the button, so the agreement and the act sit together.'),
+      mk('1e', 'Billing · new client', 'billing', false, 'Rule kept.', '“Signed” comes first so a card form never makes the deal feel uncertain. “Later” is a real path: the same link is emailed.'),
+      mk('1f', 'Billing · existing subscriber', 'sub', false, 'Change.', 'No payment step and no button that implies one. The screen only explains what changes on their next invoice, so a new charge is never a surprise.'),
+      mk('1g', 'Signed, awaiting countersignature', 'done', false, 'Rule kept.', 'Signed and completed stay two moments. A four-step checklist shows what happened and what’s left; nothing is asked of the client. The same page becomes “Completed” after countersigning.'),
+      mk('1h', 'Updated while reading', 'stale', false, 'Rule kept.', 'Never auto-reloads. The action bar is replaced, not disabled, until the client reloads and re-reads.', { scroll: 'inv' }),
+      mk('1i', 'Expired · declined · ended', 'ended', false, 'Rule kept.', 'One calm pattern for every dead end; only the sentence changes. A named person to contact, nothing internal.'),
+    ];
+    const sealBar = React.createElement('div', { style: { width: 220, height: 4, borderRadius: 2, background: '#E2DDD3', overflow: 'hidden' } },
+      React.createElement('div', { style: { height: '100%', background: 'var(--accent,#365C4A)', animation: 'seal 2.2s ease-out forwards' } }));
+    return {
+      brand: this.props.workspaceName ?? 'MarketFresh Studios', showNotes: this.props.showNotes ?? true,
+      ic, t, qItems, selected, clauses, oneTxt: fmt(one), monTxt: fmt(mon), frames, sealBar,
+      padRef: this.padRef, padDown: this.padDown, padMove: this.padMove, padUp: this.padUp, padClear: this.padClear,
+      onTyped: e => this.setState({ typed: e.target.value }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
