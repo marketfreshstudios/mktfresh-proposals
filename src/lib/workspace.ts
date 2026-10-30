@@ -46,9 +46,4 @@ export const WorkspaceSettingsSchema = z.object({
   qbo_custom_item_ref: z.string().nullable(),
   collection_method: z.enum(["charge_automatically", "send_invoice"]),
 });
-export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema> & {
-  /** Read-only compatibility for historical proposal snapshots. */
-  client_url?: string;
-  email_sender_name?: string;
-  email_sender_address?: string;
-};
+export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;

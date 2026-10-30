@@ -1,14 +1,13 @@
 import { reviewBlocks, pendingSections } from "./ai-review";
 import {
-  quoteItems,
+  cloneQuote,
   draftItems,
   chooseItem,
-  flatQuote,
+  quoteSublines,
   selected as itemSelected,
   prepareQuote,
   billingLines,
   selectedContent,
-  isQuoteItem,
 } from "./quote-model";
 import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
@@ -22,7 +21,6 @@ import { readiness } from "./quote";
 import { randomBytes, randomUUID } from "node:crypto";
 import {
   AppError,
-  readLine,
   check,
   SignatureSchema,
   type Actor,
@@ -186,7 +184,7 @@ export class ProposalService {
         await this.repo.entities<Item>("pricing_items"),
         actor.actor.startsWith("ai:"),
       ),
-      quote_model_version: 3,
+
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -204,7 +202,7 @@ export class ProposalService {
     if (input.playbook) {
       const payload = PlaybookDraftSchema.parse(input.playbook);
       p.quote = prepareQuote(
-        payload.lines,
+        payload.items,
         await this.repo.entities<Item>("pricing_items"),
         actor.actor.startsWith("ai:"),
       );
@@ -234,7 +232,7 @@ export class ProposalService {
   }
   async forRead(p: Proposal) {
     if (p.status !== "draft") return p;
-    p = { ...p, quote: draftItems(p.quote), quote_model_version: 3 };
+    p = { ...p, quote: draftItems(p.quote) };
     const current = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
@@ -302,7 +300,7 @@ export class ProposalService {
             ai_review: { source: "assistant", reviewed: false },
           });
       }
-      p.quote_model_version = 3;
+
       if (input.valid_until) {
         check(
           Date.parse(input.valid_until) > this.clock().getTime(),
@@ -311,7 +309,7 @@ export class ProposalService {
         p.valid_until = new Date(input.valid_until).toISOString();
       }
       event(p, "edited", actor, {
-        price_decisions: quoteItems(p.quote)
+        price_decisions: cloneQuote(p.quote)
           .filter((i) => i.price_review && Object.keys(i.price_review).length)
           .map((i) => ({ item_id: i.id, decisions: i.price_review })),
       });
@@ -369,7 +367,7 @@ export class ProposalService {
         "Confirm review of AI changes before sending",
       );
       p.quote = draftItems(p.quote);
-      p.quote_model_version = 3;
+
       p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);
       check(ready.ready, ready.errors.join("; "));
@@ -378,7 +376,7 @@ export class ProposalService {
         new Set(p.quote.map((l) => l.id)).size === p.quote.length,
         "Duplicate quote items must be combined using quantity",
       );
-      for (const l of quoteItems(p.quote)) {
+      for (const l of cloneQuote(p.quote)) {
         check(l.optional || itemSelected(l), "Required items must be selected");
       }
       const now = this.clock().toISOString();
@@ -407,14 +405,12 @@ export class ProposalService {
       p.token = randomBytes(32).toString("base64url");
       p.status = "sent";
       p.first_viewed_at = null;
-      const map = variables(p, p.quote, true);
+      const map = variables(p, p.quote);
       renderBlocks(p.content, p.quote, map, p.currency);
       const version = {
         id: randomUUID(),
         version_no: p.versions.length + 1,
-        client_flow_version: 2 as const,
-        quote_model_version: 3 as const,
-        money_format_version: 2 as const,
+
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -496,22 +492,10 @@ export class ProposalService {
         "Quote changed; reload",
         409,
       );
-      if (p.versions.at(-1)?.quote_model_version === 3)
-        p.quote = chooseItem(p.quote, input.item_id, input.selected);
-      else {
-        const l = (p.quote as import("./model").Line[]).find(
-          (x) => x.id === input.item_id,
-        );
-        check(l?.optional, "Only optional items can be toggled");
-        l.selected = input.selected;
-      }
+      p.quote = chooseItem(p.quote, input.item_id, input.selected);
       const v = p.versions.at(-1)!;
       v.quote = structuredClone(p.quote);
-      v.variables_resolved = variables(
-        p,
-        p.quote,
-        v.money_format_version === 2,
-      );
+      v.variables_resolved = variables(p, p.quote);
       renderBlocks(
         v.content,
         v.quote,
@@ -598,8 +582,7 @@ export class ProposalService {
         v = p.versions.at(-1)!;
       if (role === "client") {
         billingLines(v.quote);
-        if (v.quote_model_version === 3)
-          v.content = selectedContent(v.content, v.quote);
+        v.content = selectedContent(v.content, v.quote);
         v.frozen = true;
         v.content_hash = versionHash({
           content: v.content,
@@ -678,7 +661,7 @@ export class ProposalService {
           "billing",
           "billing",
           {
-            selected_item_ids: quoteItems(v.quote)
+            selected_item_ids: cloneQuote(v.quote)
               .filter(itemSelected)
               .map((i) => i.id),
             lines: billingLines(v.quote),
@@ -759,10 +742,7 @@ export function publicResult(p: Proposal) {
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
-    client_flow_version: v.client_flow_version,
-    quote_model_version: v.quote_model_version,
-    money_format_version: v.money_format_version,
-    items: quoteItems(v.quote).map(
+    quote: cloneQuote(v.quote).map(
       ({
         plan_terms: _plan,
         custom_family_id: _family,
@@ -812,35 +792,6 @@ export function publicResult(p: Proposal) {
       p.currency,
       p.workspace_settings?.money?.cents ?? "auto",
     ),
-    quote: flatQuote(v.quote)
-      .map(readLine)
-      .map(
-        ({
-          id,
-          name,
-          description,
-          amount,
-          qty,
-          optional,
-          selected,
-          interval,
-          min_term_months,
-          schedule,
-          group,
-        }) => ({
-          id,
-          name,
-          description,
-          amount,
-          qty,
-          optional,
-          selected,
-          interval,
-          min_term_months,
-          schedule,
-          group,
-        }),
-      ),
     totals: totals(v.quote),
     company: p.workspace_settings
       ? {

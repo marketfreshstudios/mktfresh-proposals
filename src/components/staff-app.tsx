@@ -1,5 +1,5 @@
 "use client";
-import { flatQuote } from "../lib/quote-model";
+import { quoteSublines } from "../lib/quote-model";
 import { intervalSuffix } from "../lib/money";
 import { statusDisplay } from "../lib/status-display";
 import { StaffShell } from "./staff-shell";
@@ -704,7 +704,7 @@ function Dashboard({ data }: { data: Data }) {
 function ProposalTable({ proposals }: { proposals: Proposal[] }) {
   const money = useMoney();
   const hasYearly = proposals.some((p) =>
-    flatQuote(p.quote ?? []).some((line) => line.interval === "year"),
+    quoteSublines(p.quote ?? []).some((line) => line.interval === "year"),
   );
   return proposals.length ? (
     <div className="table-wrap">
@@ -1137,10 +1137,7 @@ function Document({ p }: { p: Proposal }) {
     html = "Preview unavailable until unresolved variables are fixed.";
   }
   return (
-    <article
-      className={p.status === "draft" ? "paper" : "paper legacy-document"}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <article className="paper" dangerouslySetInnerHTML={{ __html: html }} />
   );
 }
 function SendProposal({
@@ -1314,11 +1311,7 @@ function Record({
           {p.token && (
             <Button
               onClick={async () => {
-                await navigator.clipboard.writeText(
-                  (p.workspace_settings?.client_url ?? appUrl) +
-                    "/p/" +
-                    p.token,
-                );
+                await navigator.clipboard.writeText(appUrl + "/p/" + p.token);
                 setMessage("Private link copied");
               }}
             >

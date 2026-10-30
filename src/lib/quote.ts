@@ -1,5 +1,5 @@
-import { LineSchema, type Item, type Proposal } from "./model";
-import { flatQuote, quoteItems, validateItems } from "./quote-model";
+import { BillingLineSchema, type Item, type Proposal } from "./model";
+import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
 import { pendingSections } from "./ai-review";
 import { renderBlocks, variables } from "./presentation";
 
@@ -24,10 +24,10 @@ export function readiness(
   } catch (e) {
     errors.push(e instanceof Error ? e.message : "Invalid quote items");
   }
-  for (const i of quoteItems(p.quote)) {
+  for (const i of cloneQuote(p.quote)) {
     if (
       i.choice_group_id &&
-      !quoteItems(p.quote).some(
+      !cloneQuote(p.quote).some(
         (v) => v.choice_group_id === i.choice_group_id && v.default_selected,
       )
     )
@@ -63,8 +63,8 @@ export function readiness(
         .length !== 1
     )
       errors.push(`Exactly one ${role} signature block required`);
-  for (const raw of flatQuote(p.quote)) {
-    const parsed = LineSchema.safeParse(raw);
+  for (const raw of quoteSublines(p.quote)) {
+    const parsed = BillingLineSchema.safeParse(raw);
     if (!parsed.success) {
       errors.push(`${raw.name}: invalid quote line`);
       continue;

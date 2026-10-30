@@ -2,10 +2,9 @@ import { billingLines } from "./quote-model";
 import { proposalOrigin, proposalLink } from "./links";
 import {
   check,
-  readLine,
   type BillingLink,
   type Client,
-  type Line,
+  type BillingLine,
   type Proposal,
 } from "./model";
 import { sha256 } from "./content";
@@ -16,13 +15,13 @@ export interface BillingProvider {
   createCustomer(client: Client, key: string): Promise<Customer>;
   createObject(
     customer: Customer,
-    lines: Line[],
+    lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
   ): Promise<{ id: string; metadata: Record<string, unknown> }>;
 }
 export function paidInvoiceProgress(
-  line: Line,
+  line: BillingLine,
   invoices: { id: string; amount_paid: number; status: string }[],
 ) {
   check(line.schedule, "Scheduled line required");
@@ -69,7 +68,7 @@ export class MockBillingProvider implements BillingProvider {
   }
   async createObject(
     customer: Customer,
-    lines: Line[],
+    lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
   ) {
@@ -177,8 +176,7 @@ export async function bill(
     metadata.proposal_id = p.id;
     if (provider === "stripe") {
       metadata.client_origin = proposalOrigin(p);
-      if (p.versions.at(-1)?.client_flow_version === 2)
-        metadata.client_return_url = proposalLink(p);
+      metadata.client_return_url = proposalLink(p);
     }
     metadata.proposal_title = p.title;
     metadata.currency = p.currency.toLowerCase();

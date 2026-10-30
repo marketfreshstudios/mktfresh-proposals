@@ -317,17 +317,7 @@
 .staff-foundation .skeleton-document .skeleton-line {
   height: 24px;
 }
-.staff-foundation .legacy-document {
-  --font-sans: "Public Sans", system-ui, sans-serif;
-  --font-serif: "Source Serif 4", Georgia, serif;
-  --paper-ink: #12151a;
-  --paper-muted: #5a626b;
-  --paper-border: #d4d8de;
-  --ink: #12151a;
-  --ink-muted: #5a626b;
-  --surface: #fff;
-  --accent: #1a5fb4;
-}
+
 @keyframes foundation-pulse {
   from {
     opacity: 0.5;

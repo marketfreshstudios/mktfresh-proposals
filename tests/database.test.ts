@@ -55,13 +55,6 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   expect((await db.query("select * from proposal_versions")).rows).toHaveLength(
     1,
   );
-  expect(
-    (
-      await db.query<{ data: { client_flow_version: number } }>(
-        "select data from proposal_versions",
-      )
-    ).rows[0].data.client_flow_version,
-  ).toBe(2);
   await expect(db.exec("update events set actor='tampered'")).rejects.toThrow(
     "Append-only",
   );
@@ -225,113 +218,5 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
       )
     ).rows,
   ).toEqual([{ money: { cents: "always" } }]);
-  await db.close();
-});
-
-it("migrates drafts only, preserves frozen/sent snapshots byte for byte, and is idempotent", async () => {
-  const db = new PGlite();
-  await db.exec(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;`,
-  );
-  const files = (await readdir("supabase/migrations")).sort(),
-    migration = files.at(-1)!;
-  for (const file of files.slice(0, -1))
-    await db.exec(await readFile(`supabase/migrations/${file}`, "utf8"));
-  const { draft, repo, service } = await setup();
-  const { flatQuote, quoteItems } = await import("../src/lib/quote-model");
-  const { versionHash, variables } = await import("../src/lib/content");
-  const sent = await service.send(draft.id, staff);
-  const legacy = { ...sent, quote: flatQuote(sent.quote) };
-  delete legacy.quote_model_version;
-  const v = legacy.versions[0];
-  v.quote = flatQuote(v.quote);
-  delete v.quote_model_version;
-  delete v.money_format_version;
-  v.variables_resolved = variables(legacy, v.quote, false);
-  v.content_hash = versionHash({
-    content: v.content,
-    quote: v.quote,
-    variables_resolved: v.variables_resolved,
-  });
-  await db.query("insert into clients(id,data,workspace_id) values($1,$2,$3)", [
-    draft.client.id,
-    JSON.stringify(draft.client),
-    repo.workspaceId,
-  ]);
-  const states = [
-    "draft",
-    "sent",
-    "viewed",
-    "signed_by_client",
-    "completed",
-    "declined",
-    "expired",
-    "archived",
-  ] as const;
-  for (const [n, status] of states.entries()) {
-    const p = {
-      ...structuredClone(legacy),
-      id: `00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}`,
-      status,
-      token: null,
-      revision: 0,
-    };
-    p.versions[0].id = `00000000-0000-4000-8000-${String(900 + n).padStart(12, "0")}`;
-    p.versions[0].frozen = ["signed_by_client", "completed"].includes(status);
-    p.events = status === "draft" ? structuredClone(draft.events) : [];
-    p.jobs = [];
-    await db.query("select save_proposal($1::jsonb,-1)", [JSON.stringify(p)]);
-  }
-  const frozenBefore = (
-      await db.query(
-        "select id,data::text as bytes from proposal_versions order by id",
-      )
-    ).rows,
-    closedBefore = (
-      await db.query(
-        "select id,state::text as bytes from proposals where status<>'draft' order by id",
-      )
-    ).rows;
-  // Fail even on a physically attempted UPDATE of an unchanged version row.
-  await db.exec(
-    `create function reject_version_write() returns trigger language plpgsql as $$begin raise exception 'Snapshot write attempted';end$$;create trigger phase3_snapshot_write_guard before update or delete on proposal_versions for each row execute function reject_version_write();`,
-  );
-  const sql = await readFile(`supabase/migrations/${migration}`, "utf8");
-  await db.exec(sql);
-  expect(
-    (
-      await db.query(
-        "select id,data::text as bytes from proposal_versions order by id",
-      )
-    ).rows,
-  ).toEqual(frozenBefore);
-  expect(
-    (
-      await db.query(
-        "select id,state::text as bytes from proposals where status<>'draft' order by id",
-      )
-    ).rows,
-  ).toEqual(closedBefore);
-  const migrated = (
-    await db.query<{ state: typeof draft }>(
-      "select state from proposals where status='draft'",
-    )
-  ).rows[0].state;
-  expect(migrated.quote_model_version).toBe(3);
-  expect(migrated.revision).toBe(1);
-  expect(migrated.quote).toEqual(quoteItems(legacy.quote));
-  expect(migrated.events.slice(0, -1)).toEqual(draft.events);
-  expect(migrated.events.at(-1)!.type).toBe("draft_quote_migrated");
-  const once = (await db.query("select state::text from proposals order by id"))
-    .rows;
-  await db.exec(sql);
-  expect(
-    (await db.query("select state::text from proposals order by id")).rows,
-  ).toEqual(once);
-  await db.exec("set role authenticated");
-  await expect(db.exec("select quote_items_v3('[]')")).rejects.toThrow(
-    "permission denied",
-  );
-  await db.exec("reset role");
   await db.close();
 });

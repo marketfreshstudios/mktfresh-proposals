@@ -1,4 +1,4 @@
-import { chooseItem, flatQuote } from "../src/lib/quote-model";
+import { chooseItem, quoteSublines } from "../src/lib/quote-model";
 import type { QuoteItem } from "../src/lib/model";
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -68,7 +68,7 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
       return route.fulfill({
         json: {
           ...read.company,
-          client_flow_version: 2,
+
           contact: read.contact,
           ended:
             scenario === "expired"
@@ -101,12 +101,11 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
           json: { error: "Revision changed" },
         });
       const { item_id, selected } = req.postDataJSON();
-      current.items = chooseItem(
-        current.items as QuoteItem[],
+      current.quote = chooseItem(
+        current.quote as QuoteItem[],
         item_id,
         selected,
       );
-      current.quote = flatQuote(current.items as QuoteItem[]);
       const { totals, money } = await import("../src/lib/presentation");
       current.totals = totals(current.quote as any);
       current.variables["quote.monthly_total"] = money(
@@ -519,37 +518,23 @@ test("client redesign: every responsive state, frozen legacy renderer, safe prev
     }
   }
   const withYear = structuredClone(sent);
-  withYear.quote = flatQuote(withYear.quote);
   withYear.quote.push({
-    ...flatQuote(withYear.quote)[0],
-    id: "year",
-    interval: "year" as const,
-    amount: 0,
+    ...withYear.quote[0],
+    id: "00000000-0000-4000-8000-000000009999",
+    sublines: [
+      {
+        ...withYear.quote[0].sublines[0],
+        id: "00000000-0000-4000-8000-000000009998",
+        interval: "year",
+        amount: 0,
+      },
+    ],
   });
   staffRows = [withYear];
   await page.goto("/");
   await expect(
     page.getByRole("columnheader", { name: "Yearly", exact: true }),
   ).toBeVisible();
-  // A legacy send retains the old renderer and formatting after the redesign lands.
-  await page.unroute("**/api/**");
-  const legacy = structuredClone(read);
-  delete legacy.client_flow_version;
-  await page.route("**/api/**", (r) =>
-    r.fulfill({
-      json: new URL(r.request().url()).pathname.endsWith("/brand")
-        ? { ...read.company, client_flow_version: 1 }
-        : legacy,
-    }),
-  );
-  await page.goto(`/p/${token}`);
-  await expect(
-    page.getByRole("button", { name: "Accept & sign", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".client-flow")).toHaveCount(0);
-  await expect(
-    page.getByLabel("Proposal totals", { exact: true }),
-  ).toContainText(".00");
   expect(externalFonts).toEqual([]);
   expect(signPosts).toBe(12);
   expect(quotePosts).toBe(18);
@@ -616,7 +601,9 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
   const { service, draft } = await setup();
   const sent = await service.send(draft.id, staff),
     value = publicResult(sent);
-  value.quote = value.quote.filter((l) => l.interval === "one_time");
+  value.quote = value.quote.filter((i) =>
+    i.sublines.every((s) => s.interval === "one_time"),
+  );
   value.totals.monthly_total = 0;
   const mobile = await browser.newContext({
       hasTouch: true,
@@ -634,7 +621,7 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
       return route.fulfill({
         json: {
           ...value.company,
-          client_flow_version: 2,
+
           contact: value.contact,
         },
       });

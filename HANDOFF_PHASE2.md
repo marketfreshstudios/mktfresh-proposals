@@ -373,3 +373,11 @@ Validation: 149 unit/database tests, the complete 12-test Playwright suite, type
 Deployment note: the new migration is committed and tested against local PostgreSQL (PGlite), but has **not** been pushed to any hosted project. No live credentials, provider calls or hosted resources were used. Review the migration as part of this PR; apply it only to this app's Supabase project during the eventual release. QuickBooks/live provider verification remains as previously documented.
 
 Stop: Phase 3 only, one open PR for Jonathan's review. Do not begin Phase 4.
+
+## Phase 4 Part A — current-model reset (30 October 2026)
+
+The owner confirmed there is no pre-redesign client evidence. `scripts/purge-test-proposals.ts` is prepared but **has not been run against the hosted project**, including dry-run. See `docs/purge-test-proposals.md` for the owner-run workflow. It requires an explicit workspace and confirmation; the default prints counts. Imports and their files, other workspaces, clients, catalogue, templates, library/reference content, settings and integrations are preserved. Proposal-dependent evidence rows are removed only in the owner-run transaction; protections are restored before commit and on rollback. No Stripe/QBO/email calls are made.
+
+Legacy client/signature files and readers, generation flags, old flat MCP inputs and the draft quote migration were removed. The application and MCP use current items/sub-lines only; billing still resolves selected sub-lines into provider DTOs. New playbook payloads use `items` and `/schemas/quote-draft.v2.json`. Future signed snapshots/hashes are still immutable. This is Part A's separate commit before the Phase 4 UI work and Jonathan's additional validity/client/Studio requests.
+
+Part A local validation: 148 unit/database checks and TypeScript passed. Eleven existing browser tests passed; the broad screenshot fixture was updated to use the current client flow and is being rechecked with Phase 4. No hosted purge or database change was performed.

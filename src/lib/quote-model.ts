@@ -1,56 +1,23 @@
 import {
   check,
-  readLine,
   QuoteItemSchema,
+  QuoteSchema,
   ContractClauseSchema,
   type Quote,
   type QuoteItem,
-  type Line,
+  type BillingLine,
   type Item,
   type Block,
 } from "./model";
-export const isQuoteItem = (v: Quote[number]): v is QuoteItem =>
-  "sublines" in v;
-/** Pure adapter. The caller owns the result; no input/version is ever mutated. */
-export function quoteItems(quote: Quote): QuoteItem[] {
-  return quote.map((raw, order) => {
-    if (isQuoteItem(raw)) return structuredClone(raw);
-    const l = readLine(raw);
-    return QuoteItemSchema.parse({
-      id: l.id,
-      order,
-      name: l.name,
-      description: l.description,
-      source: l.pricing_item_id ? "catalog" : "custom",
-      pricing_item_id: l.pricing_item_id,
-      custom_family_id: l.custom_family_id,
-      sublines: [
-        {
-          id: l.id,
-          amount: l.amount,
-          list_amount: l.list_amount,
-          interval: l.interval,
-          qty: l.qty,
-          stripe_lookup_key: l.stripe_lookup_key,
-          qbo_item_ref: l.qbo_item_ref,
-        },
-      ],
-      optional: l.optional,
-      default_selected: l.optional ? l.selected : true,
-      selected: l.optional ? l.selected : true,
-      choice_group_id: null,
-      min_term_months: l.min_term_months,
-      schedule: l.schedule,
-      plan_terms: l.plan_terms,
-      legacy_group: l.group,
-    });
-  });
+/** Clone the current model; malformed/flat quote inputs are rejected. */
+export function cloneQuote(quote: Quote): QuoteItem[] {
+  return structuredClone(QuoteSchema.parse(quote));
 }
 export function selected(item: QuoteItem) {
   return !item.optional || (item.selected ?? item.default_selected);
 }
 export function orderedItems(quote: Quote) {
-  const items = quoteItems(quote).sort((a, b) => a.order - b.order),
+  const items = cloneQuote(quote).sort((a, b) => a.order - b.order),
     out: QuoteItem[] = [];
   const seen = new Set<string>();
   for (const item of items) {
@@ -65,7 +32,7 @@ export function orderedItems(quote: Quote) {
   return out;
 }
 export function validateItems(quote: Quote, requireChoice = false) {
-  const items = quoteItems(quote);
+  const items = cloneQuote(quote);
   const ids = new Set<string>(),
     subIds = new Set<string>();
   for (const raw of items) {
@@ -106,19 +73,18 @@ export function validateItems(quote: Quote, requireChoice = false) {
   return items;
 }
 export function draftItems(quote: Quote): QuoteItem[] {
-  const items = quoteItems(quote).map((i) => ({
+  const items = cloneQuote(quote).map((i) => ({
     ...i,
     selected: !i.optional || i.default_selected,
   }));
   validateItems(items);
   return items;
 }
-/** All provider boundaries use this adapter; sub-line IDs remain stable idempotency identities. */
-export function flatQuote(quote: Quote, onlySelected = false): Line[] {
-  if (!quote.some(isQuoteItem))
-    return (quote as Line[])
-      .map(readLine)
-      .filter((l) => !onlySelected || !l.optional || l.selected);
+/** Provider DTOs only. Proposal storage and public/MCP inputs always use items. */
+export function quoteSublines(
+  quote: Quote,
+  onlySelected = false,
+): BillingLine[] {
   return orderedItems(quote)
     .filter((i) => !onlySelected || selected(i))
     .flatMap((i) =>
@@ -136,7 +102,7 @@ export function flatQuote(quote: Quote, onlySelected = false): Line[] {
         custom_family_id: i.custom_family_id,
         optional: i.optional,
         selected: selected(i),
-        group: i.legacy_group ?? null,
+        group: null,
         min_term_months: s.interval === "one_time" ? null : i.min_term_months,
         schedule: s.interval === "one_time" ? null : i.schedule,
         plan_terms: i.plan_terms,
@@ -145,14 +111,14 @@ export function flatQuote(quote: Quote, onlySelected = false): Line[] {
 }
 export function billingLines(quote: Quote) {
   validateItems(quote, true);
-  return flatQuote(quote, true);
+  return quoteSublines(quote, true);
 }
 export function chooseItem(
   quote: Quote,
   id: string,
   value: boolean,
 ): QuoteItem[] {
-  const items = quoteItems(quote),
+  const items = cloneQuote(quote),
     item = items.find((i) => i.id === id);
   check(item?.optional, "Only optional items can be toggled");
   if (item.choice_group_id) {
@@ -210,7 +176,7 @@ export function catalogQuoteItem(
 }
 export function selectedContent(content: Block[], quote: Quote) {
   const included = new Set(
-    quoteItems(quote)
+    cloneQuote(quote)
       .filter(selected)
       .map((i) => i.pricing_item_id),
   );
@@ -237,7 +203,7 @@ export function selectedContent(content: Block[], quote: Quote) {
   );
 }
 export function quoteRange(quote: Quote) {
-  const items = quoteItems(quote),
+  const items = cloneQuote(quote),
     min = { one_time_total: 0, monthly_total: 0, yearly_total: 0 },
     max = { ...min };
   const sums = (i: QuoteItem) => {

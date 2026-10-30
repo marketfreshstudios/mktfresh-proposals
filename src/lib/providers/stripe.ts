@@ -1,5 +1,5 @@
 import { appOrigin, AppUrlSchema } from "../links";
-import { check, type Client, type Line, type Item } from "../model";
+import { check, type Client, type BillingLine, type Item } from "../model";
 import {
   NeedsReview,
   type BillingProvider,
@@ -91,7 +91,7 @@ export class StripeProvider implements BillingProvider {
       ),
     );
   }
-  private async item(line: Line, currency: string) {
+  private async item(line: BillingLine, currency: string) {
     if (line.stripe_lookup_key) {
       const price = await resolveLookup(this.api, line.stripe_lookup_key);
       if (price.currency && price.currency !== currency)
@@ -144,10 +144,10 @@ export class StripeProvider implements BillingProvider {
       quantity: line.qty,
     };
   }
-  private plan(line: Line) {
+  private plan(line: BillingLine) {
     return line.stripe_lookup_key ?? `custom:${line.custom_family_id}`;
   }
-  private terms(line: Line, proposal: string) {
+  private terms(line: BillingLine, proposal: string) {
     return {
       ...Object.fromEntries(
         Object.entries(line.plan_terms ?? {}).map(([k, v]) => [k, String(v)]),
@@ -177,7 +177,7 @@ export class StripeProvider implements BillingProvider {
   }
   async createObject(
     c: Customer,
-    lines: Line[],
+    lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
   ) {
@@ -395,7 +395,7 @@ export class StripeProvider implements BillingProvider {
   }
   async finishSetup(
     c: string,
-    lines: Line[],
+    lines: BillingLine[],
     pm: string,
     key: string,
     metadata: Record<string, unknown>,
@@ -448,7 +448,7 @@ export class StripeProvider implements BillingProvider {
   }
   async configureSchedule(
     sub: Subscription,
-    line: Line,
+    line: BillingLine,
     key: string,
     proposal: string,
   ) {

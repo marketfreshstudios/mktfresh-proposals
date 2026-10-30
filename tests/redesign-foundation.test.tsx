@@ -1,4 +1,4 @@
-import { flatQuote } from "../src/lib/quote-model";
+import { quoteSublines } from "../src/lib/quote-model";
 import { mutate } from "../src/lib/repository";
 import { variables } from "../src/lib/presentation";
 import { expect, it } from "vitest";
@@ -23,7 +23,7 @@ it("formats cents per amount with auto/always, including zero, negative amounts 
   expect(formatMoney(50000, "USD", "always")).toBe("$500.00");
   expect(formatMoney(-4950)).toBe("-$49.50");
   expect(formatMoney(50000, "EUR")).toBe("€500");
-  expect(money(50000)).toBe("$500.00");
+  expect(money(50000)).toBe("$500");
   const value = { one_time_total: 0, monthly_total: 17500, yearly_total: 5100 };
   expect(
     renderToStaticMarkup(
@@ -39,9 +39,9 @@ it("formats cents per amount with auto/always, including zero, negative amounts 
       </MoneyProvider>,
     ),
   ).toContain("$175.00");
-  const legacy = renderToStaticMarkup(<Totals value={value} />);
-  expect(legacy).toContain("$175.00");
-  expect(legacy).toContain("/month");
+  const defaultFormat = renderToStaticMarkup(<Totals value={value} />);
+  expect(defaultFormat).toContain("$175");
+  expect(defaultFormat).toContain("/mo");
 });
 it.each([
   [["dashboard"], "/"],
@@ -89,28 +89,13 @@ it("uses display-only status words and accessible tags/skeletons", () => {
     expect(html).toContain(word);
   expect(renderToStaticMarkup(<Skeleton />)).toContain('role="status"');
 });
-it("current money preferences parse while old sent/signed rendering, quote shape and content hashes stay unchanged", async () => {
+it("current money preferences parse while current signed rendering and content hashes stay unchanged", async () => {
   const { repo, service, draft, settings } = await setup();
   expect(
     WorkspaceSettingsSchema.parse({ ...settings, money: { cents: "always" } })
       .money?.cents,
   ).toBe("always");
   let sent = await service.send(draft.id, staff);
-  // Explicit pre-redesign fixture: the old flat evidence, fixed cents and no new flags.
-  sent = await mutate(repo, sent.id, (p) => {
-    p.quote = flatQuote(p.quote);
-    delete p.quote_model_version;
-    const v = p.versions[0];
-    v.quote = flatQuote(v.quote);
-    delete v.quote_model_version;
-    delete v.money_format_version;
-    v.variables_resolved = variables(p, v.quote, false);
-    v.content_hash = versionHash({
-      content: v.content,
-      quote: v.quote,
-      variables_resolved: v.variables_resolved,
-    });
-  });
   const signed = await service.sign(
     sent.id,
     signature(sent.revision),
@@ -127,11 +112,10 @@ it("current money preferences parse while old sent/signed rendering, quote shape
     accent_colour: "#123456",
   });
   expect(publicResult((await repo.get(signed.id))!)).toEqual(view);
-  expect(view.html).toContain("$2,750.00");
-  expect(view.html).toContain("$25.00");
+  expect(view.html).toContain("$2,750");
+  expect(view.html).toContain("$25");
   const { content, quote, variables_resolved } = signed.versions[0];
   expect(versionHash({ content, quote, variables_resolved })).toBe(hash);
   expect(JSON.stringify(await repo.get(signed.id))).toBe(before);
-  expect(signed.quote[0]).toHaveProperty("amount");
-  expect(signed.quote[0]).not.toHaveProperty("sublines");
+  expect(signed.quote[0]).toHaveProperty("sublines");
 });

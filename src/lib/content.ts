@@ -6,10 +6,9 @@ import {
 } from "node:crypto";
 import {
   AppError,
-  readLine,
   check,
   type Block,
-  type Line,
+  type BillingLine,
   type Proposal,
   type RichText,
   type Version,

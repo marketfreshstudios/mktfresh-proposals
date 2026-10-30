@@ -1,4 +1,4 @@
-import { flatQuote, quoteItems } from "../src/lib/quote-model";
+import { quoteSublines, cloneQuote } from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import { randomBytes, createHmac } from "node:crypto";
 import { StripeProvider } from "../src/lib/providers/stripe";
@@ -13,7 +13,7 @@ import {
 } from "../src/lib/providers/webhook";
 import { encryptSecret, decryptSecret } from "../src/lib/providers/secrets";
 import { type StripeTransport } from "../src/lib/catalog";
-import { type Line, LineSchema } from "../src/lib/model";
+import { type BillingLine, BillingLineSchema } from "../src/lib/model";
 import { setup, staff, signature, clientActor } from "./helpers";
 import { bill } from "../src/lib/billing";
 function transport(existing = false, multi = false) {
@@ -199,8 +199,8 @@ it("custom retainer bills entered 2000/month inline on existing family, without 
     stripe_product_id: "prod_family",
     active: true,
   });
-  const line = LineSchema.parse({
-    ...flatQuote(draft.quote)[1],
+  const line = BillingLineSchema.parse({
+    ...quoteSublines(draft.quote)[1],
     pricing_item_id: null,
     custom_family_id: family,
     stripe_lookup_key: null,
@@ -282,13 +282,13 @@ it("encrypts OAuth state with workspace binding and creates only an unsent QBO i
   );
   await qbo.createObject(
     { id: "customer", email: "", company: "" },
-    [flatQuote(draft.quote)[0]],
+    [quoteSublines(draft.quote)[0]],
     "invoice",
     { proposal_id: draft.id },
   );
   const invoice = JSON.parse(calls[1].init.body);
   expect(invoice.EmailStatus).toBe("NotSet");
-  expect(invoice.Line).toHaveLength(1);
+  expect(invoice.BillingLine).toHaveLength(1);
   expect(calls[1].url).toContain("sandbox-quickbooks");
   expect(
     JSON.stringify(await repo.entities("provider_credentials")),
@@ -347,8 +347,8 @@ it("scheduled plans preserve the phase anchor, count paid invoices and explicitl
     ...settings,
     collection_method: "send_invoice",
   });
-  const line = LineSchema.parse({
-    ...flatQuote(draft.quote)[1],
+  const line = BillingLineSchema.parse({
+    ...quoteSublines(draft.quote)[1],
     schedule: {
       after_paid_invoices: 3,
       then: { amount: 2500, lookup_key: "next-plan" },
@@ -432,21 +432,5 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
       plan_items:
         "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
     },
-  });
-});
-
-it("Checkout preserves a legacy proposal origin after workspace client_url is removed", async () => {
-  const { repo, service, draft } = await setup();
-  let p = await service.send(draft.id, staff);
-  p.workspace_settings!.client_url = "https://legacy.example.test/old-app";
-  delete p.versions.at(-1)!.client_flow_version; // A version sent before the redesign.
-  const { api, calls } = transport(false);
-  const result = await bill(p, "stripe", new StripeProvider(api, repo));
-  expect(result.status).toBe("succeeded");
-  expect(
-    calls.find((c) => c.path === "/v1/checkout/sessions")!.params,
-  ).toMatchObject({
-    success_url: "https://legacy.example.test/old-app/billing/complete",
-    cancel_url: "https://legacy.example.test/old-app/billing/pending",
   });
 });

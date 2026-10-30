@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { setup, staff, clientActor, signature } from "../tests/helpers";
-import { quoteItems, flatQuote, chooseItem } from "../src/lib/quote-model";
+import { cloneQuote, quoteSublines, chooseItem } from "../src/lib/quote-model";
 import { publicResult } from "../src/lib/service";
 import type { Proposal, QuoteItem } from "../src/lib/model";
 import { sha256 } from "../src/lib/content";
@@ -14,7 +14,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   page.setDefaultTimeout(15000);
   const { repo, service, draft, settings, members } = await setup(),
     catalog = await repo.entities<any>("pricing_items");
-  const quote = quoteItems(draft.quote),
+  const quote = cloneQuote(draft.quote),
     group = "00000000-0000-4000-8000-000000008001";
   quote[0] = {
     ...quote[0],
@@ -92,7 +92,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
           value = {
             ...publicResult(p).company,
             contact: publicResult(p).contact,
-            client_flow_version: 2,
+
             ended: null,
           };
         else if (path[2] === "quote") {
@@ -346,7 +346,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await expect
     .poll(
       () =>
-        quoteItems(publicP!.versions[0].quote).filter((i) => i.selected).length,
+        cloneQuote(publicP!.versions[0].quote).filter((i) => i.selected).length,
     )
     .toBe(1);
   await expect(

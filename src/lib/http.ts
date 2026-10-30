@@ -22,7 +22,7 @@ import {
   AppError,
   ClientSchema,
   ItemSchema,
-  LineSchema,
+  BillingLineSchema,
   QuoteSchema,
   SignatureSchema,
   check,
@@ -149,7 +149,7 @@ export async function handle(req: Request, path: string[]) {
         }
         return json({
           name: settings?.company_name ?? "Proposal",
-          client_flow_version: p.versions.at(-1)?.client_flow_version ?? 1,
+
           contact: {
             name: p.sender?.display_name ?? settings?.owner ?? "",
             email: p.sender?.email ?? settings?.email ?? "",

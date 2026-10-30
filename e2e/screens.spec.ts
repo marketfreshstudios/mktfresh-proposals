@@ -235,24 +235,6 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
           await expect(page.locator(".client-signature")).toHaveCount(2);
         if (name === "client-completed")
           await expect(page.locator(".typed-signature")).toHaveCount(1);
-        if (name === "client-reading") {
-          await page.evaluate(() =>
-            window.scrollTo(0, document.body.scrollHeight),
-          );
-          await expect
-            .poll(async () =>
-              page.evaluate(
-                () =>
-                  document
-                    .querySelector(".document-end")!
-                    .getBoundingClientRect().bottom <=
-                  document.querySelector(".client-bar")!.getBoundingClientRect()
-                    .top,
-              ),
-            )
-            .toBe(true);
-          await page.evaluate(() => window.scrollTo(0, 0));
-        }
       }
 
       // Exercise the actual controls on every captured surface, including paper.

@@ -13,11 +13,8 @@ export const AppUrlSchema = z.url().refine((value) => {
 export function appOrigin() {
   return new URL(AppUrlSchema.parse(process.env.APP_URL)).origin;
 }
-export function proposalOrigin(p: Pick<Proposal, "workspace_settings">) {
-  // Historical proposal snapshots are never rewritten by the settings migration.
-  return p.workspace_settings?.client_url
-    ? AppUrlSchema.parse(p.workspace_settings.client_url).replace(/\/+$/, "")
-    : appOrigin();
+export function proposalOrigin(_p?: Pick<Proposal, "workspace_settings">) {
+  return appOrigin();
 }
 export const proposalLink = (p: Proposal) =>
   `${proposalOrigin(p)}/p/${p.token}`;

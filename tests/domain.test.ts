@@ -1,4 +1,4 @@
-import { quoteItems } from "../src/lib/quote-model";
+import { cloneQuote } from "../src/lib/quote-model";
 import { describe, it, expect } from "vitest";
 import {
   setup,
@@ -141,13 +141,13 @@ describe("proposal lifecycle", () => {
   it("blocks missing provider mappings and unresolved variables at send", async () => {
     const { repo, service, draft, settings } = await setup();
     await mutate(repo, draft.id, (p) => {
-      const items = quoteItems(p.quote);
+      const items = cloneQuote(p.quote);
       items[1].sublines[0].stripe_lookup_key = null;
       p.quote = items;
     });
     await expect(service.send(draft.id, staff)).rejects.toThrow("lookup key");
     await mutate(repo, draft.id, (p) => {
-      const items = quoteItems(p.quote);
+      const items = cloneQuote(p.quote);
       items[1].sublines[0].stripe_lookup_key = "test-monthly";
       p.quote = items;
       p.content = [{ type: "paragraph", text: "{{missing.variable}}" }];

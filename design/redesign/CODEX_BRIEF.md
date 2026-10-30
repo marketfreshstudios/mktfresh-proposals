@@ -8,6 +8,10 @@ Build the redesign in `design/redesign/` into the app. The visual source of trut
 - Frame ids (`1a`, `2c`, `8f`…) in the spec point to frames in those files.
 - Sample data is illustrative. "Brightline Foods", "Rowan Vale" and the amounts are placeholders and must never ship.
 
+## Owner update — 30 October 2026
+
+There is no pre-redesign client data. Jonathan authorized purging native test proposals (excluding Proposify imports) and removing legacy readers/MCP flat inputs. This supersedes the original migration/compatibility instructions below. Do not run the purge against hosted data; the owner runs `scripts/purge-test-proposals.ts`. All future signed versions and hashes remain immutable.
+
 ## Precedence
 
 1. **Safety and integrity rules in `PHASE2.md`, `DECISIONS.md` and `AGENTS.md` always win.** This covers:
@@ -24,8 +28,8 @@ Build the redesign in `design/redesign/` into the app. The visual source of trut
 ## Non-negotiables while rebuilding
 
 - **Keep `src/` neutral.** "Own It Over Time", its 30-invoice step-down and the 18-month minimum are catalogue and seed data (`plan_terms`, `schedule`, `min_term_months`), never hardcoded in `src/`. Clause 4.4 is a seed contract clause with `show_when`. `npm run check:neutral` must pass.
-- **Already signed, sealed or sent proposals must render exactly as they were signed.** Migrate stored drafts to the new quote shape: one item per old line, one sub-line each. Read old frozen snapshots through an adapter. Never rewrite a signed snapshot or change its hash.
-- **Update the MCP connector with the model.** `create_proposal_draft`, `set_quote_lines` / `update_proposal_draft`, `get_proposal`, `check_ready` and `list_catalog` must accept and return the new quote shape: items, sub-lines, `optional`, `default_selected`, `choice_group_id` and `order`. Keep the old flat `lines` input working for one release by converting it. Update the tool descriptions. AI drafts must still go through review, and connectors never see countersign.
+- **All future signed snapshots remain immutable.** After the owner purges native test data, use only the current item/sub-line model. No legacy quote reader or conversion migration remains. Proposify imports are preserved.
+- **Update the MCP connector with the model.** `create_proposal_draft`, `set_quote_lines` / `update_proposal_draft`, `get_proposal`, `check_ready` and `list_catalog` must accept and return the new quote shape: items, sub-lines, `optional`, `default_selected`, `choice_group_id` and `order`. Accept `items` only; reject retired flat `lines` input. Update the tool descriptions. AI drafts must still go through review, and connectors never see countersign.
 - **Billing:** sub-lines map to Stripe prices by interval exactly as lines do today. Choice groups resolve to the one selected item before any billing job is created. The existing-subscriber path (add items, no Checkout), the Checkout path and the manual invoice path all keep working. Recurring totals stay "Monthly", and yearly sub-lines show as `/yr` and are never folded into the monthly figure.
 - **Status words:** map the existing stored statuses onto Draft / Sent / Viewed / Won / Lost / Expired plus the "Needs countersign" and "Billing to finish" tags. Don't rename stored audit events. Add `marked_won_by` / `marked_lost_by` per spec §3. Marking won by hand never creates a signature.
 - **Fonts:** self-host Instrument Sans (SIL OFL) alongside Source Serif 4 and IBM Plex Mono in `public/fonts`, with no Google Fonts request at runtime. Drop Public Sans once nothing uses it. Custom proposal fonts per workspace (spec §11) go in phase 5.
@@ -41,7 +45,7 @@ Build the redesign in `design/redesign/` into the app. The visual source of trut
    - No feature changes yet.
 2. **Client flow** (`/p/:token`, spec §7, frames 1a–1i, 5a–5d, 8-series client states). Review → Sign → Billing, the sticky totals bar on phone and tablet, the 340px "Your choices" panel on desktop, the sign step order, sealing and stale states, the existing-subscriber explanation, and the shared dead-end pattern. White-label logo and accent come from workspace settings.
 3. **Quote model and editor** (§5, §6, §8, frames 2a–2f, 5e–5h).
-   - Data migration and adapter for old snapshots.
+   - Current item model; old adapter/migration retired by the owner update.
    - Sub-lines and choice groups, with drag order via `@dnd-kit/sortable` and keyboard support.
    - The contract block with conditional clauses, frozen at signature.
    - Field chips, and AI review per section with "Use list price / Keep".
@@ -59,7 +63,7 @@ Build the redesign in `design/redesign/` into the app. The visual source of trut
 
 ## Every PR
 
-- Unit, database and Playwright tests updated, plus new tests for the migration and old-snapshot adapter, choice-group selection to billing, and the MCP old-shape compatibility.
+- Unit, database and Playwright tests updated, plus tests for purge scoping, future frozen-version integrity, choice-group selection to billing, and MCP current-shape validation.
 - Screenshots at 375 / 768 / 1440 in light and dark for each screen touched, compared against the matching frames.
 - Update `HANDOFF_PHASE2.md` with what changed and anything deferred.
 

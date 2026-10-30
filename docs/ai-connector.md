@@ -28,33 +28,15 @@ IDs below are UUIDs returned by the relevant list/create tools. Monetary amounts
 | `search_proposals` | `{"query":"website redesign"}` — searches imported proposal text too |
 | `get_proposal` | `{"id":"PROPOSAL_UUID"}` |
 | `create_client` | `{"company":"Acme Plumbing","first_name":"Jane","last_name":"Doe","email":"jane@example.test"}` |
-| `create_proposal_draft` | `{"brief":"Discovery notes…","template_id":"TEMPLATE_UUID","client_id":"CLIENT_UUID","title":"Website proposal","content_markdown":"# Scope\n\nPrepared for {{client.company}}.","lines":[LINE]}` |
+| `create_proposal_draft` | `{"brief":"Discovery notes…","template_id":"TEMPLATE_UUID","client_id":"CLIENT_UUID","title":"Website proposal","content_markdown":"# Scope\n\nPrepared for {{client.company}}.","items":[ITEM]}` |
 | `update_proposal_draft` | `{"id":"PROPOSAL_UUID","revision":0,"title":"Reviewed scope","content_markdown":"# Scope\n\nUpdated discovery requirements."}` |
-| `set_quote_lines` | `{"id":"PROPOSAL_UUID","revision":1,"lines":[LINE]}` |
+| `set_quote_lines` | `{"id":"PROPOSAL_UUID","revision":1,"items":[ITEM]}` |
 | `check_ready` | `{"id":"PROPOSAL_UUID"}` — same blockers and warnings as sending |
 
-A custom monthly line:
+A custom monthly item (all amounts are entered cents):
 
 ```json
-{
-  "id": "00000000-0000-4000-8000-000000000090",
-  "pricing_item_id": null,
-  "custom_family_id": "FAMILY_UUID",
-  "name": "Monthly retainer",
-  "description": "Two articles and one strategy call every month.",
-  "amount": 200000,
-  "list_amount": null,
-  "qty": 1,
-  "interval": "month",
-  "min_term_months": null,
-  "schedule": null,
-  "plan_terms": null,
-  "stripe_lookup_key": null,
-  "qbo_item_ref": null,
-  "group": null,
-  "optional": false,
-  "selected": true
-}
+{"id":"00000000-0000-4000-8000-000000000090","order":0,"name":"Monthly retainer","description":"Agreed scope","source":"custom","pricing_item_id":null,"custom_family_id":"FAMILY_UUID","sublines":[{"id":"00000000-0000-4000-8000-000000000091","amount":200000,"qty":1,"interval":"month","list_amount":null,"stripe_lookup_key":null,"qbo_item_ref":null}],"optional":false,"default_selected":true,"choice_group_id":null,"min_term_months":null,"schedule":null,"plan_terms":null}
 ```
 
 Use a real family UUID from the workspace. Catalogue lines snapshot the catalogue ID, list amount, name, description and lookup key. Unknown keys and inconsistencies warn; legacy keys block sending. Custom lines are flagged for scope/price review. Do not invent catalogue IDs or quote a price without checking the workspace's pricing documents.
@@ -73,7 +55,7 @@ Official compatibility references checked 29 October 2026: https://claude.com/do
 
 ## Quote model v3 (redesign Phase 3)
 
-Draft tool responses now include `items` (also exposed as `quote`) and a flattened `lines` compatibility view. `list_catalog` includes sub-line presets, plan terms and the item defaults. `check_ready` validates the same item model as staff sending. `create_proposal_draft`, `update_proposal_draft` and `set_quote_lines` accept **either** `items` **or** the old flat `lines`, never both. Old `lines` inputs remain supported for one release and are converted one-for-one; no amounts or mappings are inferred or changed.
+Draft tool responses include current `items` (also exposed as `quote`). `list_catalog` includes sub-line presets, plan terms and the item defaults. `check_ready` validates the same item model as staff sending. `create_proposal_draft`, `update_proposal_draft` and `set_quote_lines` accept `items` only. Flat `lines` inputs are rejected. Legacy support was removed after the owner confirmed there was no pre-redesign data. No amounts or mappings are inferred or changed.
 
 A new item is:
 
@@ -108,3 +90,5 @@ A new item is:
 Use UUIDs for item/sub-line/group identities. Intervals are `one_time`, `month`, `year`. To offer alternatives, make every member optional, give them the same `choice_group_id`, and choose at most one `default_selected`. The client must select exactly one before signing. Groups render contiguously and billing receives only the chosen item's sub-lines. Different intervals always remain separate totals.
 
 Amounts are supplied by the author; the app only sums them. AI text remains pending per section. AI-entered catalogue overrides require a staff **Use list price** or **Keep** decision; send confirmation cannot bypass those price holds. Ordinary saving does not mark sections reviewed. An AI tool cannot send, sign, countersign, choose the email sender or approve its own changes. Contract clauses come from the template; conditional clauses are evaluated against selected catalogue item IDs and frozen at signature.
+
+AI assistants cannot delete clients or proposals, change outcomes, archive records, send or sign.
