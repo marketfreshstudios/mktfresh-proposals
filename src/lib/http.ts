@@ -1,4 +1,10 @@
 import {
+  emailTemplates,
+  saveEmailTemplate,
+  proposalEmailLog,
+} from "./email-templates";
+import { emailStudioPreview, sendEmailTest } from "./email-studio";
+import {
   activity,
   activityCsv,
   uploadFont,
@@ -304,6 +310,43 @@ export async function handle(req: Request, path: string[]) {
         signatory_version: signatoryVersion(settings),
         staff: await workspaceStaff(user.workspace_id),
       });
+    }
+    if (path[0] === "email-templates") {
+      if (method === "GET" && !path[1])
+        return json(await emailTemplates(rt.repo));
+      const key = path[1];
+      if (method === "POST" && path[2] === "preview") {
+        const { result, values, logo_error } = await emailStudioPreview(
+          rt.repo,
+          rt.storage,
+          user,
+          key,
+          await body(req),
+        );
+        return json({ ...result, values, logo_error });
+      }
+      if (method === "POST" && path[2] === "test")
+        return json(
+          await sendEmailTest(
+            rt.repo,
+            rt.storage,
+            rt.mailer,
+            user,
+            key,
+            await body(req),
+          ),
+        );
+      if (method === "POST" && path[2] === "reset") {
+        z.object({})
+          .strict()
+          .parse(await body(req));
+        return json(await saveEmailTemplate(rt.repo, user, key, {}, true));
+      }
+      if (method === "PUT" && path.length === 2)
+        return json(
+          await saveEmailTemplate(rt.repo, user, key, await body(req)),
+        );
+      throw new AppError(405, "Email template action unavailable");
     }
     if (path[0] === "workspace-fonts") {
       if (method === "POST") {
@@ -782,6 +825,8 @@ export async function handle(req: Request, path: string[]) {
         check(p, "Not found", 404);
         return json(await rt.service.checkReady(p));
       }
+      if (method === "GET" && action === "emails")
+        return json(await proposalEmailLog(rt.repo, id));
       if (method === "POST" && action === "send") {
         const input = req.headers
           .get("content-type")
@@ -798,6 +843,8 @@ export async function handle(req: Request, path: string[]) {
               : uuid.parse(input.sender_user_id),
             {
               note: z.string().max(4000).optional().parse(input.note),
+              subject: z.string().max(300).optional().parse(input.subject),
+              body: input.body,
               password: z
                 .string()
                 .min(8)

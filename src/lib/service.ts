@@ -1,4 +1,9 @@
-import { proposalEmailNote } from "./branding";
+import {
+  emailTemplates,
+  validateTemplate,
+  plainBody,
+  renderTemplate,
+} from "./email-templates";
 import { stripeCustomerMatches } from "./client-billing";
 import type { StripeTransport } from "./catalog";
 import { defaultValidUntil } from "./validity";
@@ -375,6 +380,8 @@ export class ProposalService {
     senderId = actor.actor.slice(6),
     options: {
       note?: string;
+      subject?: string;
+      body?: import("./model").RichText;
       password?: string | null;
       reopen?: boolean;
       expected_revision?: number;
@@ -412,9 +419,29 @@ export class ProposalService {
       company_name: settings.company_name,
       sending_domain: domain,
     };
+    const mailTemplate = (await emailTemplates(this.repo)).find(
+      (t) => t.key === "proposal_sent",
+    )!;
+    const mailContent = {
+      ...mailTemplate,
+      ...validateTemplate({
+        subject: options.subject ?? mailTemplate.subject,
+        body:
+          options.body ??
+          (options.note !== undefined
+            ? plainBody(options.note)
+            : mailTemplate.body),
+        button_label: mailTemplate.button_label,
+      }),
+    };
     const catalog = await this.repo.entities<Item>("pricing_items");
     const before = await this.repo.get(id);
     check(before, "Not found", 404);
+    renderTemplate(mailContent, {
+      ...before,
+      workspace_settings: settingsSnapshot(settings),
+      sender,
+    });
     const preflight = await this.checkReady(
       { ...before, workspace_settings: settingsSnapshot(settings) },
       confirmAiReview,
@@ -530,7 +557,9 @@ export class ProposalService {
         "send:" + version.version_no,
         {
           to: p.client.email,
-          subject: p.title,
+          email_template_key: "proposal_sent",
+          email_template: mailContent,
+          subject: options.subject ?? p.title,
           send_version: version.version_no,
           proposal_email: true,
           note: options.note ?? "",
@@ -823,15 +852,9 @@ export class ProposalService {
                 subject: `Reminder: ${p.title}`,
                 text: `Review your proposal: ${proposalLink(p)}`,
                 proposal_email: true,
-                note: (() => {
-                  const sent = p.jobs.find(
-                    (j) => j.payload.send_version === p.versions.length,
-                  );
-                  return (
-                    sent?.payload.note ??
-                    proposalEmailNote(String(sent?.payload.text ?? ""))
-                  );
-                })(),
+                email_template_key: p.first_viewed_at
+                  ? "reminder_viewed"
+                  : "reminder_unopened",
                 reminder_day: day,
                 version: p.versions.length,
               },

@@ -56,7 +56,9 @@ function createRuntime(workspaceId: string) {
           ? new MockBillingProvider("stripe")
           : new UnconfiguredBillingProvider("Stripe"),
   };
+  const mailer = local ? new MockMailer() : new ResendMailer();
   return {
+    mailer,
     repo,
     storage,
     service: new ProposalService(
@@ -67,12 +69,7 @@ function createRuntime(workspaceId: string) {
         ? providers.stripe.api
         : undefined,
     ),
-    worker: new Worker(
-      repo,
-      storage,
-      local ? new MockMailer() : new ResendMailer(),
-      providers,
-    ),
+    worker: new Worker(repo, storage, mailer, providers),
   };
 }
 type Runtime = ReturnType<typeof createRuntime>;
