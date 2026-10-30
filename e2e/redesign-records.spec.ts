@@ -288,6 +288,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
             .first()
             .getByRole("button", { name: /More actions/ })
             .click();
+          await expect(page.getByRole("dialog")).toBeVisible();
           await capture("proposal-menu", frame, width, theme);
           await page.keyboard.press("Escape");
         }
@@ -295,6 +296,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
           await page
             .getByRole("button", { name: "Mark as invoiced", exact: true })
             .click();
+          await expect(
+            page.getByRole("dialog", { name: "Mark as invoiced", exact: true }),
+          ).toBeVisible();
           await capture("manual-invoice", frame, width, theme);
           await page.keyboard.press("Escape");
         }
