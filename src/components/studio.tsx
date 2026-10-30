@@ -1,4 +1,5 @@
 "use client";
+import { productMappings } from "../lib/workspace-setup";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { Block, Item, Template } from "../lib/model";
@@ -382,49 +383,66 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
             ].map(([label, value, set]) => (
               <fieldset className="font-choices" key={label as string}>
                 <legend>{label as string}</legend>
-                {[
-                  ...curatedFonts.map((f) => ({
-                    value: f.id as FontChoice,
-                    name: f.name,
-                  })),
-                  ...allFonts.map((f) => ({
-                    value: f as FontChoice,
-                    name: f.name,
-                  })),
-                ].map((f) => (
-                  <label
-                    key={typeof f.value === "string" ? f.value : f.value.id}
-                    style={{ fontFamily: fontFamily(f.value) }}
-                  >
-                    <input
-                      type="radio"
-                      name={
-                        label === "Headings"
-                          ? "font_heading_choice"
-                          : "font_body_choice"
-                      }
-                      checked={
-                        (typeof value === "string"
-                          ? value
-                          : (value as ProposalFont).id) ===
-                        (typeof f.value === "string" ? f.value : f.value.id)
-                      }
-                      onChange={() => (set as (f: FontChoice) => void)(f.value)}
-                    />{" "}
-                    Aa {f.name}
-                  </label>
-                ))}
+                {["Serif", "Sans", "Monospace", "Uploaded"].map((category) => {
+                  const options =
+                    category === "Uploaded"
+                      ? allFonts.map((f) => ({
+                          value: f as FontChoice,
+                          name: f.name,
+                        }))
+                      : curatedFonts
+                          .filter((f) => f.category === category)
+                          .map((f) => ({
+                            value: f.id as FontChoice,
+                            name: f.name,
+                          }));
+                  return options.length ? (
+                    <div
+                      className="font-category"
+                      role="group"
+                      aria-label={`${label} · ${category}`}
+                      key={category}
+                    >
+                      <h4>{category}</h4>
+                      {options.map((f) => (
+                        <label
+                          key={
+                            typeof f.value === "string" ? f.value : f.value.id
+                          }
+                        >
+                          <input
+                            type="radio"
+                            name={
+                              label === "Headings"
+                                ? "font_heading_choice"
+                                : "font_body_choice"
+                            }
+                            checked={
+                              (typeof value === "string"
+                                ? value
+                                : (value as ProposalFont).id) ===
+                              (typeof f.value === "string"
+                                ? f.value
+                                : f.value.id)
+                            }
+                            onChange={() =>
+                              (set as (f: FontChoice) => void)(f.value)
+                            }
+                          />
+                          <span
+                            className="font-name"
+                            style={{ fontFamily: fontFamily(f.value) }}
+                          >
+                            Aa {f.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : null;
+                })}
               </fieldset>
             ))}
           </div>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={licensed}
-              onChange={(e) => setLicensed(e.target.checked)}
-            />
-            I confirm this font is licensed for PDF embedding.
-          </label>
           <Field label="Upload a font file · WOFF2 or TTF, under 1 MB">
             <input
               type="file"
@@ -451,6 +469,15 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
               }}
             />
           </Field>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={licensed}
+              onChange={(e) => setLicensed(e.target.checked)}
+            />
+            I confirm this font is licensed for PDF embedding.
+          </label>
+
           <article className="paper proposal-typography font-preview">
             <small>PREVIEW · PHONE WIDTH</small>
             <h1>A proposal for your next chapter</h1>
@@ -671,7 +698,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           onClick={() =>
             run(
               () => post("/api/catalog-sync/stripe"),
-              "Stripe test catalog synced",
+              "Stripe test products synced",
             )
           }
         >
@@ -686,7 +713,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       </p>
       <TemplateWarnings templates={data.templates} catalog={data.catalog} />
       <div className="studio-filters">
-        <Field label="Search catalog">
+        <Field label="Search products">
           <input value={query} onChange={(e) => setQuery(e.target.value)} />
         </Field>
         <label className="check">
@@ -711,6 +738,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             <button
               className="catalog-row"
               key={i.id}
+              aria-describedby={`mapping-${i.id}`}
               onClick={() => setSelected(i)}
             >
               <span>
@@ -743,26 +771,46 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                   </small>
                 )}
               </span>
-              <span>
-                {i.qbo_item_ref
-                  ? "QBO item"
-                  : i.stripe_lookup_key
-                    ? "Stripe"
-                    : "Not mapped"}
+              <span className="product-mapping" id={`mapping-${i.id}`}>
+                {productMappings(i, data.connections?.qbo ?? null).map(
+                  (state, n) => (
+                    <span
+                      key={n}
+                      className={
+                        state.warning
+                          ? "mapping-state warning"
+                          : "mapping-state"
+                      }
+                      title={state.detail}
+                    >
+                      {state.label}
+                    </span>
+                  ),
+                )}
+                <span role="tooltip" className="mapping-tooltip">
+                  {productMappings(i, data.connections?.qbo ?? null).map(
+                    (state, n) => (
+                      <span key={n}>
+                        {state.detail}
+                        <br />
+                      </span>
+                    ),
+                  )}
+                </span>
               </span>
             </button>
           ))}
         </div>
       ) : (
         <Empty
-          title={query ? "No matching items" : "Your catalog starts here"}
+          title={query ? "No matching items" : "Your products start here"}
           action={
             <Button onClick={() => setQuery("")}>
               {query ? "Clear search" : "Show inactive items"}
             </Button>
           }
         >
-          Sync your Stripe test catalog or add an item.
+          Sync your Stripe test products or add an item.
         </Empty>
       )}
       <section className="studio-section">
@@ -784,7 +832,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       </section>
       {selected !== undefined && (
         <Sheet
-          title={selected ? itemDisplayName(selected) : "New catalog item"}
+          title={selected ? itemDisplayName(selected) : "New product"}
           onClose={() => setSelected(undefined)}
         >
           <CatalogItem
@@ -889,7 +937,7 @@ function CatalogItem({
                   : null,
                 plan_terms: { ...i?.plan_terms, client_copy: copy },
               }),
-            "Catalog item saved",
+            "Product saved",
           )
         )
           close();
@@ -915,6 +963,10 @@ function CatalogItem({
           />
         </Field>
       ))}
+      <ProductMappingDetails
+        item={i}
+        qboConnected={data.connections?.qbo ?? null}
+      />
       <p>Display name is app-only. Stripe sync preserves it.</p>
       <div className="studio-brand-grid">
         <Field label="List price">
@@ -1860,7 +1912,7 @@ function TemplateDefaults({
           </div>
         </div>
       ))}
-      <Field label="Add catalog default">
+      <Field label="Add product default">
         <select
           value=""
           onChange={(e) => {
@@ -1930,7 +1982,7 @@ export function ConnectionsStudio({
         : health?.mock
           ? "Mock mode"
           : "Not connected",
-      line: "Recurring billing, Checkout for new clients and catalog sync.",
+      line: "Recurring billing, Checkout for new clients and product sync.",
       detail: "Test mode only. No live billing is enabled.",
       action: "Settings",
     },
@@ -2066,7 +2118,7 @@ export function ConnectionsStudio({
             <div className="stack">
               <p>
                 {open === "stripe"
-                  ? "Use a Stripe test-mode restricted key in this deployment. Sync only after the test catalog has been copied."
+                  ? "Use a Stripe test-mode restricted key in this deployment. Sync only after the test products have been copied."
                   : "QuickBooks sandbox credentials must be added to the deployment by the owner. Invoices remain in review until then."}
               </p>
               <Button
@@ -2076,16 +2128,16 @@ export function ConnectionsStudio({
                       post(
                         `/api/catalog-sync/${open === "stripe" ? "stripe" : "qbo"}`,
                       ),
-                    "Test catalog synced",
+                    "Test products synced",
                   )
                 }
               >
                 Sync{" "}
                 {open === "stripe"
-                  ? "Stripe test catalog"
+                  ? "Stripe test products"
                   : "QuickBooks sandbox items"}
               </Button>
-              <a href="/studio/catalog">Open catalog</a>
+              <a href="/studio/products">Open products</a>
             </div>
           )}
         </Sheet>
@@ -2291,5 +2343,57 @@ export function ActivityStudio({ data }: { data: Data }) {
         </Empty>
       )}
     </div>
+  );
+}
+
+function ProductMappingDetails({
+  item,
+  qboConnected,
+}: {
+  item: Item | null | undefined;
+  qboConnected: boolean | null;
+}) {
+  const [current, setCurrent] = useState(item);
+  useEffect(() => setCurrent(item), [item]);
+  return (
+    <section
+      className="product-mapping-details"
+      ref={(element) => {
+        const form = element?.closest("form");
+        if (!form) return;
+        const update = () => {
+          const values = new FormData(form);
+          setCurrent({
+            ...item,
+            interval:
+              (values.get("interval") as Item["interval"]) ||
+              item?.interval ||
+              "one_time",
+            stripe_lookup_key:
+              String(values.get("stripe_lookup_key") || "") || null,
+            qbo_item_ref: String(values.get("qbo_item_ref") || "") || null,
+          } as Item);
+        };
+        form.addEventListener("input", update);
+        return () => form.removeEventListener("input", update);
+      }}
+    >
+      <h3>How this product is billed</h3>
+      {current ? (
+        productMappings(current, qboConnected).map((state, n) => (
+          <p key={n}>
+            <strong className={state.warning ? "mapping-warning" : ""}>
+              {state.label}
+            </strong>{" "}
+            · {state.detail}
+          </p>
+        ))
+      ) : (
+        <p>
+          Choose the interval and provider mapping to see what happens after
+          signature.
+        </p>
+      )}
+    </section>
   );
 }

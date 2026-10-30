@@ -15,7 +15,8 @@
     "verify:supabase": "tsx scripts/verify-supabase.ts",
     "format:check": "prettier --check src scripts tests e2e *.ts *.json",
     "check:neutral": "node --import tsx scripts/check-neutral.ts",
-    "check:pdf-trace": "node --import tsx scripts/check-pdf-trace.ts"
+    "check:pdf-trace": "node --import tsx scripts/check-pdf-trace.ts",
+    "verify:fonts": "node --import tsx scripts/verify-curated-fonts.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

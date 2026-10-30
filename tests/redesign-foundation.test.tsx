@@ -50,7 +50,7 @@ it.each([
   [["proposals", "id", "send"], "/proposals/id?view=send"],
   [["proposals", "id", "countersign"], "/proposals/id?action=countersign"],
   [["proposals", "id", "audit"], "/proposals/id?view=evidence"],
-  [["catalogue"], "/studio/catalog"],
+  [["catalogue"], "/studio/products"],
   [["settings", "team"], "/studio/workspace?view=team"],
   [["settings", "ai"], "/studio/connections?view=assistants"],
   [["imports"], "/studio/connections?view=imports"],

@@ -105,7 +105,7 @@ export async function resolveLookup(api: StripeTransport, key: string) {
   check(page.data.length === 1, `Lookup key ${key} does not resolve uniquely`);
   const price = page.data[0];
   check(!isLegacy(price.metadata.legacy), `Legacy lookup key ${key}`);
-  check(price.product.active, "Catalogue product is inactive");
+  check(price.product.active, "Product is inactive");
   return price;
 }
 export async function createCustomFamily(

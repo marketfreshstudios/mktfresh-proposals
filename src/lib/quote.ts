@@ -91,7 +91,7 @@ export function readiness(
       warnings.push(`${l.name}: legacy lookup key`);
     }
     if (item && !item.active && !item.legacy)
-      errors.push(`${l.name}: inactive catalogue item`);
+      errors.push(`${l.name}: inactive product`);
     if (l.list_amount !== null && l.amount !== l.list_amount)
       warnings.push(`${l.name}: amount differs from list`);
     if (!l.pricing_item_id)

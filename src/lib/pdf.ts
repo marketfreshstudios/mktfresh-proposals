@@ -35,11 +35,21 @@ export async function sealedPdf(
       : {}),
   });
   try {
+    const chosen = brand?.settings?.proposal_fonts;
+    const ids = new Set([
+      chosen?.heading ?? "serif",
+      chosen?.body ?? "serif",
+      "mono",
+    ]);
     const families = await Promise.all(
-      curatedFonts.map(
-        async (f) =>
-          `@font-face{font-family:${f.family.split(",")[0]};src:url(data:font/woff2;base64,${(await readFile(join(process.cwd(), "public/fonts", f.file))).toString("base64")})}`,
-      ),
+      curatedFonts
+        .filter((f) => ids.has(f.id))
+        .flatMap((f) =>
+          f.faces.map(
+            async (face) =>
+              `@font-face{font-family:${f.family.split(",")[0]};src:url(data:font/woff2;base64,${(await readFile(join(process.cwd(), "public/fonts", face.file))).toString("base64")});font-style:${face.style};font-weight:${face.weight};}`,
+          ),
+        ),
     );
     const custom = (brand?.fonts ?? [])
       .map(

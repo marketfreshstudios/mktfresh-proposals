@@ -49,7 +49,7 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `POST /api/auth/login`                        | `{email,password}` → Supabase session for an allowlisted staff user                   |
 | `GET, POST, PUT /api/clients`                 | List or upsert client records; PUT accepts the full record with its `id`              |
-| `GET, POST, PUT /api/pricing_items`           | Catalog and billing mappings; deactivate instead of deleting                          |
+| `GET, POST, PUT /api/pricing_items`           | Products and billing mappings; deactivate instead of deleting                          |
 | `GET, POST, PUT /api/templates`               | Block content and default quote line references                                       |
 | `GET, POST, PUT /api/content_library`         | Reusable named blocks                                                                 |
 | `GET /api/proposals`                          | Filters: `status`, `client`, `source`, `from`, `to`, `q`, `offset`, `limit` (max 100) |
@@ -172,10 +172,16 @@ An omitted `valid_until` defaults to the workspace validity (30 days); explicit 
 
 ### Redesign Phase 5
 
-Studio contains Templates & blocks, Catalog, Connections (including pricing references, assistants and Proposify import), Workspace and Activity. Workspace owns brand/contrast, proposal fonts, currency/cents, the signatory/delegates, staff display names, and client-link defaults. Uploaded WOFF2/TTF fonts require a PDF-embedding license confirmation and are retained as immutable private assets for signed copies. Public Sans is no longer served.
+Studio contains Templates & blocks, Products, Connections (including pricing references, assistants and Proposify import), Workspace and Activity. Workspace owns brand/contrast, proposal fonts, currency/cents, the signatory/delegates, staff display names, and client-link defaults. Uploaded WOFF2/TTF fonts require a PDF-embedding license confirmation and are retained as immutable private assets for signed copies. Public Sans is no longer served.
 
 Validity is the end of the selected day in the workspace timezone, including daylight saving; null stays indefinite. Password defaults are owner-managed, stored as hashes and applied only to new drafts. Existing proposals keep their own password. Currency selection does not convert catalog prices: the chosen catalog/provider currency must match.
 
 Review the responsive Studio/state evidence in [the Phase 5 comparison gallery](docs/screenshots/phase5/index.html). Regenerate it after browser tests with `node --import tsx scripts/verify-proposal-fonts.ts`, render its first page with `pdftoppm`, then run `node --import tsx scripts/package-phase5-evidence.ts`. No environment file or provider credentials are needed for the PDF check. Native test proposals were already purged by the owner; do not rerun the hosted purge as part of this phase.
 
 Clients use validated E.164 phone numbers, formatted contact views and structured optional addresses. The [AI connector guide](docs/ai-connector.md#client-contact-data) describes contact create/get/update and `{{client.address}}`. Staff explicitly review and link Stripe test customers on the client page; ambiguous unlinked matches block sending. Apply the client-contact/link migration to this app’s project before deploying this release; see the [handoff](HANDOFF_PHASE2.md#clients-polish--separate-pr-after-phase-5) and [Clients polish visual gallery](docs/screenshots/clients-polish/index.html).
+
+### Live review controls and curated fonts
+
+Products lives at `/studio/products`; `/studio/catalog` redirects and the MCP tool remains `list_catalog`. Home’s setup checklist reads provider configuration and workspace data rather than static connection instructions. Linked clients show only their selected Stripe customer until staff confirm an audited unlink. Contact values copy by default, with explicit Mail/dial icon links and phone-width dialing.
+
+The heading/body font picker has Serif/Sans groups and self-hosted previews. Nine added Google Fonts families retain their OFL licenses and pinned-source/hash provenance in `public/fonts/GOOGLE-FONTS-SOURCES.json`; `LICENSES.txt` lists every family. Source Serif 4 remains the default. Space Grotesk has no upstream italic and uses browser synthesis. `npm run verify:fonts` creates offline PDF specimens for all 12 curated families, checks embedding and frozen-version integrity, and runs in CI. No Google Fonts request is made at runtime.

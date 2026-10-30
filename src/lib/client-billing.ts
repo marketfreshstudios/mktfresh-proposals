@@ -32,12 +32,15 @@ export type ClientBilling = {
   qbo_url: string | null;
   notice?: string;
 };
+type BillingSummary = ClientBilling & {
+  customer?: { id: string; name: string; created?: number };
+};
 async function billingSummary(
   repo: Repository,
   client: Client,
   api?: StripeTransport,
-): Promise<ClientBilling> {
-  const result: ClientBilling = {
+): Promise<BillingSummary> {
+  const result: BillingSummary = {
     available: !!api,
     subscriber: false,
     items: [],
@@ -59,6 +62,7 @@ async function billingSummary(
   check(/^cus_[A-Za-z0-9]+$/.test(id), "Invalid Stripe customer ID");
   const customer = await api.get<{
     livemode: boolean;
+    created?: number;
     email?: string | null;
     name?: string | null;
     deleted?: boolean;
@@ -84,6 +88,11 @@ async function billingSummary(
     "Linked Stripe customer email does not match this client; verify the customer ID",
     409,
   );
+  result.customer = {
+    id,
+    name: customer.name || client.company,
+    created: customer.created,
+  };
   result.stripe_url = `https://dashboard.stripe.com/test/customers/${id}`;
   const catalog = await repo.entities<Item>("pricing_items");
   type Subscription = {
@@ -257,11 +266,19 @@ export async function clientBilling(
   client: Client,
   api?: StripeTransport,
 ): Promise<ClientBilling> {
-  const result = await billingSummary(repo, client, api);
+  const { customer, ...result } = await billingSummary(repo, client, api);
   result.linked_id = client.stripe_customer_id;
   result.candidates = [];
   if (!api) return result;
-  const matches = await stripeCustomerMatches(client, api);
+  const matches = client.stripe_customer_id
+    ? [
+        customer ?? {
+          id: client.stripe_customer_id,
+          name: client.company,
+          created: undefined,
+        },
+      ]
+    : await stripeCustomerMatches(client, api);
   for (const c of matches) {
     const details =
       c.id === client.stripe_customer_id

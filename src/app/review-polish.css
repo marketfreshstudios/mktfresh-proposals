@@ -1,0 +1,258 @@
+/* Shared native selection controls: one centred, full-row label target. */
+label:has(> input:is([type="checkbox"], [type="radio"], [role="switch"])) {
+  display: flex;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-direction: row !important;
+  cursor: pointer;
+}
+label > input:is([type="checkbox"], [type="radio"], [role="switch"]) {
+  flex: 0 0 auto;
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  order: -1;
+  align-self: center;
+  accent-color: var(--accent);
+}
+label > input[role="switch"] {
+  width: 30px !important;
+  height: 18px !important;
+}
+label:has(> input:disabled) {
+  cursor: default;
+}
+@media (pointer: coarse), (max-width: 699px) {
+  label:has(> input:is([type="checkbox"], [type="radio"], [role="switch"])) {
+    min-height: 44px !important;
+  }
+}
+/* Inline fields and actions share their baseline and control height. */
+.actions:has(.field),
+.toolbar,
+.studio-filters,
+.list-tools,
+.field-picker,
+.team-row {
+  align-items: end;
+}
+:is(
+    .actions:has(.field),
+    .toolbar,
+    .studio-filters,
+    .list-tools,
+    .field-picker,
+    .team-row
+  )
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, .btn) {
+  min-height: 44px;
+  height: 44px;
+}
+.list-tools .search-field {
+  min-height: 44px;
+  height: 44px;
+}
+.contact-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.contact-copy {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--accent-text, var(--link));
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.contact-copy:hover {
+  text-decoration: underline;
+}
+.contact-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  flex: none;
+}
+.contact-open:hover {
+  background: var(--row-hover);
+}
+.phone-dial {
+  display: none;
+}
+.contact-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  padding: 10px 18px;
+  max-width: calc(100vw - 32px);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px #0003;
+}
+@media (max-width: 699px) {
+  .contact-phone .contact-copy,
+  .contact-phone .contact-open {
+    display: none;
+  }
+  .phone-dial {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .contact-open {
+    width: 44px;
+    height: 44px;
+  }
+  .contact-copy {
+    min-height: 44px;
+  }
+  .contact-toast {
+    bottom: 90px;
+  }
+}
+.setup-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.setup-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setup-checklist li > div {
+  flex: 1;
+  min-width: 0;
+}
+.setup-checklist p {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+}
+.setup-mark {
+  color: var(--ink-muted);
+}
+.setup-checklist [data-complete="true"] .setup-mark {
+  color: var(--success);
+}
+.first-run > .btn {
+  align-self: start;
+}
+@media (max-width: 699px) {
+  .setup-checklist li {
+    flex-wrap: wrap;
+  }
+  .setup-checklist .btn {
+    margin-left: 30px;
+    flex-basis: calc(100% - 30px);
+    max-width: calc(100% - 30px);
+  }
+}
+.product-mapping {
+  display: grid;
+  gap: 8px;
+}
+.mapping-state {
+  position: relative;
+  display: inline-block;
+  font-size: 12px;
+}
+.mapping-state.warning,
+.mapping-warning {
+  color: var(--warning);
+}
+.mapping-tooltip {
+  display: none;
+  position: absolute;
+  z-index: 50;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: 240px;
+  max-width: 70vw;
+  padding: 12px;
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #0003;
+  text-align: left;
+  white-space: normal;
+}
+.mapping-state:hover .mapping-tooltip,
+.mapping-state:focus-visible .mapping-tooltip {
+  display: block;
+}
+.product-mapping-details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.font-category h4 {
+  margin: 12px 0 8px;
+  font: 600 13px var(--font-ui);
+  color: var(--ink-muted);
+}
+.font-category {
+  display: grid;
+  gap: 8px;
+}
+.font-choices label {
+  gap: 8px;
+}
+.font-name {
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.product-mapping {
+  position: relative;
+}
+.product-mapping:hover .mapping-tooltip,
+.catalog-row:focus .mapping-tooltip {
+  display: block;
+}
+
+@media (pointer: coarse) {
+  .contact-open {
+    width: 44px;
+    height: 44px;
+  }
+  .contact-copy {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 1099px) {
+  .catalog-row > .product-mapping:nth-child(5) {
+    display: grid;
+    grid-column: 1 / -1;
+  }
+}
+
+/* Tooltips remain readable for the first/last product row. */
+.studio-catalog .catalog-table {
+  overflow: visible;
+}
+.catalog-row:last-child {
+  border-radius: 0 0 12px 12px;
+}

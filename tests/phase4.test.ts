@@ -461,7 +461,6 @@ it("client billing is read-only, current and paginated; test-mode checks and una
     "/v1/customers/cus_test",
     "/v1/subscriptions",
     "/v1/subscriptions",
-    "/v1/customers",
   ]);
   await expect(
     clientBilling(repo, c, {

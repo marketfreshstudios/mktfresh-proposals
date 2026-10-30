@@ -115,7 +115,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
     ["templates", "/studio/templates", "7a/7f/7g"],
     ["template", `/studio/templates/${draft.template_id}/edit`, "7a/7f/7g"],
     ["blocks", "/studio/templates?view=blocks", "7a/7f/7g"],
-    ["catalog", "/studio/catalog", "7b"],
+    ["catalog", "/studio/products", "7b"],
     ["connections", "/studio/connections", "7c"],
     ["assistants", "/studio/connections?view=assistants", "7c"],
     ["imports", "/studio/connections?view=imports", "7c"],
@@ -255,16 +255,16 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   await page.keyboard.press("n");
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.goto("/studio/catalog");
+  await page.goto("/studio/products");
   await page
-    .getByRole("textbox", { name: "Search catalog", exact: true })
+    .getByRole("textbox", { name: "Search products", exact: true })
     .fill("n");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto("/proposals/new");
   await expect(page).toHaveURL(/\/proposals\?new=1$/);
   await page.keyboard.press("Escape");
   await page.goto("/catalogue");
-  await expect(page).toHaveURL(/\/studio\/catalog$/);
+  await expect(page).toHaveURL(/\/studio\/products$/);
   await page.goto("/settings/ai");
   await expect(page).toHaveURL(/\/studio\/connections\?view=assistants$/);
   await page.goto(`/proposals/${draft.id}/edit`);
