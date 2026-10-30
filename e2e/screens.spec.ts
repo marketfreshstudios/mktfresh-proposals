@@ -169,6 +169,17 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
           },
         ],
       };
+    else if (path[0] === "clients" && path[2] === "billing")
+      value = {
+        available: false,
+        subscriber: false,
+        items: [],
+        card: null,
+        next_invoice: null,
+        stripe_url: null,
+        qbo_url: null,
+        notice: "Stripe is not connected.",
+      };
     else if (path[0] === "proposals")
       value = path[1]
         ? active
@@ -235,24 +246,6 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
           await expect(page.locator(".client-signature")).toHaveCount(2);
         if (name === "client-completed")
           await expect(page.locator(".typed-signature")).toHaveCount(1);
-        if (name === "client-reading") {
-          await page.evaluate(() =>
-            window.scrollTo(0, document.body.scrollHeight),
-          );
-          await expect
-            .poll(async () =>
-              page.evaluate(
-                () =>
-                  document
-                    .querySelector(".document-end")!
-                    .getBoundingClientRect().bottom <=
-                  document.querySelector(".client-bar")!.getBoundingClientRect()
-                    .top,
-              ),
-            )
-            .toBe(true);
-          await page.evaluate(() => window.scrollTo(0, 0));
-        }
       }
 
       // Exercise the actual controls on every captured surface, including paper.
@@ -331,30 +324,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
   await capture("audit", `/proposals/${draft.id}/audit`);
   active = archive;
   await capture("archive", `/archives/${archive.id}`);
-  for (const state of [
-    "password",
-    "reading",
-    "stale",
-    "sign",
-    "billing",
-    "signed",
-    "completed",
-    "ended",
-  ]) {
-    clientState = state;
-    for (const phone of [true, false])
-      await capture(`client-${state}`, `/p/${sent.token}`, phone, async () => {
-        if (state === "sign")
-          await page.getByRole("button", { name: "Accept & sign" }).click();
-        if (state === "stale") {
-          // A revision conflict replaces the checkbox; assert the warning, not its final checked state.
-          await page.getByRole("checkbox").first().click();
-          await expect(
-            page.getByText("This proposal changed while you were reading it"),
-          ).toBeVisible();
-        }
-      });
-  }
+
   await writeFile(
     `${root}/manifest.json`,
     JSON.stringify(

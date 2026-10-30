@@ -2,7 +2,7 @@ import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { AppError, type Proposal } from "./model";
+import { AppError, type Proposal, type Actor, type Client } from "./model";
 export type EntityTable =
   | "clients"
   | "pricing_items"
@@ -17,6 +17,7 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  deleteClient(id: string, actor: Actor): Promise<void>;
   finishDocumentRefresh<T extends { id: string }>(
     document: T,
     attempt: string,
@@ -32,6 +33,28 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async deleteClient(id: string, actor: Actor) {
+    if (!actor.actor.startsWith("staff:"))
+      throw new AppError(403, "Staff authorization required");
+    const client = (await this.entities<Client>("clients")).find(
+      (c) => c.id === id,
+    );
+    if (!client) throw new AppError(404, "Client not found");
+    const count = (await this.list()).filter((p) => p.client.id === id).length;
+    if (count)
+      throw new AppError(
+        409,
+        `Has ${count} proposals — archive them or keep the client`,
+      );
+    this.catalog.get("clients")!.delete(id);
+    await this.put("workspace_events", {
+      id: crypto.randomUUID(),
+      type: "client_deleted",
+      ...actor,
+      created_at: new Date().toISOString(),
+      metadata: { client_id: id, company: client.company },
+    });
+  }
   async get(id: string) {
     const p = this.rows.get(id);
     return structuredClone(
@@ -133,6 +156,37 @@ export class LocalRepository extends MemoryRepository {
     );
     await rename(join(this.dir, "db.tmp"), join(this.dir, "db.json"));
   }
+  override async deleteClient(id: string, actor: Actor) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      // Avoid the queued put override while this transaction owns the queue.
+      const client = (await super.entities<Client>("clients")).find(
+        (c) => c.id === id,
+      );
+      if (!actor.actor.startsWith("staff:"))
+        throw new AppError(403, "Staff authorization required");
+      if (!client) throw new AppError(404, "Client not found");
+      const count = (await super.list()).filter(
+        (p) => p.client.id === id,
+      ).length;
+      if (count)
+        throw new AppError(
+          409,
+          `Has ${count} proposals — archive them or keep the client`,
+        );
+      this.catalog.get("clients")!.delete(id);
+      await super.put("workspace_events", {
+        id: crypto.randomUUID(),
+        type: "client_deleted",
+        ...actor,
+        created_at: new Date().toISOString(),
+        metadata: { client_id: id, company: client.company },
+      });
+      await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    await run;
+  }
   override async get(id: string) {
     await this.ready;
     return super.get(id);
@@ -186,6 +240,25 @@ export class SupabaseRepository implements Repository {
     public db: SupabaseClient,
     public readonly workspaceId = LOCAL_WORKSPACE_ID,
   ) {}
+  async deleteClient(id: string, actor: Actor) {
+    if (!actor.actor.startsWith("staff:"))
+      throw new AppError(403, "Staff authorization required");
+    const { error } = await this.db.rpc("delete_unused_client", {
+      target_workspace: this.workspaceId,
+      target_client: id,
+      audit_event: {
+        id: crypto.randomUUID(),
+        type: "client_deleted",
+        ...actor,
+        created_at: new Date().toISOString(),
+      },
+    });
+    if (error)
+      throw new AppError(
+        error.code === "23503" ? 409 : error.code === "P0002" ? 404 : 400,
+        error.message,
+      );
+  }
   async get(id: string) {
     const { data, error } = await this.db
       .from("proposals")

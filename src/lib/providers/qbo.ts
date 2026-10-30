@@ -1,5 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { check, ItemSchema, type Client, type Line, type Item } from "../model";
+import {
+  check,
+  ItemSchema,
+  type Client,
+  type BillingLine,
+  type Item,
+} from "../model";
 import { canonical, sha256 } from "../content";
 import { type BillingProvider, type Customer } from "../billing";
 import type { Repository } from "../repository";
@@ -199,7 +205,7 @@ export class QboProvider implements BillingProvider {
   }
   async createObject(
     c: Customer,
-    lines: Line[],
+    lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
   ) {
@@ -215,7 +221,7 @@ export class QboProvider implements BillingProvider {
         CustomerRef: { value: c.id },
         EmailStatus: "NotSet",
         PrivateNote: String(metadata.proposal_id),
-        Line: lines.map((l) => ({
+        BillingLine: lines.map((l) => ({
           Amount: (l.amount * l.qty) / 100,
           Description: l.name + "\n" + l.description,
           DetailType: "SalesItemLineDetail",

@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Phase 4 visual review</title
+  ><style>
+    body {
+      font: 14px system-ui;
+      margin: 24px;
+      background: #e7e3db;
+      color: #1c1b18;
+    }
+    h1 {
+      font-size: 28px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    section {
+      margin: 34px 0;
+    }
+    .pair {
+      display: flex;
+      gap: 16px;
+      overflow: auto;
+      align-items: flex-start;
+    }
+    .pair figure {
+      margin: 0;
+    }
+    .pair img {
+      width: auto;
+      max-width: min(720px, 90vw);
+      border: 1px solid #aaa;
+    }
+    .pair figcaption {
+      font-size: 12px;
+      margin: 8px 0;
+    }
+    small {
+      display: block;
+    }
+  </style>
+  <h1>Phase 4 review: implementation beside design</h1>
+  <p>
+    Neutral test fixtures only. The stored-signature fixture is deliberately a
+    one-pixel PNG, not a real signature. Both themes at 375/768/1440. Tablet
+    editor frames 5e–5h use the available light reference for structural
+    comparison in dark mode.
+  </p>
+  <h1>Records, Home, clients and owner additions</h1>
+  <section>
+    <h2>home-375-light.png</h2>
+    <small>3f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="home-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3f</figcaption>
+        <img loading="lazy" src="reference-3f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-375-light.png</h2>
+    <small>6c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="proposals-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6c</figcaption>
+        <img loading="lazy" src="reference-6c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-375-light.png</h2>
+    <small>6c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="proposal-menu-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6c</figcaption>
+        <img loading="lazy" src="reference-6c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-375-light.png</h2>
+    <small>6f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="client-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6f</figcaption>
+        <img loading="lazy" src="reference-6f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-375-light.png</h2>
+    <small>3c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="record-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3c</figcaption>
+        <img loading="lazy" src="reference-3c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-375-light.png</h2>
+    <small>3c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="manual-invoice-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3c</figcaption>
+        <img loading="lazy" src="reference-3c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-375-light.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="countersign-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-375-light.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="countersign-consent-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-375-light.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="indefinite-new-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-375-light.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="inline-client-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-375-light.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="studio-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-375-light.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="delete-client-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-375-light.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="indefinite-client-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-375-light.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="indefinite-sign-375-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>home-768-light.png</h2>
+    <small>3e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="home-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3e</figcaption>
+        <img loading="lazy" src="reference-3e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-768-light.png</h2>
+    <small>6b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="proposals-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6b</figcaption>
+        <img loading="lazy" src="reference-6b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-768-light.png</h2>
+    <small>6b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="proposal-menu-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6b</figcaption>
+        <img loading="lazy" src="reference-6b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-768-light.png</h2>
+    <small>6e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="client-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6e</figcaption>
+        <img loading="lazy" src="reference-6e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-768-light.png</h2>
+    <small>3b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="record-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3b</figcaption>
+        <img loading="lazy" src="reference-3b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-768-light.png</h2>
+    <small>3b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="manual-invoice-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3b</figcaption>
+        <img loading="lazy" src="reference-3b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-768-light.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="countersign-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-768-light.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="countersign-consent-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-768-light.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="indefinite-new-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-768-light.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="inline-client-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-768-light.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="studio-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-768-light.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="delete-client-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-768-light.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="indefinite-client-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-768-light.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="indefinite-sign-768-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>home-1440-light.png</h2>
+    <small>3d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="home-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3d</figcaption>
+        <img loading="lazy" src="reference-3d-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-1440-light.png</h2>
+    <small>6a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="proposals-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6a</figcaption>
+        <img loading="lazy" src="reference-6a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-1440-light.png</h2>
+    <small>6a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="proposal-menu-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6a</figcaption>
+        <img loading="lazy" src="reference-6a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-1440-light.png</h2>
+    <small>6d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="client-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6d</figcaption>
+        <img loading="lazy" src="reference-6d-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-1440-light.png</h2>
+    <small>3a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="record-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a</figcaption>
+        <img loading="lazy" src="reference-3a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-1440-light.png</h2>
+    <small>3a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="manual-invoice-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a</figcaption>
+        <img loading="lazy" src="reference-3a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-1440-light.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="countersign-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-1440-light.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="countersign-consent-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-1440-light.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="indefinite-new-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-1440-light.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="inline-client-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-1440-light.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="studio-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-1440-light.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="delete-client-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-1440-light.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="indefinite-client-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-1440-light.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="indefinite-sign-1440-light.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>home-375-dark.png</h2>
+    <small>3f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="home-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3f</figcaption>
+        <img loading="lazy" src="reference-3f-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-375-dark.png</h2>
+    <small>6c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="proposals-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6c</figcaption>
+        <img loading="lazy" src="reference-6c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-375-dark.png</h2>
+    <small>6c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="proposal-menu-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6c</figcaption>
+        <img loading="lazy" src="reference-6c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-375-dark.png</h2>
+    <small>6f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="client-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6f</figcaption>
+        <img loading="lazy" src="reference-6f-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-375-dark.png</h2>
+    <small>3c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="record-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3c</figcaption>
+        <img loading="lazy" src="reference-3c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-375-dark.png</h2>
+    <small>3c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="manual-invoice-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3c</figcaption>
+        <img loading="lazy" src="reference-3c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-375-dark.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="countersign-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-375-dark.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="countersign-consent-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-375-dark.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="indefinite-new-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-375-dark.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="inline-client-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-375-dark.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="studio-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-375-dark.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="delete-client-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-375-dark.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="indefinite-client-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-375-dark.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="indefinite-sign-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>home-768-dark.png</h2>
+    <small>3e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="home-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3e</figcaption>
+        <img loading="lazy" src="reference-3e-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-768-dark.png</h2>
+    <small>6b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="proposals-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6b</figcaption>
+        <img loading="lazy" src="reference-6b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-768-dark.png</h2>
+    <small>6b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="proposal-menu-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6b</figcaption>
+        <img loading="lazy" src="reference-6b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-768-dark.png</h2>
+    <small>6e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="client-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6e</figcaption>
+        <img loading="lazy" src="reference-6e-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-768-dark.png</h2>
+    <small>3b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="record-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3b</figcaption>
+        <img loading="lazy" src="reference-3b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-768-dark.png</h2>
+    <small>3b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="manual-invoice-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3b</figcaption>
+        <img loading="lazy" src="reference-3b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-768-dark.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="countersign-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-768-dark.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="countersign-consent-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-768-dark.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="indefinite-new-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-768-dark.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="inline-client-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-768-dark.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="studio-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-768-dark.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="delete-client-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-768-dark.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="indefinite-client-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-768-dark.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="indefinite-sign-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>home-1440-dark.png</h2>
+    <small>3d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="home-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3d</figcaption>
+        <img loading="lazy" src="reference-3d-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposals-1440-dark.png</h2>
+    <small>6a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="proposals-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6a</figcaption>
+        <img loading="lazy" src="reference-6a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>proposal-menu-1440-dark.png</h2>
+    <small>6a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="proposal-menu-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6a</figcaption>
+        <img loading="lazy" src="reference-6a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-1440-dark.png</h2>
+    <small>6d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="client-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 6d</figcaption>
+        <img loading="lazy" src="reference-6d-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>record-1440-dark.png</h2>
+    <small>3a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="record-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a</figcaption>
+        <img loading="lazy" src="reference-3a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>manual-invoice-1440-dark.png</h2>
+    <small>3a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="manual-invoice-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a</figcaption>
+        <img loading="lazy" src="reference-3a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-1440-dark.png</h2>
+    <small>3a–3c countersign sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="countersign-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 3a–3c countersign sheet</figcaption>
+        <img loading="lazy" src="reference-countersign-3a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-consent-1440-dark.png</h2>
+    <small>3a–3c authorization and consent</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="countersign-consent-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>
+          Matching design frame · 3a–3c authorization and consent
+        </figcaption>
+        <img loading="lazy" src="reference-countersign-3a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-new-1440-dark.png</h2>
+    <small>New proposal validity</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="indefinite-new-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>inline-client-1440-dark.png</h2>
+    <small>Nested client modal / phone sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="inline-client-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>studio-1440-dark.png</h2>
+    <small>Responsive Studio navigation</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="studio-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>delete-client-1440-dark.png</h2>
+    <small>Client detail actions extension</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="delete-client-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-client-1440-dark.png</h2>
+    <small>1a–1c / indefinite state</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="indefinite-client-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>indefinite-sign-1440-dark.png</h2>
+    <small>Client sign summary without expiry</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="indefinite-sign-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>countersign-stale-1440-dark.png</h2>
+    <small>3a guarded stale sheet</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="countersign-stale-1440-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <h1>Editor polish</h1>
+  <section>
+    <h2>sections-375-light.png</h2>
+    <small>2c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/sections-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2c</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>section-edit-375-light.png</h2>
+    <small>2c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/section-edit-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2c</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2c-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-375-light.png</h2>
+    <small>2d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2d</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2d-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-375-light.png</h2>
+    <small>2e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>line-edit-375-light.png</h2>
+    <small>2e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/line-edit-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-375-light.png</h2>
+    <small>2f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-375-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>tablet-document-768-light.png</h2>
+    <small>5g</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/tablet-document-768-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5g</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5g-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-768-light.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-768-light.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-768-light.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-768-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-1440-light.png</h2>
+    <small>2a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2a</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2a-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-1440-light.png</h2>
+    <small>2b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2b</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-1440-light.png</h2>
+    <small>2b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-1440-light.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2b</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2b-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>sections-375-dark.png</h2>
+    <small>2c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/sections-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2c</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>section-edit-375-dark.png</h2>
+    <small>2c</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/section-edit-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2c</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2c-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-375-dark.png</h2>
+    <small>2d</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2d</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2d-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-375-dark.png</h2>
+    <small>2e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2e-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>line-edit-375-dark.png</h2>
+    <small>2e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/line-edit-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2e-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-375-dark.png</h2>
+    <small>2f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2f-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>tablet-document-768-dark.png</h2>
+    <small>5g</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/tablet-document-768-dark.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5g</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5g-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-768-dark.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-768-dark.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-768-dark.png</h2>
+    <small>5h</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5h</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5h-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>quote-1440-dark.png</h2>
+    <small>2a</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/quote-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2a</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2a-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>reference-1440-dark.png</h2>
+    <small>2b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2b</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>send-1440-dark.png</h2>
+    <small>2b</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/send-1440-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 2b</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-2b-dark.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-375-light.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-choice-375-light.png"
+        />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-768-light.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-choice-768-light.png"
+        />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-1440-light.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-choice-1440-light.png"
+        />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-375-dark.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/client-choice-375-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-768-dark.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/client-choice-768-dark.png" />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-choice-1440-dark.png</h2>
+    <small>2a client counterpart</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-choice-1440-dark.png"
+        />
+      </figure>
+      <p>
+        This state extends the design with Jonathan’s additional requirements.
+      </p>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-375-light.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-375-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-375-light.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-signed-375-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-768-light.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-768-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-768-light.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-signed-768-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-1440-light.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-1440-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-1440-light.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · light</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-signed-1440-light.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-375-dark.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-375-dark.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-375-dark.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 375px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/client-signed-375-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-768-dark.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-768-dark.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-768-dark.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 768px · dark</figcaption>
+        <img loading="lazy" src="../phase4-editor/client-signed-768-dark.png" />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-billing-1440-dark.png</h2>
+    <small>5e</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-billing-1440-dark.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5e</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5e-light.png" />
+      </figure>
+    </div>
+  </section>
+  <section>
+    <h2>client-signed-1440-dark.png</h2>
+    <small>5f</small>
+    <div class="pair">
+      <figure>
+        <figcaption>Implementation · 1440px · dark</figcaption>
+        <img
+          loading="lazy"
+          src="../phase4-editor/client-signed-1440-dark.png"
+        />
+      </figure>
+      <figure>
+        <figcaption>Matching design frame · 5f</figcaption>
+        <img loading="lazy" src="../phase4-editor/reference-5f-light.png" />
+      </figure>
+    </div>
+  </section>
+</html>

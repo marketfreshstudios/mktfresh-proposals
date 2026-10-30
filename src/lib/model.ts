@@ -71,11 +71,10 @@ export const QuoteItemSchema = z.object({
     .default(null),
   ai_entered: z.boolean().optional(),
   price_review: z.record(z.string(), z.enum(["keep", "list"])).optional(),
-  legacy_group: z.string().max(200).nullable().optional(),
 });
 export type QuoteItem = z.infer<typeof QuoteItemSchema>;
 export type Item = z.infer<typeof ItemSchema>;
-export const LineSchema = ItemSchema.omit({
+export const BillingLineSchema = ItemSchema.omit({
   sublines: true,
   display_name: true,
   active: true,
@@ -90,37 +89,9 @@ export const LineSchema = ItemSchema.omit({
   optional: z.boolean(),
   selected: z.boolean(),
 });
-export type Line = z.infer<typeof LineSchema>;
-export type Quote = (Line | QuoteItem)[];
-export const QuoteSchema = z
-  .array(z.union([QuoteItemSchema, LineSchema]))
-  .max(100);
-// Read compatibility only. Never rewrite a previously signed version or its hash.
-export function readLine(raw: Line): Line {
-  if ("amount" in raw) return raw;
-  const old = raw as unknown as Record<string, unknown>;
-  return LineSchema.parse({
-    ...old,
-    amount: old.unit_price,
-    interval: old.billing === "monthly" ? "month" : "one_time",
-    pricing_item_id: old.id,
-    list_amount: old.unit_price,
-    qbo_item_ref: old.qbo_item_id,
-  });
-}
-export function catalogLine(
-  item: Item,
-  options: { qty: number; optional: boolean; selected: boolean },
-): Line {
-  return LineSchema.parse({
-    ...item,
-    ...options,
-    name: item.display_name?.trim() || item.name,
-    pricing_item_id: item.id,
-    list_amount: item.amount,
-    selected: options.optional ? options.selected : true,
-  });
-}
+export type BillingLine = z.infer<typeof BillingLineSchema>;
+export type Quote = QuoteItem[];
+export const QuoteSchema = z.array(QuoteItemSchema).max(100);
 export const ContractClauseSchema = z.object({
   id: z.string().min(1).max(200),
   heading: z.string().min(1).max(300),
@@ -246,9 +217,6 @@ export type Audit = Actor & {
   metadata: Record<string, unknown>;
 };
 export type Version = {
-  client_flow_version?: 2;
-  quote_model_version?: 3;
-  money_format_version?: 2;
   id: string;
   version_no: number;
   content: Block[];
@@ -289,7 +257,12 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
-  quote_model_version?: 3;
+  archived_at?: string | null;
+  archived_by?: string;
+  marked_won_by?: string;
+  marked_lost_by?: string;
+  /** Read-only list summary; full evidence is loaded on the record. */
+  version_count?: number;
   creation_warnings?: string[];
   sender?: import("./email-identity").ProposalSender;
   notification_emails?: string[];
@@ -311,7 +284,7 @@ export type Proposal = {
     | "archived";
   token: string | null;
   password_hash: string | null;
-  valid_until: string;
+  valid_until: string | null;
   currency: string;
   source: "native" | "proposify_import";
   brief?: string;

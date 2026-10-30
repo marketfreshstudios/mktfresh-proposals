@@ -1,7 +1,7 @@
 "use client";
 import {
   chooseItem,
-  flatQuote,
+  quoteSublines,
   orderedItems,
   selectedContent,
 } from "../lib/quote-model";
@@ -10,12 +10,9 @@ import { useEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
-import type { Line } from "../lib/model";
+import type { BillingLine } from "../lib/model";
 import type { publicResult } from "../lib/service";
-import {
-  LegacyClientProposal,
-  ClientSignatureBlock,
-} from "./legacy-client-proposal";
+import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
 import { Skeleton } from "./foundation";
@@ -27,10 +24,8 @@ type Brand = {
   accent_colour?: string;
   contact?: { name: string; email: string };
   ended?: string | null;
-  client_flow_version?: number;
 };
 const emptyBrand: Brand = { name: "Proposal", email: "" };
-// Rendering is selected by the saved send version, never by the current workspace.
 export function ClientProposal({
   token,
   preview = false,
@@ -41,7 +36,6 @@ export function ClientProposal({
   const [route, setRoute] = useState<{
     brand: Brand;
     initial?: PublicProposal;
-    legacy: boolean;
   } | null>(null);
   const [failure, setFailure] = useState(false);
   useEffect(() => {
@@ -66,7 +60,6 @@ export function ClientProposal({
               ? { ...value.company, contact: value.contact }
               : value,
             initial: preview ? value : undefined,
-            legacy: (value.client_flow_version ?? 1) !== 2,
           });
       })
       .catch(() => {
@@ -86,8 +79,6 @@ export function ClientProposal({
         </div>
       </div>
     );
-  if (route.legacy)
-    return <LegacyClientProposal token={token} preview={preview} />;
   return (
     <NewClientFlow
       token={token}
@@ -132,9 +123,11 @@ function NewClientFlow({
   const [readSection, setReadSection] = useState<number | null>(null);
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
-  const recurring = !!p?.quote.some(
-    (l) => (!l.optional || l.selected) && l.interval !== "one_time",
-  );
+  const recurring =
+    !!p &&
+    quoteSublines(p.quote as QuoteItem[]).some(
+      (l) => (!l.optional || l.selected) && l.interval !== "one_time",
+    );
   const billing =
     preview && step === "billing"
       ? [
@@ -172,7 +165,7 @@ function NewClientFlow({
       setStep(
         ["signed_by_client", "completed"].includes(value.status)
           ? value.billing.some((b) => b.requires_checkout) ||
-            value.quote.some(
+            quoteSublines(value.quote as QuoteItem[]).some(
               (l) => (!l.optional || l.selected) && l.interval !== "one_time",
             )
             ? "billing"
@@ -258,19 +251,9 @@ function NewClientFlow({
   async function toggle(id: string, selected: boolean) {
     if (!p || pending.current || stale || signed) return;
     const previous = p,
-      items =
-        p.quote_model_version === 3
-          ? chooseItem(p.items as QuoteItem[], id, selected)
-          : p.items,
-      quote =
-        p.quote_model_version === 3
-          ? flatQuote(items as QuoteItem[])
-          : p.quote.map((l) => (l.id === id ? { ...l, selected } : l)),
-      t = totals(quote as Line[]);
-    const fmt = (n: number) =>
-      p.money_format_version === 2
-        ? formatMoney(n, p.currency, p.money_cents)
-        : money(n, p.currency);
+      quote = chooseItem(p.quote as QuoteItem[], id, selected),
+      t = totals(quote);
+    const fmt = (n: number) => formatMoney(n, p.currency, p.money_cents);
     const variables = {
       ...p.variables,
       "quote.one_time_total": fmt(t.one_time_total),
@@ -284,10 +267,14 @@ function NewClientFlow({
     setP({
       ...p,
       quote,
-      items,
       totals: t,
       variables,
-      html: renderBlocks(p.content, quote as Line[], variables, p.currency),
+      html: renderBlocks(
+        p.content,
+        quote as QuoteItem[],
+        variables,
+        p.currency,
+      ),
     });
     if (preview) return;
     pending.current = true;
@@ -343,11 +330,10 @@ function NewClientFlow({
   );
   const missingChoice =
     !!p &&
-    p.quote_model_version === 3 &&
-    p.items.some(
+    p.quote.some(
       (i) =>
         i.choice_group_id &&
-        !p.items.some(
+        !p.quote.some(
           (v) => v.choice_group_id === i.choice_group_id && v.selected,
         ),
     );
@@ -568,12 +554,12 @@ function NewClientFlow({
                       separately.
                     </p>
                     <FlowTotals proposal={p} />
-                    {p.quote
+                    {quoteSublines(p.quote as QuoteItem[])
                       .filter((l) => !l.optional || l.selected)
                       .map((l) => (
                         <Terms
                           key={l.id}
-                          line={l as Line}
+                          line={l as BillingLine}
                           currency={p.currency}
                         />
                       ))}
@@ -632,7 +618,9 @@ function NewClientFlow({
                         p.money_cents,
                       )}
                       /mo
-                      {p.quote.some((l) => l.interval === "year") &&
+                      {p.quote.some((i) =>
+                        i.sublines.some((s) => s.interval === "year"),
+                      ) &&
                         ` · New yearly total: ${formatMoney(
                           existing.reduce(
                             (sum, b) => sum + (b.yearly_total ?? 0),
@@ -855,7 +843,7 @@ function NewClientFlow({
                       const valueP = await submit("sign", value);
                       setP(valueP);
                       go(
-                        valueP.quote.some(
+                        quoteSublines(valueP.quote as QuoteItem[]).some(
                           (l) =>
                             (!l.optional || l.selected) &&
                             l.interval !== "one_time",
@@ -913,9 +901,11 @@ function NewClientFlow({
                       >
                         Review and sign
                       </Button>
-                      <small className="flow-desktop-choices">
-                        Valid until {date(p.valid_until)}
-                      </small>
+                      {p.valid_until && (
+                        <small className="flow-desktop-choices">
+                          Valid until {date(p.valid_until)}
+                        </small>
+                      )}
                     </>
                   )}
                 </aside>
@@ -1008,7 +998,7 @@ export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
           <small>/mo</small>
         </strong>
       </div>
-      {p.quote.some((l) => l.interval === "year") && (
+      {p.quote.some((i) => i.sublines.some((s) => s.interval === "year")) && (
         <div>
           <span>Yearly</span>
           <strong>
@@ -1020,7 +1010,7 @@ export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
     </div>
   );
 }
-function Terms({ line: l, currency }: { line: Line; currency: string }) {
+function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
   return (
     <>
       {l.schedule && (
@@ -1046,56 +1036,38 @@ function ChosenItems({
   proposal: PublicProposal;
   terms?: boolean;
 }) {
-  if (p.quote_model_version === 3)
-    return (
-      <ul className="flow-chosen">
-        {orderedItems(p.items as QuoteItem[])
-          .filter((i) => !i.optional || i.selected)
-          .map((i) => (
-            <li key={i.id}>
-              <span>
-                {i.name}
-                {terms && (
-                  <Terms
-                    line={
-                      flatQuote([i]).find((l) => l.interval !== "one_time") ??
-                      flatQuote([i])[0]
-                    }
-                    currency={p.currency}
-                  />
-                )}
-              </span>
-              <span>
-                {i.sublines.map((s) => (
-                  <span key={s.id} style={{ display: "block" }}>
-                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
-                    {intervalSuffix(s.interval)}
-                  </span>
-                ))}
-              </span>
-            </li>
-          ))}
-      </ul>
-    );
   return (
     <ul className="flow-chosen">
-      {p.quote
-        .filter((l) => !l.optional || l.selected)
-        .map((l) => (
-          <li key={l.id}>
+      {orderedItems(p.quote as QuoteItem[])
+        .filter((i) => !i.optional || i.selected)
+        .map((i) => (
+          <li key={i.id}>
             <span>
-              {l.name}
-              {terms && <Terms line={l as Line} currency={p.currency} />}
+              {i.name}
+              {terms && (
+                <Terms
+                  line={
+                    quoteSublines([i]).find((l) => l.interval !== "one_time") ??
+                    quoteSublines([i])[0]
+                  }
+                  currency={p.currency}
+                />
+              )}
             </span>
             <span>
-              {formatMoney(l.amount * l.qty, p.currency, p.money_cents)}
-              {intervalSuffix(l.interval)}
+              {i.sublines.map((s) => (
+                <span key={s.id} style={{ display: "block" }}>
+                  {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+                  {intervalSuffix(s.interval)}
+                </span>
+              ))}
             </span>
           </li>
         ))}
     </ul>
   );
 }
+
 function Contact({
   name,
   email,
@@ -1143,10 +1115,7 @@ function FlowDocument({
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
 }) {
-  const content =
-    p.quote_model_version === 3
-      ? selectedContent(p.content, p.items as QuoteItem[])
-      : p.content;
+  const content = selectedContent(p.content, p.quote as QuoteItem[]);
   const sections = content
     .map((block, index) => ({ block, index }))
     .filter(
@@ -1159,8 +1128,8 @@ function FlowDocument({
       <p className="flow-eyebrow">Proposal for {p.recipient.company}</p>
       <h1>{p.title}</h1>
       <p className="flow-byline">
-        From {p.contact.name || p.company.name} · Valid until{" "}
-        {date(p.valid_until)}
+        From {p.contact.name || p.company.name}
+        {p.valid_until && <> · Valid until {date(p.valid_until)}</>}
       </p>
       {sections.length > 1 && (
         <details className="flow-outline">
@@ -1190,61 +1159,12 @@ function FlowDocument({
               <p>Optional items are your choice. Totals update as you go.</p>
             )}
             <div className="flow-quote">
-              {p.quote_model_version === 3 ? (
-                <ClientItems
-                  proposal={p}
-                  frozen={frozen}
-                  busy={busy}
-                  onToggle={onToggle}
-                />
-              ) : (
-                p.quote.map((l) => {
-                  const line = (
-                    <>
-                      <div className="flow-line-title">
-                        <strong>{l.name}</strong>
-                        <span className="amount">
-                          {formatMoney(
-                            l.amount * l.qty,
-                            p.currency,
-                            p.money_cents,
-                          )}
-                          {intervalSuffix(l.interval)}
-                        </span>
-                      </div>
-                      {l.description && <p>{l.description}</p>}
-                      <Terms line={l as Line} currency={p.currency} />
-                      {l.qty !== 1 && <small>Quantity {l.qty}</small>}
-                      <small>
-                        {l.optional
-                          ? l.selected
-                            ? "Optional · included"
-                            : "Optional · not included"
-                          : "Required"}
-                      </small>
-                    </>
-                  );
-                  return l.optional && !frozen ? (
-                    <label
-                      className={`flow-quote-line ${l.selected ? "selected" : ""}`}
-                      key={l.id}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={l.selected}
-                        disabled={busy}
-                        onChange={(e) => onToggle?.(l.id, e.target.checked)}
-                      />
-                      <div>{line}</div>
-                    </label>
-                  ) : (
-                    <div className="flow-quote-line" key={l.id}>
-                      <Icon name="lock" />
-                      <div>{line}</div>
-                    </div>
-                  );
-                })
-              )}
+              <ClientItems
+                proposal={p}
+                frozen={frozen}
+                busy={busy}
+                onToggle={onToggle}
+              />
             </div>
           </section>
         ) : block.type === "contract" ? (
@@ -1276,7 +1196,7 @@ function FlowDocument({
             dangerouslySetInnerHTML={{
               __html: renderBlocks(
                 [block],
-                p.quote as Line[],
+                p.quote as QuoteItem[],
                 p.variables,
                 p.currency,
               ),
@@ -1285,7 +1205,8 @@ function FlowDocument({
         ),
       )}
       <p className="muted document-end">
-        Valid until {date(p.valid_until)} · From {p.company.name}
+        {p.valid_until && <>Valid until {date(p.valid_until)} · </>}From{" "}
+        {p.company.name}
       </p>
     </article>
   );
@@ -1302,7 +1223,7 @@ function ClientItems({
   busy: boolean;
   onToggle?: (id: string, value: boolean) => void;
 }) {
-  const items = orderedItems(p.items as QuoteItem[]),
+  const items = orderedItems(p.quote as QuoteItem[]),
     units = Array.from(new Set(items.map((i) => i.choice_group_id ?? i.id)));
   function option(i: QuoteItem) {
     const active = !i.optional || !!i.selected;

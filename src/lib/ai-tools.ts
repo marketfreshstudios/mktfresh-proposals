@@ -1,4 +1,5 @@
-import { quoteItems, flatQuote } from "./quote-model";
+import { saveClient } from "./clients";
+import { cloneQuote, quoteSublines } from "./quote-model";
 import { itemDisplayName, sellableCatalogue } from "./catalogue-display";
 import { templateDefaultQuote } from "./template-quote";
 import {
@@ -10,7 +11,6 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   ClientSchema,
-  LineSchema,
   QuoteItemSchema,
   check,
   type Actor,
@@ -63,8 +63,8 @@ const schemas: Record<string, z.ZodType> = {
     template_id: id,
     client_id: id,
     title: z.string().min(1).max(300),
+    valid_until: z.string().nullable().optional(),
     content_markdown: z.string().max(100000),
-    lines: z.array(LineSchema).max(100).optional(),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   update_proposal_draft: z.object({
@@ -72,22 +72,21 @@ const schemas: Record<string, z.ZodType> = {
     revision: z.number().int(),
     title: z.string().min(1).max(300).optional(),
     brief: z.string().max(50000).optional(),
+    valid_until: z.string().nullable().optional(),
     content_markdown: z.string().max(100000).optional(),
-    lines: z.array(LineSchema).max(100).optional(),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   set_quote_lines: z.object({
     id,
     revision: z.number().int(),
-    lines: z.array(LineSchema).max(100).optional(),
-    items: z.array(QuoteItemSchema).max(100).optional(),
+    items: z.array(QuoteItemSchema).max(100),
   }),
   check_ready: z.object({ id }),
 };
 export const toolDefinitions = Object.entries(schemas).map(
   ([name, schema]) => ({
     name,
-    description: `${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply items OR legacy flat lines (converted for one release), never both. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name.replaceAll("_", " ")}. Workspace-scoped. ${WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
+    description: `${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name.replaceAll("_", " ")}. Workspace-scoped. ${WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
     inputSchema: z.toJSONSchema(schema, { target: "draft-7" }),
     annotations: {
       readOnlyHint:
@@ -104,11 +103,11 @@ function proposalView(p: Proposal) {
     revision: p.revision,
     title: p.title,
     status: p.status,
+    valid_until: p.valid_until,
     client: p.client,
     content: p.content,
-    quote: quoteItems(p.quote),
-    items: quoteItems(p.quote),
-    lines: flatQuote(p.quote),
+    quote: cloneQuote(p.quote),
+    items: cloneQuote(p.quote),
     warnings: p.creation_warnings ?? [],
     brief: p.brief,
     ai_unreviewed: p.ai_unreviewed,
@@ -135,16 +134,13 @@ export async function aiTool(
     "Insufficient connector scope",
     403,
   );
-  const input = schemas[name].parse(raw) as any;
   check(
-    !(input.items !== undefined && input.lines !== undefined),
-    "Supply items or legacy lines, not both",
+    !(raw && typeof raw === "object" && "lines" in raw),
+    "Flat lines are no longer supported; supply items with sublines",
   );
+  const input = schemas[name].parse(raw) as any;
   if (name === "set_quote_lines")
-    check(
-      input.items !== undefined || input.lines !== undefined,
-      "Items or legacy lines required",
-    );
+    check(input.items !== undefined, "Items required");
   const service = new ProposalService(repo);
   if (name === "search_clients")
     return (await repo.entities<Client>("clients"))
@@ -201,7 +197,7 @@ export async function aiTool(
     return (await repo.list(input.query)).slice(0, 30).map(proposalView);
   if (name === "create_client") {
     const client = ClientSchema.parse({ ...input, id: randomUUID() });
-    await repo.put("clients", client);
+    await saveClient(repo, client);
     await repo.put("workspace_events", {
       id: randomUUID(),
       type: "client_created",
@@ -229,7 +225,6 @@ export async function aiTool(
     check(template, "Active template required");
     const quoteForVariables =
       input.items ??
-      input.lines ??
       templateDefaultQuote(template, await repo.entities<Item>("pricing_items"))
         .quote;
     const allowed = Object.keys(
@@ -247,9 +242,7 @@ export async function aiTool(
     const p = await service.create(
       {
         ...input,
-        valid_until: new Date(
-          Date.now() + settings.default_validity_days * 86400000,
-        ).toISOString(),
+        valid_until: input.valid_until,
         brief: input.brief,
         document_versions: await readDocumentsForDraft(repo, actor),
         content: [
@@ -259,7 +252,7 @@ export async function aiTool(
           { type: "signature_block", role: "client" },
           { type: "signature_block", role: "company" },
         ],
-        quote: input.items ?? input.lines,
+        quote: input.items,
       },
       actor,
     );
@@ -292,7 +285,8 @@ export async function aiTool(
         title: input.title,
         brief: input.brief,
         content,
-        quote: input.items ?? input.lines,
+        valid_until: input.valid_until,
+        quote: input.items,
       },
       actor,
     ),

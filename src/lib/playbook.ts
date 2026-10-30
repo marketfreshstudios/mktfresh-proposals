@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LineSchema, check } from "./model";
+import { QuoteItemSchema, check } from "./model";
 export const PlaybookDraftSchema = z
   .object({
     source: z.literal("playbook"),
@@ -13,7 +13,7 @@ export const PlaybookDraftSchema = z
         email: z.email(),
       })
       .optional(),
-    lines: z.array(LineSchema).min(1).max(100),
+    items: z.array(QuoteItemSchema).min(1).max(100),
     notes: z.string().max(50000).optional(),
   })
   .strict();

@@ -1,19 +1,19 @@
+import { defaultValidUntil } from "./validity";
 import { reviewBlocks, pendingSections } from "./ai-review";
 import {
-  quoteItems,
+  cloneQuote,
   draftItems,
   chooseItem,
-  flatQuote,
+  quoteSublines,
   selected as itemSelected,
   prepareQuote,
   billingLines,
   selectedContent,
-  isQuoteItem,
 } from "./quote-model";
 import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
-import { proposalLink } from "./links";
+import { proposalLink, appOrigin } from "./links";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
@@ -22,7 +22,6 @@ import { readiness } from "./quote";
 import { randomBytes, randomUUID } from "node:crypto";
 import {
   AppError,
-  readLine,
   check,
   SignatureSchema,
   type Actor,
@@ -88,17 +87,18 @@ export function notify(p: Proposal, type: string) {
     queue(p, "email", "notify:" + type + ":" + p.events.length + ":" + to, {
       to,
       subject: `Proposal ${type}: ${p.title}`,
-      text: `${p.title} for ${p.client.company}: ${type}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
+      text: `${p.title} for ${p.client.company}: ${type}${type === "signed" ? `\n\nReview and countersign: ${appOrigin()}/proposals/${p.id}?action=countersign` : ""}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
     });
 }
 export function publicAccess(p: Proposal, password = "", now = new Date()) {
   check(p.source === "native" && p.token, "Not found", 404);
   check(
-    !["draft", "expired", "declined", "archived"].includes(p.status),
+    !p.archived_at &&
+      !["draft", "expired", "declined", "archived"].includes(p.status),
     "Proposal unavailable",
     410,
   );
-  if (["sent", "viewed"].includes(p.status))
+  if (p.valid_until && ["sent", "viewed"].includes(p.status))
     check(new Date(p.valid_until) > now, "Proposal expired", 410);
   if (p.password_hash)
     check(
@@ -118,7 +118,7 @@ export class ProposalService {
       client_id: string;
       template_id: string;
       title: string;
-      valid_until: string;
+      valid_until?: string | null;
       currency?: string;
       password?: string;
       playbook?: unknown;
@@ -137,11 +137,6 @@ export class ProposalService {
       );
     check(client && template, "Client and active template required");
     check(input.title?.trim() && input.title.length <= 300, "Title required");
-    check(
-      Number.isFinite(Date.parse(input.valid_until)) &&
-        new Date(input.valid_until) > this.clock(),
-      "Future expiry required",
-    );
     check(/^[A-Z]{3}$/.test(input.currency ?? "USD"), "Currency required");
     // Explicit lines (including an empty list) and playbook lines fully replace defaults.
     const supplied = input.quote !== undefined || input.playbook !== undefined;
@@ -155,6 +150,16 @@ export class ProposalService {
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const validity =
+      input.valid_until === undefined
+        ? defaultValidUntil(settings, this.clock())
+        : input.valid_until;
+    check(
+      validity === null ||
+        (Number.isFinite(Date.parse(validity)) &&
+          new Date(validity) > this.clock()),
+      "Future expiry required",
+    );
     const now = this.clock().toISOString();
     const p: Proposal = {
       id: randomUUID(),
@@ -166,7 +171,7 @@ export class ProposalService {
       status: "draft",
       token: null,
       password_hash: input.password ? hashPassword(input.password) : null,
-      valid_until: new Date(input.valid_until).toISOString(),
+      valid_until: validity === null ? null : new Date(validity).toISOString(),
       currency: input.currency ?? "USD",
       source: "native",
       proposify_id: null,
@@ -186,7 +191,7 @@ export class ProposalService {
         await this.repo.entities<Item>("pricing_items"),
         actor.actor.startsWith("ai:"),
       ),
-      quote_model_version: 3,
+
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -204,7 +209,7 @@ export class ProposalService {
     if (input.playbook) {
       const payload = PlaybookDraftSchema.parse(input.playbook);
       p.quote = prepareQuote(
-        payload.lines,
+        payload.items,
         await this.repo.entities<Item>("pricing_items"),
         actor.actor.startsWith("ai:"),
       );
@@ -234,7 +239,7 @@ export class ProposalService {
   }
   async forRead(p: Proposal) {
     if (p.status !== "draft") return p;
-    p = { ...p, quote: draftItems(p.quote), quote_model_version: 3 };
+    p = { ...p, quote: draftItems(p.quote) };
     const current = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
@@ -249,14 +254,18 @@ export class ProposalService {
       brief?: string;
       content?: Block[];
       quote?: Proposal["quote"];
-      valid_until?: string;
+      valid_until?: string | null;
     },
     actor: Actor,
   ) {
     const catalog = await this.repo.entities<Item>("pricing_items");
     const result = await mutate(this.repo, id, (p) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
-      check(p.status === "draft", "Only drafts can be edited", 409);
+      check(
+        p.source === "native" && p.status === "draft" && !p.archived_at,
+        "Only drafts can be edited; archived and imported proposals are read-only",
+        409,
+      );
       delete p.workspace_settings;
       if (input.title) p.title = input.title;
       if (input.brief !== undefined) p.brief = input.brief;
@@ -302,16 +311,20 @@ export class ProposalService {
             ai_review: { source: "assistant", reviewed: false },
           });
       }
-      p.quote_model_version = 3;
-      if (input.valid_until) {
+
+      if (input.valid_until !== undefined) {
         check(
-          Date.parse(input.valid_until) > this.clock().getTime(),
+          input.valid_until === null ||
+            Date.parse(input.valid_until) > this.clock().getTime(),
           "Future expiry required",
         );
-        p.valid_until = new Date(input.valid_until).toISOString();
+        p.valid_until =
+          input.valid_until === null
+            ? null
+            : new Date(input.valid_until).toISOString();
       }
       event(p, "edited", actor, {
-        price_decisions: quoteItems(p.quote)
+        price_decisions: cloneQuote(p.quote)
           .filter((i) => i.price_review && Object.keys(i.price_review).length)
           .map((i) => ({ item_id: i.id, decisions: i.price_review })),
       });
@@ -323,7 +336,12 @@ export class ProposalService {
     actor: Actor,
     confirmAiReview = false,
     senderId = actor.actor.slice(6),
-    options: { note?: string; password?: string | null } = {},
+    options: {
+      note?: string;
+      password?: string | null;
+      reopen?: boolean;
+      expected_revision?: number;
+    } = {},
   ) {
     check(
       !actor.actor.startsWith("ai:"),
@@ -360,7 +378,23 @@ export class ProposalService {
     const catalog = await this.repo.entities<Item>("pricing_items");
     return mutate(this.repo, id, (p) => {
       check(
-        ["draft", "sent", "viewed"].includes(p.status),
+        !p.archived_at && p.source === "native",
+        "Unarchive a native proposal before sending",
+        409,
+      );
+      if (options.expected_revision !== undefined)
+        check(
+          p.revision === options.expected_revision,
+          "Proposal changed; reload and try again",
+          409,
+        );
+      const reopening =
+        options.reopen === true &&
+        p.status === "declined" &&
+        !p.signers.length &&
+        p.versions.length > 0;
+      check(
+        ["draft", "sent", "viewed"].includes(p.status) || reopening,
         "Cannot send signed or closed proposal",
         409,
       );
@@ -369,7 +403,7 @@ export class ProposalService {
         "Confirm review of AI changes before sending",
       );
       p.quote = draftItems(p.quote);
-      p.quote_model_version = 3;
+
       p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);
       check(ready.ready, ready.errors.join("; "));
@@ -378,10 +412,14 @@ export class ProposalService {
         new Set(p.quote.map((l) => l.id)).size === p.quote.length,
         "Duplicate quote items must be combined using quantity",
       );
-      for (const l of quoteItems(p.quote)) {
+      for (const l of cloneQuote(p.quote)) {
         check(l.optional || itemSelected(l), "Required items must be selected");
       }
       const now = this.clock().toISOString();
+      if (reopening) {
+        delete p.marked_lost_by;
+        event(p, "reopened", actor, { previous_status: "declined" }, now);
+      }
       p.sender = sender;
       p.notification_emails = [
         ...new Set(
@@ -407,14 +445,12 @@ export class ProposalService {
       p.token = randomBytes(32).toString("base64url");
       p.status = "sent";
       p.first_viewed_at = null;
-      const map = variables(p, p.quote, true);
+      const map = variables(p, p.quote);
       renderBlocks(p.content, p.quote, map, p.currency);
       const version = {
         id: randomUUID(),
         version_no: p.versions.length + 1,
-        client_flow_version: 2 as const,
-        quote_model_version: 3 as const,
-        money_format_version: 2 as const,
+
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -489,6 +525,7 @@ export class ProposalService {
       publicAccess(p, password, this.clock());
       check(p.token === token, "Link superseded", 410);
       check(["sent", "viewed"].includes(p.status), "Quote is frozen", 409);
+      check(!p.archived_at, "Archived proposals cannot be signed", 409);
       check(
         input.reviewed_hash
           ? p.versions.at(-1)?.content_hash === input.reviewed_hash
@@ -496,22 +533,10 @@ export class ProposalService {
         "Quote changed; reload",
         409,
       );
-      if (p.versions.at(-1)?.quote_model_version === 3)
-        p.quote = chooseItem(p.quote, input.item_id, input.selected);
-      else {
-        const l = (p.quote as import("./model").Line[]).find(
-          (x) => x.id === input.item_id,
-        );
-        check(l?.optional, "Only optional items can be toggled");
-        l.selected = input.selected;
-      }
+      p.quote = chooseItem(p.quote, input.item_id, input.selected);
       const v = p.versions.at(-1)!;
       v.quote = structuredClone(p.quote);
-      v.variables_resolved = variables(
-        p,
-        p.quote,
-        v.money_format_version === 2,
-      );
+      v.variables_resolved = variables(p, p.quote);
       renderBlocks(
         v.content,
         v.quote,
@@ -570,6 +595,7 @@ export class ProposalService {
         publicAccess(p, access.password, this.clock());
         check(access.token === p.token, "Link superseded", 410);
       }
+      check(!p.archived_at, "Archived proposals cannot be signed", 409);
       check(
         input.reviewed_hash
           ? p.versions.at(-1)?.content_hash === input.reviewed_hash
@@ -598,8 +624,7 @@ export class ProposalService {
         v = p.versions.at(-1)!;
       if (role === "client") {
         billingLines(v.quote);
-        if (v.quote_model_version === 3)
-          v.content = selectedContent(v.content, v.quote);
+        v.content = selectedContent(v.content, v.quote);
         v.frozen = true;
         v.content_hash = versionHash({
           content: v.content,
@@ -678,7 +703,7 @@ export class ProposalService {
           "billing",
           "billing",
           {
-            selected_item_ids: quoteItems(v.quote)
+            selected_item_ids: cloneQuote(v.quote)
               .filter(itemSelected)
               .map((i) => i.id),
             lines: billingLines(v.quote),
@@ -717,11 +742,12 @@ export class ProposalService {
   }
   async tick() {
     for (const item of await this.repo.list()) {
-      if (!["sent", "viewed"].includes(item.status)) continue;
+      if (item.archived_at || !["sent", "viewed"].includes(item.status))
+        continue;
       await mutate(this.repo, item.id, (p) => {
         if (!["sent", "viewed"].includes(p.status)) return;
         const now = this.clock();
-        if (new Date(p.valid_until) <= now) {
+        if (p.valid_until && new Date(p.valid_until) <= now) {
           p.status = "expired";
           event(p, "expired", system, {}, now.toISOString());
           return;
@@ -759,10 +785,7 @@ export function publicResult(p: Proposal) {
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
-    client_flow_version: v.client_flow_version,
-    quote_model_version: v.quote_model_version,
-    money_format_version: v.money_format_version,
-    items: quoteItems(v.quote).map(
+    quote: cloneQuote(v.quote).map(
       ({
         plan_terms: _plan,
         custom_family_id: _family,
@@ -812,35 +835,6 @@ export function publicResult(p: Proposal) {
       p.currency,
       p.workspace_settings?.money?.cents ?? "auto",
     ),
-    quote: flatQuote(v.quote)
-      .map(readLine)
-      .map(
-        ({
-          id,
-          name,
-          description,
-          amount,
-          qty,
-          optional,
-          selected,
-          interval,
-          min_term_months,
-          schedule,
-          group,
-        }) => ({
-          id,
-          name,
-          description,
-          amount,
-          qty,
-          optional,
-          selected,
-          interval,
-          min_term_months,
-          schedule,
-          group,
-        }),
-      ),
     totals: totals(v.quote),
     company: p.workspace_settings
       ? {

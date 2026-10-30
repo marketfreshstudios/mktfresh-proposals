@@ -1,6 +1,7 @@
 import "./globals.css";
 import "./foundation.css";
 import "./client-flow.css";
+import "./records.css";
 export default function RootLayout({
   children,
 }: {

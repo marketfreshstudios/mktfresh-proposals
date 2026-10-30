@@ -1,4 +1,6 @@
 "use client";
+import { ValidityField } from "./validity-field";
+import { readableDate } from "../lib/validity";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
@@ -32,7 +34,7 @@ import { readiness } from "../lib/quote";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { FieldEditor } from "./field-editor";
-import { api, post, ApiError, Button, Field, Banner, Totals } from "./ui";
+import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
 function Sortable({
@@ -69,7 +71,7 @@ function Sortable({
         {...attributes}
         {...listeners}
       >
-        ⠿ <span>Move</span>
+        <span aria-hidden="true">⋮⋮</span>
       </button>
       {children}
     </div>
@@ -877,15 +879,28 @@ export function QuoteEditor({
       <h3>Ready to send?</h3>
       <ul className="send-checklist">
         {ready.errors.map((e, n) => (
-          <li className="danger" key={n}>
-            × {e}
+          <li className="readiness-row blocker" key={n}>
+            <Icon name="declined" />
+            <div>
+              <strong>Blocker</strong>
+              <p>{e}</p>
+            </div>
           </li>
         ))}
         {ready.warnings.map((e, n) => (
-          <li key={n}>! {e}</li>
+          <li className="readiness-row warning" key={n}>
+            <Icon name="review" />
+            <div>
+              <strong>Review</strong>
+              <p>{e}</p>
+            </div>
+          </li>
         ))}
         {ready.ready && (
-          <li>✓ Content, quote and signature blocks are ready.</li>
+          <li className="readiness-row success">
+            <Icon name="verified" />
+            <p>Content, quote and signature blocks are ready.</p>
+          </li>
         )}
       </ul>
       {pending.length > 0 && (
@@ -1505,6 +1520,7 @@ export function QuoteEditor({
             "sender.name",
             "proposal.date",
             "proposal.valid_until",
+            "proposal.validity",
             "quote.one_time_total",
             "quote.monthly_total",
           ].map((k) => (
@@ -1569,9 +1585,16 @@ export function QuoteEditor({
               <p className="eyebrow">Proposal for {p.client.company}</p>
               <h1>{p.title}</h1>
               <p>
-                From <span className="field-chip">{map["sender.name"]}</span> ·
-                Valid until{" "}
-                <span className="field-chip">{p.valid_until.slice(0, 10)}</span>
+                From <span className="field-chip">{map["sender.name"]}</span>
+                {p.valid_until && (
+                  <>
+                    {" "}
+                    · Valid until{" "}
+                    <span className="field-chip">
+                      {readableDate(p.valid_until)}
+                    </span>
+                  </>
+                )}
               </p>
             </header>
             {sections.map((s, n) => (
@@ -1664,17 +1687,9 @@ export function QuoteEditor({
               </select>
             )}
             <Field label="Valid until">
-              <input
-                type="date"
-                value={p.valid_until.slice(0, 10)}
-                onChange={(e) => {
-                  if (e.target.value)
-                    change({
-                      valid_until: new Date(
-                        e.target.value + "T23:59:59Z",
-                      ).toISOString(),
-                    });
-                }}
+              <ValidityField
+                value={p.valid_until}
+                onChange={(valid_until) => change({ valid_until })}
               />
             </Field>
           </div>

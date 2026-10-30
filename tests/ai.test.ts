@@ -1,4 +1,4 @@
-import { flatQuote, quoteItems } from "../src/lib/quote-model";
+import { quoteSublines, cloneQuote } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { setup, staff, signature, clientActor } from "./helpers";
@@ -96,7 +96,7 @@ it("AI creates a review-required draft; explicit section review unlocks send and
       title: "AI draft",
       content_markdown:
         "# Scope\n\nHello {{client.first_name}}.\n\n- Design\n- Build",
-      lines: flatQuote(draft.quote),
+      items: cloneQuote(draft.quote),
     },
     scopes,
   )) as { id: string; revision: number };
@@ -130,7 +130,7 @@ it("AI creates a review-required draft; explicit section review unlocks send and
       repo,
       ai,
       "set_quote_lines",
-      { id: p.id, revision: p.revision, lines: flatQuote(p.quote) },
+      { id: p.id, revision: p.revision, items: cloneQuote(p.quote) },
       scopes,
     ),
   ).rejects.toThrow("only modify drafts");

@@ -1,6 +1,7 @@
+import { catalogQuoteItem } from "../src/lib/quote-model";
 import { testSignatory } from "../tests/helpers";
 import { connectAssistant } from "./mcp-client";
-import { catalogLine, type Item } from "../src/lib/model";
+import { type Item } from "../src/lib/model";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -11,7 +12,13 @@ test("full headless flow through the client interface, both PDFs, billing, downl
 }) => {
   const headers = { Authorization: "Bearer e2e-staff-secret-only" };
   expect((await request.get("/api/proposals")).status()).toBe(401);
-  const clientId = randomUUID(),
+  const existingClients = await (
+    await request.get("/api/clients", { headers })
+  ).json();
+  const clientId =
+      existingClients.find(
+        (c: { id: string; email: string }) => c.email === "jane@example.test",
+      )?.id ?? randomUUID(),
     itemId = randomUUID(),
     monthlyId = randomUUID(),
     optionalId = randomUUID(),
@@ -120,12 +127,17 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   }
   const call = await connectAssistant(request, headers);
   const catalog = (await call("list_catalog", {})) as Item[];
-  const lines = [itemId, monthlyId, optionalId].map((id) =>
-    catalogLine(
+  const items = [itemId, monthlyId, optionalId].map((id, order) => ({
+    ...catalogQuoteItem(
       catalog.find((i) => i.id === id)!,
-      { qty: 1, optional: id === optionalId, selected: true },
+      order,
+      id,
+      [id],
     ),
-  );
+    optional: id === optionalId,
+    default_selected: true,
+    selected: true,
+  }));
   let p = await call("create_proposal_draft", {
     brief: "Discovery notes for the website partnership",
     client_id: clientId,
@@ -133,7 +145,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     title: "Website partnership",
     content_markdown:
       "# {{proposal.title}}\n\nPrepared for {{client.company}}. Monthly: {{quote.monthly_total}}.",
-    lines,
+    items,
   });
   expect(p.ai_unreviewed).toBe(true);
   await page.context().addCookies([

@@ -46,7 +46,7 @@
       ],
       "additionalProperties": false
     },
-    "lines": {
+    "items": {
       "minItems": 1,
       "maxItems": 100,
       "type": "array",
@@ -58,6 +58,11 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
           "name": {
             "type": "string",
             "minLength": 1,
@@ -68,31 +73,133 @@
             "type": "string",
             "maxLength": 10000
           },
-          "amount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 100000000
-          },
-          "interval": {
+          "source": {
             "type": "string",
             "enum": [
-              "one_time",
-              "month",
-              "year"
+              "catalog",
+              "custom"
             ]
           },
-          "stripe_lookup_key": {
+          "pricing_item_id": {
             "default": null,
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "qbo_item_ref": {
+          "custom_family_id": {
             "default": null,
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sublines": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "list_amount": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100000000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "interval": {
+                  "type": "string",
+                  "enum": [
+                    "one_time",
+                    "month",
+                    "year"
+                  ]
+                },
+                "qty": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "stripe_lookup_key": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "qbo_item_ref": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "amount",
+                "list_amount",
+                "interval",
+                "qty",
+                "stripe_lookup_key",
+                "qbo_item_ref"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "default_selected": {
+            "type": "boolean"
+          },
+          "selected": {
+            "type": "boolean"
+          },
+          "choice_group_id": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "min_term_months": {
@@ -171,87 +278,38 @@
               }
             ]
           },
-          "pricing_item_id": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "custom_family_id": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid",
-                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "list_amount": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "group": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "qty": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 10000
-          },
-          "optional": {
+          "ai_entered": {
             "type": "boolean"
           },
-          "selected": {
-            "type": "boolean"
+          "price_review": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "keep",
+                "list"
+              ]
+            }
           }
         },
         "required": [
           "id",
+          "order",
           "name",
           "description",
-          "amount",
-          "interval",
-          "stripe_lookup_key",
-          "qbo_item_ref",
-          "min_term_months",
-          "schedule",
-          "plan_terms",
+          "source",
           "pricing_item_id",
           "custom_family_id",
-          "list_amount",
-          "group",
-          "qty",
+          "sublines",
           "optional",
-          "selected"
+          "default_selected",
+          "choice_group_id",
+          "min_term_months",
+          "schedule",
+          "plan_terms"
         ],
         "additionalProperties": false
       }
@@ -264,7 +322,7 @@
   "required": [
     "source",
     "source_version",
-    "lines"
+    "items"
   ],
   "additionalProperties": false
 }

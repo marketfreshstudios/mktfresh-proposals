@@ -1,6 +1,6 @@
 "use client";
-import { flatQuote } from "../lib/quote-model";
-import { useMoney, useFoundationMoney } from "./money-context";
+import { quoteSublines } from "../lib/quote-model";
+import { useMoney } from "./money-context";
 import { statusDisplay } from "../lib/status-display";
 import {
   useEffect,
@@ -11,7 +11,7 @@ import {
 } from "react";
 import icons from "./icons.json";
 import { totals } from "../lib/presentation";
-import type { Line, Proposal, Quote } from "../lib/model";
+import type { BillingLine, Proposal, Quote } from "../lib/model";
 export function Icon({ name }: { name: keyof typeof icons }) {
   const i = icons[name];
   return (
@@ -145,22 +145,20 @@ export function Totals({
   };
 }) {
   const money = useMoney();
-  const modern = useFoundationMoney();
   const t = value ?? totals(lines ?? []);
   return (
     <div className="totals" aria-label="Proposal totals">
       {[
         ["One-time", t.one_time_total, ""],
-        ["Monthly", t.monthly_total, modern ? "/mo" : "/month"],
-        ["Yearly", t.yearly_total, modern ? "/yr" : "/year"],
+        ["Monthly", t.monthly_total, "/mo"],
+        ["Yearly", t.yearly_total, "/yr"],
       ]
         .filter(
           ([label]) =>
             label !== "Yearly" ||
             (showYearly &&
-              (!modern ||
-                t.yearly_total !== 0 ||
-                flatQuote(lines ?? []).some((l) => l.interval === "year"))),
+              (t.yearly_total !== 0 ||
+                quoteSublines(lines ?? []).some((l) => l.interval === "year"))),
         )
         .map(([label, amount, suffix]) => (
           <div key={label}>

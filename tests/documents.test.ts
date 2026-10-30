@@ -1,4 +1,4 @@
-import { flatQuote, quoteItems } from "../src/lib/quote-model";
+import { quoteSublines, cloneQuote } from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import { MemoryRepository } from "../src/lib/repository";
 import {
@@ -299,7 +299,7 @@ it("records the actual version read, even after refresh, on the draft's first ev
       client_id: draft.client.id,
       title: "Draft",
       content_markdown: "Text",
-      lines: flatQuote(draft.quote),
+      items: cloneQuote(draft.quote),
     },
     scopes,
   )) as any;

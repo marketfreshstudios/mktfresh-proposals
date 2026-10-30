@@ -1,4 +1,4 @@
-import { flatQuote } from "../src/lib/quote-model";
+import { cloneQuote } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { setup, staff } from "./helpers";
 import { aiTool } from "../src/lib/ai-tools";
@@ -21,7 +21,7 @@ it.each([false, true])(
     const { repo, draft, item } = await inactiveDefault();
     const lines = empty
       ? []
-      : flatQuote(draft.quote).filter((l) => l.pricing_item_id !== item.id);
+      : cloneQuote(draft.quote).filter((l) => l.pricing_item_id !== item.id);
     const result = (await aiTool(
       repo,
       { ...staff, workspace_id: repo.workspaceId, actor: "ai:Assistant" },
@@ -32,11 +32,11 @@ it.each([false, true])(
         client_id: draft.client.id,
         title: "Proposal",
         content_markdown: "Scope",
-        lines,
+        items: lines,
       },
       ["proposals:read", "proposals:draft"],
     )) as any;
-    expect(result.lines).toEqual(lines);
+    expect(result.items.map(({ ai_entered, ...i }: any) => i)).toEqual(lines);
     expect(result.items).toHaveLength(lines.length);
     expect(result.warnings).toEqual([]);
   },

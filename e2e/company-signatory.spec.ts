@@ -54,7 +54,7 @@ test("delegated company signing requires authorization in the UI and seals actua
     page.getByRole("heading", { name: "Signing on behalf of Alex Morgan" }),
   ).toBeVisible();
   const button = page.getByRole("button", {
-    name: "Counter-sign and complete",
+    name: "Countersign as Alex Morgan",
   });
   await expect(button).toBeDisabled();
   await page

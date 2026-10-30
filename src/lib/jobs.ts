@@ -73,7 +73,7 @@ export class Worker {
     public providers: Record<"qbo" | "stripe", BillingProvider>,
     private render?: typeof import("./pdf").sealedPdf,
   ) {}
-  async drain(id?: string) {
+  async drain(id?: string, kind?: Job["kind"]) {
     const results = [];
     const deadline = Date.now() + 240000;
     for (const row of await this.repo.list()) {
@@ -86,6 +86,7 @@ export class Worker {
           selected = undefined;
           const j = p.jobs.find(
             (j) =>
+              (!kind || j.kind === kind) &&
               j.status !== "done" &&
               j.status !== "failed" &&
               Date.parse(j.available_at) <= now.getTime() &&
@@ -121,7 +122,8 @@ export class Worker {
             ).toISOString();
             delete j.lease_until;
             event(p, "sync_failed", system, { job: j.id, error: j.last_error });
-            if (j.kind !== "email") notify(p, "sync_failed");
+            if (j.kind !== "email" && !j.payload.preview)
+              notify(p, "sync_failed");
           });
           results.push({ job: job.id, status: "failed" });
         }
@@ -138,13 +140,22 @@ export class Worker {
     }
     if (j.kind === "email") {
       const payload = j.payload;
-      if (payload.send_version && payload.send_version !== p.versions.length)
+      if (
+        payload.send_version &&
+        (payload.send_version !== p.versions.length ||
+          !p.token ||
+          p.archived_at ||
+          !["sent", "viewed", "signed_by_client", "completed"].includes(
+            p.status,
+          ))
+      )
         return;
       if (
         payload.reminder_day &&
-        (!["sent", "viewed"].includes(p.status) ||
+        (!!p.archived_at ||
+          !["sent", "viewed"].includes(p.status) ||
           payload.version !== p.versions.length ||
-          Date.parse(p.valid_until) <= Date.now())
+          (p.valid_until && Date.parse(p.valid_until) <= Date.now()))
       )
         return;
       const attachments = payload.file_id
@@ -254,7 +265,17 @@ export class Worker {
     }
     if (j.kind === "pdf") {
       const stage = String(j.payload.stage);
-      if (p.files.some((f) => f.kind === "sealed" && f.stage === stage)) return;
+      const renderSettings =
+        (j.payload.settings as Proposal["workspace_settings"]) ??
+        p.workspace_settings;
+      if (
+        p.files.some(
+          (f) =>
+            f.stage === stage &&
+            (f.kind === "sealed" || j.payload.preview === true),
+        )
+      )
+        return;
       const v = j.payload.version as Version;
       // Import failures belong to this retryable job, never API initialization.
       const render = this.render ?? (await import("./pdf")).sealedPdf;
@@ -264,12 +285,12 @@ export class Worker {
         j.payload.events as Audit[],
         p.currency,
         {
-          settings: p.workspace_settings,
-          logo: p.workspace_settings?.logo
+          settings: renderSettings,
+          logo: renderSettings?.logo
             ? "data:image/png;base64," +
-              Buffer.from(
-                await this.storage.get(p.workspace_settings.logo),
-              ).toString("base64")
+              Buffer.from(await this.storage.get(renderSettings.logo)).toString(
+                "base64",
+              )
             : undefined,
         },
       );
@@ -288,7 +309,13 @@ export class Worker {
           Buffer.from(signer.image!.split(",")[1], "base64"),
         );
       await mutate(this.repo, p.id, (p) => {
-        if (p.files.some((f) => f.kind === "sealed" && f.stage === stage))
+        if (
+          p.files.some(
+            (f) =>
+              f.stage === stage &&
+              (f.kind === "sealed" || j.payload.preview === true),
+          )
+        )
           return;
         const body = {
           id: randomUUID(),
@@ -301,7 +328,7 @@ export class Worker {
         };
         const file = {
           id: randomUUID(),
-          kind: "sealed" as const,
+          kind: j.payload.preview ? ("render" as const) : ("sealed" as const),
           storage_path: path,
           sha256: hash,
           bytes: rendered.pdf.length,
@@ -327,13 +354,14 @@ export class Worker {
             stage: signer.role,
           });
         }
-        for (const to of new Set([p.client.email, ...staffRecipients(p)]))
-          queue(p, "email", `copy:${stage}:${to}`, {
-            to,
-            subject: `Signed copy: ${p.title}`,
-            text: `Attached is your ${stage === "company" ? "fully countersigned" : "client-signed"} proposal.`,
-            file_id: file.id,
-          });
+        if (!j.payload.preview)
+          for (const to of new Set([p.client.email, ...staffRecipients(p)]))
+            queue(p, "email", `copy:${stage}:${to}`, {
+              to,
+              subject: `Signed copy: ${p.title}`,
+              text: `Attached is your ${stage === "company" ? "fully countersigned" : "client-signed"} proposal.`,
+              file_id: file.id,
+            });
       });
     }
   }

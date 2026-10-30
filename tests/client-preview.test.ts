@@ -1,7 +1,8 @@
+import { catalogQuoteItem } from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import { setup, staff, clientActor, signature } from "./helpers";
 import { previewResult } from "../src/lib/preview";
-import { catalogLine, ItemSchema, type Item } from "../src/lib/model";
+import { ItemSchema, type Item } from "../src/lib/model";
 import {
   itemDisplayName,
   sellableCatalogue,
@@ -38,12 +39,10 @@ it("alphabetizes sellable items by display name and snapshots display names into
     "Beta",
   ]);
   const renamed = ItemSchema.parse({ ...base, display_name: "App name" });
-  expect(
-    catalogLine(renamed, { qty: 1, optional: false, selected: true }).name,
-  ).toBe("App name");
-  expect(
-    catalogLine(base, { qty: 1, optional: false, selected: true }).name,
-  ).toBe(base.name);
+  expect(catalogQuoteItem(renamed, 0, renamed.id, [renamed.id]).name).toBe(
+    "App name",
+  );
+  expect(catalogQuoteItem(base, 0, base.id, [base.id]).name).toBe(base.name);
 });
 it("Stripe sync refreshes the synced name while preserving app-only display name", async () => {
   const { repo } = await setup();

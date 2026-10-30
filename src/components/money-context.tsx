@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, type ReactNode } from "react";
 import { formatMoney, type CentsMode } from "../lib/money";
-import { money as legacyMoney } from "../lib/presentation";
+import { money } from "../lib/presentation";
 const MoneyContext = createContext<
   ((cents: number, currency?: string) => string) | null
 >(null);
@@ -21,9 +21,5 @@ export function MoneyProvider({
   );
 }
 export function useMoney() {
-  return useContext(MoneyContext) ?? legacyMoney;
-}
-
-export function useFoundationMoney() {
-  return useContext(MoneyContext) !== null;
+  return useContext(MoneyContext) ?? money;
 }

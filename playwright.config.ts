@@ -1,4 +1,9 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
+// Each run owns its local database; test clients cannot leak across repeat runs.
+const e2eDataDir = mkdtempSync(join(tmpdir(), "proposals-e2e-"));
 process.env.APP_URL = "http://127.0.0.1:3100";
 export default defineConfig({
   testDir: "e2e",
@@ -15,7 +20,7 @@ export default defineConfig({
         APP_MODE: "local",
         BILLING_MODE: "mock",
         OAUTH_ISSUER: "http://127.0.0.1:3100",
-        DATA_DIR: ".data/e2e",
+        DATA_DIR: e2eDataDir,
         DEV_STAFF_TOKEN: "e2e-staff-secret-only",
         APP_URL: "http://127.0.0.1:3100",
         CRON_SECRET: "e2e-cron-only",

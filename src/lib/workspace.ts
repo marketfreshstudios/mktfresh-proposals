@@ -34,7 +34,7 @@ export const WorkspaceSettingsSchema = z.object({
     .default(""),
   consent_text: z.string().min(20).max(10000),
   reminder_days: z.array(z.number().int().positive()).max(10),
-  default_validity_days: z.number().int().min(1).max(365),
+  default_validity_days: z.number().int().min(1).max(365).default(30),
   timezone: z.string().refine((value) => {
     try {
       new Intl.DateTimeFormat("en", { timeZone: value });
@@ -46,9 +46,4 @@ export const WorkspaceSettingsSchema = z.object({
   qbo_custom_item_ref: z.string().nullable(),
   collection_method: z.enum(["charge_automatically", "send_invoice"]),
 });
-export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema> & {
-  /** Read-only compatibility for historical proposal snapshots. */
-  client_url?: string;
-  email_sender_name?: string;
-  email_sender_address?: string;
-};
+export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;

@@ -14,13 +14,13 @@ import { MockBillingProvider } from "../src/lib/billing";
 import { sha256 } from "../src/lib/content";
 import { WorkspaceSettingsSchema } from "../src/lib/workspace";
 afterEach(() => vi.unstubAllEnvs());
-it("uses APP_URL for new links, retains legacy snapshots and enforces HTTPS", async () => {
+it("uses canonical APP_URL for every current proposal link and enforces HTTPS", async () => {
   const { repo, service, draft, settings } = await setup();
   vi.stubEnv("APP_URL", "https://proposals.example.test/path/");
   expect(appOrigin()).toBe("https://proposals.example.test");
-  settings.client_url = "https://old.example.test";
-  settings.email_sender_name = "Old";
-  settings.email_sender_address = "old@example.test";
+  (settings as any).client_url = "https://old.example.test";
+  (settings as any).email_sender_name = "Old";
+  (settings as any).email_sender_address = "old@example.test";
   const parsed = WorkspaceSettingsSchema.parse(settings);
   expect(parsed).not.toHaveProperty("client_url");
   expect(parsed).not.toHaveProperty("email_sender_name");
@@ -30,9 +30,9 @@ it("uses APP_URL for new links, retains legacy snapshots and enforces HTTPS", as
     "https://proposals.example.test/p/",
   );
   expect(emailHtml(p, "Review")).toContain("https://proposals.example.test/p/");
-  p.workspace_settings!.client_url = "https://old.example.test";
-  expect(proposalLink(p)).toBe(`https://old.example.test/p/${p.token}`);
-  expect(emailHtml(p, "Review")).toContain("https://old.example.test/p/");
+  (p.workspace_settings as any).client_url = "https://old.example.test";
+  expect(proposalLink(p)).toBe(`https://proposals.example.test/p/${p.token}`);
+  expect(emailHtml(p, "Review")).toContain("https://proposals.example.test/p/");
   vi.stubEnv("APP_URL", "http://unsafe.example.test");
   expect(() => appOrigin()).toThrow("HTTPS");
   vi.stubEnv("APP_URL", "http://localhost:3100");

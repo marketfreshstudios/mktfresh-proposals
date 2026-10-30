@@ -50,7 +50,18 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         app_url: "http://127.0.0.1:3100",
         signatory_version: companyConsent(0, settings).signatory_version,
       };
-    } else if (path[0] === "proposals")
+    } else if (path[0] === "clients" && path[2] === "billing")
+      value = {
+        available: false,
+        subscriber: false,
+        items: [],
+        card: null,
+        next_invoice: null,
+        stripe_url: null,
+        qbo_url: null,
+        notice: "Stripe is not connected.",
+      };
+    else if (path[0] === "proposals")
       value = path[1]
         ? active
         : {
@@ -211,20 +222,23 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
       });
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
-      const studioTrigger = page
-        .getByRole("button", { name: "Studio", exact: true })
-        .filter({ visible: true });
-      await studioTrigger.click();
-      await expect(
-        page.getByRole("navigation", { name: "Studio navigation" }),
-      ).toBeVisible();
+      if (width === 768) {
+        await page
+          .getByRole("button", { name: "Studio", exact: true })
+          .filter({ visible: true })
+          .click();
+        await expect(page.locator(".studio-popover")).toBeVisible();
+      } else if (width === 375) {
+        await page.getByRole("link", { name: "Studio", exact: true }).click();
+        await expect(page.locator(".studio-page")).toBeVisible();
+      } else await expect(page.locator(".desktop-studio")).toBeVisible();
       await page.screenshot({
         path: `${dir}/studio-menu-${width}-${theme}.png`,
         fullPage: true,
       });
       captures.push({
         file: `studio-menu-${width}-${theme}.png`,
-        route: "Studio menu",
+        route: "Studio navigation",
         width,
         theme,
         frame: "01 IA/04 components",

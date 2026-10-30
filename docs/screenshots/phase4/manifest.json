@@ -1,0 +1,512 @@
+[
+  {
+    "file": "home-375-light.png",
+    "frame": "3f",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "proposals-375-light.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "proposal-menu-375-light.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "client-375-light.png",
+    "frame": "6f",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "record-375-light.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-375-light.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-375-light.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-consent-375-light.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-new-375-light.png",
+    "frame": "New proposal validity",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "inline-client-375-light.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "studio-375-light.png",
+    "frame": "Responsive Studio navigation",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "delete-client-375-light.png",
+    "frame": "Client detail actions extension",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-client-375-light.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-sign-375-light.png",
+    "frame": "Client sign summary without expiry",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "home-768-light.png",
+    "frame": "3e",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "proposals-768-light.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "proposal-menu-768-light.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "client-768-light.png",
+    "frame": "6e",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "record-768-light.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-768-light.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-768-light.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-consent-768-light.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-new-768-light.png",
+    "frame": "New proposal validity",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "inline-client-768-light.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "studio-768-light.png",
+    "frame": "Responsive Studio navigation",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "delete-client-768-light.png",
+    "frame": "Client detail actions extension",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-client-768-light.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-sign-768-light.png",
+    "frame": "Client sign summary without expiry",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "home-1440-light.png",
+    "frame": "3d",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "proposals-1440-light.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "proposal-menu-1440-light.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "client-1440-light.png",
+    "frame": "6d",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "record-1440-light.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "manual-invoice-1440-light.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-1440-light.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "countersign-consent-1440-light.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-new-1440-light.png",
+    "frame": "New proposal validity",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "inline-client-1440-light.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "studio-1440-light.png",
+    "frame": "Responsive Studio navigation",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "delete-client-1440-light.png",
+    "frame": "Client detail actions extension",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-client-1440-light.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "indefinite-sign-1440-light.png",
+    "frame": "Client sign summary without expiry",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "home-375-dark.png",
+    "frame": "3f",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "proposals-375-dark.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "proposal-menu-375-dark.png",
+    "frame": "6c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "client-375-dark.png",
+    "frame": "6f",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "record-375-dark.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-375-dark.png",
+    "frame": "3c",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-375-dark.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-consent-375-dark.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-new-375-dark.png",
+    "frame": "New proposal validity",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "inline-client-375-dark.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-375-dark.png",
+    "frame": "Responsive Studio navigation",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "delete-client-375-dark.png",
+    "frame": "Client detail actions extension",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-client-375-dark.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-sign-375-dark.png",
+    "frame": "Client sign summary without expiry",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "home-768-dark.png",
+    "frame": "3e",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "proposals-768-dark.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "proposal-menu-768-dark.png",
+    "frame": "6b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "client-768-dark.png",
+    "frame": "6e",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "record-768-dark.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-768-dark.png",
+    "frame": "3b",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-768-dark.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-consent-768-dark.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-new-768-dark.png",
+    "frame": "New proposal validity",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "inline-client-768-dark.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-768-dark.png",
+    "frame": "Responsive Studio navigation",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "delete-client-768-dark.png",
+    "frame": "Client detail actions extension",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-client-768-dark.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-sign-768-dark.png",
+    "frame": "Client sign summary without expiry",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "home-1440-dark.png",
+    "frame": "3d",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "proposals-1440-dark.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "proposal-menu-1440-dark.png",
+    "frame": "6a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "client-1440-dark.png",
+    "frame": "6d",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "record-1440-dark.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "manual-invoice-1440-dark.png",
+    "frame": "3a",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-1440-dark.png",
+    "frame": "3a–3c countersign sheet",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-consent-1440-dark.png",
+    "frame": "3a–3c authorization and consent",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-new-1440-dark.png",
+    "frame": "New proposal validity",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "inline-client-1440-dark.png",
+    "frame": "Nested client modal / phone sheet",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-1440-dark.png",
+    "frame": "Responsive Studio navigation",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "delete-client-1440-dark.png",
+    "frame": "Client detail actions extension",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-client-1440-dark.png",
+    "frame": "1a–1c / indefinite state",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "indefinite-sign-1440-dark.png",
+    "frame": "Client sign summary without expiry",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "countersign-stale-1440-dark.png",
+    "frame": "3a guarded stale sheet",
+    "width": 1440,
+    "theme": "dark"
+  }
+]

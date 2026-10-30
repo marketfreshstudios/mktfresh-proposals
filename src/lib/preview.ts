@@ -9,16 +9,14 @@ export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
     p.status === "draft" ? settings : (p.workspace_settings ?? settings);
   if (p.status === "draft" || !p.versions.length) {
     p.quote = draftItems(p.quote);
-    p.quote_model_version = 3;
+
     const version = {
       id: p.id,
       version_no: 0,
-      client_flow_version: 2 as const,
-      quote_model_version: 3 as const,
-      money_format_version: 2 as const,
+
       content: p.content,
       quote: p.quote,
-      variables_resolved: variables(p, p.quote, true),
+      variables_resolved: variables(p, p.quote),
       content_hash: "",
       created_at: p.created_at,
       frozen: false,

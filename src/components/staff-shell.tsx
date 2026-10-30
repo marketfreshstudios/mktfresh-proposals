@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
-import { useState } from "react";
-import { Sheet } from "./foundation";
+import { useState, useEffect, useRef } from "react";
+
 import { Icon, ThemeToggle } from "./ui";
 import { MoneyProvider } from "./money-context";
 import { studioRoutes } from "../lib/staff-routes";
@@ -29,9 +29,23 @@ export function StaffShell({
   children: ReactNode;
 }) {
   const [studio, setStudio] = useState(false);
+  const studioButton = useRef<HTMLButtonElement>(null),
+    studioPopover = useRef<HTMLDivElement>(null);
   const current = "/" + path.join("/");
   const insideProposal =
     path[0] === "proposals" && !!path[1] && path[1] !== "new";
+  useEffect(() => {
+    if (!studio) return;
+    studioPopover.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const close = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setStudio(false);
+        studioButton.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [studio]);
   function nav(
     href: string,
     label: string,
@@ -86,12 +100,21 @@ export function StaffShell({
               </span>
             ))}
           </nav>
+          <section className="desktop-studio">
+            <h2>Studio</h2>
+            <nav aria-label="Studio navigation">
+              {studioRoutes.map(([href, label]) => (
+                <span key={href}>{nav(href, label, "studio")}</span>
+              ))}
+            </nav>
+          </section>
           <footer>
             <button
-              className="studio-trigger"
+              ref={studioButton}
+              className={`studio-trigger ${path[0] === "studio" ? "active" : ""}`}
               aria-haspopup="dialog"
               aria-expanded={studio}
-              onClick={() => setStudio(true)}
+              onClick={() => setStudio(!studio)}
             >
               <Icon name="studio" />
               <span>Studio</span>
@@ -127,37 +150,35 @@ export function StaffShell({
               <span className="sr-only">New proposal</span>
             </button>
             {nav("/clients", "Clients", "clients")}
-            <button
-              className={path[0] === "studio" ? "active" : ""}
-              onClick={() => setStudio(true)}
-              aria-haspopup="dialog"
-            >
-              <Icon name="studio" />
-              <span>Studio</span>
-            </button>
+            {nav("/studio", "Studio", "studio")}
           </nav>
         )}
         {studio && (
-          <Sheet title="Studio" onClose={() => setStudio(false)}>
-            <nav className="studio-menu" aria-label="Studio navigation">
-              {studioRoutes.map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  aria-current={current.startsWith(href) ? "page" : undefined}
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
-            <div className="phone-person">
-              <p>{name}</p>
-              <ThemeToggle />
-              <button className="btn ghost" onClick={onSignout}>
-                Sign out
-              </button>
+          <>
+            <button
+              className="studio-dismiss"
+              aria-label="Close Studio menu"
+              onClick={() => setStudio(false)}
+            />
+            <div
+              className="studio-popover"
+              role="dialog"
+              aria-label="Studio"
+              ref={studioPopover}
+            >
+              <nav className="studio-menu" aria-label="Studio navigation">
+                {studioRoutes.map(([href, label]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    aria-current={current.startsWith(href) ? "page" : undefined}
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
             </div>
-          </Sheet>
+          </>
         )}
       </div>
     </MoneyProvider>

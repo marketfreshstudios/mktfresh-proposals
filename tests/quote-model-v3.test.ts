@@ -8,8 +8,8 @@ import {
   companyConsent,
 } from "./helpers";
 import {
-  quoteItems,
-  flatQuote,
+  cloneQuote,
+  quoteSublines,
   chooseItem,
   billingLines,
   draftItems,
@@ -28,10 +28,10 @@ import {
   MockBillingProvider,
   UnconfiguredBillingProvider,
 } from "../src/lib/billing";
-import type { QuoteItem, Item, Line, Proposal } from "../src/lib/model";
+import type { QuoteItem, Item, BillingLine, Proposal } from "../src/lib/model";
 async function choices(defaultChoice = true) {
   const ctx = await setup(),
-    original = quoteItems(ctx.draft.quote),
+    original = cloneQuote(ctx.draft.quote),
     group = randomUUID();
   const a = {
     ...original[0],
@@ -90,41 +90,6 @@ async function choices(defaultChoice = true) {
   );
   return { ...ctx, draft: p, a, b };
 }
-it("adapts both generations of old snapshot without mutations, reordering, rewriting or rehashing", async () => {
-  const { draft } = await setup();
-  const flat = flatQuote(draft.quote),
-    phase1 = {
-      id: randomUUID(),
-      name: "Historic",
-      description: "Original",
-      unit_price: 9900,
-      billing: "monthly",
-      qty: 2,
-      optional: true,
-      selected: false,
-    };
-  for (const quote of [flat, [phase1] as never]) {
-    const v = {
-        content: draft.content.filter((b) => b.type !== "contract"),
-        quote,
-        variables_resolved: variables(
-          { ...draft, status: "sent" },
-          quote,
-          false,
-        ),
-      },
-      bytes = JSON.stringify(v),
-      hash = versionHash(v),
-      html = renderBlocks(v.content, v.quote, v.variables_resolved);
-    const adapted = quoteItems(v.quote);
-    expect(adapted[0].sublines).toHaveLength(1);
-    expect(totals(adapted)).toEqual(totals(v.quote));
-    adapted[0].sublines[0].amount = 1;
-    expect(JSON.stringify(v)).toBe(bytes);
-    expect(versionHash(v)).toBe(hash);
-    expect(renderBlocks(v.content, v.quote, v.variables_resolved)).toBe(html);
-  }
-});
 it("preserves multiple entered sublines, provider mappings, terms, quantities and separate totals", async () => {
   const { repo } = await setup(),
     item = (await repo.entities<Item>("pricing_items")).find(
@@ -190,7 +155,7 @@ it("resolves exactly one chosen item before queueing billing and freezes only vi
     { revision: p.revision, item_id: b.id, selected: true },
     clientActor,
   );
-  expect(quoteItems(p.versions[0].quote).map((i) => i.selected)).toEqual([
+  expect(cloneQuote(p.versions[0].quote).map((i) => i.selected)).toEqual([
     false,
     true,
   ]);
@@ -201,11 +166,11 @@ it("resolves exactly one chosen item before queueing billing and freezes only vi
   });
   const job = p.jobs.find((j) => j.kind === "billing")!;
   expect(job.payload.selected_item_ids).toEqual([b.id]);
-  expect((job.payload.lines as Line[]).map((l) => l.id)).toEqual(
+  expect((job.payload.lines as BillingLine[]).map((l) => l.id)).toEqual(
     b.sublines.map((s) => s.id),
   );
   expect(
-    (job.payload.lines as Line[]).every(
+    (job.payload.lines as BillingLine[]).every(
       (l) => l.pricing_item_id !== a.pricing_item_id,
     ),
   ).toBe(true);
@@ -277,73 +242,50 @@ it("excludes unchosen contract clauses from the signed evidence and keeps old fr
     }),
   ).toBe(hash);
 });
-it("MCP supports old flat inputs for create/set/update and returns canonical items plus compatibility lines", async () => {
+it("MCP accepts current items and rejects retired flat lines inputs", async () => {
   const { repo, draft } = await setup(),
     ai = { ...staff, workspace_id: repo.workspaceId, actor: "ai:Test" },
     scopes = ["proposals:read", "proposals:draft"];
-  const created = (await aiTool(
+  const p = (await aiTool(
     repo,
     ai,
     "create_proposal_draft",
     {
       client_id: draft.client.id,
       template_id: draft.template_id,
-      title: "Compatibility",
-      brief: "Entered values",
-      content_markdown: "# Scope\n\nHello {{client.first_name}}.",
-      lines: flatQuote(draft.quote),
+      title: "Current",
+      brief: "Discovery",
+      content_markdown: "# Scope",
+      items: draft.quote,
     },
     scopes,
   )) as any;
-  expect(created.items[0].sublines[0].amount).toBe(
-    flatQuote(draft.quote)[0].amount,
-  );
-  expect(created.lines).toEqual(flatQuote(draft.quote));
-  expect(created.ai_unreviewed).toBe(true);
-  let p = (await aiTool(
-    repo,
-    ai,
-    "set_quote_lines",
-    { id: created.id, revision: created.revision, lines: created.lines },
-    scopes,
-  )) as any;
   expect(p.items).toHaveLength(2);
-  p = (await aiTool(
-    repo,
-    ai,
-    "update_proposal_draft",
-    { id: p.id, revision: p.revision, lines: p.lines },
-    scopes,
-  )) as any;
-  expect(p.lines).toEqual(created.lines);
-  const newShape = (await aiTool(
-    repo,
-    ai,
-    "set_quote_lines",
-    { id: p.id, revision: p.revision, items: p.items },
-    scopes,
-  )) as any;
-  expect(newShape.items).toEqual(p.items);
+  expect(p).not.toHaveProperty("lines");
   await expect(
     aiTool(
       repo,
       ai,
       "set_quote_lines",
-      { id: p.id, revision: newShape.revision, items: [], lines: [] },
+      { id: p.id, revision: p.revision, lines: quoteSublines(draft.quote) },
       scopes,
     ),
-  ).rejects.toThrow("items or");
-  const catalog = (await aiTool(repo, ai, "list_catalog", {}, scopes)) as any[];
-  expect(catalog.find((c) => c.sublines.length === 2)).toMatchObject({
-    optional: false,
-    default_selected: true,
-    choice_group_id: null,
-    order: 0,
-  });
+  ).rejects.toThrow("Flat lines");
+  expect(
+    (
+      (await aiTool(
+        repo,
+        ai,
+        "set_quote_lines",
+        { id: p.id, revision: p.revision, items: p.items },
+        scopes,
+      )) as any
+    ).items,
+  ).toHaveLength(2);
 });
 it("AI price overrides remain held after ordinary save and send confirmation until a staff price decision", async () => {
   const { service, repo, draft } = await setup(),
-    items = quoteItems(draft.quote);
+    items = cloneQuote(draft.quote);
   items[0].sublines[0].amount = 12345;
   let p = await service.edit(
     draft.id,
@@ -361,7 +303,7 @@ it("AI price overrides remain held after ordinary save and send confirmation unt
   await expect(service.send(p.id, staff, true)).rejects.toThrow(
     "review AI price",
   );
-  const reviewed = quoteItems(p.quote);
+  const reviewed = cloneQuote(p.quote);
   reviewed[0].price_review = { [reviewed[0].sublines[0].id]: "keep" };
   p = await service.edit(
     p.id,
@@ -371,16 +313,14 @@ it("AI price overrides remain held after ordinary save and send confirmation unt
   expect(p.events.at(-1)!.metadata.price_decisions).toHaveLength(1);
   expect((await service.send(p.id, staff, true)).status).toBe("sent");
 });
-it("new send variables match money preferences while old sent variables stay fixed with cents", async () => {
+it("send variables match the frozen money preference", async () => {
   const { service, draft, repo, settings } = await setup();
   let p = await service.send(draft.id, staff);
   expect(p.versions[0].variables_resolved["quote.one_time_total"]).toBe(
     "$2,750",
   );
   expect(p.versions[0].variables_resolved["quote.monthly_total"]).toBe("$25");
-  expect(variables(p, flatQuote(p.quote), false)["quote.monthly_total"]).toBe(
-    "$25.00",
-  );
+
   await repo.put("workspace_settings", {
     ...settings,
     money: { cents: "always" },
@@ -427,7 +367,7 @@ it("section IDs stay unique when template blocks are reused and AI cannot supply
   expect(new Set(contentSections(content).map((s) => s.id)).size).toBe(2);
   expect(content.every((b) => b.ai_review?.reviewed === false)).toBe(true);
   const { service, draft } = await setup(),
-    items = quoteItems(draft.quote);
+    items = cloneQuote(draft.quote);
   items[0].sublines[0].amount = 12345;
   items[0].price_review = { [items[0].sublines[0].id]: "keep" };
   const p = await service.edit(
@@ -435,7 +375,7 @@ it("section IDs stay unique when template blocks are reused and AI cannot supply
     { revision: draft.revision, quote: items },
     { ...staff, actor: "ai:Assistant" },
   );
-  expect(quoteItems(p.quote)[0].price_review).toBeUndefined();
+  expect(cloneQuote(p.quote)[0].price_review).toBeUndefined();
   await expect(service.send(p.id, staff, true)).rejects.toThrow(
     "review AI price",
   );
@@ -482,10 +422,6 @@ it("renders canonical item names once with separate sublines and alternatives; o
   expect(html).toContain("Not included");
   expect(html).toContain("$25.00/mo");
   expect(html).not.toContain("Yearly:");
-  const old = flatQuote([a, b]);
-  expect(
-    renderBlocks([{ type: "pricing_table" }], old, {}, "USD", "auto"),
-  ).toBe(renderBlocks([{ type: "pricing_table" }], old, {}, "USD", "always"));
 });
 it("quote-only MCP edits reopen the quote section while preserving reviewed text", async () => {
   const { service, repo, draft } = await setup(),
@@ -533,7 +469,7 @@ it("quote-only MCP edits reopen the quote section while preserving reviewed text
     repo,
     ai,
     "set_quote_lines",
-    { id: p.id, revision: p.revision, lines: flatQuote(p.quote) },
+    { id: p.id, revision: p.revision, items: cloneQuote(p.quote) },
     scopes,
   );
   p = (await repo.get(p.id))!;

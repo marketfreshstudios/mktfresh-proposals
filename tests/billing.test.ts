@@ -1,4 +1,4 @@
-import { flatQuote, quoteItems } from "../src/lib/quote-model";
+import { quoteSublines, cloneQuote } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import {
   bill,
@@ -10,7 +10,7 @@ import { setup, staff, clientActor, signature } from "./helpers";
 it("counts unique paid invoices against supplied schedule, never calculates a price", async () => {
   const { draft } = await setup();
   const line = {
-    ...flatQuote(draft.quote)[1],
+    ...quoteSublines(draft.quote)[1],
     amount: 20000,
     schedule: {
       after_paid_invoices: 35,
