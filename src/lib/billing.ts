@@ -1,4 +1,4 @@
-import { proposalOrigin } from "./links";
+import { proposalOrigin, proposalLink } from "./links";
 import {
   check,
   readLine,
@@ -181,7 +181,11 @@ export async function bill(
         ? { email_status: "NotSet", send_invoice: false }
         : { billing_start: "on_signature", trial_days: 0 };
     metadata.proposal_id = p.id;
-    if (provider === "stripe") metadata.client_origin = proposalOrigin(p);
+    if (provider === "stripe") {
+      metadata.client_origin = proposalOrigin(p);
+      if (p.versions.at(-1)?.client_flow_version === 2)
+        metadata.client_return_url = proposalLink(p);
+    }
     metadata.proposal_title = p.title;
     metadata.currency = p.currency.toLowerCase();
     metadata.schedules = lines

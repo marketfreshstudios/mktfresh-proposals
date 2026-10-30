@@ -148,6 +148,19 @@ export async function handle(req: Request, path: string[]) {
         }
         return json({
           name: settings?.company_name ?? "Proposal",
+          client_flow_version: p.versions.at(-1)?.client_flow_version ?? 1,
+          contact: {
+            name: p.sender?.display_name ?? settings?.owner ?? "",
+            email: p.sender?.email ?? settings?.email ?? "",
+          },
+          ended:
+            p.status === "declined"
+              ? "declined"
+              : p.status === "expired" ||
+                  (["sent", "viewed"].includes(p.status) &&
+                    Date.parse(p.valid_until) <= Date.now())
+                ? "expired"
+                : null,
           email: settings?.email ?? "",
           logo: settings?.logo ?? null,
           accent_colour: settings?.accent_colour ?? "#245547",
@@ -187,10 +200,16 @@ export async function handle(req: Request, path: string[]) {
           ),
         );
       }
-      if (method === "POST" && action === "decline")
+      if (method === "POST" && action === "decline") {
+        const input = z
+          .object({ note: z.string().max(2000).optional() })
+          .parse(await body(req));
         return json(
-          publicResult(await rt.service.decline(token, password, actor(req))),
+          publicResult(
+            await rt.service.decline(token, password, actor(req), input.note),
+          ),
         );
+      }
       if (method === "GET" && action === "files") {
         const p = await rt.service.byToken(token, password),
           f = p.files.find((f) => f.id === path[3] && f.kind === "sealed");

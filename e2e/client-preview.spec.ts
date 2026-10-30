@@ -55,7 +55,7 @@ test("draft client preview has live local totals, branded steps and no client wr
         await page
           .getByRole("button", { name: "Phone width", exact: true })
           .click();
-        await expect(page.locator(".client-app")).toHaveCSS("width", "390px");
+        await expect(page.locator(".client-flow")).toHaveCSS("width", "390px");
         await page
           .getByRole("button", { name: "Desktop width", exact: true })
           .click();
@@ -67,7 +67,7 @@ test("draft client preview has live local totals, branded steps and no client wr
       await optional.click();
       await expect(
         page.getByLabel("Proposal totals", { exact: true }),
-      ).not.toHaveText(before);
+      ).not.toHaveText(before, { useInnerText: true });
       for (const [step, button] of [
         ["read", "Reading view"],
         ["sign", "Signing step"],
@@ -79,7 +79,7 @@ test("draft client preview has live local totals, branded steps and no client wr
           await page.getByRole("tab", { name: "Type", exact: true }).click();
           await page.getByPlaceholder("Type your full name").fill("Jane Doe");
           await expect(
-            page.getByRole("button", { name: "Sign and accept", exact: true }),
+            page.getByRole("button", { name: "Sign proposal", exact: true }),
           ).toBeDisabled();
           await page
             .getByRole("textbox", { name: "Full name", exact: true })
@@ -87,10 +87,12 @@ test("draft client preview has live local totals, branded steps and no client wr
         }
         if (step === "billing") {
           await expect(
-            page.getByText("One more step: set up your recurring billing"),
+            page.getByText("One more step: set up your billing"),
           ).toBeVisible();
           await expect(
-            page.getByRole("button", { name: "Set up billing (preview)" }),
+            page.getByRole("button", {
+              name: "Continue to secure checkout (preview)",
+            }),
           ).toBeDisabled();
         }
         await page.evaluate(() => document.fonts.ready);

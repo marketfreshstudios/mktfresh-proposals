@@ -134,3 +134,19 @@ The spec's 232px/64px navigation dimensions override the prototype's content-box
 Open-decision defaults are accepted for their future phases: clause 4.4 seed wording marked draft:true with the specified readiness warning; optional reason for manual Won, recorded in audit without a signature; Source Serif 4 heading/body defaults, a curated OFL list and uploaded-font PDF-embedding confirmation. None is prematurely exposed as a Phase 1 feature.
 
 Phase 1 is submitted as one PR for owner review. It is left unmerged and Phase 2 is not started.
+
+## Redesign Phase 2 — client flow (30 October 2026)
+
+Apply the brief's safety/frozen-evidence precedence before its visual spec. New sends and re-sends opt into client_flow_version: 2 on the saved Version JSON. Previous sent versions are never backfilled or rehashed; versions without the marker use the preserved legacy client/signature components. Draft preview materializes v2 without persisting it. Existing JSON storage carries the optional marker and optional contact title, so no schema migration or hosted operation is required.
+
+The new client UI uses scoped foundation tokens and self-hosted Instrument Sans around white Source Serif 4 paper. The new money formatter reads the send-time cents preference; frozen legacy/PDF formatting is untouched. Contract copy remains the actual proposal content. The contract line/Read action appears only when that content has a contract heading. Choice groups, sub-lines, conditional clauses, their adapter/migration and MCP changes remain Phase 3, as the phased brief explicitly assigns them.
+
+Contact title is optional, editable on the contact and captured in new proposal recipient data; it prefills the sign form when known. Recipient email is fixed. Contact/help uses the chosen sender's saved name/email (workspace owner/email fallback for historical data), never an arbitrary first staff user. Unknown or rotated tokens cannot safely identify a workspace, so their shared ended screen asks the recipient to reply to the sender instead of inventing or disclosing another workspace's contact.
+
+New Checkout sessions return to the canonical proposal link; legacy sessions retain the historical origin/return path. The page always reads current server billing state; a return query never counts as payment success. Existing subscriber results show no payment control. Billing/PDF preparation and failures never undo or cast doubt on a committed signature. Network failures during signature submission are described as unconfirmed, since the server may have committed before a connection failed. A deliberate retry/reload is required; no automatic signing or reloading occurs.
+
+Removed designPreviewStaff and the DESIGN_PREVIEW_OPEN branch entirely. Staff requests now require the existing verified session/local-development authorization path regardless of that obsolete environment flag. No hosted environment variables were changed. Footer theme/sign-out controls and conditional Yearly columns are small fixes under the existing Foundation shell.
+
+Client decline accepts an optional 2000-character note, preserved verbatim in the existing declined audit event, and queues notification to the relevant staff through the saved sender identity. No audit event or stored status is renamed.
+
+Stop after one Phase 2 PR for Jonathan to review; do not merge or start Phase 3 in this run.

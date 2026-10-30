@@ -185,8 +185,8 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
       ).toMatchObject({
         customer: "cus_test",
         mode: "subscription",
-        success_url: "http://127.0.0.1:3100/billing/complete",
-        cancel_url: "http://127.0.0.1:3100/billing/pending",
+        success_url: `http://127.0.0.1:3100/p/${p.token}?billing=returned`,
+        cancel_url: `http://127.0.0.1:3100/p/${p.token}?billing=pending`,
       });
   }
 });
@@ -438,6 +438,7 @@ it("Checkout preserves a legacy proposal origin after workspace client_url is re
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
   p.workspace_settings!.client_url = "https://legacy.example.test/old-app";
+  delete p.versions.at(-1)!.client_flow_version; // A version sent before the redesign.
   const { api, calls } = transport(false);
   const result = await bill(p, "stripe", new StripeProvider(api, repo));
   expect(result.status).toBe("succeeded");

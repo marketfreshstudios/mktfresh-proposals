@@ -74,12 +74,6 @@ export async function staff(request: Request) {
       staff_name: await localDisplayName(),
       staff_email: "staff@example.test",
     };
-  if (
-    !token &&
-    process.env.DESIGN_PREVIEW_OPEN === "1" &&
-    process.env.SUPABASE_URL
-  )
-    return designPreviewStaff(request);
   if (!token || !process.env.SUPABASE_URL)
     throw new AppError(401, "Staff login required");
   const db = supabase(),
@@ -98,29 +92,6 @@ export async function staff(request: Request) {
     staff_role: member.data.role as "owner" | "member",
     staff_name: member.data.display_name || data.user.email || "Staff",
     staff_email: data.user.email ?? "",
-  };
-}
-// Temporary, read-only open access so a design tool can crawl the staff app.
-// Enabled only while the DESIGN_PREVIEW_OPEN=1 env var is set; requests that
-// carry a real session or bearer token never reach this path.
-async function designPreviewStaff(request: Request) {
-  if (!["GET", "HEAD"].includes(request.method))
-    throw new AppError(403, "This preview is read-only");
-  const db = supabase();
-  const owner = await db
-    .from("staff_users")
-    .select("user_id,workspace_id,display_name")
-    .eq("role", "owner")
-    .limit(1)
-    .maybeSingle();
-  if (owner.error || !owner.data)
-    throw new AppError(401, "Staff login required");
-  return {
-    ...actor(request, "staff:" + owner.data.user_id),
-    workspace_id: owner.data.workspace_id as string,
-    staff_role: "owner" as const,
-    staff_name: owner.data.display_name || "Staff",
-    staff_email: "",
   };
 }
 export async function login(email: string, password: string) {

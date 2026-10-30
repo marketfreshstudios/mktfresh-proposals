@@ -198,14 +198,20 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await expect(
     page.getByRole("heading", { name: "Website partnership" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Accept & sign" }).click();
+  await page.getByRole("button", { name: "Review and sign" }).click();
   await page.getByLabel("Full name", { exact: true }).fill("Jane Doe");
   await page.getByLabel("Your signature", { exact: true }).fill("Jane Doe");
-  await page.getByLabel("Email address").fill("jane@example.test");
+  await expect(page.getByLabel("Email address")).toHaveAttribute(
+    "readonly",
+    "",
+  );
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Sign and accept" }).click();
+  await page.getByRole("button", { name: "Sign proposal" }).click();
   await expect(
-    page.getByText("Your proposal is signed", { exact: true }),
+    page.getByText(
+      "Your proposal is signed. Your copy will be sent to jane@example.test.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await expect
     .poll(async () => {
