@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-VariableItalic.woff2') format('woff2');font-weight:200 900;font-style:italic}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500}
+@keyframes shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button,input,select{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Design system · foundations, components, light and dark, white-label</span></div>
+
+<div style="max-width:1440px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin:0 0 48px">
+  <h1 style="margin:0;font:600 48px/52px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">Quiet paper, confident type, one brand color.</h1>
+  <div style="display:flex;flex-direction:column;gap:10px;font:400 15px/23px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#1C1B18">Editorial, not admin.</b> Serif headlines and documents, a warm neutral ground, hairlines instead of boxes, and almost no shadow.</div>
+    <div><b style="color:#1C1B18">The workspace owns one color.</b> Its accent drives buttons, links, focus and selection. Status colors are fixed by the product and never change with the brand.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;font:400 15px/23px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#1C1B18">The document is always paper.</b> What a client reads stays white in dark mode so it matches the sealed PDF. Everything around it follows the theme.</div>
+    <div><b style="color:#1C1B18">Built from what exists.</b> Same token names as the repo’s design system; values updated. Components map one to one to React components (names in mono).</div>
+  </div>
+</div>
+
+<div style="max-width:1440px;display:flex;flex-direction:column;gap:20px;margin:0 0 56px">
+  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px"><h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif">Type</h2><span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Instrument Sans for interface · Source Serif 4 for documents and display · IBM Plex Mono for evidence</span></div>
+  <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:16px">
+    <sc-for list="{{ typeScale }}" as="ty" hint-placeholder-count="12">
+      <div style="display:grid;grid-template-columns:200px minmax(0,1fr) 220px;gap:24px;align-items:baseline;padding:16px 24px;border-bottom:1px solid #E8E4DC">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 13px 'Instrument Sans'">{{ ty.name }}</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:#5F5B53">{{ ty.token }}</span></div>
+        <div style="font:{{ ty.font }};letter-spacing:{{ ty.ls }};text-transform:{{ ty.tt }};font-variant-numeric:tabular-nums;color:#1C1B18;min-width:0;overflow-wrap:anywhere">{{ ty.sample }}</div>
+        <div style="font:400 12px/17px 'IBM Plex Mono',monospace;color:#5F5B53">{{ ty.spec }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">Floors: document body never below 17px; client tap targets never below 44px; staff controls 36–40px. Money always uses tabular figures and always carries its interval: “$175/mo”, “$2,750”. Cents appear only when an amount has them, unless the workspace turns on “Always show cents”.</div>
+</div>
+
+<div style="max-width:1440px;display:flex;flex-direction:column;gap:20px;margin:0 0 56px">
+  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px"><h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif">Color</h2><span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Three layers that never mix: neutrals, the workspace accent, fixed status colors</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(560px,1fr));gap:20px">
+    <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+      <div style="background:{{ th.bg }};border:1px solid #C9C3B7;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;color:{{ th.ink }}">
+        <div style="font:600 15px 'Instrument Sans'">{{ th.name }}</div>
+        <sc-for list="{{ th.swatchGroups }}" as="sg" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:{{ th.muted }}">{{ sg.name }}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px">
+              <sc-for list="{{ sg.items }}" as="sw" hint-placeholder-count="6">
+                <div style="display:flex;flex-direction:column;border-radius:10px;overflow:hidden;border:1px solid {{ th.line }};background:{{ th.surface }}">
+                  <div style="height:44px;background:{{ sw.hex }};display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans';color:{{ sw.on }}">{{ sw.sample }}</div>
+                  <div style="padding:6px 8px;display:flex;flex-direction:column"><span style="font:600 11px/15px 'Instrument Sans'">{{ sw.name }}</span><span style="font:400 10px/14px 'IBM Plex Mono',monospace;color:{{ th.muted }}">{{ sw.hex }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="max-width:1440px;display:flex;flex-direction:column;gap:20px;margin:0 0 56px">
+  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px"><h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif">Space, shape, depth</h2><span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">4px base · radii grow with the size of the thing · shadow only for things that float</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Spacing</div>
+      <sc-for list="{{ spaces }}" as="sp" hint-placeholder-count="9">
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:56px;font:400 11px 'IBM Plex Mono',monospace;color:#5F5B53">{{ sp.token }}</span><span style="height:12px;border-radius:3px;background:#365C4A;width:{{ sp.px }}"></span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ sp.use }}</span></div>
+      </sc-for>
+    </div>
+    <div style="background:#FBFAF7;border:1px solid #DDD8CE;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Radius</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <sc-for list="{{ radii }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:72px"><div style="width:60px;height:60px;border:1.5px solid #1C1B18;border-radius:{{ r.px }};background:#F3F0EA"></div><span style="font:400 11px 'IBM Plex Mono',monospace">{{ r.token }}</span><span style="font:400 11px/14px 'Instrument Sans';color:#5F5B53;text-align:center">{{ r.use }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#F3F0EA;border:1px solid #DDD8CE;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Depth</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="height:64px;border-radius:12px;background:#FBFAF7;border:1px solid #DDD8CE;display:flex;align-items:flex-end;padding:8px;font:400 11px 'IBM Plex Mono',monospace">hairline · default</div>
+        <div style="height:64px;border-radius:16px;background:#FFFFFF;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);display:flex;align-items:flex-end;padding:8px;font:400 11px 'IBM Plex Mono',monospace">shadow-paper · document</div>
+        <div style="height:64px;border-radius:12px;background:#FBFAF7;box-shadow:0 2px 4px rgba(20,18,14,.06),0 8px 16px rgba(20,18,14,.08);display:flex;align-items:flex-end;padding:8px;font:400 11px 'IBM Plex Mono',monospace">shadow-md · menus</div>
+        <div style="height:64px;border-radius:12px;background:#FBFAF7;box-shadow:0 -8px 24px rgba(20,18,14,.08);display:flex;align-items:flex-end;padding:8px;font:400 11px 'IBM Plex Mono',monospace">shadow-bar · sticky totals</div>
+      </div>
+      <div style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Focus: 2px ring in the accent, 2px offset in the element’s own ground, on every interactive element.</div>
+    </div>
+  </div>
+</div>
+
+<div style="max-width:1440px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;margin:0 0 20px"><h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif">Components</h2><span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Same specimens in light and dark. The document surfaces (quote, choose one) stay paper in both.</span></div>
+<div style="max-width:1440px;display:grid;grid-template-columns:repeat(auto-fit,minmax(640px,1fr));gap:20px;margin:0 0 56px">
+<sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+<div style="background:{{ th.bg }};color:{{ th.ink }};border:1px solid #C9C3B7;border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:18px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 17px 'Instrument Sans'">{{ th.name }}</span><span style="font:400 12px 'IBM Plex Mono',monospace;color:{{ th.muted }}">accent {{ accent }}</span></div>
+
+  <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;Button&gt; staff 40 · client 52</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <button style="height:40px;padding:0 16px;border:0;border-radius:10px;background:{{ accent }};color:#fff;font:600 14px 'Instrument Sans'">Review &amp; send</button>
+      <button style="height:40px;padding:0 16px;border:1px solid {{ th.line }};border-radius:10px;background:{{ th.surface }};color:{{ th.ink }};font:600 14px 'Instrument Sans'">Preview as client</button>
+      <button style="height:40px;padding:0 8px;border:0;background:none;color:{{ th.accentText }};font:600 14px 'Instrument Sans'">Look up</button>
+      <button style="height:40px;padding:0 16px;border:1px solid {{ th.badInk }};border-radius:10px;background:transparent;color:{{ th.badInk }};font:600 14px 'Instrument Sans'">Decline proposal</button>
+      <button style="height:40px;padding:0 16px;border:0;border-radius:10px;background:{{ accent }};color:#fff;font:600 14px 'Instrument Sans';outline:2px solid {{ th.accentText }};outline-offset:2px">Focused</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-width:360px">
+      <button style="height:52px;border:0;border-radius:12px;background:{{ accent }};color:#fff;font:600 17px 'Instrument Sans';opacity:.45">Sign proposal</button>
+      <span style="font:400 12px 'Instrument Sans';color:{{ th.muted }}">Add your signature to continue.  ← a disabled control always says why</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;Field&gt; &lt;MoneyField&gt;</div>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Client email</span><span style="height:40px;border:1px solid {{ th.line }};border-radius:10px;background:{{ th.bg }};display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans'">r.vale@brightline.example</span></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Password</span><span style="height:40px;border:1.5px solid {{ th.badInk }};border-radius:10px;background:{{ th.bg }};display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';letter-spacing:.2em">••••••</span><span style="font:500 12px 'Instrument Sans';color:{{ th.badInk }}">That password doesn’t match.</span></label>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 44px 104px;gap:6px"><span style="height:38px;border:1.5px solid {{ th.accentText }};border-radius:8px;background:{{ th.bg }};display:flex;align-items:center;padding:0 10px;gap:4px;font:600 15px 'Instrument Sans'"><span style="color:{{ th.muted }};font-weight:500">$</span>175</span><span style="height:38px;border:1px solid {{ th.line }};border-radius:8px;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans'">× 1</span><span style="height:38px;border:1px solid {{ th.line }};border-radius:8px;display:flex;align-items:center;padding:0 8px;font:500 13px 'Instrument Sans'">Monthly ▾</span></div>
+    </div>
+    <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;Checkbox&gt; &lt;Radio&gt; &lt;Switch&gt; · 44px hit area</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font:500 14px 'Instrument Sans'">
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;border-radius:7px;background:{{ accent }};display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span>Included</span>
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;border-radius:7px;border:2px solid {{ th.strong }};box-sizing:border-box"></span>Not included</span>
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;border-radius:12px;border:2px solid {{ accent }};box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:#fff"><span style="width:10px;height:10px;border-radius:5px;background:{{ accent }}"></span></span>Selected option</span>
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:24px;height:24px;border-radius:12px;border:2px solid {{ th.strong }};box-sizing:border-box"></span>Other option</span>
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:34px;height:20px;border-radius:10px;background:{{ accent }};position:relative"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:8px;background:#fff"></span></span>Optional</span>
+        <span style="display:flex;align-items:center;gap:10px"><span style="width:34px;height:20px;border-radius:10px;background:{{ th.line }};position:relative"><span style="position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:8px;background:#fff"></span></span>Password protect</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;StatusPill&gt; Draft · Sent · Viewed · Won · Lost (+ Expired, Archived) · “Needs countersign” rides on Won · a client decline sets Lost · &lt;AiPill&gt; · &lt;SourceBadge&gt; · &lt;JobState&gt;</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{ th.pills }}" as="p" hint-placeholder-count="9">
+        <span style="display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:{{ p.bg }};color:{{ p.ink }};font:600 13px/18px 'Instrument Sans'"><svg width="13" height="12" viewBox="{{ p.icon.v }}"><path fill="currentColor" d="{{ p.icon.d }}"></path></svg>{{ p.word }}</span>
+      </sc-for>
+      <span style="padding:3px 10px;border-radius:999px;border:1px solid {{ th.line }};color:{{ th.muted }};font:500 13px/18px 'Instrument Sans'">Proposify import</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <sc-for list="{{ th.jobs }}" as="j" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:{{ j.bg }};color:{{ j.ink }}"><span style="font:600 13px 'Instrument Sans';min-width:96px">{{ j.state }}</span><span style="flex:1;font:400 13px 'Instrument Sans'">{{ j.copy }}</span><sc-if value="{{ j.retry }}"><span style="height:28px;padding:0 10px;border:1px solid currentColor;border-radius:7px;display:flex;align-items:center;font:600 12px 'Instrument Sans'">{{ j.action }}</span></sc-if></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+    <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;Banner&gt; what happened · what it means · what to do</div>
+    <div style="display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:{{ th.warnBg }};color:{{ th.warnInk }}"><svg width="16" height="16" viewBox="{{ ic.stale.v }}" style="flex:none;margin-top:2px"><path fill="currentColor" d="{{ ic.stale.d }}"></path></svg><div style="flex:1"><div style="font:600 14px/20px 'Instrument Sans'">Someone saved this draft after you opened it.</div><div style="font:400 13px/18px 'Instrument Sans'">Reload to keep both sets of changes from colliding.</div></div><span style="align-self:center;font:600 13px 'Instrument Sans'">Reload</span></div>
+    <div style="display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:{{ th.aiBg }};color:{{ th.aiInk }}"><svg width="16" height="15" viewBox="{{ ic.ai.v }}" style="flex:none;margin-top:2px"><path fill="currentColor" d="{{ ic.ai.d }}"></path></svg><div style="flex:1;font:500 14px/20px 'Instrument Sans'">Claude drafted this from Rowan’s email. 3 of 4 sections to read.</div><span style="align-self:center;font:600 13px 'Instrument Sans'">Next</span></div>
+    <div style="display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:{{ th.badBg }};color:{{ th.badInk }}"><svg width="16" height="16" viewBox="{{ ic.failed.v }}" style="flex:none;margin-top:2px"><path fill="currentColor" d="{{ ic.failed.d }}"></path></svg><div style="flex:1"><div style="font:600 14px/20px 'Instrument Sans'">We couldn’t load the catalog from Stripe.</div><div style="font:400 13px/18px 'Instrument Sans'">Your saved lines are unchanged. Try again, or add a custom line for now.</div></div><span style="align-self:center;font:600 13px 'Instrument Sans'">Try again</span></div>
+  </div>
+
+  <div style="background:#FFFFFF;color:#1C1B18;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 3px rgba(20,18,14,.1),0 14px 32px rgba(20,18,14,.1)">
+    <div style="font:500 11px 'IBM Plex Mono',monospace;color:#5F5B53;margin-bottom:6px">&lt;QuoteLine&gt; &lt;ChoiceGroup&gt; &lt;TotalsPair&gt; · paper in both themes</div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:14px 12px 12px;border:2px solid color-mix(in oklch, {{ accent }} 55%, white);background:color-mix(in oklch, {{ accent }} 8%, white);border-radius:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 13px/18px 'Instrument Sans';letter-spacing:.06em;text-transform:uppercase;color:{{ accent }}">Choose one</span><span style="font:500 13px 'Instrument Sans';color:#3E3B35">2 options · pick one</span></div>
+      <div style="display:flex;gap:12px;padding:12px;border:2px solid {{ accent }};border-radius:12px;background:#fff;align-items:flex-start"><span style="flex:none;width:24px;height:24px;border-radius:12px;border:2px solid {{ accent }};box-sizing:border-box;display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:5px;background:{{ accent }}"></span></span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:600 15px 'Instrument Sans'">Website Build — Own It Over Time</span><span style="display:flex;justify-content:space-between;font:400 14px 'Instrument Sans'"><span style="color:#5F5B53">Kickoff</span><b>$500</b></span><span style="display:flex;justify-content:space-between;font:400 14px 'Instrument Sans'"><span style="color:#5F5B53">Monthly</span><b>$175<span style="font-weight:400;color:#5F5B53">/mo</span></b></span></div></div>
+      <div style="display:flex;gap:12px;padding:12px;border:1px solid #DDD8CE;border-radius:12px;background:#fff;align-items:center"><span style="flex:none;width:24px;height:24px;border-radius:12px;border:2px solid #8A857B;box-sizing:border-box"></span><span style="flex:1;font:600 15px 'Instrument Sans'">Website Build — Own It Now</span><b style="font:600 15px 'Instrument Sans'">$2,750</b></div>
+    </div>
+    <div style="display:flex;gap:14px;padding:14px 10px;margin:6px -10px 0;border-radius:10px;background:color-mix(in oklch, {{ accent }} 10%, white);align-items:center"><span style="flex:none;width:24px;height:24px;border-radius:7px;background:{{ accent }};display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span><span style="flex:1;font:600 15px 'Instrument Sans'">Care Standard <span style="display:block;font:600 12px 'Instrument Sans';color:{{ accent }}">Optional · included</span></span><b style="font:600 15px 'Instrument Sans'">$85<span style="font-weight:400;color:#5F5B53">/mo</span></b></div>
+    <div style="display:flex;gap:14px;padding:14px 0;border-top:1px solid #ECE8E1;align-items:center"><span style="flex:none;width:24px;display:flex;justify-content:center;color:#8A857B"><svg width="12" height="14" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg></span><span style="flex:1;font:600 15px 'Instrument Sans'">Catering menu photography</span><b style="font:600 15px 'Instrument Sans'">$650</b></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#F6F4EF;border-radius:12px;padding:14px 16px"><div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums">$1,150</div></div><div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums">$260<span style="font:400 14px 'Instrument Sans';color:#5F5B53">/mo</span></div></div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;ListRow&gt; → card on phone</div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid {{ th.line }};border-radius:12px;background:{{ th.bg }}"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font:600 15px 'Instrument Sans'">Brightline Foods</span><span style="padding:1px 8px;border-radius:999px;background:{{ th.okBg }};color:{{ th.okInk }};font:600 12px/18px 'Instrument Sans'">Won</span></div><span style="font:400 13px 'Instrument Sans';color:{{ th.muted }}">$1,150 one-time · $260/mo</span><span style="margin-top:6px;height:40px;border-radius:10px;background:{{ accent }};color:#fff;font:600 14px/40px 'Instrument Sans';text-align:center">Countersign</span></div>
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }};margin-top:6px">&lt;Skeleton&gt; loading, never a spinner over content</div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid {{ th.line }};border-radius:12px">{{ th.skel }}</div>
+    </div>
+    <div style="background:{{ th.surface }};border:1px solid {{ th.line }};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;EmptyState&gt; deliberate, with one next step</div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:12px 4px">
+        <div style="font:600 20px/26px 'Source Serif 4',Georgia,serif">Nothing needs you right now.</div>
+        <div style="font:400 13px/19px 'Instrument Sans';color:{{ th.muted }}">Drafts from Claude, signatures to countersign and billing problems will show up here.</div>
+        <span style="height:40px;padding:0 14px;border:1px solid {{ th.line }};border-radius:10px;display:flex;align-items:center;font:600 14px 'Instrument Sans'">+ New proposal</span>
+      </div>
+      <div style="font:500 11px 'IBM Plex Mono',monospace;color:{{ th.muted }}">&lt;TabBar&gt; phone</div>
+      <div style="height:56px;border:1px solid {{ th.line }};border-radius:12px;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;text-align:center;font:500 11px 'Instrument Sans';color:{{ th.muted }}"><span style="color:{{ th.ink }};font-weight:700">Home</span><span>Proposals</span><span><span style="display:inline-block;width:36px;height:36px;border-radius:18px;background:{{ accent }};color:#fff;font:500 22px/36px 'Instrument Sans'">+</span></span><span>Clients</span><span>Studio</span></div>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<div style="max-width:1440px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;margin:0 0 20px"><h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif">White-label</h2><span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">A workspace sets its name, logo and one accent. Soft tints and dark-mode variants are derived; status colors never change.</span></div>
+<div style="max-width:1440px;display:flex;flex-wrap:wrap;gap:24px;margin:0 0 24px">
+  <sc-for list="{{ brands }}" as="br" hint-placeholder-count="3">
+    <div style="width:340px;display:flex;flex-direction:column;gap:10px">
+      <div style="border-radius:28px;border:1px solid #C9C3B7;background:#F3F0EA;overflow:hidden;box-shadow:0 16px 32px rgba(20,18,14,.08)">
+        <div style="padding:14px 16px 10px;border-bottom:1px solid #DDD8CE;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;min-height:28px"><sc-if value="{{ br.hasLogo }}"><span style="width:28px;height:28px;border-radius:7px;background:repeating-linear-gradient(135deg,#E2DED6 0 5px,#D6D1C7 5px 10px);display:flex;align-items:center;justify-content:center;font:400 8px 'IBM Plex Mono',monospace;color:#5F5B53">logo</span></sc-if><span style="font:600 16px 'Instrument Sans'">{{ br.name }}</span></div>
+          <div style="display:flex;gap:4px"><span style="flex:1;height:3px;border-radius:2px;background:{{ br.accent }}"></span><span style="flex:1;height:3px;border-radius:2px;background:#DDD8CE"></span><span style="flex:1;height:3px;border-radius:2px;background:#DDD8CE"></span></div>
+        </div>
+        <div style="background:#FFFFFF;padding:18px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:{{ br.accent }}">Proposal for {{ br.client }}</div>
+          <div style="font:600 24px/30px 'Source Serif 4',Georgia,serif">{{ br.title }}</div>
+          <div style="display:flex;gap:12px;padding:12px 10px;border-radius:10px;background:{{ br.soft }};align-items:center"><span style="flex:none;width:24px;height:24px;border-radius:7px;background:{{ br.accent }};display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></span><span style="flex:1;font:600 14px 'Instrument Sans'">{{ br.line }}</span><b style="font:600 14px 'Instrument Sans'">{{ br.price }}</b></div>
+        </div>
+        <div style="background:#FBFAF7;border-top:1px solid #DDD8CE;padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:20px"><div><div style="font:600 10px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 18px 'Instrument Sans'">{{ br.one }}</div></div><div><div style="font:600 10px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 18px 'Instrument Sans'">{{ br.mon }}<span style="font:400 12px 'Instrument Sans';color:#5F5B53">/mo</span></div></div></div>
+          <div style="height:48px;border-radius:12px;background:{{ br.accent }};color:#fff;font:600 16px/48px 'Instrument Sans';text-align:center">Review and sign</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font:400 12px 'IBM Plex Mono',monospace;color:#5F5B53"><span style="width:14px;height:14px;border-radius:4px;background:{{ br.accent }}"></span>{{ br.accent }} · {{ br.contrast }}</div>
+    </div>
+  </sc-for>
+  <div style="width:340px;display:flex;flex-direction:column;gap:12px;padding:20px;border:1px dashed #BDB6A8;border-radius:20px;align-self:flex-start">
+    <div style="font:600 15px 'Instrument Sans'">Settings → Workspace → Brand</div>
+    <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Logo (SVG or PNG, shown at 28px high on phone, 36px on desktop). Without a logo, the workspace name is shown in the header. Never a “powered by”.</div>
+    <div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Accent: any color with at least 4.5:1 contrast against white text. Below that, Settings shows the failing ratio and suggests the nearest darker shade of the same hue.</div>
+    <div style="display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;background:#FBEEDB;color:#7A4800;font:500 13px/18px 'Instrument Sans'"><span style="width:16px;height:16px;border-radius:4px;background:#E0A83A;flex:none"></span>#E0A83A is 2.1:1 with white. Try #8A5E12.</div>
+  </div>
+</div>
+
+<p class="dv-next">Next: editor at 768, client flow at 768 and 1440, Proposals list, Clients, Studio screens, and empty / loading / error states. Try: “try a darker, inkier dark mode” · “show the tokens as a CSS file I can hand to engineering”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#365C4A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#365C4A&quot;,&quot;#7A2E2E&quot;,&quot;#1F3A5F&quot;,&quot;#8A4E0F&quot;],&quot;section&quot;:&quot;White-label&quot;}}">
+class Component extends DCLogic {
+  state = { ic: {} };
+  componentDidMount() {
+    fetch('src/components/icons.json').then(r => r.json()).then(j => {
+      const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path }; this.setState({ ic });
+    }).catch(() => {});
+  }
+  renderVals() {
+    const dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(this.state.ic, { get: (t, k) => t[k] || dflt });
+    const accent = this.props.accent ?? '#365C4A';
+    const L = { name: 'Light', bg: '#F3F0EA', surface: '#FBFAF7', sunk: '#E9E5DD', ink: '#1C1B18', muted: '#5F5B53', line: '#DDD8CE', strong: '#8A857B',
+      accentText: accent, okInk: '#146B3F', okBg: '#E3F1E8', warnInk: '#7A4800', warnBg: '#FBEEDB', badInk: '#A3261E', badBg: '#FBE9E7', infoInk: '#0B5563', infoBg: '#E2F2F5', aiInk: '#5B3FA8', aiBg: '#EEE8FB', neuInk: '#5F5B53', neuBg: '#ECE8E1' };
+    const Dk = { name: 'Dark', bg: '#131311', surface: '#1C1B19', sunk: '#0E0E0C', ink: '#F1EFEA', muted: '#ABA79E', line: '#302F2B', strong: '#6E6A61',
+      accentText: `color-mix(in oklch, ${accent} 55%, white)`, okInk: '#58C98D', okBg: '#12321F', warnInk: '#F0B429', warnBg: '#3A2A09', badInk: '#FF8A80', badBg: '#3A1512', infoInk: '#58C8DE', infoBg: '#0D2E36', aiInk: '#B49CF0', aiBg: '#241C3D', neuInk: '#ABA79E', neuBg: '#2A2926' };
+    const themes = [L, Dk].map(th => {
+      const sw = (name, hex, on = th.ink, sample = 'Aa') => ({ name, hex, on, sample });
+      const pills = [
+        ['Draft', 'edit', 'neu'], ['Sent', 'send', 'info'], ['Viewed', 'viewed', 'info'], ['Won', 'verified', 'ok'], ['Needs countersign', 'signature', 'warn'],
+        ['Lost', 'declined', 'bad'], ['Expired', 'expired', 'neu'], ['Archived', 'archive', 'neu'], ['Drafted by AI — needs review', 'ai', 'ai'],
+      ].map(([word, icon, k]) => ({ word, icon: ic[icon], ink: th[k + 'Ink'], bg: th[k + 'Bg'] }));
+      const jobs = [
+        { state: 'Queued', copy: 'Email to Rowan Vale', ink: th.neuInk, bg: th.neuBg },
+        { state: 'Running', copy: 'Sealing PDF…', ink: th.infoInk, bg: th.infoBg },
+        { state: 'Failed', copy: 'Couldn’t create the invoice · attempt 3', ink: th.badInk, bg: th.badBg, retry: true, action: 'Retry' },
+        { state: 'Needs review', copy: 'Two QuickBooks customers match this client', ink: th.warnInk, bg: th.warnBg, retry: true, action: 'Choose' },
+      ].map(j => ({ ...j, retry: !!j.retry }));
+      const bar = (w, h = 12) => React.createElement('div', { style: { width: w, height: h, borderRadius: 6, background: th.sunk, animation: 'shimmer 1.6s ease-in-out infinite' } });
+      const skel = React.createElement(React.Fragment, null, bar('55%', 14), bar('80%'), bar('35%'));
+      return { ...th, pills, jobs, skel, swatchGroups: [
+        { name: 'Neutrals', items: [sw('page', th.bg), sw('surface', th.surface), sw('sunken', th.sunk), sw('line', th.line), sw('line-strong', th.strong, '#fff'), sw('ink', th.ink, th.bg), sw('ink-muted', th.muted, th.bg), sw('paper', '#FFFFFF', '#1C1B18', 'Doc')] },
+        { name: 'Workspace accent', items: [sw('accent', accent, '#fff', 'Sign'), sw('accent-text', th.name === 'Light' ? accent : 'mix 55% white', th.name === 'Light' ? '#fff' : '#1C1B18'), sw('accent-soft', th.name === 'Light' ? `mix 10% white` : 'mix 30% surface')] },
+        { name: 'Status · fixed', items: [sw('success', th.okBg, th.okInk, 'Done'), sw('warning', th.warnBg, th.warnInk, 'Wait'), sw('danger', th.badBg, th.badInk, 'Fail'), sw('info', th.infoBg, th.infoInk, 'Sent'), sw('ai', th.aiBg, th.aiInk, 'AI'), sw('neutral', th.neuBg, th.neuInk, 'Draft')] },
+      ] };
+    });
+    // fix accent swatch hex for derived values (display only)
+    themes.forEach(th => th.swatchGroups[1].items.forEach(s => { if (s.hex.startsWith('mix')) { s.label = s.hex; s.hex = s.name === 'accent-soft' ? (th.name === 'Light' ? `color-mix(in oklch, ${accent} 10%, white)` : `color-mix(in oklch, ${accent} 30%, #1C1B19)`) : `color-mix(in oklch, ${accent} 55%, white)`; } }));
+    const typeScale = [
+      { name: 'Display', token: 'display', font: "600 48px/52px 'Source Serif 4',Georgia,serif", ls: '-.02em', tt: 'none', sample: 'Six things need you, Jonathan.', spec: 'Serif 48/52 600 · page heroes' },
+      { name: 'Doc title', token: 'doc-title', font: "600 36px/42px 'Source Serif 4',Georgia,serif", ls: '-.015em', tt: 'none', sample: 'A new website for Brightline Foods', spec: 'Serif 36/42 600 · proposal title' },
+      { name: 'Doc heading', token: 'doc-h2', font: "600 24px/30px 'Source Serif 4',Georgia,serif", ls: '0', tt: 'none', sample: 'Your investment', spec: 'Serif 24/30 600' },
+      { name: 'Doc lead', token: 'doc-lead', font: "400 19px/30px 'Source Serif 4',Georgia,serif", ls: '0', tt: 'none', sample: 'Rowan, thank you for walking us through the new menu.', spec: 'Serif 19/30 · first paragraph' },
+      { name: 'Doc body', token: 'doc-body', font: "400 17px/28px 'Source Serif 4',Georgia,serif", ls: '0', tt: 'none', sample: 'This proposal covers a new website for Brightline Foods and ongoing care once it’s live.', spec: 'Serif 17/28 · floor, never smaller' },
+      { name: 'UI title', token: 'ui-title', font: "600 20px/26px 'Instrument Sans'", ls: '-.005em', tt: 'none', sample: 'Countersign for MarketFresh Studios', spec: 'Sans 20/26 600' },
+      { name: 'UI heading', token: 'ui-heading', font: "600 16px/22px 'Instrument Sans'", ls: '0', tt: 'none', sample: 'Review AI drafts', spec: 'Sans 16/22 600' },
+      { name: 'UI body', token: 'ui-body', font: "400 15px/22px 'Instrument Sans'", ls: '0', tt: 'none', sample: 'Rowan signed today. It needs your countersignature.', spec: 'Sans 15/22' },
+      { name: 'UI small', token: 'ui-small', font: "400 13px/18px 'Instrument Sans'", ls: '0', tt: 'none', sample: 'Opened 3 times, last on Oct 27', spec: 'Sans 13/18' },
+      { name: 'Label', token: 'ui-label', font: "600 11px/16px 'Instrument Sans'", ls: '.08em', tt: 'uppercase', sample: 'One-time · Monthly · Next', spec: 'Sans 11/16 600 caps +.08em' },
+      { name: 'Amount', token: 'amount-display', font: "650 28px/34px 'Instrument Sans'", ls: '-.01em', tt: 'none', sample: '$1,150   $260/mo', spec: 'Sans 28/34 650 tabular' },
+      { name: 'Evidence', token: 'mono', font: "400 13px/20px 'IBM Plex Mono',monospace", ls: '0', tt: 'none', sample: 'client.signed · 73.142.18.204 · sha256 9b2e7c41…', spec: 'Plex Mono 13/20' },
+    ];
+    const spaces = [['space-1', 4, 'icon gap'], ['space-2', 8, 'inside controls'], ['space-3', 12, 'list rows'], ['space-4', 16, 'card padding'], ['space-5', 20, 'phone page edge'], ['space-6', 24, 'between groups'], ['space-7', 32, 'desktop page edge'], ['space-8', 48, 'between sections'], ['space-9', 64, 'document margins']].map(([token, px, use]) => ({ token, px: px * 2 + 'px', use: px + 'px · ' + use }));
+    const radii = [['xs', 4, 'chips'], ['sm', 7, 'checkbox'], ['md', 10, 'buttons, inputs'], ['lg', 12, 'cards, rows'], ['xl', 16, 'document, sheets'], ['pill', 999, 'status only']].map(([t, px, use]) => ({ token: 'radius-' + t, px: px + 'px', use }));
+    const contrast = hex => { const c = hex.replace('#', ''); const ch = [0, 2, 4].map(i => { const v = parseInt(c.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); const Lm = .2126 * ch[0] + .7152 * ch[1] + .0722 * ch[2]; return (1.05 / (Lm + .05)).toFixed(1) + ':1 with white'; };
+    const brands = [
+      { name: 'MarketFresh Studios', accent: '#365C4A', client: 'Brightline Foods', title: 'A new website for Brightline Foods', line: 'Care Standard', price: '$85/mo', one: '$1,150', mon: '$260', hasLogo: false },
+      { name: 'Harbor & Pine Co.', accent: '#1F3A5F', client: 'Lumen Law', title: 'Brand refresh and new site', line: 'Brand guidelines', price: '$1,200', one: '$4,800', mon: '$120', hasLogo: true },
+      { name: 'Saltwater Design', accent: '#8A4E0F', client: 'Oak & Ember Bakery', title: 'Menu, photos and a site', line: 'Monthly social posts', price: '$350/mo', one: '$2,100', mon: '$350', hasLogo: true },
+    ].map(b => ({ ...b, soft: `color-mix(in oklch, ${b.accent} 10%, white)`, contrast: contrast(b.accent) }));
+    return { ic, accent, themes, typeScale, spaces, radii, brands };
+  }
+}
+
+</script>
+</body>
+</html>

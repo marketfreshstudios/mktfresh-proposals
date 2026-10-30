@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-VariableItalic.woff2') format('woff2');font-weight:200 900;font-style:italic}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500}
+@keyframes seal{from{width:6%}to{width:96%}}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opt:target .dv-oid{background:#365C4A;color:#fff}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Proposal record + countersign · Home · at 1440 / 768 / 375</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;max-width:1440px;margin:0 0 36px">
+  <h1 style="margin:0;font:600 40px/46px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">Every record opens on one sentence: what happened, and who acts next.</h1>
+  <div style="display:flex;flex-direction:column;gap:8px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#365C4A">Change.</b> The record leads with a “Next” card that names the action. Countersign is a sheet opened from that card, not a separate page, and the same sheet works on a phone.</div>
+    <div><b style="color:#365C4A">Change.</b> When Franz countersigns, the sheet says plainly that the signature reads Jonathan Garces and that the audit trail records Franz. Switch the viewer in Tweaks to see Jonathan’s version.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#365C4A">Change.</b> Status words match the Proposals list: a signed proposal is Won. While work remains it says what’s left (“needs countersign”, “billing to finish”); the lifecycle strip shows every step.</div>
+    <div><b style="color:#1C1B18">Rule kept.</b> Billing problems sit beside the record with their own action, and never make the signature look in doubt.</div>
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;max-width:2700px;margin:0 0 28px">
+  <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Proposal record</h2>
+  <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Live at all three widths. Press Countersign, then Mark as invoiced.</span>
+</div>
+
+<div class="dv-opts">
+<sc-for list="{{ widths }}" as="w" hint-placeholder-count="3">
+<div class="dv-opt" id="{{ w.rid }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ w.rid }}">{{ w.rid }}</a>{{ w.label }}</div>
+  <div style="width:{{ w.px }};height:{{ w.h }};border-radius:{{ w.radius }};border:1px solid #C9C3B7;background:var(--bg,#F3F0EA);color:var(--ink,#1C1B18);overflow:hidden;position:relative;display:flex;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <sc-if value="{{ w.isDesk }}">
+    <nav style="flex:none;width:232px;background:var(--surface,#FBFAF7);border-right:1px solid var(--line,#DDD8CE);padding:18px 14px;display:flex;flex-direction:column;gap:4px">
+      <div style="font:600 15px/22px 'Instrument Sans';padding:0 8px 14px">{{ brand }}</div>
+      <div style="height:38px;border-radius:9px;background:var(--accent,#365C4A);color:#fff;font:600 14px/38px 'Instrument Sans';padding:0 12px;margin-bottom:10px">+ New proposal</div>
+      <div style="display:flex;justify-content:space-between;font:500 14px/36px 'Instrument Sans';padding:0 12px"><span>Home</span><span style="color:var(--muted,#5F5B53)">6</span></div>
+      <div style="font:600 14px/36px 'Instrument Sans';padding:0 12px;border-radius:8px;background:var(--line,#DDD8CE)">Proposals</div>
+      <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Clients</div>
+      <div style="flex:1"></div>
+      <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:var(--muted,#5F5B53)">Studio</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px 0;border-top:1px solid var(--line,#DDD8CE);margin-top:6px"><span style="width:28px;height:28px;border-radius:14px;background:#D9D3C7;font:600 12px/28px 'Instrument Sans';text-align:center">{{ viewerInitial }}</span><span style="font:500 14px 'Instrument Sans'">{{ viewer }}</span></div>
+    </nav>
+    </sc-if>
+    <sc-if value="{{ w.isTab }}">
+    <nav style="flex:none;width:64px;background:var(--surface,#FBFAF7);border-right:1px solid var(--line,#DDD8CE);padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--accent,#365C4A);color:#fff;font:500 22px/40px 'Instrument Sans';text-align:center">+</div>
+      <div style="width:48px;height:44px;border-radius:10px;font:600 10px/44px 'Instrument Sans';text-align:center;color:var(--muted,#5F5B53)">Home</div>
+      <div style="width:48px;height:44px;border-radius:10px;background:var(--line,#DDD8CE);font:600 10px/44px 'Instrument Sans';text-align:center">Proposals</div>
+      <div style="width:48px;height:44px;border-radius:10px;font:600 10px/44px 'Instrument Sans';text-align:center;color:var(--muted,#5F5B53)">Clients</div>
+    </nav>
+    </sc-if>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex:1;overflow:auto;padding:{{ w.pad }};display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font:500 14px 'Instrument Sans';color:var(--muted,#5F5B53)">← Proposals</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px">
+            <h1 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">A new website for Brightline Foods</h1>
+            <span style="display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:{{ st.bg }};color:{{ st.ink }};font:600 13px/18px 'Instrument Sans'"><svg width="14" height="12" viewBox="{{ st.icon.v }}"><path fill="currentColor" d="{{ st.icon.d }}"></path></svg>{{ st.word }}</span>
+          </div>
+          <div style="font:400 14px/20px 'Instrument Sans';color:var(--muted,#5F5B53)">Brightline Foods · Rowan Vale · Sent by Jonathan Garces on Oct 29 · Version 3</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:16px;background:{{ st.cardBg }}">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:{{ st.ink }}">Next</div>
+          <div style="font:600 22px/30px 'Source Serif 4',Georgia,serif;text-wrap:pretty;color:#1C1B18">{{ st.headline }}</div>
+          <div style="font:400 14px/20px 'Instrument Sans';color:#3E3B35;text-wrap:pretty">{{ st.sub }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <sc-if value="{{ st.canCounter }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ openSheet }}" style="height:48px;padding:0 22px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:#fff;font:600 16px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;gap:10px"><svg width="18" height="14" viewBox="{{ ic.countersign.v }}"><path fill="currentColor" d="{{ ic.countersign.d }}"></path></svg>Countersign</button>
+            </sc-if>
+            <sc-if value="{{ st.canInvoice }}">
+              <button onClick="{{ markInvoiced }}" style="height:48px;padding:0 22px;border:0;border-radius:12px;background:#1C1B18;color:#fff;font:600 16px 'Instrument Sans';cursor:pointer">Mark as invoiced</button>
+            </sc-if>
+            <sc-if value="{{ st.isDone }}">
+              <button style="height:48px;padding:0 22px;border:0;border-radius:12px;background:#146B3F;color:#fff;font:600 16px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="{{ ic.download.v }}"><path fill="currentColor" d="{{ ic.download.d }}"></path></svg>Final sealed PDF</button>
+            </sc-if>
+            <button style="height:48px;padding:0 18px;border:1px solid rgba(28,27,24,.18);border-radius:12px;background:rgba(255,255,255,.6);font:600 15px 'Instrument Sans';color:#1C1B18;cursor:pointer">View signed document</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:6px" aria-label="Lifecycle">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="7">
+            <span style="display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:999px;background:{{ s.bg }};color:{{ s.ink }};border:1px solid {{ s.line }};font:600 12px 'Instrument Sans'">{{ s.mark }} {{ s.name }}</span>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+          <div style="flex:1 1 460px;min-width:0;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="margin:0;font:600 18px/24px 'Instrument Sans'">Timeline</h2><span style="font:600 13px 'Instrument Sans';color:var(--accent-text,#365C4A)">Evidence &amp; hashes →</span></div>
+            <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px">
+              <sc-for list="{{ events }}" as="e" hint-placeholder-count="6">
+                <div style="display:flex;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line,#DDD8CE);align-items:flex-start">
+                  <span style="flex:none;width:8px;height:8px;border-radius:4px;margin-top:7px;background:{{ e.dot }}"></span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font:400 14px/20px 'Instrument Sans'"><b style="font-weight:600;color:{{ e.actorInk }}">{{ e.actor }}</b> {{ e.what }}</div>
+                    <sc-if value="{{ e.hasDetail }}"><div style="font:400 12px/17px 'IBM Plex Mono',monospace;color:var(--muted,#5F5B53);overflow-wrap:anywhere">{{ e.detail }}</div></sc-if>
+                  </div>
+                  <span style="flex:none;font:400 12px/20px 'Instrument Sans';color:var(--muted,#5F5B53);white-space:nowrap">{{ e.time }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">As signed</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">One-time</div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$1,150</div></div>
+                <div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">Monthly</div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$260<span style="font:400 13px 'Instrument Sans';color:var(--muted,#5F5B53)">/mo</span></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;border-top:1px solid var(--line,#DDD8CE);font:400 13px/18px 'Instrument Sans'">
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line,#DDD8CE)"><span>Website Build — Own It Over Time <span style="color:var(--muted,#5F5B53)">· chosen</span></span><span style="font-weight:600;text-align:right">$500<br>+ $175/mo</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line,#DDD8CE)"><span>Catering menu photography</span><span style="font-weight:600">$650</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0"><span>Care Standard <span style="color:var(--muted,#5F5B53)">· added</span></span><span style="font-weight:600">$85/mo</span></div>
+              </div>
+              <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">Not chosen: Website Build — Own It Now, AI Search Readiness Audit, Local Visibility Core.</div>
+            </div>
+            <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Billing</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span style="font:600 14px 'Instrument Sans'">Monthly · Stripe</span><span style="padding:2px 8px;border-radius:999px;background:#E3F1E8;color:#146B3F;font:600 12px/18px 'Instrument Sans'">✓ Subscription active</span></div>
+                <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">New client · Rowan completed Checkout at 4:15 PM</div>
+              </div>
+              <div style="height:1px;background:var(--line,#DDD8CE)"></div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span style="font:600 14px 'Instrument Sans'">One-time · invoice manually</span><span style="padding:2px 8px;border-radius:999px;background:{{ qb.bg }};color:{{ qb.ink }};font:600 12px/18px 'Instrument Sans'">{{ qb.word }}</span></div>
+                <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ qb.sub }}</div>
+              </div>
+            </div>
+            <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:4px;font:400 14px/20px 'Instrument Sans'">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53);margin-bottom:4px">Files</div>
+              <div style="display:flex;justify-content:space-between;min-height:36px;align-items:center"><span>Client-signed PDF</span><span style="font:600 13px 'Instrument Sans';color:var(--accent-text,#365C4A)">Download</span></div>
+              <sc-if value="{{ countered }}"><div style="display:flex;justify-content:space-between;min-height:36px;align-items:center"><span>Final sealed PDF</span><span style="font:600 13px 'Instrument Sans';color:var(--accent-text,#365C4A)">Download</span></div></sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ w.isPhone }}">
+        <div style="flex:none;height:64px;background:var(--surface,#FBFAF7);border-top:1px solid var(--line,#DDD8CE);display:grid;grid-template-columns:repeat(5,1fr);gap:4px;align-items:center;text-align:center;font:500 11px 'Instrument Sans';color:var(--muted,#5F5B53);padding:0 6px 6px">
+          <span>Home</span><span style="color:var(--ink,#1C1B18);font-weight:700">Proposals</span><span><span style="display:inline-block;width:40px;height:40px;border-radius:20px;background:var(--accent,#365C4A);color:#fff;font:500 24px/40px 'Instrument Sans'">+</span></span><span>Clients</span><span>Studio</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ sheetOpen }}">
+    <div style="position:absolute;inset:0;z-index:20;background:rgba(20,18,14,.45);display:flex;justify-content:center;align-items:{{ w.sheetAlign }}">
+      <div role="dialog" aria-label="Countersign" style="width:{{ w.sheetW }};max-height:{{ w.sheetMaxH }};overflow:auto;background:var(--surface,#FBFAF7);border-radius:{{ w.sheetRadius }};box-shadow:0 12px 32px rgba(20,18,14,.24);padding:20px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box;position:relative">
+        <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Countersign</div><button onClick="{{ closeSheet }}" style="height:40px;padding:0 8px;border:0;background:none;font:600 15px 'Instrument Sans';color:var(--muted,#5F5B53);cursor:pointer">Close</button></div>
+        <h2 style="margin:-8px 0 0;font:600 26px/32px 'Source Serif 4',Georgia,serif">Countersign for {{ brand }}</h2>
+        <div style="background:#FFFFFF;color:#1C1B18;border:1px solid #E8E4DC;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Signed by the client · locked</div>
+          <div style="font:italic 400 30px/36px 'Source Serif 4',Georgia,serif;border-bottom:1px solid #CFC9BE;padding-bottom:6px">Rowan Vale</div>
+          <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">Rowan Vale, Owner, Brightline Foods · r.vale@brightline.example · Oct 29, 2026, 4:12 PM</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 20px;font:400 13px 'Instrument Sans';color:#5F5B53"><span>One-time <b style="color:#1C1B18">$1,150</b></span><span>Monthly <b style="color:#1C1B18">$260/mo</b></span></div>
+          <div style="font:400 11px/16px 'IBM Plex Mono',monospace;color:#5F5B53;overflow-wrap:anywhere">version 3 · sha256 9b2e7c41…d8a041c0</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font:600 14px 'Instrument Sans'">The company signature will read</div>
+          <div style="background:#FFFFFF;color:#1C1B18;border:1px solid #E8E4DC;border-radius:14px;padding:14px 16px">
+            <div style="height:52px;border-radius:8px;background:repeating-linear-gradient(135deg,#F2EFE9 0 8px,#EAE6DE 8px 16px);display:flex;align-items:center;padding:0 12px;font:400 11px 'IBM Plex Mono',monospace;color:#6E6A61">stored signature image</div>
+            <div style="font:600 16px/22px 'Source Serif 4',Georgia,serif;margin-top:8px">Jonathan Garces</div>
+            <div style="font:400 13px 'Instrument Sans';color:#5F5B53">Owner, {{ brand }} · today, Oct 29, 2026</div>
+          </div>
+        </div>
+        <sc-if value="{{ isDelegate }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ toggleAuth }}" role="checkbox" aria-checked="{{ auth }}" style="display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line,#DDD8CE);border-radius:12px;background:var(--bg,#F3F0EA);text-align:left;cursor:pointer;color:var(--ink,#1C1B18)">
+            <span style="flex:none;width:24px;height:24px;border-radius:6px;border:2px solid {{ authBorder }};background:{{ authBg }};display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ auth }}"><svg width="12" height="12" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if></span>
+            <span style="font:400 14px/20px 'Instrument Sans'">I’m applying Jonathan Garces’s signature on his behalf, as he authorized in Settings. The audit trail will record <b>{{ viewer }}</b> as the person who applied it.</span>
+          </button>
+        </sc-if>
+        <button onClick="{{ toggleConsent }}" role="checkbox" aria-checked="{{ consent }}" style="display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line,#DDD8CE);border-radius:12px;background:var(--bg,#F3F0EA);text-align:left;cursor:pointer;color:var(--ink,#1C1B18)">
+          <span style="flex:none;width:24px;height:24px;border-radius:6px;border:2px solid {{ consentBorder }};background:{{ consentBg }};display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ consent }}"><svg width="12" height="12" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if></span>
+          <span style="font:400 14px/21px 'Source Serif 4',Georgia,serif">By signing electronically, I consent to electronic records and signatures, intend to sign this proposal, and agree that my electronic signature is the legal equivalent of my handwritten signature. I can download and retain a copy.</span>
+        </button>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onClick="{{ doCounter }}" aria-disabled="{{ cantCounter }}" style="height:52px;border:0;border-radius:12px;background:var(--accent,#365C4A);color:#fff;font:600 16px 'Instrument Sans';cursor:pointer;opacity:{{ counterOpacity }}">Countersign as Jonathan Garces</button>
+          <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53);text-align:center">{{ counterReason }}</div>
+        </div>
+        <sc-if value="{{ sealing }}">
+          <div style="position:absolute;inset:0;background:rgba(251,250,247,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px" role="status">
+            <div style="font:600 22px/28px 'Source Serif 4',Georgia,serif;color:#1C1B18">Sealing the final copy…</div>
+            {{ sealBar }}
+            <div style="font:400 13px 'Instrument Sans';color:#5F5B53">Then we email it to Rowan and to you.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;max-width:2700px;margin:64px 0 28px">
+  <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Home</h2>
+  <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">Grouped by the action needed, each row with its button. Tables become cards on phone.</span>
+</div>
+
+<div class="dv-opts">
+<sc-for list="{{ widths }}" as="w" hint-placeholder-count="3">
+<div class="dv-opt" id="{{ w.hid }}">
+  <div class="dv-olabel"><a class="dv-oid" href="#{{ w.hid }}">{{ w.hid }}</a>{{ w.label }}</div>
+  <div style="width:{{ w.px }};height:{{ w.h }};border-radius:{{ w.radius }};border:1px solid #C9C3B7;background:var(--bg,#F3F0EA);color:var(--ink,#1C1B18);overflow:hidden;position:relative;display:flex;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <sc-if value="{{ w.isDesk }}">
+    <nav style="flex:none;width:232px;background:var(--surface,#FBFAF7);border-right:1px solid var(--line,#DDD8CE);padding:18px 14px;display:flex;flex-direction:column;gap:4px">
+      <div style="font:600 15px/22px 'Instrument Sans';padding:0 8px 14px">{{ brand }}</div>
+      <div style="height:38px;border-radius:9px;background:var(--accent,#365C4A);color:#fff;font:600 14px/38px 'Instrument Sans';padding:0 12px;margin-bottom:10px">+ New proposal</div>
+      <div style="display:flex;justify-content:space-between;font:600 14px/36px 'Instrument Sans';padding:0 12px;border-radius:8px;background:var(--line,#DDD8CE)"><span>Home</span><span>6</span></div>
+      <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Proposals</div>
+      <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px">Clients</div>
+      <div style="flex:1"></div>
+      <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:var(--muted,#5F5B53)">Studio</div>
+    </nav>
+    </sc-if>
+    <sc-if value="{{ w.isTab }}">
+    <nav style="flex:none;width:64px;background:var(--surface,#FBFAF7);border-right:1px solid var(--line,#DDD8CE);padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--accent,#365C4A);color:#fff;font:500 22px/40px 'Instrument Sans';text-align:center">+</div>
+      <div style="width:48px;height:44px;border-radius:10px;background:var(--line,#DDD8CE);font:600 10px/44px 'Instrument Sans';text-align:center">Home</div>
+      <div style="width:48px;height:44px;border-radius:10px;font:600 10px/44px 'Instrument Sans';text-align:center;color:var(--muted,#5F5B53)">Proposals</div>
+      <div style="width:48px;height:44px;border-radius:10px;font:600 10px/44px 'Instrument Sans';text-align:center;color:var(--muted,#5F5B53)">Clients</div>
+    </nav>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex:1;overflow:auto;padding:{{ w.pad }};display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="font:500 13px 'Instrument Sans';color:var(--muted,#5F5B53)">Thursday, October 29</div>
+          <h1 style="margin:0;font:600 32px/38px 'Source Serif 4',Georgia,serif;letter-spacing:-.015em">6 things need you, {{ viewerFirst }}.</h1>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+          <div style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:22px">
+            <sc-for list="{{ needs }}" as="g" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:8px"><h2 style="margin:0;font:600 16px/22px 'Instrument Sans'">{{ g.kind }}</h2><span style="font:500 13px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ g.count }}</span></div>
+                <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;overflow:hidden">
+                  <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="1">
+                    <div style="display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line,#DDD8CE)">
+                      <div style="flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:5px">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px"><span style="font:600 15px/21px 'Instrument Sans'">{{ it.client }}</span><span style="padding:1px 8px;border-radius:999px;background:{{ it.pillBg }};color:{{ it.pillInk }};font:600 12px/18px 'Instrument Sans'">{{ it.pill }}</span><sc-if value="{{ it.ai }}"><span style="padding:1px 8px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 12px/18px 'Instrument Sans'">Drafted by AI — needs review</span></sc-if></div>
+                        <div style="font:400 14px/20px 'Instrument Sans'">{{ it.title }}</div>
+                        <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ it.meta }}</div>
+                      </div>
+                      <div style="flex:none;text-align:right;font:500 13px/18px 'Instrument Sans';font-variant-numeric:tabular-nums;color:var(--muted,#5F5B53)">{{ it.one }}<br>{{ it.mon }}</div>
+                      <button style="flex:{{ w.btnFlex }};height:44px;padding:0 16px;border:{{ it.btnBorder }};border-radius:10px;background:{{ it.btnBg }};color:{{ it.btnInk }};font:600 14px 'Instrument Sans';cursor:pointer;white-space:nowrap">{{ it.action }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Pipeline</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="font:500 13px 'Instrument Sans';color:var(--muted,#5F5B53)">Out for signature · 5 proposals</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$14,600</div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">one-time</div></div>
+                  <div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$1,345<span style="font:400 13px 'Instrument Sans';color:var(--muted,#5F5B53)">/mo</span></div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">recurring</div></div>
+                </div>
+              </div>
+              <div style="height:1px;background:var(--line,#DDD8CE)"></div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="font:500 13px 'Instrument Sans';color:var(--muted,#5F5B53)">Signed in October · 4 proposals</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$8,250</div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">one-time</div></div>
+                  <div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">$910<span style="font:400 13px 'Instrument Sans';color:var(--muted,#5F5B53)">/mo</span></div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">recurring</div></div>
+                </div>
+              </div>
+              <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">Out-for-signature figures use each proposal’s default selection.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ w.isPhone }}">
+        <div style="flex:none;height:64px;background:var(--surface,#FBFAF7);border-top:1px solid var(--line,#DDD8CE);display:grid;grid-template-columns:repeat(5,1fr);gap:4px;align-items:center;text-align:center;font:500 11px 'Instrument Sans';color:var(--muted,#5F5B53);padding:0 6px 6px">
+          <span style="color:var(--ink,#1C1B18);font-weight:700">Home</span><span>Proposals</span><span><span style="display:inline-block;width:40px;height:40px;border-radius:20px;background:var(--accent,#365C4A);color:#fff;font:500 24px/40px 'Instrument Sans'">+</span></span><span>Clients</span><span>Studio</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-for>
+</div>
+
+<p class="dv-next">Next: full design system (type, color, components, light and dark), the editor at 768, clients and settings screens, and empty / loading / error states. Try: “in <a class="dv-oid" href="#3d">3d</a>, add a recent activity column” · “show <a class="dv-oid" href="#3c">3c</a> after countersigning”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;viewer&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Franz&quot;,&quot;Jonathan Garces&quot;],&quot;default&quot;:&quot;Franz&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#365C4A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#365C4A&quot;,&quot;#7A2E2E&quot;,&quot;#1F3A5F&quot;,&quot;#8A4E0F&quot;],&quot;section&quot;:&quot;White-label&quot;},&quot;workspaceName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;MarketFresh Studios&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;White-label&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+class Component extends DCLogic {
+  state = { sheet: null, auth: false, consent: false, sealing: false, countered: false, invoiced: false, ic: {} };
+  componentDidMount() {
+    if (/[?&](countersign|action=countersign)/.test(window.location.search)) setTimeout(() => this.setState({ sheet: true, consent: false, auth: false }), 300);
+    fetch('src/components/icons.json').then(r => r.json()).then(j => {
+      const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path }; this.setState({ ic });
+    }).catch(() => {});
+    this.applyTheme();
+  }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() {
+    const a = this.props.accent ?? '#365C4A', dark = (this.props.theme ?? 'light') === 'dark', s = document.documentElement.style;
+    const v = dark ? { '--bg': '#131311', '--surface': '#1C1B19', '--ink': '#F1EFEA', '--muted': '#ABA79E', '--line': '#302F2B', '--accent': a, '--accent-text': `color-mix(in oklch, ${a} 55%, white)` }
+      : { '--bg': '#F3F0EA', '--surface': '#FBFAF7', '--ink': '#1C1B18', '--muted': '#5F5B53', '--line': '#DDD8CE', '--accent': a, '--accent-text': a };
+    for (const k in v) s.setProperty(k, v[k]);
+  }
+  renderVals() {
+    const S = this.state, dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || dflt });
+    const viewer = this.props.viewer ?? 'Franz';
+    const isDelegate = viewer !== 'Jonathan Garces';
+    const viewerFirst = viewer.split(' ')[0];
+    const brand = this.props.workspaceName ?? 'MarketFresh Studios';
+    const widths = [
+      { rid: '3a', hid: '3d', label: 'Desktop 1440', px: '1440px', h: '960px', radius: '12px', isDesk: true, pad: '28px 40px 48px', sheetAlign: 'center', sheetW: '560px', sheetMaxH: '92%', sheetRadius: '16px', btnFlex: 'none' },
+      { rid: '3b', hid: '3e', label: 'Tablet 768', px: '768px', h: '1100px', radius: '24px', isTab: true, pad: '24px 24px 40px', sheetAlign: 'center', sheetW: '560px', sheetMaxH: '90%', sheetRadius: '16px', btnFlex: 'none' },
+      { rid: '3c', hid: '3f', label: 'Phone 375', px: '375px', h: '780px', radius: '38px', isPhone: true, pad: '16px 16px 28px', sheetAlign: 'flex-end', sheetW: '100%', sheetMaxH: '94%', sheetRadius: '20px 20px 0 0', btnFlex: '1 1 100%' },
+    ];
+    const done = S.countered && S.invoiced;
+    const st = !S.countered ? {
+      word: 'Won · needs countersign', icon: ic.signature, bg: '#FBEEDB', ink: '#7A4800', cardBg: '#FBEEDB', canCounter: true,
+      headline: isDelegate ? 'Rowan signed today. It needs a countersignature from Jonathan or you.' : 'Rowan signed today. It needs your countersignature.',
+      sub: 'Monthly billing is already active through Stripe. The one-time items will be invoiced manually once it’s countersigned.'
+    } : !S.invoiced ? {
+      word: 'Won · billing to finish', icon: ic.countersign, bg: '#E2F2F5', ink: '#0B5563', cardBg: '#E2F2F5', canInvoice: true,
+      headline: 'Invoice the one-time items, then mark it here.',
+      sub: '$1,150 one-time: the Own It Over Time kickoff and Catering menu photography. The final sealed PDF has been emailed to Rowan.'
+    } : {
+      word: 'Won', icon: ic.verified, bg: '#E3F1E8', ink: '#146B3F', cardBg: '#E3F1E8', isDone: true,
+      headline: 'Won and wrapped up. Nothing left to do.',
+      sub: 'Both signatures are sealed, monthly billing is active and the one-time invoice was sent on Oct 29.'
+    };
+    const stepDef = [['Draft', 1], ['Sent', 1], ['Viewed', 1], ['Won · client signed', 1], ['Countersigned', S.countered ? 1 : 2], ['Billing set up', S.invoiced ? 1 : 3], ['Done', done ? 1 : 0]];
+    const steps = stepDef.map(([name, s]) => ({ name,
+      mark: s === 1 ? '✓' : s === 2 ? '●' : s === 3 ? '◐' : '○',
+      bg: s === 2 ? '#FBEEDB' : s === 3 ? 'var(--surface,#FBFAF7)' : s === 1 ? 'var(--surface,#FBFAF7)' : 'transparent',
+      ink: s === 2 ? '#7A4800' : s === 0 ? 'var(--muted,#5F5B53)' : 'var(--ink,#1C1B18)',
+      line: s === 2 ? '#E9C88F' : 'var(--line,#DDD8CE)' }));
+    const E = (actor, what, time, detail, kind) => ({ actor, what, time, detail, hasDetail: !!detail,
+      dot: kind === 'ai' ? '#6B4FBB' : kind === 'client' ? '#8A5200' : kind === 'sys' ? '#8A857B' : 'var(--accent,#365C4A)',
+      actorInk: kind === 'ai' ? '#5B3FA8' : 'var(--ink,#1C1B18)' });
+    const events = [];
+    if (S.invoiced) events.push(E(viewer, 'marked the one-time items as invoiced', 'Oct 29, 4:40 PM', '', 'staff'));
+    if (S.countered) {
+      events.push(E('System', 'sealed the final PDF and emailed it to both parties', 'Oct 29, 4:31 PM', 'final.pdf · sha256 c41e…07bd', 'sys'));
+      events.push(E(viewer, isDelegate ? 'countersigned as Jonathan Garces, on his behalf' : 'countersigned', 'Oct 29, 4:31 PM', isDelegate ? 'applied_by franz@mktfresh.com · signatory Jonathan Garces' : '', 'staff'));
+    }
+    events.push(
+      E('Stripe', 'started the subscription at $260/mo', 'Oct 29, 4:15 PM', 'checkout.session.completed', 'sys'),
+      E('Rowan Vale', 'signed the proposal', 'Oct 29, 4:12 PM', 'IP 73.142.18.204 · iPhone Safari · version 3', 'client'),
+      E('Rowan Vale', 'chose Own It Over Time and added Care Standard', 'Oct 29, 4:09 PM', '', 'client'),
+      E('Rowan Vale', 'opened the proposal', 'Oct 29, 3:58 PM', 'iPhone Safari', 'client'),
+      E('Jonathan Garces', 'sent it to r.vale@brightline.example', 'Oct 29, 3:20 PM', 'link rotated · token …4f9a', 'staff'),
+      E('Jonathan Garces', 'reviewed the AI-written content (4 sections)', 'Oct 29, 3:12 PM', '', 'staff'),
+      E('Claude', 'drafted this from Rowan’s email', 'Oct 29, 2:04 PM', 'connector claude-studio · playbook v1.17 read', 'ai'),
+    );
+    const qb = S.invoiced ? { word: '✓ Invoiced', bg: '#E3F1E8', ink: '#146B3F', sub: `$1,150 one-time · marked invoiced by ${viewer}` }
+      : { word: 'Needs review', bg: '#FBEEDB', ink: '#7A4800', sub: '$1,150 one-time · Catering menu photography has no QuickBooks item, so this is invoiced by hand.' };
+    const can = S.consent && (!isDelegate || S.auth);
+    const sealBar = React.createElement('div', { style: { width: 220, height: 4, borderRadius: 2, background: '#E2DDD3', overflow: 'hidden' } },
+      React.createElement('div', { style: { height: '100%', background: 'var(--accent,#365C4A)', animation: 'seal 1.8s ease-out forwards' } }));
+    const P = (bg, ink) => ({ pillBg: bg, pillInk: ink });
+    const primary = { btnBg: 'var(--accent,#365C4A)', btnInk: '#fff', btnBorder: '0' };
+    const secondary = { btnBg: 'var(--surface,#FBFAF7)', btnInk: 'var(--ink,#1C1B18)', btnBorder: '1px solid var(--line,#DDD8CE)' };
+    const needs = [
+      { kind: 'Countersign', count: '1', items: [{ client: 'Brightline Foods', pill: 'Won', ...P('#E3F1E8', '#146B3F'), title: 'A new website for Brightline Foods', meta: 'Rowan Vale signed today at 4:12 PM', one: '$1,150 one-time', mon: '$260/mo', action: 'Sign', ...primary }] },
+      { kind: 'Review AI drafts', count: '2', items: [
+        { client: 'Harbor Dental', pill: 'Draft', ...P('#ECE8E1', '#5F5B53'), ai: true, title: 'Care plan and hosting renewal', meta: 'Drafted by Claude 1 hour ago from Dana’s email', one: '$0 one-time', mon: '$100/mo', action: 'Review', ...secondary },
+        { client: 'Oak & Ember Bakery', pill: 'Draft', ...P('#ECE8E1', '#5F5B53'), ai: true, title: 'Website refresh', meta: 'Drafted by Claude yesterday · 1 AI price to check', one: '$2,750 one-time', mon: '$85/mo', action: 'Review', ...secondary }] },
+      { kind: 'Viewed, not signed', count: '2', items: [
+        { client: 'Northside Fitness', pill: 'Viewed', ...P('#E2F2F5', '#0B5563'), title: 'Local visibility', meta: 'Opened 3 times, last on Oct 27', one: '$0 one-time', mon: '$295/mo', action: 'Send reminder', ...secondary },
+        { client: 'Lumen Law', pill: 'Viewed', ...P('#E2F2F5', '#0B5563'), title: 'Website build', meta: 'Opened Oct 22 · expires in 4 days', one: '$500 one-time', mon: '$175/mo', action: 'Send reminder', ...secondary }] },
+      { kind: 'Billing needs attention', count: '1', items: [
+        { client: 'Fairway Plumbing', pill: 'Failed', ...P('#FBE9E7', '#A3261E'), title: 'Care Standard upgrade', meta: 'Couldn’t add items to the Stripe subscription · attempt 3 · card declined', one: '$0 one-time', mon: '$85/mo', action: 'Retry', ...secondary }] },
+    ];
+    return {
+      ic, brand, viewer, viewerFirst, viewerInitial: viewer[0], isDelegate, widths, st, steps, events, qb, needs, sealBar,
+      countered: S.countered, sheetOpen: !!S.sheet, sealing: S.sealing,
+      openSheet: () => this.setState({ sheet: true, consent: false, auth: false }), closeSheet: () => this.setState({ sheet: null }),
+      auth: S.auth, toggleAuth: () => this.setState(s => ({ auth: !s.auth })), authBorder: S.auth ? 'var(--accent,#365C4A)' : '#8A857B', authBg: S.auth ? 'var(--accent,#365C4A)' : '#fff',
+      consent: S.consent, toggleConsent: () => this.setState(s => ({ consent: !s.consent })), consentBorder: S.consent ? 'var(--accent,#365C4A)' : '#8A857B', consentBg: S.consent ? 'var(--accent,#365C4A)' : '#fff',
+      cantCounter: !can, counterOpacity: can ? 1 : 0.45,
+      counterReason: can ? 'Seals the final PDF and emails it to Rowan and to you.' : isDelegate ? 'Confirm both statements above to countersign.' : 'Agree to the statement above to countersign.',
+      doCounter: () => { if (!can || S.sealing) return; this.setState({ sealing: true }); setTimeout(() => this.setState({ sealing: false, sheet: null, countered: true }), 1800); },
+      markInvoiced: () => this.setState({ invoiced: true }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

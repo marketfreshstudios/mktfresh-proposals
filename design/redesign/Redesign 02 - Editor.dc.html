@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-Variable.woff2') format('woff2');font-weight:200 900;font-style:normal}
+@font-face{font-family:'Source Serif 4';src:url('public/fonts/SourceSerif4-VariableItalic.woff2') format('woff2');font-weight:200 900;font-style:italic}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Regular.woff2') format('woff2');font-weight:400}
+@font-face{font-family:'IBM Plex Mono';src:url('public/fonts/IBMPlexMono-Medium.woff2') format('woff2');font-weight:500}
+body{margin:0;background:#E7E3DB;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18;-webkit-font-smoothing:antialiased}
+a{color:#365C4A}a:hover{color:#24402F}
+button,input,select,textarea{font-family:inherit}
+.dv-turn{padding:48px 48px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:#1C1B18;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1C1B18;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:600 12px/1.3 'Instrument Sans',sans-serif;color:#1C1B18}.dv-opt:target .dv-oid{background:#365C4A;color:#fff}.dv-next{margin:28px 0 0;font:13px/1.5 'Instrument Sans',sans-serif;color:rgba(0,0,0,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Editor · desktop and phone</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;max-width:1440px;margin:0 0 36px">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <h1 style="margin:0;font:600 40px/46px 'Source Serif 4',Georgia,serif;letter-spacing:-.02em;text-wrap:pretty">Write on the left, price on the right, send from the same screen.</h1>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#365C4A">Change.</b> Write, Quote and Send are no longer separate screens. The quote lives in a right-hand panel beside the document, with the pricing reference and the send checklist as two more tabs in the same panel. Nobody leaves the page to look up a price or check readiness.</div>
+    <div><b style="color:#365C4A">Change.</b> AI review is a list of sections to read, not a banner to dismiss. Marking each one reviewed clears the send blocker; staff can also confirm in one checkbox at send time, which names what’s still unread.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div><b style="color:#365C4A">Change.</b> When an AI-entered price differs from the catalog list price, the line is held for a decision: use the list price or keep the entered one. It’s the costliest mistake to skim past.</div>
+    <div><b style="color:#365C4A">Change.</b> The quote is one ordered list, dragged into the order the client reads it. Own It Over Time and Own It Now are ordinary lines you can add, remove or make optional; link optional lines as “choose one” when the client should pick between them. An item’s kickoff and monthly fees are sub-lines of that item. Totals remain split one-time and monthly.</div>
+    <div><b style="color:#365C4A">Change.</b> The Statement of Work &amp; Contract is its own section, pulled from the template so legal copy stays consistent. Clauses can be conditional (the Own It Over Time clause only appears when that line is in the quote). Client, company, dates and totals are fields that fill in everywhere, listed under Fields in the left column.</div>
+    <div><b style="color:#365C4A">Change.</b> Prices show whole dollars and only show cents when an amount has them. Settings → Workspace can switch this to always show cents.</div>
+    <div><b style="color:#1C1B18">Rule kept.</b> The app never calculates a price. The reference panel is read-only text from the studio’s playbook; staff type every amount.</div>
+  </div>
+</div>
+
+<div class="dv-opts">
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Desktop 1440 · live: mark sections reviewed, resolve the AI price, edit amounts, then Review &amp; send</div>
+<div style="width:1440px;height:940px;display:flex;flex-direction:column;background:var(--bg,#F3F0EA);color:var(--ink,#1C1B18);border:1px solid #C9C3B7;border-radius:12px;overflow:hidden;box-shadow:0 24px 48px rgba(20,18,14,.10);position:relative">
+
+  <div style="height:64px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface,#FBFAF7);border-bottom:1px solid var(--line,#DDD8CE)">
+    <button style="height:36px;padding:0 10px;border:0;background:none;font:500 14px 'Instrument Sans';color:var(--muted,#5F5B53);cursor:pointer">← Proposals</button>
+    <div style="width:1px;height:24px;background:var(--line,#DDD8CE)"></div>
+    <div style="display:flex;flex-direction:column;min-width:0">
+      <div style="font:600 16px/22px 'Instrument Sans'">A new website for Brightline Foods</div>
+      <div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">Brightline Foods · Rowan Vale · Website proposal template</div>
+    </div>
+    <span style="display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:{{ statusBg }};color:{{ statusInk }};font:600 13px/18px 'Instrument Sans'"><svg width="13" height="13" viewBox="{{ statusIcon.v }}"><path fill="currentColor" d="{{ statusIcon.d }}"></path></svg>{{ statusWord }}</span>
+    <sc-if value="{{ aiOpen }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 13px/18px 'Instrument Sans'"><svg width="14" height="13" viewBox="{{ ic.ai.v }}"><path fill="currentColor" d="{{ ic.ai.d }}"></path></svg>Drafted by AI — needs review</span></sc-if>
+    <div style="flex:1"></div>
+    <span style="font:400 13px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ savedText }}</span>
+    <a href="Redesign 01 - IA and Client Flow.dc.html#1a" style="height:40px;padding:0 16px;display:flex;align-items:center;border:1px solid var(--line,#DDD8CE);border-radius:10px;font:600 14px 'Instrument Sans';color:var(--ink,#1C1B18);text-decoration:none;background:var(--surface,#FBFAF7)">Preview as client</a>
+    <button onClick="{{ openSend }}" style="height:40px;padding:0 18px;border:0;border-radius:10px;background:var(--accent,#365C4A);color:#fff;font:600 14px 'Instrument Sans';cursor:pointer">Review &amp; send</button>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:236px minmax(0,1fr) 452px">
+
+    <nav style="border-right:1px solid var(--line,#DDD8CE);padding:20px 14px;display:flex;flex-direction:column;gap:18px;overflow:auto;background:var(--surface,#FBFAF7)">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53);padding:0 8px 8px">Sections</div>
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+          <button onClick="{{ s.jump }}" style="display:flex;align-items:center;gap:10px;min-height:36px;padding:0 8px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer;color:var(--ink,#1C1B18);font:500 14px/20px 'Instrument Sans'">
+            <span style="flex:none;width:8px;height:8px;border-radius:4px;background:{{ s.dot }}"></span>
+            <span style="flex:1">{{ s.title }}</span>
+            <span style="font:500 12px 'Instrument Sans';color:{{ s.tagInk }}">{{ s.tag }}</span>
+          </button>
+        </sc-for>
+        <button style="margin-top:6px;min-height:36px;padding:0 8px;border:1px dashed var(--line,#DDD8CE);border-radius:8px;background:none;text-align:left;font:500 14px 'Instrument Sans';color:var(--muted,#5F5B53);cursor:pointer">+ Add section or block</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:12px;background:#EEE8FB;color:#3E2A80">
+        <div style="font:600 13px/18px 'Instrument Sans'">AI review · {{ aiLeft }} of 4 left</div>
+        <div style="height:4px;border-radius:2px;background:rgba(91,63,168,.18);overflow:hidden"><div style="height:100%;background:#6B4FBB;width:{{ aiPct }}"></div></div>
+        <div style="font:400 12px/17px 'Instrument Sans'">Claude drafted this from Rowan’s email, Oct 29, 2:04 PM.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 8px"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Fields</span><button onClick="{{ toggleTokens }}" style="height:28px;padding:0 8px;border:1px solid var(--line,#DDD8CE);border-radius:7px;background:none;font:600 11px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">{{ tokensLabel }}</button></div>
+        <sc-for list="{{ fields }}" as="fd" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;padding:5px 8px;border-radius:7px"><span style="font:400 11px/15px 'IBM Plex Mono',monospace;color:#5B3FA8">{{ fd.token }}</span><span style="font:500 12px/16px 'Instrument Sans';color:var(--ink,#1C1B18);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ fd.value }}</span></div>
+        </sc-for>
+        <div style="padding:0 8px;font:400 11px/15px 'Instrument Sans';color:var(--muted,#5F5B53)">Type {{ brace }} in any paragraph to insert a field. Values fill in from the client, workspace, dates and quote.</div>
+      </div>
+      <div style="flex:1"></div>
+      <div style="display:flex;flex-direction:column;gap:6px;font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">
+        <div>Valid until <b style="color:var(--ink,#1C1B18);font-weight:600">Nov 28, 2026</b></div>
+        <div>Link <b style="color:var(--ink,#1C1B18);font-weight:600">No password</b></div>
+        <div>Owner <b style="color:var(--ink,#1C1B18);font-weight:600">Jonathan Garces</b></div>
+      </div>
+    </nav>
+
+    <div data-center="1" style="overflow:auto;background:var(--sunk,#E9E5DD);padding:28px 40px 80px;position:relative">
+      <sc-if value="{{ sent }}">
+        <div style="max-width:720px;margin:0 auto 16px;display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:12px;background:#E2F2F5;color:#0B5563">
+          <svg width="18" height="18" viewBox="{{ ic.send.v }}"><path fill="currentColor" d="{{ ic.send.d }}"></path></svg>
+          <div style="flex:1;font:500 14px/20px 'Instrument Sans'"><b>Sent to Rowan Vale</b> from {{ senderName }}. The document is now read-only. To change it, create a new version; re-sending rotates the link.</div>
+          <span style="font:600 14px 'Instrument Sans'">Open record →</span>
+        </div>
+      </sc-if>
+      <div style="max-width:720px;margin:0 auto;background:#FFFFFF;color:#1C1B18;border-radius:16px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);padding:56px 0 64px">
+        <div style="padding:0 64px 28px">
+          <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--accent,#365C4A)"><sc-for list="{{ hdr.eyebrow }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></div>
+          <h1 style="margin:10px 0 12px;font:600 40px/46px 'Source Serif 4',Georgia,serif;letter-spacing:-.015em">A new website for Brightline Foods</h1>
+          <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53"><sc-for list="{{ hdr.meta }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></div>
+        </div>
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="5">
+          <sc-if value="{{ s.inDoc }}">
+          <div data-sec="{{ s.key }}" style="position:relative;padding:20px 64px;background:{{ s.docBg }};scroll-margin-top:20px">
+            <sc-if value="{{ s.ai }}">
+              <div style="position:absolute;left:24px;top:24px;bottom:24px;width:3px;border-radius:2px;background:{{ s.gutter }}"></div>
+              <div style="position:absolute;right:16px;top:18px;display:flex;align-items:center;gap:8px">
+                <sc-if value="{{ s.needs }}">
+                  <button onClick="{{ s.mark }}" style="height:32px;padding:0 12px;border:1px solid #CDBFF0;border-radius:8px;background:#F6F2FE;color:#4A3196;font:600 13px 'Instrument Sans';cursor:pointer;display:flex;align-items:center;gap:6px"><svg width="13" height="12" viewBox="{{ ic.ai.v }}"><path fill="currentColor" d="{{ ic.ai.d }}"></path></svg>Mark reviewed</button>
+                </sc-if>
+                <sc-if value="{{ s.done }}">
+                  <span style="height:32px;padding:0 10px;display:flex;align-items:center;gap:6px;font:600 13px 'Instrument Sans';color:#146B3F"><svg width="12" height="12" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>Reviewed by you</span>
+                </sc-if>
+              </div>
+            </sc-if>
+            <h2 style="margin:0 0 10px;font:600 26px/32px 'Source Serif 4',Georgia,serif">{{ s.title }}</h2>
+            <sc-for list="{{ s.paras }}" as="p" hint-placeholder-count="1">
+              <p style="margin:0 0 14px;font:400 17px/28px 'Source Serif 4',Georgia,serif;max-width:600px;text-wrap:pretty"><sc-for list="{{ p }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></p>
+            </sc-for>
+            <sc-if value="{{ s.hasList }}">
+              <ul style="margin:0 0 14px;padding-left:22px;font:400 17px/28px 'Source Serif 4',Georgia,serif"><sc-for list="{{ s.list }}" as="li"><li><sc-for list="{{ li }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></li></sc-for></ul>
+            </sc-if>
+            <sc-if value="{{ s.isContract }}">
+              <div style="display:flex;align-items:center;gap:8px;margin:-4px 0 14px;font:500 12px/16px 'Instrument Sans';color:#5F5B53"><svg width="11" height="12" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg>From template · Contract v3 · <span style="color:var(--accent,#365C4A);font-weight:600">Edit for this proposal</span></div>
+              <sc-for list="{{ s.clauses }}" as="c" hint-placeholder-count="4">
+                <div style="padding:12px 0;border-top:1px solid #ECE8E1;position:relative">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-bottom:6px"><span style="font:600 13px/18px 'Instrument Sans';letter-spacing:.04em;text-transform:uppercase">{{ c.h }}</span><sc-if value="{{ c.conditional }}"><span style="padding:1px 8px;border-radius:999px;background:#E2F2F5;color:#0B5563;font:600 11px/16px 'Instrument Sans'">Shown when Own It Over Time is in the quote</span></sc-if><sc-if value="{{ c.draft }}"><span style="padding:1px 8px;border-radius:999px;background:#FBEEDB;color:#7A4800;font:600 11px/16px 'Instrument Sans'">Draft wording · replace with yours</span></sc-if></div>
+                  <sc-for list="{{ c.paras }}" as="p" hint-placeholder-count="1"><p style="margin:0 0 8px;font:400 15px/24px 'Source Serif 4',Georgia,serif;max-width:600px"><sc-for list="{{ p }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></p></sc-for>
+                </div>
+              </sc-for>
+              <button onClick="{{ toggleContract }}" style="width:100%;min-height:44px;border:1px solid #E8E4DC;border-radius:10px;background:#FBFAF7;font:600 14px 'Instrument Sans';color:#1C1B18;cursor:pointer;margin-top:6px">{{ contractToggleLabel }}</button>
+            </sc-if>
+            <sc-if value="{{ s.isQuote }}">
+              <p style="margin:0 0 18px;font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">Choose the website option that suits you, and tap any optional item to add or remove it. Totals update as you go.</p>
+              <div style="border-top:1.5px solid #1C1B18">
+                <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="5">
+                  <div draggable="true" onDragStart="{{ b.dStart }}" onDragOver="{{ b.dOver }}" onDrop="{{ b.dDrop }}" onDragEnd="{{ dEnd }}" style="position:relative;display:flex;flex-direction:column;gap:{{ b.docGap }};margin:{{ b.docMargin }};padding:{{ b.docPad }};border:{{ b.docBorder }};background:{{ b.docBg }};border-radius:16px;opacity:{{ b.op }};box-shadow:{{ b.drop }}">
+                    <sc-if value="{{ b.isGroup }}"><div style="position:relative"><span aria-hidden="true" style="position:absolute;left:-44px;top:4px;font:700 14px/1 'Instrument Sans';color:#B5AFA4;letter-spacing:-3px">⋮⋮</span><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px"><span style="display:flex;align-items:center;gap:8px"><span style="font:700 13px/18px 'Instrument Sans';letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#365C4A)">Choose one</span></span><span style="font:500 13px/18px 'Instrument Sans';color:#3E3B35">{{ b.countText }}</span></div></div></sc-if>
+                    <sc-for list="{{ b.items }}" as="q" hint-placeholder-count="1">
+                  <div draggable="{{ q.dragAttr }}" onDragStart="{{ q.dStart }}" onDragOver="{{ q.dOver }}" onDrop="{{ q.dDrop }}" onDragEnd="{{ dEnd }}" style="position:relative;border-bottom:{{ q.sep }};opacity:{{ q.op }};box-shadow:{{ q.drop }};cursor:grab">
+                    <span aria-hidden="true" style="position:absolute;left:-28px;top:18px;font:700 14px/1 'Instrument Sans';color:#B5AFA4;letter-spacing:-3px">⋮⋮</span>
+                    <div style="display:flex;gap:14px;padding:{{ q.rowPad }};margin:{{ q.rowMargin }};border:{{ q.rowBorder }};border-radius:12px;background:{{ q.rowBg }};align-items:flex-start;box-sizing:border-box">
+                      <sc-if value="{{ q.isAlt }}"><span style="flex:none;width:26px;height:26px;margin-top:1px;border-radius:13px;border:2px solid {{ q.boxBorder }};background:#fff;display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ q.on }}"><span style="width:12px;height:12px;border-radius:6px;background:var(--accent,#365C4A)"></span></sc-if></span></sc-if>
+                      <sc-if value="{{ q.isCheck }}"><span style="flex:none;width:26px;height:26px;margin-top:1px;border-radius:7px;border:2px solid {{ q.boxBorder }};background:{{ q.boxBg }};display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ q.on }}"><svg width="14" height="14" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if></span></sc-if>
+                      <sc-if value="{{ q.req }}"><span style="flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:#8A857B"><svg width="13" height="14" viewBox="{{ ic.lock.v }}"><path fill="currentColor" d="{{ ic.lock.d }}"></path></svg></span></sc-if>
+                      <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                        <span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span>
+                        <span style="font:400 15px/22px 'Source Serif 4',Georgia,serif;color:#5F5B53">{{ q.meta }}</span>
+                        <sc-if value="{{ q.multi }}"><span style="display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:8px;border-top:1px solid #E8E4DC"><sc-for list="{{ q.subs }}" as="u" hint-placeholder-count="2"><span style="display:flex;justify-content:space-between;gap:8px;font:400 14px/20px 'Instrument Sans'"><span style="color:#3E3B35">{{ u.label }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.amtFmt }}<span style="font-weight:400;color:#5F5B53">{{ u.per }}</span></span></span></sc-for></span></sc-if>
+                        <sc-if value="{{ q.hasTerms }}"><span style="margin-top:6px;padding:8px 10px;background:#F6F4EF;border-radius:8px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">{{ q.terms }}</span></sc-if>
+                        <sc-if value="{{ q.hasTag }}"><span style="font:600 12px/16px 'Instrument Sans';color:var(--accent,#365C4A);margin-top:2px">{{ q.clientTag }}</span></sc-if>
+                      </span>
+                      <sc-if value="{{ q.single }}"><span style="flex:none;text-align:right;font:600 15px/21px 'Instrument Sans';font-variant-numeric:tabular-nums;white-space:nowrap">{{ q.firstAmt }}<span style="font-weight:400;color:#5F5B53">{{ q.firstPer }}</span></span></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#F6F4EF;border-radius:12px;padding:16px;margin-top:20px">
+                <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.one }}</div></div>
+                <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.mon }}<span style="font:400 15px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+              </div>
+              <div style="margin-top:8px;font:500 12px/16px 'Instrument Sans';color:#5F5B53">Shown as the client sees it, with your defaults selected. Drag ⋮⋮ in the margin to reorder; edit amounts in the Quote panel.</div>
+              <p style="margin:14px 0 0;font:400 17px/28px 'Source Serif 4',Georgia,serif"><sc-for list="{{ investSentence }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;font-family:{{ chipFont }};font-size:{{ chipSize }};color:{{ chipInk }}">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></p>
+            </sc-if>
+          </div>
+          </sc-if>
+        </sc-for>
+        <div style="padding:20px 64px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="border:1px solid #E8E4DC;border-radius:12px;padding:14px 16px;font:400 13px/18px 'Instrument Sans';color:#5F5B53"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase">Client signature</div><div style="font:600 16px/24px 'Source Serif 4',Georgia,serif;color:#1C1B18;margin-top:4px">Rowan Vale</div>Owner, Brightline Foods</div>
+          <div style="border:1px solid #E8E4DC;border-radius:12px;padding:14px 16px;font:400 13px/18px 'Instrument Sans';color:#5F5B53"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase">Company signature</div><div style="font:600 16px/24px 'Source Serif 4',Georgia,serif;color:#1C1B18;margin-top:4px">Jonathan Garces</div>Owner, MarketFresh Studios</div>
+        </div>
+      </div>
+      <div style="max-width:720px;margin:14px auto 0;font:400 12px/16px 'Instrument Sans';color:var(--muted,#5F5B53);text-align:center">Shaded words are fields: client, workspace, dates and totals fill in automatically. Toggle “Show names” in Fields to see them. Changes save automatically.</div>
+    </div>
+
+    <aside style="border-left:1px solid var(--line,#DDD8CE);background:var(--surface,#FBFAF7);display:flex;flex-direction:column;min-height:0">
+      <div role="tablist" style="flex:none;display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--line,#DDD8CE)">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="3">
+          <button role="tab" aria-selected="{{ tb.on }}" onClick="{{ tb.go }}" style="height:44px;padding:0 12px;border:0;background:none;border-bottom:2px solid {{ tb.bar }};font:600 14px 'Instrument Sans';color:{{ tb.ink }};cursor:pointer;display:flex;align-items:center;gap:8px">{{ tb.label }}<sc-if value="{{ tb.hasCount }}"><span style="min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#FBE9E7;color:#A3261E;font:600 12px/20px 'Instrument Sans';box-sizing:border-box">{{ tb.count }}</span></sc-if></button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ tabQuote }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="flex:1;overflow:auto;padding:16px 16px 20px;display:flex;flex-direction:column;gap:12px">
+          <sc-if value="{{ quoteNeeds }}">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#EEE8FB;color:#3E2A80;font:500 13px/18px 'Instrument Sans'"><svg width="14" height="13" viewBox="{{ ic.ai.v }}" style="flex:none"><path fill="currentColor" d="{{ ic.ai.d }}"></path></svg><span style="flex:1">Claude built this quote. Check each line, then mark it reviewed.</span><button onClick="{{ markQuote }}" style="height:30px;padding:0 10px;border:1px solid #CDBFF0;border-radius:7px;background:#fff;color:#4A3196;font:600 12px 'Instrument Sans';cursor:pointer">Mark reviewed</button></div>
+          </sc-if>
+          <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">Drag ⋮⋮ to reorder; the client sees this order. Link optional lines as alternatives and they group together; drag inside a group to reorder its options.</div>
+          <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="5">
+            <div draggable="true" onDragStart="{{ b.dStart }}" onDragOver="{{ b.dOver }}" onDrop="{{ b.dDrop }}" onDragEnd="{{ dEnd }}" style="display:flex;flex-direction:column;gap:8px;padding:{{ b.pPad }};border:{{ b.pBorder }};background:{{ b.pBg }};border-radius:14px;opacity:{{ b.op }};box-shadow:{{ b.drop }}">
+              <sc-if value="{{ b.isGroup }}"><div style="display:flex;align-items:center;gap:6px;padding:0 2px"><span aria-label="Drag group to reorder" title="Drag group to reorder" style="flex:none;width:20px;height:28px;display:flex;align-items:center;justify-content:center;cursor:grab;font:700 14px/1 'Instrument Sans';color:#6F9BA4;letter-spacing:-3px">⋮⋮</span><span style="flex:1;font:700 13px/18px 'Instrument Sans';color:#0B5563;letter-spacing:.02em">⇄ CHOOSE ONE · client picks one</span><span style="font:500 12px 'Instrument Sans';color:#3F7D88">Drag inside to reorder</span></div></sc-if>
+              <sc-for list="{{ b.items }}" as="q" hint-placeholder-count="1">
+            <div draggable="{{ q.dragAttr }}" onDragStart="{{ q.dStart }}" onDragOver="{{ q.dOver }}" onDrop="{{ q.dDrop }}" onDragEnd="{{ dEnd }}" style="border:1px solid {{ q.border }};border-radius:12px;background:var(--bg,#F3F0EA);padding:12px;display:flex;flex-direction:column;gap:10px;opacity:{{ q.op }};box-shadow:{{ q.drop }};box-sizing:border-box;min-width:0">
+              <div style="display:flex;align-items:flex-start;gap:6px"><span aria-label="Drag to reorder" title="Drag to reorder" style="flex:none;width:20px;height:28px;display:flex;align-items:center;justify-content:center;cursor:grab;font:700 14px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 14px/20px 'Instrument Sans'">{{ q.name }}</div><div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ q.meta }}</div></div><span style="flex:none;padding:2px 8px;border-radius:999px;border:1px solid {{ q.srcBorder }};font:600 11px/16px 'Instrument Sans';color:{{ q.srcInk }}">{{ q.src }}</span><button onClick="{{ q.remove }}" aria-label="Remove {{ q.name }}" title="Remove line" style="flex:none;width:28px;height:28px;border:0;border-radius:7px;background:none;font:500 18px/1 'Instrument Sans';color:var(--muted,#5F5B53);cursor:pointer">×</button></div>
+              <sc-for list="{{ q.subs }}" as="u" hint-placeholder-count="1"><div style="display:flex;flex-direction:column;gap:4px">
+                      <sc-if value="{{ u.hasLabel }}"><span style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ u.label }}</span></sc-if>
+                      <div style="display:grid;grid-template-columns:minmax(0,1fr) 48px 116px;gap:6px;align-items:center">
+                        <label style="min-width:0;display:flex;align-items:center;height:38px;border:1px solid var(--line,#DDD8CE);border-radius:8px;background:var(--surface,#FBFAF7);padding:0 10px;gap:4px;box-sizing:border-box"><span style="font:500 14px 'Instrument Sans';color:var(--muted,#5F5B53)">$</span><input value="{{ u.amt }}" onChange="{{ u.setAmt }}" draggable="true" onDragStart="{{ noDrag }}" aria-label="Amount" inputmode="decimal" style="flex:1;min-width:0;width:100%;border:0;outline:none;background:transparent;font:600 15px 'Instrument Sans';font-variant-numeric:tabular-nums;color:var(--ink,#1C1B18)"></input></label>
+                        <span aria-label="Quantity" style="height:38px;border:1px solid var(--line,#DDD8CE);border-radius:8px;background:var(--surface,#FBFAF7);display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans';box-sizing:border-box">× 1</span>
+                        <select value="{{ u.iv }}" onChange="{{ u.setIv }}" aria-label="Billing interval" style="width:100%;min-width:0;height:38px;border:1px solid var(--line,#DDD8CE);border-radius:8px;background:var(--surface,#FBFAF7);padding:0 8px;font:500 13px 'Instrument Sans';color:var(--ink,#1C1B18);box-sizing:border-box"><option value="one">One-time</option><option value="mon">Monthly</option><option value="yr">Yearly</option></select>
+                      </div>
+                    </div></sc-for>
+              <sc-if value="{{ q.hasTerms }}"><div style="font:400 12px/17px 'Instrument Sans';color:#3E3B35;background:var(--surface,#FBFAF7);border-radius:8px;padding:7px 10px">{{ q.terms }}</div></sc-if>
+              <sc-if value="{{ q.flagOpen }}">
+                <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;background:#EEE8FB;color:#3E2A80">
+                  <div style="font:500 13px/18px 'Instrument Sans'"><b>AI entered $250.</b> The catalog list price is <b>$295</b>.</div>
+                  <div style="display:flex;gap:8px"><button onClick="{{ useList }}" style="height:32px;padding:0 12px;border:0;border-radius:7px;background:#6B4FBB;color:#fff;font:600 13px 'Instrument Sans';cursor:pointer">Use $295</button><button onClick="{{ keepAi }}" style="height:32px;padding:0 12px;border:1px solid #CDBFF0;border-radius:7px;background:#fff;color:#4A3196;font:600 13px 'Instrument Sans';cursor:pointer">Keep $250</button></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ q.hasWas }}"><div style="font:400 12px 'Instrument Sans';color:var(--muted,#5F5B53)">Kept below list · <s>$295</s> was</div></sc-if>
+              <sc-if value="{{ q.custom }}"><div style="font:500 12px/17px 'Instrument Sans';color:#7A4800">Custom line. Check the scope and price; it has no accounting item yet.</div></sc-if>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font:500 13px 'Instrument Sans'">
+                <button onClick="{{ q.toggleOpt }}" role="switch" aria-checked="{{ q.opt }}" style="display:flex;align-items:center;gap:8px;height:28px;border:0;background:none;padding:0;cursor:pointer;color:var(--ink,#1C1B18);font:500 13px 'Instrument Sans'"><span style="width:32px;height:18px;border-radius:9px;background:{{ q.optTrack }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ q.optKnob }};width:14px;height:14px;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></span>Optional</button>
+                <sc-if value="{{ q.opt }}"><button onClick="{{ q.toggleOn }}" style="height:28px;border:0;background:none;padding:0;cursor:pointer;font:500 13px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ q.onLabel }}</button></sc-if>
+                <sc-if value="{{ q.opt }}"><button onClick="{{ q.toggleAlt }}" title="Client picks one of the linked lines" style="white-space:nowrap;height:26px;padding:0 8px;border:1px solid {{ q.altBorder }};border-radius:999px;background:{{ q.altBg }};cursor:pointer;font:600 12px 'Instrument Sans';color:{{ q.altInk }}">{{ q.altLabel }}</button></sc-if>
+                <span style="flex:1"></span>
+                <button style="height:28px;border:0;background:none;padding:0;cursor:pointer;font:600 13px 'Instrument Sans';color:var(--muted,#5F5B53)">+ Sub-line</button>
+                <button onClick="{{ toRef }}" style="height:28px;border:0;background:none;padding:0;cursor:pointer;font:600 13px 'Instrument Sans';color:var(--accent-text,#365C4A)">Look up</button>
+              </div>
+            </div>
+          </sc-for>
+                  </div>
+                </sc-for>
+          <div style="position:relative;display:flex;gap:8px">
+            <button onClick="{{ toggleAdd }}" aria-expanded="{{ addOpen }}" style="flex:1;height:40px;border:1px solid var(--line,#DDD8CE);border-radius:10px;background:var(--surface,#FBFAF7);display:flex;align-items:center;gap:8px;padding:0 12px;font:500 14px 'Instrument Sans';color:var(--muted,#5F5B53);cursor:pointer"><svg width="13" height="13" viewBox="{{ ic.search.v }}"><path fill="currentColor" d="{{ ic.search.d }}"></path></svg>Add from catalog…</button>
+            <button style="height:40px;padding:0 14px;border:1px solid var(--line,#DDD8CE);border-radius:10px;background:var(--surface,#FBFAF7);font:600 14px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">Custom line</button>
+            <sc-if value="{{ addOpen }}">
+              <div role="listbox" style="position:absolute;left:0;right:0;bottom:46px;background:var(--surface,#FBFAF7);border:1px solid var(--line,#DDD8CE);border-radius:12px;box-shadow:0 2px 4px rgba(20,18,14,.06),0 8px 16px rgba(20,18,14,.08);padding:6px;display:flex;flex-direction:column;z-index:5">
+                <sc-for list="{{ addable }}" as="a" hint-placeholder-count="3">
+                  <button onClick="{{ a.add }}" role="option" style="display:flex;justify-content:space-between;gap:10px;min-height:40px;padding:0 10px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer;font:500 14px 'Instrument Sans';color:var(--ink,#1C1B18);align-items:center"><span>{{ a.name }}</span><span style="font:400 12px 'Instrument Sans';color:var(--muted,#5F5B53);white-space:nowrap">{{ a.price }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="flex:none;border-top:1px solid var(--line,#DDD8CE);padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;background:var(--surface,#FBFAF7)">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Client sees by default</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">One-time</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.one }}</div></div>
+            <div><div style="font:500 12px 'Instrument Sans';color:var(--muted,#5F5B53)">Monthly</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums;letter-spacing:-.01em">{{ t.mon }}<span style="font:400 14px 'Instrument Sans';color:var(--muted,#5F5B53)">/mo</span></div></div>
+          </div>
+          <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">Depending on the client’s choices: {{ t.rangeOne }} one-time · {{ t.rangeMon }}/mo</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ tabRef }}">
+      <div style="flex:1;min-height:0;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font:600 15px/22px 'Instrument Sans'">Pricing playbook</div><div style="font:400 12px 'IBM Plex Mono',monospace;color:var(--muted,#5F5B53)">v1.17 · Oct 15, 2026</div></div>
+        <label style="display:flex;align-items:center;gap:8px;height:40px;border:1.5px solid var(--ink,#1C1B18);border-radius:10px;padding:0 12px;background:var(--bg,#F3F0EA)"><svg width="14" height="14" viewBox="{{ ic.search.v }}"><path fill="currentColor" d="{{ ic.search.d }}"></path></svg><input value="{{ refQ }}" onChange="{{ setRefQ }}" aria-label="Search the pricing reference" style="flex:1;border:0;outline:none;background:transparent;font:500 14px 'Instrument Sans';color:var(--ink,#1C1B18)"></input><span style="font:400 12px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ refHits }}</span></label>
+        <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">Read-only text from your linked reference. The app never sets or suggests prices; you type every amount.</div>
+        <sc-for list="{{ refItems }}" as="r" hint-placeholder-count="3">
+          <div style="border-top:1px solid var(--line,#DDD8CE);padding-top:12px;display:flex;flex-direction:column;gap:6px">
+            <div style="font:600 14px/20px 'Instrument Sans'">{{ r.h }}</div>
+            <div style="font:400 14px/22px 'Instrument Sans';color:#3E3B35;white-space:pre-line">{{ r.body }}</div>
+          </div>
+        </sc-for>
+        <div style="font:400 12px 'IBM Plex Mono',monospace;color:var(--muted,#5F5B53)">Fetched Oct 29, 2:00 PM · sha256 4f1c…9a2e</div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ tabSend }}">
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Before you send</div>
+            <sc-for list="{{ checks }}" as="c" hint-placeholder-count="5">
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:{{ c.bg }}">
+                <span style="flex:none;width:20px;height:20px;border-radius:10px;background:{{ c.dotBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px 'Instrument Sans';margin-top:1px">{{ c.glyph }}</span>
+                <div style="flex:1;min-width:0"><div style="font:600 14px/20px 'Instrument Sans';color:{{ c.ink }}">{{ c.title }}</div><sc-if value="{{ c.hasSub }}"><div style="font:400 13px/18px 'Instrument Sans';color:var(--muted,#5F5B53)">{{ c.sub }}</div></sc-if></div>
+                <sc-if value="{{ c.hasAct }}"><button onClick="{{ c.act }}" style="flex:none;height:30px;padding:0 10px;border:1px solid var(--line,#DDD8CE);border-radius:7px;background:var(--surface,#FBFAF7);font:600 12px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer">{{ c.actLabel }}</button></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5F5B53)">Email</div>
+            <div style="display:grid;grid-template-columns:64px 1fr;gap:10px 12px;align-items:center;font:400 14px 'Instrument Sans'">
+              <span style="color:var(--muted,#5F5B53)">From</span>
+              <button onClick="{{ cycleSender }}" style="height:38px;border:1px solid var(--line,#DDD8CE);border-radius:8px;background:var(--bg,#F3F0EA);text-align:left;padding:0 10px;font:500 14px 'Instrument Sans';color:var(--ink,#1C1B18);cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span>{{ senderName }} <span style="color:var(--muted,#5F5B53)">{{ senderNote }}</span></span><span>▾</span></button>
+              <span style="color:var(--muted,#5F5B53)">To</span>
+              <span style="font:500 14px 'Instrument Sans'">Rowan Vale · r.vale@brightline.example</span>
+              <span style="color:var(--muted,#5F5B53);align-self:start;padding-top:8px">Note</span>
+              <div style="min-height:72px;border:1px solid var(--line,#DDD8CE);border-radius:8px;background:var(--bg,#F3F0EA);padding:8px 10px;font:400 14px/20px 'Instrument Sans'">Hi Rowan, here’s the proposal we talked about. You can choose the add-ons that suit you and sign on your phone.</div>
+            </div>
+            <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53)">The proposal link is added to the email automatically. Replies go to {{ senderName }}.</div>
+            <button onClick="{{ togglePw }}" role="switch" aria-checked="{{ pw }}" style="display:flex;align-items:center;gap:10px;height:36px;border:0;background:none;padding:0;cursor:pointer;font:500 14px 'Instrument Sans';color:var(--ink,#1C1B18)"><span style="width:32px;height:18px;border-radius:9px;background:{{ pwTrack }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ pwKnob }};width:14px;height:14px;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></span>Protect the link with a password</button>
+          </div>
+          <sc-if value="{{ aiOpen }}">
+            <button onClick="{{ toggleAiConfirm }}" role="checkbox" aria-checked="{{ aiConfirm }}" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid #CDBFF0;background:#F6F2FE;text-align:left;cursor:pointer;color:#3E2A80">
+              <span style="flex:none;width:20px;height:20px;border-radius:5px;border:2px solid #6B4FBB;background:{{ aiBoxBg }};display:flex;align-items:center;justify-content:center;box-sizing:border-box"><sc-if value="{{ aiConfirm }}"><svg width="11" height="11" viewBox="0 0 14 14"><polyline points="2.5,7.5 5.5,10.5 11.5,3.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></sc-if></span>
+              <span style="font:500 13px/18px 'Instrument Sans'">I’ve read the AI-written {{ aiLeftNames }} and they’re ready to send.</span>
+            </button>
+          </sc-if>
+        </div>
+        <div style="flex:none;border-top:1px solid var(--line,#DDD8CE);padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface,#FBFAF7)">
+          <div style="display:flex;gap:8px">
+            <a href="Redesign 01 - IA and Client Flow.dc.html#1a" style="height:48px;padding:0 16px;display:flex;align-items:center;border:1px solid var(--line,#DDD8CE);border-radius:10px;font:600 15px 'Instrument Sans';color:var(--ink,#1C1B18);text-decoration:none">Preview</a>
+            <button onClick="{{ doSend }}" aria-disabled="{{ cantSend }}" style="flex:1;height:48px;border:0;border-radius:10px;background:var(--accent,#365C4A);color:#fff;font:600 15px 'Instrument Sans';cursor:pointer;opacity:{{ sendOpacity }}">{{ sendLabel }}</button>
+          </div>
+          <div style="font:400 12px/17px 'Instrument Sans';color:var(--muted,#5F5B53);text-align:center">{{ sendReason }}</div>
+        </div>
+      </div>
+      </sc-if>
+    </aside>
+  </div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;border-bottom:1px solid #CFC9BE;padding-bottom:12px;max-width:1440px;margin:56px 0 28px">
+  <h2 style="margin:0;font:600 30px/36px 'Source Serif 4',Georgia,serif;letter-spacing:-.01em">Editor on phone</h2>
+  <span style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">One section at a time. The quote is its own sheet; the pricing reference slides up over it.</span>
+</div>
+
+<div class="dv-opts">
+
+<div class="dv-opt" id="2b">
+  <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Draft overview</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:#F3F0EA;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <div style="flex:none;padding:14px 16px 12px;background:#FBFAF7;border-bottom:1px solid #DDD8CE;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;min-height:32px"><span style="font:600 15px 'Instrument Sans';color:#5F5B53">← Proposals</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">Saved</span></div>
+      <div style="font:600 20px/26px 'Source Serif 4',Georgia,serif">A new website for Brightline Foods</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="padding:2px 9px;border-radius:999px;background:#ECE8E1;color:#5F5B53;font:600 12px/18px 'Instrument Sans'">Draft</span><span style="padding:2px 9px;border-radius:999px;background:#EEE8FB;color:#5B3FA8;font:600 12px/18px 'Instrument Sans'">Drafted by AI — needs review</span></div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:#EEE8FB;color:#3E2A80">
+        <div style="font:600 15px/21px 'Instrument Sans'">Claude drafted this from Rowan’s email</div>
+        <div style="font:400 13px/18px 'Instrument Sans'">3 of 4 sections still to read. Tap one to review it.</div>
+        <div style="height:4px;border-radius:2px;background:rgba(91,63,168,.18)"><div style="width:25%;height:100%;border-radius:2px;background:#6B4FBB"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px">
+        <div style="display:flex;gap:12px;align-items:center;min-height:64px;padding:10px 14px;border-bottom:1px solid #DDD8CE"><span style="width:8px;height:8px;border-radius:4px;background:#6B4FBB;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 15px/21px 'Instrument Sans'">Overview</div><div style="font:400 13px/18px 'Source Serif 4',Georgia,serif;color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rowan, thank you for walking us through the new menu…</div></div><span style="font:600 12px 'Instrument Sans';color:#5B3FA8">Review</span></div>
+        <div style="display:flex;gap:12px;align-items:center;min-height:64px;padding:10px 14px;border-bottom:1px solid #DDD8CE"><span style="width:8px;height:8px;border-radius:4px;background:#2E7D50;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 15px/21px 'Instrument Sans'">What we’ll do</div><div style="font:400 13px/18px 'Source Serif 4',Georgia,serif;color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Design and build a site with online catering…</div></div><span style="font:600 12px 'Instrument Sans';color:#146B3F">Reviewed</span></div>
+        <div style="display:flex;gap:12px;align-items:center;min-height:64px;padding:10px 14px;border-bottom:1px solid #DDD8CE"><span style="width:8px;height:8px;border-radius:4px;background:#6B4FBB;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 15px/21px 'Instrument Sans'">Timeline</div><div style="font:400 13px/18px 'Source Serif 4',Georgia,serif;color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">We’ll start the week of November 9…</div></div><span style="font:600 12px 'Instrument Sans';color:#5B3FA8">Review</span></div>
+        <div style="display:flex;gap:12px;align-items:center;min-height:64px;padding:10px 14px"><span style="width:8px;height:8px;border-radius:4px;background:#CFC9BE;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 15px/21px 'Instrument Sans'">Next steps</div><div style="font:400 13px/18px 'Source Serif 4',Georgia,serif;color:#5F5B53">From template</div></div><span style="font:500 18px 'Instrument Sans';color:#8A857B">›</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 15px 'Instrument Sans'">Quote · 6 lines</span><span style="font:600 12px 'Instrument Sans';color:#5B3FA8">1 price to check</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">One-time</div><div style="font:650 20px 'Instrument Sans';font-variant-numeric:tabular-nums">$1,150</div></div><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">Monthly</div><div style="font:650 20px 'Instrument Sans';font-variant-numeric:tabular-nums">$260<span style="font:400 13px 'Instrument Sans';color:#5F5B53">/mo</span></div></div></div>
+        <div style="height:44px;border:1px solid #DDD8CE;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans'">Edit quote</div>
+      </div>
+    </div>
+    <div style="flex:none;padding:12px 16px 18px;background:#FBFAF7;border-top:1px solid #DDD8CE;display:flex;gap:10px">
+      <div style="height:52px;padding:0 18px;border:1px solid #DDD8CE;border-radius:12px;display:flex;align-items:center;font:600 16px 'Instrument Sans'">Preview</div>
+      <div style="flex:1;height:52px;border-radius:12px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Instrument Sans'">Review &amp; send</div>
+    </div>
+  </div>
+  <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">The proposal as a list of sections, each with its review state, and the quote as one card with both totals. Bottom tabs are hidden inside a proposal so the two actions own the thumb zone.</div>
+</div>
+
+<div class="dv-opt" id="2c">
+  <div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Edit one section</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:#FFFFFF;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <div style="flex:none;padding:12px 16px;border-bottom:1px solid #E8E4DC;display:flex;align-items:center;gap:8px;min-height:52px;box-sizing:border-box">
+      <span style="font:600 15px 'Instrument Sans';color:#365C4A">Done</span>
+      <span style="flex:1;text-align:center;font:600 14px 'Instrument Sans'">Overview <span style="font-weight:400;color:#5F5B53">· 1 of 4</span></span>
+      <span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font:500 18px 'Instrument Sans';color:#5F5B53">‹</span><span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font:500 18px 'Instrument Sans';color:#1C1B18">›</span>
+    </div>
+    <div style="flex:1;overflow:hidden;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#EEE8FB;color:#3E2A80;font:500 13px/18px 'Instrument Sans'"><span style="flex:1">Written by Claude, Oct 29</span><span style="height:32px;padding:0 10px;border-radius:7px;background:#6B4FBB;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Mark reviewed</span></div>
+      <div style="font:600 26px/32px 'Source Serif 4',Georgia,serif">Overview</div>
+      <div style="font:400 17px/28px 'Source Serif 4',Georgia,serif">Rowan, thank you for walking us through the new menu and the catering side of the business.</div>
+      <div style="font:400 17px/28px 'Source Serif 4',Georgia,serif">This proposal covers a new website you’ll own outright over time, ongoing care once it’s live, and two optional add-ons<span style="display:inline-block;width:2px;height:20px;background:#365C4A;vertical-align:-4px;margin-left:1px"></span></div>
+    </div>
+    <div style="flex:none;height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;background:#F3F0EA;border-top:1px solid #DDD8CE">
+      <span style="width:44px;height:36px;display:flex;align-items:center;justify-content:center;font:700 16px 'Instrument Sans'">B</span><span style="width:44px;height:36px;display:flex;align-items:center;justify-content:center;font:italic 500 16px 'Source Serif 4',serif">I</span><span style="width:44px;height:36px;display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans'">H2</span><span style="width:44px;height:36px;display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans'">• —</span><span style="flex:1"></span><span style="height:32px;padding:0 10px;border-radius:7px;background:#ECE8E1;display:flex;align-items:center;font:500 12px 'IBM Plex Mono',monospace">{ } variable</span>
+    </div>
+    <div style="flex:none;height:280px;background:repeating-linear-gradient(135deg,#E2DED6 0 8px,#DBD6CD 8px 16px);display:flex;align-items:center;justify-content:center;font:400 11px 'IBM Plex Mono',monospace;color:#5F5B53">system keyboard</div>
+  </div>
+  <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">Full-screen, one section. Formatting sits above the keyboard; ‹ › moves between sections without going back. Mark reviewed is where the reading happens.</div>
+</div>
+
+<div class="dv-opt" id="2d">
+  <div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Quote sheet</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:#7A766E;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <div style="height:48px;flex:none"></div>
+    <div style="flex:1;min-height:0;background:#FBFAF7;border-radius:20px 20px 0 0;display:flex;flex-direction:column">
+      <div style="flex:none;padding:8px 16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;border-bottom:1px solid #DDD8CE">
+        <div style="width:40px;height:5px;border-radius:3px;background:#CFC9BE"></div>
+        <div style="width:100%;display:flex;justify-content:space-between;align-items:center;min-height:36px"><span style="font:600 18px 'Instrument Sans'">Quote</span><span style="font:600 15px 'Instrument Sans';color:#365C4A">Done</span></div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:10px 16px;display:flex;flex-direction:column;gap:4px">
+        <div style="font:400 12px 'Instrument Sans';color:#5F5B53;padding-bottom:4px">Press and hold ⋮⋮ to reorder.</div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid #E8E4DC"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px;margin-top:3px">⋮⋮</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="font:600 15px 'Instrument Sans'">Website Build — Own It Over Time</div><div style="display:flex;justify-content:space-between;font:400 13px 'Instrument Sans'"><span style="color:#5F5B53">Kickoff</span><span style="font-weight:600">$500</span></div><div style="display:flex;justify-content:space-between;font:400 13px 'Instrument Sans'"><span style="color:#5F5B53">Monthly</span><span style="font-weight:600">$175<span style="font-weight:400;color:#5F5B53">/mo</span></span></div><div style="font:500 12px 'Instrument Sans';color:#0B5563">Optional · ⇄ choose one · selected for client</div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid #E8E4DC"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 15px 'Instrument Sans'">Website Build — Own It Now</div><div style="font:500 12px 'Instrument Sans';color:#0B5563">Optional · ⇄ choose one</div></div><span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right">$2,750</span></div>
+        <div style="display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid #E8E4DC"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 15px 'Instrument Sans'">Catering menu photography</div><div style="font:500 12px 'Instrument Sans';color:#7A4800">Custom · check scope and price</div></div><span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right">$650</span></div>
+        <div style="display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid #E8E4DC;background:#F6F2FE;margin:0 -16px;padding:0 16px"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 15px 'Instrument Sans'">AI Search Readiness Audit</div><div style="font:500 12px 'Instrument Sans';color:#5B3FA8">Optional · AI price differs from list</div></div><span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right">$250</span></div>
+        <div style="display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid #E8E4DC"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 15px 'Instrument Sans'">Care Standard</div><div style="font:400 12px 'Instrument Sans';color:#5F5B53">Optional · ticked for client</div></div><span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right">$85<span style="font-weight:400;color:#5F5B53">/mo</span></span></div>
+        <div style="display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid #E8E4DC"><span style="font:700 13px/1 'Instrument Sans';color:#A39D92;letter-spacing:-3px;width:16px">⋮⋮</span><div style="flex:1;min-width:0"><div style="font:600 15px 'Instrument Sans'">Local Visibility Core</div><div style="font:400 12px 'Instrument Sans';color:#5F5B53">Optional · unticked</div></div><span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right">$295<span style="font-weight:400;color:#5F5B53">/mo</span></span></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;height:44px;border:1px solid #DDD8CE;border-radius:10px;display:flex;align-items:center;padding:0 12px;font:500 14px 'Instrument Sans';color:#5F5B53">+ Add from catalog</div><div style="height:44px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;display:flex;align-items:center;font:600 14px 'Instrument Sans'">Custom</div></div>
+      </div>
+      <div style="flex:none;padding:12px 16px 20px;border-top:1px solid #DDD8CE;box-shadow:0 -8px 24px rgba(20,18,14,.06);display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 22px 'Instrument Sans';font-variant-numeric:tabular-nums">$1,150</div></div>
+        <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 22px 'Instrument Sans';font-variant-numeric:tabular-nums">$260<span style="font:400 13px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">One ordered list, the same order the client sees. Own It Over Time and Own It Now are ordinary lines, linked as “choose one”; kickoff and monthly fees are sub-lines. Swipe a row left to remove it. Totals stay split and pinned.</div>
+</div>
+
+<div class="dv-opt" id="2e">
+  <div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Edit a line + pricing reference</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:#4A4740;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <div style="height:40px;flex:none"></div>
+    <div style="flex:1;min-height:0;background:#FBFAF7;border-radius:20px 20px 0 0;padding:8px 16px;display:flex;flex-direction:column;gap:14px">
+      <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:#CFC9BE"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 15px 'Instrument Sans';color:#5F5B53">Cancel</span><span style="font:600 16px 'Instrument Sans'">AI Search Readiness Audit</span><span style="font:600 15px 'Instrument Sans';color:#365C4A">Save</span></div>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Amount</span><span style="height:56px;border:1.5px solid #6B4FBB;border-radius:12px;display:flex;align-items:center;padding:0 14px;font:650 24px 'Instrument Sans';font-variant-numeric:tabular-nums">$250</span><span style="font:500 13px 'Instrument Sans';color:#5B3FA8">AI entered this. Catalog list price is $295.</span></label>
+      <div style="display:flex;background:#E8E4DC;border-radius:10px;padding:3px"><span style="flex:1;height:40px;border-radius:8px;background:#FBFAF7;display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans'">One-time</span><span style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans';color:#5F5B53">Monthly</span><span style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;font:600 14px 'Instrument Sans';color:#5F5B53">Yearly</span></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:470px;background:#FFFFFF;border-radius:20px 20px 0 0;box-shadow:0 -12px 32px rgba(20,18,14,.22);padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px">
+      <div style="align-self:center;width:40px;height:5px;border-radius:3px;background:#CFC9BE"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 17px 'Instrument Sans'">Pricing playbook</span><span style="font:400 11px 'IBM Plex Mono',monospace;color:#5F5B53">v1.17</span></div>
+      <div style="height:44px;border:1.5px solid #1C1B18;border-radius:10px;display:flex;align-items:center;padding:0 12px;font:500 15px 'Instrument Sans'">audit</div>
+      <div style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Reference only. You type every amount.</div>
+      <div style="border-top:1px solid #E8E4DC;padding-top:10px"><div style="font:600 14px 'Instrument Sans'">AI Search Readiness <span style="background:#FBEEDB">Audit</span></div><div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Standard rate $295. Waive for clients on Care Pro. Discounts need Jonathan’s OK.</div></div>
+      <div style="border-top:1px solid #E8E4DC;padding-top:10px"><div style="font:600 14px 'Instrument Sans'">Legacy <span style="background:#FBEEDB">audit</span> (retired)</div><div style="font:400 14px/21px 'Instrument Sans';color:#3E3B35">Do not quote. Replaced by AI Search Readiness in v1.12.</div></div>
+    </div>
+  </div>
+  <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">Tapping “Look up” on a line slides the reference up over the line editor, already searched for the line’s name. Swipe down to return to the amount field.</div>
+</div>
+
+<div class="dv-opt" id="2f">
+  <div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>Review &amp; send</div>
+  <div style="width:375px;height:780px;border-radius:38px;border:1px solid #C9C3B7;background:#F3F0EA;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+    <div style="flex:none;padding:12px 16px;background:#FBFAF7;border-bottom:1px solid #DDD8CE;display:flex;align-items:center;min-height:52px;box-sizing:border-box"><span style="font:600 15px 'Instrument Sans';color:#5F5B53">← Edit</span><span style="flex:1;text-align:center;font:600 16px 'Instrument Sans'">Review &amp; send</span><span style="width:52px"></span></div>
+    <div style="flex:1;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Before you send · 1 left</div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:#FBE9E7"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#B3261E;color:#fff;font:700 12px/20px 'Instrument Sans';text-align:center">!</span><div style="flex:1"><div style="font:600 14px/20px 'Instrument Sans';color:#8E1E17">Catering menu photography has no accounting item</div><div style="font:400 13px/18px 'Instrument Sans';color:#5F5B53">Map it, or invoice it manually.</div></div></div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:#FBEEDB"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#8A5200;color:#fff;font:700 12px/20px 'Instrument Sans';text-align:center">!</span><div style="flex:1"><div style="font:600 14px/20px 'Instrument Sans';color:#6E4100">Custom line: check the scope and price</div></div></div>
+      <div style="display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:#FBFAF7;border:1px solid #DDD8CE"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#146B3F;color:#fff;font:700 11px/20px 'Instrument Sans';text-align:center">✓</span><div style="font:600 14px 'Instrument Sans'">AI content reviewed · prices checked</div></div>
+      <div style="display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:#FBFAF7;border:1px solid #DDD8CE"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#146B3F;color:#fff;font:700 11px/20px 'Instrument Sans';text-align:center">✓</span><div style="font:600 14px 'Instrument Sans'">Both signature blocks · valid to Nov 28</div></div>
+      <div style="display:flex;flex-direction:column;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:12px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 14px;border-bottom:1px solid #DDD8CE;font:400 14px 'Instrument Sans'"><span style="color:#5F5B53">From</span><span style="font-weight:600">Jonathan Garces ▾</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 14px;border-bottom:1px solid #DDD8CE;font:400 14px 'Instrument Sans'"><span style="color:#5F5B53">To</span><span>Rowan Vale</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 14px;font:400 14px 'Instrument Sans'"><span style="color:#5F5B53">Note</span><span style="color:#5F5B53">Hi Rowan, here’s the… ›</span></div>
+      </div>
+    </div>
+    <div style="flex:none;padding:12px 16px 18px;background:#FBFAF7;border-top:1px solid #DDD8CE;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:10px"><div style="height:52px;padding:0 16px;border:1px solid #DDD8CE;border-radius:12px;display:flex;align-items:center;font:600 16px 'Instrument Sans'">Preview</div><div style="flex:1;height:52px;border-radius:12px;background:#365C4A;opacity:.45;color:#fff;display:flex;align-items:center;justify-content:center;font:600 16px 'Instrument Sans'">Send to Rowan</div></div>
+      <div style="font:400 12px 'Instrument Sans';color:#5F5B53;text-align:center">Fix 1 item above to send.</div>
+    </div>
+  </div>
+  <div style="width:375px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">The same checklist as desktop, blockers first. A disabled Send always says why underneath.</div>
+</div>
+
+</div>
+
+<p class="dv-next">Next: tablet 768 editor (rail becomes a drawer), then record + countersign, dashboard and the full design system. Try: “in <a class="dv-oid" href="#2a">2a</a>, put the quote inline in the document instead of the rail” · “make <a class="dv-oid" href="#2d">2d</a> editable inline”.</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;cents&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;always&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Workspace setting&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#365C4A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#365C4A&quot;,&quot;#7A2E2E&quot;,&quot;#1F3A5F&quot;,&quot;#8A4E0F&quot;],&quot;section&quot;:&quot;White-label&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;}}">
+class Component extends DCLogic {
+  state = {
+    tab: 'quote', rev: { overview: false, scope: true, timeline: false, quote: false },
+    amt: { kick: '500', photo: '650', audit: '250', oiotm: '175', own1: '2750', lite: '49', host: '25', care: '85', vis: '295' },
+    opt: { oiot: true, own: true, photo: false, audit: true, care: true, vis: true, lite: true, host: false },
+    on: { oiot: true, own: false, audit: false, care: true, vis: false, lite: false },
+    flag: 'open', order: ['oiot', 'own', 'photo', 'audit', 'care', 'vis'], alt: { oiot: true, own: true }, iv: {}, showTokens: false, addOpen: false, contractOpen: false, drag: null, over: null, manual: false, aiConfirm: false, sent: false, sender: 0, pw: false, refQ: 'audit', ic: {}
+  };
+  componentDidMount() {
+    fetch('src/components/icons.json').then(r => r.json()).then(j => {
+      const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path }; this.setState({ ic });
+    }).catch(() => {});
+    this.applyTheme();
+  }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() {
+    const a = this.props.accent ?? '#365C4A', dark = (this.props.theme ?? 'light') === 'dark', s = document.documentElement.style;
+    const v = dark ? { '--bg': '#131311', '--surface': '#1C1B19', '--sunk': '#0E0E0C', '--ink': '#F1EFEA', '--muted': '#ABA79E', '--line': '#302F2B', '--accent': a, '--accent-text': `color-mix(in oklch, ${a} 55%, white)` }
+      : { '--bg': '#F3F0EA', '--surface': '#FBFAF7', '--sunk': '#E9E5DD', '--ink': '#1C1B18', '--muted': '#5F5B53', '--line': '#DDD8CE', '--accent': a, '--accent-text': a };
+    for (const k in v) s.setProperty(k, v[k]);
+  }
+  c(str) { return Math.round((parseFloat(String(str).replace(/[^0-9.]/g, '')) || 0) * 100); }
+  fmt(c) { const always = (this.props.cents ?? 'auto') === 'always'; const d = always || c % 100 !== 0 ? 2 : 0; return '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  move(scope, target) {
+    const S = this.state; if (!S.drag || S.drag.scope !== scope) return;
+    const done = o => this.setState(o ? { order: o, drag: null, over: null } : { drag: null, over: null });
+    const altSet = new Set(S.order.filter(k => S.opt[k] && S.alt[k])), alts = S.order.filter(k => altSet.has(k));
+    if (scope === 'alt') { const f = alts.indexOf(S.drag.key), t = alts.indexOf(target); if (f < 0 || t < 0 || f === t) return done(); alts.splice(f, 1); alts.splice(t, 0, S.drag.key); let i = 0; return done(S.order.map(k => altSet.has(k) ? alts[i++] : k)); }
+    const blocks = []; let g = false; S.order.forEach(k => { if (altSet.has(k)) { if (!g) { blocks.push('grp'); g = true; } } else blocks.push(k); });
+    const f = blocks.indexOf(S.drag.key), t = blocks.indexOf(target); if (f < 0 || t < 0 || f === t) return done();
+    blocks.splice(f, 1); blocks.splice(t, 0, S.drag.key);
+    const order = []; blocks.forEach(b => b === 'grp' ? order.push(...alts) : order.push(b)); done(order);
+  }
+  set(k, v) { this.setState(s => ({ [k]: { ...s[k], ...v } })); }
+  jump(key) {
+    const box = document.querySelector('[data-center="1"]'), el = box && box.querySelector(`[data-sec="${key}"]`);
+    if (key === 'quote') this.setState({ tab: 'quote' });
+    if (box && el) box.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+  }
+  renderVals() {
+    const S = this.state, fmt = c => this.fmt(c), dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || dflt });
+    const D = {
+      oiot: { name: 'Website Build — Own It Over Time', src: 'Catalog', meta: 'Spread the cost; you own the site once it’s paid off.', subs: [{ k: 'kick', label: 'Kickoff', iv: 'one' }, { k: 'oiotm', label: 'Monthly', iv: 'mon' }], terms: '$175/month for 30 months, then $100/month. 18-month minimum commitment. Plan terms come with the catalog item.' },
+      own: { name: 'Website Build — Own It Now', src: 'Catalog', meta: 'Pay once and own it from launch.', subs: [{ k: 'own1', iv: 'one' }] },
+      photo: { name: 'Catering menu photography', src: 'Custom', custom: true, meta: 'Half-day shoot, 20 edited images.', subs: [{ k: 'photo', iv: 'one' }] },
+      audit: { name: 'AI Search Readiness Audit', src: 'Catalog', meta: 'How Brightline shows up in AI search, with a fix list.', subs: [{ k: 'audit', iv: 'one' }] },
+      care: { name: 'Care Standard', src: 'Catalog', meta: 'Updates, backups, security and small monthly edits.', subs: [{ k: 'care', iv: 'mon' }] },
+      vis: { name: 'Local Visibility Core', src: 'Catalog', meta: 'Google Business Profile, reviews and local listings.', subs: [{ k: 'vis', iv: 'mon' }] },
+      lite: { name: 'Care Lite', src: 'Catalog', meta: 'Backups, security and updates.', subs: [{ k: 'lite', iv: 'mon' }] },
+      host: { name: 'Hosting + Essentials', src: 'Catalog', meta: 'Fast, secure hosting with SSL.', subs: [{ k: 'host', iv: 'mon' }] },
+    };
+    const dz = (scope, key) => ({
+      dStart: e => { e.stopPropagation(); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', key); } catch (_) {} this.setState({ drag: { scope, key } }); },
+      dOver: e => { const dr = this.state.drag; if (dr && dr.scope === scope) { e.preventDefault(); e.stopPropagation(); if (this.state.over !== key) this.setState({ over: key }); } },
+      dDrop: e => { const dr = this.state.drag; if (dr && dr.scope === scope) { e.preventDefault(); e.stopPropagation(); this.move(scope, key); } },
+      op: S.drag && S.drag.key === key ? 0.4 : 1,
+      drop: S.over === key && S.drag && S.drag.key !== key && S.drag.scope === scope ? 'inset 0 3px 0 var(--accent,#365C4A)' : 'none',
+    });
+    const ivOf = u => S.iv[u.k] || u.iv;
+    const perOf = iv => iv === 'one' ? '' : iv === 'yr' ? '/yr' : '/mo';
+    const cOf = u => this.c(S.amt[u.k]);
+    const sum = (sel) => { let o = 0, m = 0; S.order.forEach(k => { if (!sel[k]) return; D[k].subs.forEach(u => { const iv = ivOf(u); if (iv === 'one') o += cOf(u); else if (iv === 'mon') m += cOf(u); }); }); return [o, m]; };
+    const isOn = k => S.opt[k] ? !!S.on[k] : true;
+    const defSel = {}; S.order.forEach(k => defSel[k] = isOn(k));
+    const [one, mon] = sum(defSel);
+    const altKeys = S.order.filter(k => S.opt[k] && S.alt[k]);
+    const freeOpt = S.order.filter(k => S.opt[k] && !S.alt[k]);
+    let mins = [Infinity, Infinity], maxs = [0, 0];
+    const altChoices = altKeys.length ? altKeys : [null];
+    altChoices.forEach(a => { for (let mask = 0; mask < (1 << freeOpt.length); mask++) { const sel = {}; S.order.forEach(k => sel[k] = !S.opt[k]); if (a) sel[a] = true; freeOpt.forEach((k, i) => sel[k] = !!(mask & (1 << i))); const [o, m] = sum(sel); mins = [Math.min(mins[0], o), Math.min(mins[1], m)]; maxs = [Math.max(maxs[0], o), Math.max(maxs[1], m)]; } });
+    const rng = (a, b) => a === b ? fmt(a) : fmt(a) + '–' + fmt(b);
+    const soft = 'color-mix(in oklch, var(--accent,#365C4A) 10%, white)';
+    const altNames = k => altKeys.filter(x => x !== k).map(x => D[x].name.replace('Website Build — ', '')).join(', ');
+    const qitems = S.order.map(key => {
+      const d = D[key], opt = !!S.opt[key], on = isOn(key), alt = opt && !!S.alt[key], flagOpen = key === 'audit' && S.flag === 'open';
+      const subs = d.subs.map(u => { const iv = ivOf(u); return { ...u, iv, hasLabel: !!u.label, amt: S.amt[u.k], amtFmt: fmt(cOf(u)), per: perOf(iv),
+        setAmt: e => this.set('amt', { [u.k]: e.target.value }), setIv: e => this.set('iv', { [u.k]: e.target.value }) }; });
+      const others = altNames(key);
+      return { ...d, key, opt, req: !opt, on, isAlt: alt, isCheck: opt && !alt, flagOpen, custom: !!d.custom, hasWas: key === 'audit' && S.flag === 'kept',
+        subs, single: subs.length === 1, multi: subs.length > 1, firstAmt: subs[0].amtFmt, firstPer: subs[0].per, hasTerms: !!d.terms,
+        srcBorder: d.custom ? '#E9C88F' : 'var(--line,#DDD8CE)', srcInk: d.custom ? '#7A4800' : 'var(--muted,#5F5B53)', ...dz('top', key),
+        border: flagOpen ? '#CDBFF0' : 'var(--line,#DDD8CE)', optTrack: opt ? 'var(--accent,#365C4A)' : '#CFC9BE', optKnob: opt ? '16px' : '2px',
+        onLabel: on ? (alt ? 'Selected for client ▾' : 'Ticked for client ▾') : (alt ? 'Not selected ▾' : 'Unticked for client ▾'),
+        rowBg: alt ? '#FFFFFF' : opt && on ? soft : 'transparent', rowPad: alt ? '14px 12px' : '14px 10px', rowMargin: alt ? '0' : '6px -10px', rowBorder: alt ? (on ? '2px solid var(--accent,#365C4A)' : '1px solid #DDD8CE') : '0', boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', boxBg: on ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        hasTag: opt && !alt, clientTag: alt ? '' : opt ? (on ? 'Optional · included' : 'Optional · tap to add') : '',
+        altLabel: alt ? '⇄ Choose one' : 'Link as alternative', altBg: alt ? '#E2F2F5' : 'transparent', altInk: alt ? '#0B5563' : 'var(--muted,#5F5B53)', altBorder: alt ? '#A9D7DF' : 'var(--line,#DDD8CE)',
+        sep: alt ? '0' : '1px solid #ECE8E1', remove: () => this.setState(s => ({ order: s.order.filter(k => k !== key) })),
+        toggleOpt: () => this.set('opt', { [key]: !opt }),
+        toggleOn: () => this.setState(s => { const on2 = { ...s.on, [key]: !s.on[key] }; if (alt && on2[key]) altKeys.forEach(k => { if (k !== key) on2[k] = false; }); return { on: on2 }; }),
+        toggleAlt: () => this.set('alt', { [key]: !S.alt[key] }) };
+    });
+    const altSetR = new Set(altKeys), noopE = () => {};
+    const blocks = []; let grp = null;
+    qitems.forEach(q => {
+      if (altSetR.has(q.key)) {
+        if (!grp) { grp = { key: 'grp', isGroup: true, items: [], ...dz('top', 'grp'), docMargin: '16px -14px', docPad: '14px 14px 12px', docBorder: '2px solid color-mix(in oklch, var(--accent,#365C4A) 55%, white)', docBg: 'color-mix(in oklch, var(--accent,#365C4A) 8%, white)', docGap: '10px', countText: '', pPad: '10px', pBorder: '2px solid #7FBFCB', pBg: '#EAF5F7' }; blocks.push(grp); }
+        grp.items.push({ ...q, ...dz('alt', q.key), dragAttr: 'true' }); grp.countText = grp.items.length + ' options · pick one';
+      } else blocks.push({ key: q.key, isGroup: false, items: [{ ...q, dStart: noopE, dOver: noopE, dDrop: noopE, dragAttr: 'false', op: 1, drop: 'none' }], ...dz('top', q.key), docMargin: '0', docPad: '0', docBorder: '0', docBg: 'transparent', docGap: '0', pPad: '0', pBorder: '0', pBg: 'transparent' });
+    });
+    const addable = Object.keys(D).filter(k => !S.order.includes(k)).map(k => ({ name: D[k].name, price: D[k].subs.map(u => fmt(cOf(u)) + perOf(ivOf(u))).join(' + '),
+      add: () => this.setState(s => ({ order: [...s.order, k], addOpen: false })) }));
+    const t = { one: fmt(one), mon: fmt(mon), rangeOne: rng(mins[0], maxs[0]), rangeMon: rng(mins[1], maxs[1]) };
+    const oiotIn = S.order.includes('oiot');
+    const brand = this.props.workspaceName ?? 'MarketFresh Studios';
+    const VAL = { 'client.first_name': 'Rowan', 'client.full_name': 'Rowan Vale', 'client.company': 'Brightline Foods', 'workspace.name': brand, 'sender.name': 'Jonathan Garces',
+      'proposal.date': 'October 29, 2026', 'proposal.valid_until': 'November 28, 2026', 'quote.one_time_total': t.one, 'quote.monthly_total': t.mon + '/month' };
+    const seg = str => str.split(/(\{\{\s*[\w.]+\s*\}\})/).filter(Boolean).map(p => { const m = p.match(/^\{\{\s*([\w.]+)\s*\}\}$/); return m ? { v: true, plain: false, t: S.showTokens ? '{{' + m[1] + '}}' : (VAL[m[1]] ?? '') } : { v: false, plain: true, t: p }; });
+    const fields = Object.keys(VAL).map(k => ({ token: '{{' + k + '}}', value: VAL[k] }));
+    const hdr = { eyebrow: seg('Proposal for {{client.company}}'), meta: seg('From {{sender.name}} · Valid until {{proposal.valid_until}}') };
+    const investSentence = seg('Your investment is {{quote.one_time_total}} one-time and {{quote.monthly_total}}.');
+    const clausesAll = [
+      { h: 'Statement of work', paras: ['Date: {{proposal.date}}', 'Between “us”, {{workspace.name}}, and “you”, {{client.company}}.', 'You, {{client.company}}, are hiring {{workspace.name}} to design and develop a new website for the estimated total price of {{quote.one_time_total}} one-time and {{quote.monthly_total}}.'] },
+      { h: '1.0 Services rendered · Design', paras: ['We create look-and-feel designs and flexible layouts that adapt to the capabilities of many devices and screen sizes. You’ll have weekly opportunities to review our work and provide feedback. If at any stage, you’re not happy with the direction our work is taking, you will pay us in full for everything we’ve produced up to that point and then cancel this contract.'] },
+      { h: '4.1 Billing schedule', paras: ['The total budget for this project is {{quote.one_time_total}} one-time and {{quote.monthly_total}}. {{workspace.name}} will invoice {{client.company}} for fifty percent (50%) of the one-time total at point of this signed contract agreement which will act as the deposit. The remaining balance will be due upon completion. Billing for website hosting (if chosen) will begin right away, and maintenance (if chosen) will begin when the website launches.'] },
+      { h: '4.4 Own It Over Time', conditional: true, draft: true, show: oiotIn, paras: ['If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, {{workspace.name}} may take the website offline.'] },
+      { h: '8.1 Period of agreement and notice of termination', paras: ['This Agreement shall become effective as of {{proposal.date}} and shall continue until terminated by either party upon not less than 60 days notice in writing given by either party to the other.'] },
+      { h: '2.0 Mutual cooperation', more: true, paras: ['We agree to use our best efforts to fulfill and exceed your expectation on the deliverables listed above. You agree to aid us in doing so by making available to us needed information pertaining to your website and to cooperate with us in expediting the work.'] },
+      { h: '4.2 Client agreement to pay', more: true, paras: ['You agree to pay our initial (1st) invoice upon receipt which will act as a deposit for the project. Every invoice after that will have 30-day payment terms.'] },
+      { h: '7.0 Confidentiality', more: true, paras: ['{{workspace.name}} acknowledges its responsibility, both during and after the term of its appointment, to use all reasonable efforts to preserve the confidentiality of any proprietary or confidential information or data developed by {{workspace.name}} on behalf of {{client.company}} or disclosed by {{client.company}} to {{workspace.name}}.'] },
+      { h: '9.1 Governing law', more: true, paras: ['This Agreement shall be governed and construed in accordance with the laws of North Carolina.'] },
+    ];
+    const clauses = clausesAll.filter(c => c.show !== false && (S.contractOpen || !c.more)).map(c => ({ ...c, conditional: !!c.conditional, draft: !!c.draft, paras: c.paras.map(seg) }));
+    const secDefs = [
+      { key: 'overview', title: 'Overview', ai: true, paras: ['{{client.first_name}}, thank you for walking us through the new menu and the catering side of the business.', 'This proposal covers a new website for {{client.company}}, ongoing care once it’s live, and optional add-ons you can include if they suit you.'] },
+      { key: 'scope', title: 'What we’ll do', ai: true, paras: [], list: ['Design and build a site with online catering orders', 'Photograph the catering menu and write the menu pages', 'Launch, then keep it updated and secure'] },
+      { key: 'timeline', title: 'Timeline', ai: true, paras: ['We’ll start the week of November 9. Design takes about three weeks and the build about five, so you’d launch in early January.'] },
+      { key: 'quote', title: 'Your investment', ai: true, isQuote: true, paras: [] },
+      { key: 'contract', title: 'Statement of Work & Contract', ai: false, isContract: true, paras: [], clauses },
+      { key: 'next', title: 'Next steps', ai: false, paras: ['Please read the contract above. When you’re ready, sign below. {{sender.name}} countersigns for {{workspace.name}}, then you’ll both receive a sealed copy by email.'] },
+    ].map(s => ({ ...s, paras: s.paras.map(seg), list: s.list ? s.list.map(seg) : undefined }));
+    const sections = secDefs.map(s => {
+      const done = s.ai && S.rev[s.key], needs = s.ai && !S.rev[s.key];
+      return { ...s, inDoc: true, done: !!done, needs: !!needs, hasList: !!s.list, isQuote: !!s.isQuote, isContract: !!s.isContract, clauses: s.clauses || [], list: s.list || [],
+        docBg: needs ? '#FBF9FF' : 'transparent', gutter: needs ? '#8C73D6' : '#9FCDB2',
+        dot: needs ? '#6B4FBB' : done ? '#2E7D50' : '#CFC9BE',
+        tag: needs ? 'Review' : done ? 'Reviewed' : '', tagInk: needs ? '#5B3FA8' : '#146B3F',
+        mark: () => this.set('rev', { [s.key]: true }), jump: () => this.jump(s.key) };
+    });
+    const unrev = secDefs.filter(s => s.ai && !S.rev[s.key]);
+    const aiLeft = unrev.length, aiOpen = aiLeft > 0 && !S.sent;
+    const names = unrev.map(s => s.key === 'quote' ? 'quote' : s.title);
+    const aiLeftNames = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : (names[0] || '');
+    const aiOk = aiLeft === 0 || S.aiConfirm;
+    const checks = [];
+    const B = (ok, title, sub, actLabel, act) => checks.push({ ok, title, sub, hasSub: !!sub, actLabel, act, hasAct: !ok && !!act,
+      bg: ok ? 'transparent' : '#FBE9E7', dotBg: ok ? '#146B3F' : '#B3261E', glyph: ok ? '✓' : '!', ink: ok ? 'var(--ink,#1C1B18)' : '#8E1E17' });
+    const W = (title, sub, actLabel, act) => checks.push({ title, sub, hasSub: !!sub, actLabel, act, hasAct: !!act, bg: '#FBEEDB', dotBg: '#8A5200', glyph: '!', ink: '#6E4100' });
+    B(aiOk, aiOk ? 'AI-written content reviewed' : `Review AI-written content · ${aiLeft} left`, aiOk ? '' : 'Mark each section reviewed, or confirm below.', 'Next', () => this.jump(unrev[0] && unrev[0].key));
+    B(S.manual, S.manual ? 'Catering menu photography will be invoiced manually' : 'Catering menu photography has no accounting item', S.manual ? '' : 'Map it to a QuickBooks item, or invoice it manually.', 'Invoice manually', () => this.setState({ manual: true }));
+    if (S.flag === 'open') W('AI price differs from the catalog', 'AI Search Readiness Audit: $250 entered, $295 list.', 'Decide', () => this.setState({ tab: 'quote' }));
+    W('Custom line: check the scope and price', 'Catering menu photography', null, null);
+    B(true, 'Monthly lines have Stripe prices', '', null, null);
+    B(true, 'Client and company signature blocks present', '', null, null);
+    B(true, 'Valid until November 28, 2026', '', null, null);
+    const blockers = checks.filter(c => c.ok === false).length;
+    const cantSend = blockers > 0 || S.sent;
+    const senders = [['Jonathan Garces', '(you)'], ['Franz', '']];
+    const [senderName, senderNote] = senders[S.sender];
+    const tabs = [
+      { k: 'quote', label: 'Quote' }, { k: 'ref', label: 'Pricing reference' }, { k: 'send', label: 'Review & send', count: blockers },
+    ].map(x => ({ ...x, on: S.tab === x.k, hasCount: !!x.count, bar: S.tab === x.k ? 'var(--ink,#1C1B18)' : 'transparent', ink: S.tab === x.k ? 'var(--ink,#1C1B18)' : 'var(--muted,#5F5B53)', go: () => this.setState({ tab: x.k }) }));
+    const ref = [
+      { h: 'AI Search Readiness Audit', body: 'Standard rate $295. Waive for clients on Care Pro.\nDiscounts need Jonathan’s OK.' },
+      { h: 'Care plans', body: 'Lite $49 · Standard $85 · Pro $149 per month.\nStandard is the default for new builds.' },
+      { h: 'Own It Over Time', body: '$500 kickoff, then $175/month. 18-month minimum, then steps down to $100/month.' },
+      { h: 'Local Visibility', body: 'Core $295/month · Growth $495/month. Offer as optional on website proposals.' },
+      { h: 'Photography (custom)', body: 'Half day $650, full day $1,100. Quote as a custom line.' },
+    ];
+    const q = (S.refQ || '').toLowerCase().trim();
+    const refItems = q ? ref.filter(r => (r.h + r.body).toLowerCase().includes(q)) : ref;
+    return {
+      ic, t, qitems, blocks, sections, hdr, investSentence, fields, addable, addOpen: S.addOpen, toggleAdd: () => this.setState(s => ({ addOpen: !s.addOpen })), brace: "{{", toggleTokens: () => this.setState(s => ({ showTokens: !s.showTokens })), tokensLabel: S.showTokens ? "Show values" : "Show names", chipFont: S.showTokens ? "'IBM Plex Mono',monospace" : "inherit", chipSize: S.showTokens ? "0.82em" : "inherit", chipInk: S.showTokens ? "#5B3FA8" : "inherit", toggleContract: () => this.setState(s => ({ contractOpen: !s.contractOpen })), contractToggleLabel: S.contractOpen ? "Show fewer clauses" : "Show all clauses (9.0 General provisions and 12 more)", noDrag: e => { e.preventDefault(); e.stopPropagation(); }, dEnd: () => this.setState({ drag: null, over: null }), tabs, checks, aiLeft, aiOpen, aiLeftNames, aiPct: ((4 - aiLeft) / 4 * 100) + '%',
+      lineCount: qitems.length, editable: !S.sent,
+      tabQuote: S.tab === 'quote', tabRef: S.tab === 'ref', tabSend: S.tab === 'send',
+      quoteNeeds: !S.rev.quote, markQuote: () => this.set('rev', { quote: true }),
+      toQuote: () => this.setState({ tab: 'quote' }), toRef: () => this.setState({ tab: 'ref' }),
+      openSend: () => this.setState({ tab: 'send' }),
+      useList: () => this.setState(s => ({ flag: 'list', amt: { ...s.amt, audit: '295' } })), keepAi: () => this.setState({ flag: 'kept' }),
+      refQ: S.refQ, setRefQ: e => this.setState({ refQ: e.target.value }), refItems, refHits: `${refItems.length} found`,
+      senderName, senderNote, cycleSender: () => this.setState(s => ({ sender: (s.sender + 1) % 2 })),
+      pw: S.pw, togglePw: () => this.setState(s => ({ pw: !s.pw })), pwTrack: S.pw ? 'var(--accent,#365C4A)' : '#CFC9BE', pwKnob: S.pw ? '16px' : '2px',
+      aiConfirm: S.aiConfirm, toggleAiConfirm: () => this.setState(s => ({ aiConfirm: !s.aiConfirm })), aiBoxBg: S.aiConfirm ? '#6B4FBB' : '#fff',
+      cantSend, sendOpacity: cantSend && !S.sent ? 0.45 : 1,
+      sendLabel: S.sent ? 'Sent' : 'Send to Rowan',
+      sendReason: S.sent ? 'Sent just now.' : blockers ? `Fix ${blockers} item${blockers > 1 ? 's' : ''} above to send.` : 'Rowan gets an email with the link. You’ll see when it’s opened.',
+      doSend: () => { if (!cantSend) this.setState({ sent: true }); },
+      sent: S.sent, savedText: S.sent ? 'Sent Oct 29, 4:20 PM' : 'Saved · just now',
+      statusWord: S.sent ? 'Sent' : 'Draft', statusBg: S.sent ? '#E2F2F5' : '#ECE8E1', statusInk: S.sent ? '#0B5563' : '#5F5B53', statusIcon: S.sent ? ic.send : ic.edit,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
+ + (c / 100).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  move(scope, target) {
+    const S = this.state; if (!S.drag || S.drag.scope !== scope) return;
+    const k = scope === 'top' ? 'order' : 'optOrder', arr = [...S[k]], from = arr.indexOf(S.drag.key), to = arr.indexOf(target);
+    if (from < 0 || to < 0 || from === to) { this.setState({ drag: null, over: null }); return; }
+    arr.splice(from, 1); arr.splice(to, 0, S.drag.key); this.setState({ [k]: arr, drag: null, over: null });
+  }
+  set(k, v) { this.setState(s => ({ [k]: { ...s[k], ...v } })); }
+  jump(key) {
+    const box = document.querySelector('[data-center="1"]'), el = box && box.querySelector(`[data-sec="${key}"]`);
+    if (key === 'quote') this.setState({ tab: 'quote' });
+    if (box && el) box.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+  }
+  renderVals() {
+    const S = this.state, fmt = c => this.fmt(c), dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || dflt });
+    const D = {
+      oiot: { name: 'Own It Over Time', src: 'Catalog', meta: 'Spread the cost; you own the site once it’s paid off.', subs: [{ k: 'kick', label: 'Kickoff', iv: 'one' }, { k: 'oiotm', label: 'Monthly', iv: 'mon' }], terms: '$175/month for 30 months, then $100/month. 18-month minimum commitment. Plan terms come with the catalog item.' },
+      own: { name: 'Website Build — Own It Now', src: 'Catalog', meta: 'Pay once and own it from launch.', subs: [{ k: 'own1', iv: 'one' }] },
+      photo: { name: 'Catering menu photography', src: 'Custom', custom: true, meta: 'Half-day shoot, 20 edited images.', subs: [{ k: 'photo', iv: 'one' }] },
+      audit: { name: 'AI Search Readiness Audit', src: 'Catalog', meta: 'How Brightline shows up in AI search, with a fix list.', subs: [{ k: 'audit', iv: 'one' }] },
+      care: { name: 'Care Standard', src: 'Catalog', meta: 'Updates, backups, security and small monthly edits.', subs: [{ k: 'care', iv: 'mon' }] },
+      vis: { name: 'Local Visibility Core', src: 'Catalog', meta: 'Google Business Profile, reviews and local listings.', subs: [{ k: 'vis', iv: 'mon' }] },
+      lite: { name: 'Care Lite', src: 'Catalog', meta: 'Backups, security and updates.', subs: [{ k: 'lite', iv: 'mon' }] },
+      host: { name: 'Hosting + Essentials', src: 'Catalog', meta: 'Fast, secure hosting with SSL.', subs: [{ k: 'host', iv: 'mon' }] },
+    };
+    const dz = (scope, key) => ({
+      dStart: e => { e.stopPropagation(); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', key); } catch (_) {} this.setState({ drag: { scope, key } }); },
+      dOver: e => { const dr = this.state.drag; if (dr && dr.scope === scope) { e.preventDefault(); e.stopPropagation(); if (this.state.over !== key) this.setState({ over: key }); } },
+      dDrop: e => { const dr = this.state.drag; if (dr && dr.scope === scope) { e.preventDefault(); e.stopPropagation(); this.move(scope, key); } },
+      op: S.drag && S.drag.key === key ? 0.4 : 1,
+      drop: S.over === key && S.drag && S.drag.key !== key && S.drag.scope === scope ? 'inset 0 3px 0 var(--accent,#365C4A)' : 'none',
+    });
+    const ivOf = u => S.iv[u.k] || u.iv;
+    const perOf = iv => iv === 'one' ? ' one-time' : iv === 'yr' ? '/yr' : '/mo';
+    const cOf = u => this.c(S.amt[u.k]);
+    const sum = (sel) => { let o = 0, m = 0; S.order.forEach(k => { if (!sel[k]) return; D[k].subs.forEach(u => { const iv = ivOf(u); if (iv === 'one') o += cOf(u); else if (iv === 'mon') m += cOf(u); }); }); return [o, m]; };
+    const isOn = k => S.opt[k] ? !!S.on[k] : true;
+    const defSel = {}; S.order.forEach(k => defSel[k] = isOn(k));
+    const [one, mon] = sum(defSel);
+    const altKeys = S.order.filter(k => S.opt[k] && S.alt[k]);
+    const freeOpt = S.order.filter(k => S.opt[k] && !S.alt[k]);
+    let mins = [Infinity, Infinity], maxs = [0, 0];
+    const altChoices = altKeys.length ? altKeys : [null];
+    altChoices.forEach(a => { for (let mask = 0; mask < (1 << freeOpt.length); mask++) { const sel = {}; S.order.forEach(k => sel[k] = !S.opt[k]); if (a) sel[a] = true; freeOpt.forEach((k, i) => sel[k] = !!(mask & (1 << i))); const [o, m] = sum(sel); mins = [Math.min(mins[0], o), Math.min(mins[1], m)]; maxs = [Math.max(maxs[0], o), Math.max(maxs[1], m)]; } });
+    const rng = (a, b) => a === b ? fmt(a) : fmt(a) + '–' + fmt(b);
+    const soft = 'color-mix(in oklch, var(--accent,#365C4A) 10%, white)';
+    const altNames = k => altKeys.filter(x => x !== k).map(x => D[x].name.replace('Website Build — ', '')).join(', ');
+    const qitems = S.order.map(key => {
+      const d = D[key], opt = !!S.opt[key], on = isOn(key), alt = opt && !!S.alt[key], flagOpen = key === 'audit' && S.flag === 'open';
+      const subs = d.subs.map(u => { const iv = ivOf(u); return { ...u, iv, hasLabel: !!u.label, amt: S.amt[u.k], amtFmt: fmt(cOf(u)), per: perOf(iv),
+        setAmt: e => this.set('amt', { [u.k]: e.target.value }), setIv: e => this.set('iv', { [u.k]: e.target.value }) }; });
+      const others = altNames(key);
+      return { ...d, key, opt, req: !opt, on, isAlt: alt, isCheck: opt && !alt, flagOpen, custom: !!d.custom, hasWas: key === 'audit' && S.flag === 'kept',
+        subs, single: subs.length === 1, multi: subs.length > 1, firstAmt: subs[0].amtFmt, firstPer: subs[0].per, hasTerms: !!d.terms,
+        srcBorder: d.custom ? '#E9C88F' : 'var(--line,#DDD8CE)', srcInk: d.custom ? '#7A4800' : 'var(--muted,#5F5B53)', ...dz('top', key),
+        border: flagOpen ? '#CDBFF0' : 'var(--line,#DDD8CE)', optTrack: opt ? 'var(--accent,#365C4A)' : '#CFC9BE', optKnob: opt ? '16px' : '2px',
+        onLabel: on ? (alt ? 'Selected for client ▾' : 'Ticked for client ▾') : (alt ? 'Not selected ▾' : 'Unticked for client ▾'),
+        rowBg: opt && on ? soft : 'transparent', boxBorder: on ? 'var(--accent,#365C4A)' : '#8A857B', boxBg: on ? 'var(--accent,#365C4A)' : '#FFFFFF',
+        hasTag: opt, clientTag: alt ? (others ? 'Choose one · or ' + others : 'Choose one') : opt ? (on ? 'Optional · included' : 'Optional · tap to add') : '',
+        altLabel: alt ? '⇄ Choose one' : 'Link as alternative', altBg: alt ? '#E2F2F5' : 'transparent', altInk: alt ? '#0B5563' : 'var(--muted,#5F5B53)', altBorder: alt ? '#A9D7DF' : 'var(--line,#DDD8CE)',
+        remove: () => this.setState(s => ({ order: s.order.filter(k => k !== key) })),
+        toggleOpt: () => this.set('opt', { [key]: !opt }),
+        toggleOn: () => this.setState(s => { const on2 = { ...s.on, [key]: !s.on[key] }; if (alt && on2[key]) altKeys.forEach(k => { if (k !== key) on2[k] = false; }); return { on: on2 }; }),
+        toggleAlt: () => this.set('alt', { [key]: !S.alt[key] }) };
+    });
+    const addable = Object.keys(D).filter(k => !S.order.includes(k)).map(k => ({ name: D[k].name, price: D[k].subs.map(u => fmt(cOf(u)) + perOf(ivOf(u))).join(' + '),
+      add: () => this.setState(s => ({ order: [...s.order, k], addOpen: false })) }));
+    const t = { one: fmt(one), mon: fmt(mon), rangeOne: rng(mins[0], maxs[0]), rangeMon: rng(mins[1], maxs[1]) };
+    const oiotIn = S.order.includes('oiot');
+    const brand = this.props.workspaceName ?? 'MarketFresh Studios';
+    const VAL = { 'client.first_name': 'Rowan', 'client.full_name': 'Rowan Vale', 'client.company': 'Brightline Foods', 'workspace.name': brand, 'sender.name': 'Jonathan Garces',
+      'proposal.date': 'October 29, 2026', 'proposal.valid_until': 'November 28, 2026', 'quote.one_time_total': t.one, 'quote.monthly_total': t.mon + '/month' };
+    const seg = str => str.split(/(\{\{\s*[\w.]+\s*\}\})/).filter(Boolean).map(p => { const m = p.match(/^\{\{\s*([\w.]+)\s*\}\}$/); return m ? { v: true, plain: false, t: S.showTokens ? '{{' + m[1] + '}}' : (VAL[m[1]] ?? '') } : { v: false, plain: true, t: p }; });
+    const fields = Object.keys(VAL).map(k => ({ token: '{{' + k + '}}', value: VAL[k] }));
+    const hdr = { eyebrow: seg('Proposal for {{client.company}}'), meta: seg('From {{sender.name}} · Valid until {{proposal.valid_until}}') };
+    const investSentence = seg('Your investment is {{quote.one_time_total}} one-time and {{quote.monthly_total}}.');
+    const clausesAll = [
+      { h: 'Statement of work', paras: ['Date: {{proposal.date}}', 'Between “us”, {{workspace.name}}, and “you”, {{client.company}}.', 'You, {{client.company}}, are hiring {{workspace.name}} to design and develop a new website for the estimated total price of {{quote.one_time_total}} one-time and {{quote.monthly_total}}.'] },
+      { h: '1.0 Services rendered · Design', paras: ['We create look-and-feel designs and flexible layouts that adapt to the capabilities of many devices and screen sizes. You’ll have weekly opportunities to review our work and provide feedback. If at any stage, you’re not happy with the direction our work is taking, you will pay us in full for everything we’ve produced up to that point and then cancel this contract.'] },
+      { h: '4.1 Billing schedule', paras: ['The total budget for this project is {{quote.one_time_total}} one-time and {{quote.monthly_total}}. {{workspace.name}} will invoice {{client.company}} for fifty percent (50%) of the one-time total at point of this signed contract agreement which will act as the deposit. The remaining balance will be due upon completion. Billing for website hosting (if chosen) will begin right away, and maintenance (if chosen) will begin when the website launches.'] },
+      { h: '4.4 Own It Over Time', conditional: true, draft: true, show: oiotIn, paras: ['If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, {{workspace.name}} may take the website offline.'] },
+      { h: '8.1 Period of agreement and notice of termination', paras: ['This Agreement shall become effective as of {{proposal.date}} and shall continue until terminated by either party upon not less than 60 days notice in writing given by either party to the other.'] },
+      { h: '2.0 Mutual cooperation', more: true, paras: ['We agree to use our best efforts to fulfill and exceed your expectation on the deliverables listed above. You agree to aid us in doing so by making available to us needed information pertaining to your website and to cooperate with us in expediting the work.'] },
+      { h: '4.2 Client agreement to pay', more: true, paras: ['You agree to pay our initial (1st) invoice upon receipt which will act as a deposit for the project. Every invoice after that will have 30-day payment terms.'] },
+      { h: '7.0 Confidentiality', more: true, paras: ['{{workspace.name}} acknowledges its responsibility, both during and after the term of its appointment, to use all reasonable efforts to preserve the confidentiality of any proprietary or confidential information or data developed by {{workspace.name}} on behalf of {{client.company}} or disclosed by {{client.company}} to {{workspace.name}}.'] },
+      { h: '9.1 Governing law', more: true, paras: ['This Agreement shall be governed and construed in accordance with the laws of North Carolina.'] },
+    ];
+    const clauses = clausesAll.filter(c => c.show !== false && (S.contractOpen || !c.more)).map(c => ({ ...c, conditional: !!c.conditional, draft: !!c.draft, paras: c.paras.map(seg) }));
+    const secDefs = [
+      { key: 'overview', title: 'Overview', ai: true, paras: ['{{client.first_name}}, thank you for walking us through the new menu and the catering side of the business.', 'This proposal covers a new website for {{client.company}}, ongoing care once it’s live, and optional add-ons you can include if they suit you.'] },
+      { key: 'scope', title: 'What we’ll do', ai: true, paras: [], list: ['Design and build a site with online catering orders', 'Photograph the catering menu and write the menu pages', 'Launch, then keep it updated and secure'] },
+      { key: 'timeline', title: 'Timeline', ai: true, paras: ['We’ll start the week of November 9. Design takes about three weeks and the build about five, so you’d launch in early January.'] },
+      { key: 'quote', title: 'Your investment', ai: true, isQuote: true, paras: [] },
+      { key: 'contract', title: 'Statement of Work & Contract', ai: false, isContract: true, paras: [], clauses },
+      { key: 'next', title: 'Next steps', ai: false, paras: ['Please read the contract above. When you’re ready, sign below. {{sender.name}} countersigns for {{workspace.name}}, then you’ll both receive a sealed copy by email.'] },
+    ].map(s => ({ ...s, paras: s.paras.map(seg), list: s.list ? s.list.map(seg) : undefined }));
+    const sections = secDefs.map(s => {
+      const done = s.ai && S.rev[s.key], needs = s.ai && !S.rev[s.key];
+      return { ...s, inDoc: true, done: !!done, needs: !!needs, hasList: !!s.list, isQuote: !!s.isQuote, isContract: !!s.isContract, clauses: s.clauses || [], list: s.list || [],
+        docBg: needs ? '#FBF9FF' : 'transparent', gutter: needs ? '#8C73D6' : '#9FCDB2',
+        dot: needs ? '#6B4FBB' : done ? '#2E7D50' : '#CFC9BE',
+        tag: needs ? 'Review' : done ? 'Reviewed' : '', tagInk: needs ? '#5B3FA8' : '#146B3F',
+        mark: () => this.set('rev', { [s.key]: true }), jump: () => this.jump(s.key) };
+    });
+    const unrev = secDefs.filter(s => s.ai && !S.rev[s.key]);
+    const aiLeft = unrev.length, aiOpen = aiLeft > 0 && !S.sent;
+    const names = unrev.map(s => s.key === 'quote' ? 'quote' : s.title);
+    const aiLeftNames = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : (names[0] || '');
+    const aiOk = aiLeft === 0 || S.aiConfirm;
+    const checks = [];
+    const B = (ok, title, sub, actLabel, act) => checks.push({ ok, title, sub, hasSub: !!sub, actLabel, act, hasAct: !ok && !!act,
+      bg: ok ? 'transparent' : '#FBE9E7', dotBg: ok ? '#146B3F' : '#B3261E', glyph: ok ? '✓' : '!', ink: ok ? 'var(--ink,#1C1B18)' : '#8E1E17' });
+    const W = (title, sub, actLabel, act) => checks.push({ title, sub, hasSub: !!sub, actLabel, act, hasAct: !!act, bg: '#FBEEDB', dotBg: '#8A5200', glyph: '!', ink: '#6E4100' });
+    B(aiOk, aiOk ? 'AI-written content reviewed' : `Review AI-written content · ${aiLeft} left`, aiOk ? '' : 'Mark each section reviewed, or confirm below.', 'Next', () => this.jump(unrev[0] && unrev[0].key));
+    B(S.manual, S.manual ? 'Catering menu photography will be invoiced manually' : 'Catering menu photography has no accounting item', S.manual ? '' : 'Map it to a QuickBooks item, or invoice it manually.', 'Invoice manually', () => this.setState({ manual: true }));
+    if (S.flag === 'open') W('AI price differs from the catalog', 'AI Search Readiness Audit: $250 entered, $295 list.', 'Decide', () => this.setState({ tab: 'quote' }));
+    W('Custom line: check the scope and price', 'Catering menu photography', null, null);
+    B(true, 'Monthly lines have Stripe prices', '', null, null);
+    B(true, 'Client and company signature blocks present', '', null, null);
+    B(true, 'Valid until November 28, 2026', '', null, null);
+    const blockers = checks.filter(c => c.ok === false).length;
+    const cantSend = blockers > 0 || S.sent;
+    const senders = [['Jonathan Garces', '(you)'], ['Franz', '']];
+    const [senderName, senderNote] = senders[S.sender];
+    const tabs = [
+      { k: 'quote', label: 'Quote' }, { k: 'ref', label: 'Pricing reference' }, { k: 'send', label: 'Review & send', count: blockers },
+    ].map(x => ({ ...x, on: S.tab === x.k, hasCount: !!x.count, bar: S.tab === x.k ? 'var(--ink,#1C1B18)' : 'transparent', ink: S.tab === x.k ? 'var(--ink,#1C1B18)' : 'var(--muted,#5F5B53)', go: () => this.setState({ tab: x.k }) }));
+    const ref = [
+      { h: 'AI Search Readiness Audit', body: 'Standard rate $295. Waive for clients on Care Pro.\nDiscounts need Jonathan’s OK.' },
+      { h: 'Care plans', body: 'Lite $49 · Standard $85 · Pro $149 per month.\nStandard is the default for new builds.' },
+      { h: 'Own It Over Time', body: '$500 kickoff, then $175/month. 18-month minimum, then steps down to $100/month.' },
+      { h: 'Local Visibility', body: 'Core $295/month · Growth $495/month. Offer as optional on website proposals.' },
+      { h: 'Photography (custom)', body: 'Half day $650, full day $1,100. Quote as a custom line.' },
+    ];
+    const q = (S.refQ || '').toLowerCase().trim();
+    const refItems = q ? ref.filter(r => (r.h + r.body).toLowerCase().includes(q)) : ref;
+    return {
+      ic, t, qitems, sections, hdr, investSentence, fields, addable, addOpen: S.addOpen, toggleAdd: () => this.setState(s => ({ addOpen: !s.addOpen })), brace: "{{", toggleTokens: () => this.setState(s => ({ showTokens: !s.showTokens })), tokensLabel: S.showTokens ? "Show values" : "Show names", chipFont: S.showTokens ? "'IBM Plex Mono',monospace" : "inherit", chipSize: S.showTokens ? "0.82em" : "inherit", chipInk: S.showTokens ? "#5B3FA8" : "inherit", toggleContract: () => this.setState(s => ({ contractOpen: !s.contractOpen })), contractToggleLabel: S.contractOpen ? "Show fewer clauses" : "Show all clauses (9.0 General provisions and 12 more)", noDrag: e => { e.preventDefault(); e.stopPropagation(); }, dEnd: () => this.setState({ drag: null, over: null }), tabs, checks, aiLeft, aiOpen, aiLeftNames, aiPct: ((4 - aiLeft) / 4 * 100) + '%',
+      lineCount: qitems.length, editable: !S.sent,
+      tabQuote: S.tab === 'quote', tabRef: S.tab === 'ref', tabSend: S.tab === 'send',
+      quoteNeeds: !S.rev.quote, markQuote: () => this.set('rev', { quote: true }),
+      toQuote: () => this.setState({ tab: 'quote' }), toRef: () => this.setState({ tab: 'ref' }),
+      openSend: () => this.setState({ tab: 'send' }),
+      useList: () => this.setState(s => ({ flag: 'list', amt: { ...s.amt, audit: '295' } })), keepAi: () => this.setState({ flag: 'kept' }),
+      refQ: S.refQ, setRefQ: e => this.setState({ refQ: e.target.value }), refItems, refHits: `${refItems.length} found`,
+      senderName, senderNote, cycleSender: () => this.setState(s => ({ sender: (s.sender + 1) % 2 })),
+      pw: S.pw, togglePw: () => this.setState(s => ({ pw: !s.pw })), pwTrack: S.pw ? 'var(--accent,#365C4A)' : '#CFC9BE', pwKnob: S.pw ? '16px' : '2px',
+      aiConfirm: S.aiConfirm, toggleAiConfirm: () => this.setState(s => ({ aiConfirm: !s.aiConfirm })), aiBoxBg: S.aiConfirm ? '#6B4FBB' : '#fff',
+      cantSend, sendOpacity: cantSend && !S.sent ? 0.45 : 1,
+      sendLabel: S.sent ? 'Sent' : 'Send to Rowan',
+      sendReason: S.sent ? 'Sent just now.' : blockers ? `Fix ${blockers} item${blockers > 1 ? 's' : ''} above to send.` : 'Rowan gets an email with the link. You’ll see when it’s opened.',
+      doSend: () => { if (!cantSend) this.setState({ sent: true }); },
+      sent: S.sent, savedText: S.sent ? 'Sent Oct 29, 4:20 PM' : 'Saved · just now',
+      statusWord: S.sent ? 'Sent' : 'Draft', statusBg: S.sent ? '#E2F2F5' : '#ECE8E1', statusInk: S.sent ? '#0B5563' : '#5F5B53', statusIcon: S.sent ? ic.send : ic.edit,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
