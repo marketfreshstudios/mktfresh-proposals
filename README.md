@@ -169,3 +169,11 @@ The responsive comparison gallery is [docs/redesign-quote-editor/index.html](doc
 Proposals use the current item/sub-line model only. Run the owner-maintenance purge before the current-only release; never delete Proposify imports. Signed evidence created from now on remains frozen. See the latest sections of `DECISIONS.md` and `HANDOFF_PHASE2.md`.
 
 An omitted `valid_until` defaults to the workspace validity (30 days); explicit null means indefinite. `{{proposal.validity}}` inserts a complete dated validity sentence or disappears cleanly. The custom date field `{{proposal.valid_until}}` remains supported. Staff actions use revision-checked `/api/proposals/:id/actions`; AI cannot send, sign, change outcomes, archive or delete. Client deletion is reference-guarded and audited.
+
+### Redesign Phase 5
+
+Studio contains Templates & blocks, Catalog, Connections (including pricing references, assistants and Proposify import), Workspace and Activity. Workspace owns brand/contrast, proposal fonts, currency/cents, the signatory/delegates, staff display names, and client-link defaults. Uploaded WOFF2/TTF fonts require a PDF-embedding license confirmation and are retained as immutable private assets for signed copies. Public Sans is no longer served.
+
+Validity is the end of the selected day in the workspace timezone, including daylight saving; null stays indefinite. Password defaults are owner-managed, stored as hashes and applied only to new drafts. Existing proposals keep their own password. Currency selection does not convert catalog prices: the chosen catalog/provider currency must match.
+
+Review the responsive Studio/state evidence in [the Phase 5 comparison gallery](docs/screenshots/phase5/index.html). Regenerate it after browser tests with `node --import tsx scripts/verify-proposal-fonts.ts`, render its first page with `pdftoppm`, then run `node --import tsx scripts/package-phase5-evidence.ts`. No environment file or provider credentials are needed for the PDF check. Native test proposals were already purged by the owner; do not rerun the hosted purge as part of this phase.
