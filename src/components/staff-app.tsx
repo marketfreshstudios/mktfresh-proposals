@@ -1,4 +1,10 @@
 "use client";
+import { intervalSuffix } from "../lib/money";
+import { statusDisplay } from "../lib/status-display";
+import { StaffShell } from "./staff-shell";
+import { Sheet, Skeleton } from "./foundation";
+import { staffRoute, type StaffQuery } from "../lib/staff-routes";
+import { useMoney } from "./money-context";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { TemplateWarnings } from "./template-warnings";
@@ -27,7 +33,7 @@ import {
   CompanySignatureForm,
   StoredSignatureEditor,
 } from "./company-signature";
-import { money, renderBlocks, variables, totals } from "../lib/presentation";
+import { renderBlocks, variables, totals } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { PlaybookDraftSchema } from "../lib/playbook";
 import type {
@@ -82,14 +88,15 @@ type Data = {
 };
 export function StaffApp({
   path,
+  query = {},
   local = false,
 }: {
   path: string[];
+  query?: StaffQuery;
   local?: boolean;
 }) {
-  const section = path[0] ?? "",
-    id = path[1],
-    action = path[2];
+  const { section, id, action } = staffRoute(path, query);
+  const [newOpen, setNewOpen] = useState(query.new === "1");
   const [data, setData] = useState<Data | null>(null),
     [p, setP] = useState<Proposal | null>(null),
     [error, setError] = useState(""),
@@ -158,6 +165,26 @@ export function StaffApp({
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
   }, [section, id, action]);
+  useEffect(() => {
+    function key(event: KeyboardEvent) {
+      const target = event.target as HTMLElement;
+      if (
+        event.key.toLowerCase() === "n" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !target.isContentEditable &&
+        !target.closest(
+          "input,textarea,select,[contenteditable=true],[role=dialog],dialog",
+        )
+      ) {
+        event.preventDefault();
+        setNewOpen(true);
+      }
+    }
+    if (section !== "login") window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [section]);
   if (section === "login") return <Login local={local} />;
   if (section === "billing")
     return (
@@ -184,18 +211,22 @@ export function StaffApp({
       setError(e instanceof Error ? e.message : "Unable to complete action");
     }
   };
-  let title = nav.find(([key]) => key === section)?.[1] ?? "Workspace",
+  let title =
+      path[0] === "studio"
+        ? ({
+            templates: "Templates & blocks",
+            catalog: "Catalog",
+            connections: "Connections",
+            workspace: "Workspace",
+            activity: "Activity log",
+          }[path[1]] ?? "Studio")
+        : (nav.find(([key]) => key === section)?.[1] ?? "Workspace"),
     subtitle = "",
     content: ReactNode = null,
-    headerAction: ReactNode = (
-      <a className="btn primary" href="/proposals/new">
-        <Icon name="plus" />
-        New proposal
-      </a>
-    );
+    headerAction: ReactNode = null;
   if (data) {
     if (section === "") {
-      title = "What needs me today";
+      title = "Home";
       subtitle = new Date().toLocaleDateString(undefined, {
         weekday: "long",
         day: "numeric",
@@ -243,7 +274,7 @@ export function StaffApp({
         </div>
       );
       content =
-        action === "edit" && p.status === "draft" ? (
+        (!action || action === "edit") && p.status === "draft" ? (
           <ProposalEditor
             initial={p}
             settings={data.settings}
@@ -306,6 +337,7 @@ export function StaffApp({
           initial={data.proposals}
           total={data.total}
           clients={data.clients}
+          initialView={typeof query.view === "string" ? query.view : ""}
         />
       );
     } else if (section === "clients") {
@@ -380,6 +412,15 @@ export function StaffApp({
         "Read reference data and draft proposals. A person always reviews and sends.";
       headerAction = null;
       content = <Assistants data={data} run={run} />;
+    } else if (section === "activity") {
+      title = "Activity log";
+      headerAction = null;
+      content = (
+        <section className="card">
+          <p>Open a proposal record to see its activity and evidence.</p>
+          <p>Proposal evidence remains available from each record.</p>
+        </section>
+      );
     } else if (section === "settings") {
       headerAction = null;
       content = <Settings data={data} run={run} />;
@@ -392,70 +433,73 @@ export function StaffApp({
       );
   }
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          {data?.settings?.logo ? (
-            <img src="/api/workspace-logo" alt={company} />
-          ) : (
-            company
-          )}
-          <small>Workspace</small>
+    <StaffShell
+      path={path}
+      settings={data?.settings ?? null}
+      name={data?.user.staff_name ?? ""}
+      email={data?.user.staff_email ?? ""}
+      onNew={() => setNewOpen(true)}
+      onSignout={async () => {
+        await post("/api/auth/logout");
+        location.href = "/login";
+      }}
+    >
+      <header className="page-header">
+        <div>
+          <h1>{title}</h1>
+          {subtitle && <p>{subtitle}</p>}
         </div>
-        <nav aria-label="Main navigation">
-          {nav.map(([key, label]) => (
-            <a
-              href={"/" + key}
-              key={key}
-              className={
-                path.join("/") === key ||
-                (key === section && !["ai", "team"].includes(id ?? ""))
-                  ? "active"
-                  : ""
-              }
-            >
-              {label}
-            </a>
-          ))}
-        </nav>
-        <footer>
-          {data?.settings?.owner}
-          <small style={{ display: "block" }}>{data?.settings?.email}</small>
-          <ThemeToggle />
-          <button
-            className="btn ghost"
-            onClick={async () => {
-              await post("/api/auth/logout");
-              location.href = "/login";
-            }}
+        {headerAction}
+      </header>
+      <div className="page-body stack">
+        {path[0] === "studio" && (
+          <nav className="studio-subnav" aria-label="Studio views">
+            {path[1] === "templates" && (
+              <>
+                <a href="/studio/templates">Templates</a>
+                <a href="/studio/templates?view=blocks">Reusable blocks</a>
+              </>
+            )}
+            {path[1] === "connections" && (
+              <>
+                <a href="/studio/connections">Connections</a>
+                <a href="/studio/connections?view=assistants">AI assistants</a>
+                <a href="/studio/connections?view=imports">Proposify import</a>
+              </>
+            )}
+            {path[1] === "workspace" && (
+              <>
+                <a href="/studio/workspace">Workspace</a>
+                <a href="/studio/workspace?view=team">Team</a>
+              </>
+            )}
+          </nav>
+        )}
+        {error && (
+          <Banner
+            tone="danger"
+            title="Unable to complete this action"
+            action={<Button onClick={load}>Reload</Button>}
           >
-            Sign out
-          </button>
-        </footer>
-      </aside>
-      <main className="workspace">
-        <header className="page-header">
-          <div>
-            <h1>{title}</h1>
-            {subtitle && <p>{subtitle}</p>}
-          </div>
-          {headerAction}
-        </header>
-        <div className="page-body stack">
-          {error && (
-            <Banner
-              tone="danger"
-              title="Unable to complete this action"
-              action={<Button onClick={load}>Reload</Button>}
-            >
-              {error}
-            </Banner>
-          )}
-          {notice && <Banner tone="success" title={notice} />}{" "}
-          {loading ? <p role="status">Loading your workspace…</p> : content}
-        </div>
-      </main>
-    </div>
+            {error}
+          </Banner>
+        )}
+        {notice && <Banner tone="success" title={notice} />}{" "}
+        {loading ? <Skeleton /> : content}
+      </div>
+      {newOpen && data && (
+        <Sheet
+          title="New proposal"
+          onClose={() => {
+            setNewOpen(false);
+            if (query.new === "1")
+              history.replaceState(null, "", location.pathname);
+          }}
+        >
+          <NewProposal data={data} />
+        </Sheet>
+      )}
+    </StaffShell>
   );
 }
 async function allProposals() {
@@ -652,6 +696,7 @@ function Dashboard({ data }: { data: Data }) {
   );
 }
 function ProposalTable({ proposals }: { proposals: Proposal[] }) {
+  const money = useMoney();
   return proposals.length ? (
     <div className="table-wrap">
       <table>
@@ -686,7 +731,16 @@ function ProposalTable({ proposals }: { proposals: Proposal[] }) {
                   )}
                 </td>
                 <td>
-                  <Status status={p.status} ai={p.ai_unreviewed} />
+                  <Status
+                    status={p.status}
+                    ai={p.ai_unreviewed}
+                    billingPending={
+                      p.jobs?.some(
+                        (j) => j.kind === "billing" && j.status !== "done",
+                      ) ||
+                      p.billing_links?.some((l) => l.status !== "succeeded")
+                    }
+                  />
                   {p.jobs?.some((j) => j.status === "failed") ||
                   p.billing_links?.some((l) =>
                     ["failed", "needs_review"].includes(l.status),
@@ -708,8 +762,8 @@ function ProposalTable({ proposals }: { proposals: Proposal[] }) {
                   </small>
                 </td>
                 <td>{money(t.one_time_total, p.currency)}</td>
-                <td>{money(t.monthly_total, p.currency)}/month</td>
-                <td>{money(t.yearly_total, p.currency)}/year</td>
+                <td>{money(t.monthly_total, p.currency)}/mo</td>
+                <td>{money(t.yearly_total, p.currency)}/yr</td>
                 <td>{date(p.sent_at)}</td>
               </tr>
             );
@@ -734,15 +788,19 @@ function ProposalList({
   initial,
   total,
   clients,
+  initialView = "",
 }: {
   initial: Proposal[];
   total: number;
   clients: Client[];
+  initialView?: string;
 }) {
   const [rows, setRows] = useState(initial),
     [count, setCount] = useState(total),
     [q, setQ] = useState(""),
-    [status, setStatus] = useState(""),
+    [status, setStatus] = useState(
+      initialView === "archived" ? "archived" : "",
+    ),
     [client, setClient] = useState(""),
     [source, setSource] = useState(""),
     [from, setFrom] = useState(""),
@@ -794,7 +852,14 @@ function ProposalList({
               "expired",
               "archived",
             ].map((s) => (
-              <option key={s}>{s}</option>
+              <option key={s} value={s}>
+                {statusDisplay(s).name}
+                {s === "signed_by_client"
+                  ? " — Needs countersign"
+                  : s === "completed"
+                    ? " — Countersigned"
+                    : ""}
+              </option>
             ))}
           </select>
         </Field>
@@ -943,7 +1008,7 @@ function NewProposal({ data }: { data: Data }) {
                 ...(f.get("password") ? { password: f.get("password") } : {}),
                 ...(payload ? { playbook: payload } : {}),
               });
-              location.href = `/proposals/${p.id}/edit`;
+              location.href = `/proposals/${p.id}`;
             } catch (e) {
               setError(
                 e instanceof Error ? e.message : "Unable to create draft",
@@ -1062,7 +1127,10 @@ function Document({ p }: { p: Proposal }) {
     html = "Preview unavailable until unresolved variables are fixed.";
   }
   return (
-    <article className="paper" dangerouslySetInnerHTML={{ __html: html }} />
+    <article
+      className={p.status === "draft" ? "paper" : "paper legacy-document"}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }
 function SendProposal({
@@ -1209,7 +1277,14 @@ function Record({
   return (
     <div className="stack">
       <div className="card stack">
-        <Status status={p.status} ai={p.ai_unreviewed} />
+        <Status
+          status={p.status}
+          ai={p.ai_unreviewed}
+          billingPending={
+            p.jobs?.some((j) => j.kind === "billing" && j.status !== "done") ||
+            p.billing_links?.some((l) => l.status !== "succeeded")
+          }
+        />
         {p.origin && (
           <span className="pill">From playbook {p.origin.source_version}</span>
         )}
@@ -1575,6 +1650,7 @@ function Clients({
   );
 }
 function Catalogue({ data, run }: { data: Data; run: Runner }) {
+  const money = useMoney();
   const [selected, setSelected] = useState<Item | null>(null),
     [query, setQuery] = useState("");
   return (
@@ -1629,11 +1705,7 @@ function Catalogue({ data, run }: { data: Data; run: Runner }) {
                 </span>
                 <span>
                   {money(i.amount)}
-                  {i.interval === "month"
-                    ? "/month"
-                    : i.interval === "year"
-                      ? "/year"
-                      : " once"}
+                  {intervalSuffix(i.interval)}
                 </span>
               </button>
             ))}

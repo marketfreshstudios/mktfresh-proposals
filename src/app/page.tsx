@@ -1,4 +1,9 @@
 import { StaffApp } from "../components/staff-app";
-export default function Home() {
-  return <StaffApp path={[]} />;
+import type { StaffQuery } from "../lib/staff-routes";
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<StaffQuery>;
+}) {
+  return <StaffApp path={[]} query={await searchParams} />;
 }

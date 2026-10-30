@@ -148,3 +148,9 @@ Staff can open **Preview as client** from the editor (after autosave) or proposa
 Catalogue **Display name** is an optional app-only override preserved by Stripe sync. New catalogue-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
 
 Workspace settings remain live while a proposal is a draft. Draft API responses and readiness use current settings without persisting a snapshot. Send and re-send capture the current settings before validation and rendering; signed proposals retain their frozen snapshot.
+
+### Redesign Foundation (Phase 1)
+
+The staff interface now uses scoped redesign tokens and self-hosted Instrument Sans, with a 232px sidebar at ≥1100px, a 64px rail at ≥700px and five phone tabs. Studio routes live under /studio; old staff addresses redirect. Draft proposals open their editor at /proposals/:id, while transitional send/evidence/countersign views remain accessible by query parameter. New proposal is a sheet (shortcut N). Existing client/PDF typography and fixed-cent formatting remain unchanged.
+
+Phase 1 introduces display-only status mapping, money auto/always formatting and skeleton primitives. It deliberately retains current feature content until its planned redesign phase. Review screenshots and scoped comparisons in docs/redesign-foundation/index.html and COMPARISON.md. No migration or hosted configuration is required.

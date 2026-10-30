@@ -74,7 +74,11 @@ export async function staff(request: Request) {
       staff_name: await localDisplayName(),
       staff_email: "staff@example.test",
     };
-  if (!token && process.env.DESIGN_PREVIEW_OPEN === "1" && process.env.SUPABASE_URL)
+  if (
+    !token &&
+    process.env.DESIGN_PREVIEW_OPEN === "1" &&
+    process.env.SUPABASE_URL
+  )
     return designPreviewStaff(request);
   if (!token || !process.env.SUPABASE_URL)
     throw new AppError(401, "Staff login required");

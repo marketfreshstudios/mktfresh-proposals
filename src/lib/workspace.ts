@@ -16,6 +16,7 @@ export const onBehalfText = (name: string, company: string) =>
   `I'm authorized to sign on behalf of ${name} for ${company}.`;
 export const WorkspaceSettingsSchema = z.object({
   id: z.string().uuid(),
+  money: z.object({ cents: z.enum(["auto", "always"]) }).optional(),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
   company_signatory: CompanySignatorySchema.nullable().optional(),

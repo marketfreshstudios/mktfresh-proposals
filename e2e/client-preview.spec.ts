@@ -30,8 +30,8 @@ test("draft client preview has live local totals, branded steps and no client wr
   });
   await page.goto(`/proposals/${draft.id}`);
   await expect(
-    page.getByRole("link", { name: "Preview as client", exact: true }),
-  ).toHaveAttribute("href", `/p/${draft.id}?preview=1`);
+    page.getByRole("button", { name: "Preview as client", exact: true }),
+  ).toBeEnabled();
   await page.goto(`/proposals/${draft.id}/edit`);
   await expect(
     page.getByRole("button", { name: "Preview as client", exact: true }),

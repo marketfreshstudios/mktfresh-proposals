@@ -1,4 +1,6 @@
 "use client";
+import { intervalSuffix } from "../lib/money";
+import { useMoney } from "./money-context";
 import { withDraftSettings } from "../lib/proposal-settings";
 import type { WorkspaceSettings } from "../lib/workspace";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
@@ -14,7 +16,7 @@ import {
   type Proposal,
   type Item,
 } from "../lib/model";
-import { variables, money } from "../lib/presentation";
+import { variables } from "../lib/presentation";
 import { readiness } from "../lib/quote";
 function RichEditor({
   value,
@@ -285,6 +287,7 @@ export function ProposalEditor({
   library: { id: string; name: string; block: Block }[];
   onSaved: (p: Proposal) => void;
 }) {
+  const money = useMoney();
   const [p, setP] = useState(initial),
     [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
@@ -731,8 +734,8 @@ export function ProposalEditor({
               <option value="">Choose a service</option>
               {sellableCatalogue(catalog).map((i) => (
                 <option key={i.id} value={i.id}>
-                  {itemDisplayName(i)} — {money(i.amount, p.currency)}/
-                  {i.interval}
+                  {itemDisplayName(i)} — {money(i.amount, p.currency)}
+                  {intervalSuffix(i.interval)}
                 </option>
               ))}
             </select>
@@ -774,6 +777,27 @@ export function ProposalEditor({
           </div>
         </aside>
       </div>
+      <nav className="foundation-editor-nav" aria-label="Proposal actions">
+        <Button
+          disabled={dirty || saving || stale}
+          onClick={() =>
+            window.open(`/p/${p.id}?preview=1`, "_blank", "noopener")
+          }
+        >
+          Preview
+        </Button>
+        <a
+          className="btn primary"
+          aria-disabled={dirty || saving || stale}
+          href={
+            dirty || saving || stale
+              ? undefined
+              : `/proposals/${p.id}?view=send`
+          }
+        >
+          Review &amp; send
+        </a>
+      </nav>
     </div>
   );
 }
