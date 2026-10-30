@@ -415,9 +415,6 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         page.getByText("Loading your workspace…", { exact: true }),
       ).toHaveCount(0);
       await page
-        .getByRole("button", { name: "More actions for Unused Client" })
-        .click();
-      await page
         .getByRole("button", { name: "Delete client", exact: true })
         .click();
       await expect(
@@ -597,10 +594,6 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await page.getByRole("button", { name: "Unarchive", exact: true }).click();
   await expect(page.locator(".quote-workspace")).toBeVisible();
   await page.goto(`/clients/${draft.client.id}`);
-  await page
-    .locator(".client-detail-v4 > header")
-    .getByRole("button", { name: `More actions for ${draft.client.company}` })
-    .click();
   await expect(
     page.getByRole("button", { name: "Delete client", exact: true }),
   ).toBeDisabled();

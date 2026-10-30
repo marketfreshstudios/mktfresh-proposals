@@ -1,3 +1,4 @@
+import { qboAddress, normalizedPhone } from "../client-contact";
 import { randomUUID } from "node:crypto";
 import {
   check,
@@ -198,6 +199,10 @@ export class QboProvider implements BillingProvider {
         GivenName: c.first_name,
         FamilyName: c.last_name,
         PrimaryEmailAddr: { Address: c.email },
+        ...(c.phone
+          ? { PrimaryPhone: { FreeFormNumber: normalizedPhone(c.phone) } }
+          : {}),
+        ...(qboAddress(c.address) ? { BillAddr: qboAddress(c.address) } : {}),
       },
       key,
     );

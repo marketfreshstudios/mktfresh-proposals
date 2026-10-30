@@ -17,7 +17,15 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  saveClientContact(client: Client): Promise<Client>;
   deleteClient(id: string, actor: Actor): Promise<void>;
+  linkClientStripe(
+    id: string,
+    expected: string | null,
+    email: string,
+    customer: string | null,
+    actor: Actor,
+  ): Promise<void>;
   finishDocumentRefresh<T extends { id: string }>(
     document: T,
     attempt: string,
@@ -33,6 +41,57 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async saveClientContact(client: Client) {
+    const existing = this.catalog.get("clients")?.get(client.id) as
+      Client | undefined;
+    const saved = {
+      ...client,
+      stripe_customer_id: existing?.stripe_customer_id ?? null,
+    };
+    // The memory repository commits synchronously, like the database row update.
+    const clients = this.catalog.get("clients") ?? new Map();
+    clients.set(client.id, structuredClone(saved));
+    this.catalog.set("clients", clients);
+    return saved;
+  }
+  async linkClientStripe(
+    id: string,
+    expected: string | null,
+    email: string,
+    customer: string | null,
+    actor: Actor,
+  ) {
+    if (!actor.actor.startsWith("staff:"))
+      throw new AppError(403, "Staff authorization required");
+    const client = this.catalog.get("clients")?.get(id) as Client | undefined;
+    if (!client) throw new AppError(404, "Client not found");
+    if (
+      client.stripe_customer_id !== expected ||
+      client.email.toLowerCase() !== email.toLowerCase()
+    )
+      throw new AppError(
+        409,
+        "Customer link or email changed; reload and try again",
+      );
+    this.catalog
+      .get("clients")!
+      .set(id, structuredClone({ ...client, stripe_customer_id: customer }));
+    const events = this.catalog.get("workspace_events") ?? new Map();
+    const idEvent = crypto.randomUUID();
+    events.set(idEvent, {
+      id: idEvent,
+      ...actor,
+      type: customer ? "client_stripe_linked" : "client_stripe_unlinked",
+      created_at: new Date().toISOString(),
+      metadata: {
+        client_id: id,
+        name: client.company,
+        previous_customer_id: expected,
+        customer_id: customer,
+      },
+    });
+    this.catalog.set("workspace_events", events);
+  }
   async deleteClient(id: string, actor: Actor) {
     if (!actor.actor.startsWith("staff:"))
       throw new AppError(403, "Staff authorization required");
@@ -156,6 +215,31 @@ export class LocalRepository extends MemoryRepository {
     );
     await rename(join(this.dir, "db.tmp"), join(this.dir, "db.json"));
   }
+  override async saveClientContact(client: Client) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const saved = await super.saveClientContact(client);
+      await this.persist();
+      return saved;
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
+  override async linkClientStripe(
+    id: string,
+    expected: string | null,
+    email: string,
+    customer: string | null,
+    actor: Actor,
+  ) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      await super.linkClientStripe(id, expected, email, customer, actor);
+      await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
   override async deleteClient(id: string, actor: Actor) {
     await this.ready;
     const run = this.tail.then(async () => {
@@ -240,6 +324,42 @@ export class SupabaseRepository implements Repository {
     public db: SupabaseClient,
     public readonly workspaceId = LOCAL_WORKSPACE_ID,
   ) {}
+  async saveClientContact(client: Client) {
+    const { data, error } = await this.db.rpc("save_client_contact", {
+      target_workspace: this.workspaceId,
+      contact: client,
+    });
+    if (error) throw error;
+    return data as Client;
+  }
+  async linkClientStripe(
+    id: string,
+    expected: string | null,
+    email: string,
+    customer: string | null,
+    actor: Actor,
+  ) {
+    if (!actor.actor.startsWith("staff:"))
+      throw new AppError(403, "Staff authorization required");
+    const { error } = await this.db.rpc("link_client_stripe", {
+      target_workspace: this.workspaceId,
+      target_client: id,
+      expected_customer: expected,
+      expected_email: email,
+      customer,
+      audit_event: {
+        id: crypto.randomUUID(),
+        ...actor,
+        type: customer ? "client_stripe_linked" : "client_stripe_unlinked",
+        created_at: new Date().toISOString(),
+      },
+    });
+    if (error)
+      throw new AppError(
+        error.code === "40001" ? 409 : error.code === "P0002" ? 404 : 400,
+        error.message,
+      );
+  }
   async deleteClient(id: string, actor: Actor) {
     if (!actor.actor.startsWith("staff:"))
       throw new AppError(403, "Staff authorization required");

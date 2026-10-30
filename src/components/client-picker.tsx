@@ -1,4 +1,5 @@
 "use client";
+import { ClientContactFields, clientFormValues } from "./client-contact-fields";
 import { useState } from "react";
 import { Sheet } from "./foundation";
 import { Banner, Button, Field } from "./ui";
@@ -83,7 +84,7 @@ export function CreateClientModal({
           setBusy(true);
           setError("");
           setExisting(null);
-          const values = Object.fromEntries(new FormData(e.currentTarget));
+          const values = clientFormValues(e.currentTarget);
           try {
             const response = await fetch("/api/clients", {
               method: "POST",
@@ -122,27 +123,7 @@ export function CreateClientModal({
             Use the existing client
           </Button>
         )}
-        <div className="client-fields">
-          {[
-            ["first_name", "First name"],
-            ["last_name", "Last name"],
-            ["title", "Title"],
-            ["email", "Email"],
-            ["company", "Company"],
-            ["phone", "Phone"],
-          ].map(([key, label]) => (
-            <Field key={key} label={label}>
-              <input
-                name={key}
-                type={
-                  key === "email" ? "email" : key === "phone" ? "tel" : "text"
-                }
-                required={["email", "company"].includes(key)}
-                maxLength={key === "email" ? 254 : 200}
-              />
-            </Field>
-          ))}
-        </div>
+        <ClientContactFields />
         <Button type="submit" variant="primary" busy={busy}>
           Create client
         </Button>

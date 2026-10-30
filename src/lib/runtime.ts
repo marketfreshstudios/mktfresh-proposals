@@ -59,7 +59,14 @@ function createRuntime(workspaceId: string) {
   return {
     repo,
     storage,
-    service: new ProposalService(repo),
+    service: new ProposalService(
+      repo,
+      undefined,
+      undefined,
+      providers.stripe instanceof StripeProvider
+        ? providers.stripe.api
+        : undefined,
+    ),
     worker: new Worker(
       repo,
       storage,

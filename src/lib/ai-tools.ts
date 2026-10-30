@@ -1,3 +1,4 @@
+import { AddressSchema, PhoneInputSchema, clientView } from "./client-contact";
 import { saveClient } from "./clients";
 import { cloneQuote, quoteSublines } from "./quote-model";
 import { itemDisplayName, sellableCatalogue } from "./catalogue-display";
@@ -23,7 +24,6 @@ import type { Repository } from "./repository";
 import { ProposalService, event } from "./service";
 import { variables } from "./content";
 import { markdownBlocks } from "./markdown";
-import { readiness } from "./quote";
 export const READ_TOOLS = [
   "search_clients",
   "get_client",
@@ -37,6 +37,7 @@ export const READ_TOOLS = [
 ] as const;
 export const WRITE_TOOLS = [
   "create_client",
+  "update_client",
   "create_proposal_draft",
   "update_proposal_draft",
   "set_quote_lines",
@@ -53,11 +54,29 @@ const schemas: Record<string, z.ZodType> = {
   get_document: z.object({ id }),
   search_proposals: z.object({ query: z.string().max(200).default("") }),
   get_proposal: z.object({ id }),
-  create_client: ClientSchema.omit({
-    id: true,
-    qbo_customer_id: true,
-    stripe_customer_id: true,
-  }),
+  update_client: z
+    .object({
+      id,
+      company: ClientSchema.shape.company.optional(),
+      first_name: ClientSchema.shape.first_name.optional(),
+      last_name: ClientSchema.shape.last_name.optional(),
+      title: ClientSchema.shape.title,
+      email: ClientSchema.shape.email.optional(),
+      phone: z.string().max(80).optional(),
+      address: AddressSchema.optional(),
+      notes: z.string().max(10000).optional(),
+    })
+    .strict(),
+  create_client: ClientSchema.extend({
+    phone: PhoneInputSchema,
+    address: AddressSchema.optional(),
+  })
+    .omit({
+      id: true,
+      qbo_customer_id: true,
+      stripe_customer_id: true,
+    })
+    .strict(),
   create_proposal_draft: z.object({
     brief: z.string().min(1).max(50000),
     template_id: id,
@@ -86,8 +105,8 @@ const schemas: Record<string, z.ZodType> = {
 export const toolDefinitions = Object.entries(schemas).map(
   ([name, schema]) => ({
     name,
-    description: `${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name.replaceAll("_", " ")}. Workspace-scoped. ${WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
-    inputSchema: z.toJSONSchema(schema, { target: "draft-7" }),
+    description: `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send." : "Read only."}`,
+    inputSchema: z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
     annotations: {
       readOnlyHint:
         !(WRITE_TOOLS as readonly string[]).includes(name) ||
@@ -120,6 +139,7 @@ export async function aiTool(
   name: string,
   raw: unknown,
   scopes: string[],
+  service = new ProposalService(repo),
 ) {
   check(
     actor.actor.startsWith("ai:") && actor.workspace_id === repo.workspaceId,
@@ -141,7 +161,6 @@ export async function aiTool(
   const input = schemas[name].parse(raw) as any;
   if (name === "set_quote_lines")
     check(input.items !== undefined, "Items required");
-  const service = new ProposalService(repo);
   if (name === "search_clients")
     return (await repo.entities<Client>("clients"))
       .filter((c) =>
@@ -149,7 +168,8 @@ export async function aiTool(
           .toLowerCase()
           .includes(input.query.toLowerCase()),
       )
-      .slice(0, 50);
+      .slice(0, 50)
+      .map(clientView);
   if (name === "list_templates") return repo.entities<Template>("templates");
   if (name === "list_catalog")
     return sellableCatalogue(await repo.entities<Item>("pricing_items")).map(
@@ -191,21 +211,31 @@ export async function aiTool(
       (e) => e.id === input.id,
     );
     check(entity, "Not found", 404);
-    return entity;
+    return name === "get_client" ? clientView(entity as Client) : entity;
   }
   if (name === "search_proposals")
     return (await repo.list(input.query)).slice(0, 30).map(proposalView);
-  if (name === "create_client") {
-    const client = ClientSchema.parse({ ...input, id: randomUUID() });
-    await saveClient(repo, client);
+  if (name === "create_client" || name === "update_client") {
+    const previous =
+      name === "update_client"
+        ? (await repo.entities<Client>("clients")).find(
+            (c) => c.id === input.id,
+          )
+        : undefined;
+    if (name === "update_client") check(previous, "Client not found", 404);
+    const client = await saveClient(repo, {
+      ...previous,
+      ...input,
+      id: previous?.id ?? randomUUID(),
+    });
     await repo.put("workspace_events", {
       id: randomUUID(),
-      type: "client_created",
+      type: name === "create_client" ? "client_created" : "client_saved",
       ...actor,
       created_at: new Date().toISOString(),
       metadata: { client_id: client.id },
     });
-    return client;
+    return clientView(client);
   }
   if (name === "create_proposal_draft") {
     const settings = (
@@ -261,11 +291,7 @@ export async function aiTool(
   const p = await repo.get(input.id);
   check(p, "Not found", 404);
   if (name === "get_proposal") return proposalView(p);
-  if (name === "check_ready")
-    return readiness(
-      await service.forRead(p),
-      await repo.entities<Item>("pricing_items"),
-    );
+  if (name === "check_ready") return service.checkReady(p);
   check(p.status === "draft", "AI assistants may only modify drafts", 403);
   const content =
     input.content_markdown === undefined

@@ -146,15 +146,24 @@ export async function bill(
       emailMatches = matches.filter(
         (x) => x.email.toLowerCase() === p.client.email.toLowerCase(),
       );
-    if (emailMatches.length > 1)
+    if (
+      emailMatches.length > 1 &&
+      !(provider === "stripe"
+        ? p.client.stripe_customer_id
+        : p.client.qbo_customer_id)
+    )
       throw new NeedsReview("Multiple customers with recipient email");
     const storedId =
       provider === "stripe"
         ? p.client.stripe_customer_id
         : p.client.qbo_customer_id;
-    let customer =
-      (storedId ? matches.find((c) => c.id === storedId) : undefined) ??
-      emailMatches[0];
+    let customer = storedId
+      ? emailMatches.find((c) => c.id === storedId)
+      : emailMatches[0];
+    if (storedId && !customer)
+      throw new NeedsReview(
+        "Linked customer is missing or its email differs; review customer mapping",
+      );
     if (
       !customer &&
       matches.some(

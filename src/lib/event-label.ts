@@ -5,6 +5,8 @@ export function eventLabel(
   actorName = "staff",
 ) {
   const labels: Record<string, string> = {
+    client_stripe_linked: "Stripe customer linked",
+    client_stripe_unlinked: "Stripe customer unlinked",
     created: "Draft created",
     edited: "Draft edited",
     sent: "Proposal sent",

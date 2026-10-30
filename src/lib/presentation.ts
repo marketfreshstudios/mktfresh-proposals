@@ -1,3 +1,4 @@
+import { formattedAddress } from "./client-contact";
 import { readableDate } from "./validity";
 import {
   quoteSublines,
@@ -49,6 +50,7 @@ export function variables(p: Proposal, quote = p.quote) {
   for (const field of ["first_name", "last_name", "company", "email"] as const)
     map["client." + field] = p.client[field];
   Object.assign(map, {
+    "client.address": formattedAddress(p.client.address),
     "proposal.title": p.title,
     "proposal.valid_until": readableDate(
       p.valid_until,
@@ -93,7 +95,11 @@ export function resolve(text: string, map: Record<string, string>) {
     check(
       map[path] !== undefined &&
         (map[path] !== "" ||
-          ["proposal.validity", "proposal.valid_until"].includes(path)),
+          [
+            "proposal.validity",
+            "proposal.valid_until",
+            "client.address",
+          ].includes(path)),
       `Unresolved variable: ${path}`,
     );
     return map[path];
@@ -107,14 +113,21 @@ export const escape = (text: string) =>
         c
       ]!,
   );
+function escapedResolved(text: string, map: Record<string, string>) {
+  const result = escape(resolve(text, map));
+  // Only the new multiline field changes whitespace; existing document text keeps its rendering.
+  return /{{\s*client\.address\s*}}/.test(text)
+    ? result.replaceAll("\n", "<br>")
+    : result;
+}
 function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   check(depth < 30, "Content nesting too deep");
   if (node.type === "variable")
     return resolve("{{" + (node.attrs?.path ?? "") + "}}", map)
-      ? `<span class="field-chip">${escape(resolve("{{" + (node.attrs?.path ?? "") + "}}", map))}</span>`
+      ? `<span class="field-chip">${escapedResolved("{{" + (node.attrs?.path ?? "") + "}}", map)}</span>`
       : "";
   if (node.type === "text") {
-    let s = escape(resolve(node.text ?? "", map));
+    let s = escapedResolved(node.text ?? "", map);
     for (const m of node.marks ?? [])
       if (["bold", "italic", "underline"].includes(m.type))
         s = `<${{ bold: "strong", italic: "em", underline: "u" }[m.type]}>${s}</${{ bold: "strong", italic: "em", underline: "u" }[m.type]}>`;
@@ -136,7 +149,7 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   if (!body.trim() && tag === "div") return "";
   return tag === "p" &&
     !body.replace(/<[^>]*>/g, "").trim() &&
-    JSON.stringify(node).includes("proposal.valid")
+    /proposal\.valid|client\.address/.test(JSON.stringify(node))
     ? ""
     : `<${tag}>${body}</${tag}>`;
 }
@@ -152,16 +165,16 @@ export function renderBlocks(
     .map((b) => {
       switch (b.type) {
         case "heading":
-          return `<h2>${escape(resolve(b.text ?? "", map))}</h2>`;
+          return `<h2>${escapedResolved(b.text ?? "", map)}</h2>`;
         case "paragraph":
           return b.content
             ? rich(b.content, map)
             : resolve(b.text ?? "", map).trim()
-              ? `<p>${escape(resolve(b.text ?? "", map))}</p>`
+              ? `<p>${escapedResolved(b.text ?? "", map)}</p>`
               : "";
         case "variable":
           return resolve("{{" + b.path + "}}", map)
-            ? `<span>${escape(resolve("{{" + b.path + "}}", map))}</span>`
+            ? `<span>${escapedResolved("{{" + b.path + "}}", map)}</span>`
             : "";
         case "page_break":
           return '<div class="page-break"></div>';

@@ -415,6 +415,7 @@ it("client billing is read-only, current and paginated; test-mode checks and una
             default_payment_method: { card: { brand: "visa", last4: "4242" } },
           },
         } as T;
+      if (path === "/v1/customers") return { data: [], has_more: false } as T;
       if (params.starting_after) return { data: [], has_more: false } as T;
       return {
         data: [
@@ -460,6 +461,7 @@ it("client billing is read-only, current and paginated; test-mode checks and una
     "/v1/customers/cus_test",
     "/v1/subscriptions",
     "/v1/subscriptions",
+    "/v1/customers",
   ]);
   await expect(
     clientBilling(repo, c, {
@@ -674,55 +676,44 @@ it("mark as sent again reopens an unsigned lost proposal with a rotated link, cu
     ),
   ).rejects.toThrow();
 });
-it("finds an existing subscriber by exact email before a customer ID is stored, refuses ambiguous matches and performs no writes", async () => {
-  const { repo, draft } = await setup(),
-    calls: string[] = [];
+it("shows a matching customer without automatically linking or showing it as the linked subscriber", async () => {
+  const { repo, draft } = await setup();
   const api = {
-    get: async <T>(path: string) => {
-      calls.push(path);
-      if (path === "/v1/customers")
-        return {
-          data: [{ id: "cus_existing", email: draft.client.email }],
-          has_more: false,
-        } as T;
-      if (path.includes("/v1/customers/"))
-        return { livemode: false, email: draft.client.email } as T;
-      return {
-        data: [
-          {
-            id: "sub_existing",
-            livemode: false,
-            status: "active",
-            items: { data: [] },
-          },
-        ],
-        has_more: false,
-      } as T;
-    },
-    post: async () => {
-      throw new Error("Must not create a customer");
+    get: async <T>(path: string) =>
+      (path === "/v1/customers"
+        ? {
+            data: [
+              {
+                id: "cus_existing",
+                email: draft.client.email,
+                livemode: false,
+              },
+            ],
+            has_more: false,
+          }
+        : path.includes("/customers/")
+          ? { livemode: false, email: draft.client.email }
+          : {
+              data: [
+                {
+                  id: "sub_existing",
+                  livemode: false,
+                  status: "active",
+                  items: { data: [] },
+                },
+              ],
+              has_more: false,
+            }) as T,
+    post: async <T>() => {
+      throw new Error("Must not write");
     },
   };
-  expect((await clientBilling(repo, draft.client, api)).subscriber).toBe(true);
-  expect(calls).toEqual([
-    "/v1/customers",
-    "/v1/customers/cus_existing",
-    "/v1/subscriptions",
+  const result = await clientBilling(repo, draft.client, api);
+  expect(result.subscriber).toBe(false);
+  expect(result.candidates).toMatchObject([
+    { id: "cus_existing", subscriptions: 1 },
   ]);
   expect(
     (await repo.entities<any>("clients"))[0].stripe_customer_id,
   ).toBeNull();
-  await expect(
-    clientBilling(repo, draft.client, {
-      ...api,
-      get: async <T>() =>
-        ({
-          data: [
-            { id: "cus_one", email: draft.client.email },
-            { id: "cus_two", email: draft.client.email },
-          ],
-          has_more: false,
-        }) as T,
-    }),
-  ).rejects.toThrow("Multiple Stripe customers");
 });
