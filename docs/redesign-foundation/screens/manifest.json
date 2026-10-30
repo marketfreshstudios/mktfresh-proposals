@@ -31,35 +31,35 @@
     },
     {
       "file": "editor-375-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 375,
       "theme": "light",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-375-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 375,
       "theme": "light",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-375-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 375,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-375-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 375,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-375-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 375,
       "theme": "light",
       "frame": "3a/3b/3c"
@@ -69,21 +69,21 @@
       "route": "/studio/templates",
       "width": 375,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-375-light.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 375,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-375-light.png",
       "route": "/studio/templates?view=blocks",
       "width": 375,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-375-light.png",
@@ -118,14 +118,14 @@
       "route": "/studio/workspace",
       "width": 375,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-375-light.png",
       "route": "/studio/workspace?view=team",
       "width": 375,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-375-light.png",
@@ -178,35 +178,35 @@
     },
     {
       "file": "editor-768-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 768,
       "theme": "light",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-768-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 768,
       "theme": "light",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-768-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 768,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-768-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 768,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-768-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 768,
       "theme": "light",
       "frame": "3a/3b/3c"
@@ -216,21 +216,21 @@
       "route": "/studio/templates",
       "width": 768,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-768-light.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 768,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-768-light.png",
       "route": "/studio/templates?view=blocks",
       "width": 768,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-768-light.png",
@@ -265,14 +265,14 @@
       "route": "/studio/workspace",
       "width": 768,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-768-light.png",
       "route": "/studio/workspace?view=team",
       "width": 768,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-768-light.png",
@@ -325,35 +325,35 @@
     },
     {
       "file": "editor-1440-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 1440,
       "theme": "light",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-1440-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 1440,
       "theme": "light",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-1440-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 1440,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-1440-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 1440,
       "theme": "light",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-1440-light.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 1440,
       "theme": "light",
       "frame": "3a/3b/3c"
@@ -363,21 +363,21 @@
       "route": "/studio/templates",
       "width": 1440,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-1440-light.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 1440,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-1440-light.png",
       "route": "/studio/templates?view=blocks",
       "width": 1440,
       "theme": "light",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-1440-light.png",
@@ -412,14 +412,14 @@
       "route": "/studio/workspace",
       "width": 1440,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-1440-light.png",
       "route": "/studio/workspace?view=team",
       "width": 1440,
       "theme": "light",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-1440-light.png",
@@ -472,35 +472,35 @@
     },
     {
       "file": "editor-375-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 375,
       "theme": "dark",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-375-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 375,
       "theme": "dark",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-375-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 375,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-375-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 375,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-375-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 375,
       "theme": "dark",
       "frame": "3a/3b/3c"
@@ -510,21 +510,21 @@
       "route": "/studio/templates",
       "width": 375,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-375-dark.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 375,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-375-dark.png",
       "route": "/studio/templates?view=blocks",
       "width": 375,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-375-dark.png",
@@ -559,14 +559,14 @@
       "route": "/studio/workspace",
       "width": 375,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-375-dark.png",
       "route": "/studio/workspace?view=team",
       "width": 375,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-375-dark.png",
@@ -619,35 +619,35 @@
     },
     {
       "file": "editor-768-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 768,
       "theme": "dark",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-768-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 768,
       "theme": "dark",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-768-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 768,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-768-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 768,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-768-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 768,
       "theme": "dark",
       "frame": "3a/3b/3c"
@@ -657,21 +657,21 @@
       "route": "/studio/templates",
       "width": 768,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-768-dark.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 768,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-768-dark.png",
       "route": "/studio/templates?view=blocks",
       "width": 768,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-768-dark.png",
@@ -706,14 +706,14 @@
       "route": "/studio/workspace",
       "width": 768,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-768-dark.png",
       "route": "/studio/workspace?view=team",
       "width": 768,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-768-dark.png",
@@ -766,35 +766,35 @@
     },
     {
       "file": "editor-1440-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 1440,
       "theme": "dark",
-      "frame": "2a/5e/2d"
+      "frame": "2a/5g/2c"
     },
     {
       "file": "send-1440-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=send",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=send",
       "width": 1440,
       "theme": "dark",
-      "frame": "2c/5h/2f"
+      "frame": "2a/5h/2f"
     },
     {
       "file": "record-1440-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297",
       "width": 1440,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "countersign-1440-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?action=countersign",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?action=countersign",
       "width": 1440,
       "theme": "dark",
       "frame": "3a/3b/3c"
     },
     {
       "file": "evidence-1440-dark.png",
-      "route": "/proposals/fa3d9b7e-3e80-48ac-aadd-41f36573f632?view=evidence",
+      "route": "/proposals/bd59d1e7-db63-4abb-a341-0965b118d297?view=evidence",
       "width": 1440,
       "theme": "dark",
       "frame": "3a/3b/3c"
@@ -804,21 +804,21 @@
       "route": "/studio/templates",
       "width": 1440,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "template-1440-dark.png",
       "route": "/studio/templates/00000000-0000-4000-8000-000000000020/edit",
       "width": 1440,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "blocks-1440-dark.png",
       "route": "/studio/templates?view=blocks",
       "width": 1440,
       "theme": "dark",
-      "frame": "7a"
+      "frame": "7a/7f/7g"
     },
     {
       "file": "catalog-1440-dark.png",
@@ -853,14 +853,14 @@
       "route": "/studio/workspace",
       "width": 1440,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "team-1440-dark.png",
       "route": "/studio/workspace?view=team",
       "width": 1440,
       "theme": "dark",
-      "frame": "7d/7g"
+      "frame": "7d/7d/7g"
     },
     {
       "file": "activity-1440-dark.png",

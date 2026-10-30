@@ -96,20 +96,20 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
     ["proposals", "/proposals", "6a/6b/6c"],
     ["clients", "/clients", "6d/6e/6f"],
     ["client", `/clients/${draft.client.id}`, "6d/6e/6f"],
-    ["editor", `/proposals/${draft.id}`, "2a/5e/2d"],
-    ["send", `/proposals/${draft.id}?view=send`, "2c/5h/2f"],
+    ["editor", `/proposals/${draft.id}`, "2a/5g/2c"],
+    ["send", `/proposals/${draft.id}?view=send`, "2a/5h/2f"],
     ["record", `/proposals/${draft.id}`, "3a/3b/3c"],
     ["countersign", `/proposals/${draft.id}?action=countersign`, "3a/3b/3c"],
     ["evidence", `/proposals/${draft.id}?view=evidence`, "3a/3b/3c"],
-    ["templates", "/studio/templates", "7a"],
-    ["template", `/studio/templates/${draft.template_id}/edit`, "7a"],
-    ["blocks", "/studio/templates?view=blocks", "7a"],
+    ["templates", "/studio/templates", "7a/7f/7g"],
+    ["template", `/studio/templates/${draft.template_id}/edit`, "7a/7f/7g"],
+    ["blocks", "/studio/templates?view=blocks", "7a/7f/7g"],
     ["catalog", "/studio/catalog", "7b"],
     ["connections", "/studio/connections", "7c"],
     ["assistants", "/studio/connections?view=assistants", "7c"],
     ["imports", "/studio/connections?view=imports", "7c"],
-    ["workspace", "/studio/workspace", "7d/7g"],
-    ["team", "/studio/workspace?view=team", "7d/7g"],
+    ["workspace", "/studio/workspace", "7d/7d/7g"],
+    ["team", "/studio/workspace?view=team", "7d/7d/7g"],
     ["activity", "/studio/activity", "7e"],
   ] as const;
   for (const theme of ["light", "dark"]) {
@@ -232,6 +232,10 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
+  // The shortcut is a client effect; wait for hydrated workspace data on CI.
+  await expect(
+    page.getByRole("heading", { name: "Recent proposals", exact: true }),
+  ).toBeVisible();
   await page.keyboard.press("n");
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -321,7 +325,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   }
   const boards = [
     ["Redesign 02 - Editor.dc.html", ["2a", "2c", "2d", "2f"]],
-    ["Redesign 05 - Tablet and Desktop.dc.html", ["5e", "5h"]],
+    ["Redesign 05 - Tablet and Desktop.dc.html", ["5g", "5h"]],
     [
       "Redesign 06 - Proposals and Clients.dc.html",
       ["6a", "6b", "6c", "6d", "6e", "6f"],

@@ -8,7 +8,7 @@ Reviewed 30 October 2026. Source: design/redesign/CODEX_BRIEF.md, specs/README.m
 
 - 19 existing staff surfaces, plus New proposal and Studio sheets, at **375 / 768 / 1440**, in **light / dark**: 126 full-page captures.
 - Six additional Home viewport captures use the source frame heights (375×780, 768×1100, 1440×960), for direct shell comparisons.
-- Original reference frames: 3a–3f in both supported themes; 2a/2c/2d/2f, 5e/5h, 6a–6f, 7a–7g and 8c; Design System board 04 contains both component themes.
+- Original reference frames: 3a–3f in both supported themes; 2a/2c/2d/2f, 5g/5h, 6a–6f, 7a–7g and 8c; Design System board 04 contains both component themes.
 - Reference exports are served as HTML and rendered through their own supplied runtime. Instrument Sans is supplied locally to the reference renderer. No exported sample data is copied into application code.
 - Automated checks enforce staff surface colors, Instrument Sans, 232px desktop / 64px tablet navigation, phone-tab visibility and no horizontal page overflow on every captured surface.
 - Visual inspection compared Home at all three widths, the dark phone shell, the design-system type/colors and legacy paper. Feature bodies are deliberately not pixel-matched in Foundation.
@@ -34,6 +34,7 @@ Reviewed 30 October 2026. Source: design/redesign/CODEX_BRIEF.md, specs/README.m
 - The prototype desktop sidebar declares width 232px but its content-box padding/border makes its painted width about 261px. The implementation follows the higher-precedence explicit **232px** spec using border-box sizing. Tablet similarly follows the explicit 64px.
 - The source tablet rail renders small words; the implementation uses icons **with words**, satisfying the icon-rail and accessibility rules.
 - Phone tab graphics use real accessible links/buttons and a 44px New target. Source frame device outlines are presentation furniture and are not part of the app.
+- The export notes misnumber the tablet editor range: actual frames 5g/5h contain the editor; 5e contains Billing. The gallery follows the actual frame contents.
 - Some Studio reference frames are light-only. Their application dark captures use board 04's dark tokens; no invented dark reference is claimed.
 - New proposal is now a native modal/bottom sheet reusing the existing form. Send remains the existing form in a query view until Phase 3; countersign remains the current guarded form until its Phase 4 sheet.
 - Activity has its canonical address and a pointer to current per-proposal evidence. Workspace-wide filtering and CSV export remain Phase 5.
