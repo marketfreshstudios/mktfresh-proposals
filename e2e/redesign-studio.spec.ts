@@ -189,6 +189,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save workspace settings", exact: true }),
+  ).toBeEnabled();
   expect(settings.default_validity_days).toBe(45);
   expect(settings.company_signatory!.image!.length).toBeGreaterThan(1000);
   await page.reload();
@@ -218,6 +221,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save workspace settings", exact: true }),
+  ).toBeEnabled();
   expect(typeof settings.proposal_fonts?.body).toBe("object");
   const chosen = settings.proposal_fonts!.body;
   if (typeof chosen !== "string") {
@@ -264,6 +270,25 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       .evaluate((el: HTMLImageElement) => el.naturalWidth),
   ).toBe(720);
   await page.keyboard.press("Escape");
+  await page.goto("/studio/templates");
+  await page
+    .getByRole("button", { name: "+ New template", exact: true })
+    .click();
+  await page
+    .getByLabel("Template name", { exact: true })
+    .fill("Keep this template selected");
+  await page
+    .getByRole("button", { name: "Save template", exact: true })
+    .click();
+  await expect(page.getByText("Template saved", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Template name", { exact: true })).toHaveValue(
+    "Keep this template selected",
+  );
+  const savedTemplate = (await repo.entities<any>("templates")).find(
+    (t) => t.name === "Keep this template selected",
+  );
+  expect(savedTemplate).toBeTruthy();
+  repo.catalog.get("templates")!.delete(savedTemplate.id);
   const dir = ".data/evidence/phase5";
   await mkdir(dir, { recursive: true });
   const captures: {

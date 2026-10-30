@@ -130,8 +130,9 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
         className="stack"
         onSubmit={async (e) => {
           e.preventDefault();
-          const f = new FormData(e.currentTarget);
-          await save.save(
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          const saved = await save.save(
             () =>
               post("/api/workspace_settings", {
                 ...s,
@@ -168,6 +169,16 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
               }),
             "Workspace settings saved",
           );
+          if (saved) {
+            const password = form.querySelector<HTMLInputElement>(
+              'input[name="default_password"]',
+            );
+            if (password) password.value = "";
+            form
+              .querySelectorAll<HTMLInputElement>('input[type="file"]')
+              .forEach((input) => (input.value = ""));
+            setLicensed(false);
+          }
         }}
       >
         <Section

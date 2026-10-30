@@ -99,8 +99,8 @@ export function StaffApp({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [notice, setNotice] = useState("");
-  async function load() {
-    setLoading(true);
+  async function load(preservePage = false) {
+    if (!preservePage) setLoading(true);
     setError("");
     try {
       const session = await api<{
@@ -205,7 +205,7 @@ export function StaffApp({
       setError("");
       await fn();
       setNotice(success);
-      await load();
+      await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to complete action");
     }
@@ -399,7 +399,7 @@ export function StaffApp({
           <Banner
             tone="danger"
             title="Unable to complete this action"
-            action={<Button onClick={load}>Reload</Button>}
+            action={<Button onClick={() => void load()}>Reload</Button>}
           >
             {error}
           </Banner>
