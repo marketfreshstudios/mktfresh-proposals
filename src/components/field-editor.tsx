@@ -44,7 +44,8 @@ export function FieldEditor({
 }) {
   const change = useRef(onChange),
     values = useRef(map),
-    names = useRef(showNames);
+    names = useRef(showNames),
+    painters = useRef(new Set<() => void>());
   change.current = onChange;
   values.current = map;
   names.current = showNames;
@@ -67,6 +68,37 @@ export function FieldEditor({
         atom: true,
         addAttributes: () => ({ path: { default: "client.first_name" } }),
         parseHTML: () => [{ tag: "span[data-field]" }],
+        addNodeView() {
+          return ({ node }) => {
+            let current = node;
+            const dom = document.createElement("span");
+            dom.className = "field-chip";
+            dom.contentEditable = "false";
+            const paint = () => {
+              const path = String(current.attrs.path);
+              dom.dataset.field = path;
+              dom.textContent = names.current
+                ? `{{${path}}}`
+                : values.current[path] || `{{${path}}}`;
+            };
+            painters.current.add(paint);
+            paint();
+            return {
+              dom,
+              update(next: typeof node) {
+                if (next.type !== node.type) return false;
+                current = next;
+                paint();
+                return true;
+              },
+              ignoreMutation: (mutation: { type: string }) =>
+                mutation.type !== "selection",
+              destroy: () => {
+                painters.current.delete(paint);
+              },
+            };
+          };
+        },
         renderHTML: ({ node, HTMLAttributes }) => [
           "span",
           mergeAttributes(HTMLAttributes, {
@@ -96,10 +128,10 @@ export function FieldEditor({
     if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(next))
       editor.commands.setContent(next, { emitUpdate: false });
   }, [value, editor]);
-  // Atom decorations are recreated when live totals or the Show names preference changes.
+  // Display values are decorations, not document edits. Refresh node views without
+  // replacing equal JSON (which ProseMirror correctly treats as unchanged).
   useEffect(() => {
-    if (editor)
-      editor.commands.setContent(editor.getJSON(), { emitUpdate: false });
+    for (const paint of painters.current) paint();
   }, [showNames, JSON.stringify(map), editor]);
   return (
     <div className="field-editor">

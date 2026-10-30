@@ -271,6 +271,28 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   // Resolve a held price explicitly; editing an unrelated field does not dismiss review.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${active.id}`);
+  const contentBeforeNames = JSON.stringify(active.content);
+  await page.getByRole("switch", { name: "Show names", exact: true }).check();
+  await expect(
+    page.locator(".editor-paper .tiptap .field-chip").first(),
+  ).toHaveText("{{client.first_name}}");
+  await page.getByRole("switch", { name: "Show names", exact: true }).uncheck();
+  await expect(
+    page.locator(".editor-paper .tiptap .field-chip").first(),
+  ).toHaveText("Jane");
+  expect(JSON.stringify(active.content)).toBe(contentBeforeNames);
+  const amountInput = page.getByRole("spinbutton", {
+    name: `Amount ${quote[0].name}`,
+    exact: true,
+  });
+  await amountInput.fill("2601");
+  await expect(
+    page.locator('.editor-paper .tiptap [data-field="quote.one_time_total"]'),
+  ).toHaveText("$2,601");
+  await amountInput.fill("2600");
+  await expect(
+    page.locator('.editor-paper .tiptap [data-field="quote.one_time_total"]'),
+  ).toHaveText("$2,600");
   await expect(
     page.getByRole("button", { name: "Keep $2,600", exact: true }),
   ).toBeVisible();
