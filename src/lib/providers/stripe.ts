@@ -1,3 +1,4 @@
+import { stripeCustomerMatches } from "../client-billing";
 import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
 import { check, type Client, type BillingLine, type Item } from "../model";
@@ -73,15 +74,13 @@ export class StripeProvider implements BillingProvider {
         throw new NeedsReview("Stored Stripe customer was deleted");
       return [customer(found)];
     }
-    const exact = await this.api.get<StripePage<StripeCustomer>>(
-      "/v1/customers",
-      { email: c.email, limit: "100" },
-    );
-    if (exact.data.length || exact.has_more) {
-      if (exact.has_more)
-        throw new NeedsReview("Too many matching Stripe customers");
-      return exact.data.map(customer);
-    }
+    const exact = await stripeCustomerMatches(c, this.api);
+    if (exact.length)
+      return exact.map((found) => ({
+        id: found.id,
+        email: c.email,
+        company: found.name ?? "",
+      }));
     // Company matching is a review signal only, never an automatic link.
     const escaped = c.company.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const possible = await this.api.get<StripePage<StripeCustomer>>(

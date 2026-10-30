@@ -10,7 +10,10 @@ import {
 import { saveClient, linkStripeCustomer } from "../src/lib/clients";
 import { aiTool, toolDefinitions } from "../src/lib/ai-tools";
 import { variables, renderBlocks, versionHash } from "../src/lib/content";
-import { clientBilling } from "../src/lib/client-billing";
+import {
+  clientBilling,
+  stripeCustomerMatches,
+} from "../src/lib/client-billing";
 import { ProposalService } from "../src/lib/service";
 import { StripeProvider } from "../src/lib/providers/stripe";
 import { QboProvider } from "../src/lib/providers/qbo";
@@ -550,4 +553,64 @@ it("contact edits preserve a Stripe link chosen after the form was opened", asyn
     phone: "7045550123",
   });
   expect(saved?.stripe_customer_id).toBe("cus_1");
+});
+
+it("finds differently cased duplicate emails across customer pages before sending or billing", async () => {
+  const { repo, draft, members } = await setup();
+  const api: StripeTransport = {
+    get: async <T>(path: string, params: Record<string, string>) => {
+      expect(path).toBe("/v1/customers");
+      expect(params).not.toHaveProperty("email");
+      return (
+        params.starting_after
+          ? {
+              data: [
+                {
+                  id: "cus_upper",
+                  email: draft.client.email.toUpperCase(),
+                  name: "Previous company",
+                  livemode: false,
+                },
+              ],
+              has_more: false,
+            }
+          : {
+              data: [
+                {
+                  id: "cus_lower",
+                  email: draft.client.email,
+                  name: draft.client.company,
+                  livemode: false,
+                },
+                {
+                  id: "cus_other",
+                  email: "someone@example.test",
+                  livemode: false,
+                },
+              ],
+              has_more: true,
+            }
+      ) as T;
+    },
+    post: async () => {
+      throw new Error("Must not write");
+    },
+  };
+  expect(
+    (await stripeCustomerMatches(draft.client, api)).map((c) => c.id),
+  ).toEqual(["cus_lower", "cus_upper"]);
+  const service = new ProposalService(
+    repo,
+    undefined,
+    async () => members,
+    api,
+  );
+  await expect(service.send(draft.id, staff)).rejects.toThrow(
+    "Choose which Stripe customer this client is",
+  );
+  expect(
+    (await new StripeProvider(api, repo).findCustomers(draft.client)).map(
+      (c) => c.id,
+    ),
+  ).toEqual(["cus_lower", "cus_upper"]);
 });

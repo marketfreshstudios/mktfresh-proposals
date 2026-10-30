@@ -75,13 +75,19 @@ function transport(existing = false, multi = false) {
       else if (path === "/v1/customers" || path === "/v1/customers/search")
         result = {
           data: [
-            { id: "cus_test", email: "jane@example.test", name: "Acme & Sons" },
+            {
+              id: "cus_test",
+              email: "jane@example.test",
+              name: "Acme & Sons",
+              livemode: false,
+            },
           ],
           has_more: false,
         };
       else if (path === "/v1/customers/cus_test")
         result = {
           id: "cus_test",
+          livemode: false,
           email: "jane@example.test",
           name: "Acme & Sons",
           invoice_settings: {

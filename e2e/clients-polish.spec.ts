@@ -63,18 +63,13 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
     get: async <T>(path: string, params: Record<string, string>) => {
       if (path === "/v1/customers")
         return {
-          data: Array.from(
-            {
-              length:
-                params.email === client.email
-                  ? 3
-                  : params.email === single.email
-                    ? 1
-                    : 0,
-            },
-            (_, i) => ({
-              id: `cus_${params.email === client.email ? "acme" : "harbor"}${i}`,
-              email: params.email,
+          data: [
+            { email: client.email, prefix: "acme", count: 3 },
+            { email: single.email, prefix: "harbor", count: 1 },
+          ].flatMap((group) =>
+            Array.from({ length: group.count }, (_, i) => ({
+              id: `cus_${group.prefix}${i}`,
+              email: group.email,
               name:
                 i === 0
                   ? "Main account"
@@ -83,7 +78,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
                     : "Marketing account",
               created: 1700000000 + i * 864000,
               livemode: false,
-            }),
+            })),
           ),
           has_more: false,
         } as T;
