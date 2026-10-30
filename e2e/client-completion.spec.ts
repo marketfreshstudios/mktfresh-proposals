@@ -24,7 +24,8 @@ test("client completion: exact charges, one contact footer, reading width, email
   page.setDefaultTimeout(12000);
   const { repo, service, draft, settings } = await setup();
   settings.timezone = "America/New_York";
-  await page.goto("/");
+  // Draw without starting the staff app: its sign-in redirect can race the first fixture navigation.
+  await page.goto("about:blank");
   // Synthetic test signature, never an owner's real stored image.
   settings.company_signatory!.image = await page.evaluate(() => {
     const c = document.createElement("canvas");
