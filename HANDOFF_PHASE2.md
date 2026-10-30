@@ -418,6 +418,7 @@ Final visual pass: desktop/tablet action menus are anchored popovers; phone acti
 
 Built from the brief/spec precedence and the served Redesign 07/08 frames. This is one Phase 5 PR, left open for Jonathan's review. Phase 4 is merged; the hosted test purge and client-delete function were already handled by the owner. No hosted migration, resource or provider action was run for Phase 5.
 
+- Desktop sidebar footer controls explicitly retain readable theme colors; browser checks verify their text contrast in both themes.
 - Studio saves refresh data without resetting the selected template or open form. Successful Workspace saves clear password/upload fields.
 - **Templates & blocks:** one Studio surface for templates and saved blocks, with ordered blocks, pointer/keyboard drag handles and explicit move controls. Clause editing includes the show-when catalog condition, draft-wording warning, ordering and reusable contracts. On phone/tablet the inspector is a sheet. Template defaults can use current items, sub-lines, optionals and choice groups. Existing sent/signed agreements are unaffected.
 - **Catalog:** active items first, search and explicit inactive/legacy inclusion, custom families, app-only display names, minimum commitment/paid-invoice schedule controls, accounting mappings and a client-copy preview. Additional client copy is retained by Stripe sync and appears in new proposal/client/PDF item terms. No price is calculated or suggested.

@@ -386,6 +386,43 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         await page.goto(url);
         await expect(page.locator(".page-body .skeleton")).toHaveCount(0);
         await capture(name, frame, width, theme);
+        if (name === "connections" && width === 1440) {
+          const contrast = await page
+            .locator(".sidebar footer > button.btn")
+            .evaluateAll((buttons) =>
+              buttons.map((button) => {
+                const style = getComputedStyle(button),
+                  parent = getComputedStyle(button.closest(".sidebar")!);
+                const rgb = (value: string) =>
+                  value
+                    .match(/[\d.]+/g)!
+                    .slice(0, 3)
+                    .map(Number);
+                const luminance = (rgb: number[]) => {
+                  const c = rgb
+                    .map((n) => n / 255)
+                    .map((n) =>
+                      n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4,
+                    );
+                  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                };
+                const front = luminance(rgb(style.color));
+                const back = luminance(
+                  rgb(
+                    style.backgroundColor === "rgba(0, 0, 0, 0)"
+                      ? parent.backgroundColor
+                      : style.backgroundColor,
+                  ),
+                );
+                return (
+                  (Math.max(front, back) + 0.05) /
+                  (Math.min(front, back) + 0.05)
+                );
+              }),
+            );
+          for (const ratio of contrast)
+            expect(ratio).toBeGreaterThanOrEqual(4.5);
+        }
         if (name === "templates") {
           await page.locator(".contract-clause-list button").first().click();
           await expect(

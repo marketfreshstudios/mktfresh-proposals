@@ -525,3 +525,14 @@
     grid-row: 1/5;
   }
 }
+/* Keep native button paint from overriding the sidebar's theme in desktop browsers. */
+.staff-foundation .sidebar footer > button.btn {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+}
+.staff-foundation .sidebar footer > button.btn:hover {
+  background: var(--surface-sunken);
+}
