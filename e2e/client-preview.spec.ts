@@ -77,6 +77,7 @@ test("draft client preview has live local totals, branded steps and no client wr
       await expect(
         page.getByLabel("Proposal totals", { exact: true }),
       ).not.toHaveText(before, { useInnerText: true });
+      await optional.check();
       for (const [step, button] of [
         ["read", "Reading view"],
         ["sign", "Signing step"],
@@ -96,11 +97,11 @@ test("draft client preview has live local totals, branded steps and no client wr
         }
         if (step === "billing") {
           await expect(
-            page.getByText("One more step: set up your billing"),
+            page.getByText("Set up your monthly subscription"),
           ).toBeVisible();
           await expect(
             page.getByRole("button", {
-              name: "Continue to secure checkout (preview)",
+              name: /Continue to secure checkout/,
             }),
           ).toBeDisabled();
         }

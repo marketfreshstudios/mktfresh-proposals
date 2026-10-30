@@ -280,14 +280,14 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await open("billing", newBilling);
       await expect(
         page.getByRole("heading", {
-          name: "One more step: set up your billing",
+          name: "Set up your monthly subscription",
           exact: true,
         }),
       ).toBeVisible();
       await capture("billing", width, theme, "1e");
       await expect(
         page.getByRole("link", {
-          name: "Continue to secure checkout",
+          name: /Continue to secure checkout/,
           exact: true,
         }),
       ).toHaveAttribute("href", "https://checkout.stripe.com/test_only");
@@ -318,7 +318,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
       ).toBeVisible();
       await expect(
         page.getByRole("link", {
-          name: "Continue to secure checkout",
+          name: /Continue to secure checkout/,
           exact: true,
         }),
       ).toHaveCount(0);
@@ -396,7 +396,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
         await open(dead);
         await expect(page.locator(".flow-state")).toBeVisible();
         await expect(
-          page.getByRole("link", { name: "Email Alex Morgan", exact: true }),
+          page.getByRole("link", { name: "Alex Morgan", exact: true }),
         ).toBeVisible();
         await capture(dead, width, theme, dead === "replaced" ? "8p" : "1i");
       }
@@ -741,7 +741,7 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: "One more step: set up your billing",
+      name: "Set up your monthly subscription",
       exact: true,
     }),
   ).toHaveCount(0);

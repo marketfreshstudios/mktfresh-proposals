@@ -1,0 +1,755 @@
+{
+  "captures": [
+    {
+      "file": "sender-contact-reading-375-light.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "light",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-375-light.png",
+      "frame": "1d",
+      "width": 375,
+      "theme": "light",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-375-light.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "light",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-375-light.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "light",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-375-light.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "light",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-375-light.png",
+      "frame": "1f",
+      "width": 375,
+      "theme": "light",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-375-light.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "light",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-375-light.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "light",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-375-light.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "light",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-375-light.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "light",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-375-light.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "light",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-375-light.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "light",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "sender-contact-reading-375-dark.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "dark",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-375-dark.png",
+      "frame": "1d",
+      "width": 375,
+      "theme": "dark",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-375-dark.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "dark",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-375-dark.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "dark",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-375-dark.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "dark",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-375-dark.png",
+      "frame": "1f",
+      "width": 375,
+      "theme": "dark",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-375-dark.png",
+      "frame": "1e",
+      "width": 375,
+      "theme": "dark",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-375-dark.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "dark",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-375-dark.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "dark",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-375-dark.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "dark",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-375-dark.png",
+      "frame": "1a",
+      "width": 375,
+      "theme": "dark",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-375-dark.png",
+      "frame": "1g",
+      "width": 375,
+      "theme": "dark",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "sender-contact-reading-768-light.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "light",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-768-light.png",
+      "frame": "5d",
+      "width": 768,
+      "theme": "light",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-768-light.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "light",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-768-light.png",
+      "frame": "5b",
+      "width": 768,
+      "theme": "light",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-768-light.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "light",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-768-light.png",
+      "frame": "1f",
+      "width": 768,
+      "theme": "light",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-768-light.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "light",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-768-light.png",
+      "frame": "1g",
+      "width": 768,
+      "theme": "light",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-768-light.png",
+      "frame": "5b",
+      "width": 768,
+      "theme": "light",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-768-light.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "light",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-768-light.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "light",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-768-light.png",
+      "frame": "1g",
+      "width": 768,
+      "theme": "light",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "sender-contact-reading-768-dark.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "dark",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-768-dark.png",
+      "frame": "5d",
+      "width": 768,
+      "theme": "dark",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-768-dark.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "dark",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-768-dark.png",
+      "frame": "5b",
+      "width": 768,
+      "theme": "dark",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-768-dark.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "dark",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-768-dark.png",
+      "frame": "1f",
+      "width": 768,
+      "theme": "dark",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-768-dark.png",
+      "frame": "1e",
+      "width": 768,
+      "theme": "dark",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-768-dark.png",
+      "frame": "1g",
+      "width": 768,
+      "theme": "dark",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-768-dark.png",
+      "frame": "5b",
+      "width": 768,
+      "theme": "dark",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-768-dark.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "dark",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-768-dark.png",
+      "frame": "1a",
+      "width": 768,
+      "theme": "dark",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-768-dark.png",
+      "frame": "1g",
+      "width": 768,
+      "theme": "dark",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "sender-contact-reading-1440-light.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "light",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-1440-light.png",
+      "frame": "5c",
+      "width": 1440,
+      "theme": "light",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-1440-light.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "light",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-1440-light.png",
+      "frame": "5a",
+      "width": 1440,
+      "theme": "light",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-1440-light.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "light",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-1440-light.png",
+      "frame": "1f",
+      "width": 1440,
+      "theme": "light",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-1440-light.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "light",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-1440-light.png",
+      "frame": "1g",
+      "width": 1440,
+      "theme": "light",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-1440-light.png",
+      "frame": "5a",
+      "width": 1440,
+      "theme": "light",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-1440-light.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "light",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-1440-light.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "light",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-1440-light.png",
+      "frame": "1g",
+      "width": 1440,
+      "theme": "light",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "sender-contact-reading-1440-dark.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "dark",
+      "state": "sender-contact-reading"
+    },
+    {
+      "file": "sign-contact-footer-1440-dark.png",
+      "frame": "5c",
+      "width": 1440,
+      "theme": "dark",
+      "state": "sign-contact-footer"
+    },
+    {
+      "file": "billing-monthly-manual-1440-dark.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "dark",
+      "state": "billing-monthly-manual"
+    },
+    {
+      "file": "billing-signed-reading-width-1440-dark.png",
+      "frame": "5a",
+      "width": 1440,
+      "theme": "dark",
+      "state": "billing-signed-reading-width"
+    },
+    {
+      "file": "billing-mixed-qbo-1440-dark.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "dark",
+      "state": "billing-mixed-qbo"
+    },
+    {
+      "file": "existing-subscriber-1440-dark.png",
+      "frame": "1f",
+      "width": 1440,
+      "theme": "dark",
+      "state": "existing-subscriber"
+    },
+    {
+      "file": "card-setup-explanation-1440-dark.png",
+      "frame": "1e",
+      "width": 1440,
+      "theme": "dark",
+      "state": "card-setup-explanation"
+    },
+    {
+      "file": "completed-1440-dark.png",
+      "frame": "1g",
+      "width": 1440,
+      "theme": "dark",
+      "state": "completed"
+    },
+    {
+      "file": "completed-signed-reading-width-1440-dark.png",
+      "frame": "5a",
+      "width": 1440,
+      "theme": "dark",
+      "state": "completed-signed-reading-width"
+    },
+    {
+      "file": "proposal-email-1440-dark.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "dark",
+      "state": "proposal-email"
+    },
+    {
+      "file": "reminder-email-1440-dark.png",
+      "frame": "1a",
+      "width": 1440,
+      "theme": "dark",
+      "state": "reminder-email"
+    },
+    {
+      "file": "completion-certificate-1440-dark.png",
+      "frame": "1g",
+      "width": 1440,
+      "theme": "dark",
+      "state": "completion-certificate"
+    },
+    {
+      "file": "proposal-before-375-light.png",
+      "state": "proposal-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-before-375-light.png",
+      "state": "proposal-clause-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-after-375-light.png",
+      "state": "proposal-after",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-after-375-light.png",
+      "state": "proposal-clause-after",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-before-375-light.png",
+      "state": "template-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-before-375-light.png",
+      "state": "template-clause-before",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-after-375-light.png",
+      "state": "template-after",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-after-375-light.png",
+      "state": "template-clause-after",
+      "width": 375,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-after-768-light.png",
+      "state": "proposal-after",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-after-768-light.png",
+      "state": "proposal-clause-after",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "template-after-768-light.png",
+      "state": "template-after",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-after-768-light.png",
+      "state": "template-clause-after",
+      "width": 768,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-before-1440-light.png",
+      "state": "proposal-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-before-1440-light.png",
+      "state": "proposal-clause-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-after-1440-light.png",
+      "state": "proposal-after",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-clause-after-1440-light.png",
+      "state": "proposal-clause-after",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-before-1440-light.png",
+      "state": "template-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-before-1440-light.png",
+      "state": "template-clause-before",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-after-1440-light.png",
+      "state": "template-after",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "template-clause-after-1440-light.png",
+      "state": "template-clause-after",
+      "width": 1440,
+      "theme": "light"
+    },
+    {
+      "file": "proposal-before-375-dark.png",
+      "state": "proposal-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-before-375-dark.png",
+      "state": "proposal-clause-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-after-375-dark.png",
+      "state": "proposal-after",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-after-375-dark.png",
+      "state": "proposal-clause-after",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-before-375-dark.png",
+      "state": "template-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-before-375-dark.png",
+      "state": "template-clause-before",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-after-375-dark.png",
+      "state": "template-after",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-after-375-dark.png",
+      "state": "template-clause-after",
+      "width": 375,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-after-768-dark.png",
+      "state": "proposal-after",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-after-768-dark.png",
+      "state": "proposal-clause-after",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "template-after-768-dark.png",
+      "state": "template-after",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-after-768-dark.png",
+      "state": "template-clause-after",
+      "width": 768,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-before-1440-dark.png",
+      "state": "proposal-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-before-1440-dark.png",
+      "state": "proposal-clause-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-after-1440-dark.png",
+      "state": "proposal-after",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "proposal-clause-after-1440-dark.png",
+      "state": "proposal-clause-after",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-before-1440-dark.png",
+      "state": "template-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-before-1440-dark.png",
+      "state": "template-clause-before",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-after-1440-dark.png",
+      "state": "template-after",
+      "width": 1440,
+      "theme": "dark"
+    },
+    {
+      "file": "template-clause-after-1440-dark.png",
+      "state": "template-clause-after",
+      "width": 1440,
+      "theme": "dark"
+    }
+  ],
+  "identicalSourceVariants": [
+    "5a",
+    "5b",
+    "5c",
+    "5d"
+  ],
+  "beforeCommit": "734b026"
+}

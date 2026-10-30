@@ -1,4 +1,11 @@
 "use client";
+import {
+  BillingItems,
+  BillingRecurringTotal,
+  checkoutAmount,
+} from "./billing-breakdown";
+import { billingDisplay } from "../lib/billing-display";
+import { ContactToast, copyContactValue } from "./contact-value";
 import { fontCss } from "../lib/proposal-fonts";
 import { readableDate } from "../lib/validity";
 import {
@@ -116,8 +123,7 @@ function NewClientFlow({
     [error, setError] = useState("");
   const [declining, setDeclining] = useState(false),
     [phone, setPhone] = useState(false),
-    [showCopy, setShowCopy] = useState(false),
-    [verify, setVerify] = useState("");
+    [showCopy, setShowCopy] = useState(false);
   const bar = useRef<HTMLDivElement>(null),
     main = useRef<HTMLElement>(null),
     pending = useRef(false);
@@ -141,11 +147,17 @@ function NewClientFlow({
           },
         ]
       : (p?.billing ?? []);
-  const checkout = billing.flatMap((b) =>
-    b.requires_checkout ? b.checkout : [],
-  );
-  const requiresCheckout = billing.some((b) => b.requires_checkout);
-  const existing = billing.flatMap((b) => b.added_existing);
+  const display = p
+    ? billingDisplay(
+        p.quote as QuoteItem[],
+        billing,
+        preview && step === "billing",
+      )
+    : null;
+  const checkout = display?.checkout ?? [];
+  const requiresCheckout =
+    recurring && billing.some((b) => b.requires_checkout);
+  const existing = display?.added ?? [];
   const contact = p?.contact ??
     brand.contact ?? { name: "", email: brand.email };
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
@@ -463,11 +475,6 @@ function NewClientFlow({
                   ? "If your plans change, ask for a new proposal."
                   : "Check your email for the newest link, or ask the sender to send it again."}
             </p>
-            <Contact
-              name={contact.name}
-              email={contact.email}
-              company={brand.name}
-            />
           </section>
         ) : locked ? (
           <section className="flow-state">
@@ -545,251 +552,296 @@ function NewClientFlow({
             )}
             {signed || step === "billing" || step === "done" ? (
               <section className="flow-result stack">
-                <p className="flow-success">
-                  <Icon name="verified" />{" "}
-                  {p.status === "completed"
-                    ? "Completed copy"
-                    : `Signed. Thank you${firstName ? `, ${firstName}` : ""}.`}
-                </p>
-                <p>
-                  {preview
-                    ? "This is a preview. No signature or billing has been submitted."
-                    : `Your proposal is signed. Your copy will be sent to ${p.recipient.email}.`}
-                </p>
-                {step !== "done" && requiresCheckout ? (
-                  <>
-                    <h1>One more step: set up your billing</h1>
-                    <p>
-                      You’ll add a card on Stripe’s secure page, then come
-                      straight back here. One-time items are invoiced
-                      separately.
-                    </p>
-                    <FlowTotals proposal={p} />
-                    {quoteSublines(p.quote as QuoteItem[])
-                      .filter((l) => !l.optional || l.selected)
-                      .map((l) => (
-                        <Terms
-                          key={l.id}
-                          line={l as BillingLine}
-                          currency={p.currency}
-                        />
-                      ))}
-                    {billing.some(
-                      (b) =>
-                        b.status === "failed" || b.status === "needs_review",
-                    ) && (
-                      <Banner
-                        tone="warning"
-                        title="Your proposal is signed. Billing needs attention."
-                      >
-                        You can try secure checkout again, or contact{" "}
-                        {contact.name || "the sender"} for help.
-                      </Banner>
-                    )}
-                    {preview ? (
-                      <Button variant="primary" disabled>
-                        Continue to secure checkout (preview)
+                <div className="flow-result-summary stack">
+                  <p className="flow-success">
+                    <Icon name="verified" />{" "}
+                    {p.status === "completed"
+                      ? "Completed copy"
+                      : `Signed. Thank you${firstName ? `, ${firstName}` : ""}.`}
+                  </p>
+                  <p>
+                    {preview
+                      ? "This is a preview. No signature or billing has been submitted."
+                      : `Your proposal is signed. Your copy will be sent to ${p.recipient.email}.`}
+                  </p>
+                  {step !== "done" && requiresCheckout ? (
+                    <>
+                      <h1>Set up your monthly subscription</h1>
+                      <p>
+                        Only the recurring services below are arranged through
+                        Stripe. One-time fees are invoiced separately.
+                      </p>
+                      {checkout.length > 1 && (
+                        <p>Each group has its own secure checkout.</p>
+                      )}
+                      <BillingRecurringTotal
+                        lines={checkout
+                          .filter((s) => s.mode !== "setup")
+                          .flatMap((s) => s.lines)}
+                        currency={p.currency}
+                        cents={p.money_cents}
+                      />
+                      {billing.some(
+                        (b) =>
+                          b.status === "failed" || b.status === "needs_review",
+                      ) && (
+                        <Banner
+                          tone="warning"
+                          title="Your proposal is signed. Billing needs attention."
+                        >
+                          You can try secure checkout again, or contact{" "}
+                          {contact.name || "the sender"} for help.
+                        </Banner>
+                      )}
+                      {checkout.length ? (
+                        checkout.map((session, index) => (
+                          <section
+                            className="flow-checkout-group"
+                            key={session.url || index}
+                          >
+                            <BillingItems
+                              lines={session.lines}
+                              currency={p.currency}
+                              cents={p.money_cents}
+                            />
+                            {session.lines.map((line) => (
+                              <Terms
+                                key={line.id}
+                                line={line}
+                                currency={p.currency}
+                              />
+                            ))}
+                            {session.mode === "setup" && (
+                              <BillingRecurringTotal
+                                lines={session.lines}
+                                currency={p.currency}
+                                cents={p.money_cents}
+                                setup
+                              />
+                            )}
+                            {session.mode === "setup" && (
+                              <p>
+                                No payment is taken during card setup. Stripe
+                                saves your card, then arranges the subscription
+                                shown above.
+                              </p>
+                            )}
+                            {session.lines.length ? (
+                              preview ? (
+                                <Button variant="primary" disabled>
+                                  {session.mode === "setup"
+                                    ? "Continue to secure card setup —"
+                                    : "Continue to secure checkout —"}{" "}
+                                  {checkoutAmount(
+                                    session.lines,
+                                    p.currency,
+                                    p.money_cents,
+                                  )}
+                                </Button>
+                              ) : (
+                                <a className="btn primary" href={session.url}>
+                                  {session.mode === "setup"
+                                    ? "Continue to secure card setup —"
+                                    : "Continue to secure checkout —"}{" "}
+                                  {checkoutAmount(
+                                    session.lines,
+                                    p.currency,
+                                    p.money_cents,
+                                  )}
+                                </a>
+                              )
+                            ) : (
+                              <p role="status">
+                                The itemized checkout details are unavailable.
+                                Contact the sender before continuing.
+                              </p>
+                            )}
+                          </section>
+                        ))
+                      ) : (
+                        <p role="status">
+                          Your secure checkout link is being prepared. Your
+                          signature is saved.
+                        </p>
+                      )}
+                      {existing.length > 0 && (
+                        <section className="flow-added-items">
+                          <h2>Added to your subscription</h2>
+                          <BillingItems
+                            lines={existing}
+                            currency={p.currency}
+                            cents={p.money_cents}
+                          />
+                          <BillingRecurringTotal
+                            lines={existing}
+                            currency={p.currency}
+                            cents={p.money_cents}
+                            added
+                          />
+                        </section>
+                      )}
+                      <SeparateInvoice
+                        proposal={p}
+                        lines={display?.oneTime ?? []}
+                      />
+                      <Button variant="ghost" onClick={() => go("done")}>
+                        I’ll do this later
                       </Button>
-                    ) : checkout.length ? (
-                      checkout.map((s, i) => (
-                        <a key={s.url} className="btn primary" href={s.url}>
-                          Continue to secure checkout
-                          {checkout.length > 1 ? ` ${i + 1}` : ""}
-                        </a>
-                      ))
-                    ) : (
+                      <small>
+                        We’ll email the same billing link so you can finish
+                        later.
+                      </small>
+                    </>
+                  ) : step !== "done" &&
+                    existing.length > 0 &&
+                    !requiresCheckout ? (
+                    <>
+                      <h1>Billing is already taken care of</h1>
+                      <p>
+                        These services were added to your existing subscription
+                        and will appear on your next invoice. No payment setup
+                        is needed here.
+                      </p>
+                      <h2>Added to your subscription</h2>
+                      <BillingItems
+                        lines={existing}
+                        currency={p.currency}
+                        cents={p.money_cents}
+                      />
+                      <BillingRecurringTotal
+                        lines={existing}
+                        currency={p.currency}
+                        cents={p.money_cents}
+                        added
+                      />
+                      <SeparateInvoice
+                        proposal={p}
+                        lines={display?.oneTime ?? []}
+                      />
+                      <Button variant="primary" onClick={() => go("done")}>
+                        Done
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="flow-eyebrow">
+                        {p.status === "completed"
+                          ? "Both signatures complete"
+                          : "Signed by you · awaiting countersignature"}
+                      </p>
+                      <h1>
+                        {p.status === "completed"
+                          ? "Your completed copy"
+                          : `You’re all set${firstName ? `, ${firstName}` : ""}.`}
+                      </h1>
+                      <p>
+                        {p.status === "completed"
+                          ? "The final sealed copy will be emailed to you."
+                          : `${p.company.signatory_name || brand.name} will countersign, then we’ll email the final sealed copy.`}
+                      </p>
+                      <ol className="flow-checklist">
+                        <li>
+                          <Icon name="verified" />
+                          <div>
+                            You signed
+                            <small>
+                              {date(
+                                p.signers.find((s) => s.role === "client")
+                                  ?.signed_at,
+                              )}
+                            </small>
+                          </div>
+                        </li>
+                        <li>
+                          <Icon
+                            name={requiresCheckout ? "clock" : "verified"}
+                          />
+                          <div>
+                            {requiresCheckout
+                              ? "Billing still to finish"
+                              : billing.some(
+                                    (b) =>
+                                      b.status === "failed" ||
+                                      b.status === "needs_review",
+                                  )
+                                ? "Billing will be reviewed separately. Your signature is safe."
+                                : !recurring
+                                  ? "One-time items are invoiced separately"
+                                  : !billing.length ||
+                                      billing.some(
+                                        (b) => b.status !== "succeeded",
+                                      )
+                                    ? "Billing is being prepared. Your signature is safe."
+                                    : "Billing arranged"}
+                            {requiresCheckout && (
+                              <Button onClick={() => go("billing")}>
+                                Finish billing
+                              </Button>
+                            )}
+                            <small>
+                              One-time items are invoiced separately.
+                            </small>
+                          </div>
+                        </li>
+                        <li>
+                          <Icon
+                            name={
+                              p.status === "completed"
+                                ? "verified"
+                                : "signature"
+                            }
+                          />
+                          <div>
+                            {p.status === "completed"
+                              ? `${p.company.signatory_name || brand.name} countersigned`
+                              : `${p.company.signatory_name || brand.name} countersigns`}
+                            <small>
+                              For {brand.name}.{" "}
+                              {p.status !== "completed" &&
+                                "Nothing needed from you."}
+                            </small>
+                          </div>
+                        </li>
+                        <li>
+                          <Icon name="download" />
+                          <div>
+                            {p.files.some((f) => f.stage === "company")
+                              ? "Final sealed copy available"
+                              : "Final sealed copy will be emailed to you"}
+                          </div>
+                        </li>
+                      </ol>
+                    </>
+                  )}
+                  <div className="flow-copy-actions">
+                    {p.files.map((f) => (
+                      <Button
+                        key={f.id}
+                        icon="download"
+                        onClick={() => download(f.id)}
+                      >
+                        {f.stage === "company"
+                          ? "Download the final copy"
+                          : "Download your signed copy"}
+                      </Button>
+                    ))}
+                    {step === "done" && !p.files.length && (
                       <p role="status">
-                        Your secure checkout link is being prepared. Your
-                        signature is saved.
+                        Your signature is saved. Your signed copy is being
+                        sealed and will arrive by email.
                       </p>
                     )}
-                    <Button variant="ghost" onClick={() => go("done")}>
-                      I’ll do this later
-                    </Button>
-                    <small>
-                      We’ll email the same billing link so you can finish later.
-                    </small>
-                  </>
-                ) : step !== "done" &&
-                  existing.length > 0 &&
-                  !requiresCheckout ? (
-                  <>
-                    <h1>Billing is already taken care of</h1>
-                    <p>
-                      These items have been added to your existing billing. No
-                      payment setup is needed here. They will appear on your
-                      next invoice.
-                    </p>
-                    <FlowTotals proposal={p} />
-                    <p>
-                      New monthly total:{" "}
-                      {formatMoney(
-                        existing.reduce((sum, b) => sum + b.monthly_total, 0),
-                        p.currency,
-                        p.money_cents,
-                      )}
-                      /mo
-                      {p.quote.some((i) =>
-                        i.sublines.some((s) => s.interval === "year"),
-                      ) &&
-                        ` · New yearly total: ${formatMoney(
-                          existing.reduce(
-                            (sum, b) => sum + (b.yearly_total ?? 0),
-                            0,
-                          ),
-                          p.currency,
-                          p.money_cents,
-                        )}/yr`}
-                      . One-time items are invoiced separately.
-                    </p>
-                    <Button variant="primary" onClick={() => go("done")}>
-                      Done
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <p className="flow-eyebrow">
-                      {p.status === "completed"
-                        ? "Both signatures complete"
-                        : "Signed by you · awaiting countersignature"}
-                    </p>
-                    <h1>
-                      {p.status === "completed"
-                        ? "Your completed copy"
-                        : `You’re all set${firstName ? `, ${firstName}` : ""}.`}
-                    </h1>
-                    <p>
-                      {p.status === "completed"
-                        ? "The final sealed copy will be emailed to you."
-                        : `${p.company.signatory_name || brand.name} will countersign, then we’ll email the final sealed copy.`}
-                    </p>
-                    <ol className="flow-checklist">
-                      <li>
-                        <Icon name="verified" />
-                        <div>
-                          You signed
-                          <small>
-                            {date(
-                              p.signers.find((s) => s.role === "client")
-                                ?.signed_at,
-                            )}
-                          </small>
-                        </div>
-                      </li>
-                      <li>
-                        <Icon name={requiresCheckout ? "clock" : "verified"} />
-                        <div>
-                          {requiresCheckout
-                            ? "Billing still to finish"
-                            : billing.some(
-                                  (b) =>
-                                    b.status === "failed" ||
-                                    b.status === "needs_review",
-                                )
-                              ? "Billing will be reviewed separately. Your signature is safe."
-                              : !recurring
-                                ? "One-time items are invoiced separately"
-                                : !billing.length ||
-                                    billing.some(
-                                      (b) => b.status !== "succeeded",
-                                    )
-                                  ? "Billing is being prepared. Your signature is safe."
-                                  : "Billing arranged"}
-                          {requiresCheckout && (
-                            <Button onClick={() => go("billing")}>
-                              Finish billing
-                            </Button>
-                          )}
-                          <small>One-time items are invoiced separately.</small>
-                        </div>
-                      </li>
-                      <li>
-                        <Icon
-                          name={
-                            p.status === "completed" ? "verified" : "signature"
-                          }
-                        />
-                        <div>
-                          {p.status === "completed"
-                            ? `${p.company.signatory_name || brand.name} countersigned`
-                            : `${p.company.signatory_name || brand.name} countersigns`}
-                          <small>
-                            For {brand.name}.{" "}
-                            {p.status !== "completed" &&
-                              "Nothing needed from you."}
-                          </small>
-                        </div>
-                      </li>
-                      <li>
-                        <Icon name="download" />
-                        <div>
-                          {p.files.some((f) => f.stage === "company")
-                            ? "Final sealed copy available"
-                            : "Final sealed copy will be emailed to you"}
-                        </div>
-                      </li>
-                    </ol>
-                  </>
-                )}
-                <div className="flow-copy-actions">
-                  {p.files.map((f) => (
-                    <Button
-                      key={f.id}
-                      icon="download"
-                      onClick={() => download(f.id)}
-                    >
-                      {f.stage === "company"
-                        ? "Download the final copy"
-                        : "Download your signed copy"}
-                    </Button>
-                  ))}
-                  {step === "done" && !p.files.length && (
-                    <p role="status">
-                      Your signature is saved. Your signed copy is being sealed
-                      and will arrive by email.
-                    </p>
-                  )}
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowCopy(!showCopy)}
-                  >
-                    {showCopy
-                      ? "Hide the signed proposal"
-                      : "View the signed proposal"}
-                  </Button>
-                  {p.files.length > 0 && (
                     <Button
                       variant="ghost"
-                      onClick={async () => {
-                        try {
-                          const f = p.files.at(-1)!;
-                          const result = await api<{ valid: boolean }>(
-                            `/api/public/${token}/files/${f.id}/verify`,
-                            { headers },
-                          );
-                          setVerify(
-                            result.valid
-                              ? "Matches — this file is unchanged since sealing."
-                              : "Verification failed — please contact us.",
-                          );
-                        } catch {
-                          setVerify(
-                            "Unable to verify right now. Please try again.",
-                          );
-                        }
-                      }}
+                      onClick={() => setShowCopy(!showCopy)}
                     >
-                      Verify this document
+                      {showCopy
+                        ? "Hide the signed proposal"
+                        : "View the signed proposal"}
                     </Button>
-                  )}
-                  {verify && <p role="status">{verify}</p>}
+                  </div>
                 </div>
                 {showCopy && <FlowDocument proposal={p} frozen />}
-                <Contact
-                  name={contact.name}
-                  email={contact.email}
-                  company={brand.name}
-                />
               </section>
             ) : step === "sign" ? (
               <section className="flow-sign">
@@ -921,15 +973,6 @@ function NewClientFlow({
                   )}
                 </aside>
                 <div className="flow-document-footer">
-                  <p>
-                    Questions?{" "}
-                    <Contact
-                      name={contact.name}
-                      email={contact.email}
-                      company={brand.name}
-                      compact
-                    />
-                  </p>
                   {declining ? (
                     <section className="card stack">
                       <h2>Decline this proposal?</h2>
@@ -989,6 +1032,12 @@ function NewClientFlow({
             )}
           </>
         )}
+        <Contact
+          name={contact.name}
+          email={contact.email}
+          company={brand.name}
+        />
+        <ContactToast />
       </main>
     </div>
   );
@@ -1083,37 +1132,53 @@ function Contact({
   name,
   email,
   company,
-  compact = false,
 }: {
   name: string;
   email: string;
   company: string;
-  compact?: boolean;
 }) {
-  return compact ? (
-    <>
-      {email ? (
-        <a href={`mailto:${email}`}>Email {name || company}</a>
-      ) : (
-        "Reply to the person who sent you this link."
+  return (
+    <footer className="flow-sender-contact">
+      <span>
+        Questions? Contact{" "}
+        {email ? (
+          <a href={`mailto:${email}`}>{name || company || "the sender"}</a>
+        ) : (
+          name || company || "the sender"
+        )}
+      </span>
+      {email && (
+        <button
+          className="contact-copy"
+          type="button"
+          aria-label={`Copy sender email: ${email}`}
+          onClick={() => void copyContactValue(email)}
+        >
+          {email}
+          <Icon name="copy" />
+        </button>
       )}
-    </>
-  ) : (
-    <div className="flow-contact">
-      <strong>{name || company}</strong>
-      <p>
-        {company}
-        {email && ` · ${email}`}
-      </p>
-      {email ? (
-        <a className="btn" href={`mailto:${email}`}>
-          Email {name || company}
-        </a>
-      ) : (
-        <p>Reply to the person who sent you this link.</p>
-      )}
-    </div>
+    </footer>
   );
+}
+function SeparateInvoice({
+  proposal: p,
+  lines,
+}: {
+  proposal: PublicProposal;
+  lines: BillingLine[];
+}) {
+  return lines.length ? (
+    <section className="flow-separate-invoice">
+      <h2>Invoiced separately</h2>
+      <BillingItems lines={lines} currency={p.currency} cents={p.money_cents} />
+      <p>
+        {p.invoice_method === "quickbooks"
+          ? "You'll receive a QuickBooks invoice for these one-time fees."
+          : "We'll send you an invoice for these one-time fees."}
+      </p>
+    </section>
+  ) : null;
 }
 function FlowDocument({
   proposal: p,

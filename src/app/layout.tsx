@@ -4,6 +4,7 @@ import "./client-flow.css";
 import "./records.css";
 import "./studio.css";
 import "./review-polish.css";
+import "./block-controls.css";
 export default function RootLayout({
   children,
 }: {

@@ -327,3 +327,19 @@
 [data-theme="dark"] {
   --row-hover: #2c2b27;
 }
+
+:root,
+[data-theme="light"] {
+  --block-active-ground: rgba(54, 92, 74, 0.045);
+  --block-active-outline: #688276;
+  --block-toolbar-ground: #fbfaf7;
+  --block-toolbar-ink: #24231f;
+  --block-ai-ink: #6541a1;
+}
+[data-theme="dark"] {
+  --block-active-ground: rgba(149, 185, 159, 0.12);
+  --block-active-outline: #88ad97;
+  --block-toolbar-ground: #24231f;
+  --block-toolbar-ink: #f4f2ed;
+  --block-ai-ink: #ceb7ff;
+}

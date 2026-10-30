@@ -142,6 +142,10 @@ export async function handle(req: Request, path: string[]) {
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
         rt = await publicRuntime(token);
+      const clientResult = (p: import("./model").Proposal) =>
+        publicResult(p, {
+          qboConnected: rt.worker.providers.qbo instanceof QboProvider,
+        });
       if (method === "GET" && action === "brand") {
         const p = await rt.repo.byToken(token);
         check(p, "Not found", 404);
@@ -202,7 +206,7 @@ export async function handle(req: Request, path: string[]) {
       }
       if (method === "GET" && !action)
         return json(
-          publicResult(await rt.service.view(token, password, actor(req))),
+          clientResult(await rt.service.view(token, password, actor(req))),
         );
       if (method === "POST" && action === "quote") {
         const input = z
@@ -217,7 +221,7 @@ export async function handle(req: Request, path: string[]) {
           })
           .parse(await body(req));
         return json(
-          publicResult(
+          clientResult(
             await rt.service.toggle(token, password, input, actor(req)),
           ),
         );
@@ -226,7 +230,7 @@ export async function handle(req: Request, path: string[]) {
         const p = await rt.service.byToken(token, password),
           input = SignatureSchema.parse(await body(req));
         return json(
-          publicResult(
+          clientResult(
             await rt.service.sign(p.id, input, "client", actor(req), {
               token,
               password,
@@ -239,7 +243,7 @@ export async function handle(req: Request, path: string[]) {
           .object({ note: z.string().max(2000).optional() })
           .parse(await body(req));
         return json(
-          publicResult(
+          clientResult(
             await rt.service.decline(token, password, actor(req), input.note),
           ),
         );

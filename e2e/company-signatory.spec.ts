@@ -6,6 +6,7 @@ import {
   signature,
   companyConsent,
 } from "../tests/helpers";
+import { certificateTime } from "../src/lib/completion-certificate";
 import { sealedPdf } from "../src/lib/pdf";
 import { onBehalfText } from "../src/lib/workspace";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -81,7 +82,7 @@ test("delegated company signing requires authorization in the UI and seals actua
     p.signers,
     p.events,
     p.currency,
-    { settings },
+    { settings, document: { id: p.id, title: p.title } },
   );
   await writeFile(".data/evidence/delegated-company-proposal.pdf", result.pdf);
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -108,10 +109,14 @@ test("delegated company signing requires authorization in the UI and seals actua
   expect(body).toContain("Alex Morgan · Owner · Example Studio");
   expect(body).not.toContain("Franz");
   expect(full).toContain(
-    "Company signature applied by Franz [franz@example.test] on behalf of Alex Morgan",
+    "Signed on behalf of Alex Morgan by Franz [franz@example.test]",
   );
   expect(full).toContain(authorization);
   expect(full).toContain(delegate.ip);
-  expect(full).toContain(p.signers[1].signed_at);
-  expect(full).toContain(delegate.actor);
+  expect(full).toContain(
+    certificateTime(p.signers[1].signed_at, settings.timezone),
+  );
+  expect(full).not.toContain(delegate.actor);
+  expect(full).toContain("Certificate of completion");
+  expect(full).not.toContain("Events");
 });
