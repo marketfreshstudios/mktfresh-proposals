@@ -380,7 +380,7 @@ function NewClientFlow({
         </style>
       )}
       {preview && (
-        <aside className="preview-controls" aria-label="Preview controls">
+        <PreviewControls>
           <strong>Preview, not sent</strong>
           <div className="toolbar">
             {(
@@ -397,7 +397,7 @@ function NewClientFlow({
             <Button onClick={() => setPhone(false)}>Desktop width</Button>
             <Button onClick={() => setPhone(true)}>Phone width</Button>
           </div>
-        </aside>
+        </PreviewControls>
       )}
       <header className="client-header flow-header">
         <div>
@@ -1400,5 +1400,29 @@ function ClientItems({
         );
       })}
     </>
+  );
+}
+
+/** Staff-only preview bar. Publishes its height so sticky client panels sit below it. */
+function PreviewControls({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const update = () =>
+      root.style.setProperty("--preview-controls-h", `${el.offsetHeight}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--preview-controls-h");
+    };
+  }, []);
+  return (
+    <aside ref={ref} className="preview-controls" aria-label="Preview controls">
+      {children}
+    </aside>
   );
 }
