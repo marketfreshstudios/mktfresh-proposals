@@ -1,0 +1,11 @@
+Example Studio
+
+Your next project
+
+Jamie Example at Example client declined the proposal.
+
+Review proposal: http://127.0.0.1:3100/studio/emails/staff_declined
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

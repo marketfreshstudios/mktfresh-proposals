@@ -1,0 +1,247 @@
+.emails-studio,
+.email-editor {
+  max-width: 1200px;
+  display: grid;
+  gap: 24px;
+}
+.emails-studio section {
+  min-width: 0;
+}
+.email-list-head,
+.email-list-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(200px, 1.5fr) 140px;
+  gap: 24px;
+  align-items: center;
+  padding: 18px 16px;
+}
+.email-list-head {
+  color: var(--ink-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.staff-foundation a.email-list-row {
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.email-list-row:hover,
+.email-list-row:focus-visible {
+  background: var(--row-hover);
+}
+.email-list-row span {
+  overflow-wrap: anywhere;
+}
+.email-staff-label {
+  display: block;
+  font: 12px/1.5 var(--font-ui);
+  color: var(--ink-muted);
+  margin-top: 6px;
+}
+.email-mobile-label {
+  display: none;
+}
+.email-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.email-editor-heading h2 {
+  margin: 0;
+}
+.email-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+}
+.email-edit-fields {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.email-subject-fields {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.email-subject-fields .field {
+  flex: 1;
+  min-width: 150px;
+}
+.email-edit-fields .field-editor {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px;
+}
+.email-edit-fields .rich-toolbar {
+  height: auto;
+  min-height: 44px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.email-edit-fields .tiptap {
+  min-height: 230px;
+  padding: 8px;
+  line-height: 1.7;
+}
+.email-edit-fields .field-picker,
+.email-link-picker {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: var(--surface-sunken);
+  border-radius: 6px;
+}
+.email-edit-fields .field-picker .field,
+.email-link-picker .field {
+  flex: 1;
+  min-width: 150px;
+}
+.email-notice {
+  padding: 14px;
+  border: 1px solid var(--success);
+  border-radius: 8px;
+}
+.email-preview-tools {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.email-preview-tools > .field {
+  flex: 1;
+  min-width: 150px;
+}
+.email-preview-subject {
+  overflow-wrap: anywhere;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.email-preview-scroll {
+  max-width: 100%;
+  overflow: auto;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.email-preview-scroll iframe {
+  display: block;
+  border: 0;
+  height: 720px;
+  background: #fff;
+  margin-inline: auto;
+  max-width: none;
+  flex-shrink: 0;
+}
+.email-preview-section details {
+  margin-top: 16px;
+}
+.email-plain-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 16px;
+  background: var(--surface-sunken);
+  font: 13px/1.6 var(--font-mono);
+  max-width: 100%;
+  overflow: auto;
+}
+.email-log-preview {
+  width: 100%;
+  height: 650px;
+  border: 1px solid var(--border);
+  background: #fff;
+  margin-top: 16px;
+}
+.email-edit-fields .field-editor:focus-within {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+@media (min-width: 1200px) {
+  .email-editor-grid {
+    grid-template-columns: minmax(0, 1fr) 626px;
+  }
+}
+@media (max-width: 699px) {
+  .email-list-head {
+    display: none;
+  }
+  .email-list-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px;
+    background: var(--surface);
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+  .email-mobile-label {
+    display: block;
+    color: var(--ink-muted);
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .email-editor-heading {
+    align-items: start;
+    flex-wrap: wrap;
+  }
+  .email-preview-scroll {
+    padding: 4px;
+  }
+  .email-edit-fields .actions > .button-wrap {
+    flex: 1;
+  }
+  .email-editor-grid {
+    gap: 24px;
+  }
+  .email-edit-fields .rich-toolbar .btn {
+    min-height: 44px;
+  }
+  .email-preview-tools .segmented {
+    width: 100%;
+    display: flex;
+  }
+  .email-preview-tools .segmented .button-wrap {
+    flex: 1;
+  }
+  .email-preview-tools .segmented button {
+    width: 100%;
+  }
+}
+.send-email-note .field-editor {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+}
+.send-email-note .rich-toolbar {
+  height: auto !important;
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+.send-email-note .tiptap {
+  min-height: 180px;
+}
+.send-email-note .email-link-picker {
+  display: grid;
+}
+.send-email-note .field-picker {
+  flex-wrap: wrap;
+}
+.send-email-note .field-picker .field {
+  min-width: 130px;
+}
+
+.email-edit-fields .tiptap,
+.send-email-note .tiptap {
+  font: 400 15px/1.65 var(--font-ui);
+}

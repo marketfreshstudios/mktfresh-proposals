@@ -5,6 +5,9 @@ export function eventLabel(
   actorName = "staff",
 ) {
   const labels: Record<string, string> = {
+    email_template_saved: e.metadata.reset
+      ? "Email template reset"
+      : "Email template updated",
     client_stripe_linked: "Stripe customer linked",
     client_stripe_unlinked: "Stripe customer unlinked",
     created: "Draft created",

@@ -1,7 +1,11 @@
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { proposalLink } from "./links";
-import { emailHtml, proposalEmailNote } from "./branding";
+import {
+  prepareEmail,
+  logSentEmail,
+  type EmailSnapshot,
+} from "./email-templates";
 import { StripeProvider } from "./providers/stripe";
 import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
@@ -163,37 +167,29 @@ export class Worker {
       const attachments = payload.file_id
         ? await this.attachment(p, String(payload.file_id))
         : undefined;
-      const isProposalEmail = !!(
-        payload.proposal_email ||
-        payload.send_version ||
-        payload.reminder_day
-      );
-      const senderNote =
-        typeof payload.note === "string"
-          ? payload.note
-          : proposalEmailNote(String(payload.text));
+      const prepared =
+        (payload.email_snapshot as EmailSnapshot | undefined) ??
+        (await prepareEmail(this.repo, p, j));
+      const stored = await mutate(this.repo, p.id, (row) => {
+        const job = row.jobs.find((v) => v.id === j.id)!;
+        job.payload.email_snapshot ??= prepared;
+      });
+      const snapshot = stored.jobs.find((v) => v.id === j.id)!.payload
+        .email_snapshot as EmailSnapshot;
+      await this.repo.emailLog(p.id);
       await this.mailer.send(
         {
-          ...(typeof payload.from === "string" &&
-          typeof payload.reply_to === "string"
-            ? { from: payload.from, reply_to: payload.reply_to }
-            : emailIdentity(p)),
-          to: String(payload.to),
-          subject: String(payload.subject),
-          text: isProposalEmail
-            ? [
-                senderNote,
-                `Review your proposal: ${proposalLink(p)}`,
-                `Sent by ${p.sender?.display_name ?? p.workspace_settings?.owner ?? "your sender"} at ${p.workspace_settings?.company_name ?? "your workspace"}`,
-              ]
-                .filter(Boolean)
-                .join("\n\n")
-            : String(payload.text),
-          html: emailHtml(p, String(payload.text), isProposalEmail, senderNote),
+          from: snapshot.from,
+          reply_to: snapshot.reply_to,
+          to: snapshot.to,
+          subject: snapshot.subject,
+          text: snapshot.text,
+          html: snapshot.html,
           ...(attachments ? { attachments } : {}),
         },
         j.id,
       );
+      await logSentEmail(this.repo, p, j, snapshot);
       if (payload.reminder_day)
         await mutate(this.repo, p.id, (p) =>
           event(p, "reminder_sent", system, {

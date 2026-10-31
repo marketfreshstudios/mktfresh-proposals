@@ -116,7 +116,12 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
             staff,
             input.confirm_ai_review,
             input.sender_user_id,
-            { note: input.note, password: input.password },
+            {
+              note: input.note,
+              subject: input.subject,
+              body: input.body,
+              password: input.password,
+            },
           );
           publicP = active;
           value = active;
@@ -331,7 +336,9 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   ).toBeVisible();
   expect(
     active.jobs.some((j) =>
-      String(j.payload.text).includes("Please review the scope"),
+      JSON.stringify(j.payload.email_template).includes(
+        "Please review the scope",
+      ),
     ),
   ).toBe(true);
   // Client chooses exactly one item; total and conditional contract change together.

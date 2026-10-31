@@ -3,6 +3,7 @@ import {
   connectionStatus,
   type ConnectionStatus,
 } from "../lib/workspace-setup";
+import { EmailsStudio } from "./email-studio";
 import { ContactToast } from "./contact-value";
 import { HomeV4, ProposalListV4, RecordV4, ClientsV4 } from "./records";
 import {
@@ -226,6 +227,7 @@ export function StaffApp({
         ? ({
             templates: "Templates & blocks",
             products: "Products",
+            emails: "Emails",
             connections: "Connections",
             workspace: "Workspace",
             activity: "Activity log",
@@ -341,6 +343,9 @@ export function StaffApp({
     } else if (section === "catalogue") {
       headerAction = null;
       content = <CatalogStudio data={data} run={run} />;
+    } else if (section === "emails") {
+      title = "Emails";
+      content = <EmailsStudio data={data} id={id} />;
     } else if (section === "templates") {
       headerAction = null;
       content = <TemplatesStudio data={data} selected={id} run={run} />;

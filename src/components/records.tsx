@@ -1,4 +1,5 @@
 "use client";
+import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
 import { ClientContactFields, clientFormValues } from "./client-contact-fields";
@@ -1515,6 +1516,7 @@ export function RecordV4({
               </Button>
             )}
           </section>
+          <ProposalEmailLog id={p.id} revision={p.revision} />
           <section className="card stack">
             <h2>Files</h2>
             {p.files

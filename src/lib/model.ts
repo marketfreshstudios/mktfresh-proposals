@@ -135,7 +135,7 @@ export type RichText = {
   type: string;
   text?: string;
   content?: RichText[];
-  marks?: { type: string }[];
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
   attrs?: { path?: string };
 };
 export type Template = {

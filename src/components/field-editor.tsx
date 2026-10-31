@@ -22,7 +22,11 @@ export function fieldNodes(node: RichText): RichText {
             )) {
               if (m.index! > last)
                 out.push({ ...n, text: n.text!.slice(last, m.index) });
-              out.push({ type: "variable", attrs: { path: m[1] } });
+              out.push({
+                type: "variable",
+                attrs: { path: m[1] },
+                ...(n.marks ? { marks: n.marks } : {}),
+              });
               last = m.index! + m[0].length;
             }
             if (last < (n.text ?? "").length)
@@ -38,11 +42,15 @@ export function FieldEditor({
   onChange,
   map,
   showNames,
+  allowLinks = false,
+  label,
 }: {
   value: RichText;
   onChange: (v: RichText) => void;
   map: Record<string, string>;
   showNames: boolean;
+  allowLinks?: boolean;
+  label?: string;
 }) {
   const toolbar = useBlockToolbar();
   const change = useRef(onChange),
@@ -52,17 +60,33 @@ export function FieldEditor({
   change.current = onChange;
   values.current = map;
   names.current = showNames;
+  const [linkPicker, setLinkPicker] = useState(false),
+    [href, setHref] = useState(""),
+    [linkError, setLinkError] = useState("");
   const [picker, setPicker] = useState(false),
     [field, setField] = useState("client.first_name");
   const editor = useEditor({
     immediatelyRender: false,
+    editorProps: {
+      attributes: label
+        ? { role: "textbox", "aria-label": label, "aria-multiline": "true" }
+        : {},
+    },
     extensions: [
       StarterKit.configure({
         heading: false,
+        code: allowLinks ? false : undefined,
+        strike: allowLinks ? false : undefined,
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,
-        link: false,
+        link: allowLinks
+          ? {
+              openOnClick: false,
+              autolink: false,
+              protocols: ["https", "mailto"],
+            }
+          : false,
       }),
       Node.create({
         name: "variable",
@@ -156,6 +180,19 @@ export function FieldEditor({
       >
         List
       </Button>
+      {allowLinks && (
+        <>
+          <Button
+            variant="ghost"
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          >
+            Numbered list
+          </Button>
+          <Button variant="ghost" onClick={() => setLinkPicker(!linkPicker)}>
+            Link
+          </Button>
+        </>
+      )}
       <Button variant="ghost" onClick={() => setPicker(!picker)}>
         Insert field
       </Button>
@@ -165,7 +202,10 @@ export function FieldEditor({
     <div
       className="field-editor"
       onKeyDown={(e) => {
-        if (e.key === "Escape") setPicker(false);
+        if (e.key === "Escape") {
+          setPicker(false);
+          setLinkPicker(false);
+        }
       }}
     >
       {toolbar === undefined
@@ -173,6 +213,43 @@ export function FieldEditor({
         : toolbar
           ? createPortal(formatting, toolbar)
           : null}
+      {linkPicker && (
+        <div className="email-link-picker">
+          <label className="field">
+            Link URL
+            <input
+              value={href}
+              onChange={(e) => setHref(e.target.value)}
+              placeholder="https://example.com"
+            />
+          </label>
+          <Button
+            onClick={() => {
+              try {
+                const url = new URL(href);
+                if (!["https:", "mailto:"].includes(url.protocol))
+                  throw new Error("Use HTTPS or mailto");
+                editor?.chain().focus().setLink({ href }).run();
+                setLinkError("");
+                setLinkPicker(false);
+              } catch {
+                setLinkError("Enter an HTTPS or mailto link");
+              }
+            }}
+          >
+            Apply link
+          </Button>
+          <Button
+            onClick={() => {
+              editor?.chain().focus().unsetLink().run();
+              setLinkPicker(false);
+            }}
+          >
+            Remove link
+          </Button>
+          {linkError && <p role="alert">{linkError}</p>}
+        </div>
+      )}
       <EditorContent editor={editor} />
       {picker && (
         <div className="field-picker">

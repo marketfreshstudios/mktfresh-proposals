@@ -6,6 +6,14 @@ import {
   useBlockSelection,
 } from "./block-controls";
 import type { ComponentProps } from "react";
+import {
+  emailDefaults,
+  plainBody,
+  emailValues,
+  resolveEmailText,
+  validateTemplate,
+} from "../lib/email-template-content";
+import type { EmailTemplate } from "../lib/email-template-content";
 import { fontCss } from "../lib/proposal-fonts";
 import { ValidityField } from "./validity-field";
 import { readableDate } from "../lib/validity";
@@ -230,10 +238,68 @@ function QuoteEditorContent({
     [sender, setSender] = useState(
       user?.actor.slice(6) ?? staff[0]?.user_id ?? "",
     ),
-    [note, setNote] = useState(""),
+    [note, setNote] = useState<import("../lib/model").RichText>(plainBody("")),
+    [emailSubject, setEmailSubject] = useState(""),
+    [emailError, setEmailError] = useState(""),
+    [emailLoaded, setEmailLoaded] = useState(false),
+    [emailRetry, setEmailRetry] = useState(0),
     [protectedLink, setProtected] = useState(!!initial.password_hash),
     [password, setPassword] = useState(""),
     [sending, setSending] = useState(false);
+  const subjectEdited = useRef(false),
+    subjectTemplate = useRef("");
+  useEffect(() => {
+    if (tab !== "Review & send" || emailLoaded) return;
+    let live = true;
+    void api<EmailTemplate[]>("/api/email-templates")
+      .then((ts) => {
+        if (!live) return;
+        const t = ts.find((t) => t.key === "proposal_sent") ?? emailDefaults[0];
+        subjectTemplate.current = t.subject;
+        setEmailSubject(
+          resolveEmailText(t.subject, {
+            ...emailValues(p),
+            "sender.name":
+              staff.find((m) => m.user_id === sender)?.display_name ??
+              user?.staff_name ??
+              "",
+          }),
+        );
+        setNote(t.body);
+        setEmailLoaded(true);
+        setEmailError("");
+      })
+      .catch((e) => {
+        if (live)
+          setEmailError("Email template could not be loaded: " + e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [tab, emailLoaded, emailRetry]);
+  useEffect(() => {
+    if (emailLoaded && !subjectEdited.current)
+      setEmailSubject(
+        resolveEmailText(subjectTemplate.current, {
+          ...emailValues(p),
+          "sender.name":
+            staff.find((m) => m.user_id === sender)?.display_name ??
+            user?.staff_name ??
+            "",
+        }),
+      );
+  }, [sender, emailLoaded]);
+  let emailValidation = "";
+  if (emailLoaded)
+    try {
+      validateTemplate({
+        subject: emailSubject,
+        body: note,
+        button_label: "View proposal",
+      });
+    } catch (e) {
+      emailValidation = (e as Error).message;
+    }
   const cacheKey = `proposal-unsaved:${initial.workspace_id ?? "workspace"}:${initial.id}`;
   const [offline, setOffline] = useState(false),
     [recovery, setRecovery] = useState<Partial<Proposal> | null>(null),
@@ -1041,13 +1107,55 @@ function QuoteEditorContent({
           readOnly
         />
       </Field>
-      <Field label="Note">
-        <textarea
-          placeholder="A personal note for your client"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
+      {(emailError || emailValidation) && (
+        <Banner tone="danger" title="Check the email">
+          {emailError || emailValidation}
+          {emailError && (
+            <Button onClick={() => setEmailRetry((n) => n + 1)}>
+              Retry email template
+            </Button>
+          )}
+        </Banner>
+      )}
+      <Field label="Subject">
+        <input
+          value={emailSubject}
+          disabled={!emailLoaded}
+          onChange={(e) => {
+            subjectEdited.current = true;
+            setEmailSubject(e.target.value);
+          }}
+          maxLength={300}
         />
       </Field>
+      <div className="field send-email-note">
+        <span>Note</span>
+        {emailLoaded ? (
+          <FieldEditor
+            label="Note"
+            allowLinks
+            value={note}
+            onChange={(v) => {
+              setNote(v);
+            }}
+            map={{
+              ...emailValues(p),
+              "sender.name":
+                staff.find((m) => m.user_id === sender)?.display_name ??
+                user?.staff_name ??
+                "",
+            }}
+            showNames={false}
+          />
+        ) : (
+          <p role="status">Loading email template…</p>
+        )}
+      </div>
+      <p className="muted">
+        Subject and note start from your{" "}
+        <a href="/studio/emails/proposal_sent">Proposal sent email</a>. Edits
+        here apply only to this send.
+      </p>
       <label className="check">
         <input
           type="checkbox"
@@ -1090,6 +1198,9 @@ function QuoteEditorContent({
           variant="primary"
           disabled={
             !ready.ready ||
+            !emailLoaded ||
+            !!emailValidation ||
+            !!emailError ||
             stale ||
             offline ||
             saving ||
@@ -1109,7 +1220,8 @@ function QuoteEditorContent({
               await post(`/api/proposals/${p.id}/send`, {
                 confirm_ai_review: confirmed,
                 sender_user_id: sender,
-                note,
+                subject: emailSubject,
+                body: note,
                 ...(!protectedLink
                   ? { password: null }
                   : password

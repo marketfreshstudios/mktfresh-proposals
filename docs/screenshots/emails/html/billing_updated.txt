@@ -1,0 +1,15 @@
+Example Studio
+
+Your next project
+
+Hi Jamie,
+
+The recurring services in your signed proposal have been added to your subscription. You can review the agreed services in your proposal.
+
+Any one-time fees are invoiced separately.
+
+View proposal: http://127.0.0.1:3100/studio/emails/billing_updated
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

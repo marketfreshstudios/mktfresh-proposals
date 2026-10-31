@@ -26,10 +26,11 @@ test("From lists the workspace team, defaults to the current user and submits a 
     else if (path.endsWith("/send")) {
       const input = route.request().postDataJSON();
       expect(Object.keys(input).sort()).toEqual([
+        "body",
         "confirm_ai_review",
-        "note",
         "password",
         "sender_user_id",
+        "subject",
       ]);
       p = await service.send(
         p.id,

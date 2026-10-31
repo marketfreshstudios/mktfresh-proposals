@@ -1,0 +1,11 @@
+Example Studio
+
+Your next project
+
+The client and company signatures have been recorded. The completed agreement is available on the proposal record.
+
+Review proposal: http://127.0.0.1:3100/studio/emails/staff_completed
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

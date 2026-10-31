@@ -2,8 +2,16 @@ import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { AppError, type Proposal, type Actor, type Client } from "./model";
+import {
+  AppError,
+  type Proposal,
+  type Actor,
+  type Client,
+  type Audit,
+} from "./model";
 export type EntityTable =
+  | "email_templates"
+  | "email_log"
   | "clients"
   | "pricing_items"
   | "templates"
@@ -17,6 +25,11 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  saveEmailTemplate<T extends { id: string }>(
+    template: T,
+    audit: Audit,
+  ): Promise<void>;
+  emailLog<T>(proposalId: string): Promise<T[]>;
   saveClientContact(client: Client): Promise<Client>;
   deleteClient(id: string, actor: Actor): Promise<void>;
   linkClientStripe(
@@ -41,6 +54,26 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async saveEmailTemplate<T extends { id: string }>(template: T, audit: Audit) {
+    const templates = this.catalog.get("email_templates") ?? new Map();
+    const events = this.catalog.get("workspace_events") ?? new Map();
+    if (events.has(audit.id)) throw new AppError(409, "Append-only history");
+    templates.set(
+      template.id,
+      structuredClone({ ...template, workspace_id: this.workspaceId }),
+    );
+    events.set(
+      audit.id,
+      structuredClone({ ...audit, workspace_id: this.workspaceId }),
+    );
+    this.catalog.set("email_templates", templates);
+    this.catalog.set("workspace_events", events);
+  }
+  async emailLog<T>(proposalId: string) {
+    return (
+      await this.entities<T & { proposal_id: string }>("email_log")
+    ).filter((e) => e.proposal_id === proposalId);
+  }
   async saveClientContact(client: Client) {
     const existing = this.catalog.get("clients")?.get(client.id) as
       Client | undefined;
@@ -174,6 +207,8 @@ export class MemoryRepository implements Repository {
     return true;
   }
   async put<T extends { id: string }>(table: EntityTable, entity: T) {
+    if (table === "email_log" && this.catalog.get(table)?.has(entity.id))
+      throw new AppError(409, "Append-only email log");
     if (!this.catalog.has(table)) this.catalog.set(table, new Map());
     this.catalog.get(table)!.set(entity.id, structuredClone(entity));
   }
@@ -214,6 +249,18 @@ export class LocalRepository extends MemoryRepository {
       { mode: 0o600 },
     );
     await rename(join(this.dir, "db.tmp"), join(this.dir, "db.json"));
+  }
+  override async saveEmailTemplate<T extends { id: string }>(
+    template: T,
+    audit: Audit,
+  ) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      await super.saveEmailTemplate(template, audit);
+      await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    return run;
   }
   override async saveClientContact(client: Client) {
     await this.ready;
@@ -324,6 +371,29 @@ export class SupabaseRepository implements Repository {
     public db: SupabaseClient,
     public readonly workspaceId = LOCAL_WORKSPACE_ID,
   ) {}
+  async saveEmailTemplate<T extends { id: string }>(template: T, audit: Audit) {
+    const { error } = await this.db.rpc("save_email_template", {
+      target_workspace: this.workspaceId,
+      template,
+      audit_event: audit,
+    });
+    if (error) throw error;
+  }
+  async emailLog<T>(proposalId: string) {
+    const rows: T[] = [];
+    for (let from = 0; ; from += 500) {
+      const { data, error } = await this.db
+        .from("email_log")
+        .select("data")
+        .eq("workspace_id", this.workspaceId)
+        .eq("data->>proposal_id", proposalId)
+        .order("id")
+        .range(from, from + 499);
+      if (error) throw error;
+      rows.push(...data.map((row) => row.data as T));
+      if (data.length < 500) return rows;
+    }
+  }
   async saveClientContact(client: Client) {
     const { data, error } = await this.db.rpc("save_client_contact", {
       target_workspace: this.workspaceId,

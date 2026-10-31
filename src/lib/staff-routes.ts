@@ -1,6 +1,7 @@
 export type StaffQuery = Record<string, string | string[] | undefined>;
 export const studioRoutes = [
   ["/studio/templates", "Templates & blocks"],
+  ["/studio/emails", "Emails"],
   ["/studio/products", "Products"],
   ["/studio/connections", "Connections"],
   ["/studio/workspace", "Workspace"],
@@ -48,6 +49,7 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
       templates: query.view === "blocks" ? "library" : "templates",
       catalog: "catalogue",
       products: "catalogue",
+      emails: "emails",
       connections:
         query.view === "assistants"
           ? "assistants"

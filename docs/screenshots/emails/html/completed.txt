@@ -1,0 +1,15 @@
+Example Studio
+
+Your next project
+
+Hi Jamie,
+
+Your proposal is now signed by both parties. The completed copy is attached for your records.
+
+Thank you for choosing Example Studio.
+
+View completed copy: http://127.0.0.1:3100/studio/emails/completed
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test · (704) 555-0123 · 123 Example Street

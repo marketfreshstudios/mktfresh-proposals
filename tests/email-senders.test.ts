@@ -98,7 +98,9 @@ it("defaults to the logged-in staff, supports re-send and freezes every client a
     expect(emails.some((e) => e.to === to)).toBe(true);
   expect(
     emails.filter(
-      (e) => e.to === p.client.email && e.subject.startsWith("Signed copy:"),
+      (e) =>
+        e.to === p.client.email &&
+        /signed copy:|completed agreement:/i.test(e.subject),
     ),
   ).toHaveLength(2);
 });
