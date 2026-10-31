@@ -1,0 +1,674 @@
+[
+  {
+    "file": "checkout-setup-375-light.png",
+    "state": "checkout-setup",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-setup-375-light.png",
+    "state": "record-waiting-setup",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-setup-375-light.png",
+    "state": "return-finishing-setup",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-setup-375-light.png",
+    "state": "return-confirmed-setup",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-setup-375-light.png",
+    "state": "record-confirmed-setup",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-subscription-375-light.png",
+    "state": "checkout-subscription",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-subscription-375-light.png",
+    "state": "record-waiting-subscription",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-subscription-375-light.png",
+    "state": "return-finishing-subscription",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-subscription-375-light.png",
+    "state": "return-confirmed-subscription",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-subscription-375-light.png",
+    "state": "record-confirmed-subscription",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-yearly-375-light.png",
+    "state": "checkout-yearly",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-yearly-375-light.png",
+    "state": "return-confirmed-yearly",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "return-timeout-375-light.png",
+    "state": "return-timeout",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-setup-768-light.png",
+    "state": "checkout-setup",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-setup-768-light.png",
+    "state": "record-waiting-setup",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-setup-768-light.png",
+    "state": "return-finishing-setup",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-setup-768-light.png",
+    "state": "return-confirmed-setup",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-setup-768-light.png",
+    "state": "record-confirmed-setup",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-subscription-768-light.png",
+    "state": "checkout-subscription",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-subscription-768-light.png",
+    "state": "record-waiting-subscription",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-subscription-768-light.png",
+    "state": "return-finishing-subscription",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-subscription-768-light.png",
+    "state": "return-confirmed-subscription",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-subscription-768-light.png",
+    "state": "record-confirmed-subscription",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-yearly-768-light.png",
+    "state": "checkout-yearly",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-yearly-768-light.png",
+    "state": "return-confirmed-yearly",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "return-timeout-768-light.png",
+    "state": "return-timeout",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-setup-1440-light.png",
+    "state": "checkout-setup",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-setup-1440-light.png",
+    "state": "record-waiting-setup",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-setup-1440-light.png",
+    "state": "return-finishing-setup",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-setup-1440-light.png",
+    "state": "return-confirmed-setup",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-setup-1440-light.png",
+    "state": "record-confirmed-setup",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-subscription-1440-light.png",
+    "state": "checkout-subscription",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "record-waiting-subscription-1440-light.png",
+    "state": "record-waiting-subscription",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-finishing-subscription-1440-light.png",
+    "state": "return-finishing-subscription",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-subscription-1440-light.png",
+    "state": "return-confirmed-subscription",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "record-confirmed-subscription-1440-light.png",
+    "state": "record-confirmed-subscription",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-yearly-1440-light.png",
+    "state": "checkout-yearly",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-confirmed-yearly-1440-light.png",
+    "state": "return-confirmed-yearly",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "return-timeout-1440-light.png",
+    "state": "return-timeout",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "checkout-setup-375-dark.png",
+    "state": "checkout-setup",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-setup-375-dark.png",
+    "state": "record-waiting-setup",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-setup-375-dark.png",
+    "state": "return-finishing-setup",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-setup-375-dark.png",
+    "state": "return-confirmed-setup",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-setup-375-dark.png",
+    "state": "record-confirmed-setup",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-subscription-375-dark.png",
+    "state": "checkout-subscription",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-subscription-375-dark.png",
+    "state": "record-waiting-subscription",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-subscription-375-dark.png",
+    "state": "return-finishing-subscription",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-subscription-375-dark.png",
+    "state": "return-confirmed-subscription",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-subscription-375-dark.png",
+    "state": "record-confirmed-subscription",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-yearly-375-dark.png",
+    "state": "checkout-yearly",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-yearly-375-dark.png",
+    "state": "return-confirmed-yearly",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "return-timeout-375-dark.png",
+    "state": "return-timeout",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-setup-768-dark.png",
+    "state": "checkout-setup",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-setup-768-dark.png",
+    "state": "record-waiting-setup",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-setup-768-dark.png",
+    "state": "return-finishing-setup",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-setup-768-dark.png",
+    "state": "return-confirmed-setup",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-setup-768-dark.png",
+    "state": "record-confirmed-setup",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-subscription-768-dark.png",
+    "state": "checkout-subscription",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-subscription-768-dark.png",
+    "state": "record-waiting-subscription",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-subscription-768-dark.png",
+    "state": "return-finishing-subscription",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-subscription-768-dark.png",
+    "state": "return-confirmed-subscription",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-subscription-768-dark.png",
+    "state": "record-confirmed-subscription",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-yearly-768-dark.png",
+    "state": "checkout-yearly",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-yearly-768-dark.png",
+    "state": "return-confirmed-yearly",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "return-timeout-768-dark.png",
+    "state": "return-timeout",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-setup-1440-dark.png",
+    "state": "checkout-setup",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-setup-1440-dark.png",
+    "state": "record-waiting-setup",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-setup-1440-dark.png",
+    "state": "return-finishing-setup",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-setup-1440-dark.png",
+    "state": "return-confirmed-setup",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-setup-1440-dark.png",
+    "state": "record-confirmed-setup",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-subscription-1440-dark.png",
+    "state": "checkout-subscription",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "record-waiting-subscription-1440-dark.png",
+    "state": "record-waiting-subscription",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-finishing-subscription-1440-dark.png",
+    "state": "return-finishing-subscription",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-subscription-1440-dark.png",
+    "state": "return-confirmed-subscription",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "record-confirmed-subscription-1440-dark.png",
+    "state": "record-confirmed-subscription",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "checkout-yearly-1440-dark.png",
+    "state": "checkout-yearly",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-confirmed-yearly-1440-dark.png",
+    "state": "return-confirmed-yearly",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "return-timeout-1440-dark.png",
+    "state": "return-timeout",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "email-setup-client-375-light.png",
+    "state": "email-setup-client",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "email-setup-client-600-light.png",
+    "state": "email-setup-client",
+    "width": 600,
+    "theme": "light"
+  },
+  {
+    "file": "email-setup-client-375-dark.png",
+    "state": "email-setup-client",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "email-setup-client-600-dark.png",
+    "state": "email-setup-client",
+    "width": 600,
+    "theme": "dark"
+  },
+  {
+    "file": "email-setup-staff-375-light.png",
+    "state": "email-setup-staff",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "email-setup-staff-600-light.png",
+    "state": "email-setup-staff",
+    "width": 600,
+    "theme": "light"
+  },
+  {
+    "file": "email-setup-staff-375-dark.png",
+    "state": "email-setup-staff",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "email-setup-staff-600-dark.png",
+    "state": "email-setup-staff",
+    "width": 600,
+    "theme": "dark"
+  },
+  {
+    "file": "email-subscription-client-375-light.png",
+    "state": "email-subscription-client",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "email-subscription-client-600-light.png",
+    "state": "email-subscription-client",
+    "width": 600,
+    "theme": "light"
+  },
+  {
+    "file": "email-subscription-client-375-dark.png",
+    "state": "email-subscription-client",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "email-subscription-client-600-dark.png",
+    "state": "email-subscription-client",
+    "width": 600,
+    "theme": "dark"
+  },
+  {
+    "file": "email-subscription-staff-375-light.png",
+    "state": "email-subscription-staff",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "email-subscription-staff-600-light.png",
+    "state": "email-subscription-staff",
+    "width": 600,
+    "theme": "light"
+  },
+  {
+    "file": "email-subscription-staff-375-dark.png",
+    "state": "email-subscription-staff",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "email-subscription-staff-600-dark.png",
+    "state": "email-subscription-staff",
+    "width": 600,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-emails-list-375-light.png",
+    "state": "studio-emails-list",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-billing_complete-375-light.png",
+    "state": "studio-editor-billing_complete",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-375-light.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 375,
+    "theme": "light"
+  },
+  {
+    "file": "studio-emails-list-768-light.png",
+    "state": "studio-emails-list",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-billing_complete-768-light.png",
+    "state": "studio-editor-billing_complete",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-768-light.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 768,
+    "theme": "light"
+  },
+  {
+    "file": "studio-emails-list-1440-light.png",
+    "state": "studio-emails-list",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-billing_complete-1440-light.png",
+    "state": "studio-editor-billing_complete",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-1440-light.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 1440,
+    "theme": "light"
+  },
+  {
+    "file": "studio-emails-list-375-dark.png",
+    "state": "studio-emails-list",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-billing_complete-375-dark.png",
+    "state": "studio-editor-billing_complete",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-375-dark.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 375,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-emails-list-768-dark.png",
+    "state": "studio-emails-list",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-billing_complete-768-dark.png",
+    "state": "studio-editor-billing_complete",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-768-dark.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 768,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-emails-list-1440-dark.png",
+    "state": "studio-emails-list",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-billing_complete-1440-dark.png",
+    "state": "studio-editor-billing_complete",
+    "width": 1440,
+    "theme": "dark"
+  },
+  {
+    "file": "studio-editor-staff_billing_complete-1440-dark.png",
+    "state": "studio-editor-staff_billing_complete",
+    "width": 1440,
+    "theme": "dark"
+  }
+]

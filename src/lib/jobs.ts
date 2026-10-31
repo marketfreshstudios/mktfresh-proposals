@@ -90,15 +90,22 @@ export class Worker {
         const now = new Date();
         await mutate(this.repo, row.id, (p) => {
           selected = undefined;
-          const j = p.jobs.find(
-            (j) =>
-              (!kind || j.kind === kind) &&
-              j.status !== "done" &&
-              j.status !== "failed" &&
-              Date.parse(j.available_at) <= now.getTime() &&
-              (j.status !== "running" ||
-                Date.parse(j.lease_until ?? "") < now.getTime()),
-          );
+          // Confirm provider receipts before older mail/PDF work, within one drain budget.
+          const j = p.jobs
+            .filter(
+              (j) =>
+                (!kind || j.kind === kind) &&
+                j.status !== "done" &&
+                j.status !== "failed" &&
+                Date.parse(j.available_at) <= now.getTime() &&
+                (j.status !== "running" ||
+                  Date.parse(j.lease_until ?? "") < now.getTime()),
+            )
+            .sort(
+              (a, b) =>
+                Number(b.kind === "stripe_webhook") -
+                Number(a.kind === "stripe_webhook"),
+            )[0];
           if (j) {
             j.status = "running";
             j.attempts++;

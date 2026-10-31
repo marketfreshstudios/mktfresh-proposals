@@ -84,6 +84,21 @@ export const emailDefaults = [
     "View completed copy",
   ),
   def(
+    "billing_complete",
+    "Billing setup completed",
+    "Billing is set up: {{proposal.title}}",
+    "Hi {{client.first_name}},\n\nYour recurring services are set up. The confirmed details are below.",
+    "View your signed proposal",
+  ),
+  def(
+    "staff_billing_complete",
+    "Client completed billing setup",
+    "Billing setup completed: {{proposal.title}}",
+    "{{client.full_name}} at {{client.company}} completed billing setup. The confirmed details are below.",
+    "Review proposal",
+    true,
+  ),
+  def(
     "billing_updated",
     "Subscription updated",
     "Billing updated: {{proposal.title}}",

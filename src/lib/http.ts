@@ -210,6 +210,15 @@ export async function handle(req: Request, path: string[]) {
           },
         );
       }
+      if (method === "GET" && action === "state") {
+        const proposal = await rt.service.byToken(token, password);
+        check(
+          proposal.client_signed_at,
+          "Billing state is available after signing",
+          409,
+        );
+        return json(clientResult(proposal));
+      }
       if (method === "GET" && !action)
         return json(
           clientResult(await rt.service.view(token, password, actor(req))),

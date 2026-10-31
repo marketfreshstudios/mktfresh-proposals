@@ -1,4 +1,6 @@
 "use client";
+import { stripeBillingStatus } from "../lib/billing-confirmation";
+import { StripeBillingDetails } from "./billing-breakdown";
 import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
@@ -1390,27 +1392,31 @@ export function RecordV4({
                         : "One-time invoice"}
                     </strong>
                     <span
-                      className={`pill ${link.status === "succeeded" ? "success" : link.status === "failed" ? "danger" : "warning"}`}
+                      className={`pill ${link.status === "succeeded" && !(link.provider === "stripe" && link.metadata?.requires_checkout) ? "success" : link.status === "failed" ? "danger" : "warning"}`}
                     >
-                      {link.metadata?.manual_invoice &&
-                      link.status === "succeeded"
-                        ? "Invoiced manually"
-                        : link.provider === "qbo" &&
-                            link.status === "needs_review"
-                          ? "Invoice manually"
-                          : link.status === "succeeded"
-                            ? "Ready"
-                            : link.status === "failed"
-                              ? "Needs attention"
-                              : "In progress"}
+                      {link.provider === "stripe" &&
+                      link.status === "succeeded" &&
+                      stripeBillingStatus(link).labels.length
+                        ? stripeBillingStatus(link).labels[0]
+                        : link.metadata?.manual_invoice &&
+                            link.status === "succeeded"
+                          ? "Invoiced manually"
+                          : link.provider === "qbo" &&
+                              link.status === "needs_review"
+                            ? "Invoice manually"
+                            : link.status === "succeeded"
+                              ? "Ready"
+                              : link.status === "failed"
+                                ? "Needs attention"
+                                : "In progress"}
                     </span>
                     {link.last_error && <p>{link.last_error}</p>}
                     {link.provider === "stripe" &&
                       link.metadata?.requires_checkout === true && (
                         <div className="stack">
                           <p>
-                            The proposal is signed. The client has not finished
-                            payment setup.
+                            The proposal is signed. We’re waiting for Checkout
+                            confirmation.
                           </p>
                           <Button
                             onClick={async () => {
@@ -1436,14 +1442,9 @@ export function RecordV4({
                           </Button>
                         </div>
                       )}
-                    {link.provider === "stripe" &&
-                      link.status === "succeeded" && (
-                        <p>
-                          {link.metadata?.requires_checkout
-                            ? "Client completes Checkout to start billing."
-                            : "Monthly items were added to the existing subscription."}
-                        </p>
-                      )}
+                    {link.provider === "stripe" && (
+                      <StripeBillingDetails link={link} />
+                    )}
                     {link.provider === "qbo" &&
                       link.status === "needs_review" && (
                         <Button

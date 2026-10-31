@@ -5,6 +5,8 @@ export type BillingGroup = {
   line_ids?: string[];
   items?: { line_id: string; name: string }[];
   mode?: "setup" | "subscription";
+  collection_method?: "send_invoice" | "charge_automatically";
+  amount_due_today?: number;
 };
 export function billingDisplay(
   quote: Quote,
@@ -14,6 +16,7 @@ export function billingDisplay(
     added_existing: BillingGroup[];
   }[],
   preview = false,
+  collection: "send_invoice" | "charge_automatically" = "charge_automatically",
 ) {
   const lines = quoteSublines(quote, true),
     recurring = lines.filter((l) => l.interval !== "one_time"),
@@ -31,8 +34,15 @@ export function billingDisplay(
   const added = existing.flatMap((g) =>
     resolve(g, sessions.length ? [] : recurring),
   );
-  const checkout = preview
-    ? [{ url: "", mode: "subscription" as const, lines: recurring }]
+  const checkout: (BillingGroup & { lines: BillingLine[] })[] = preview
+    ? [
+        {
+          url: "",
+          mode: collection === "send_invoice" ? "setup" : "subscription",
+          collection_method: collection,
+          lines: recurring,
+        },
+      ]
     : sessions.map((g) => ({
         ...g,
         lines: resolve(

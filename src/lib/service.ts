@@ -1,3 +1,4 @@
+import { completedCheckouts, publicCompletion } from "./billing-confirmation";
 import {
   emailTemplates,
   validateTemplate,
@@ -953,11 +954,17 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
             )
           ? ("quickbooks" as const)
           : ("manual" as const),
+    ...(p.workspace_settings?.collection_method
+      ? { billing_collection_method: p.workspace_settings.collection_method }
+      : {}),
     billing: p.client_signed_at
       ? p.billing_links
           .filter((l) => l.provider === "stripe")
           .map((l) => ({
             status: l.status,
+            ...(completedCheckouts(l).length
+              ? { confirmations: completedCheckouts(l).map(publicCompletion) }
+              : {}),
             requires_checkout: l.metadata?.requires_checkout === true,
             checkout: (
               (l.metadata?.checkout ?? []) as {
@@ -965,6 +972,8 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
                 line_ids?: string[];
                 items?: { line_id: string; name: string }[];
                 mode?: "setup" | "subscription";
+                collection_method?: "send_invoice" | "charge_automatically";
+                amount_due_today?: number;
               }[]
             ).map((s) => ({
               url: s.url,
@@ -978,6 +987,12 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
                   }
                 : {}),
               ...(s.mode ? { mode: s.mode } : {}),
+              ...(s.collection_method
+                ? { collection_method: s.collection_method }
+                : {}),
+              ...(typeof s.amount_due_today === "number"
+                ? { amount_due_today: s.amount_due_today }
+                : {}),
             })),
             added_existing: (
               (l.metadata?.added_existing ?? []) as {

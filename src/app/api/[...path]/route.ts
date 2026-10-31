@@ -14,6 +14,20 @@ async function route(
   if (
     response.ok &&
     request.method === "POST" &&
+    path[0] === "webhooks" &&
+    path[1] === "stripe"
+  ) {
+    const receipt = await response.clone().json();
+    if (receipt.proposal_id) {
+      const rt = appRuntime(path[2]);
+      after(async () => {
+        await rt.worker.drain(receipt.proposal_id);
+      });
+    }
+  }
+  if (
+    response.ok &&
+    request.method === "POST" &&
     ((path[0] === "public" && path[2] === "sign") ||
       (path[0] === "proposals" && ["send", "countersign"].includes(path[2])))
   ) {

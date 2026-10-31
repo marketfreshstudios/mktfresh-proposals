@@ -1,0 +1,21 @@
+Example Studio
+
+Website for Acme
+
+Hi Jane,
+
+Your recurring services are set up. The confirmed details are below.
+
+Billing setup completed
+
+Hosting + Essentials · $25/month
+
+Card: Visa ending 4242
+
+Next billing date: November 30, 2026
+
+View your signed proposal: http://127.0.0.1:3100/p/hsxsMXLSMd4E_O-GCz704azXDc0OUv2yXr_VeSjSP3E
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test
