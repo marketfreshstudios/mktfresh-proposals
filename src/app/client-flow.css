@@ -181,7 +181,7 @@
 .client-flow .flow-choices {
   width: 340px;
   position: sticky;
-  top: 24px;
+  top: calc(var(--preview-controls-h, 0px) + 24px);
   padding: 24px 20px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -753,7 +753,7 @@ label.flow-quote-line {
 }
 .flow-stale {
   position: sticky;
-  top: 12px;
+  top: calc(var(--preview-controls-h, 0px) + 12px);
   z-index: 40;
   margin-bottom: 24px;
 }
