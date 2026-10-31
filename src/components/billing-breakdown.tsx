@@ -104,6 +104,7 @@ export function BillingConfirmationCard({
   return (
     <section
       className="flow-billing-confirmation stack"
+      role="status"
       aria-label="Confirmed billing setup"
     >
       <h2>Billing setup complete</h2>

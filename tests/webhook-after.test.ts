@@ -79,9 +79,7 @@ it("public state polling checks token/password access without recording a view o
     },
     staff,
   );
-  const unsigned = await f.service.send(unsignedDraft.id, {
-    actor: "staff:" + f.members[0].user_id,
-  });
+  const unsigned = await f.service.send(unsignedDraft.id, staff);
   const unsignedState = await handle(
     new Request(
       `https://proposals.example.test/api/public/${unsigned.token}/state`,
