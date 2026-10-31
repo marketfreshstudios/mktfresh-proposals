@@ -192,7 +192,7 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
       ).toMatchObject({
         customer: "cus_test",
         mode: "subscription",
-        success_url: `http://127.0.0.1:3100/p/${p.token}?billing=returned`,
+        success_url: `http://127.0.0.1:3100/p/${p.token}?billing=returned&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `http://127.0.0.1:3100/p/${p.token}?billing=pending`,
       });
   }

@@ -864,3 +864,27 @@ label.flow-quote-line {
 .flow-checkout-button {
   text-align: center;
 }
+
+.flow-billing-confirmation {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--surface);
+}
+.stripe-billing-details {
+  overflow-wrap: anywhere;
+  align-items: start;
+}
+
+.flow-billing-confirmation {
+  gap: 16px;
+}
+.flow-billing-confirmation > .stack {
+  gap: 12px;
+}
+.flow-billing-confirmation h2,
+.flow-billing-confirmation p,
+.flow-billing-confirmation .flow-billing-items {
+  margin: 0;
+}

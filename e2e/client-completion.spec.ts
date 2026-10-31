@@ -420,7 +420,9 @@ test("client completion: exact charges, one contact footer, reading width, email
       setupOnly.billing = [checkout([monthly], "setup")];
       await open(setupOnly);
       await expect(
-        page.getByText(/No payment is taken during card setup/),
+        page.getByText(
+          /No charge is taken in this card-saving step|no charge today; your first invoice will be emailed/,
+        ),
       ).toBeVisible();
       await expect(
         page.getByText("Monthly subscription rate", { exact: true }),

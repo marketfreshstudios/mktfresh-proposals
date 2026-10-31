@@ -159,7 +159,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       await expect(
         page.getByRole("heading", { name: "Client emails", exact: true }),
       ).toBeVisible();
-      await expect(page.locator(".email-list-row")).toHaveCount(13);
+      await expect(page.locator(".email-list-row")).toHaveCount(15);
       await shot("emails-list", width, theme);
       if (width === 768) {
         await page.getByRole("button", { name: "Studio", exact: true }).click();

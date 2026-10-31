@@ -2,7 +2,8 @@
 import {
   BillingItems,
   BillingRecurringTotal,
-  checkoutAmount,
+  checkoutActionLabel,
+  BillingConfirmationCard,
 } from "./billing-breakdown";
 import { billingDisplay } from "../lib/billing-display";
 import { ContactToast, copyContactValue } from "./contact-value";
@@ -113,6 +114,16 @@ function NewClientFlow({
   const [step, setStep] = useState<"read" | "sign" | "billing" | "done">(
     "read",
   );
+  const [checkoutReturned, setCheckoutReturned] = useState(false),
+    [returnSession, setReturnSession] = useState(""),
+    [returnTimedOut, setReturnTimedOut] = useState(false),
+    [pollCycle, setPollCycle] = useState(0);
+  useEffect(() => {
+    if (preview) return;
+    const query = new URLSearchParams(location.search);
+    setCheckoutReturned(query.get("billing") === "returned");
+    setReturnSession(query.get("session_id") ?? "");
+  }, [preview, token]);
   const [locked, setLocked] = useState(false),
     [ended, setEnded] = useState(false),
     [password, setPassword] = useState("");
@@ -158,6 +169,11 @@ function NewClientFlow({
   const requiresCheckout =
     recurring && billing.some((b) => b.requires_checkout);
   const existing = display?.added ?? [];
+  const confirmations = p?.billing.flatMap((b) => b.confirmations ?? []) ?? [];
+  const returnConfirmed = returnSession
+    ? confirmations.some((c) => c.checkout_session_id === returnSession)
+    : confirmations.length > 0 && !requiresCheckout;
+  const finishingReturn = checkoutReturned && signed && !returnConfirmed;
   const contact = p?.contact ??
     brand.contact ?? { name: "", email: brand.email };
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
@@ -202,25 +218,50 @@ function NewClientFlow({
     if (!initial) void load();
   }, [token]);
   useEffect(() => {
-    if (preview || !signed) return;
-    let ticks = 0,
-      active = true;
+    if (
+      preview ||
+      !signed ||
+      (checkoutReturned && (returnConfirmed || returnTimedOut))
+    )
+      return;
+    let active = true;
+    const controller = new AbortController();
     const timer = setInterval(() => {
-      if (++ticks > 60) {
-        clearInterval(timer);
-        return;
-      }
-      void api<PublicProposal>(`/api/public/${token}`, { headers })
+      void api<PublicProposal>(`/api/public/${token}/state`, {
+        headers,
+        signal: controller.signal,
+      })
         .then((value) => {
           if (active) setP(value);
         })
         .catch(() => {});
     }, 3000);
+    const deadline = setTimeout(
+      () => {
+        active = false;
+        clearInterval(timer);
+        controller.abort();
+        if (checkoutReturned) setReturnTimedOut(true);
+      },
+      checkoutReturned ? 60000 : 180000,
+    );
     return () => {
       active = false;
       clearInterval(timer);
+      clearTimeout(deadline);
+      controller.abort();
     };
-  }, [signed, token, password, preview]);
+  }, [
+    signed,
+    token,
+    password,
+    preview,
+    checkoutReturned,
+    returnConfirmed,
+    returnTimedOut,
+    pollCycle,
+  ]);
+
   useEffect(() => {
     main.current?.focus({ preventScroll: true });
     window.scrollTo(0, 0);
@@ -564,9 +605,52 @@ function NewClientFlow({
                       ? "This is a preview. No signature or billing has been submitted."
                       : `Your proposal is signed. Your copy will be sent to ${p.recipient.email}.`}
                   </p>
-                  {step !== "done" && requiresCheckout ? (
+                  {finishingReturn ? (
                     <>
-                      <h1>Set up your monthly subscription</h1>
+                      <h1>Payment details received — finishing setup…</h1>
+                      <p role="status">
+                        {returnTimedOut
+                          ? "This can take a minute. We'll email you when it's done."
+                          : "We’re checking the confirmation from Stripe. Your signature is safe."}
+                      </p>
+                      {confirmations.length > 0 && (
+                        <BillingConfirmationCard
+                          confirmations={confirmations}
+                          timezone={p.timezone}
+                          cents={p.money_cents}
+                        />
+                      )}
+                      {returnTimedOut && (
+                        <Button
+                          onClick={() => {
+                            setReturnTimedOut(false);
+                            setPollCycle((c) => c + 1);
+                          }}
+                        >
+                          Check again
+                        </Button>
+                      )}
+                    </>
+                  ) : step !== "done" && requiresCheckout ? (
+                    <>
+                      <h1>
+                        {checkout.length &&
+                        checkout.every((s) => s.mode === "setup")
+                          ? "Save a card for your subscription"
+                          : checkout.length &&
+                              checkout.every((s) =>
+                                s.lines.every((l) => l.interval === "year"),
+                              )
+                            ? "Set up your yearly subscription"
+                            : "Set up your monthly subscription"}
+                      </h1>
+                      {confirmations.length > 0 && (
+                        <BillingConfirmationCard
+                          confirmations={confirmations}
+                          timezone={p.timezone}
+                          cents={p.money_cents}
+                        />
+                      )}
                       <p>
                         Only the recurring services below are arranged through
                         Stripe. One-time fees are invoiced separately.
@@ -621,32 +705,45 @@ function NewClientFlow({
                             )}
                             {session.mode === "setup" && (
                               <p>
-                                No payment is taken during card setup. Stripe
-                                saves your card, then arranges the subscription
-                                shown above.
+                                {(session.collection_method ??
+                                  p.billing_collection_method) ===
+                                "send_invoice"
+                                  ? `Save a card for your ${session.lines.every((l) => l.interval === "year") ? "yearly" : "monthly"} subscription — no charge today; your first invoice will be emailed.`
+                                  : "No charge is taken in this card-saving step. Your subscription starts after your card is saved, and the first charge follows."}
+                              </p>
+                            )}
+                            {session.mode !== "setup" && (
+                              <p>
+                                You’ll be charged{" "}
+                                {formatMoney(
+                                  session.amount_due_today ??
+                                    session.lines.reduce(
+                                      (sum, l) => sum + l.amount * l.qty,
+                                      0,
+                                    ),
+                                  p.currency,
+                                  p.money_cents,
+                                )}{" "}
+                                today.
                               </p>
                             )}
                             {session.lines.length ? (
                               preview ? (
                                 <Button variant="primary" disabled>
-                                  {session.mode === "setup"
-                                    ? "Continue to secure card setup —"
-                                    : "Continue to secure checkout —"}{" "}
-                                  {checkoutAmount(
-                                    session.lines,
+                                  {checkoutActionLabel(
+                                    session,
                                     p.currency,
                                     p.money_cents,
+                                    p.billing_collection_method,
                                   )}
                                 </Button>
                               ) : (
                                 <a className="btn primary" href={session.url}>
-                                  {session.mode === "setup"
-                                    ? "Continue to secure card setup —"
-                                    : "Continue to secure checkout —"}{" "}
-                                  {checkoutAmount(
-                                    session.lines,
+                                  {checkoutActionLabel(
+                                    session,
                                     p.currency,
                                     p.money_cents,
+                                    p.billing_collection_method,
                                   )}
                                 </a>
                               )
@@ -724,6 +821,13 @@ function NewClientFlow({
                     </>
                   ) : (
                     <>
+                      {confirmations.length > 0 && (
+                        <BillingConfirmationCard
+                          confirmations={confirmations}
+                          timezone={p.timezone}
+                          cents={p.money_cents}
+                        />
+                      )}
                       <p className="flow-eyebrow">
                         {p.status === "completed"
                           ? "Both signatures complete"

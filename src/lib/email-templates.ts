@@ -1,3 +1,8 @@
+import {
+  billingCompletionText,
+  completedCheckouts,
+  type BillingCompletion,
+} from "./billing-confirmation";
 import { randomUUID } from "node:crypto";
 import { check, type Actor, type Proposal, type Job } from "./model";
 import type { Repository } from "./repository";
@@ -133,6 +138,7 @@ export function renderTemplate(
     logo?: string;
     url?: string;
     declineNote?: string;
+    billingConfirmation?: BillingCompletion;
   } = {},
 ) {
   validateTemplate({
@@ -150,6 +156,27 @@ export function renderTemplate(
   if (options.declineNote) {
     body.html += `<p style="margin:0 0 18px"><strong>Client note</strong><br>${escape(options.declineNote).replaceAll("\n", "<br>")}</p>`;
     body.text += "\n\nClient note:\n" + options.declineNote;
+  }
+  if (["billing_complete", "staff_billing_complete"].includes(t.key)) {
+    const confirmed =
+      options.billingConfirmation ??
+      p.billing_links.flatMap(completedCheckouts).at(-1);
+    const facts = confirmed
+      ? billingCompletionText(
+          confirmed,
+          p.workspace_settings?.timezone,
+          p.workspace_settings?.money?.cents,
+        )
+      : "Confirmed billing details will appear here after Stripe finishes setup.";
+    // Provider/product names are literal receipt data, never template instructions.
+    body.html += facts
+      .split("\n\n")
+      .map(
+        (text) =>
+          `<p style="margin:0 0 18px;font-size:16px;line-height:26px">${escape(text).replaceAll("\n", "<br>")}</p>`,
+      )
+      .join("");
+    body.text += "\n\n" + facts;
   }
   const s = p.workspace_settings,
     link = t.staff
@@ -197,6 +224,8 @@ export async function prepareEmail(
       body: plainBody(j.payload.note || "Your proposal is ready to review."),
     };
   const r = renderTemplate(t, p, {
+    billingConfirmation: j.payload.billing_confirmation as
+      BillingCompletion | undefined,
     declineNote:
       key === "staff_declined"
         ? String(j.payload.text ?? "").split("\n\nClient note:\n")[1]

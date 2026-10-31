@@ -344,6 +344,15 @@ function EmailEditor({
             attached and can also be downloaded from that page. The destination
             is managed automatically.
           </p>
+          {["billing_complete", "staff_billing_complete"].includes(
+            form.key,
+          ) && (
+            <p className="muted">
+              Verified products, rates, card details and the next billing date
+              are added automatically after setup. These details cannot be
+              removed from the confirmation.
+            </p>
+          )}
           <p className="muted">
             Pricing fields are optional and are not included in the defaults.
           </p>

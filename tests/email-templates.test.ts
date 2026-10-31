@@ -54,7 +54,7 @@ it("all client and read-only staff defaults render one primary action, automatic
     expect(r.text).toContain(settings.phone);
     expect(r.text).not.toMatch(/{{|<p>|\$/);
   }
-  expect(emailDefaults.filter((t) => !t.staff)).toHaveLength(7);
+  expect(emailDefaults.filter((t) => !t.staff)).toHaveLength(8);
 });
 it("rejects unknown/misspelled fields by name, malformed fields, unsafe links, unsupported content and editable destinations", () => {
   expect(() => validateTemplate(edit("{{client.frist_name}}"))).toThrow(

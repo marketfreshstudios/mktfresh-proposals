@@ -210,6 +210,8 @@ export async function handle(req: Request, path: string[]) {
           },
         );
       }
+      if (method === "GET" && action === "state")
+        return json(clientResult(await rt.service.byToken(token, password)));
       if (method === "GET" && !action)
         return json(
           clientResult(await rt.service.view(token, password, actor(req))),

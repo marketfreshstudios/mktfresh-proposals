@@ -262,6 +262,8 @@ export class StripeProvider implements BillingProvider {
       line_ids: string[];
       items: { line_id: string; name: string }[];
       mode: "setup" | "subscription";
+      collection_method: "send_invoice" | "charge_automatically";
+      amount_due_today?: number;
     }[] = [];
     const added: {
       id: string;
@@ -349,7 +351,11 @@ export class StripeProvider implements BillingProvider {
             .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0),
         });
       } else {
-        const session = await this.api.post<{ id: string; url: string }>(
+        const session = await this.api.post<{
+          id: string;
+          url: string;
+          amount_total?: number;
+        }>(
           "/v1/checkout/sessions",
           {
             customer: c.id,
@@ -376,7 +382,8 @@ export class StripeProvider implements BillingProvider {
               workspace_id: this.repo.workspaceId,
             },
             success_url: clientReturn
-              ? clientReturn + "?billing=returned"
+              ? clientReturn +
+                "?billing=returned&session_id={CHECKOUT_SESSION_ID}"
               : returnOrigin + "/billing/complete",
             cancel_url: clientReturn
               ? clientReturn + "?billing=pending"
@@ -392,6 +399,10 @@ export class StripeProvider implements BillingProvider {
             settings.collection_method === "send_invoice"
               ? "setup"
               : "subscription",
+          collection_method: settings.collection_method,
+          ...(typeof session.amount_total === "number"
+            ? { amount_due_today: session.amount_total }
+            : {}),
         });
       }
     }
@@ -409,7 +420,7 @@ export class StripeProvider implements BillingProvider {
           usable.default_payment_method ??
             sc.invoice_settings!.default_payment_method!,
           key + ":own:" + line.id,
-          metadata,
+          { ...metadata, collection_method: settings.collection_method },
         );
         added.push({
           id: subscriptions[0],
@@ -420,7 +431,11 @@ export class StripeProvider implements BillingProvider {
         });
         continue;
       }
-      const session = await this.api.post<{ id: string; url: string }>(
+      const session = await this.api.post<{
+        id: string;
+        url: string;
+        amount_total?: number;
+      }>(
         "/v1/checkout/sessions",
         {
           customer: c.id,
@@ -433,7 +448,8 @@ export class StripeProvider implements BillingProvider {
             workspace_id: this.repo.workspaceId,
           },
           success_url: clientReturn
-            ? clientReturn + "?billing=returned"
+            ? clientReturn +
+              "?billing=returned&session_id={CHECKOUT_SESSION_ID}"
             : returnOrigin + "/billing/complete",
           cancel_url: clientReturn
             ? clientReturn + "?billing=pending"
@@ -446,6 +462,8 @@ export class StripeProvider implements BillingProvider {
         line_ids: [line.id],
         items: displayItems([line]),
         mode: "setup",
+        collection_method: settings.collection_method,
+        amount_due_today: 0,
       });
     }
     return {
@@ -469,6 +487,11 @@ export class StripeProvider implements BillingProvider {
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const collection =
+      metadata.collection_method === "send_invoice" ||
+      metadata.collection_method === "charge_automatically"
+        ? metadata.collection_method
+        : settings.collection_method;
     const subscriptions: string[] = [];
     for (const line of lines) {
       const item = await this.item(line, String(metadata.currency));
@@ -480,15 +503,13 @@ export class StripeProvider implements BillingProvider {
           items: [item],
           description: metadata.proposal_title,
           metadata: this.terms(line, String(metadata.proposal_id)),
-          collection_method: settings.collection_method,
-          ...(settings.collection_method === "send_invoice"
-            ? { days_until_due: 30 }
-            : {}),
+          collection_method: collection,
+          ...(collection === "send_invoice" ? { days_until_due: 30 } : {}),
           proration_behavior: "none",
         },
         key + ":subscription:" + line.id,
       );
-      if (settings.collection_method === "send_invoice" && sub.latest_invoice) {
+      if (collection === "send_invoice" && sub.latest_invoice) {
         await this.api.post(
           `/v1/invoices/${sub.latest_invoice}/finalize`,
           {},

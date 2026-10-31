@@ -5,6 +5,8 @@ export type BillingGroup = {
   line_ids?: string[];
   items?: { line_id: string; name: string }[];
   mode?: "setup" | "subscription";
+  collection_method?: "send_invoice" | "charge_automatically";
+  amount_due_today?: number;
 };
 export function billingDisplay(
   quote: Quote,
@@ -31,7 +33,7 @@ export function billingDisplay(
   const added = existing.flatMap((g) =>
     resolve(g, sessions.length ? [] : recurring),
   );
-  const checkout = preview
+  const checkout: (BillingGroup & { lines: BillingLine[] })[] = preview
     ? [{ url: "", mode: "subscription" as const, lines: recurring }]
     : sessions.map((g) => ({
         ...g,
