@@ -1,5 +1,6 @@
 import { it, expect, vi, afterEach } from "vitest";
 import { hashPassword } from "../src/lib/content";
+import { staff } from "./helpers";
 import { billingFixture } from "./billing-confirmation-fixture";
 const mocked = vi.hoisted(() => ({ runtime: vi.fn(), after: vi.fn() }));
 vi.mock("next/server", () => ({ after: mocked.after }));
@@ -70,6 +71,25 @@ it("public state polling checks token/password access without recording a view o
     expect((await r.json()).billing[0].requires_checkout).toBe(true);
   }
   expect(await f.repo.get(f.p.id)).toEqual(before);
+  const unsignedDraft = await f.service.create(
+    {
+      client_id: f.p.client.id,
+      template_id: f.p.template_id!,
+      title: "Unsigned proposal",
+    },
+    staff,
+  );
+  const unsigned = await f.service.send(unsignedDraft.id, {
+    actor: "staff:" + f.members[0].user_id,
+  });
+  const unsignedState = await handle(
+    new Request(
+      `https://proposals.example.test/api/public/${unsigned.token}/state`,
+    ),
+    ["public", unsigned.token!, "state"],
+  );
+  expect(unsignedState.status).toBe(409);
+  expect((await f.repo.get(unsigned.id))!.first_viewed_at).toBeNull();
   await f.repo.save(
     { ...before!, password_hash: hashPassword("a test password") },
     before!.revision,

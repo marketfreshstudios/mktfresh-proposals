@@ -1,0 +1,19 @@
+Example Studio
+
+Website for Acme
+
+Jane Doe at Acme & Sons completed billing setup. The confirmed details are below.
+
+Billing setup completed
+
+Hosting + Essentials · $25/month
+
+Card: Visa ending 4242
+
+Next billing date: November 30, 2026
+
+Review proposal: http://127.0.0.1:3100/proposals/c04b5b99-e272-40d0-9779-68d2ac8dd700
+
+Sent by Alex Morgan at Example Studio
+
+owner@example.test

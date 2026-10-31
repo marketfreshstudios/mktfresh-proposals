@@ -14,6 +14,20 @@ const captures = JSON.parse(
 await mkdir(`${destination}/html`, { recursive: true });
 for (const c of captures)
   await copyFile(`${source}/${c.file}`, `${destination}/${c.file}`);
+const studio = JSON.parse(
+  await readFile(".data/evidence/emails/manifest.json", "utf8"),
+) as Capture[];
+for (const c of studio.filter((c) =>
+  [
+    "emails-list",
+    "editor-billing_complete",
+    "editor-staff_billing_complete",
+  ].includes(c.state),
+)) {
+  const file = `studio-${c.file}`;
+  await copyFile(`.data/evidence/emails/${c.file}`, `${destination}/${file}`);
+  captures.push({ ...c, file, state: `studio-${c.state}` });
+}
 const files = (await readdir(`${source}/html`)).sort();
 for (const f of files)
   await copyFile(`${source}/html/${f}`, `${destination}/html/${f}`);

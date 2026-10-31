@@ -163,6 +163,7 @@ function NewClientFlow({
         p.quote as QuoteItem[],
         billing,
         preview && step === "billing",
+        p.billing_collection_method,
       )
     : null;
   const checkout = display?.checkout ?? [];

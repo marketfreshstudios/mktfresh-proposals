@@ -16,6 +16,7 @@ export function billingDisplay(
     added_existing: BillingGroup[];
   }[],
   preview = false,
+  collection: "send_invoice" | "charge_automatically" = "charge_automatically",
 ) {
   const lines = quoteSublines(quote, true),
     recurring = lines.filter((l) => l.interval !== "one_time"),
@@ -34,7 +35,14 @@ export function billingDisplay(
     resolve(g, sessions.length ? [] : recurring),
   );
   const checkout: (BillingGroup & { lines: BillingLine[] })[] = preview
-    ? [{ url: "", mode: "subscription" as const, lines: recurring }]
+    ? [
+        {
+          url: "",
+          mode: collection === "send_invoice" ? "setup" : "subscription",
+          collection_method: collection,
+          lines: recurring,
+        },
+      ]
     : sessions.map((g) => ({
         ...g,
         lines: resolve(

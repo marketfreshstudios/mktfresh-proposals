@@ -63,3 +63,5 @@ The [Phase 4 comparison gallery](phase4/index.html) contains 85 record/Home/list
 Regenerate with `npx playwright test e2e/redesign-records.spec.ts e2e/redesign-quote-editor.spec.ts`. Raw output and manifests appear in `.data/evidence/phase4` and `.data/evidence/quote-editor`; run `node --import tsx scripts/package-phase4-evidence.ts` to rebuild the committed comparison gallery. CI uploads the complete evidence folder. The committed gallery also includes the source frames for review.
 
 - [Workspace email templates](emails/index.html): Emails list/editor at 375/768/1440 light/dark, all client/staff HTML and plain-text previews, and standalone 375/600 light/dark email renders. [Compatibility notes](emails/COMPATIBILITY.md) distinguish browser evidence from pending native inbox checks.
+
+- [Billing confirmations](billing-confirmations/index.html): Checkout mode copy, returning/timeout/verified states, yearly billing and staff status at 375/768/1440 light/dark; four client/sender HTML/plain-text receipts and browser renders.

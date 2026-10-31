@@ -1415,8 +1415,8 @@ export function RecordV4({
                       link.metadata?.requires_checkout === true && (
                         <div className="stack">
                           <p>
-                            The proposal is signed. The client has not finished
-                            payment setup.
+                            The proposal is signed. We’re waiting for Checkout
+                            confirmation.
                           </p>
                           <Button
                             onClick={async () => {

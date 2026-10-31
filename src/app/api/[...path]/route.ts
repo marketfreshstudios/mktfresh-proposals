@@ -21,7 +21,6 @@ async function route(
     if (receipt.proposal_id) {
       const rt = appRuntime(path[2]);
       after(async () => {
-        await rt.worker.drain(receipt.proposal_id, "stripe_webhook");
         await rt.worker.drain(receipt.proposal_id);
       });
     }

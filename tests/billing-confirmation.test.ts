@@ -6,7 +6,8 @@ import {
   publicCompletion,
   stripeBillingStatus,
 } from "../src/lib/billing-confirmation";
-import { publicResult } from "../src/lib/service";
+import { billingDisplay } from "../src/lib/billing-display";
+import { publicResult, queue } from "../src/lib/service";
 import { mutate } from "../src/lib/repository";
 import {
   proposalEmailLog,
@@ -102,6 +103,7 @@ it("unpaid, incomplete, mismatched, live and inactive subscriptions never produc
     "live",
     "inactive",
     "workspace",
+    "card",
   ]) {
     const f = await billingFixture("subscription");
     if (change === "unpaid") f.session.payment_status = "unpaid";
@@ -111,6 +113,7 @@ it("unpaid, incomplete, mismatched, live and inactive subscriptions never produc
     if (change === "inactive")
       f.subscriptions.get("sub_fixture").status = "incomplete";
     if (change === "workspace") f.session.metadata.workspace_id = "other";
+    if (change === "card") f.method.card.last4 = "";
     await receive(f);
     await f.worker.drain(f.p.id, "stripe_webhook");
     const p = (await f.repo.get(f.p.id))!;
@@ -242,4 +245,32 @@ it("inherited customer payment details are read only from the linked test custom
     true,
   );
   expect(f.calls.some((c) => c.path.startsWith("/v1/invoices/"))).toBe(false);
+});
+
+it("client preview follows the workspace collection method without creating Checkout or charging", async () => {
+  const f = await billingFixture();
+  expect(
+    billingDisplay(f.p.quote, [], true, "send_invoice").checkout[0].mode,
+  ).toBe("setup");
+  expect(
+    billingDisplay(f.p.quote, [], true, "charge_automatically").checkout[0]
+      .mode,
+  ).toBe("subscription");
+  expect(f.calls).toEqual([]);
+});
+
+it("one bounded proposal drain processes its verified webhook before older notifications", async () => {
+  const f = await billingFixture();
+  await mutate(f.repo, f.p.id, (p) =>
+    queue(p, "email", "older-notice", {
+      to: p.sender!.email,
+      email_template_key: "staff_viewed",
+    }),
+  );
+  await receive(f);
+  const result = await f.worker.drain(f.p.id);
+  expect(result[0].job).toContain(":webhook:");
+  expect(
+    (await f.repo.get(f.p.id))!.jobs.every((j) => j.status === "done"),
+  ).toBe(true);
 });

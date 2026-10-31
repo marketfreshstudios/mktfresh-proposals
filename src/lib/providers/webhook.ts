@@ -320,6 +320,12 @@ export async function executeStripeWebhook(
         method.livemode === false && method.customer === session.customer,
         "Test payment method customer mismatch",
       );
+    if (method?.type === "card")
+      check(
+        typeof method.card?.brand === "string" &&
+          /^\d{4}$/.test(method.card?.last4 ?? ""),
+        "Saved card details incomplete",
+      );
     const confirmation: BillingCompletion = {
       session_id: session.id,
       mode: session.mode,
