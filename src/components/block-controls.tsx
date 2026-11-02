@@ -592,6 +592,7 @@ export function useBlockFeedback() {
   return {
     reuse,
     remove,
+    error: (message: string) => setToast({ message, error: true }),
     removePage: (action: () => void) =>
       remove(
         { type: "paragraph" },

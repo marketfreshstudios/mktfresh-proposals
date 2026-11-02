@@ -20,11 +20,13 @@ export function PagesOutline({
   content,
   layout,
   onChange,
+  onMove,
   onFocus,
 }: {
   content: Block[];
   layout?: PrintLayout | null;
   onChange: (v: Block[]) => void;
+  onMove: (operation: (content: Block[]) => Block[]) => void;
   onFocus: (id: string) => void;
 }) {
   const pages = authoringPages(content),
@@ -49,22 +51,27 @@ export function PagesOutline({
         ids={ids}
         pages
         onMove={(from, to) => {
-          if (from.startsWith("page:")) {
-            const target = pages.find(
-              (p) =>
-                `page:${p.id}` === to ||
-                p.sections.some((s) => `section:${s.id}` === to),
-            );
-            if (target) onChange(movePage(content, from.slice(5), target.id));
-          } else {
-            const target = pages.find(
-              (p) =>
-                `page:${p.id}` === to ||
-                p.sections.some((s) => `section:${s.id}` === to),
-            );
-            if (target)
-              onChange(
-                movePageSection(
+          onMove((content) => {
+            const pages = authoringPages(content),
+              ids = pages.flatMap((p) => [
+                `page:${p.id}`,
+                ...p.sections.map((s) => `section:${s.id}`),
+              ]);
+            if (from.startsWith("page:")) {
+              const target = pages.find(
+                (p) =>
+                  `page:${p.id}` === to ||
+                  p.sections.some((s) => `section:${s.id}` === to),
+              );
+              if (target) return movePage(content, from.slice(5), target.id);
+            } else {
+              const target = pages.find(
+                (p) =>
+                  `page:${p.id}` === to ||
+                  p.sections.some((s) => `section:${s.id}` === to),
+              );
+              if (target)
+                return movePageSection(
                   content,
                   from.slice(8),
                   target.id,
@@ -77,9 +84,10 @@ export function PagesOutline({
                         ]?.id
                       : to.slice(8)
                     : undefined,
-                ),
-              );
-          }
+                );
+            }
+            return content;
+          });
         }}
       >
         {pages.map((p, n) => {

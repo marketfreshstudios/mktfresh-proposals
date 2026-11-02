@@ -12,6 +12,7 @@ import "./editor-polish.css";
 import "./editor-round3.css";
 import "./editor-round4.css";
 import "./editor-round5.css";
+import "./editor-round6.css";
 export default function RootLayout({
   children,
 }: {

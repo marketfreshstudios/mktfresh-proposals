@@ -258,12 +258,12 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         );
         await expect(select).toHaveCSS(
           "padding-right",
-          compact ? "18px" : "36px",
+          compact ? "20px" : "36px",
         );
         await expect(select).toHaveCSS("background-size", "12px 12px");
         await expect(select).toHaveCSS(
           "background-position",
-          compact ? "calc(100% - 6px) 50%" : "calc(100% - 12px) 50%",
+          compact ? "calc(100% - 8px) 50%" : "calc(100% - 12px) 50%",
         );
         const paper = await select.evaluate((el) => !!el.closest(".paper"));
         const muted = theme === "dark" && !paper ? "a3abb6" : "5a626b";

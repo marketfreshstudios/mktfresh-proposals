@@ -313,11 +313,11 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
     await expect(select).toHaveClass("select-compact");
     await page.mouse.move(0, 0);
     await expect(select).toHaveCSS("appearance", "none");
-    await expect(select).toHaveCSS("padding-right", "18px");
+    await expect(select).toHaveCSS("padding-right", "20px");
     await expect(select).toHaveCSS("background-size", "12px 12px");
     await expect(select).toHaveCSS(
       "background-position",
-      "calc(100% - 6px) 50%",
+      "calc(100% - 8px) 50%",
     );
     await expect(select).toHaveCSS(
       "background-image",

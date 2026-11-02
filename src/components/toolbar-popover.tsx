@@ -23,7 +23,25 @@ export function ToolbarPopover({
         trigger ?? el.closest(".document-formatting-bar") ?? el.parentElement;
       const bounds = anchor!.getBoundingClientRect(),
         box = el.getBoundingClientRect();
-      el.style.left = `${Math.max(8, Math.min(bounds.left, innerWidth - box.width - 8))}px`;
+      const paper = anchor
+        ?.closest(".editor-document-region,.studio-template-main")
+        ?.querySelector<HTMLElement>(".editor-paper,.template-paged-paper");
+      let left = 8,
+        right = innerWidth - 8;
+      if (paper) {
+        const rect = paper.getBoundingClientRect(),
+          scale = rect.width / paper.offsetWidth,
+          style = getComputedStyle(paper);
+        const start = rect.left + parseFloat(style.paddingLeft) * scale,
+          end = rect.right - parseFloat(style.paddingRight) * scale;
+        // Keep wide-screen menus inside the text column, clear of both action
+        // gutters. Small screens retain the viewport-sized, scrollable menu.
+        if (end - start >= box.width) {
+          left = Math.max(left, start);
+          right = Math.min(right, end);
+        }
+      }
+      el.style.left = `${Math.max(left, Math.min(bounds.left, right - box.width))}px`;
       el.style.top = `${Math.max(8, Math.min(bounds.bottom + 4, innerHeight - box.height - 8))}px`;
     };
     place();
