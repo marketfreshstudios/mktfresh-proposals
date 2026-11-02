@@ -1,5 +1,6 @@
 "use client";
 import { readableDate } from "../lib/validity";
+import { useEditorHistory } from "./editor-history";
 /** The cover is shared by editing and client reading. Controls do not take document space. */
 export function DocumentCover({
   title,
@@ -16,6 +17,7 @@ export function DocumentCover({
   timezone?: string;
   onTitle?: (title: string) => void;
 }) {
+  const history = useEditorHistory();
   return (
     <header className="document-cover">
       <p className="flow-eyebrow">Proposal for {company}</p>
@@ -25,12 +27,18 @@ export function DocumentCover({
             {title || "\u200b"}
           </span>
           <textarea
+            data-document-text
             id="cover-title"
             aria-label="Proposal title"
             rows={1}
             maxLength={300}
             value={title}
-            onChange={(e) => onTitle(e.target.value.replace(/[\r\n]+/g, " "))}
+            onChange={(e) => {
+              const edit = () =>
+                onTitle(e.target.value.replace(/[\r\n]+/g, " "));
+              if (history) history.inScope("text:title", edit);
+              else edit();
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

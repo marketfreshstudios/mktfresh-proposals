@@ -11,6 +11,8 @@ import {
 import { Icon, Button, post } from "./ui";
 import type { Block, RichText } from "../lib/model";
 import { createPortal } from "react-dom";
+import { FormattingControls } from "./formatting-controls";
+import { EditorHistoryProvider, useEditorHistory } from "./editor-history";
 const Formatting = createContext<
   | {
       target: HTMLElement | null;
@@ -65,22 +67,7 @@ export function DocumentFormattingBar() {
       }}
     >
       <div ref={state?.setTarget} className="document-formatting-target" />
-      {!state?.owner && (
-        <div className="rich-toolbar">
-          {[
-            "Bold",
-            "Italic",
-            "List",
-            "Numbered list",
-            "Link",
-            "Insert field",
-          ].map((label) => (
-            <Button key={label} variant="ghost" disabled>
-              {label}
-            </Button>
-          ))}
-        </div>
-      )}
+      {!state?.owner && <FormattingControls />}
     </div>
   );
 }
@@ -93,6 +80,65 @@ const Selection = createContext({
 });
 export function useBlockSelection() {
   return useContext(Selection);
+}
+function ToastSurface({
+  children,
+  role = "status",
+  className = "",
+}: {
+  children: ReactNode;
+  role?: "status" | "alert";
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [host, setHost] = useState<Element | null>(null);
+  useEffect(() => {
+    const sync = () => {
+      const modal = Array.from(document.querySelectorAll("dialog:modal")).at(
+        -1,
+      );
+      setHost((current) =>
+        current === (modal ?? document.body)
+          ? current
+          : (modal ?? document.body),
+      );
+      // A newly opened menu/dialog must not cover an existing toast. Keeping
+      // it inside the modal also prevents the browser from making Undo inert.
+      const toast = ref.current;
+      if (toast?.matches(":popover-open")) {
+        toast.hidePopover();
+        toast.showPopover();
+      }
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const toast = ref.current;
+    if (!toast) return;
+    toast.showPopover();
+    return () => toast.hidePopover();
+  }, [host]);
+  return host
+    ? createPortal(
+        <div
+          ref={ref}
+          popover="manual"
+          className={`block-feedback-toast ${className}`}
+          role={role}
+        >
+          {children}
+        </div>,
+        host,
+      )
+    : null;
 }
 export function BlockScope({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<string | null>(null),
@@ -154,7 +200,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
       const target = event.target as Element;
       if (
         target.closest(
-          ".document-formatting-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog",
+          ".document-formatting-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover",
         )
       )
         return;
@@ -185,76 +231,78 @@ export function BlockScope({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("pointerdown", outside, true);
   }, []);
   return (
-    <Formatting.Provider
-      value={{
-        target,
-        setTarget,
-        owner,
-        activate,
-        insert,
-        register: (id, target) => {
-          targets.current.set(id, target);
-          return () => {
-            targets.current.delete(id);
-            activate((current) => (current === id ? null : current));
-            if (lastText.current === id) lastText.current = null;
-          };
-        },
-        remember: (id) => {
-          lastText.current = id;
-          activate(targets.current.get(id)?.rich ? id : null);
-        },
-      }}
-    >
-      <Selection.Provider
+    <EditorHistoryProvider>
+      <Formatting.Provider
         value={{
-          active: selected ?? hovered,
-          selected,
-          hover: setHovered,
-          select,
-          clear,
+          target,
+          setTarget,
+          owner,
+          activate,
+          insert,
+          register: (id, target) => {
+            targets.current.set(id, target);
+            return () => {
+              targets.current.delete(id);
+              activate((current) => (current === id ? null : current));
+              if (lastText.current === id) lastText.current = null;
+            };
+          },
+          remember: (id) => {
+            lastText.current = id;
+            activate(targets.current.get(id)?.rich ? id : null);
+          },
         }}
       >
-        <div
-          className="block-scope"
-          onPointerDownCapture={(e) => {
-            if (
-              !(e.target as Element).closest(
-                ".field-editor,.document-formatting-bar,[role=dialog]",
-              )
-            )
-              activate(null);
-          }}
-          onFocusCapture={(e) => {
-            if (
-              !(e.target as Element).closest(
-                ".field-editor,.document-formatting-bar,[role=dialog]",
-              )
-            )
-              activate(null);
-          }}
-          onPointerLeave={() => setHovered(null)}
-          onKeyDownCapture={(e) => {
-            if (e.key === "Escape") {
-              clear();
-              if ((e.target as Element).closest(".block-frame")) {
-                (e.target as HTMLElement).blur();
-              }
-            }
+        <Selection.Provider
+          value={{
+            active: selected ?? hovered,
+            selected,
+            hover: setHovered,
+            select,
+            clear,
           }}
         >
-          {children}
-        </div>
-        {guidance &&
-          typeof document !== "undefined" &&
-          createPortal(
-            <div className="block-feedback-toast" role="status">
-              Click into the text where you want the field
-            </div>,
-            document.body,
-          )}
-      </Selection.Provider>
-    </Formatting.Provider>
+          <div
+            className="block-scope"
+            onPointerDownCapture={(e) => {
+              if (
+                !(e.target as Element).closest(
+                  ".field-editor,.document-formatting-bar,[role=dialog]",
+                )
+              )
+                activate(null);
+            }}
+            onFocusCapture={(e) => {
+              if (
+                !(e.target as Element).closest(
+                  ".field-editor,.document-formatting-bar,[role=dialog]",
+                )
+              )
+                activate(null);
+            }}
+            onPointerLeave={() => setHovered(null)}
+            onKeyDownCapture={(e) => {
+              if (e.key === "Escape") {
+                clear();
+                if ((e.target as Element).closest(".block-frame")) {
+                  (e.target as HTMLElement).blur();
+                }
+              }
+            }}
+          >
+            {children}
+          </div>
+          {guidance &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <ToastSurface>
+                Click into the text where you want the field
+              </ToastSurface>,
+              document.body,
+            )}
+        </Selection.Provider>
+      </Formatting.Provider>
+    </EditorHistoryProvider>
   );
 }
 export function BlockAction({
@@ -270,17 +318,19 @@ export function BlockAction({
     : /remove clause/i.test(rawLabel)
       ? "Delete clause"
       : rawLabel;
-  const icon = /up/i.test(label)
-    ? "↑"
-    : /down/i.test(label)
-      ? "↓"
-      : /remove|delete/i.test(label)
-        ? "trash-can"
-        : /reviewed/i.test(label)
-          ? "✓"
-          : /save|reuse/i.test(label)
-            ? "floppy-disk"
-            : "⚙";
+  const icon = /duplicate/i.test(label)
+    ? "copy"
+    : /up/i.test(label)
+      ? "↑"
+      : /down/i.test(label)
+        ? "↓"
+        : /remove|delete/i.test(label)
+          ? "trash-can"
+          : /reviewed/i.test(label)
+            ? "✓"
+            : /save|reuse/i.test(label)
+              ? "floppy-disk"
+              : "⚙";
   return (
     <button
       {...props}
@@ -325,7 +375,7 @@ export function BlockFrame({
   reviewed?: boolean;
   reviewPending?: boolean;
   onUndo?: () => void;
-  insert?: (edge: "above" | "below") => void;
+  insert?: (edge: "above" | "below", anchor: HTMLElement) => void;
   onInsertField?: (path: string) => void;
 }) {
   const frame = useRef<HTMLDivElement>(null);
@@ -439,7 +489,7 @@ export function BlockFrame({
               className={`block-insert block-insert-${edge}`}
               aria-label={`Add block ${edge}`}
               title={`Add block ${edge}`}
-              onClick={() => insert(edge)}
+              onClick={(e) => insert(edge, e.currentTarget)}
             >
               +
             </button>
@@ -452,6 +502,7 @@ export function BlockFrame({
 
 /** Shared proposal/template actions. Undo restores just the removed item, preserving later edits. */
 export function useBlockFeedback() {
+  const history = useEditorHistory();
   const [saving, setSaving] = useState(false),
     [candidate, setCandidate] = useState<Block | null>(null),
     [name, setName] = useState("");
@@ -488,7 +539,15 @@ export function useBlockFeedback() {
   ) {
     const apply = () => {
       action();
-      setToast({ message: "Block deleted", undo });
+      const controller = history?.controller,
+        id = controller?.engine.lastId;
+      setToast({
+        message: "Block deleted",
+        undo:
+          controller && id !== undefined
+            ? () => controller.undo(undefined, id)
+            : undo,
+      });
       setConfirmation(null);
     };
     if (["pricing_table", "signature_block"].includes(block.type))
@@ -628,8 +687,8 @@ export function useBlockFeedback() {
                 </dialog>
               )}
               {toast && !(candidate && toast.error) && (
-                <div
-                  className={`block-feedback-toast ${toast.error ? "error" : ""}`}
+                <ToastSurface
+                  className={toast.error ? "error" : ""}
                   role={toast.error ? "alert" : "status"}
                 >
                   {toast.message}
@@ -653,7 +712,7 @@ export function useBlockFeedback() {
                       </button>
                     </>
                   )}
-                </div>
+                </ToastSurface>
               )}
             </>,
             document.body,

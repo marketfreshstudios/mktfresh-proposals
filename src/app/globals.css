@@ -135,7 +135,7 @@ small {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  z-index: 20;
+  z-index: var(--z-editor-header);
 }
 .brand {
   padding: 0 12px 22px;
@@ -589,7 +589,7 @@ td strong {
   border-top: 1px solid var(--border);
   padding: 14px 20px;
   box-shadow: var(--shadow-bar);
-  z-index: 30;
+  z-index: var(--z-bar);
 }
 .client-bar .totals strong {
   font-size: 17px;
@@ -666,7 +666,7 @@ td strong {
   background: var(--overlay);
   display: grid;
   place-items: center;
-  z-index: 100;
+  z-index: var(--z-dialog);
   padding: 20px;
 }
 .modal {
@@ -921,7 +921,7 @@ select:hover:not(:disabled),
 .preview-controls {
   position: sticky;
   top: 0;
-  z-index: 800;
+  z-index: var(--z-editor-header);
   padding: 12px 20px;
   background: var(--warning-soft);
   color: var(--ink);
@@ -982,7 +982,7 @@ select:hover:not(:disabled),
   background: var(--surface);
   position: sticky;
   top: 0;
-  z-index: 12;
+  z-index: var(--z-editor-header);
 }
 .quote-editor-top > a {
   white-space: nowrap;

@@ -20,7 +20,7 @@
   overflow: visible;
   white-space: normal;
   border-radius: 6px;
-  z-index: 15;
+  z-index: var(--z-block-controls);
 }
 .block-tools .block-action {
   width: 44px;
@@ -47,7 +47,7 @@
   height: 44px;
   min-height: 44px;
   transform: none;
-  z-index: 16;
+  z-index: var(--z-block-handle);
 }
 .document-reading .block-insert-above {
   top: -34px;
@@ -58,7 +58,7 @@
 .document-formatting-bar {
   position: sticky;
   top: var(--formatting-top, 110px);
-  z-index: 24;
+  z-index: var(--z-formatting);
   min-height: 54px;
   margin: 0 auto 16px;
   padding: 4px;
@@ -91,7 +91,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  z-index: 30;
+  z-index: var(--z-popover);
   padding: 16px;
   width: min(420px, 100%);
   background: var(--surface);
@@ -133,7 +133,7 @@
 }
 .block-feedback-toast {
   position: fixed;
-  z-index: 200;
+  z-index: var(--z-toast);
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);

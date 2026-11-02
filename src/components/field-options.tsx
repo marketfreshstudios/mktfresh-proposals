@@ -9,6 +9,7 @@ import {
 import { fieldGroup, fieldLabel } from "../lib/field-labels";
 import { useBlockToolbar } from "./block-controls";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
+import { useEditorHistory, textHistoryScope } from "./editor-history";
 import { Button } from "./ui";
 export function FieldOptions({
   map,
@@ -174,6 +175,13 @@ export function FieldTextArea({
     latest = useRef({ value, onValue, onBeforeInsert }),
     cursor = useRef<{ start: number; end: number } | null>(null);
   const afterVisible = useVisibleEditorAction();
+  const history = useEditorHistory();
+  const edit = (text: string) =>
+    history
+      ? history.inScope(textHistoryScope(ref.current), () =>
+          latest.current.onValue(text),
+        )
+      : latest.current.onValue(text);
   latest.current = { value, onValue, onBeforeInsert };
   const remember = () => {
     if (ref.current)
@@ -196,7 +204,7 @@ export function FieldTextArea({
           start = range?.start ?? value.length,
           end = range?.end ?? start,
           token = `{{${path}}}`;
-        onValue(value.slice(0, start) + token + value.slice(end));
+        edit(value.slice(0, start) + token + value.slice(end));
         if (!ref.current) return;
         afterVisible(ref.current, () => {
           ref.current?.focus();
@@ -212,8 +220,9 @@ export function FieldTextArea({
     <textarea
       {...props}
       ref={ref}
+      data-document-text
       value={value}
-      onChange={(e) => onValue(e.target.value)}
+      onChange={(e) => edit(e.target.value)}
       onFocus={() => scope?.remember(id)}
       onSelect={remember}
       onBlur={remember}

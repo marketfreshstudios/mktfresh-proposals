@@ -92,7 +92,8 @@ test("block controls own one block and never move document content on hover, foc
     }
   });
   const dir = ".data/evidence/editor-followup";
-  await mkdir(dir, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir, { recursive: true });
   const captures: {
     file: string;
     state: string;
@@ -102,6 +103,7 @@ test("block controls own one block and never move document content on hover, foc
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   async function shot(state: string, width: number, theme: string) {
+    if (!captureEvidence) return;
     await page.evaluate(() => document.fonts.ready);
     const file = `${state}-${width}-${theme}.png`;
     await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
@@ -410,7 +412,11 @@ test("block controls own one block and never move document content on hover, foc
             page.getByRole("status").filter({ hasText: "Block deleted" }),
           ).toBeVisible();
           await shot(`${editor}-delete-undo`, width, theme);
-          await page.getByRole("button", { name: "Undo", exact: true }).click();
+          await page
+            .getByRole("status")
+            .filter({ hasText: "Block deleted" })
+            .getByRole("button", { name: "Undo", exact: true })
+            .click();
           await expect(page.locator(`[data-block-id="${id}"]`)).toBeVisible();
           // A real outside pointer-down hides the selected rail and insertion buttons.
           await paragraph.evaluate((el) =>
@@ -456,7 +462,7 @@ test("block controls own one block and never move document content on hover, foc
             await expect(paragraph).toHaveAttribute("data-selected", "true");
             await page
               .getByRole("dialog", { name: "Add a block", exact: true })
-              .getByRole("button", { name: "Done", exact: true })
+              .getByRole("searchbox", { name: "Search blocks", exact: true })
               .click();
             await expect(paragraph).toHaveAttribute("data-selected", "true");
             await shot("formatting-bar", width, theme);
@@ -547,7 +553,7 @@ test("block controls own one block and never move document content on hover, foc
     .click();
   await page
     .getByRole("dialog", { name: "Add a block", exact: true })
-    .getByRole("button", { name: "Text", exact: true })
+    .getByRole("menuitem", { name: "Text", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
   const inspectorText = page.locator(".studio-inspector .tiptap");
@@ -555,7 +561,7 @@ test("block controls own one block and never move document content on hover, foc
   await inspectorText.press("/");
   await page
     .getByRole("dialog", { name: "Add a block", exact: true })
-    .getByRole("button", { name: "Heading", exact: true })
+    .getByRole("menuitem", { name: "Heading", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
   await expect(
@@ -603,5 +609,6 @@ test("block controls own one block and never move document content on hover, foc
   await page.keyboard.press("Space");
   await expect(roots.nth(1)).toHaveAttribute("data-block-id", secondId!);
   expect(errors).toEqual([]);
-  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+  if (captureEvidence)
+    await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

@@ -593,3 +593,19 @@ The Fields sheet explicitly closes its captured native dialog and dispatches ins
 The original phone assertion now checks the rendered field and persisted text as well as focus. The delayed-visibility regression also checks selection replacement, native close completion, no insertion while hidden, and subsequent typing immediately after the inserted field. Screenshot evidence for this test is opt-in (`CAPTURE_EDITOR_EVIDENCE=1`); no captures or galleries were generated or updated for this fix. No hosted/provider actions.
 
 Validation for this focus fix: 238 unit/database tests across 38 files, TypeScript, formatting, neutrality, production build/API tracing (327 files), the focused macOS browser test and three consecutive focused Linux runs all pass. The delayed-visibility check fails against the pre-fix implementation, confirming it exercises the race. GitHub CI is not awaited; PR #39 stays open for Jonathan’s review.
+
+
+## Editor polish: layers, formatting, undo and insertion — 1 November 2026
+
+Built from merged PR #39 (`ebe5ffe`) on `codex/editor-history-polish`, as one review PR.
+
+- Central tokens now order document content, block controls/outline, pinned formatting, sticky header, menus, dialogs and toasts. Proposal and template controls scroll below pinned chrome. Field/link/block menus use native popovers to escape lower stacking contexts; editor feedback uses the top layer as well.
+- Formatting has a stronger border, surface, radius and medium shadow; separators group Undo/Redo, Bold/Italic, lists, Link and fields. Desktop icon+label controls become icons below 900px with names/tooltips retained. Active text marks have pressed states; unavailable formatting is disabled.
+- A 100-step session history covers text/fields/title/clauses, insertion/deletion/duplication/moves, outline sections and document/panel quote edits. Text shortcuts consume block-local text steps before document steps, preserving later structural changes. Ctrl+Z/Shift+Ctrl+Z/Ctrl+Y and Cmd+Z/Shift+Cmd+Z are supported. Form inputs keep native undo. Delete-toast Undo uses the same ledger and normal redo. Proposal restoration autosaves with current revision/conflict handling; templates retain their existing explicit Save. Reload clears history.
+- The shared ~320px block popover anchors to + or slash, flips above when needed, focuses search, groups types and named saved blocks, hides unavailable pricing tables, and supports arrows/Enter/Escape. Image validation remains in place.
+
+No screenshots/gallery updates, migrations, hosted/provider actions or signed-version changes. Local automated validation results are recorded below; GitHub CI is left for Jonathan to monitor. Stop after opening the PR for live-site review.
+
+Validation: **242 unit/database tests across 39 files**, formatting, TypeScript and neutrality pass. Four focused macOS browser suites pass (history/menu/layers, existing hover/focus/no-movement, editor/document geometry and pagination, field selection/focus). Targeted Linux history and field checks pass, including the document-switch guard. The final layer rerun also confirms the Save hit target and clicking delete Undo while a native dialog is open. Native production build and API renderer tracing pass (**327 files**).
+
+A supplemental ARM Linux container compiled the production app, but the existing serverless PDF smoke binary is x86-only and could not launch in that ARM environment. The native trace check passes; the unchanged x86 GitHub runner remains responsible for that serverless launch smoke. No check was weakened. Screenshots/galleries were not generated. CI is not awaited; Jonathan will monitor it and test the live site.

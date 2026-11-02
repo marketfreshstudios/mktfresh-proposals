@@ -126,7 +126,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     }
   });
   const stage = process.env.EDITOR_UX_BEFORE ? "before" : "after",
-    dir = `.data/evidence/editor-ux/${stage}`;
+    dir =
+      process.env.CAPTURE_EDITOR_EVIDENCE === "1"
+        ? `.data/evidence/editor-ux/${stage}`
+        : "test-results/editor-ux-fixtures";
   await mkdir(dir, { recursive: true });
   const captures: any[] = [];
   async function shot(state: string, width: number, theme: string) {
@@ -141,7 +144,8 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       ),
     ).toBe(true);
     const file = `${state}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
     captures.push({ file, state, width, theme, stage });
   }
   for (const theme of process.env.EDITOR_UX_FAST
@@ -379,7 +383,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .click();
     await page
       .getByRole("dialog", { name: "Add a block" })
-      .getByRole("button", { name: "Text", exact: true })
+      .getByRole("menuitem", { name: "Text", exact: true })
       .click();
     const empty = page.locator(".tiptap:focus");
     await expect(empty).toBeVisible();
@@ -389,7 +393,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     ).toBeVisible();
     await page
       .getByRole("dialog", { name: "Add a block" })
-      .getByRole("button", { name: "Heading", exact: true })
+      .getByRole("menuitem", { name: "Heading", exact: true })
       .click();
     await expect(page.locator(".document-heading:focus")).toHaveValue(
       "New section",
@@ -634,5 +638,6 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .poll(() => active.content.some((b) => b.text?.includes("unknown.field")))
       .toBe(false);
   }
-  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

@@ -44,7 +44,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
-  z-index: 12;
+  z-index: var(--z-block-controls);
   color: var(--ink);
   font: 12px var(--font-ui);
 }
@@ -99,7 +99,7 @@
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  z-index: 13;
+  z-index: var(--z-block-controls);
 }
 .block-sortable:has(> .block-frame[data-active="true"]) > .drag-handle {
   visibility: visible;
@@ -126,7 +126,7 @@
 }
 .block-frame .field-picker {
   position: absolute;
-  z-index: 20;
+  z-index: var(--z-popover);
   left: 0;
   top: 84px;
   max-width: 100%;
