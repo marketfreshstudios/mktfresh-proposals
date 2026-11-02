@@ -22,6 +22,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # verify:fonts renders PDFs with Playwright's Chromium.
+      - run: npx playwright install --with-deps chromium
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: npm run check:neutral
       - run: npm run typecheck
