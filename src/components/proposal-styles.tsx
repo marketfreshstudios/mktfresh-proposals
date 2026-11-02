@@ -267,17 +267,17 @@ export function ProposalStyles({
           </style>
           <h1>A proposal for your next chapter</h1>
           <h2>Our approach</h2>
-          <div className="style-body">
-            <p>Clear goals and thoughtful work, shaped around your business.</p>
-          </div>
+          <p className="style-body">
+            Clear goals and thoughtful work, shaped around your business.
+          </p>
           <h3>Built around you</h3>
-          <div className="style-body">
-            <p>Each detail supports the outcome we agree on together.</p>
-          </div>
+          <p className="style-body">
+            Each detail supports the outcome we agree on together.
+          </p>
           <h4>The next step</h4>
-          <div className="style-body">
-            <p>Review your proposal and let us know what you think.</p>
-          </div>
+          <p className="style-body">
+            Review your proposal and let us know what you think.
+          </p>
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import { useTemplatePreview } from "./use-template-preview";
 import { authoringPreview } from "../lib/authoring-preview";
 import { variables } from "../lib/presentation";
 import { documentQuote } from "../lib/document-quote";
+import { documentSpacing } from "../lib/document-spacing";
 import { pageMetrics } from "../lib/proposal-styles";
 import { ProposalStyles } from "./proposal-styles";
 import {
@@ -1247,8 +1248,10 @@ function TemplatesStudioContent({
     draft,
     data.catalog,
     mode === "templates",
+    data.settings,
   );
   const templateStyles = resolveStyles(data.settings, draft?.style_overrides);
+  const blockSpaces = documentSpacing(content, templateStyles);
   const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
   currentContent.current = content;
@@ -1445,6 +1448,15 @@ function TemplatesStudioContent({
         )}
       </aside>
       <main className="studio-template-main stack">
+        {mode === "templates" && (
+          <small
+            className="pages-updating-indicator"
+            role="status"
+            data-updating={templatePreview.approximate}
+          >
+            Updating pages…
+          </small>
+        )}
         <div className="actions">
           <nav className="editor-breadcrumb" aria-label="Breadcrumb">
             <a href="/studio">Studio</a> / Templates &amp; blocks
@@ -1588,6 +1600,7 @@ function TemplatesStudioContent({
                         styles={templateStyles}
                         approximate={templatePreview.approximate}
                         contentKey={templatePreview.visualKey}
+                        fingerprint={templatePreview.data?.fingerprint}
                       />
                     )}
                     <div className="proposal-typography document-reading template-cover">
@@ -1621,6 +1634,7 @@ function TemplatesStudioContent({
                       <Sortable
                         block
                         id={String(n)}
+                        spaceBefore={blockSpaces[b.id ?? String(n)]}
                         label={`block ${n + 1}`}
                         key={b.id ?? n}
                       >

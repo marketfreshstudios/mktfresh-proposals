@@ -1,6 +1,7 @@
 "use client";
 import { printView, viewKey } from "../lib/print-view";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { usePrintPreview } from "./use-print-preview";
 import type { Proposal } from "../lib/model";
 import type { PdfPreview } from "../lib/pdf-preview";
 export const pdfPreviewInput = (p: Proposal) => ({
@@ -21,61 +22,40 @@ const visualKey = (p: Proposal) =>
     client: p.client,
     settings: p.workspace_settings,
     sender: p.sender,
+    currency: p.currency,
+    created_at: p.created_at,
   });
 export function usePdfPreview(proposal: Proposal) {
   const latest = useRef(proposal);
   latest.current = proposal;
   const key = visualKey(proposal);
-  const [loaded, setLoaded] = useState<{
-      key: string;
-      data: PdfPreview;
-    } | null>(null),
-    [error, setError] = useState("");
-  const currentKey = useRef(key);
-  currentKey.current = key;
-  const request = async (p: Proposal, signal?: AbortSignal) => {
-    const input = pdfPreviewInput(p),
-      requested = visualKey(p);
-    const res = await fetch(`/api/proposals/${p.id}/preview-pdf`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-      signal,
-    });
+  return usePrintPreview(key, async (signal) => {
+    const p = latest.current,
+      input = pdfPreviewInput(p);
+    const send = () =>
+      fetch(`/api/proposals/${p.id}/preview-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+        signal,
+      });
+    let res = await send();
+    // An autosave may finish between taking the snapshot and the revision check.
+    // Revalidate the revision only; never persist or replace the local draft.
+    if (res.status === 409 && !signal?.aborted) {
+      const response = await fetch(`/api/proposals/${p.id}`, { signal });
+      if (response.ok) {
+        const saved = await response.json();
+        if (saved.status === "draft" && saved.revision > input.revision) {
+          input.revision = saved.revision;
+          res = await send();
+        }
+      }
+    }
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? "PDF preview unavailable");
     if (!data.layout || !data.pdf_base64)
       throw new Error("PDF preview unavailable");
-    if (requested === currentKey.current) {
-      setLoaded({ key: requested, data });
-      setError("");
-    }
     return data as PdfPreview;
-  };
-  useEffect(() => {
-    if (loaded?.key === key) return;
-    const cancel = new AbortController();
-    setError("");
-    const timer = setTimeout(
-      () =>
-        request(latest.current, cancel.signal).catch((e) => {
-          if (!cancel.signal.aborted) setError(e.message);
-        }),
-      1200,
-    );
-    return () => {
-      clearTimeout(timer);
-      cancel.abort();
-    };
-  }, [key, proposal.id, proposal.revision]);
-  return {
-    data: loaded?.data ?? null,
-    visualKey: key,
-    approximate: loaded?.key !== key,
-    error,
-    ensure: () =>
-      loaded?.key === currentKey.current
-        ? Promise.resolve(loaded.data)
-        : request(latest.current),
-  };
+  });
 }

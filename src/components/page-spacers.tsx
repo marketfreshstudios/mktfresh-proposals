@@ -2,7 +2,7 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 export type SourceSpacer = { offset: number; height: number };
 export const pageSpacerKey = new PluginKey<SourceSpacer[]>("pdf-page-spacers");
 export function pageSpacers(values: () => Record<string, string>) {
@@ -68,7 +68,9 @@ export function pageSpacers(values: () => Record<string, string>) {
 export function SourceParagraph({ text }: { text: string }) {
   const root = useRef<HTMLParagraphElement>(null),
     [spacers, setSpacers] = useState<SourceSpacer[]>([]);
-  useEffect(() => {
+  // Parent pagination commits cached spacers in its layout effect. Register
+  // before that commit when undo remounts the clause, without waiting for paint.
+  useLayoutEffect(() => {
     const el = root.current!;
     const receive = (e: Event) =>
       setSpacers((e as CustomEvent<SourceSpacer[]>).detail);

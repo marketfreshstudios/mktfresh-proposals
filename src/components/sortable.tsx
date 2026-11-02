@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import type { ReactNode, CSSProperties } from "react";
 import { useBlockSelection } from "./block-controls";
 import {
   DndContext,
@@ -8,6 +8,8 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  pointerWithin,
+  type CollisionDetection,
   type KeyboardCoordinateGetter,
   type DragEndEvent,
 } from "@dnd-kit/core";
@@ -25,12 +27,14 @@ export function Sortable({
   block = false,
   printUnit,
   documentKind,
+  spaceBefore,
 }: {
   id: string;
   label: string;
   block?: boolean;
   printUnit?: string;
   documentKind?: "card" | "group";
+  spaceBefore?: number;
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
@@ -46,14 +50,19 @@ export function Sortable({
     <div
       ref={setNodeRef}
       data-print-unit={printUnit}
+      data-sortable-id={id}
       onPointerLeave={() => {
         if (block) selection.hover(null);
       }}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
+      style={
+        {
+          "--block-space-before":
+            spaceBefore === undefined ? undefined : `${spaceBefore}px`,
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.5 : 1,
+        } as CSSProperties
+      }
       className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
     >
       <button
@@ -102,10 +111,12 @@ export function Reorder({
   ids,
   onMove,
   children,
+  pages = false,
 }: {
   ids: string[];
   onMove: (from: string, to: string) => void;
   children: ReactNode;
+  pages?: boolean;
 }) {
   // Align centres for vertical keyboard moves. The stock getter bottom-aligns
   // differently sized cards, which leaves a tall choice group over itself.
@@ -114,8 +125,12 @@ export function Reorder({
       return sortableKeyboardCoordinates(event, args);
     const { active, over, droppableRects, collisionRect } = args.context;
     if (!active || !collisionRect) return;
-    const index = ids.indexOf(String(over?.id ?? active.id));
-    const target = ids[index + (event.code === "ArrowDown" ? 1 : -1)];
+    const targets =
+      pages && String(active.id).startsWith("page:")
+        ? ids.filter((id) => id.startsWith("page:"))
+        : ids;
+    const index = targets.indexOf(String(over?.id ?? active.id));
+    const target = targets[index + (event.code === "ArrowDown" ? 1 : -1)];
     const rect = target && droppableRects.get(target);
     if (!rect || index < 0) return;
     event.preventDefault();
@@ -131,16 +146,36 @@ export function Reorder({
       scrollBehavior: "auto",
     }),
   );
+  const collision: CollisionDetection = (args) => {
+    if (!pages) return closestCenter(args);
+    const page = String(args.active.id).startsWith("page:");
+    const filtered = {
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (d) => !page || String(d.id).startsWith("page:"),
+      ),
+    };
+    if (page || !args.pointerCoordinates) return closestCenter(filtered);
+    const inside = pointerWithin(filtered);
+    return inside.filter((d) => String(d.id).startsWith("section:")).length
+      ? inside.filter((d) => String(d.id).startsWith("section:"))
+      : inside.length
+        ? inside
+        : closestCenter(filtered);
+  };
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collision}
       onDragEnd={({ active, over }: DragEndEvent) => {
         if (over && active.id !== over.id)
           onMove(String(active.id), String(over.id));
       }}
     >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={pages ? ids.filter((id) => id.startsWith("page:")) : ids}
+        strategy={verticalListSortingStrategy}
+      >
         {children}
       </SortableContext>
     </DndContext>

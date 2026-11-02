@@ -1,0 +1,41 @@
+/* Page handles have their own gutter; section controls cannot cover page handles. */
+.pages-outline.pages-outline .quote-sortable {
+  position: relative;
+  padding-left: var(--control-sm);
+}
+.pages-outline.pages-outline .quote-sortable > .drag-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--control-sm);
+  min-width: var(--control-sm);
+  height: var(--control-lg);
+  min-height: var(--control-lg);
+  padding: 0;
+  opacity: 1;
+  z-index: var(--z-block-controls);
+  justify-content: center;
+}
+.template-paged-paper {
+  border: 0;
+  box-shadow: none;
+  background: transparent !important;
+}
+.editor-page-sheets {
+  background: transparent;
+}
+.document-quote .document-sortable-card > .drag-handle {
+  top: 3px;
+}
+.pdf-source-spacer {
+  background: transparent !important;
+}
+.pages-updating-indicator[data-updating="false"] {
+  display: none;
+}
+:is(.editor-document-region, .studio-template-main):has(
+    .editor-page-sheets[data-approximate="true"]
+  )
+  .pages-updating-indicator {
+  display: inline;
+}

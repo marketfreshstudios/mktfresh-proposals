@@ -163,11 +163,17 @@ export function BlockMenu({
     popover.showPopover();
     const place = () => {
       const a = (anchor ?? fallback.current)?.getBoundingClientRect();
-      const box = popover.getBoundingClientRect();
+      popover.style.maxHeight = "";
+      const preferred = popover.getBoundingClientRect();
       const top = a?.bottom ?? 80,
-        below = innerHeight - top - 12;
-      const y =
-        box.height > below && (a?.top ?? 0) > below
+        below = innerHeight - top - 14,
+        above = (a?.top ?? top) - 14,
+        flip = preferred.height > below && above > below;
+      // Scrolling belongs inside the menu when neither side fits its preferred
+      // height; clamping its top alone would overlap the trigger/document.
+      popover.style.maxHeight = `${Math.max(0, Math.min(preferred.height, flip ? above : below))}px`;
+      const box = popover.getBoundingClientRect(),
+        y = flip
           ? Math.max(8, (a?.top ?? top) - box.height - 6)
           : Math.min(top + 6, innerHeight - box.height - 8);
       popover.style.left = `${Math.max(8, Math.min(a?.left ?? 16, innerWidth - box.width - 8))}px`;
@@ -179,8 +185,24 @@ export function BlockMenu({
     const resize = new ResizeObserver(place);
     resize.observe(popover);
     window.addEventListener("resize", place);
+    // Pagination can move a trigger without resizing it or scrolling. Keep the
+    // open menu attached to its current bounds, including during page updates.
+    let frame = 0,
+      previous = "";
+    const follow = () => {
+      const a = (anchor ?? fallback.current)?.getBoundingClientRect(),
+        box = popover.getBoundingClientRect(),
+        geometry = `${a?.x},${a?.y},${a?.width},${a?.height},${box.width},${box.height}`;
+      if (geometry !== previous) {
+        previous = geometry;
+        place();
+      }
+      frame = requestAnimationFrame(follow);
+    };
+    frame = requestAnimationFrame(follow);
 
     return () => {
+      cancelAnimationFrame(frame);
       resize.disconnect();
       window.removeEventListener("resize", place);
 

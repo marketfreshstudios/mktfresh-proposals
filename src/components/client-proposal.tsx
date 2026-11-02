@@ -1,5 +1,8 @@
 "use client";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
+import { documentSpacing } from "../lib/document-spacing";
+import type { CSSProperties } from "react";
+import type { Block } from "../lib/model";
 import {
   BillingItems,
   BillingRecurringTotal,
@@ -1306,6 +1309,13 @@ function FlowDocument({
   onToggle?: (id: string, selected: boolean) => void;
 }) {
   const content = selectedContent(p.content, p.quote as QuoteItem[]);
+  const spaces = p.resolved_styles?.layout
+    ? documentSpacing(content, p.resolved_styles)
+    : {};
+  const spacing = (block: Block, n: number) =>
+    ({
+      "--block-space-before": `${spaces[block.id ?? String(n)] ?? 0}px`,
+    }) as CSSProperties;
   return (
     <article
       className="paper flow-document proposal-typography document-reading"
@@ -1325,6 +1335,7 @@ function FlowDocument({
           "pricing_table" ? (
           <section
             data-document-block={block.id ?? index}
+            style={spacing(block, index)}
             key={index}
             id={`section-${index}`}
           >
@@ -1347,6 +1358,7 @@ function FlowDocument({
             id={`section-${index}`}
             className="flow-contract"
             data-document-block={block.id ?? index}
+            style={spacing(block, index)}
           >
             <h2>{block.text || "Statement of Work & Contract"}</h2>
             {(block.clauses ?? []).map((c) => (
@@ -1359,13 +1371,18 @@ function FlowDocument({
             ))}
           </section>
         ) : block.type === "signature_block" ? (
-          <div data-document-block={block.id ?? index} key={index}>
+          <div
+            data-document-block={block.id ?? index}
+            style={spacing(block, index)}
+            key={index}
+          >
             <ClientSignatureBlock proposal={p} role={block.role ?? "client"} />
           </div>
         ) : (
           <div
             id={`section-${index}`}
             data-document-block={block.id ?? index}
+            style={spacing(block, index)}
             key={index}
             dangerouslySetInnerHTML={{
               __html: renderBlocks(
@@ -1411,7 +1428,7 @@ function ClientItems({
         cents={p.money_cents}
       />
     );
-    return i.optional && !frozen ? (
+    return i.optional ? (
       <label
         className={`flow-quote-line ${active ? "selected" : ""}`}
         key={i.id}
@@ -1419,15 +1436,23 @@ function ClientItems({
         <input
           type={i.choice_group_id ? "radio" : "checkbox"}
           name={i.choice_group_id ?? i.id}
+          aria-label={`${i.name} · ${active ? "included" : "not included"}`}
           checked={active}
-          disabled={busy}
+          disabled={busy || frozen}
           onChange={(e) => onToggle?.(i.id, e.target.checked)}
         />
         {body}
       </label>
     ) : (
-      <div className="flow-quote-line" key={i.id}>
-        <Icon name="lock" />
+      <div className="flow-quote-line selected" key={i.id}>
+        <span
+          className="quote-required"
+          role="img"
+          aria-label="Required"
+          title="Required"
+        >
+          <Icon name="lock" />
+        </span>
         {body}
       </div>
     );
