@@ -1,4 +1,5 @@
 :root {
+  --editor-touch-target: calc(var(--tap-min) + var(--space-1));
   --select-padding-right: 36px;
   --select-chevron-size: 12px;
   --select-chevron-offset: 12px;

@@ -289,7 +289,34 @@ test("block controls own one block and never move document content on hover, foc
           await page.mouse.move(1, 1);
           const before = await positions(page);
           // Target the content owned by this frame, rather than a nested clause.
-          await block.hover({ position: { x: 5, y: 20 } });
+          const owned = await block.evaluate((el) => {
+            const bounds = el.getBoundingClientRect(),
+              walker = document.createTreeWalker(
+                el.querySelector(":scope > .block-content")!,
+                NodeFilter.SHOW_TEXT,
+              );
+            let node;
+            while ((node = walker.nextNode())) {
+              if (
+                !node.textContent?.trim() ||
+                node.parentElement?.closest(".block-frame") !== el ||
+                node.parentElement?.closest(".block-tools,.drag-handle,small")
+              )
+                continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              const r = Array.from(range.getClientRects()).find(
+                (r) => r.width && r.height,
+              );
+              if (r)
+                return {
+                  x: r.left - bounds.left + Math.min(5, r.width / 2),
+                  y: r.top - bounds.top + r.height / 2,
+                };
+            }
+            return { x: 5, y: Math.min(5, bounds.height / 2) };
+          });
+          await block.hover({ position: owned });
           await expect(block).toHaveAttribute("data-active", "true");
           await unchanged(before);
           await expect(
@@ -433,10 +460,7 @@ test("block controls own one block and never move document content on hover, foc
             (el as HTMLElement).focus({ preventScroll: true }),
           );
           await showBlock(blocks.nth(2), width, editor);
-          await blocks
-            .nth(2)
-            .locator(":scope > .block-content")
-            .click({ position: { x: 20, y: 20 } });
+          await blocks.nth(2).locator(".tiptap").click();
           await expect(blocks.nth(2)).toHaveAttribute("data-selected", "true");
           await expect(paragraph).toHaveAttribute("data-selected", "false");
           if (editor === "proposal") {
@@ -498,12 +522,12 @@ test("block controls own one block and never move document content on hover, foc
               else {
                 await page
                   .getByRole("button", {
-                    name: "Toggle Sections sidebar",
+                    name: /^(Expand|Collapse) Pages sidebar$/,
                     exact: true,
                   })
                   .click();
                 const sections = page.getByRole("dialog", {
-                  name: "Sections",
+                  name: "Pages",
                   exact: true,
                 });
                 await sections

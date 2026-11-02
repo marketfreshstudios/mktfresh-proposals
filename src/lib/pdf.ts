@@ -9,6 +9,7 @@ import {
   printCss,
   printPageCss,
   paginatePrintDocument,
+  collectPrintSheets,
   type PrintLayout,
 } from "./document-print";
 import { readFile } from "node:fs/promises";
@@ -77,12 +78,9 @@ export async function sealedPdf(
     const style = `<style>${families.join("")}${custom}body{--proposal-body:${fontFamily(brand?.settings?.proposal_fonts?.body)};--proposal-heading:${fontFamily(brand?.settings?.proposal_fonts?.heading)};font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}</style>`;
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());
-    const signatures = signers
-      .map(
-        (s) =>
-          `<section class="print-signature" style="break-inside:avoid"><h2>${s.role === "client" ? "Client" : "Company"} signature</h2><p>${escape(s.name)} · ${escape(s.title)}${s.company ? ` · ${escape(s.company)}` : ` · ${escape(s.email)}`}</p>${s.kind === "drawn" ? `<img alt="Signature" src="${s.image}" style="max-width:100%;max-height:160px;object-fit:contain" />` : `<p><em>${escape(s.typed_name!)}</em></p>`}<p>${escape(certificateTime(s.signed_at, brand?.settings?.timezone))}</p><p>${escape(s.consent_text)}</p></section>`,
-      )
-      .join("");
+    const signedBlock = (s: Signer) =>
+      `<section class="print-signature" style="break-inside:avoid"><h2>${s.role === "client" ? "Client" : "Company"} signature</h2><p>${escape(s.name)} · ${escape(s.title)}${s.company ? ` · ${escape(s.company)}` : ` · ${escape(s.email)}`}</p>${s.kind === "drawn" ? `<img alt="Signature" src="${s.image}" style="max-width:100%;max-height:160px;object-fit:contain" />` : `<p><em>${escape(s.typed_name!)}</em></p>`}<p>${escape(certificateTime(s.signed_at, brand?.settings?.timezone))}</p><p>${escape(s.consent_text)}</p></section>`;
+    const signatures = signers.map(signedBlock).join("");
     await page.setContent(
       htmlDocument(
         style +
@@ -104,6 +102,9 @@ export async function sealedPdf(
             currency,
             cents: brand?.settings?.money?.cents ?? "auto",
             signatures,
+            signatureBlocks: Object.fromEntries(
+              signers.map((s) => [s.role, signedBlock(s)]),
+            ),
             logo: brand?.logo,
             signatory: brand?.settings?.company_signatory,
             currentLayout: !!version.resolved_styles?.layout,
@@ -126,61 +127,8 @@ export async function sealedPdf(
     >(
       `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
     );
-    layout.sheets = await page.locator(".print-sheet").evaluateAll((sheets) =>
-      sheets.map((sheet) => {
-        const top = sheet.getBoundingClientRect().top;
-        const lineTop = (el: HTMLElement) => {
-          const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-          let node;
-          while ((node = walk.nextNode()))
-            if (node.textContent?.trim()) {
-              const range = document.createRange();
-              range.setStart(node, 0);
-              range.setEnd(node, Math.min(1, node.textContent.length));
-              return range.getBoundingClientRect().top;
-            }
-          return el.getBoundingClientRect().top;
-        };
-        return {
-          html: sheet.innerHTML,
-          fragments: Array.from(
-            sheet.querySelectorAll<HTMLElement>(".print-atom"),
-          ).flatMap((atom) => {
-            const common = {
-              block: atom.dataset.sourceBlock!,
-              offset: Number(atom.dataset.sourceOffset),
-              ...(atom.dataset.sourcePart
-                ? {
-                    part: atom.dataset.sourcePart,
-                    part_offset: Number(atom.dataset.sourcePartOffset),
-                  }
-                : {}),
-              ...(atom.dataset.sourceUnit
-                ? { unit: atom.dataset.sourceUnit }
-                : {}),
-            };
-            const targets =
-              atom.querySelectorAll<HTMLElement>("[data-print-unit]");
-            return [
-              {
-                ...common,
-                y: lineTop(atom) - top,
-                height: atom.getBoundingClientRect().height,
-                bottom: atom.getBoundingClientRect().bottom - top,
-              },
-              ...Array.from(targets)
-                .filter((el) => el !== atom.firstElementChild)
-                .map((el) => ({
-                  ...common,
-                  unit: el.dataset.printUnit,
-                  y: lineTop(el) - top,
-                  height: el.getBoundingClientRect().height,
-                  bottom: el.getBoundingClientRect().bottom - top,
-                })),
-            ];
-          }),
-        };
-      }),
+    layout.sheets = await page.evaluate<ReturnType<typeof collectPrintSheets>>(
+      `(() => { const __name = value => value; return (${collectPrintSheets.toString()})(Array.from(document.querySelectorAll(".print-sheet"))); })()`,
     );
     const pricingIds = new Set(
       version.content

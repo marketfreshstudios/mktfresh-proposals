@@ -1,4 +1,14 @@
 "use client";
+import { useManagedPopover } from "./editor-popovers";
+import { PagedPaper } from "./paged-paper";
+import { SourceParagraph } from "./page-spacers";
+import { PagesOutline } from "./pages-outline";
+import { useEditorPanels } from "./use-editor-panels";
+import { useTemplatePreview } from "./use-template-preview";
+import { authoringPreview } from "../lib/authoring-preview";
+import { variables } from "../lib/presentation";
+import { documentQuote } from "../lib/document-quote";
+import { pageMetrics } from "../lib/proposal-styles";
 import { ProposalStyles } from "./proposal-styles";
 import {
   resolveStyles,
@@ -7,7 +17,11 @@ import {
   type StyleOverrides,
 } from "../lib/proposal-styles";
 import { useSessionHistory } from "./editor-history";
-import { blockText, duplicateBlock } from "../lib/editor-document";
+import {
+  blockText,
+  duplicateBlock,
+  convertTextStyle,
+} from "../lib/editor-document";
 import { BlockMenu } from "./block-menu";
 import {
   BlockScope,
@@ -18,12 +32,13 @@ import {
   BlockAction,
   useBlockSelection,
 } from "./block-controls";
-import type { ComponentProps } from "react";
+import type { ComponentProps, CSSProperties } from "react";
 import { productMappings } from "../lib/workspace-setup";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import { renderBlocks, escape } from "../lib/presentation";
 import { DocumentCover } from "./document-cover";
+import { FieldEditor } from "./field-editor";
 import { FieldOptions } from "./field-options";
 import { withoutTitleHeading, appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
@@ -41,7 +56,7 @@ import { itemDisplayName, sellableCatalogue } from "../lib/catalogue-display";
 import { intervalSuffix } from "../lib/money";
 import { eventLabel } from "../lib/event-label";
 import { inactiveTemplateItems } from "../lib/template-quote";
-import { api, post, Button, Banner, Field, Empty } from "./ui";
+import { api, post, Button, Banner, Field, Empty, Icon } from "./ui";
 import { Sheet, Skeleton } from "./foundation";
 import { StoredSignatureEditor } from "./company-signature";
 import { ReferenceDocuments } from "./reference-documents";
@@ -1168,6 +1183,7 @@ function TemplatesStudioContent({
     [mobile, setMobile] = useState(false),
     [insertAt, setInsertAt] = useState<number | null>(null),
     [replaceEmpty, setReplaceEmpty] = useState(false);
+  useManagedPopover(fields, () => setFields(false));
   const save = useSave(run);
   useEffect(() => {
     const q = matchMedia("(max-width:1099px)");
@@ -1200,6 +1216,40 @@ function TemplatesStudioContent({
     history.record(model.current, value);
     applyModel(value);
   };
+  const templatePaper = useRef<HTMLDivElement>(null);
+  const templatePanels = useEditorPanels(data.user.actor, templatePaper, true);
+  const [templateListOpen, setTemplateListOpen] = useState(false),
+    [templateToolsOpen, setTemplateToolsOpen] = useState(false);
+  const toggleTemplateLeft = () => {
+    if (templatePanels.canLeft) templatePanels.toggle("left");
+    else setTemplateListOpen((v) => !v);
+  };
+  const toggleTemplateRight = () => {
+    if (templatePanels.canRight) templatePanels.toggle("right");
+    else setTemplateToolsOpen((v) => !v);
+  };
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.repeat &&
+        (e.key === "\\" || e.code === "Backslash")
+      ) {
+        e.preventDefault();
+        if (e.shiftKey) toggleTemplateLeft();
+        else toggleTemplateRight();
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [templatePanels.canLeft, templatePanels.canRight]);
+  const templatePreview = useTemplatePreview(
+    draft,
+    data.catalog,
+    mode === "templates",
+  );
+  const templateStyles = resolveStyles(data.settings, draft?.style_overrides);
+  const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
   currentContent.current = content;
   const patch = (next: Block[]) => {
@@ -1222,20 +1272,22 @@ function TemplatesStudioContent({
     setInsertAt(null);
     setIndex(at);
   }
-  const map = {
-    "proposal.title": "A new proposal",
-    "proposal.date": "October 30, 2026",
-    "proposal.valid_until": "November 29, 2026",
-    "proposal.validity": "This proposal is valid until November 29, 2026.",
-    "client.address": "123 Main St\nCharlotte, NC 28202\nUnited States",
-    "client.first_name": "Client",
-    "client.company": "Client company",
-    "company.name": data.settings?.company_name ?? "Company",
-    "workspace.name": data.settings?.company_name ?? "Company",
-    "quote.one_time_total": "One-time total",
-    "quote.monthly_total": "Monthly total",
-    "quote.yearly_total": "Yearly total",
-  };
+  const specimen =
+    draft && data.settings
+      ? authoringPreview(
+          {
+            id: draft.id,
+            content,
+            quote: templatePreview.quote,
+            style_overrides: draft.style_overrides,
+          },
+          data.settings,
+          "template-preview",
+        )
+      : null;
+  const map = specimen
+    ? variables({ ...specimen, workspace_settings: data.settings! })
+    : {};
   const inspector =
     index !== null && content[index] ? (
       <BlockPanel
@@ -1254,99 +1306,174 @@ function TemplatesStudioContent({
         }}
       />
     ) : null;
-  return (
-    <div className="studio-template-layout">
-      {blockFeedback.feedback}
-      <aside className="studio-template-list">
-        <div
-          className="studio-tabs"
-          role="tablist"
-          aria-label="Templates and saved blocks"
-        >
-          {["templates", "blocks"].map((m) => (
+  const templateSidebar = (
+    <>
+      <div
+        className="studio-tabs"
+        role="tablist"
+        aria-label="Templates and saved blocks"
+      >
+        {["templates", "blocks"].map((m) => (
+          <button
+            role="tab"
+            aria-selected={mode === m}
+            key={m}
+            onClick={() => {
+              setMode(m);
+              setIndex(null);
+            }}
+          >
+            {m === "templates" ? "Templates" : "Saved blocks"}
+          </button>
+        ))}
+      </div>
+      <Button
+        onClick={() => {
+          setIndex(null);
+          if (mode === "templates")
+            setDraft({
+              id: crypto.randomUUID(),
+              name: "Untitled template",
+              active: true,
+              default_quote: [],
+              content: [
+                {
+                  id: crypto.randomUUID(),
+                  type: "paragraph",
+                  text: "",
+                },
+              ],
+            });
+          else
+            setSaved({
+              name: "Untitled block",
+              block: { id: crypto.randomUUID(), type: "paragraph", text: "" },
+            });
+        }}
+      >
+        + New {mode === "templates" ? "template" : "block"}
+      </Button>
+      {mode === "templates" ? (
+        data.templates.length ? (
+          data.templates.map((t) => (
             <button
-              role="tab"
-              aria-selected={mode === m}
-              key={m}
+              className={`template-link ${draft?.id === t.id ? "active" : ""}`}
+              key={t.id}
               onClick={() => {
-                setMode(m);
+                setDraft(structuredClone(t));
+                setTemplateListOpen(false);
                 setIndex(null);
               }}
             >
-              {m === "templates" ? "Templates" : "Saved blocks"}
-            </button>
-          ))}
-        </div>
-        <Button
-          onClick={() => {
-            setIndex(null);
-            if (mode === "templates")
-              setDraft({
-                id: crypto.randomUUID(),
-                name: "Untitled template",
-                active: true,
-                default_quote: [],
-                content: [
-                  {
-                    id: crypto.randomUUID(),
-                    type: "paragraph",
-                    text: "",
-                  },
-                ],
-              });
-            else
-              setSaved({
-                name: "Untitled block",
-                block: { id: crypto.randomUUID(), type: "paragraph", text: "" },
-              });
-          }}
-        >
-          + New {mode === "templates" ? "template" : "block"}
-        </Button>
-        {mode === "templates" ? (
-          data.templates.length ? (
-            data.templates.map((t) => (
-              <button
-                className={`template-link ${draft?.id === t.id ? "active" : ""}`}
-                key={t.id}
-                onClick={() => {
-                  setDraft(structuredClone(t));
-                  setIndex(null);
-                }}
-              >
-                <strong>{t.name}</strong>
-                <small>
-                  {t.content.length} blocks ·{" "}
-                  {data.proposals.filter((p) => p.template_id === t.id).length}{" "}
-                  proposals{!t.active ? " · Inactive" : ""}
-                  {inactiveTemplateItems(t, data.catalog).length
-                    ? " · Defaults need review"
-                    : ""}
-                </small>
-              </button>
-            ))
-          ) : (
-            <p>No templates yet. Create your first reusable proposal.</p>
-          )
-        ) : data.library.length ? (
-          data.library.map((b) => (
-            <button
-              key={b.id}
-              className={`template-link ${saved?.id === b.id ? "active" : ""}`}
-              onClick={() => {
-                setSaved(structuredClone(b));
-                setIndex(0);
-              }}
-            >
-              <strong>{b.name}</strong>
-              <small>{blockName(b.block)}</small>
+              <strong>{t.name}</strong>
+              <small>
+                {t.content.length} blocks ·{" "}
+                {data.proposals.filter((p) => p.template_id === t.id).length}{" "}
+                proposals{!t.active ? " · Inactive" : ""}
+                {inactiveTemplateItems(t, data.catalog).length
+                  ? " · Defaults need review"
+                  : ""}
+              </small>
             </button>
           ))
         ) : (
-          <p>No saved blocks yet. Save a block from a template to reuse it.</p>
+          <p>No templates yet. Create your first reusable proposal.</p>
+        )
+      ) : data.library.length ? (
+        data.library.map((b) => (
+          <button
+            key={b.id}
+            className={`template-link ${saved?.id === b.id ? "active" : ""}`}
+            onClick={() => {
+              setSaved(structuredClone(b));
+              setIndex(0);
+            }}
+          >
+            <strong>{b.name}</strong>
+            <small>{blockName(b.block)}</small>
+          </button>
+        ))
+      ) : (
+        <p>No saved blocks yet. Save a block from a template to reuse it.</p>
+      )}
+      {mode === "templates" && draft && (
+        <>
+          <p className="eyebrow">Pages</p>
+          <PagesOutline
+            content={content}
+            layout={templatePreview.data?.layout}
+            onChange={(content) => {
+              selection.clear();
+              setIndex(null);
+              patch(content);
+            }}
+            onFocus={(id) => {
+              const n = content.findIndex((b) => b.id === id);
+              if (templateListOpen) {
+                setTemplateListOpen(false);
+                requestAnimationFrame(() => {
+                  if (n >= 0) setIndex(n);
+                });
+              } else if (n >= 0) setIndex(n);
+              requestAnimationFrame(() =>
+                document
+                  .querySelector(`[data-block-id="template-${CSS.escape(id)}"]`)
+                  ?.scrollIntoView({ block: "center" }),
+              );
+            }}
+          />
+        </>
+      )}
+    </>
+  );
+  const templateTools =
+    inspector ??
+    (draft && (
+      <ProposalStyles
+        settings={data.settings}
+        value={draft.style_overrides}
+        onChange={(style_overrides) => editDraft({ ...draft, style_overrides })}
+        resetLabel="Reset to workspace"
+      />
+    ));
+  return (
+    <div
+      ref={templatePanels.container}
+      className="studio-template-layout"
+      style={{ gridTemplateColumns: templatePanels.columns }}
+    >
+      {blockFeedback.feedback}
+      <aside
+        className={`studio-template-list ${templatePanels.left ? "" : "sidebar-rail"}`}
+      >
+        <button
+          className="sidebar-arrow"
+          aria-label={
+            templatePanels.left
+              ? "Collapse Pages sidebar"
+              : "Expand Pages sidebar"
+          }
+          title="Pages sidebar"
+          onClick={toggleTemplateLeft}
+        >
+          {templatePanels.left ? "‹" : "›"}
+        </button>
+        {templatePanels.left ? (
+          templateSidebar
+        ) : (
+          <button
+            aria-label="Open Pages"
+            title="Pages"
+            onClick={toggleTemplateLeft}
+          >
+            <Icon name="file-lines" />
+          </button>
         )}
       </aside>
       <main className="studio-template-main stack">
+        <nav className="editor-breadcrumb" aria-label="Breadcrumb">
+          <a href="/studio">Studio</a> / Templates &amp; blocks
+        </nav>
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
             <header className="actions">
@@ -1413,417 +1540,554 @@ function TemplatesStudioContent({
                 Active template
               </label>
             )}
-            {mode === "templates" && draft && (
-              <details className="template-style-settings">
-                <summary>Proposal styles</summary>
-                <ProposalStyles
-                  settings={data.settings}
-                  value={draft.style_overrides}
-                  onChange={(style_overrides) =>
-                    editDraft({ ...draft, style_overrides })
-                  }
-                  resetLabel="Reset to workspace"
-                />
-              </details>
-            )}
-            <Reorder
-              ids={content.map((_, n) => String(n))}
-              onMove={(from, to) => {
-                selection.clear();
-                const next = [...content];
-                const [moved] = next.splice(Number(from), 1);
-                next.splice(Number(to), 0, moved);
-                patch(next);
-                setIndex(null);
-              }}
-            >
-              <div className="studio-blocks proposal-typography document-reading">
-                {!(mobile && inspector) && <DocumentFormattingBar />}
-                <div className="paper proposal-typography document-reading template-cover">
-                  <style>
-                    {fontCss(data.settings)}
-                    {styleFontFaces(
-                      resolveStyles(data.settings, draft?.style_overrides),
-                    )}
-                    {documentStyleCss(
-                      resolveStyles(data.settings, draft?.style_overrides),
-                      data.settings?.accent_colour,
-                    )}
-                  </style>
-                  <DocumentCover
-                    title="Proposal title"
-                    company="Client company"
-                    sender={
-                      data.settings?.owner ||
-                      data.settings?.company_name ||
-                      "Company"
+            {!(mobile && inspector) && <DocumentFormattingBar />}
+            <div className="template-page-viewport">
+              <div
+                style={{
+                  width: 816 * templatePanels.scale,
+                  height: templatePanels.height * templatePanels.scale,
+                  marginInline: "auto",
+                }}
+              >
+                <Reorder
+                  ids={content.map((_, n) => String(n))}
+                  onMove={(from, to) => {
+                    selection.clear();
+                    const next = [...content];
+                    const [moved] = next.splice(Number(from), 1);
+                    next.splice(Number(to), 0, moved);
+                    patch(next);
+                    setIndex(null);
+                  }}
+                >
+                  <div
+                    ref={templatePaper}
+                    className={`studio-blocks proposal-typography document-reading ${mode === "templates" ? "template-paged-paper" : ""}`}
+                    style={
+                      mode === "templates"
+                        ? ({
+                            position: "relative",
+                            "--editor-ui-scale": 1 / templatePanels.scale,
+                            transform: `scale(${templatePanels.scale})`,
+                            transformOrigin: "top left",
+                            minHeight:
+                              (templatePreview.data?.layout.pages ?? 1) * 1080 -
+                              24,
+                            padding: `${templateMetrics.margins.top * 96}px ${templateMetrics.margins.right * 96}px ${templateMetrics.margins.bottom * 96}px ${templateMetrics.margins.left * 96}px`,
+                          } as CSSProperties)
+                        : undefined
                     }
-                  />
-                </div>
-                {content.map((b, n) => (
-                  <Sortable
-                    block
-                    id={String(n)}
-                    label={`block ${n + 1}`}
-                    key={b.id ?? n}
                   >
-                    <BlockFrame
-                      id={`template-${b.id ?? n}`}
-                      label={`Template block ${n + 1}`}
-                      className="studio-block-card"
-                      insert={
-                        mode === "templates"
-                          ? (edge, anchor) => {
-                              setInsertAnchor(anchor);
-                              setReplaceEmpty(false);
-                              setInsertAt(n + (edge === "below" ? 1 : 0));
-                            }
-                          : undefined
-                      }
-                      onInsertField={
-                        ["paragraph", "heading"].includes(b.type)
-                          ? (path) => {
-                              patch(
-                                content.map((v, j) =>
-                                  j === n ? appendField(v, path) : v,
-                                ),
-                              );
-                              setIndex(n);
-                              requestAnimationFrame(() => {
-                                const host =
-                                  document.querySelector(".studio-inspector") ??
-                                  document.querySelector(
-                                    "[aria-labelledby].foundation-sheet[open]",
-                                  );
-                                const text =
-                                  host?.querySelector<HTMLElement>(".tiptap");
-                                if (text) {
-                                  text.focus();
-                                  const range = document.createRange();
-                                  range.selectNodeContents(text);
-                                  range.collapse(false);
-                                  getSelection()?.removeAllRanges();
-                                  getSelection()?.addRange(range);
-                                  document.dispatchEvent(
-                                    new Event("selectionchange"),
-                                  );
-                                } else {
-                                  const input = host?.querySelector<
-                                    HTMLInputElement | HTMLTextAreaElement
-                                  >("input,textarea");
-                                  input?.focus();
-                                  input?.setSelectionRange(
-                                    input.value.length,
-                                    input.value.length,
-                                  );
-                                }
-                              });
-                            }
-                          : undefined
-                      }
-                      ai={!!b.ai_review && !b.ai_review.reviewed}
-                      onReviewed={() =>
-                        patch(
-                          content.map((v, j) =>
-                            j === n
-                              ? {
-                                  ...v,
-                                  ai_review: {
-                                    source: v.ai_review?.source ?? "assistant",
-                                    reviewed: true,
-                                  },
-                                }
-                              : v,
-                          ),
-                        )
-                      }
-                      tools={
-                        <>
-                          <BlockAction
-                            aria-label="Block settings"
-                            onClick={() => {
-                              setClauseIndex(0);
-                              setIndex(n);
-                            }}
-                          >
-                            Block settings
-                          </BlockAction>
-                          {mode === "templates" && (
-                            <>
-                              <BlockAction
-                                aria-label={`Move block ${n + 1} up`}
-                                disabled={n === 0}
-                                onClick={() => {
-                                  const next = [...content];
-                                  [next[n - 1], next[n]] = [
-                                    next[n],
-                                    next[n - 1],
-                                  ];
-                                  patch(next);
-                                  setIndex(null);
-                                }}
-                              >
-                                Move up
-                              </BlockAction>
-                              <BlockAction
-                                aria-label={`Move block ${n + 1} down`}
-                                disabled={n === content.length - 1}
-                                onClick={() => {
-                                  const next = [...content];
-                                  [next[n + 1], next[n]] = [
-                                    next[n],
-                                    next[n + 1],
-                                  ];
-                                  patch(next);
-                                  setIndex(null);
-                                }}
-                              >
-                                Move down
-                              </BlockAction>
-                              {!["pricing_table", "signature_block"].includes(
-                                b.type,
-                              ) && (
-                                <BlockAction
-                                  aria-label="Duplicate block"
-                                  onClick={() => {
-                                    const next = [...currentContent.current];
-                                    next.splice(n + 1, 0, duplicateBlock(b));
-                                    patch(next);
-                                  }}
-                                >
-                                  Duplicate block
-                                </BlockAction>
-                              )}
-                              {blockFeedback.reuseButton(b)}
-                              <BlockAction
-                                aria-label="Delete block"
-                                onClick={() =>
-                                  blockFeedback.remove(
-                                    b,
-                                    () => {
-                                      patch(
-                                        currentContent.current.filter(
-                                          (v) => v !== b,
-                                        ),
-                                      );
-                                      setIndex(null);
-                                    },
-                                    () => {
-                                      const next = [...currentContent.current];
-                                      next.splice(
-                                        Math.min(n, next.length),
-                                        0,
-                                        b,
-                                      );
-                                      patch(next);
-                                    },
-                                  )
-                                }
-                              >
-                                Delete block
-                              </BlockAction>
-                            </>
-                          )}
-                        </>
-                      }
-                    >
-                      <button
-                        className="block-open"
-                        onClick={() =>
-                          selection.select(`template-${b.id ?? n}`)
-                        }
-                      >
-                        {["heading", "paragraph"].includes(b.type) ? (
-                          <div
-                            className="template-text-preview"
-                            dangerouslySetInnerHTML={{
-                              __html: templateTextPreview(b, map),
-                            }}
-                          />
-                        ) : (
-                          <strong>
-                            {b.type === "contract"
-                              ? b.text || "Statement of Work & Contract"
-                              : blockName(b)}
-                          </strong>
+                    {mode === "templates" && (
+                      <PagedPaper
+                        paper={templatePaper}
+                        layout={templatePreview.data?.layout}
+                        styles={templateStyles}
+                        approximate={templatePreview.approximate}
+                        contentKey={templatePreview.visualKey}
+                      />
+                    )}
+                    <div className="proposal-typography document-reading template-cover">
+                      <style>
+                        {fontCss(data.settings)}
+                        {styleFontFaces(
+                          resolveStyles(data.settings, draft?.style_overrides),
                         )}
-                        <small>{blockName(b)}</small>
-                      </button>
-                      {b.type === "contract" && (
-                        <Reorder
-                          ids={(b.clauses ?? []).map((c) => c.id)}
-                          onMove={(from, to) => {
-                            selection.clear();
-                            const clauses = [...b.clauses!];
-                            const [moved] = clauses.splice(
-                              clauses.findIndex((c) => c.id === from),
-                              1,
-                            );
-                            clauses.splice(
-                              b.clauses!.findIndex((c) => c.id === to),
-                              0,
-                              moved,
-                            );
+                        {documentStyleCss(
+                          resolveStyles(data.settings, draft?.style_overrides),
+                          data.settings?.accent_colour,
+                        )}
+                      </style>
+                      <DocumentCover
+                        title="Proposal title"
+                        workspace={data.settings?.company_name}
+                        logo={
+                          data.settings?.logo
+                            ? "/api/workspace-logo"
+                            : undefined
+                        }
+                        company="Client company"
+                        sender={
+                          data.settings?.owner ||
+                          data.settings?.company_name ||
+                          "Company"
+                        }
+                      />
+                    </div>
+                    {content.map((b, n) => (
+                      <Sortable
+                        block
+                        id={String(n)}
+                        label={`block ${n + 1}`}
+                        key={b.id ?? n}
+                      >
+                        <BlockFrame
+                          id={`template-${b.id ?? n}`}
+                          label={`Template block ${n + 1}`}
+                          className="studio-block-card"
+                          insert={
+                            mode === "templates"
+                              ? (edge, anchor) => {
+                                  setInsertAnchor(anchor);
+                                  setReplaceEmpty(false);
+                                  setInsertAt(n + (edge === "below" ? 1 : 0));
+                                }
+                              : undefined
+                          }
+                          onInsertField={
+                            ["paragraph", "heading"].includes(b.type)
+                              ? (path) => {
+                                  patch(
+                                    content.map((v, j) =>
+                                      j === n ? appendField(v, path) : v,
+                                    ),
+                                  );
+                                  setIndex(n);
+                                  requestAnimationFrame(() => {
+                                    const host =
+                                      document.querySelector(
+                                        ".studio-inspector",
+                                      ) ??
+                                      document.querySelector(
+                                        "[aria-labelledby].foundation-sheet[open]",
+                                      );
+                                    const text =
+                                      host?.querySelector<HTMLElement>(
+                                        ".tiptap",
+                                      );
+                                    if (text) {
+                                      text.focus();
+                                      const range = document.createRange();
+                                      range.selectNodeContents(text);
+                                      range.collapse(false);
+                                      getSelection()?.removeAllRanges();
+                                      getSelection()?.addRange(range);
+                                      document.dispatchEvent(
+                                        new Event("selectionchange"),
+                                      );
+                                    } else {
+                                      const input = host?.querySelector<
+                                        HTMLInputElement | HTMLTextAreaElement
+                                      >("input,textarea");
+                                      input?.focus();
+                                      input?.setSelectionRange(
+                                        input.value.length,
+                                        input.value.length,
+                                      );
+                                    }
+                                  });
+                                }
+                              : undefined
+                          }
+                          ai={!!b.ai_review && !b.ai_review.reviewed}
+                          onReviewed={() =>
                             patch(
                               content.map((v, j) =>
-                                j === n ? { ...b, clauses } : v,
+                                j === n
+                                  ? {
+                                      ...v,
+                                      ai_review: {
+                                        source:
+                                          v.ai_review?.source ?? "assistant",
+                                        reviewed: true,
+                                      },
+                                    }
+                                  : v,
                               ),
-                            );
-                            setIndex(null);
-                          }}
-                        >
-                          <div className="contract-clause-list">
-                            {b.clauses?.map((c, k) => (
-                              <Sortable
-                                block
-                                id={c.id}
-                                label={`clause ${k + 1}`}
-                                key={c.id}
+                            )
+                          }
+                          tools={
+                            <>
+                              <BlockAction
+                                aria-label="Block settings"
+                                onClick={() => {
+                                  setClauseIndex(0);
+                                  setIndex(n);
+                                }}
                               >
-                                <BlockFrame
-                                  id={`template-clause-${c.id}`}
-                                  label={`Template clause ${k + 1}`}
-                                  className="studio-clause-frame"
-                                  tools={
-                                    <>
-                                      <BlockAction
-                                        aria-label="Clause settings"
-                                        onClick={() => {
-                                          setClauseIndex(k);
-                                          setIndex(n);
-                                        }}
-                                      >
-                                        Clause settings
-                                      </BlockAction>
-                                      <BlockAction
-                                        aria-label="Move clause up"
-                                        disabled={k === 0}
-                                        onClick={() => {
-                                          const clauses = [...b.clauses!];
-                                          [clauses[k - 1], clauses[k]] = [
-                                            clauses[k],
-                                            clauses[k - 1],
-                                          ];
-                                          patch(
-                                            content.map((v, j) =>
-                                              j === n ? { ...b, clauses } : v,
-                                            ),
-                                          );
-                                          setIndex(null);
-                                        }}
-                                      >
-                                        Move clause up
-                                      </BlockAction>
-                                      <BlockAction
-                                        aria-label="Move clause down"
-                                        disabled={k === b.clauses!.length - 1}
-                                        onClick={() => {
-                                          const clauses = [...b.clauses!];
-                                          [clauses[k + 1], clauses[k]] = [
-                                            clauses[k],
-                                            clauses[k + 1],
-                                          ];
-                                          patch(
-                                            content.map((v, j) =>
-                                              j === n ? { ...b, clauses } : v,
-                                            ),
-                                          );
-                                          setIndex(null);
-                                        }}
-                                      >
-                                        Move clause down
-                                      </BlockAction>
-                                      {blockFeedback.reuseButton({
-                                        id: c.id,
-                                        type: "contract",
-                                        text: c.heading,
-                                        clauses: [c],
-                                      })}
-                                      <BlockAction
-                                        aria-label="Delete clause"
-                                        onClick={() =>
-                                          blockFeedback.remove(
-                                            { type: "contract" },
-                                            () => {
-                                              patch(
-                                                currentContent.current.map(
-                                                  (v) =>
-                                                    v === b
-                                                      ? {
-                                                          ...b,
-                                                          clauses:
-                                                            b.clauses!.filter(
-                                                              (v) =>
-                                                                v.id !== c.id,
-                                                            ),
-                                                        }
-                                                      : v,
-                                                ),
-                                              );
-                                              setIndex(null);
-                                            },
-                                            () => {
-                                              patch(
-                                                currentContent.current.map(
-                                                  (v) => {
-                                                    if (v.id !== b.id) return v;
-                                                    const clauses = [
-                                                      ...(v.clauses ?? []),
-                                                    ];
-                                                    clauses.splice(
-                                                      Math.min(
-                                                        k,
-                                                        clauses.length,
-                                                      ),
-                                                      0,
-                                                      c,
-                                                    );
-                                                    return { ...v, clauses };
-                                                  },
-                                                ),
-                                              );
-                                            },
-                                          )
-                                        }
-                                      >
-                                        Delete clause
-                                      </BlockAction>
-                                    </>
-                                  }
-                                >
-                                  <button
-                                    className="clause-open"
+                                Block settings
+                              </BlockAction>
+                              {mode === "templates" && (
+                                <>
+                                  <BlockAction
+                                    aria-label={`Move block ${n + 1} up`}
+                                    disabled={n === 0}
+                                    onClick={() => {
+                                      const next = [...content];
+                                      [next[n - 1], next[n]] = [
+                                        next[n],
+                                        next[n - 1],
+                                      ];
+                                      patch(next);
+                                      setIndex(null);
+                                    }}
+                                  >
+                                    Move up
+                                  </BlockAction>
+                                  <BlockAction
+                                    aria-label={`Move block ${n + 1} down`}
+                                    disabled={n === content.length - 1}
+                                    onClick={() => {
+                                      const next = [...content];
+                                      [next[n + 1], next[n]] = [
+                                        next[n],
+                                        next[n + 1],
+                                      ];
+                                      patch(next);
+                                      setIndex(null);
+                                    }}
+                                  >
+                                    Move down
+                                  </BlockAction>
+                                  {![
+                                    "pricing_table",
+                                    "signature_block",
+                                  ].includes(b.type) && (
+                                    <BlockAction
+                                      aria-label="Duplicate block"
+                                      onClick={() => {
+                                        const next = [
+                                          ...currentContent.current,
+                                        ];
+                                        next.splice(
+                                          n + 1,
+                                          0,
+                                          duplicateBlock(b),
+                                        );
+                                        patch(next);
+                                      }}
+                                    >
+                                      Duplicate block
+                                    </BlockAction>
+                                  )}
+                                  {blockFeedback.reuseButton(b)}
+                                  <BlockAction
+                                    aria-label="Delete block"
                                     onClick={() =>
-                                      selection.select(
-                                        `template-clause-${c.id}`,
+                                      blockFeedback.remove(
+                                        b,
+                                        () => {
+                                          patch(
+                                            currentContent.current.filter(
+                                              (v) => v !== b,
+                                            ),
+                                          );
+                                          setIndex(null);
+                                        },
+                                        () => {
+                                          const next = [
+                                            ...currentContent.current,
+                                          ];
+                                          next.splice(
+                                            Math.min(n, next.length),
+                                            0,
+                                            b,
+                                          );
+                                          patch(next);
+                                        },
                                       )
                                     }
                                   >
-                                    <strong>{c.heading}</strong>
-                                    {c.show_when && (
-                                      <small>
-                                        Shown when ·{" "}
-                                        {data.catalog.find(
-                                          (i) =>
-                                            i.id ===
-                                            c.show_when?.pricing_item_id,
-                                        )?.name ?? "Unavailable item"}{" "}
-                                        selected
-                                      </small>
-                                    )}
-                                    <p>{c.body}</p>
-                                  </button>
-                                </BlockFrame>
-                              </Sortable>
-                            ))}
+                                    Delete block
+                                  </BlockAction>
+                                </>
+                              )}
+                            </>
+                          }
+                        >
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            className="block-open"
+                            onClick={() =>
+                              selection.select(`template-${b.id ?? n}`)
+                            }
+                          >
+                            {b.type === "paragraph" ? (
+                              <FieldEditor
+                                map={map}
+                                showNames={false}
+                                value={
+                                  b.content ?? {
+                                    type: "doc",
+                                    content: [
+                                      {
+                                        type: "paragraph",
+                                        content: b.text
+                                          ? [{ type: "text", text: b.text }]
+                                          : [],
+                                      },
+                                    ],
+                                  }
+                                }
+                                onChange={(value) =>
+                                  patch(
+                                    content.map((v, j) =>
+                                      j === n
+                                        ? {
+                                            ...b,
+                                            content: value,
+                                            text: undefined,
+                                          }
+                                        : v,
+                                    ),
+                                  )
+                                }
+                                onTextStyle={(level, text) =>
+                                  patch(
+                                    content.map((v, j) =>
+                                      j === n
+                                        ? convertTextStyle(b, level, text)
+                                        : v,
+                                    ),
+                                  )
+                                }
+                                onSlash={(anchor) => {
+                                  setInsertAnchor(anchor ?? null);
+                                  setReplaceEmpty(true);
+                                  setInsertAt(n);
+                                }}
+                              />
+                            ) : b.type === "image" ? (
+                              <img src={b.src} alt={b.alt ?? ""} />
+                            ) : b.type === "signature_block" ? (
+                              <section className="print-signature">
+                                <h3>
+                                  {b.role === "client" ? "Client" : "Company"}{" "}
+                                  signature
+                                </h3>
+                                <strong>
+                                  {b.role === "client"
+                                    ? "Client"
+                                    : (data.settings?.company_signatory?.name ??
+                                      data.settings?.owner)}
+                                </strong>
+                                {b.role === "company" && (
+                                  <p>
+                                    {data.settings?.company_signatory?.title}
+                                  </p>
+                                )}
+                                <p>Awaiting signature</p>
+                              </section>
+                            ) : b.type === "contract" ? (
+                              <h2>
+                                {b.text || "Statement of Work & Contract"}
+                              </h2>
+                            ) : b.type === "pricing_table" ? (
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: documentQuote(
+                                    templatePreview.quote,
+                                    data.settings?.currency ?? "USD",
+                                    data.settings?.money?.cents,
+                                  ),
+                                }}
+                              />
+                            ) : ["heading", "paragraph"].includes(b.type) ? (
+                              <div
+                                className="template-text-preview"
+                                dangerouslySetInnerHTML={{
+                                  __html: templateTextPreview(b, map),
+                                }}
+                              />
+                            ) : (
+                              <strong>{blockName(b)}</strong>
+                            )}
+                            <small>{blockName(b)}</small>
                           </div>
-                        </Reorder>
-                      )}
-                    </BlockFrame>
-                  </Sortable>
-                ))}
+                          {b.type === "contract" && (
+                            <Reorder
+                              ids={(b.clauses ?? []).map((c) => c.id)}
+                              onMove={(from, to) => {
+                                selection.clear();
+                                const clauses = [...b.clauses!];
+                                const [moved] = clauses.splice(
+                                  clauses.findIndex((c) => c.id === from),
+                                  1,
+                                );
+                                clauses.splice(
+                                  b.clauses!.findIndex((c) => c.id === to),
+                                  0,
+                                  moved,
+                                );
+                                patch(
+                                  content.map((v, j) =>
+                                    j === n ? { ...b, clauses } : v,
+                                  ),
+                                );
+                                setIndex(null);
+                              }}
+                            >
+                              <div className="contract-clause-list">
+                                {b.clauses?.map((c, k) => (
+                                  <Sortable
+                                    block
+                                    id={c.id}
+                                    label={`clause ${k + 1}`}
+                                    key={c.id}
+                                  >
+                                    <BlockFrame
+                                      id={`template-clause-${c.id}`}
+                                      label={`Template clause ${k + 1}`}
+                                      className="studio-clause-frame"
+                                      tools={
+                                        <>
+                                          <BlockAction
+                                            aria-label="Clause settings"
+                                            onClick={() => {
+                                              setClauseIndex(k);
+                                              setIndex(n);
+                                            }}
+                                          >
+                                            Clause settings
+                                          </BlockAction>
+                                          <BlockAction
+                                            aria-label="Move clause up"
+                                            disabled={k === 0}
+                                            onClick={() => {
+                                              const clauses = [...b.clauses!];
+                                              [clauses[k - 1], clauses[k]] = [
+                                                clauses[k],
+                                                clauses[k - 1],
+                                              ];
+                                              patch(
+                                                content.map((v, j) =>
+                                                  j === n
+                                                    ? { ...b, clauses }
+                                                    : v,
+                                                ),
+                                              );
+                                              setIndex(null);
+                                            }}
+                                          >
+                                            Move clause up
+                                          </BlockAction>
+                                          <BlockAction
+                                            aria-label="Move clause down"
+                                            disabled={
+                                              k === b.clauses!.length - 1
+                                            }
+                                            onClick={() => {
+                                              const clauses = [...b.clauses!];
+                                              [clauses[k + 1], clauses[k]] = [
+                                                clauses[k],
+                                                clauses[k + 1],
+                                              ];
+                                              patch(
+                                                content.map((v, j) =>
+                                                  j === n
+                                                    ? { ...b, clauses }
+                                                    : v,
+                                                ),
+                                              );
+                                              setIndex(null);
+                                            }}
+                                          >
+                                            Move clause down
+                                          </BlockAction>
+                                          {blockFeedback.reuseButton({
+                                            id: c.id,
+                                            type: "contract",
+                                            text: c.heading,
+                                            clauses: [c],
+                                          })}
+                                          <BlockAction
+                                            aria-label="Delete clause"
+                                            onClick={() =>
+                                              blockFeedback.remove(
+                                                { type: "contract" },
+                                                () => {
+                                                  patch(
+                                                    currentContent.current.map(
+                                                      (v) =>
+                                                        v === b
+                                                          ? {
+                                                              ...b,
+                                                              clauses:
+                                                                b.clauses!.filter(
+                                                                  (v) =>
+                                                                    v.id !==
+                                                                    c.id,
+                                                                ),
+                                                            }
+                                                          : v,
+                                                    ),
+                                                  );
+                                                  setIndex(null);
+                                                },
+                                                () => {
+                                                  patch(
+                                                    currentContent.current.map(
+                                                      (v) => {
+                                                        if (v.id !== b.id)
+                                                          return v;
+                                                        const clauses = [
+                                                          ...(v.clauses ?? []),
+                                                        ];
+                                                        clauses.splice(
+                                                          Math.min(
+                                                            k,
+                                                            clauses.length,
+                                                          ),
+                                                          0,
+                                                          c,
+                                                        );
+                                                        return {
+                                                          ...v,
+                                                          clauses,
+                                                        };
+                                                      },
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                            }
+                                          >
+                                            Delete clause
+                                          </BlockAction>
+                                        </>
+                                      }
+                                    >
+                                      <button
+                                        className="clause-open"
+                                        onClick={() =>
+                                          selection.select(
+                                            `template-clause-${c.id}`,
+                                          )
+                                        }
+                                      >
+                                        <h3>{c.heading}</h3>
+                                        {c.show_when && (
+                                          <small>
+                                            Shown when ·{" "}
+                                            {data.catalog.find(
+                                              (i) =>
+                                                i.id ===
+                                                c.show_when?.pricing_item_id,
+                                            )?.name ?? "Unavailable item"}{" "}
+                                            selected
+                                          </small>
+                                        )}
+                                        <SourceParagraph
+                                          text={c.body.replace(
+                                            /{{\s*([\w.-]+)\s*}}/g,
+                                            (_, key) => map[key] ?? key,
+                                          )}
+                                        />
+                                      </button>
+                                    </BlockFrame>
+                                  </Sortable>
+                                ))}
+                              </div>
+                            </Reorder>
+                          )}
+                        </BlockFrame>
+                      </Sortable>
+                    ))}
+                  </div>
+                </Reorder>
               </div>
-            </Reorder>
+            </div>
             {mode === "templates" && (
               <>
                 <section className="studio-section">
@@ -1855,15 +2119,63 @@ function TemplatesStudioContent({
           </Empty>
         )}
       </main>
-      {!mobile && inspector && (
-        <aside className="studio-inspector stack block-owned-dialog">
-          {inspector}
-        </aside>
+      <aside
+        className={`studio-inspector stack ${templatePanels.right ? "block-owned-dialog" : "sidebar-rail"}`}
+      >
+        <button
+          className="sidebar-arrow"
+          aria-label={
+            templatePanels.right
+              ? "Collapse tools sidebar"
+              : "Expand tools sidebar"
+          }
+          title="Tools sidebar"
+          onClick={toggleTemplateRight}
+        >
+          {templatePanels.right ? "›" : "‹"}
+        </button>
+        {templatePanels.right ? (
+          <>
+            <Button onClick={() => setIndex(null)}>Styles</Button>
+            {templateTools}
+          </>
+        ) : (
+          <>
+            <button
+              aria-label="Open Fields"
+              title="Fields"
+              onClick={() => setFields(true)}
+            >
+              <Icon name="code" />
+            </button>
+            <button
+              aria-label="Open Styles"
+              title="Styles"
+              onClick={() => {
+                if (templatePanels.canRight) templatePanels.toggle("right");
+                else setTemplateToolsOpen(true);
+              }}
+            >
+              <Icon name="heading" />
+            </button>
+          </>
+        )}
+      </aside>
+      {templateListOpen && (
+        <Sheet title="Pages" onClose={() => setTemplateListOpen(false)}>
+          {templateSidebar}
+        </Sheet>
       )}
-      {mobile && inspector && (
-        <Sheet title="Edit block" onClose={() => setIndex(null)}>
+      {!templatePanels.right && (inspector || templateToolsOpen) && (
+        <Sheet
+          title={inspector ? "Edit block" : "Template styles"}
+          onClose={() => {
+            setIndex(null);
+            setTemplateToolsOpen(false);
+          }}
+        >
           <DocumentFormattingBar />
-          {inspector}
+          {templateTools}
         </Sheet>
       )}
       {insertAt !== null && (

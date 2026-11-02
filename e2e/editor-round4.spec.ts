@@ -1,0 +1,620 @@
+import { test, expect, type Page } from "@playwright/test";
+import { setup, staff, signature, clientActor } from "../tests/helpers";
+import { authoringPreview } from "../src/lib/authoring-preview";
+import { templateDefaultQuote } from "../src/lib/template-quote";
+import { sealedPdf } from "../src/lib/pdf";
+import { previewProposal } from "../src/lib/preview";
+import { freezeStyles } from "../src/lib/proposal-styles";
+import { pdfPreview } from "../src/lib/pdf-preview";
+import type { Block } from "../src/lib/model";
+async function fixture(page: Page, long = false) {
+  const f = await setup();
+  const content: Block[] = [
+    {
+      id: crypto.randomUUID(),
+      type: "heading",
+      text: "First section",
+      level: 1,
+    },
+    {
+      id: crypto.randomUUID(),
+      type: "paragraph",
+      ai_review: long ? { source: "assistant", reviewed: false } : undefined,
+      text: long
+        ? "Long paragraph with a clear and useful plan. ".repeat(340)
+        : "A clear and useful plan.",
+    },
+    { id: crypto.randomUUID(), type: "page_break" },
+    {
+      id: crypto.randomUUID(),
+      type: "heading",
+      text: "Second section",
+      level: 1,
+    },
+    { id: crypto.randomUUID(), type: "paragraph", text: "Next steps." },
+    { id: crypto.randomUUID(), type: "pricing_table" },
+    { id: crypto.randomUUID(), type: "signature_block", role: "client" },
+  ];
+  const template = (await f.repo.entities<any>("templates"))[0];
+  template.content = structuredClone(content);
+  await f.repo.put("templates", template);
+  let active = await f.service.edit(
+    f.draft.id,
+    { revision: f.draft.revision, content },
+    staff,
+  );
+  const renders: Awaited<ReturnType<typeof pdfPreview>>[] = [];
+  await page.route("**/api/**", async (route) => {
+    const req = route.request(),
+      parts = new URL(req.url()).pathname.split("/").filter(Boolean).slice(1);
+    try {
+      let value: unknown = [];
+      if (parts[0] === "auth")
+        value = {
+          user: staff,
+          settings: f.settings,
+          staff: f.members,
+          app_url: "http://127.0.0.1:3100",
+          signatory_version: "fixture",
+        };
+      else if (parts[0] === "proposals") {
+        if (req.method() === "PATCH")
+          active = await f.service.edit(active.id, req.postDataJSON(), staff);
+        if (parts[2] === "review")
+          active = await f.service.reviewSections(
+            active.id,
+            req.postDataJSON(),
+            staff,
+          );
+        if (parts[2] === "preview-pdf") {
+          value = await pdfPreview(
+            f.repo,
+            {
+              get: async () => new Uint8Array(),
+              put: async () => {
+                throw new Error("No writes");
+              },
+            },
+            { ...active, ...req.postDataJSON() },
+            f.settings,
+          );
+          renders.push(value as any);
+        } else value = parts[1] ? active : { items: [active], total: 1 };
+      } else if (parts[0] === "document-preview") {
+        const p = authoringPreview(
+          req.postDataJSON(),
+          f.settings,
+          f.repo.workspaceId,
+        );
+        value = await pdfPreview(
+          f.repo,
+          {
+            get: async () => new Uint8Array(),
+            put: async () => {
+              throw new Error("No writes");
+            },
+          },
+          p,
+          f.settings,
+        );
+        renders.push(value as any);
+      } else value = await f.repo.entities(parts[0] as any);
+      await route.fulfill({ json: value });
+    } catch (e) {
+      await route.fulfill({ status: 400, json: { error: String(e) } });
+    }
+  });
+  return { ...f, content, active: () => active, renders };
+}
+test("real page sheets align server PDF line starts without changing stored text", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  const f = await fixture(page, true);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  expect(
+    Number(
+      await page
+        .locator(".editor-page-sheets")
+        .getAttribute("data-layout-max-error"),
+    ),
+  ).toBeLessThanOrEqual(1);
+  const layout = f.renders.at(-1)!.layout;
+  expect(layout.pages).toBeGreaterThan(3);
+  await expect(page.locator(".editor-page-sheet")).toHaveCount(layout.pages);
+  const source = await page.locator(".editor-page-sheet").evaluateAll((els) =>
+    els.map((el) => ({
+      top: (el as HTMLElement).offsetTop,
+      height: (el as HTMLElement).offsetHeight,
+    })),
+  );
+  for (let n = 0; n < source.length; n++)
+    expect(source[n]).toEqual({ top: n * 1080, height: 1056 });
+  const deltas = await page
+    .locator(".editor-paper")
+    .evaluate((root, sheets) => {
+      const top = root.getBoundingClientRect().top,
+        scale =
+          root.getBoundingClientRect().width /
+          (root as HTMLElement).offsetWidth;
+      return sheets!.flatMap((sheet, page) =>
+        sheet.fragments
+          .filter((f) => f.offset > 0 && !f.part && !f.unit)
+          .map((f) => {
+            const block = root.querySelector(
+              `[data-block-id="block-${f.block}"] .block-content`,
+            )!;
+            const walker = document.createTreeWalker(
+              block,
+              NodeFilter.SHOW_TEXT,
+              {
+                acceptNode: (n) =>
+                  n.parentElement?.closest(
+                    "[data-pagination-spacer],.block-tools",
+                  )
+                    ? NodeFilter.FILTER_REJECT
+                    : NodeFilter.FILTER_ACCEPT,
+              },
+            );
+            let node,
+              offset = f.offset;
+            while ((node = walker.nextNode())) {
+              const len = node.textContent?.length ?? 0;
+              if (offset < len) {
+                const r = document.createRange();
+                r.setStart(node, offset);
+                r.setEnd(node, offset + 1);
+                return {
+                  page: page + 1,
+                  offset: f.offset,
+                  actual: (r.getBoundingClientRect().top - top) / scale,
+                  expected: page * 1080 + 72 + f.y,
+                };
+              }
+              offset -= len;
+            }
+            throw new Error("Missing page anchor");
+          }),
+      );
+    }, layout.sheets);
+  for (const d of deltas)
+    expect(
+      Math.abs(d.actual - d.expected),
+      JSON.stringify(d),
+    ).toBeLessThanOrEqual(1);
+  expect(JSON.stringify(f.active().content)).toBe(JSON.stringify(f.content));
+});
+test("sidebar rails open every tab, remember collapse and support both shortcuts", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".quote-workspace")).toHaveAttribute(
+    "data-panels-ready",
+    "true",
+  );
+  await page
+    .getByRole("button", { name: "Collapse Pages sidebar", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+    .click();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Expand Pages sidebar", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Expand tools sidebar", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+Shift+Backslash");
+  await expect(
+    page.getByRole("button", { name: "Collapse Pages sidebar", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Control+Backslash");
+  await expect(
+    page.getByRole("button", { name: "Collapse tools sidebar", exact: true }),
+  ).toBeVisible();
+  for (const width of [1440, 1100, 768]) {
+    await page.setViewportSize({ width, height: 1000 });
+    if (width < 1328)
+      await expect(
+        page.getByRole("button", { name: "Expand tools sidebar", exact: true }),
+      ).toBeVisible();
+    for (const name of ["Quote", "Fields", "Styles", "Review & send"]) {
+      if (
+        await page
+          .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+          .isVisible()
+      )
+        await page
+          .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+          .click();
+      await page
+        .getByRole("button", { name: `Open ${name}`, exact: true })
+        .click();
+      await expect(
+        page.getByRole("tab", { name, exact: true }).filter({ visible: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      const dialog = page
+        .getByRole("dialog")
+        .filter({ has: page.getByRole("tablist", { name: "Proposal tools" }) });
+      if (await dialog.isVisible())
+        await dialog.getByRole("button", { name: "Done", exact: true }).click();
+    }
+  }
+});
+
+test("every popover pair replaces the previous surface; outside, Escape and insertion close it", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`),
+    text = block.locator(".tiptap"),
+    bar = page.getByRole("toolbar", {
+      name: "Document formatting",
+      exact: true,
+    });
+  const visible = page.locator(
+    '.toolbar-popover:popover-open,.block-popover:popover-open,select[aria-expanded="true"]',
+  );
+  const open = [
+    () => bar.getByRole("button", { name: "Link", exact: true }).click(),
+    () =>
+      bar.getByRole("button", { name: "Insert field", exact: true }).click(),
+    () =>
+      bar.getByRole("combobox", { name: "Text style", exact: true }).click(),
+    () =>
+      block
+        .getByRole("button", { name: "Add block below", exact: true })
+        .click(),
+  ];
+  for (let a = 0; a < open.length; a++)
+    for (let b = 0; b < open.length; b++)
+      if (a !== b) {
+        await page.keyboard.press("Escape");
+        await text.click();
+        await open[a]();
+        await expect(visible, `first ${a}`).toHaveCount(1);
+        await open[b]();
+        await expect(visible, `${a} -> ${b}`).toHaveCount(1);
+        await page.keyboard.press("Escape");
+        await expect(visible).toHaveCount(0);
+      }
+  await text.click();
+  await open[1]();
+  await page
+    .getByRole("button", { name: /Client first name.*client.first_name/ })
+    .filter({ visible: true })
+    .click();
+  await expect(visible).toHaveCount(0);
+  await open[0]();
+  await page.locator(".quote-editor-top").click({ position: { x: 5, y: 5 } });
+  await expect(visible).toHaveCount(0);
+});
+test("pricing moves as a whole when it fits; tall quotes split only at intact card/group boundaries; density and margins affect page count", async () => {
+  const f = await setup(),
+    base = previewProposal(f.draft, f.settings).versions[0],
+    quote = f.draft.quote.map((i, n) => ({
+      ...i,
+      description: "A clear scope and monthly care plan. ".repeat(3),
+      id: crypto.randomUUID(),
+    }));
+  const content: Block[] = [
+    {
+      id: "filler",
+      type: "paragraph",
+      text: "A clear and useful plan. ".repeat(135),
+    },
+    { id: "pricing", type: "pricing_table" },
+  ];
+  const render = async (q = quote, styles = freezeStyles()) =>
+    sealedPdf(
+      { ...base, content, quote: q, resolved_styles: styles },
+      [],
+      [],
+      "USD",
+      {
+        settings: f.settings,
+        document: { id: f.draft.id, title: f.draft.title },
+      },
+      { preview: true },
+    );
+  let fits = await render();
+  let straddles = false;
+  for (let length = 40; length <= 120; length += 5) {
+    content[0].text = "A clear and useful plan. ".repeat(length);
+    fits = await render();
+    const at = fits.layout.sheets!.findIndex((s) =>
+      s.fragments.some((f) => f.block === "pricing"),
+    );
+    if (at < 1) continue;
+    const previous = fits.layout.sheets![at - 1],
+      pricing = fits.layout.sheets![at].fragments.filter(
+        (f) => f.block === "pricing",
+      );
+    const free =
+      912 -
+      Math.max(...previous.fragments.map((f) => f.bottom ?? f.y + f.height));
+    const table = pricing.find((f) => !f.unit)!,
+      card = pricing.find((f) => !!f.unit)!;
+    if (table && card && free > card.height + 80 && free < table.height - 10) {
+      straddles = true;
+      break;
+    }
+  }
+  expect(
+    straddles,
+    "fixture leaves room for one card, but not the complete table",
+  ).toBe(true);
+  expect(fits.layout.pricing_pages).toBe(1);
+  expect(
+    fits.layout.sheets!.findIndex((s) =>
+      s.fragments.some((a) => a.block === "pricing"),
+    ),
+  ).toBeGreaterThan(0);
+  const choiceId = crypto.randomUUID();
+  const many = Array.from({ length: 14 }, (_, n) => ({
+    ...quote[0],
+    id: crypto.randomUUID(),
+    order: n,
+    choice_group_id: n < 2 ? choiceId : null,
+    optional: n < 2,
+    default_selected: n === 0 || n >= 2,
+    selected: n === 0 || n >= 2,
+  }));
+  const tall = await render(many);
+  expect(tall.layout.pricing_pages).toBeGreaterThan(1);
+  for (const unit of [many[0].id, ...many.slice(2).map((i) => i.id)])
+    expect(
+      tall.layout.sheets!.filter((s) =>
+        s.fragments.some((f) => f.unit === unit),
+      ),
+    ).toHaveLength(1);
+  const long = {
+    ...base,
+    content: [
+      {
+        id: "long",
+        type: "paragraph" as const,
+        text: "Clear scope, thoughtful work, and useful results. ".repeat(500),
+      },
+    ],
+  };
+  const pages = [];
+  for (const override of [
+    { density: "standard" },
+    { density: "comfortable" },
+    {
+      density: "comfortable",
+      margins: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5 },
+    },
+  ] as const) {
+    const result = await sealedPdf(
+      {
+        ...long,
+        resolved_styles: freezeStyles(undefined, undefined, override),
+      },
+      [],
+      [],
+      "USD",
+      { settings: f.settings },
+      { preview: true },
+    );
+    pages.push(result.layout.pages);
+  }
+  expect(pages[1]).toBeGreaterThan(pages[0]);
+  expect(pages[2]).toBeGreaterThan(pages[1]);
+});
+test("page add/delete and undo use normal authoring history; templates use the same sheets and Pages sidebar", async ({
+  page,
+}) => {
+  const f = await fixture(page, true);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const before = JSON.stringify(f.active().content);
+  await page.getByRole("button", { name: "+ Add page", exact: true }).click();
+  await expect
+    .poll(
+      () => f.active().content.filter((b) => b.type === "page_break").length,
+    )
+    .toBe(2);
+  const added = f.active().content.at(-1)!;
+  await expect(
+    page.locator(`[data-block-id="block-${added.id}"] textarea`),
+  ).toBeFocused();
+  const bar = page.getByRole("toolbar", {
+    name: "Document formatting",
+    exact: true,
+  });
+  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
+  await bar.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect
+    .poll(
+      () => f.active().content.filter((b) => b.type === "page_break").length,
+    )
+    .toBe(2);
+  page.once("dialog", (d) => d.accept());
+  await page
+    .getByRole("button", { name: "Delete page 3", exact: true })
+    .click();
+  await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
+  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect
+    .poll(
+      () => f.active().content.filter((b) => b.type === "page_break").length,
+    )
+    .toBe(2);
+  await page.goto("/studio/templates");
+  await expect(
+    page.getByRole("navigation", { name: "Pages", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".template-paged-paper .editor-page-sheets"),
+  ).toHaveAttribute("data-layout-settled", "true");
+  expect(
+    Number(
+      await page
+        .locator(".template-paged-paper .editor-page-sheets")
+        .getAttribute("data-layout-max-error"),
+    ),
+    (await page
+      .locator(".template-paged-paper")
+      .getAttribute("data-layout-errors")) ?? "template layout",
+  ).toBeLessThanOrEqual(1);
+  const layout = f.renders.at(-1)!.layout;
+  await expect(
+    page.locator(".template-paged-paper .editor-page-sheet"),
+  ).toHaveCount(layout.pages);
+  expect(layout.pages).toBeGreaterThan(3);
+});
+
+test("whole pages and sections move through normal undo without moving the following explicit page", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const before = JSON.stringify(f.active().content),
+    second = f.content[3].id!;
+  const pageHandle = page.getByRole("button", {
+    name: "Drag page 2",
+    exact: true,
+  });
+  await pageHandle.focus();
+  await pageHandle.press("Space");
+  await expect(pageHandle).toHaveAttribute("aria-pressed", "true");
+  await page.evaluate(
+    () =>
+      new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r())),
+      ),
+  );
+  await page.keyboard.press("ArrowUp");
+  await expect(
+    page
+      .locator('[id^="DndLiveRegion"]')
+      .filter({ hasText: `over droppable area section:${f.content[0].id}.` }),
+  ).toHaveCount(1);
+  await page.keyboard.press("Space");
+  await expect.poll(() => f.active().content[0]?.id).toBe(second);
+  const bar = page.getByRole("toolbar", {
+    name: "Document formatting",
+    exact: true,
+  });
+  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
+  const section = page.getByRole("button", {
+    name: "Drag section First section",
+    exact: true,
+  });
+  await section.focus();
+  await section.press("Space");
+  await expect(section).toHaveAttribute("aria-pressed", "true");
+  await page.evaluate(
+    () =>
+      new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r())),
+      ),
+  );
+  await page.keyboard.press("ArrowDown");
+  await expect(
+    page
+      .locator('[id^="DndLiveRegion"]')
+      .filter({ hasText: `over droppable area page:${f.content[2].id}.` }),
+  ).toHaveCount(1);
+  await page.keyboard.press("Space");
+  await expect.poll(() => f.active().content[0]?.type).toBe("page_break");
+  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
+});
+test("real signatures retain their authored page positions in new PDFs", async () => {
+  const f = await setup(),
+    client = crypto.randomUUID(),
+    after = crypto.randomUUID();
+  const p = await f.service.edit(
+    f.draft.id,
+    {
+      revision: f.draft.revision,
+      content: [
+        { id: client, type: "signature_block", role: "client" },
+        { id: crypto.randomUUID(), type: "page_break" },
+        { id: after, type: "paragraph", text: "After the client signature." },
+        { id: crypto.randomUUID(), type: "signature_block", role: "company" },
+      ],
+    },
+    staff,
+  );
+  const sent = await f.service.send(p.id, staff),
+    signed = await f.service.sign(
+      p.id,
+      signature(sent.revision),
+      "client",
+      clientActor,
+      { token: sent.token!, password: "" },
+    );
+  const version = signed.versions.at(-1)!,
+    before = JSON.stringify(version);
+  const result = await sealedPdf(
+    version,
+    signed.signers,
+    signed.events,
+    "USD",
+    {
+      settings: signed.workspace_settings,
+      document: { id: p.id, title: p.title },
+    },
+  );
+  const at = (id: string) =>
+    result.layout.sheets!.findIndex((s) =>
+      s.fragments.some((f) => f.block === id),
+    );
+  expect(at(client)).toBe(0);
+  expect(at(after)).toBeGreaterThan(at(client));
+  expect(JSON.stringify(version)).toBe(before);
+});
+
+test("review-only changes retain page geometry and page decorations never enter saved content", async ({
+  page,
+}) => {
+  const f = await fixture(page, true);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  const frame = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
+  await frame.locator(".tiptap").click();
+  const boxes = () =>
+    page.locator(".draft-block").evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          id: el.getAttribute("data-block-id"),
+          top: r.top + scrollY,
+          height: r.height,
+        };
+      }),
+    );
+  const before = await boxes();
+  await frame
+    .getByRole("button", { name: "Mark reviewed", exact: true })
+    .click();
+  await expect.poll(() => f.active().content[1].ai_review?.reviewed).toBe(true);
+  expect(await boxes()).toEqual(before);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-approximate",
+    "false",
+  );
+  expect(JSON.stringify(f.active().content)).not.toContain("paginationSpacer");
+  expect(JSON.stringify(f.active().content)).not.toContain("pdf-source-spacer");
+});

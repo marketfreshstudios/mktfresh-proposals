@@ -434,7 +434,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       );
       if (width < 1100)
         await page
-          .getByRole("button", { name: "Quote & totals", exact: true })
+          .getByRole("button", { name: "Open Quote", exact: true })
           .click();
       await page
         .getByRole("tab", { name: "Review & send", exact: true })

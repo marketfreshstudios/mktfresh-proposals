@@ -404,6 +404,15 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     .getByRole("status")
     .filter({ hasText: "Block deleted" });
   await expect(oldToast).toBeVisible();
+  if (
+    !(await page
+      .locator(".template-link")
+      .filter({ hasText: "Other document" })
+      .isVisible())
+  )
+    await page
+      .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+      .click();
   await page
     .locator(".template-link")
     .filter({ hasText: "Other document" })

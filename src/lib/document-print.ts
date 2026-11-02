@@ -23,6 +23,7 @@ export function printContent(input: {
   currency: string;
   cents?: "auto" | "always";
   signatures?: string;
+  signatureBlocks?: Partial<Record<"client" | "company", string>>;
   logo?: string;
   workspace?: string;
   signatory?: { name: string; title: string } | null;
@@ -33,7 +34,7 @@ export function printContent(input: {
     // Presentation only: older frozen content remains byte-for-byte unchanged.
     if (
       (n === 0 && b.type === "heading" && b.text === "{{proposal.title}}") ||
-      (b.type === "signature_block" && input.signatures)
+      (b.type === "signature_block" && input.signatures && !input.currentLayout)
     )
       return "";
     const body =
@@ -41,18 +42,22 @@ export function printContent(input: {
         ? ""
         : b.type === "pricing_table" && input.currentLayout
           ? documentQuote(input.quote, input.currency, input.cents)
-          : b.type === "signature_block"
-            ? `<section class="print-signature"><h3>${b.role === "client" ? "Client" : "Company"} signature</h3><strong>${escape(b.role === "client" ? (input.variables["client.full_name"] ?? "Client") : (input.signatory?.name ?? input.variables["company.owner"] ?? input.company))}</strong>${b.role === "company" && input.signatory?.title ? `<p>${escape(input.signatory.title)}</p>` : ""}<p>Awaiting signature</p></section>`
-            : renderBlocks(
-                [b],
-                input.quote,
-                input.variables,
-                input.currency,
-                input.cents,
-              );
+          : b.type === "signature_block" &&
+              input.currentLayout &&
+              input.signatureBlocks?.[b.role!]
+            ? input.signatureBlocks[b.role!]!
+            : b.type === "signature_block"
+              ? `<section class="print-signature"><h3>${b.role === "client" ? "Client" : "Company"} signature</h3><strong>${escape(b.role === "client" ? (input.variables["client.full_name"] ?? "Client") : (input.signatory?.name ?? input.variables["company.owner"] ?? input.company))}</strong>${b.role === "company" && input.signatory?.title ? `<p>${escape(input.signatory.title)}</p>` : ""}<p>Awaiting signature</p></section>`
+              : renderBlocks(
+                  [b],
+                  input.quote,
+                  input.variables,
+                  input.currency,
+                  input.cents,
+                );
     return `<section class="print-source" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
   });
-  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${blocks.join("")}${input.signatures ?? ""}</main>`;
+  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${blocks.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
 }
 export type PageFragment = {
   block: string;
@@ -80,6 +85,60 @@ export type PageBoundary = {
   part_offset?: number;
   start_text?: string;
 };
+/** Runs in the same script-free Chromium page as pagination. No captured server state. */
+export function collectPrintSheets(sheets: HTMLElement[]) {
+  return sheets.map((sheet) => {
+    const top = sheet.getBoundingClientRect().top;
+    const lineTop = (el: HTMLElement) => {
+      const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walk.nextNode()))
+        if (node.textContent?.trim()) {
+          const range = document.createRange();
+          range.setStart(node, 0);
+          range.setEnd(node, Math.min(1, node.textContent.length));
+          return range.getBoundingClientRect().top;
+        }
+      return el.getBoundingClientRect().top;
+    };
+    return {
+      html: sheet.innerHTML,
+      fragments: Array.from(
+        sheet.querySelectorAll<HTMLElement>(".print-atom"),
+      ).flatMap((atom) => {
+        const common = {
+          block: atom.dataset.sourceBlock!,
+          offset: Number(atom.dataset.sourceOffset),
+          ...(atom.dataset.sourcePart
+            ? {
+                part: atom.dataset.sourcePart,
+                part_offset: Number(atom.dataset.sourcePartOffset),
+              }
+            : {}),
+          ...(atom.dataset.sourceUnit ? { unit: atom.dataset.sourceUnit } : {}),
+        };
+        const targets = atom.querySelectorAll<HTMLElement>("[data-print-unit]");
+        return [
+          {
+            ...common,
+            y: lineTop(atom) - top,
+            height: atom.getBoundingClientRect().height,
+            bottom: atom.getBoundingClientRect().bottom - top,
+          },
+          ...Array.from(targets)
+            .filter((el) => el !== atom.firstElementChild)
+            .map((el) => ({
+              ...common,
+              unit: el.dataset.printUnit,
+              y: lineTop(el) - top,
+              height: el.getBoundingClientRect().height,
+              bottom: el.getBoundingClientRect().bottom - top,
+            })),
+        ];
+      }),
+    };
+  });
+}
 /** Runs in Chromium for both the sealing job and the read-only preview/layout endpoint.
  * Splits oversize text with DOM Ranges, preserving markup. Content is never evaluated.
  */

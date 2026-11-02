@@ -55,18 +55,20 @@ export function useEditorPanels(
     setHeight(el.offsetHeight);
     return () => observer.disconnect();
   }, [paper]);
-  const canRight = width >= 816 + 32 + 344,
+  const canRight = width >= 44 + 816 + 48 + 420,
     right = preferences.right && canRight && !phone;
-  const canLeft = width >= 816 + 32 + 208 + (right ? 344 : 0),
+  const canLeft = width >= 240 + 816 + 48 + (right ? 420 : 44),
     left = preferences.left && canLeft && !phone;
+  const rightWidth = right
+    ? Math.min(600, Math.max(420, width - (left ? 240 : 44) - 816 - 48))
+    : 44;
+  const columns = `${left ? 240 : 44}px minmax(0,1fr) ${rightWidth}px`;
   const printMode = !phone || fullDocument,
-    available = Math.max(
-      100,
-      width - (left ? 208 : 0) - (right ? 344 : 0) - 32,
-    ),
+    available = Math.max(100, width - (left ? 240 : 44) - rightWidth - 48),
     scale = printMode && fit ? Math.min(1, available / 816) : 1;
   return {
     container,
+    columns,
     ready: hydrated && width > 0,
     phone,
     printMode,

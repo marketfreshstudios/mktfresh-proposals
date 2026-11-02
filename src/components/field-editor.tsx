@@ -1,4 +1,5 @@
 "use client";
+import { pageSpacers, pageSpacerKey } from "./page-spacers";
 import { createPortal } from "react-dom";
 import { FormattingControls } from "./formatting-controls";
 import { ToolbarPopover } from "./toolbar-popover";
@@ -90,7 +91,8 @@ export function FieldEditor({
   const [linkPicker, setLinkPicker] = useState(false),
     [href, setHref] = useState(""),
     [linkError, setLinkError] = useState("");
-  const [picker, setPicker] = useState(false);
+  const [picker, setPicker] = useState(false),
+    [popoverTrigger, setPopoverTrigger] = useState<HTMLElement | null>(null);
   const editor = useEditor({
     immediatelyRender: false,
     autofocus: autoFocus ? "end" : false,
@@ -100,6 +102,7 @@ export function FieldEditor({
         : {},
     },
     extensions: [
+      pageSpacers(() => values.current),
       StarterKit.configure({
         undoRedo: history && !standalone ? false : undefined,
         heading: false,
@@ -243,6 +246,21 @@ export function FieldEditor({
   useEffect(() => {
     for (const paint of painters.current) paint();
   }, [showNames, JSON.stringify(map), editor]);
+  useEffect(() => {
+    if (!editor || !root.current) return;
+    const el = root.current;
+    const receive = (e: Event) => {
+      if (editor.isDestroyed) return;
+      const spaces = (e as CustomEvent).detail;
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(pageSpacerKey, spaces)
+          .setMeta("addToHistory", false),
+      );
+    };
+    el.addEventListener("editor-source-spacers", receive);
+    return () => el.removeEventListener("editor-source-spacers", receive);
+  }, [editor]);
   const formatting = (
     <FormattingControls
       independent={standalone}
@@ -255,8 +273,14 @@ export function FieldEditor({
       }
       editor={editor}
       allowLinks={allowLinks}
-      onLink={() => setLinkPicker(!linkPicker)}
-      onField={() => setPicker(!picker)}
+      onLink={(trigger) => {
+        setPopoverTrigger(trigger);
+        setLinkPicker(!linkPicker);
+      }}
+      onField={(trigger) => {
+        setPopoverTrigger(trigger);
+        setPicker(!picker);
+      }}
     />
   );
   const controls = (
@@ -264,6 +288,7 @@ export function FieldEditor({
       {formatting}
       {linkPicker && (
         <ToolbarPopover
+          trigger={popoverTrigger}
           className="email-link-picker"
           close={() => setLinkPicker(false)}
         >
@@ -303,7 +328,11 @@ export function FieldEditor({
         </ToolbarPopover>
       )}
       {picker && (
-        <ToolbarPopover className="field-picker" close={() => setPicker(false)}>
+        <ToolbarPopover
+          trigger={popoverTrigger}
+          className="field-picker"
+          close={() => setPicker(false)}
+        >
           <FieldOptions
             variant="menu"
             map={map}

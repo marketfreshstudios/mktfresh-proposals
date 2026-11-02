@@ -71,7 +71,10 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
         .isVisible())
     )
       await page
-        .getByRole("button", { name: "Toggle right panel", exact: true })
+        .getByRole("button", {
+          name: /^(Expand|Collapse) tools sidebar$/,
+          exact: true,
+        })
         .click();
     await page.getByRole("tab", { name: "Fields", exact: true }).click();
     return page.locator(".field-options").filter({ visible: true });

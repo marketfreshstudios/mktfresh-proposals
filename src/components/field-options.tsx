@@ -1,4 +1,5 @@
 "use client";
+import { ToolbarPopover } from "./toolbar-popover";
 import {
   useRef,
   useState,
@@ -126,7 +127,11 @@ export function SubjectField({
         </Button>
       )}
       {open && (
-        <div className="subject-field-menu">
+        <ToolbarPopover
+          trigger={ref.current?.parentElement?.querySelector("button")}
+          className="subject-field-menu"
+          close={() => setOpen(false)}
+        >
           <FieldOptions
             map={map}
             variant="menu"
@@ -153,7 +158,7 @@ export function SubjectField({
               });
             }}
           />
-        </div>
+        </ToolbarPopover>
       )}
     </div>
   );

@@ -220,3 +220,9 @@ Use the pinned Text style selector or start an empty paragraph with `# `, `## ` 
 The editor uses fixed US Letter geometry (816 CSS px, 18 mm margins) with Fit / 100% zoom. Sections and the right tools panel can collapse; narrow windows use drawers instead of shrinking the internal page. Cmd+backslash / Ctrl+backslash toggles tools. Fields now lives beside Quote, Styles and Review & send; per-item Look up opens pricing references.
 
 Preview PDF opens the actual server-rendered document, watermarked “Preview — not signed”, with thumbnails/zoom/download. The same render supplies source block/line anchors for page markers. Updated layout is debounced; stale markers say approximate. The authenticated `GET/POST /api/proposals/:id/preview-pdf` operation is read-only (POST previews an ephemeral revision-checked draft overlay). It creates no persistent render, version, job or audit record. The normal sealing path still appends the completion certificate after signature.
+
+### Pages, density and margins
+
+Authoring has a Pages sidebar for explicit pages and their H1 sections. Use the per-page add control or Add page, and drag a page or section to reorder; deletion confirms and can be undone. Sidebar arrows remember their state, with Cmd/Ctrl+backslash for tools and Shift+Cmd/Ctrl+backslash for Pages. Collapsed tools rails open Quote, Fields, Styles or Review & send directly.
+
+Proposal styles now include Standard/Comfortable density and per-side margins in inches (default 0.75in). New sends freeze these with the existing styles; earlier frozen documents keep their prior metrics. The editor and templates show Letter sheets with PDF-derived page starts. Their spacers are display-only, and source content keeps its normal undo/autosave behaviour. A pricing table stays whole when it fits a page; larger ones split between cards and produce a measured readiness warning.

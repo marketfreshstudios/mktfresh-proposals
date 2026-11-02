@@ -1,3 +1,4 @@
+import { authoringPages } from "../src/lib/editor-pages";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import { freezeStyles } from "../src/lib/proposal-styles";
 import { test, expect } from "@playwright/test";
@@ -254,7 +255,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
             .locator(".editor-paper")
             .evaluate((el) => getComputedStyle(el).paddingLeft),
         ),
-      ).toBeCloseTo((18 * 96) / 25.4, 2);
+      ).toBeCloseTo(72, 2);
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`/proposals/${active.id}`);
@@ -277,19 +278,38 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       );
       await page.keyboard.press(key);
       await expect(
-        page
-          .locator('[id^="DndLiveRegion"]')
-          .filter({ hasText: `over droppable area ${target}.` }),
+        page.locator('[id^="DndLiveRegion"]').filter({
+          hasText: `over droppable area ${name.startsWith("Drag section") ? "section:" : ""}${target}.`,
+        }),
       ).toHaveCount(1);
       await page.keyboard.press("Space");
     }
     const first = content[0].id!,
       second = content[2].id!;
+    if (
+      !(await page
+        .getByRole("button", {
+          name: "Drag section Your next chapter",
+          exact: true,
+        })
+        .isVisible())
+    )
+      await page
+        .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+        .click();
     await keyboardMove("Drag section Your next chapter", "ArrowDown", second);
     await expect.poll(() => active.content[0].id).toBe(second);
-    expect(active.content.at(-1)?.id).toBe(content[1].id);
+    expect(authoringPages(active.content)[0].blocks.at(-1)?.id).toBe(
+      content[1].id,
+    );
+    expect(authoringPages(active.content)[1].blocks.map((b) => b.id)).toEqual(
+      authoringPages(content)[1].blocks.map((b) => b.id),
+    );
     await keyboardMove("Drag section Your next chapter", "ArrowUp", second);
     await expect.poll(() => active.content[0].id).toBe(first);
+    const pages = page.getByRole("dialog", { name: "Pages", exact: true });
+    if (await pages.isVisible())
+      await pages.getByRole("button", { name: "Done", exact: true }).click();
     const originalOrder = active.quote.map((i) => i.id);
     await page.locator(".editor-investment").scrollIntoViewIfNeeded();
     await keyboardMove(

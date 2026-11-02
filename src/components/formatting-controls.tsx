@@ -1,4 +1,5 @@
 "use client";
+import { useManagedPopover } from "./editor-popovers";
 import { useEffect, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import type { TextStyleControl } from "../lib/editor-document";
@@ -15,8 +16,8 @@ export function FormattingControls({
   textStyle,
 }: {
   editor?: Editor | null;
-  onLink?: () => void;
-  onField?: () => void;
+  onLink?: (trigger: HTMLElement) => void;
+  onField?: (trigger: HTMLElement) => void;
   allowLinks?: boolean;
   independent?: boolean;
   textStyle?: TextStyleControl | null;
@@ -24,7 +25,13 @@ export function FormattingControls({
   const status = useHistoryStatus();
   const { canUndo, canRedo } = status;
   const controller = independent ? null : status.controller;
-  const [mac, setMac] = useState(false);
+  const [mac, setMac] = useState(false),
+    [styleOpen, setStyleOpen] = useState(false);
+  useManagedPopover(styleOpen, () => {
+    setStyleOpen(false);
+    if (document.activeElement?.matches("select"))
+      (document.activeElement as HTMLElement).blur();
+  });
   useEffect(() => setMac(/Mac|iPhone|iPad/.test(navigator.platform)), []);
   const marks = useEditorState({
     editor,
@@ -51,7 +58,7 @@ export function FormattingControls({
   const button = (
     label: string,
     icon: keyof typeof icons,
-    action: () => void,
+    action: (trigger: HTMLElement) => void,
     disabled = !editor,
     pressed?: boolean,
     title = label,
@@ -63,7 +70,7 @@ export function FormattingControls({
       title={title}
       disabled={disabled}
       aria-pressed={pressed}
-      onClick={action}
+      onClick={(e) => action(e.currentTarget)}
     >
       <Icon name={icon} />
       <span className="formatting-label">{label}</span>
@@ -98,7 +105,6 @@ export function FormattingControls({
       </div>
       {textStyle !== undefined && (
         <div className="formatting-group format-style-control">
-          <Icon name="heading" />
           <label className="sr-only" htmlFor="document-text-style">
             Text style
           </label>
@@ -108,10 +114,19 @@ export function FormattingControls({
             aria-label="Text style"
             title={`Text style · ${["Paragraph", "Heading 1", "Heading 2", "Heading 3"][textStyle?.value ?? 0]}`}
             disabled={!textStyle}
+            aria-expanded={styleOpen}
+            onPointerDown={() => setStyleOpen(true)}
+            onKeyDown={(e) => {
+              if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key))
+                setStyleOpen(true);
+              if (e.key === "Escape") setStyleOpen(false);
+            }}
+            onBlur={() => setStyleOpen(false)}
             value={textStyle?.value ?? 0}
-            onChange={(e) =>
-              textStyle?.change(Number(e.target.value) as 0 | 1 | 2 | 3)
-            }
+            onChange={(e) => {
+              setStyleOpen(false);
+              textStyle?.change(Number(e.target.value) as 0 | 1 | 2 | 3);
+            }}
           >
             {["Paragraph", "Heading 1", "Heading 2", "Heading 3"].map(
               (name, n) => (
@@ -159,11 +174,17 @@ export function FormattingControls({
       </div>
       {allowLinks && (
         <div className="formatting-group" role="group" aria-label="Links">
-          {button("Link", "link", () => onLink?.(), !editor, marks?.link)}
+          {button(
+            "Link",
+            "link",
+            (trigger) => onLink?.(trigger),
+            !editor,
+            marks?.link,
+          )}
         </div>
       )}
       <div className="formatting-group" role="group" aria-label="Fields">
-        {button("Insert field", "code", () => onField?.())}
+        {button("Insert field", "code", (trigger) => onField?.(trigger))}
       </div>
     </div>
   );
