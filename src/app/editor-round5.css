@@ -34,7 +34,7 @@
   display: none;
 }
 :is(.editor-document-region, .studio-template-main):has(
-    .editor-page-sheets[data-approximate="true"]
+    .editor-page-sheets[data-layout-settled="false"]
   )
   .pages-updating-indicator {
   display: inline;

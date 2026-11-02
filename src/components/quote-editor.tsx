@@ -2443,7 +2443,7 @@ function QuoteEditorContent({
                       : undefined,
                     transformOrigin: "top left",
                     minHeight: panels.printMode
-                      ? (pdfPreview.data?.layout.pages ?? 1) * 1080 - 24
+                      ? `max(var(--page-sheets-height, 0px), ${(pdfPreview.data?.layout.pages ?? 1) * 1080 - 24}px)`
                       : undefined,
                   } as CSSProperties
                 }
