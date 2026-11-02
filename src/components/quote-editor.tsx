@@ -331,6 +331,12 @@ function QuoteEditorContent({
     reviewCursor = useRef(-1);
   const pdfPreview = usePdfPreview(p);
   const panels = useEditorPanels(user?.actor ?? "local", paper, fullDocument);
+  const openTools = (nextTab: string) => {
+    setTab(nextTab);
+    if (panels.canRight && !panels.phone) {
+      if (!panels.right) panels.toggle("right");
+    } else setDrawer(true);
+  };
   const toggleRight = () => {
     if (panels.canRight && !panels.phone) panels.toggle("right");
     else setDrawer((v) => !v);
@@ -2271,23 +2277,16 @@ function QuoteEditorContent({
         <Button disabled={saving || stale} onClick={() => setPdfOpen(true)}>
           Preview PDF
         </Button>
-        <Button
-          className="tablet-tools"
-          aria-label="Quote & totals"
-          onClick={() => {
-            setTab("Quote");
-            if (window.innerWidth < 1100) setDrawer(true);
-          }}
-        >
-          Quote & totals
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setTab("Review & send");
-            if (window.innerWidth < 1100) setDrawer(true);
-          }}
-        >
+        {!panels.right && (
+          <Button
+            aria-label="Quote & totals"
+            aria-expanded={drawer}
+            onClick={() => openTools("Quote")}
+          >
+            Quote & totals
+          </Button>
+        )}
+        <Button variant="primary" onClick={() => openTools("Review & send")}>
           Review & send
         </Button>
         <span className="tablet-tools">

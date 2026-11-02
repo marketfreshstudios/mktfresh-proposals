@@ -104,6 +104,7 @@ export function FormattingControls({
           </label>
           <select
             id="document-text-style"
+            className="select-compact"
             aria-label="Text style"
             title={`Text style · ${["Paragraph", "Heading 1", "Heading 2", "Heading 3"][textStyle?.value ?? 0]}`}
             disabled={!textStyle}

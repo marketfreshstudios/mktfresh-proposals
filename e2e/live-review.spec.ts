@@ -280,7 +280,8 @@ test("Live review: customer, contacts, setup, shared controls, products and font
     await route.fulfill({ status, json: value });
   });
   const dir = ".data/evidence/live-review";
-  await mkdir(dir, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir, { recursive: true });
   const captures: {
     file: string;
     frame: string;
@@ -304,7 +305,8 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       `${name} fits ${width}`,
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage });
+    if (captureEvidence)
+      await page.screenshot({ path: `${dir}/${file}`, fullPage });
     captures.push({ file, frame, width, theme });
   }
   async function alignedControls() {
@@ -319,14 +321,19 @@ test("Live review: customer, contacts, setup, shared controls, products and font
             const input = l.querySelector("input")!,
               a = input.getBoundingClientRect(),
               b = l.getBoundingClientRect(),
-              style = getComputedStyle(l);
+              style = getComputedStyle(l),
+              paper = l.closest<HTMLElement>(".pdf-width-editor .editor-paper"),
+              scale = paper
+                ? paper.getBoundingClientRect().width / paper.offsetWidth
+                : 1;
             return {
               gap: style.gap,
               align: style.alignItems,
               height: b.height,
               left: a.left >= b.left,
               width: a.width,
-              inputHeight: a.height,
+              inputHeight: a.height / scale,
+              inputCssHeight: getComputedStyle(input).height,
             };
           }),
       );
@@ -335,7 +342,8 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       expect(r.gap).toBe("8px");
       expect(r.align).toBe("center");
       expect(r.left).toBe(true);
-      expect(r.inputHeight).toBe(18);
+      expect(r.inputCssHeight).toBe("18px");
+      expect(r.inputHeight).toBeCloseTo(18, 2);
       if (page.viewportSize()!.width < 700)
         expect(r.height).toBeGreaterThanOrEqual(44);
     }
@@ -654,6 +662,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await page.goto("/studio");
       await capture("studio-products-navigation", "7g", width, theme);
     }
+  if (!captureEvidence) return;
   const refs = await context.newPage();
   for (const [file, frames] of [
     [

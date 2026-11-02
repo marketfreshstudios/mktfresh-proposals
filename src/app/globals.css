@@ -901,11 +901,20 @@ select,
 .paper select,
 .client-app select {
   appearance: none;
-  padding-right: 36px;
+  padding-right: var(--select-padding-right);
   background-image: var(--select-chevron);
-  background-position: right 12px center;
-  background-size: 12px 12px;
+  background-position: right var(--select-chevron-offset) center;
+  background-size: var(--select-chevron-size) var(--select-chevron-size);
   background-repeat: no-repeat;
+}
+/* Opt-in toolbar variant; shares the same chevron, focus and hover rules. */
+select.select-compact {
+  --select-padding-right: var(--select-compact-padding-right);
+  --select-chevron-offset: var(--select-compact-chevron-offset);
+}
+select.select-compact:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
 }
 select:hover:not(:disabled),
 .field select:hover:not(:disabled),

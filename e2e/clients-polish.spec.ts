@@ -229,7 +229,8 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
     await route.fulfill({ status, json: value });
   });
   const dir = ".data/evidence/clients-polish";
-  await mkdir(dir, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir, { recursive: true });
   const captures: any[] = [];
   async function capture(
     name: string,
@@ -249,7 +250,8 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
     if (frame === "6f")
       frame = width === 1440 ? "6d" : width === 768 ? "6e" : "6f";
     const file = `${name}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage });
+    if (captureEvidence)
+      await page.screenshot({ path: `${dir}/${file}`, fullPage });
     captures.push({ file, frame, width, theme });
   }
   for (const width of [375, 768, 1440])
@@ -456,6 +458,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await page.locator(".activity-primary-link").first().focus();
       await capture("activity-focus", "7e", width, theme);
     }
+  if (!captureEvidence) return;
   const refs = await context.newPage();
   for (const [file, frames] of [
     ["Redesign 02 - Editor.dc.html", ["2a", "2b", "2c", "2f"]],

@@ -213,6 +213,115 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
     .click();
   await expect(sections).toHaveCount(0);
 });
+test("collapsed tools open all four tabs and close at 1440, 1100 and 768", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  for (const width of [1440, 1100, 768]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`/proposals/${f.draft.id}`);
+    await expect(page.locator(".quote-workspace")).toHaveAttribute(
+      "data-panels-ready",
+      "true",
+    );
+    const toggle = page.getByRole("button", {
+      name: "Toggle right panel",
+      exact: true,
+    });
+    if (await page.locator(".editor-sidepanel").isVisible())
+      await toggle.click();
+    const open = page.getByRole("button", {
+      name: "Quote & totals",
+      exact: true,
+    });
+    await expect(open).toBeVisible();
+    await open.click();
+    for (const name of ["Quote", "Fields", "Styles", "Review & send"]) {
+      const tab = page
+        .getByRole("tab", { name, exact: true })
+        .filter({ visible: true });
+      await tab.click();
+      await expect(tab).toHaveAttribute("aria-selected", "true");
+      await expect(
+        page.getByRole("tabpanel").filter({ visible: true }),
+      ).toBeVisible();
+    }
+    const sheet = page
+      .getByRole("dialog")
+      .filter({ has: page.getByRole("tablist", { name: "Proposal tools" }) });
+    if (await sheet.isVisible())
+      await sheet.getByRole("button", { name: "Done", exact: true }).click();
+    else await toggle.click();
+    await expect(
+      page
+        .getByRole("tablist", { name: "Proposal tools" })
+        .filter({ visible: true }),
+    ).toHaveCount(0);
+    // The send shortcut must also reopen tools when width alone cannot dock them.
+    await page
+      .locator(".quote-editor-top")
+      .getByRole("button", { name: "Review & send", exact: true })
+      .click();
+    await expect(
+      page
+        .getByRole("tab", { name: "Review & send", exact: true })
+        .filter({ visible: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    if (await sheet.isVisible())
+      await sheet.getByRole("button", { name: "Done", exact: true }).click();
+    else await toggle.click();
+  }
+});
+test("compact toolbar selects share chevrons, focus, hover and disabled states in both themes", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript(
+      (t) => localStorage.setItem("proposal-theme", t),
+      theme,
+    );
+    await page.goto(`/proposals/${f.draft.id}`);
+    await page.locator(`[data-block-id="block-${f.id}"] .tiptap`).click();
+    const select = page.getByRole("combobox", {
+      name: "Text style",
+      exact: true,
+    });
+    await expect(select).toHaveClass("select-compact");
+    await page.mouse.move(0, 0);
+    await expect(select).toHaveCSS("appearance", "none");
+    await expect(select).toHaveCSS("padding-right", "18px");
+    await expect(select).toHaveCSS("background-size", "12px 12px");
+    await expect(select).toHaveCSS(
+      "background-position",
+      "calc(100% - 6px) 50%",
+    );
+    await expect(select).toHaveCSS(
+      "background-image",
+      new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+    );
+    await select.hover();
+    await expect(select).toHaveCSS(
+      "background-image",
+      new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
+    );
+    await select.focus();
+    await expect(select).toHaveCSS("outline-style", "solid");
+    await expect(select).toHaveCSS("outline-width", "2px");
+    await select.evaluate((el: HTMLSelectElement) => {
+      el.disabled = true;
+    });
+    await expect(select).toHaveCSS("cursor", "not-allowed");
+    await expect(select).toHaveCSS(
+      "background-image",
+      new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+    );
+    await select.evaluate((el: HTMLSelectElement) => {
+      el.disabled = false;
+    });
+  }
+});
 test("Fields tab remembers cursor across tabs and closes tablet drawer before restoring text focus; pricing references remain searchable", async ({
   page,
 }) => {

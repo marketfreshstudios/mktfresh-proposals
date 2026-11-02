@@ -198,7 +198,8 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
     });
   });
   const root = ".data/evidence/screens";
-  await mkdir(root, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(root, { recursive: true });
   const files: string[] = [];
   async function capture(
     name: string,
@@ -252,11 +253,17 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
       await page.mouse.move(0, 0);
       for (const select of await page.locator("select:visible").all()) {
         await expect(select).toHaveCSS("appearance", "none");
-        await expect(select).toHaveCSS("padding-right", "36px");
+        const compact = await select.evaluate((el) =>
+          el.classList.contains("select-compact"),
+        );
+        await expect(select).toHaveCSS(
+          "padding-right",
+          compact ? "18px" : "36px",
+        );
         await expect(select).toHaveCSS("background-size", "12px 12px");
         await expect(select).toHaveCSS(
           "background-position",
-          "calc(100% - 12px) 50%",
+          compact ? "calc(100% - 6px) 50%" : "calc(100% - 12px) 50%",
         );
         const paper = await select.evaluate((el) => !!el.closest(".paper"));
         const muted = theme === "dark" && !paper ? "a3abb6" : "5a626b";
@@ -290,7 +297,8 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
       }
       await page.evaluate(() => document.fonts.ready);
       const file = `${name}-${phone ? "phone" : "desktop"}-${theme}.png`;
-      await page.screenshot({ path: `${root}/${file}`, fullPage: true });
+      if (captureEvidence)
+        await page.screenshot({ path: `${root}/${file}`, fullPage: true });
       files.push(file);
       expect(await page.locator("body").innerText()).not.toContain(
         "Application error",
@@ -325,6 +333,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
   active = archive;
   await capture("archive", `/archives/${archive.id}`);
 
+  if (!captureEvidence) return;
   await writeFile(
     `${root}/manifest.json`,
     JSON.stringify(
