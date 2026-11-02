@@ -101,6 +101,7 @@ export function Sortable({
         type="button"
         className="drag-handle"
         aria-label={`Drag ${label}`}
+        title={`Drag ${label}`}
         onPointerOver={(e) => {
           if (block) {
             e.stopPropagation();

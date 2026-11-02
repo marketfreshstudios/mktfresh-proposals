@@ -263,3 +263,7 @@ References: [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfi
 - Pricing cards, complete choice groups and signatures are now indivisible PDF units. This supersedes the PR #38 oversized-pricing splitting rule. If a complete unit exceeds a Letter page's usable height, fail visibly and preserve content; do not shrink, clip or split it. Ordinary long body text remains splittable. Editor guides use the same trusted paginator and target whole pricing-unit IDs, landing between cards. Measurement failure clears obsolete guides and leaves editing available. Existing frozen versions, hashes and stored sealed files are never rewritten.
 - Empty drafts retain a first-block + (paper and phone overview). This is the empty-state equivalent of edge insertion, rather than restoring the removed bottom toolbar.
 - No migration, hosted operation or provider credential is needed.
+
+- Cross-platform editor text uses `white-space: pre-wrap`: ProseMirror's injected `break-spaces` can wrap a trailing space onto another line on Linux. The retained reading-shape assertion reproduced the discrepancy and verifies the fix; no comparison tolerance is relaxed.
+
+Owner workflow update (1 November 2026): open/update PRs as soon as local checks pass and hand them back without waiting for GitHub CI; Jonathan monitors CI and reports failures. Future UI-only changes default to 1440px and 375px light screenshots unless the owner asks for more. Explicit capture requirements for the current follow-up remain in place.

@@ -315,6 +315,15 @@ test("block controls own one block and never move document content on hover, foc
           );
           await unchanged(before);
           await noTextOverlap(block);
+          expect(
+            await block
+              .locator(":scope > .block-tools button")
+              .evaluateAll((buttons) =>
+                buttons.every(
+                  (button) => !!button.getAttribute("title")?.trim(),
+                ),
+              ),
+          ).toBe(true);
           await page.mouse.move(1, 1);
           await expect(block).toHaveAttribute("data-active", "true");
           await unchanged(before);

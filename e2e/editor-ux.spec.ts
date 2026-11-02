@@ -227,13 +227,15 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
           return Array.from(
             root.querySelectorAll<HTMLElement>("[data-document-block]"),
           ).map((el) => {
-            const b = el.getBoundingClientRect();
+            const b = el.getBoundingClientRect(),
+              style = getComputedStyle(el.querySelector("p") ?? el);
             return {
               id: el.dataset.documentBlock!,
               x: b.x - r.x,
               y: b.y - r.y,
               w: b.width,
               h: b.height,
+              typography: `${style.fontSize}/${style.lineHeight} ${style.fontFamily}; white-space: ${style.whiteSpace}`,
             };
           });
         });
@@ -257,13 +259,15 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         return Array.from(
           root.querySelectorAll<HTMLElement>(".draft-block"),
         ).map((el) => {
-          const b = el.getBoundingClientRect();
+          const b = el.getBoundingClientRect(),
+            style = getComputedStyle(el.querySelector(".tiptap p,p") ?? el);
           return {
             id: el.dataset.blockId!.replace(/^block-/, ""),
             x: b.x - r.x,
             y: b.y - r.y,
             w: b.width,
             h: b.height,
+            typography: `${style.fontSize}/${style.lineHeight} ${style.fontFamily}; white-space: ${style.whiteSpace}`,
           };
         });
       });
@@ -273,7 +277,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         for (const key of ["x", "w", "h"] as const)
           expect(
             Math.abs(actual[key] - expected[key]),
-            `${width}px ${active.content.find((b) => b.id === actual.id)?.type} ${key}: editor ${actual[key]}, client ${expected[key]}`,
+            `${width}px ${active.content.find((b) => b.id === actual.id)?.type} ${key}: editor ${actual[key]}, client ${expected[key]}; editor ${actual.typography}; client ${expected.typography}`,
           ).toBeLessThanOrEqual(2);
       }
     }

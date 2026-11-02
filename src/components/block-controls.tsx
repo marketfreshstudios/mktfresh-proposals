@@ -409,6 +409,7 @@ export function BlockFrame({
               <button
                 type="button"
                 className="block-review-action"
+                title="Mark reviewed"
                 onClick={onReviewed}
               >
                 <span aria-hidden="true">✓</span> Mark reviewed
@@ -421,6 +422,7 @@ export function BlockFrame({
               <button
                 type="button"
                 className="block-review-action"
+                title="Undo review"
                 onClick={onUndo}
               >
                 Undo review
@@ -436,6 +438,7 @@ export function BlockFrame({
               type="button"
               className={`block-insert block-insert-${edge}`}
               aria-label={`Add block ${edge}`}
+              title={`Add block ${edge}`}
               onClick={() => insert(edge)}
             >
               +

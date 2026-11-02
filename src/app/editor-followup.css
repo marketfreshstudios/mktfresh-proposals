@@ -306,3 +306,8 @@
   font: 24px/1 var(--font-ui);
   cursor: pointer;
 }
+/* ProseMirror's break-spaces wraps a trailing space differently from the client
+   on Linux. pre-wrap preserves editing whitespace while hanging end spaces. */
+.document-reading .tiptap {
+  white-space: pre-wrap;
+}
