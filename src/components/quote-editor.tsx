@@ -316,7 +316,12 @@ function QuoteEditorContent({
     setSection(n);
     requestAnimationFrame(() => {
       const el = document.getElementById(`draft-section-${n}`);
-      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      el?.scrollIntoView({
+        block: "center",
+        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
       const frame = el?.querySelector<HTMLElement>(
         ".block-frame[data-ai=true]",
       );
@@ -1567,7 +1572,11 @@ function QuoteEditorContent({
                       label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
                     >
                       {unitItems(id)[0].choice_group_id ? (
-                        <div className="flow-choice-group">
+                        <div
+                          className="flow-choice-group"
+                          role="radiogroup"
+                          aria-label="Choose one"
+                        >
                           <h3>Choose one</h3>
                           <Reorder
                             ids={unitItems(id).map((i) => i.id)}
@@ -1863,8 +1872,9 @@ function QuoteEditorContent({
     });
   function documentItem(i: QuoteItem) {
     const active = !i.optional || i.default_selected;
+    const Row = i.optional ? "label" : "div";
     return (
-      <div
+      <Row
         className={`flow-quote-line ${i.optional && active ? "selected" : ""}`}
       >
         {i.optional ? (
@@ -1894,7 +1904,7 @@ function QuoteEditorContent({
           currency={p.currency}
           cents={p.workspace_settings?.money?.cents}
         />
-      </div>
+      </Row>
     );
   }
   return (
@@ -1913,7 +1923,13 @@ function QuoteEditorContent({
                 setSection(0);
                 requestAnimationFrame(() => {
                   const el = document.getElementById("cover-title");
-                  el?.scrollIntoView({ block: "center", behavior: "smooth" });
+                  el?.scrollIntoView({
+                    block: "center",
+                    behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                      .matches
+                      ? "auto"
+                      : "smooth",
+                  });
                   el?.focus({ preventScroll: true });
                 });
               }}
@@ -2080,7 +2096,11 @@ function QuoteEditorContent({
                       document
                         .getElementById(`draft-section-${n}`)
                         ?.scrollIntoView({
-                          behavior: "smooth",
+                          behavior: matchMedia(
+                            "(prefers-reduced-motion: reduce)",
+                          ).matches
+                            ? "auto"
+                            : "smooth",
                           block: "start",
                         });
                     }}

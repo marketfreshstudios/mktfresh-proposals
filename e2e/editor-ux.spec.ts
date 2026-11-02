@@ -340,6 +340,26 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       page.getByRole("textbox", { name: "Clause body", exact: true }),
     ).toHaveValue("Only applies when that product is selected.");
     await page.keyboard.press("Escape");
+    // The complete option card is a labelled touch target, not only its small radio.
+    await page
+      .locator(".document-quote label.flow-quote-line")
+      .filter({ hasText: alternative.name })
+      .click();
+    await expect
+      .poll(
+        () =>
+          active.quote.find((i) => i.id === alternative.id)?.default_selected,
+      )
+      .toBe(true);
+    await page
+      .locator(".document-quote label.flow-quote-line")
+      .filter({ hasText: quote[0].name })
+      .click();
+    await expect
+      .poll(
+        () => active.quote.find((i) => i.id === quote[0].id)?.default_selected,
+      )
+      .toBe(true);
     // Slash insertion and focus do not leave the slash in document text.
     const paragraph = page
       .locator(".draft-block")
@@ -457,6 +477,61 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     expect(extracted.match(/Agreed scope and milestones\./g)).toHaveLength(645);
     expect(extracted).toContain("The final agreed step.");
     expect(extracted.split(active.title)).toHaveLength(2);
+    // An over-page choice group must retain headings/scope/amounts as it splits.
+    const longQuote = structuredClone(active.quote),
+      grouped = longQuote.filter((i) => i.choice_group_id === group);
+    grouped[0].description = "Alpha scope is included. ".repeat(160);
+    grouped[1].description = "Beta scope is included. ".repeat(160);
+    const pricingContent: Block[] = [
+      { id: crypto.randomUUID(), type: "pricing_table" },
+    ];
+    const pricingVariables = variables({
+      ...active,
+      quote: longQuote,
+      content: pricingContent,
+    });
+    const pricingVersion = {
+      ...version,
+      content: pricingContent,
+      quote: longQuote,
+      variables_resolved: pricingVariables,
+    };
+    pricingVersion.content_hash = versionHash(pricingVersion);
+    const pricingPdf = await sealedPdf(
+      pricingVersion,
+      [],
+      [],
+      active.currency,
+      { settings, document: { id: active.id, title: active.title } },
+    );
+    const pricingLoading = getDocument({
+        data: new Uint8Array(pricingPdf.body),
+        useSystemFonts: true,
+      }),
+      pricingDoc = await pricingLoading.promise;
+    let pricingText = "";
+    for (let n = 1; n <= pricingDoc.numPages; n++)
+      pricingText +=
+        (await (await pricingDoc.getPage(n)).getTextContent()).items
+          .map((i) => ("str" in i ? i.str : ""))
+          .join(" ") + " ";
+    for (let n = 1; n <= pricingDoc.numPages; n++) {
+      const pageText = (
+        await (await pricingDoc.getPage(n)).getTextContent()
+      ).items
+        .map((i) => ("str" in i ? i.str : ""))
+        .join(" ")
+        .trim();
+      expect(pageText).not.toBe("Choose one");
+    }
+    pricingText = pricingText.replace(/\s+/g, " ");
+    await pricingLoading.destroy();
+    for (const item of longQuote) expect(pricingText).toContain(item.name);
+    expect(pricingText.match(/Alpha scope is included\./g)).toHaveLength(160);
+    expect(pricingText.match(/Beta scope is included\./g)).toHaveLength(160);
+    expect(pricingText).toContain("$2,750");
+    expect(pricingText).toContain("$25");
+    await writeFile(`${dir}/long-pricing-group.pdf`, pricingPdf.pdf);
     await writeFile(`${dir}/long-proposal.pdf`, pdf.pdf);
     await writeFile(
       `${dir}/pagination.json`,
@@ -491,6 +566,56 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         );
         await shot("page-break", width, theme);
       }
+    active = await service.edit(
+      active.id,
+      {
+        revision: active.revision,
+        content: [
+          ...active.content,
+          {
+            id: crypto.randomUUID(),
+            type: "paragraph",
+            text: "{{unknown.field}}",
+          },
+        ],
+      },
+      staff,
+    );
+    await page.goto(`/proposals/${active.id}`);
+    await expect(page.locator(".quote-workspace")).toBeVisible();
+    await expect(page.locator(".document-page-count")).toContainText(
+      "Page preview unavailable",
+    );
+    for (const theme of ["light", "dark"])
+      for (const width of [375, 768, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        if (width === 375) {
+          await page.goto(`/proposals/${active.id}`);
+          await page.locator(".phone-section-list button").first().click();
+          await page
+            .getByRole("button", { name: "Full document", exact: true })
+            .click();
+        }
+        await page
+          .locator(".draft-block")
+          .filter({ has: page.locator('[data-field="unknown.field"]') })
+          .scrollIntoViewIfNeeded();
+        await shot("page-preview-unavailable", width, theme);
+      }
+    const invalid = page
+      .locator(".draft-block")
+      .filter({ has: page.locator('[data-field="unknown.field"]') });
+    await invalid.evaluate((el) => (el as HTMLElement).focus());
+    await invalid
+      .getByRole("button", { name: "Remove block", exact: true })
+      .click();
+    await expect(page.locator(".document-page-count")).toHaveAttribute(
+      "data-page-count",
+      /[0-9]+/,
+    );
+    await expect
+      .poll(() => active.content.some((b) => b.text?.includes("unknown.field")))
+      .toBe(false);
   }
   await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

@@ -30,12 +30,16 @@ export function DocumentPagination({
     >([]),
     [failure, setFailure] = useState(false);
   const markup = useMemo(() => {
-    const p = {
-        ...proposal,
-        workspace_settings: settings ?? proposal.workspace_settings,
-      },
-      map = variables(p);
-    return `<!doctype html><html><head><style>${printCss}${curatedFontFaces(curatedFonts)}${fontCss(p.workspace_settings)}</style></head><body class="proposal-typography">${printContent({ title: p.title, company: p.client.company, sender: map["sender.name"], validity: map["proposal.valid_until"], content: p.content, quote: p.quote, variables: map, currency: p.currency, workspace: p.workspace_settings?.company_name, signatory: p.workspace_settings?.company_signatory, logo: p.workspace_settings?.logo ? `/api/proposals/${p.id}/preview-logo` : undefined, cents: p.workspace_settings?.money?.cents })}</body></html>`;
+    try {
+      const p = {
+          ...proposal,
+          workspace_settings: settings ?? proposal.workspace_settings,
+        },
+        map = variables(p);
+      return `<!doctype html><html><head><style>${printCss}${curatedFontFaces(curatedFonts)}${fontCss(p.workspace_settings)}</style></head><body class="proposal-typography">${printContent({ title: p.title, company: p.client.company, sender: map["sender.name"], validity: map["proposal.valid_until"], content: p.content, quote: p.quote, variables: map, currency: p.currency, workspace: p.workspace_settings?.company_name, signatory: p.workspace_settings?.company_signatory, logo: p.workspace_settings?.logo ? `/api/proposals/${p.id}/preview-logo` : undefined, cents: p.workspace_settings?.money?.cents })}</body></html>`;
+    } catch {
+      return "";
+    }
   }, [
     proposal.title,
     proposal.content,
@@ -44,7 +48,16 @@ export function DocumentPagination({
     settings,
     proposal.workspace_settings,
   ]);
+  const currentMarkup = useRef(markup);
+  currentMarkup.current = markup;
   useEffect(() => {
+    if (!markup) {
+      setSource("");
+      setLayout(null);
+      setMarkers([]);
+      setFailure(true);
+      return;
+    }
     const timer = setTimeout(() => setSource(markup), 450);
     return () => clearTimeout(timer);
   }, [markup]);
@@ -118,13 +131,21 @@ export function DocumentPagination({
         srcDoc={source || undefined}
         onLoad={async () => {
           const doc = frame.current?.contentDocument;
-          if (!doc?.querySelector(".print-root")) return;
+          if (
+            !doc?.querySelector(".print-root") ||
+            source !== currentMarkup.current
+          )
+            return;
           try {
             await doc.fonts.ready;
             await Promise.all(
               Array.from(doc.images).map((img) => img.decode().catch(() => {})),
             );
-            if (doc !== frame.current?.contentDocument) return;
+            if (
+              doc !== frame.current?.contentDocument ||
+              source !== currentMarkup.current
+            )
+              return;
             const result = paginatePrintDocument(
               doc.querySelector<HTMLElement>(".print-root")!,
             );

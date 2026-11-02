@@ -247,3 +247,7 @@ References: [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfi
 - Oversize printable text is split by DOM ranges that preserve its markup. The renderer checks its computed page count against the emitted PDF and refuses unsupported oversized atomic content instead of clipping it. User content is escaped/validated text or embedded images and is never executed. The measurement frame permits same-origin asset access but no scripts. The renderer stays behind the existing lazy PDF job boundary.
 - No schema or provider change is required. Keep this PR unmerged for Jonathan's review, following the recent review workflow.
 - Conditional clauses in the editor reading paper follow current quote defaults, matching client preview; Contract settings keeps hidden clauses editable. Unsigned PDF placeholders use the workspace's designated signatory rather than the owner's identity. Signed signature and actor evidence retain the existing frozen records.
+
+- Oversized pricing groups must be split through every child in order. Extracting only their table rows would lose headings/scope/terms, so that path is forbidden and covered by a 320-sentence pricing PDF preservation check.
+
+- Draft print measurement failures (including unresolved fields) must never crash or disable authoring. Show an unavailable preview, clear obsolete guides and retry after edits; discard stale asynchronous measurements. Scroll helpers honor reduced motion.

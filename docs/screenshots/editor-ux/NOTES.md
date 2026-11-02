@@ -2,7 +2,7 @@
 
 1 November 2026. All proposals, staff names, clients, signatures and provider results in this evidence are synthetic. No external services were called.
 
-- 30 matched **before** captures from merged main `810882d` and 54 **after** captures: 375/768/1440, light/dark. Common states pair directly; insertion/review dialogs, document pricing sorting and PDF guides are new states.
+- 30 matched **before** captures from merged main `810882d` and 60 **after** captures: 375/768/1440, light/dark. Common states pair directly; insertion/review dialogs, document pricing sorting and PDF guides are new states.
 - Original frames: **2a** desktop editor, **2c** phone section editing, **5g** tablet editor and **7a** template Studio. The copied source-frame captures are unchanged from the redesign exports. The owner's latest instructions override the old separate title input, purple review/reserved rows and missing insertion/pagination controls. The three-column desktop structure and responsive sheets remain.
 - Cover title and row contents are shared with the client view. A browser assertion compares every block's x/y/width/height relative to its paper in the editor and actual `/p/…?preview=1` page, at 1440 and 375, within 2px. Phone offers Full document in addition to section editing. No view/sign/billing action occurs in preview.
 - Existing hover/focus/touch coverage checks every block and clause in both editors, no movement or scroll changes greater than 1px, only one active block toolbar, persistence on pointer leave and Escape clearing.
@@ -13,3 +13,9 @@
 Reproduce after with `npx playwright test e2e/editor-ux.spec.ts e2e/block-controls.spec.ts`, then `node --import tsx scripts/package-editor-ux.ts`. Before uses the same fixture/spec and `EDITOR_UX_BEFORE=1` in an isolated main checkout. Captures are at a 1000px viewport height. Local baseline used Next's alternate development bundler to resolve the isolated dependency link; application source/assets were unchanged.
 
 [Rendered PDF contact sheet](pdf-contact-sheet.png). Every page was visually checked for clipping and unwanted blanks. Conditional clauses follow the current quote defaults in both reading surfaces; Contract settings still exposes clauses that are hidden for those choices.
+
+[Oversized pricing-group fixture](long-pricing-group.pdf): both alternative scopes (160 repeated sentences each), every product name and the entered $2,750 / $25 amounts survive pagination. Group/container splits retain all headings, descriptions, terms and tables rather than extracting table rows from a whole item.
+
+[Rendered pricing contact sheet](pricing-contact-sheet.png). The five-page pricing fixture includes four content pages plus its preview/certificate page, with no stranded heading page. Scroll-to-title and Show me respect reduced-motion preferences.
+
+The page-preview error state is captured at all three widths/themes. A deliberately unresolved field suspends only print measurement; the test removes it through the editor and verifies normal pagination returns.

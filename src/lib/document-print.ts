@@ -2,8 +2,8 @@ import { escape, renderBlocks } from "./presentation";
 import type { Block, Quote } from "./model";
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
 export const printCss = `
-*{box-sizing:border-box}html,body{margin:0;padding:0}body{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f}
-@page{size:Letter;margin:18mm}h1{font:600 40px/1.15 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 20px;letter-spacing:-.025em}h2{font:600 25px/1.25 var(--proposal-heading,"Source Serif 4",serif);margin:28px 0 12px;letter-spacing:-.015em}h3{font:600 17px/1.35 "Instrument Sans",sans-serif;margin:16px 0}p{margin:10px 0}ul,ol{margin:10px 0;padding-left:24px}img{max-width:100%;max-height:320px;object-fit:contain}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border:1px solid #ddd}tr{break-inside:avoid}.field-chip{padding:0;border:0;background:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}.print-cover p{font:500 12px/1.5 "Instrument Sans",sans-serif}.print-cover .byline{padding-bottom:20px;color:#6b6963}.print-cover .eyebrow{text-transform:uppercase;letter-spacing:.07em}.print-sheet{width:100%;height:calc(1056px - 36mm);overflow:hidden;break-after:page;display:flow-root}.print-sheet:last-child{break-after:auto}.print-root{width:calc(816px - 36mm)}.print-source{display:contents}.print-atom{display:flow-root}.print-atom>*:first-child{margin-top:0}.print-atom{padding-top:10px;padding-bottom:0}.print-atom h2{margin-top:18px}.print-atom img{display:block}.print-signature{break-inside:avoid;padding-top:24px}.print-signature img{max-height:100px}.print-sheet> :first-child{padding-top:0}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f;overflow-wrap:anywhere}
+@page{size:Letter;margin:18mm}h1{font:600 40px/1.15 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 20px;letter-spacing:-.025em}h2{font:600 25px/1.25 var(--proposal-heading,"Source Serif 4",serif);margin:28px 0 12px;letter-spacing:-.015em}h3{font:600 17px/1.35 var(--proposal-heading,"Source Serif 4",serif);margin:16px 0}p{margin:10px 0}ul,ol{margin:10px 0;padding-left:24px}img{max-width:100%;max-height:320px;object-fit:contain}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border:1px solid #ddd}tr{break-inside:avoid}.field-chip{padding:0;border:0;background:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}.print-cover p{font:500 12px/1.5 "Instrument Sans",sans-serif}.print-cover .byline{padding-bottom:20px;color:#6b6963}.print-cover .eyebrow{text-transform:uppercase;letter-spacing:.07em}.print-sheet{width:100%;height:calc(1056px - 36mm);overflow:hidden;break-after:page;display:flow-root}.print-sheet:last-child{break-after:auto}.print-root{width:calc(816px - 36mm)}.print-source{display:contents}.print-atom{display:flow-root}.print-atom>*:first-child{margin-top:0}.print-atom{padding-top:10px;padding-bottom:0}.print-atom h2{margin-top:18px}.print-atom img{display:block}.print-signature{break-inside:avoid;padding-top:24px}.print-signature img{max-height:100px}.print-sheet> :first-child{padding-top:0}
 `;
 export function printContent(input: {
   title: string;
@@ -101,33 +101,46 @@ export function paginatePrintDocument(root: HTMLElement): {
       offset += textCount(node);
       return;
     }
+    const unbrokenHeight = wrapper.getBoundingClientRect().height;
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
     const atomic =
       node.matches("img,table,.print-signature") ||
       !!node.querySelector("img,table");
     if (atomic) {
-      if (page.children.length) newPage();
-      page.append(wrapper);
-      // Image/table sizes are bounded by rendering CSS. Split very long tables by rows.
-      if (!fits() && node.querySelectorAll("tr").length > 1) {
-        wrapper.remove();
-        for (const row of Array.from(node.querySelectorAll("tr"))) {
-          const table = doc.createElement("table");
-          table.append(row);
+      // Decompose an over-page container BEFORE starting a new page. Moving an
+      // impossible-to-fit group first would strand its heading on an empty page.
+      if (
+        unbrokenHeight > height &&
+        !node.matches("img,table") &&
+        node.children.length
+      ) {
+        for (const child of Array.from(node.children))
+          add(child as HTMLElement);
+        return;
+      }
+      if (
+        unbrokenHeight > height &&
+        node.matches("table") &&
+        node.querySelectorAll("tbody tr").length > 1
+      ) {
+        for (const row of Array.from(node.querySelectorAll("tbody tr"))) {
+          const table = node.cloneNode(false) as HTMLElement;
+          const head = node.querySelector("thead");
+          if (head) table.append(head.cloneNode(true));
+          const body = doc.createElement("tbody");
+          body.append(row);
+          table.append(body);
           add(table);
         }
         return;
       }
-      if (!fits()) {
-        wrapper.remove();
-        if (node.children.length > 1) {
-          for (const child of Array.from(node.children))
-            add(child as HTMLElement);
-          return;
-        }
+      if (unbrokenHeight > height)
         throw new Error("This image or table row is too tall for a PDF page");
-      }
+      if (page.children.length) newPage();
+      page.append(wrapper);
+      if (!fits())
+        throw new Error("This image or table row is too tall for a PDF page");
       offset += textCount(node);
       return;
     }
