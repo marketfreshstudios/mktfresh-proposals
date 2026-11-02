@@ -68,6 +68,8 @@ export type PageFragment = {
   y: number;
   height: number;
   bottom?: number;
+  box_top?: number;
+  box_bottom?: number;
 };
 export type PrintLayout = {
   pages: number;
@@ -124,6 +126,12 @@ export function collectPrintSheets(sheets: HTMLElement[]) {
             y: lineTop(atom) - top,
             height: atom.getBoundingClientRect().height,
             bottom: atom.getBoundingClientRect().bottom - top,
+            box_top:
+              (atom.firstElementChild ?? atom).getBoundingClientRect().top -
+              top,
+            box_bottom:
+              (atom.firstElementChild ?? atom).getBoundingClientRect().bottom -
+              top,
           },
           ...Array.from(targets)
             .filter((el) => el !== atom.firstElementChild)
@@ -149,6 +157,8 @@ export function paginatePrintDocument(root: HTMLElement): {
   const doc = root.ownerDocument,
     boundaries: PageBoundary[] = [];
   const sources = Array.from(root.children) as HTMLElement[];
+  const flow =
+    getComputedStyle(root).getPropertyValue("--document-flow").trim() === "max";
   root.replaceChildren();
   let page!: HTMLElement,
     count = 0,
@@ -156,8 +166,10 @@ export function paginatePrintDocument(root: HTMLElement): {
     offset = 0,
     pendingBreak = false,
     currentUnit: string | undefined,
-    currentPart: { id: string; start: number } | undefined;
+    currentPart: { id: string; start: number } | undefined,
+    previousAfter = 0;
   function newPage(explicit = false) {
+    previousAfter = 0;
     page = doc.createElement("div");
     page.className = "print-sheet";
     root.append(page);
@@ -206,6 +218,18 @@ export function paginatePrintDocument(root: HTMLElement): {
     }
   }
   function addContent(node: HTMLElement) {
+    const semantic = "h1,h2,h3,h4,p,ul,ol";
+    const read = (el: Element, side: "before" | "after") =>
+      parseFloat(getComputedStyle(el).getPropertyValue(`--flow-${side}`)) || 0;
+    const semanticNodes = node.matches(semantic)
+      ? [node]
+      : Array.from(node.querySelectorAll(semantic));
+    const cover = node.classList.contains("print-cover"),
+      unit = node.matches(".print-pricing-unit,.print-choice-group");
+    if (flow) {
+      node.style.marginTop = "0px";
+      node.style.marginBottom = "0px";
+    }
     const wrapper = doc.createElement("div");
     wrapper.className = "print-atom";
     wrapper.dataset.sourceBlock = currentBlock;
@@ -217,11 +241,24 @@ export function paginatePrintDocument(root: HTMLElement): {
     }
     wrapper.append(node);
     page.append(wrapper);
+    // Source nodes were detached for pagination. Resolve their style variables
+    // only after reconnecting them under the print root.
+    const above = unit
+        ? 8
+        : read(cover ? node : (semanticNodes[0] ?? node), "before"),
+      spacingAfter = unit
+        ? 0
+        : read(cover ? node : (semanticNodes.at(-1) ?? node), "after");
+    if (flow)
+      wrapper.style.paddingTop = `${page.children.length > 1 ? Math.max(previousAfter, above) : 0}px`;
     if (fits()) {
+      previousAfter = spacingAfter;
       offset += textCount(node);
       return;
     }
-    const unbrokenHeight = wrapper.getBoundingClientRect().height;
+    const unbrokenHeight =
+      wrapper.getBoundingClientRect().height -
+      (flow ? parseFloat(wrapper.style.paddingTop) || 0 : 0);
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
     const indivisible = node.matches(
@@ -268,26 +305,32 @@ export function paginatePrintDocument(root: HTMLElement): {
       if (unbrokenHeight > height)
         throw new Error("This image or table row is too tall for a PDF page");
       if (page.children.length) newPage();
+      if (flow) wrapper.style.paddingTop = "0px";
       page.append(wrapper);
       if (!fits())
         throw new Error("This image or table row is too tall for a PDF page");
       offset += textCount(node);
+      previousAfter = spacingAfter;
       return;
     }
     page.append(wrapper);
     // Keep normal short paragraphs intact. Oversize text is split only when needed.
-    const h = wrapper.getBoundingClientRect().height;
+    const h = flow ? unbrokenHeight : wrapper.getBoundingClientRect().height;
     wrapper.remove();
     if (h < height && page.children.length) {
       newPage();
+      if (flow) wrapper.style.paddingTop = "0px";
       page.append(wrapper);
       offset += textCount(node);
+      previousAfter = spacingAfter;
       return;
     }
     const total = textCount(node);
     if (!total) {
       if (page.children.length) newPage();
+      if (flow) wrapper.style.paddingTop = "0px";
       page.append(wrapper);
+      previousAfter = spacingAfter;
       return;
     }
     let low = 0,

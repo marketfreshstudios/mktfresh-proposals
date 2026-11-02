@@ -30,6 +30,24 @@ vi.mock("../src/lib/auth", async (original) => {
   };
 });
 beforeEach(() => state.render.mockClear());
+it("caches layout by printed content hash across revisions/review flags and invalidates real content changes", async () => {
+  const f = await setup(),
+    storage = { put: vi.fn(), get: vi.fn() };
+  const { pdfPreview } = await import("../src/lib/pdf-preview");
+  const a = await pdfPreview(f.repo, storage, f.draft, f.settings);
+  const reviewed = structuredClone(f.draft);
+  reviewed.revision++;
+  reviewed.content[0].ai_review = { source: "assistant", reviewed: true };
+  const b = await pdfPreview(f.repo, storage, reviewed, f.settings);
+  expect(b.fingerprint).toBe(a.fingerprint);
+  expect(b.revision).toBe(reviewed.revision);
+  expect(state.render).toHaveBeenCalledTimes(1);
+  reviewed.title = "Changed printed title";
+  expect(
+    (await pdfPreview(f.repo, storage, reviewed, f.settings)).fingerprint,
+  ).not.toBe(a.fingerprint);
+  expect(state.render).toHaveBeenCalledTimes(2);
+});
 it("requires staff, rejects cross-workspace IDs and stale revisions, and never persists preview edits", async () => {
   const f = await setup();
   const put = vi.fn();

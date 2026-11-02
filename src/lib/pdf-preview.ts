@@ -8,6 +8,7 @@ import { canonical, sha256 } from "./content";
 import { readFont, validateStyles } from "./studio";
 import { styleFonts } from "./proposal-styles";
 import type { PrintLayout } from "./document-print";
+import { printView } from "./print-view";
 export type PdfPreview = {
   pdf_base64: string;
   fingerprint: string;
@@ -36,7 +37,14 @@ export async function pdfPreview(
       p.style_overrides,
     );
   const fingerprint = sha256(
-    canonical({ version: v, settings: renderSettings, currency: p.currency }),
+    canonical({
+      view: printView(v.content, v.quote),
+      variables: v.variables_resolved,
+      styles: v.resolved_styles,
+      settings: renderSettings,
+      currency: p.currency,
+      proposal: p.id,
+    }),
   );
   const key = `${repo.workspaceId}:${p.id}:${fingerprint}`,
     now = Date.now();
