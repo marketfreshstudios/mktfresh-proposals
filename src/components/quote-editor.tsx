@@ -10,7 +10,13 @@ import {
 } from "./block-controls";
 import { QuoteItemBody } from "./quote-item-body";
 import { DocumentCover } from "./document-cover";
-import { withoutTitleHeading, moveSection } from "../lib/editor-document";
+import { BlockMenu } from "./block-menu";
+import { useSessionHistory } from "./editor-history";
+import {
+  withoutTitleHeading,
+  moveSection,
+  duplicateBlock,
+} from "../lib/editor-document";
 import { DocumentPagination } from "./document-pagination";
 import type { ComponentProps, CSSProperties } from "react";
 import {
@@ -244,6 +250,7 @@ function QuoteEditorContent({
   const fields = useBlockToolbar();
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const pendingField = useRef<string | null>(null);
+  const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
   const money = useMoney(),
@@ -480,11 +487,32 @@ function QuoteEditorContent({
     savingRef = useRef(false),
     latest = useRef(p);
   latest.current = p;
-  function change(update: Partial<Proposal>) {
+  const editable = (v: Proposal) => ({
+    title: v.title,
+    content: v.content,
+    quote: v.quote,
+    valid_until: v.valid_until,
+  });
+  const history = useSessionHistory(
+    initial.id,
+    (value: ReturnType<typeof editable>) => {
+      applyChange(value);
+    },
+    () => editable(latest.current),
+  );
+  function applyChange(update: Partial<Proposal>) {
     if (!stale) setError("");
     generation.current++;
     setDirty(true);
-    setP((current) => ({ ...current, ...update }));
+    latest.current = { ...latest.current, ...update };
+    setP(latest.current);
+  }
+  function change(update: Partial<Proposal>) {
+    history.record(
+      editable(latest.current),
+      editable({ ...latest.current, ...update }),
+    );
+    applyChange(update);
   }
   async function save() {
     if (savingRef.current || stale || offline) return false;
@@ -1190,7 +1218,8 @@ function QuoteEditorContent({
       type="button"
       className="empty-document-insert"
       aria-label="Add first block"
-      onClick={() => {
+      onClick={(e) => {
+        setInsertAnchor(e.currentTarget);
         setReplaceEmpty(false);
         setInsertAt(0);
       }}
@@ -1458,7 +1487,8 @@ function QuoteEditorContent({
             const s = sections.find((s) => s.indices.includes(n));
             if (s) void review([s.id], false);
           }}
-          insert={(edge) => {
+          insert={(edge, anchor) => {
+            setInsertAnchor(anchor);
             setReplaceEmpty(false);
             setInsertAt(n + (edge === "below" ? 1 : 0));
           }}
@@ -1556,6 +1586,18 @@ function QuoteEditorContent({
                   Block settings
                 </BlockAction>
               )}
+              {!["pricing_table", "signature_block"].includes(b.type) && (
+                <BlockAction
+                  aria-label="Duplicate block"
+                  onClick={() => {
+                    const content = [...latest.current.content];
+                    content.splice(n + 1, 0, duplicateBlock(b));
+                    change({ content });
+                  }}
+                >
+                  Duplicate block
+                </BlockAction>
+              )}
               {blockFeedback.reuseButton(b)}
               <BlockAction
                 onClick={() =>
@@ -1624,7 +1666,8 @@ function QuoteEditorContent({
               }
               map={map}
               showNames={false}
-              onSlash={() => {
+              onSlash={(anchor) => {
+                setInsertAnchor(anchor ?? null);
                 setReplaceEmpty(true);
                 setInsertAt(n);
               }}
@@ -1949,36 +1992,6 @@ function QuoteEditorContent({
       frame?.scrollIntoView({ block: "center" });
     });
   }
-  const insert = (type: Block["type"], list = false) =>
-    insertBlock({
-      type,
-      ...(type === "heading"
-        ? { text: "New section" }
-        : type === "paragraph"
-          ? {
-              content: {
-                type: "doc",
-                content: list
-                  ? [
-                      {
-                        type: "bulletList",
-                        content: [
-                          {
-                            type: "listItem",
-                            content: [{ type: "paragraph" }],
-                          },
-                        ],
-                      },
-                    ]
-                  : [{ type: "paragraph" }],
-              },
-            }
-          : type === "contract"
-            ? { clauses: [] }
-            : type === "signature_block"
-              ? { role: "client" as const }
-              : {}),
-    });
   function documentItem(i: QuoteItem) {
     const active = !i.optional || i.default_selected;
     const Row = i.optional ? "label" : "div";
@@ -2420,89 +2433,16 @@ function QuoteEditorContent({
         </Sheet>
       )}
       {insertAt !== null && (
-        <Sheet title="Add a block" close={() => setInsertAt(null)}>
-          <div className="block-menu">
-            {(
-              [
-                ["Heading", "heading"],
-                ["Text", "paragraph"],
-                ["List", "paragraph"],
-                ["Pricing table", "pricing_table"],
-                ["Contract", "contract"],
-                ["Page break", "page_break"],
-              ] as const
-            ).map(([label, type]) => (
-              <Button
-                key={label}
-                disabled={
-                  type === "pricing_table" &&
-                  p.content.some((b) => b.type === type)
-                }
-                onClick={() => insert(type, label === "List")}
-              >
-                {label}
-              </Button>
-            ))}
-            <label className="btn">
-              Image
-              <input
-                type="file"
-                className="sr-only"
-                accept="image/png,image/jpeg"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (
-                    file.size > 700000 ||
-                    !["image/png", "image/jpeg"].includes(file.type)
-                  ) {
-                    setError("Use a PNG or JPEG smaller than 700 KB");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () =>
-                    insertBlock({
-                      type: "image",
-                      src: String(reader.result),
-                      alt: file.name,
-                    });
-                  reader.readAsDataURL(file);
-                }}
-              />
-            </label>
-            <label className="field">
-              Saved block…
-              <select
-                value=""
-                onChange={(e) => {
-                  const saved = library.find((b) => b.id === e.target.value);
-                  if (
-                    saved &&
-                    !(
-                      saved.block.type === "pricing_table" &&
-                      p.content.some((b) => b.type === "pricing_table")
-                    )
-                  )
-                    insertBlock(structuredClone(saved.block));
-                }}
-              >
-                <option value="">Choose a saved block</option>
-                {library.map((b) => (
-                  <option
-                    key={b.id}
-                    value={b.id}
-                    disabled={
-                      b.block.type === "pricing_table" &&
-                      p.content.some((v) => v.type === "pricing_table")
-                    }
-                  >
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </Sheet>
+        <BlockMenu
+          anchor={insertAnchor}
+          hasPricing={p.content.some((b) => b.type === "pricing_table")}
+          saved={library}
+          onChoose={insertBlock}
+          onClose={() => {
+            setInsertAt(null);
+            setReplaceEmpty(false);
+          }}
+        />
       )}
       {clauseEdit &&
         (() => {

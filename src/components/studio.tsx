@@ -1,4 +1,7 @@
 "use client";
+import { useSessionHistory } from "./editor-history";
+import { duplicateBlock } from "../lib/editor-document";
+import { BlockMenu } from "./block-menu";
 import {
   BlockScope,
   DocumentFormattingBar,
@@ -1106,6 +1109,7 @@ function TemplatesStudioContent({
   blocksOnly?: boolean;
 }) {
   const blockFeedback = useBlockFeedback();
+  const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const fieldInsertion = useBlockToolbar();
   const selection = useBlockSelection();
   const original = data.templates.find((t) => t.id === selected);
@@ -1126,7 +1130,6 @@ function TemplatesStudioContent({
     [fields, setFields] = useState(false),
     [mobile, setMobile] = useState(false),
     [insertAt, setInsertAt] = useState<number | null>(null),
-    [insertError, setInsertError] = useState(""),
     [replaceEmpty, setReplaceEmpty] = useState(false);
   const save = useSave(run);
   useEffect(() => {
@@ -1138,11 +1141,33 @@ function TemplatesStudioContent({
   }, []);
   const content =
     mode === "blocks" ? (saved ? [saved.block] : []) : (draft?.content ?? []);
+  const model = useRef({ draft, saved });
+  model.current = { draft, saved };
+  const applyModel = (next: typeof model.current) => {
+    model.current = next;
+    setDraft(next.draft);
+    setSaved(next.saved);
+  };
+  const history = useSessionHistory(
+    `${mode}:${mode === "blocks" ? (saved?.id ?? saved?.block.id ?? "new") : (draft?.id ?? "new")}`,
+    applyModel,
+    () => model.current,
+  );
+  const editDraft = (next: typeof draft) => {
+    const value = { ...model.current, draft: next };
+    history.record(model.current, value);
+    applyModel(value);
+  };
+  const editSaved = (next: typeof saved) => {
+    const value = { ...model.current, saved: next };
+    history.record(model.current, value);
+    applyModel(value);
+  };
   const currentContent = useRef(content);
   currentContent.current = content;
   const patch = (next: Block[]) => {
-    if (mode === "blocks" && saved) setSaved({ ...saved, block: next[0] });
-    else if (draft) setDraft({ ...draft, content: next });
+    if (mode === "blocks" && saved) editSaved({ ...saved, block: next[0] });
+    else if (draft) editDraft({ ...draft, content: next });
   };
   function insertBlock(block: Block) {
     const next = [...currentContent.current],
@@ -1158,7 +1183,6 @@ function TemplatesStudioContent({
     });
     patch(next);
     setInsertAt(null);
-    setInsertError("");
     setIndex(at);
   }
   const map = {
@@ -1186,7 +1210,8 @@ function TemplatesStudioContent({
         map={map}
         onChange={(b) => patch(content.map((v, n) => (n === index ? b : v)))}
         saveAction={blockFeedback.reuseButton(content[index], true)}
-        onSlash={() => {
+        onSlash={(anchor) => {
+          setInsertAnchor(anchor ?? null);
           setReplaceEmpty(true);
           setInsertAt(index);
         }}
@@ -1296,13 +1321,20 @@ function TemplatesStudioContent({
                   required
                   onChange={(e) =>
                     mode === "templates"
-                      ? setDraft({ ...draft!, name: e.target.value })
-                      : setSaved({ ...saved!, name: e.target.value })
+                      ? editDraft({ ...draft!, name: e.target.value })
+                      : editSaved({ ...saved!, name: e.target.value })
                   }
                 />
               </Field>
               {mode === "templates" && !content.length && (
-                <Button onClick={() => setInsertAt(0)}>Add first block</Button>
+                <Button
+                  onClick={(e) => {
+                    setInsertAnchor(e.currentTarget);
+                    setInsertAt(0);
+                  }}
+                >
+                  Add first block
+                </Button>
               )}
               <Button data-field-insert onClick={() => setFields(true)}>
                 Fields
@@ -1338,7 +1370,7 @@ function TemplatesStudioContent({
                   type="checkbox"
                   checked={draft!.active}
                   onChange={(e) =>
-                    setDraft({ ...draft!, active: e.target.checked })
+                    editDraft({ ...draft!, active: e.target.checked })
                   }
                 />
                 Active template
@@ -1382,7 +1414,8 @@ function TemplatesStudioContent({
                       className="studio-block-card"
                       insert={
                         mode === "templates"
-                          ? (edge) => {
+                          ? (edge, anchor) => {
+                              setInsertAnchor(anchor);
                               setReplaceEmpty(false);
                               setInsertAt(n + (edge === "below" ? 1 : 0));
                             }
@@ -1488,6 +1521,20 @@ function TemplatesStudioContent({
                               >
                                 Move down
                               </BlockAction>
+                              {!["pricing_table", "signature_block"].includes(
+                                b.type,
+                              ) && (
+                                <BlockAction
+                                  aria-label="Duplicate block"
+                                  onClick={() => {
+                                    const next = [...currentContent.current];
+                                    next.splice(n + 1, 0, duplicateBlock(b));
+                                    patch(next);
+                                  }}
+                                >
+                                  Duplicate block
+                                </BlockAction>
+                              )}
                               {blockFeedback.reuseButton(b)}
                               <BlockAction
                                 aria-label="Delete block"
@@ -1723,7 +1770,7 @@ function TemplatesStudioContent({
                     template={draft!}
                     data={data}
                     onChange={(default_items) =>
-                      setDraft({ ...draft!, default_items, default_quote: [] })
+                      editDraft({ ...draft!, default_items, default_quote: [] })
                     }
                   />
                 </section>
@@ -1754,115 +1801,17 @@ function TemplatesStudioContent({
         </Sheet>
       )}
       {insertAt !== null && (
-        <Sheet title="Add a block" onClose={() => setInsertAt(null)}>
-          <div className="block-menu">
-            {insertError && (
-              <Banner tone="danger" title="Unable to add image">
-                {insertError}
-              </Banner>
-            )}
-            {(
-              [
-                ["Heading", "heading"],
-                ["Text", "paragraph"],
-                ["List", "paragraph"],
-                ["Pricing table", "pricing_table"],
-                ["Contract", "contract"],
-                ["Client signature", "signature_block"],
-                ["Company signature", "signature_block"],
-                ["Page break", "page_break"],
-              ] as const
-            ).map(([label, type]) => (
-              <Button
-                key={label}
-                disabled={
-                  type === "pricing_table" &&
-                  content.some((b) => b.type === type)
-                }
-                onClick={() =>
-                  insertBlock({
-                    type,
-                    ...(type === "contract"
-                      ? { text: "Statement of Work & Contract", clauses: [] }
-                      : type === "signature_block"
-                        ? {
-                            role:
-                              label === "Client signature"
-                                ? "client"
-                                : "company",
-                          }
-                        : type === "paragraph"
-                          ? {
-                              content: {
-                                type: "doc",
-                                content:
-                                  label === "List"
-                                    ? [
-                                        {
-                                          type: "bulletList",
-                                          content: [
-                                            {
-                                              type: "listItem",
-                                              content: [{ type: "paragraph" }],
-                                            },
-                                          ],
-                                        },
-                                      ]
-                                    : [{ type: "paragraph" }],
-                              },
-                            }
-                          : { text: type === "heading" ? "New section" : "" }),
-                  })
-                }
-              >
-                {label}
-              </Button>
-            ))}
-            <label className="btn">
-              Image
-              <input
-                type="file"
-                className="sr-only"
-                accept="image/png,image/jpeg"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (
-                    file.size > 700000 ||
-                    !["image/png", "image/jpeg"].includes(file.type)
-                  ) {
-                    setInsertError("Use a PNG or JPEG smaller than 700 KB");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () =>
-                    insertBlock({
-                      type: "image",
-                      src: String(reader.result),
-                      alt: file.name,
-                    });
-                  reader.onerror = () =>
-                    setInsertError(
-                      "Unable to read image. Your template is unchanged.",
-                    );
-                  reader.readAsDataURL(file);
-                }}
-              />
-            </label>
-            {data.library.map((saved) => (
-              <Button
-                key={saved.id}
-                disabled={
-                  saved.block.type === "pricing_table" &&
-                  content.some((b) => b.type === "pricing_table")
-                }
-                onClick={() => insertBlock(saved.block)}
-              >
-                Saved block · {saved.name}
-              </Button>
-            ))}
-          </div>
-        </Sheet>
+        <BlockMenu
+          anchor={insertAnchor}
+          hasPricing={content.some((b) => b.type === "pricing_table")}
+          saved={data.library}
+          signatures
+          onChoose={insertBlock}
+          onClose={() => {
+            setInsertAt(null);
+            setReplaceEmpty(false);
+          }}
+        />
       )}
       {fields && (
         <Sheet title="Fields" onClose={() => setFields(false)}>
@@ -1900,7 +1849,7 @@ function BlockPanel({
   setClause,
   onSlash,
 }: {
-  onSlash?: () => void;
+  onSlash?: (anchor?: HTMLElement) => void;
   clause: number;
   setClause: (index: number) => void;
   block: Block;

@@ -52,7 +52,7 @@
   position: fixed;
   left: 74px;
   bottom: 80px;
-  z-index: 100;
+  z-index: var(--z-popover);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -63,7 +63,7 @@
 .studio-dismiss {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: var(--z-editor-header);
   border: 0;
   background: transparent;
 }
@@ -411,7 +411,7 @@
 }
 .phase4-toast {
   position: fixed;
-  z-index: 150;
+  z-index: var(--z-toast);
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%);

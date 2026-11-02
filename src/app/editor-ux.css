@@ -202,7 +202,7 @@
   top: -44px;
   display: none;
   background: var(--block-toolbar-ground);
-  z-index: 15;
+  z-index: var(--z-block-controls);
 }
 .document-reading .block-frame[data-active="true"] .signature-settings {
   display: block;
@@ -228,7 +228,7 @@
   background: var(--block-toolbar-ground);
   color: var(--block-toolbar-ink);
   border-radius: 50%;
-  z-index: 14;
+  z-index: var(--z-block-controls);
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -342,7 +342,7 @@
   width: 36px;
   height: 44px;
   opacity: 0;
-  z-index: 14;
+  z-index: var(--z-quote-controls);
   min-height: 44px;
   padding: 0;
 }
@@ -601,7 +601,7 @@
   position: absolute;
   right: 0;
   top: -100px;
-  z-index: 16;
+  z-index: var(--z-block-controls);
   display: none;
   background: var(--block-toolbar-ground);
   padding: 8px;

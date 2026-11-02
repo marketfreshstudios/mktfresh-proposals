@@ -1,5 +1,12 @@
 import type { Block } from "./model";
 import { contentSections } from "./ai-review";
+export function duplicateBlock(block: Block): Block {
+  const copy = structuredClone(block);
+  copy.id = crypto.randomUUID();
+  if (copy.clauses)
+    copy.clauses = copy.clauses.map((c) => ({ ...c, id: crypto.randomUUID() }));
+  return copy;
+}
 /** Draft/template authoring only. Never apply to a stored sent/signed version. */
 export function withoutTitleHeading(content: Block[]) {
   return content[0]?.type === "heading" &&

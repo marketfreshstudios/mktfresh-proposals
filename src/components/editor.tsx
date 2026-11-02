@@ -12,7 +12,7 @@ export function BlocksEditor({
   content: Block[];
   onChange: (blocks: Block[]) => void;
   map: Record<string, string>;
-  onSlash?: () => void;
+  onSlash?: (anchor?: HTMLElement) => void;
 }) {
   return (
     <div className="template-block-fields">
@@ -20,7 +20,7 @@ export function BlocksEditor({
         const patch = (block: Block) =>
           onChange(content.map((v, j) => (j === n ? block : v)));
         return (
-          <section key={b.id ?? n}>
+          <section key={b.id ?? n} data-history-block={`block-${b.id ?? n}`}>
             {b.type === "heading" ? (
               <label className="field">
                 Heading

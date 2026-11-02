@@ -593,3 +593,32 @@ The Fields sheet explicitly closes its captured native dialog and dispatches ins
 The original phone assertion now checks the rendered field and persisted text as well as focus. The delayed-visibility regression also checks selection replacement, native close completion, no insertion while hidden, and subsequent typing immediately after the inserted field. Screenshot evidence for this test is opt-in (`CAPTURE_EDITOR_EVIDENCE=1`); no captures or galleries were generated or updated for this fix. No hosted/provider actions.
 
 Validation for this focus fix: 238 unit/database tests across 38 files, TypeScript, formatting, neutrality, production build/API tracing (327 files), the focused macOS browser test and three consecutive focused Linux runs all pass. The delayed-visibility check fails against the pre-fix implementation, confirming it exercises the race. GitHub CI is not awaited; PR #39 stays open for Jonathan’s review.
+
+
+## Editor polish: layers, formatting, undo and insertion — 1 November 2026
+
+Built from merged PR #39 (`ebe5ffe`) on `codex/editor-history-polish`, as one review PR.
+
+- Central tokens now order document content, block controls/outline, pinned formatting, sticky header, menus, dialogs and toasts. Proposal and template controls scroll below pinned chrome. Field/link/block menus use native popovers to escape lower stacking contexts; editor feedback uses the top layer as well.
+- Formatting has a stronger border, surface, radius and medium shadow; separators group Undo/Redo, Bold/Italic, lists, Link and fields. Desktop icon+label controls become icons below 900px with names/tooltips retained. Active text marks have pressed states; unavailable formatting is disabled.
+- A 100-step session history covers text/fields/title/clauses, insertion/deletion/duplication/moves, outline sections and document/panel quote edits. Text shortcuts consume block-local text steps before document steps, preserving later structural changes. Ctrl+Z/Shift+Ctrl+Z/Ctrl+Y and Cmd+Z/Shift+Cmd+Z are supported. Form inputs keep native undo. Delete-toast Undo uses the same ledger and normal redo. Proposal restoration autosaves with current revision/conflict handling; templates retain their existing explicit Save. Reload clears history.
+- The shared ~320px block popover anchors to + or slash, flips above when needed, focuses search, groups types and named saved blocks, hides unavailable pricing tables, and supports arrows/Enter/Escape. Image validation remains in place.
+
+No screenshots/gallery updates, migrations, hosted/provider actions or signed-version changes. Local automated validation results are recorded below; GitHub CI is left for Jonathan to monitor. Stop after opening the PR for live-site review.
+
+Validation: **242 unit/database tests across 39 files**, formatting, TypeScript and neutrality pass. Four focused macOS browser suites pass (history/menu/layers, existing hover/focus/no-movement, editor/document geometry and pagination, field selection/focus). Targeted Linux history and field checks pass, including the document-switch guard. The final layer rerun also confirms the Save hit target and clicking delete Undo while a native dialog is open. Native production build and API renderer tracing pass (**327 files**).
+
+A supplemental ARM Linux container compiled the production app, but the existing serverless PDF smoke binary is x86-only and could not launch in that ARM environment. The native trace check passes; the unchanged x86 GitHub runner remains responsible for that serverless launch smoke. No check was weakened. Screenshots/galleries were not generated. CI is not awaited; Jonathan will monitor it and test the live site.
+
+
+## PR #41 follow-up — shared formatting rows
+
+The Emails CI failure was a deterministic layout bug: a legacy shared inspector rule fixed inline toolbars at 44px while their grouped controls wrapped beyond that height. The new regression measured 46px of button overflow in the 1440px Emails column before the fix. Raising a z-index alone would still leave buttons over text.
+
+Shared `FieldEditor` now gives inline formatting an auto-height row above a separate content row, using `--z-formatting` and `--z-document` within an isolated editor. The old fixed/collapsing toolbar rules are removed. Pinned proposal/template bars retain their own existing row, and their content wrappers use the document layer. Inline controls retain selection on pointer-down and share the phone icon treatment. This covers Emails, sender notes and reuse in inspectors without adding new formatting to the existing plain-text contract clause fields.
+
+A new browser test at **1440 and 375** checks reserved row height, no control overflow, content below inline formatting, centre-point hit targets and real clicks for all eight controls (Undo, Redo, Bold, Italic, List, Numbered list, Link and Insert field). It exercises Emails, proposal body, template inspector and sender note; contract clause reading keeps non-text formatting disabled. Links are applied and fields inserted through their menus. The pre-fix test fails on row geometry; timeouts are unchanged and no forced clicks are used.
+
+The full Emails regression now runs without exporting screenshot/HTML galleries unless `CAPTURE_EDITOR_EVIDENCE=1`; its functional preview/render checks remain enabled. No galleries, hosted operations or signed-version changes for this fix. Validation results are recorded below; GitHub CI is left for Jonathan to monitor.
+
+Validation for the shared-row fix: **242 unit/database tests (39 files)**; the full Emails regression on macOS and Linux; the new all-editor formatting click/geometry test at both requested widths on macOS and Linux; the existing remembered-cursor/field-insertion regression; formatting, TypeScript, neutrality, and the native production build/API trace (**327 files**) pass. No captures or galleries were generated. Push to PR #41 and hand back without waiting for GitHub CI.

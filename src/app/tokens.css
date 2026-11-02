@@ -165,12 +165,21 @@
   --stroke-signature: 2.5px;
   --opacity-disabled: 0.45;
   --opacity-frozen: 0.7;
-  --z-base: 0;
-  --z-sticky: 100;
-  --z-bar: 300;
-  --z-overlay: 800;
-  --z-modal: 900;
-  --z-toast: 1000;
+  /* One application layer scale; keep editor controls below both pinned bars. */
+  --z-document: 0;
+  --z-quote-controls: 5;
+  --z-block-controls: 10;
+  --z-block-handle: 11;
+  --z-formatting: 20;
+  --z-editor-header: 30;
+  --z-popover: 40;
+  --z-dialog: 50;
+  --z-toast: 60;
+  --z-base: var(--z-document);
+  --z-sticky: var(--z-editor-header);
+  --z-bar: var(--z-editor-header);
+  --z-overlay: var(--z-popover);
+  --z-modal: var(--z-dialog);
   --font-sans:
     "Instrument Sans", system-ui, -apple-system, Segoe UI, sans-serif;
   --font-serif: Source Serif 4, Georgia, Times New Roman, serif;

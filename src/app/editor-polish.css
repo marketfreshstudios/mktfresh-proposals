@@ -1,0 +1,264 @@
+.quote-editor-top {
+  z-index: var(--z-editor-header);
+}
+.document-formatting-bar {
+  z-index: var(--z-formatting);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-md);
+  background: var(--surface);
+}
+.document-formatting-bar .formatting-controls {
+  gap: 0;
+  align-items: center;
+}
+/* Shared inline bars reserve their entire wrapped height, never overlay text. */
+.field-editor-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  position: relative;
+  isolation: isolate;
+}
+.inline-formatting-row {
+  grid-row: 1;
+  position: relative;
+  z-index: var(--z-formatting);
+  min-width: 0;
+  background: var(--surface);
+}
+.inline-formatting-row > .formatting-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  height: auto;
+  min-height: 44px;
+  margin: 0;
+  opacity: 1;
+  overflow: visible;
+}
+.field-editor-content {
+  position: relative;
+  z-index: var(--z-document);
+  min-width: 0;
+}
+.field-editor-inline > .field-editor-content {
+  grid-row: 2;
+}
+.formatting-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.formatting-group + .formatting-group {
+  border-left: 1px solid var(--border-strong);
+  margin-left: 5px;
+  padding-left: 5px;
+}
+.formatting-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 44px;
+  min-width: 36px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs, 4px);
+  background: transparent;
+  color: var(--ink);
+  font: 500 12px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+.formatting-button:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+.formatting-button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-text, var(--accent));
+  border-color: var(--accent);
+}
+.formatting-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.formatting-button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+.block-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(560px, calc(100dvh - 16px));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  font: 13px/1.3 var(--font-ui);
+  overflow: hidden;
+  z-index: var(--z-popover);
+}
+.block-popover:not(:popover-open) {
+  display: none;
+}
+.block-popover > input[type="search"] {
+  width: 100%;
+  flex: none;
+  min-height: 40px;
+  height: 40px;
+}
+.block-menu-options {
+  overflow-y: auto;
+  min-height: 0;
+}
+.block-menu-options section {
+  margin: 0;
+}
+.block-menu-options h3 {
+  margin: 10px 8px 4px;
+  font: 600 10px/1.4 var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+.block-menu-options button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.block-menu-options strong,
+.block-menu-options small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.block-menu-options strong {
+  font: 500 13px/16px var(--font-ui);
+}
+.block-menu-options small {
+  color: var(--ink-muted);
+  font: 11px/14px var(--font-ui);
+}
+.block-menu-options button:is(:hover, .active) {
+  background: var(--row-hover);
+}
+.block-menu-options button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.editor-sheet,
+.foundation-sheet,
+.block-dialog {
+  z-index: var(--z-dialog);
+}
+.block-feedback-toast,
+.copy-toast {
+  z-index: var(--z-toast);
+}
+@media (max-width: 899px) {
+  .document-formatting-bar .formatting-label,
+  .inline-formatting-row .formatting-label {
+    display: none;
+  }
+  .document-formatting-bar .formatting-button,
+  .inline-formatting-row .formatting-button {
+    width: 36px;
+    padding-inline: 6px;
+  }
+  .document-formatting-bar {
+    min-height: 54px;
+  }
+  .formatting-group + .formatting-group {
+    margin-left: 3px;
+    padding-left: 3px;
+  }
+}
+
+.staff-foundation :is(.bottom-tabs, .foundation-editor-nav, .sidebar) {
+  z-index: var(--z-editor-header);
+}
+.staff-foundation .skip-link {
+  z-index: var(--z-toast);
+}
+.studio-popover {
+  z-index: var(--z-popover);
+}
+.studio-dismiss {
+  z-index: var(--z-editor-header);
+}
+
+.paper.editor-paper {
+  position: relative;
+  z-index: var(--z-document);
+}
+.studio-blocks {
+  position: relative;
+  isolation: isolate;
+}
+.document-formatting-bar .toolbar-popover,
+.toolbar-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(420px, calc(100vw - 16px));
+  max-height: min(500px, calc(100dvh - 16px));
+  overflow: auto;
+  padding: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-popover);
+}
+.toolbar-popover:not(:popover-open) {
+  display: none;
+}
+
+.block-feedback-toast[popover] {
+  inset: auto;
+  bottom: 24px;
+  left: 50%;
+  margin: 0;
+}
+.block-feedback-toast[popover]:not(:popover-open) {
+  display: none;
+}
+@media (max-width: 699px) {
+  .block-feedback-toast[popover] {
+    bottom: 88px;
+  }
+}
+
+/* Paint the selection ring in the controls layer without promoting text. */
+.block-frame[data-active="true"] {
+  outline-color: transparent;
+}
+.block-frame[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--block-active-outline);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: var(--z-block-controls);
+}

@@ -1,8 +1,11 @@
 "use client";
 import { createPortal } from "react-dom";
+import { FormattingControls } from "./formatting-controls";
+import { ToolbarPopover } from "./toolbar-popover";
 import { useBlockToolbar } from "./block-controls";
 import { FieldOptions } from "./field-options";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
+import { useEditorHistory, textHistoryScope } from "./editor-history";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -57,12 +60,13 @@ export function FieldEditor({
   showNames: boolean;
   allowLinks?: boolean;
   label?: string;
-  onSlash?: () => void;
+  onSlash?: (anchor?: HTMLElement) => void;
   standalone?: boolean;
   autoFocus?: boolean;
   onBeforeInsert?: () => void;
 }) {
   const scope = useBlockToolbar();
+  const history = useEditorHistory();
   const afterVisible = useVisibleEditorAction();
   const toolbar = standalone ? undefined : scope;
   const root = useRef<HTMLDivElement>(null);
@@ -92,6 +96,7 @@ export function FieldEditor({
     },
     extensions: [
       StarterKit.configure({
+        undoRedo: history && !standalone ? false : undefined,
         heading: false,
         code: allowLinks ? false : undefined,
         strike: allowLinks ? false : undefined,
@@ -164,7 +169,10 @@ export function FieldEditor({
       };
     },
     onUpdate: ({ editor }) => {
-      change.current(editor.getJSON() as RichText);
+      const update = () => change.current(editor.getJSON() as RichText);
+      if (history && !standalone)
+        history.inScope(textHistoryScope(root.current), update);
+      else update();
       if (
         editor.state.doc.textBetween(
           Math.max(0, editor.state.selection.from - 2),
@@ -227,48 +235,22 @@ export function FieldEditor({
     for (const paint of painters.current) paint();
   }, [showNames, JSON.stringify(map), editor]);
   const formatting = (
-    <div className="rich-toolbar">
-      <Button
-        variant="ghost"
-        onClick={() => editor?.chain().focus().toggleBold().run()}
-      >
-        Bold
-      </Button>
-      <Button
-        variant="ghost"
-        onClick={() => editor?.chain().focus().toggleItalic().run()}
-      >
-        Italic
-      </Button>
-      <Button
-        variant="ghost"
-        onClick={() => editor?.chain().focus().toggleBulletList().run()}
-      >
-        List
-      </Button>
-      {allowLinks && (
-        <>
-          <Button
-            variant="ghost"
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          >
-            Numbered list
-          </Button>
-          <Button variant="ghost" onClick={() => setLinkPicker(!linkPicker)}>
-            Link
-          </Button>
-        </>
-      )}
-      <Button variant="ghost" onClick={() => setPicker(!picker)}>
-        Insert field
-      </Button>
-    </div>
+    <FormattingControls
+      independent={standalone}
+      editor={editor}
+      allowLinks={allowLinks}
+      onLink={() => setLinkPicker(!linkPicker)}
+      onField={() => setPicker(!picker)}
+    />
   );
   const controls = (
     <>
       {formatting}
       {linkPicker && (
-        <div className="email-link-picker">
+        <ToolbarPopover
+          className="email-link-picker"
+          close={() => setLinkPicker(false)}
+        >
           <label className="field">
             Link URL
             <input
@@ -302,28 +284,30 @@ export function FieldEditor({
             Remove link
           </Button>
           {linkError && <p role="alert">{linkError}</p>}
-        </div>
+        </ToolbarPopover>
       )}
       {picker && (
-        <div className="field-picker">
+        <ToolbarPopover className="field-picker" close={() => setPicker(false)}>
           <FieldOptions
             variant="menu"
             map={map}
             onInsert={(path) => insertField(path)}
           />
-        </div>
+        </ToolbarPopover>
       )}
     </>
   );
   return (
     <div
-      className="field-editor"
+      className={`field-editor ${toolbar === undefined ? "field-editor-inline" : "field-editor-external"}`}
+      data-history-independent={standalone || undefined}
       ref={root}
       onFocusCapture={() => toolbar?.remember(editorId)}
+      onPointerDownCapture={() => toolbar?.remember(editorId)}
       onKeyDown={(e) => {
         if (e.key === "/" && onSlash && editor?.isEmpty) {
           e.preventDefault();
-          onSlash();
+          onSlash(e.currentTarget);
         }
         if (e.key === "Escape") {
           setPicker(false);
@@ -331,12 +315,21 @@ export function FieldEditor({
         }
       }}
     >
-      {toolbar === undefined
-        ? controls
-        : toolbar.target && toolbar.owner === editorId
-          ? createPortal(controls, toolbar.target)
-          : null}
-      <EditorContent editor={editor} />
+      {toolbar === undefined ? (
+        <div
+          className="inline-formatting-row"
+          role="toolbar"
+          aria-label="Text formatting"
+          onMouseDown={(e) => {
+            if ((e.target as Element).closest("button")) e.preventDefault();
+          }}
+        >
+          {controls}
+        </div>
+      ) : toolbar.target && toolbar.owner === editorId ? (
+        createPortal(controls, toolbar.target)
+      ) : null}
+      <EditorContent className="field-editor-content" editor={editor} />
     </div>
   );
 }
