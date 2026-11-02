@@ -1,0 +1,287 @@
+/* Formatting is one non-wrapping row in every editor. Names remain accessible. */
+.formatting-controls .formatting-label {
+  display: none;
+}
+.rich-toolbar.formatting-controls,
+.inline-formatting-row > .formatting-controls,
+.document-formatting-bar .formatting-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  min-height: 44px;
+  height: 44px;
+  width: max-content;
+  max-width: none;
+}
+.document-formatting-target,
+.inline-formatting-row,
+.document-formatting-bar {
+  min-width: 0;
+}
+.document-formatting-bar,
+.inline-formatting-row {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+.formatting-group {
+  flex: none;
+}
+.formatting-group + .formatting-group {
+  margin-left: 3px;
+  padding-left: 3px;
+}
+.formatting-controls .formatting-button {
+  width: 32px;
+  min-width: 32px;
+  padding: 4px;
+  flex: none;
+}
+.formatting-controls [aria-label="Insert field"] {
+  width: 44px;
+}
+.format-chevron {
+  width: 5px;
+  height: 5px;
+  border-bottom: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  margin: -3px 1px 0 3px;
+}
+.format-style-control {
+  position: relative;
+  width: 48px;
+  height: 44px;
+}
+.format-style-control > .icon {
+  position: absolute;
+  left: 7px;
+  pointer-events: none;
+}
+.format-style-control select {
+  min-width: 48px;
+  width: 48px;
+  max-width: 48px;
+  min-height: 44px;
+  padding: 0 18px 0 4px;
+  color: transparent;
+  background-position: right 6px center;
+  cursor: pointer;
+}
+.format-style-control option {
+  color: var(--ink);
+  font-size: 14px;
+}
+.format-style-control:has(select:disabled) > .icon {
+  opacity: var(--opacity-disabled);
+}
+.editor-panel-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.paper-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 12px var(--font-ui);
+}
+.editor-round3 .editor-document-region {
+  padding: 16px;
+  min-width: 0;
+}
+.editor-round3 .editor-sidepanel {
+  display: block;
+  padding-inline: 12px;
+}
+.editor-round3 .editor-outline {
+  display: block;
+  padding: 16px 12px;
+}
+.editor-round3 .editor-tabs {
+  width: 100%;
+}
+.editor-round3 .editor-tabs button {
+  font-size: 12px;
+  padding-inline: 4px;
+}
+.editor-round3 .document-formatting-bar {
+  max-width: 100%;
+  margin-inline: 0;
+}
+.pdf-paper-viewport {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1px;
+}
+.pdf-paper-size {
+  margin-inline: auto;
+  position: relative;
+}
+.staff-foundation .pdf-width-editor .paper.editor-paper {
+  width: 816px;
+  min-width: 816px;
+  max-width: none;
+  padding: 18mm;
+  margin: 0;
+  border: 0;
+  outline: 1px solid var(--paper-border);
+}
+.pdf-width-editor .document-reading .draft-block {
+  margin-block: 0;
+  padding-top: 10px;
+}
+.pdf-width-editor .document-reading .block-insert {
+  width: 28px;
+  height: 28px;
+}
+.pdf-width-editor .document-reading .block-insert-above {
+  top: -10px;
+}
+.pdf-width-editor .document-reading .block-insert-below {
+  bottom: -18px;
+}
+.pdf-width-editor .document-reading .document-section {
+  margin: 0;
+  padding: 0;
+  display: flow-root;
+}
+.pdf-width-editor .editor-paper :is(ul, ol) {
+  margin-block: 10px;
+  padding-left: 24px;
+}
+.pdf-width-editor .editor-paper .flow-eyebrow {
+  font:
+    500 12px/1.5 "Instrument Sans",
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.pdf-width-editor .editor-paper :is(.flow-byline, .print-workspace) {
+  font:
+    500 12px/1.5 "Instrument Sans",
+    sans-serif;
+}
+.pdf-width-editor .editor-paper .flow-byline {
+  padding-bottom: 20px;
+}
+.editor-round3 .reference-sheet,
+.editor-round3 .sections-overlay {
+  margin-left: auto;
+  margin-right: 0;
+  width: min(520px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+}
+.pdf-viewer {
+  width: min(1400px, 98vw);
+  height: 94dvh;
+  max-width: none;
+  max-height: 98dvh;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  z-index: var(--z-dialog);
+}
+.pdf-viewer::backdrop {
+  background: #0009;
+}
+.pdf-viewer > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.pdf-viewer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pdf-viewer-layout {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  height: calc(100% - 90px);
+}
+.pdf-viewer-layout > nav {
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  padding: 8px;
+}
+.pdf-viewer-layout nav button {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  margin-bottom: 8px;
+}
+.pdf-viewer-layout nav canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+.pdf-viewer-layout > main {
+  overflow: auto;
+  padding: 16px;
+  background: var(--surface-sunken);
+}
+.pdf-viewer-layout main section {
+  width: max-content;
+  margin: 0 auto 16px;
+  background: white;
+}
+.pdf-viewer canvas {
+  display: block;
+}
+@media (min-width: 700px) {
+  .editor-round3 .editor-layout {
+    display: grid;
+  }
+  .editor-round3 .editor-document-region {
+    overflow: visible;
+  }
+  .editor-round3 .tablet-tools {
+    display: none;
+  }
+}
+@media (max-width: 699px) {
+  .editor-round3.phone-editing .editor-panel-controls {
+    display: none;
+  }
+  .editor-round3.phone-editing .pdf-paper-viewport {
+    overflow: visible;
+    padding: 0;
+  }
+  .editor-round3.phone-editing .pdf-paper-size {
+    width: auto;
+    height: auto;
+  }
+  .pdf-viewer-layout {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+  .pdf-viewer-layout main {
+    padding: 8px;
+  }
+}
+
+.sections-overlay .outline-overlay-content {
+  position: static;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+}
+
+@media (max-width: 699px) {
+  .editor-round3.phone-editing .editor-document-region {
+    padding: 20px 12px 100px;
+  }
+}

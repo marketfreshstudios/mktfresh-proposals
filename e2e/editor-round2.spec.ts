@@ -1,3 +1,4 @@
+import { pdfPreview } from "../src/lib/pdf-preview";
 import { test, expect, type Page } from "@playwright/test";
 import { setup, staff } from "../tests/helpers";
 import type { Block, Template } from "../src/lib/model";
@@ -67,11 +68,23 @@ async function fixture(page: Page, grouped = false) {
         if (req.method() === "PATCH")
           active = await service.edit(active.id, req.postDataJSON(), staff);
         value =
-          parts[2] === "preview"
-            ? previewResult(active, settings)
-            : parts[1]
-              ? active
-              : { items: [active], total: 1 };
+          parts[2] === "preview-pdf"
+            ? await pdfPreview(
+                repo,
+                {
+                  put: async () => {
+                    throw new Error("Preview wrote storage");
+                  },
+                  get: async () => new Uint8Array(),
+                },
+                { ...active, ...req.postDataJSON() },
+                settings,
+              )
+            : parts[2] === "preview"
+              ? previewResult(active, settings)
+              : parts[1]
+                ? active
+                : { items: [active], total: 1 };
       } else if (req.method() === "POST") {
         value = req.postDataJSON();
         await repo.put(parts[0] as any, value as any);

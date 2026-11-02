@@ -201,8 +201,10 @@ test("formatting rows stay above content and every button is reachable in all ed
         .click();
     }
     const clause = page.locator(".contract-editor details").first();
-    await clause.locator("summary").click();
+    if ((await clause.getAttribute("open")) === null)
+      await clause.locator("summary").click();
     await expect(clause.locator("p")).toBeVisible();
+    await clause.locator("p").click();
     await expect(
       pinned.getByRole("button", { name: "Bold", exact: true }),
     ).toBeDisabled();

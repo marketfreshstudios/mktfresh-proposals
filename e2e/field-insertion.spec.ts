@@ -61,11 +61,20 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     captures.push({ file, state, width, theme });
   }
   async function choices(width: number): Promise<Locator> {
-    if (width < 1100) {
+    if (width < 700) {
       await page.getByRole("button", { name: "Fields", exact: true }).click();
       return page.getByRole("dialog", { name: "Fields", exact: true });
     }
-    return page.locator(".editor-outline .field-options");
+    if (
+      !(await page
+        .getByRole("tab", { name: "Fields", exact: true })
+        .isVisible())
+    )
+      await page
+        .getByRole("button", { name: "Toggle right panel", exact: true })
+        .click();
+    await page.getByRole("tab", { name: "Fields", exact: true }).click();
+    return page.locator(".field-options").filter({ visible: true });
   }
   async function setCursor(from: number, to = from) {
     const text = page.locator(`[data-block-id="block-${paragraph}"] .tiptap`);

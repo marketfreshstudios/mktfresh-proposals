@@ -1,3 +1,4 @@
+import { pdfPreview } from "../src/lib/pdf-preview";
 import { freezeStyles } from "../src/lib/proposal-styles";
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -109,7 +110,20 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       else if (parts[0] === "proposals") {
         if (req.method() === "PATCH")
           active = await service.edit(active.id, req.postDataJSON(), staff);
-        if (parts[2] === "preview") value = previewResult(active, settings);
+        if (parts[2] === "preview-pdf")
+          value = await pdfPreview(
+            repo,
+            {
+              put: async () => {
+                throw new Error("Preview wrote storage");
+              },
+              get: async () => new Uint8Array(),
+            },
+            { ...active, ...req.postDataJSON() },
+            settings,
+          );
+        else if (parts[2] === "preview")
+          value = previewResult(active, settings);
         else if (parts[2] === "review")
           value = active = await service.reviewSections(
             active.id,
@@ -215,76 +229,32 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     }
   }
   if (stage === "after") {
-    // Match usable text width before comparing block shapes. The editing gutter
-    // and permanent insertion gaps are deliberate chrome, absent from client reading.
-    for (const width of [1440, 375]) {
+    // Round 3 deliberately uses PDF geometry instead of the fluid client page.
+    for (const width of [1440, 768, 375]) {
       await page.setViewportSize({ width, height: 1000 });
-      await page.goto(`/p/${active.id}?preview=1`);
-      await expect(page.locator("#proposal-document")).toBeVisible();
-      await page.locator("#proposal-document").evaluate((root, phone) => {
-        (root as HTMLElement).style.paddingLeft = phone ? "76px" : "100px";
-      }, width === 375);
-      await page.evaluate(() => document.fonts.ready);
-      const reading = await page
-        .locator("#proposal-document")
-        .evaluate((root) => {
-          const r = root.getBoundingClientRect();
-          return Array.from(
-            root.querySelectorAll<HTMLElement>("[data-document-block]"),
-          ).map((el) => {
-            const b = el.getBoundingClientRect(),
-              style = getComputedStyle(el.querySelector("p") ?? el);
-            return {
-              id: el.dataset.documentBlock!,
-              x: b.x - r.x,
-              y: b.y - r.y,
-              w: b.width,
-              h: b.height,
-              typography: `${style.fontSize}/${style.lineHeight} ${style.fontFamily}; white-space: ${style.whiteSpace}`,
-            };
-          });
-        });
       await page.goto(`/proposals/${active.id}`);
-      if (width === 375)
+      if (width === 375) {
         await page.locator(".phone-section-list button").first().click();
-      // A full-document reading view is available on phone as well as the section editor.
-      if (width === 375)
         await page
           .getByRole("button", { name: "Full document", exact: true })
           .click();
-      await page.evaluate(() => document.fonts.ready);
-      await expect(page.locator(".document-page-count")).toHaveAttribute(
-        "data-page-count",
-        /[0-9]+/,
-      );
-      await page.mouse.move(1, 1);
-      await page.keyboard.press("Escape");
-      const editing = await page.locator(".editor-paper").evaluate((root) => {
-        const r = root.getBoundingClientRect();
-        return Array.from(
-          root.querySelectorAll<HTMLElement>(".draft-block"),
-        ).map((el) => {
-          const b = el.getBoundingClientRect(),
-            style = getComputedStyle(el.querySelector(".tiptap p,p") ?? el);
-          return {
-            id: el.dataset.blockId!.replace(/^block-/, ""),
-            x: b.x - r.x,
-            y: b.y - r.y,
-            w: b.width,
-            h: b.height,
-            typography: `${style.fontSize}/${style.lineHeight} ${style.fontFamily}; white-space: ${style.whiteSpace}`,
-          };
-        });
-      });
-      expect(editing).toHaveLength(reading.length);
-      for (const actual of editing) {
-        const expected = reading.find((b) => b.id === actual.id)!;
-        for (const key of ["x", "w", "h"] as const)
-          expect(
-            Math.abs(actual[key] - expected[key]),
-            `${width}px ${active.content.find((b) => b.id === actual.id)?.type} ${key}: editor ${actual[key]}, client ${expected[key]}; editor ${actual.typography}; client ${expected.typography}`,
-          ).toBeLessThanOrEqual(2);
       }
+      await expect(page.locator(".quote-workspace")).toHaveAttribute(
+        "data-panels-ready",
+        "true",
+      );
+      expect(
+        await page
+          .locator(".editor-paper")
+          .evaluate((el) => (el as HTMLElement).offsetWidth),
+      ).toBe(816);
+      expect(
+        parseFloat(
+          await page
+            .locator(".editor-paper")
+            .evaluate((el) => getComputedStyle(el).paddingLeft),
+        ),
+      ).toBeCloseTo((18 * 96) / 25.4, 2);
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`/proposals/${active.id}`);
