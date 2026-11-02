@@ -1,3 +1,4 @@
+import { pdfPreview } from "./pdf-preview";
 import { reviewBlocks } from "./ai-review";
 import { StyleOverridesSchema, styleFonts } from "./proposal-styles";
 import {
@@ -795,6 +796,54 @@ export async function handle(req: Request, path: string[]) {
         return json(await rt.service.create(input, user), 201);
       }
       uuid.parse(id);
+      if (["GET", "POST"].includes(method) && action === "preview-pdf") {
+        const stored = await rt.repo.get(id);
+        check(stored, "Not found", 404);
+        const settings = (
+          await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+        )[0];
+        check(settings, "Workspace settings required");
+        let p = stored;
+        if (method === "POST") {
+          const input = z
+            .object({
+              revision: z.number().int(),
+              title: z.string().min(1).max(300),
+              content: z.array(z.record(z.string(), z.unknown())).max(300),
+              quote: QuoteSchema,
+              valid_until: z.string().nullable(),
+              style_overrides: StyleOverridesSchema.optional(),
+              template_style_overrides: StyleOverridesSchema.optional(),
+            })
+            .strict()
+            .parse(await body(req));
+          check(
+            stored.revision === input.revision,
+            "Proposal changed; reload",
+            409,
+          );
+          check(
+            stored.status === "draft" && !stored.archived_at,
+            "Only drafts accept preview edits",
+            409,
+          );
+          p = {
+            ...stored,
+            ...input,
+            content: reviewBlocks(input.content as Block[], false),
+          };
+        }
+        const result = await pdfPreview(rt.repo, rt.storage, p, settings);
+        if (method === "POST") return json(result);
+        return new Response(Buffer.from(result.pdf_base64, "base64"), {
+          headers: {
+            ...headers,
+            "Content-Type": "application/pdf",
+            "Content-Disposition": 'inline; filename="proposal-preview.pdf"',
+            "Cache-Control": "private, no-store",
+          },
+        });
+      }
       if (method === "GET" && ["preview", "preview-logo"].includes(action)) {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);

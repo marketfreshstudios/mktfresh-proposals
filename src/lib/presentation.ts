@@ -218,7 +218,7 @@ export function renderBlocks(
                   c.body.length <= 20000,
                 "Invalid contract clause",
               );
-              return `<section><h3>${escape(resolve(c.heading, map))}</h3><p>${escape(resolve(c.body, map)).replace(/\n/g, "<br>")}</p></section>`;
+              return `<section><h3 data-print-part="${escape(c.id)}">${escape(resolve(c.heading, map))}</h3><p data-print-part="${escape(c.id)}">${escape(resolve(c.body, map)).replace(/\n/g, "<br>")}</p></section>`;
             })
             .join("")}</section>`;
         }

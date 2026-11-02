@@ -29,6 +29,7 @@ export async function sealedPdf(
     logo?: string;
     fonts?: (ProposalFont & { data: string })[];
   },
+  options?: { preview?: boolean },
 ) {
   const serverless = process.env.VERCEL
     ? (await import("@sparticuz/chromium")).default
@@ -122,6 +123,23 @@ export async function sealedPdf(
     >(
       `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
     );
+    const starts = await page
+      .locator(".print-sheet")
+      .evaluateAll((sheets) =>
+        sheets.map((el) => (el.textContent ?? "").trim().slice(0, 160)),
+      );
+    for (const boundary of layout.boundaries)
+      boundary.start_text = starts[boundary.page - 1];
+    if (options?.preview)
+      await page.evaluate(() => {
+        const mark = document.createElement("div");
+        mark.textContent = "Preview — not signed";
+        mark.setAttribute(
+          "style",
+          'position:fixed;top:45%;left:0;width:100%;text-align:center;font:600 48px "Instrument Sans",sans-serif;color:#555;opacity:.16;transform:rotate(-25deg);z-index:9999;pointer-events:none',
+        );
+        document.body.append(mark);
+      });
     const body = await page.pdf({
       format: "Letter",
       printBackground: true,
@@ -130,6 +148,8 @@ export async function sealedPdf(
     if ((await PDFDocument.load(body)).getPageCount() !== layout.pages)
       throw new Error("PDF pagination differs from the document layout");
     const bodyHash = sha256(body);
+    if (options?.preview)
+      return { body, pdf: Buffer.from(body), bodyHash, layout };
     const certificate = completionCertificate(version, signers, events, brand);
     await page.setContent(htmlDocument(style + certificate));
     await page.evaluate(() => document.fonts.ready);
@@ -155,7 +175,7 @@ export async function sealedPdf(
       auditPdf.getPageIndices(),
     ))
       pdf.addPage(copied);
-    return { body, pdf: Buffer.from(await pdf.save()), bodyHash };
+    return { body, pdf: Buffer.from(await pdf.save()), bodyHash, layout };
   } finally {
     await browser.close();
   }
