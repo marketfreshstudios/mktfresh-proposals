@@ -343,3 +343,15 @@
   --block-toolbar-ink: #f4f2ed;
   --block-ai-ink: #ceb7ff;
 }
+
+:root,
+[data-theme="light"] {
+  --review-amber: #bd841f;
+  --review-amber-ink: #825509;
+  --review-ground: #fbf3df;
+}
+[data-theme="dark"] {
+  --review-amber: #e3b04f;
+  --review-amber-ink: #f3c56d;
+  --review-ground: #362e1d;
+}

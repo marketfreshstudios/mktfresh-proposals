@@ -3,15 +3,20 @@ import {
   certificateTime,
 } from "./completion-certificate";
 import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
+import {
+  printContent,
+  printCss,
+  paginatePrintDocument,
+} from "./document-print";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { WorkspaceSettings } from "./workspace";
 import { chromium } from "playwright-core";
 import { PDFDocument } from "pdf-lib";
-import { escape, htmlDocument, renderBlocks, sha256 } from "./content";
+import { escape, htmlDocument, sha256 } from "./content";
 import type { Audit, Signer, Version } from "./model";
 
-/** Render without network or scripts; append a single-page completion certificate. */
+/** Render without network or document scripts; append a single-page completion certificate. */
 export async function sealedPdf(
   version: Version,
   signers: Signer[],
@@ -64,8 +69,7 @@ export async function sealedPdf(
           `@font-face{font-family:"Proposal-${f.id}";src:url(data:font/${f.format};base64,${f.data})}`,
       )
       .join("");
-    const style = `<style>${families.join("")}${custom}body{font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}header{border-bottom:3px solid ${brand?.settings?.accent_colour ?? "#245547"};padding-bottom:16px;margin-bottom:24px}</style>`;
-    const heading = `<header>${brand?.logo ? `<img alt="" src="${brand.logo}" style="max-height:60px">` : ""}<h2>${escape(brand?.settings?.company_name ?? version.variables_resolved["company.name"] ?? "Proposal")}</h2></header>`;
+    const style = `<style>${families.join("")}${custom}body{--proposal-body:${fontFamily(brand?.settings?.proposal_fonts?.body)};--proposal-heading:${fontFamily(brand?.settings?.proposal_fonts?.heading)};font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}</style>`;
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());
     const signatures = signers
@@ -77,23 +81,52 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          heading +
-          renderBlocks(
-            version.content.filter((b) => b.type !== "signature_block"),
-            version.quote,
-            version.variables_resolved,
+          `<style>${printCss}</style>` +
+          printContent({
+            title:
+              version.variables_resolved["proposal.title"] ??
+              brand?.document?.title ??
+              "Proposal",
+            company: version.variables_resolved["client.company"] ?? "Client",
+            sender:
+              version.variables_resolved["sender.name"] ??
+              brand?.settings?.owner ??
+              "",
+            validity: version.variables_resolved["proposal.valid_until"] ?? "",
+            content: version.content,
+            quote: version.quote,
+            variables: version.variables_resolved,
             currency,
-            brand?.settings?.money?.cents ?? "auto",
-          ) +
-          signatures,
+            cents: brand?.settings?.money?.cents ?? "auto",
+            signatures,
+            logo: brand?.logo,
+            signatory: brand?.settings?.company_signatory,
+            workspace:
+              brand?.settings?.company_name ??
+              version.variables_resolved["company.name"],
+          }),
       ),
     );
     await page.evaluate(() => document.fonts.ready);
+    await page.locator("img").evaluateAll(async (images) => {
+      await Promise.all(
+        images.map((img) => (img as HTMLImageElement).decode().catch(() => {})),
+      );
+    });
+    // Serialize only this trusted repository function, never document content.
+    // tsx preserves nested function names with __name; keep that helper scoped here.
+    const layout = await page.evaluate<
+      ReturnType<typeof paginatePrintDocument>
+    >(
+      `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
+    );
     const body = await page.pdf({
       format: "Letter",
       printBackground: true,
       preferCSSPageSize: true,
     });
+    if ((await PDFDocument.load(body)).getPageCount() !== layout.pages)
+      throw new Error("PDF pagination differs from the document layout");
     const bodyHash = sha256(body);
     const certificate = completionCertificate(version, signers, events, brand);
     await page.setContent(htmlDocument(style + certificate));

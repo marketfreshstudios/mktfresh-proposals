@@ -829,6 +829,16 @@ export async function handle(req: Request, path: string[]) {
           ),
         );
       }
+      if (method === "POST" && action === "review") {
+        const input = z
+          .object({
+            revision: z.number().int(),
+            section_ids: z.array(z.string().min(1)).min(1).max(300),
+            reviewed: z.boolean(),
+          })
+          .parse(await body(req));
+        return json(await rt.service.reviewSections(id, input, user));
+      }
       if (method === "GET" && action === "ready") {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);

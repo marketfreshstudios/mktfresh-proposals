@@ -12,6 +12,8 @@ export function eventLabel(
     client_stripe_unlinked: "Stripe customer unlinked",
     created: "Draft created",
     edited: "Draft edited",
+    ai_sections_reviewed: "Assistant sections reviewed",
+    ai_review_undone: "Assistant review reopened",
     sent: "Proposal sent",
     viewed: "Client opened the proposal",
     quote_changed: "Client updated their choices",

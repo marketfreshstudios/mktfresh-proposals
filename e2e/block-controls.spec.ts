@@ -70,6 +70,12 @@ test("block controls own one block and never move document content on hover, foc
       else if (parts[0] === "proposals") {
         if (req.method() === "PATCH")
           active = await service.edit(active.id, req.postDataJSON(), staff);
+        else if (parts[2] === "review")
+          active = await service.reviewSections(
+            active.id,
+            req.postDataJSON(),
+            staff,
+          );
         value = parts[1] ? active : { items: [active], total: 1 };
       } else if (req.method() === "POST") {
         value = req.postDataJSON();
@@ -306,9 +312,9 @@ test("block controls own one block and never move document content on hover, foc
   const roots = page.locator(
     ".document-section > .block-sortable > .block-frame",
   );
-  const secondId = await roots.nth(1).getAttribute("data-block-id");
-  await roots.first().evaluate((el) => (el as HTMLElement).focus());
-  const handle = roots.first().locator("..").locator(":scope > .drag-handle");
+  const secondId = await roots.nth(2).getAttribute("data-block-id");
+  await roots.nth(1).evaluate((el) => (el as HTMLElement).focus());
+  const handle = roots.nth(1).locator("..").locator(":scope > .drag-handle");
   await handle.focus();
   await page.keyboard.press("Space");
   await expect(handle).toHaveAttribute("aria-pressed", "true");
@@ -326,7 +332,7 @@ test("block controls own one block and never move document content on hover, foc
       .filter({ hasText: "over droppable area " + secondId }),
   ).toHaveCount(1);
   await page.keyboard.press("Space");
-  await expect(roots.first()).toHaveAttribute("data-block-id", secondId!);
+  await expect(roots.nth(1)).toHaveAttribute("data-block-id", secondId!);
   expect(errors).toEqual([]);
   await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });
