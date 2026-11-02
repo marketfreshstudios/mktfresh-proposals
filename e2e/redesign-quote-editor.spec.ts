@@ -277,11 +277,16 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${active.id}`);
   const contentBeforeNames = JSON.stringify(active.content);
-  await page.getByRole("switch", { name: "Show names", exact: true }).check();
   await expect(
-    page.locator(".editor-paper .tiptap .field-chip").first(),
-  ).toHaveText("{{client.first_name}}");
-  await page.getByRole("switch", { name: "Show names", exact: true }).uncheck();
+    page.getByRole("switch", { name: "Show names", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".editor-outline .field-options")).toContainText(
+    "Client first name",
+  );
+  await expect(page.locator(".editor-outline .field-options")).toContainText(
+    "{{client.first_name}}",
+  );
+
   await expect(
     page.locator(".editor-paper .tiptap .field-chip").first(),
   ).toHaveText("Jane");

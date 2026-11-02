@@ -1,6 +1,9 @@
 "use client";
 import {
   BlockScope,
+  DocumentFormattingBar,
+  useBlockFeedback,
+  useBlockToolbar,
   BlockFrame,
   BlockAction,
   useBlockSelection,
@@ -54,6 +57,7 @@ import { readiness } from "../lib/quote";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { FieldEditor } from "./field-editor";
+import { FieldOptions, SubjectField, FieldTextArea } from "./field-options";
 import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
@@ -62,10 +66,12 @@ export function Sortable({
   label,
   children,
   block = false,
+  printUnit,
 }: {
   id: string;
   label: string;
   block?: boolean;
+  printUnit?: string;
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
@@ -80,6 +86,7 @@ export function Sortable({
   return (
     <div
       ref={setNodeRef}
+      data-print-unit={printUnit}
       onPointerLeave={() => {
         if (block) selection.hover(null);
       }}
@@ -182,7 +189,7 @@ function Sheet({
     <dialog
       ref={ref}
       aria-label={title}
-      className={`editor-sheet ${extra}`}
+      className={`editor-sheet ${["Add a block", "Clause settings", "Image settings", "Signature settings"].includes(title) ? "block-owned-dialog" : ""} ${extra}`}
       onCancel={(e) => {
         e.preventDefault();
         close();
@@ -219,6 +226,10 @@ function QuoteEditorContent({
   user?: Actor;
   documents?: ReferenceDocument[];
 }) {
+  const blockFeedback = useBlockFeedback();
+  const fields = useBlockToolbar();
+  const [fieldsOpen, setFieldsOpen] = useState(false);
+  const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
@@ -241,7 +252,6 @@ function QuoteEditorContent({
     [documentId, setDocumentId] = useState(documents[0]?.id ?? ""),
     [section, setSection] = useState<number | null>(null),
     [fullDocument, setFullDocument] = useState(false),
-    [names, setNames] = useState(false),
     [confirmed, setConfirmed] = useState(false),
     [sender, setSender] = useState(
       user?.actor.slice(6) ?? staff[0]?.user_id ?? "",
@@ -1160,9 +1170,29 @@ function QuoteEditorContent({
       </footer>
     </div>
   );
+  const firstBlock = !p.content.length ? (
+    <button
+      type="button"
+      className="empty-document-insert"
+      aria-label="Add first block"
+      onClick={() => {
+        setReplaceEmpty(false);
+        setInsertAt(0);
+      }}
+    >
+      +
+    </button>
+  ) : null;
   const sendPanel = (
     <div className="stack">
       <h3>Ready to send?</h3>
+      <Field label="Valid until">
+        <ValidityField
+          timezone={settings?.timezone ?? "UTC"}
+          value={p.valid_until}
+          onChange={(valid_until) => change({ valid_until })}
+        />
+      </Field>
       <ul className="send-checklist">
         {ready.errors.map((e, n) => (
           <li className="readiness-row blocker" key={n}>
@@ -1230,20 +1260,27 @@ function QuoteEditorContent({
         </Banner>
       )}
       <Field label="Subject">
-        <input
+        <SubjectField
           value={emailSubject}
           disabled={!emailLoaded}
-          onChange={(e) => {
-            subjectEdited.current = true;
-            setEmailSubject(e.target.value);
+          map={{
+            ...emailValues(p),
+            "sender.name":
+              staff.find((m) => m.user_id === sender)?.display_name ??
+              user?.staff_name ??
+              "",
           }}
-          maxLength={300}
+          onChange={(value) => {
+            subjectEdited.current = true;
+            setEmailSubject(value);
+          }}
         />
       </Field>
       <div className="field send-email-note">
         <span>Note</span>
         {emailLoaded ? (
           <FieldEditor
+            standalone
             label="Note"
             allowLinks
             value={note}
@@ -1467,6 +1504,27 @@ function QuoteEditorContent({
               >
                 Move down
               </BlockAction>
+              {b.type === "contract" && (
+                <BlockAction
+                  onClick={() =>
+                    patchBlock(n, {
+                      ...b,
+                      contract_edited: true,
+                      clauses: [
+                        ...(b.clauses ?? []),
+                        {
+                          id: uid(),
+                          heading: "New clause",
+                          body: "",
+                          show_when: null,
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Add clause
+                </BlockAction>
+              )}
               {b.type === "contract" && b.clauses?.length ? (
                 <BlockAction
                   aria-label="Contract settings"
@@ -1475,32 +1533,34 @@ function QuoteEditorContent({
                   Contract settings
                 </BlockAction>
               ) : null}
+              {["image", "signature_block"].includes(b.type) && (
+                <BlockAction
+                  aria-label="Block settings"
+                  onClick={() => setBlockSettings(b.id!)}
+                >
+                  Block settings
+                </BlockAction>
+              )}
+              {blockFeedback.reuseButton(b)}
               <BlockAction
-                variant="ghost"
-                onClick={async () => {
-                  try {
-                    await post("/api/content_library", {
-                      id: uid(),
-                      name: b.text || `${b.type} block`,
-                      block: b,
-                    });
-                    setError("");
-                  } catch (e) {
-                    setError(
-                      e instanceof Error ? e.message : "Unable to save block",
-                    );
-                  }
-                }}
-              >
-                Save block for reuse
-              </BlockAction>
-              <BlockAction
-                variant="ghost"
                 onClick={() =>
-                  change({ content: p.content.filter((_, j) => j !== n) })
+                  blockFeedback.remove(
+                    b,
+                    () =>
+                      change({
+                        content: latest.current.content.filter(
+                          (v) => v.id !== b.id,
+                        ),
+                      }),
+                    () => {
+                      const next = [...latest.current.content];
+                      next.splice(Math.min(n, next.length), 0, b);
+                      change({ content: next });
+                    },
+                  )
                 }
               >
-                Remove block
+                Delete block
               </BlockAction>
             </>
           }
@@ -1510,21 +1570,27 @@ function QuoteEditorContent({
               <span className="heading-measure" aria-hidden="true">
                 {b.text || "\u200b"}
               </span>
-              <textarea
+              <FieldTextArea
+                onBeforeInsert={() =>
+                  setSection(sections.findIndex((s) => s.indices.includes(n)))
+                }
                 className="document-heading"
                 aria-label={`Heading ${n + 1}`}
                 rows={1}
                 value={b.text ?? ""}
-                onChange={(e) =>
+                onValue={(text) =>
                   patchBlock(n, {
                     ...b,
-                    text: e.target.value.replace(/[\r\n]+/g, " "),
+                    text: text.replace(/[\r\n]+/g, " "),
                   })
                 }
               />
             </h2>
           ) : b.type === "paragraph" ? (
             <FieldEditor
+              onBeforeInsert={() =>
+                setSection(sections.findIndex((s) => s.indices.includes(n)))
+              }
               value={
                 b.content ?? {
                   type: "doc",
@@ -1542,7 +1608,7 @@ function QuoteEditorContent({
                 patchBlock(n, { ...b, content, text: undefined })
               }
               map={map}
-              showNames={names}
+              showNames={false}
               onSlash={() => {
                 setReplaceEmpty(true);
                 setInsertAt(n);
@@ -1569,6 +1635,7 @@ function QuoteEditorContent({
                     <Sortable
                       key={id}
                       id={id}
+                      printUnit={unitItems(id)[0].id}
                       label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
                     >
                       {unitItems(id)[0].choice_group_id ? (
@@ -1657,14 +1724,52 @@ function QuoteEditorContent({
                             >
                               Clause settings
                             </BlockAction>{" "}
+                            {blockFeedback.reuseButton({
+                              id: c.id,
+                              type: "contract",
+                              text: c.heading,
+                              clauses: [c],
+                            })}
                             <BlockAction
                               variant="ghost"
                               onClick={() =>
-                                patchBlock(n, {
-                                  ...b,
-                                  contract_edited: true,
-                                  clauses: b.clauses!.filter((_, j) => j !== k),
-                                })
+                                blockFeedback.remove(
+                                  { type: "contract" },
+                                  () =>
+                                    patchBlock(n, {
+                                      ...b,
+                                      contract_edited: true,
+                                      clauses: b.clauses!.filter(
+                                        (_, j) => j !== k,
+                                      ),
+                                    }),
+                                  () => {
+                                    const current = latest.current.content.find(
+                                      (v) => v.id === b.id,
+                                    );
+                                    if (!current) return;
+                                    const clauses = [
+                                      ...(current.clauses ?? []),
+                                    ];
+                                    clauses.splice(
+                                      Math.min(k, clauses.length),
+                                      0,
+                                      c,
+                                    );
+                                    change({
+                                      content: latest.current.content.map(
+                                        (v) =>
+                                          v.id === b.id
+                                            ? {
+                                                ...current,
+                                                contract_edited: true,
+                                                clauses,
+                                              }
+                                            : v,
+                                      ),
+                                    });
+                                  },
+                                )
                               }
                             >
                               Remove clause
@@ -1722,44 +1827,30 @@ function QuoteEditorContent({
                   ) : null,
                 )}
               </Reorder>
-              <Button
-                onClick={() =>
-                  patchBlock(n, {
-                    ...b,
-                    contract_edited: true,
-                    clauses: [
-                      ...(b.clauses ?? []),
-                      {
-                        id: uid(),
-                        heading: "New clause",
-                        body: "",
-                        show_when: null,
-                      },
-                    ],
-                  })
-                }
-              >
-                + Clause
-              </Button>
             </div>
           ) : b.type === "signature_block" ? (
             <div className="editor-signature client-signature">
-              <div className="signature-settings">
-                <Field label="Signer role">
-                  <select
-                    value={b.role ?? "client"}
-                    onChange={(e) =>
-                      patchBlock(n, {
-                        ...b,
-                        role: e.target.value as "client" | "company",
-                      })
-                    }
-                  >
-                    <option value="client">Client</option>
-                    <option value="company">Company</option>
-                  </select>
-                </Field>
-              </div>
+              {blockSettings === b.id && (
+                <Sheet
+                  title="Signature settings"
+                  close={() => setBlockSettings(null)}
+                >
+                  <Field label="Signer role">
+                    <select
+                      value={b.role ?? "client"}
+                      onChange={(e) =>
+                        patchBlock(n, {
+                          ...b,
+                          role: e.target.value as "client" | "company",
+                        })
+                      }
+                    >
+                      <option value="client">Client</option>
+                      <option value="company">Company</option>
+                    </select>
+                  </Field>
+                </Sheet>
+              )}
               <h3>
                 {b.role === "client" ? "Client signature" : "Company signature"}
               </h3>
@@ -1782,21 +1873,24 @@ function QuoteEditorContent({
           ) : b.type === "image" ? (
             <>
               <img src={b.src} alt={b.alt ?? ""} />
-              <div className="image-settings">
-                <Field label="Image description">
-                  <input
-                    value={b.alt ?? ""}
-                    onChange={(e) =>
-                      patchBlock(n, { ...b, alt: e.target.value })
-                    }
-                  />
-                </Field>
-              </div>
+              {blockSettings === b.id && (
+                <Sheet
+                  title="Image settings"
+                  close={() => setBlockSettings(null)}
+                >
+                  <Field label="Image description">
+                    <input
+                      value={b.alt ?? ""}
+                      onChange={(e) =>
+                        patchBlock(n, { ...b, alt: e.target.value })
+                      }
+                    />
+                  </Field>
+                </Sheet>
+              )}
             </>
           ) : b.type === "variable" ? (
-            <span className="field-chip">
-              {names ? `{{${b.path}}}` : map[b.path ?? ""]}
-            </span>
+            <span className="field-chip">{map[b.path ?? ""]}</span>
           ) : (
             <div className="editor-page-break" data-explicit-break>
               Page break
@@ -1974,6 +2068,11 @@ function QuoteEditorContent({
         >
           Review & send
         </Button>
+        <span className="tablet-tools">
+          <Button data-field-insert onClick={() => setFieldsOpen(true)}>
+            Fields
+          </Button>
+        </span>
       </header>
       {offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
@@ -2129,49 +2228,20 @@ function QuoteEditorContent({
             max={sections.length || 1}
           />
           <p className="eyebrow">Fields</p>
-          <label className="check">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={names}
-              onChange={(e) => setNames(e.target.checked)}
-            />
-            Show names
-          </label>
-          {[
-            "client.first_name",
-            "client.full_name",
-            "client.company",
-            "workspace.name",
-            "sender.name",
-            "proposal.date",
-            "proposal.valid_until",
-            "proposal.validity",
-            "client.address",
-            "quote.one_time_total",
-            "quote.monthly_total",
-          ].map((k) => (
-            <button
-              className="field-chip"
-              key={k}
-              onClick={() =>
-                change({
-                  content: [
-                    ...p.content,
-                    { id: uid(), type: "variable", path: k },
-                  ],
-                })
-              }
-            >
-              {names ? `{{${k}}}` : map[k] || k}
-            </button>
-          ))}
+          <FieldOptions map={map} onInsert={(path) => fields?.insert(path)} />
         </aside>
         <main className="editor-document-region">
+          <DocumentFormattingBar />
+          {blockFeedback.feedback}
           <div className="phone-section-list">
             <p className="eyebrow">Proposal for {p.client.company}</p>
             <h1>{p.title}</h1>
-            <p>Choose a section to edit.</p>
+            <p>
+              {p.content.length
+                ? "Choose a section to edit."
+                : "Add your first section."}
+            </p>
+            {firstBlock}
             {sections.map((s, n) => (
               <button key={s.id} onClick={() => setSection(n)}>
                 <span>{String(n + 1).padStart(2, "0")}</span>
@@ -2236,7 +2306,7 @@ function QuoteEditorContent({
               timezone={p.workspace_settings?.timezone}
               onTitle={(title) => change({ title })}
             />
-
+            {firstBlock}
             <Reorder
               ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
               onMove={(from, to) => {
@@ -2283,104 +2353,20 @@ function QuoteEditorContent({
             />
           </article>
           {reviewBanner}
-          <div className="editor-insert">
-            <label className="btn">
-              Add image
-              <input
-                className="screen-reader"
-                type="file"
-                accept="image/png,image/jpeg"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (
-                    file.size > 700000 ||
-                    !["image/png", "image/jpeg"].includes(file.type)
-                  ) {
-                    setError("Use a PNG or JPEG smaller than 700 KB");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () =>
-                    change({
-                      content: [
-                        ...latest.current.content,
-                        {
-                          id: uid(),
-                          type: "image",
-                          src: String(reader.result),
-                          alt: file.name,
-                        },
-                      ],
-                    });
-                  reader.onerror = () =>
-                    setError("Unable to read image. Your draft is unchanged.");
-                  reader.readAsDataURL(file);
-                }}
-              />
-            </label>
-            <select
-              aria-label="Add block"
-              value=""
-              onChange={(e) => {
-                if (e.target.value) insert(e.target.value as Block["type"]);
-              }}
-            >
-              <option value="">+ Add block</option>
-              {[
-                "heading",
-                "paragraph",
-                "pricing_table",
-                "contract",
-                "signature_block",
-                "page_break",
-              ].map((t) => (
-                <option
-                  key={t}
-                  value={t}
-                  disabled={
-                    t === "pricing_table" &&
-                    p.content.some((b) => b.type === "pricing_table")
-                  }
-                >
-                  {t.replaceAll("_", " ")}
-                </option>
-              ))}
-            </select>
-            {library.length > 0 && (
-              <select
-                aria-label="Insert saved block"
-                value=""
-                onChange={(e) => {
-                  const b = library.find((b) => b.id === e.target.value);
-                  if (b)
-                    change({
-                      content: [
-                        ...p.content,
-                        { ...structuredClone(b.block), id: uid() },
-                      ],
-                    });
-                }}
-              >
-                <option value="">Insert saved block</option>
-                {library.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <Field label="Valid until">
-              <ValidityField
-                timezone={p.workspace_settings?.timezone ?? "UTC"}
-                value={p.valid_until}
-                onChange={(valid_until) => change({ valid_until })}
-              />
-            </Field>
-          </div>
         </main>
         <aside className="editor-sidepanel">{panel}</aside>
       </div>
+      {fieldsOpen && (
+        <Sheet title="Fields" close={() => setFieldsOpen(false)}>
+          <FieldOptions
+            map={map}
+            onInsert={(path) => {
+              setFieldsOpen(false);
+              requestAnimationFrame(() => fields?.insert(path));
+            }}
+          />
+        </Sheet>
+      )}
       {reviewConfirm && (
         <Sheet
           title="Review all AI-written sections"

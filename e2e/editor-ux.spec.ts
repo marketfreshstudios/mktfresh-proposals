@@ -210,11 +210,15 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     }
   }
   if (stage === "after") {
-    // Compare each block in its own document coordinate system. App navigation/panels are outside the paper.
+    // Match usable text width before comparing block shapes. The editing gutter
+    // and permanent insertion gaps are deliberate chrome, absent from client reading.
     for (const width of [1440, 375]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(`/p/${active.id}?preview=1`);
       await expect(page.locator("#proposal-document")).toBeVisible();
+      await page.locator("#proposal-document").evaluate((root, phone) => {
+        (root as HTMLElement).style.paddingLeft = phone ? "76px" : "100px";
+      }, width === 375);
       await page.evaluate(() => document.fonts.ready);
       const reading = await page
         .locator("#proposal-document")
@@ -266,7 +270,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       expect(editing).toHaveLength(reading.length);
       for (const actual of editing) {
         const expected = reading.find((b) => b.id === actual.id)!;
-        for (const key of ["x", "y", "w", "h"] as const)
+        for (const key of ["x", "w", "h"] as const)
           expect(
             Math.abs(actual[key] - expected[key]),
             `${width}px ${active.content.find((b) => b.id === actual.id)?.type} ${key}: editor ${actual[key]}, client ${expected[key]}`,
@@ -477,11 +481,11 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     expect(extracted.match(/Agreed scope and milestones\./g)).toHaveLength(645);
     expect(extracted).toContain("The final agreed step.");
     expect(extracted.split(active.title)).toHaveLength(2);
-    // An over-page choice group must retain headings/scope/amounts as it splits.
+    // A complete choice group remains atomic, including all names, scopes and amounts.
     const longQuote = structuredClone(active.quote),
       grouped = longQuote.filter((i) => i.choice_group_id === group);
-    grouped[0].description = "Alpha scope is included. ".repeat(160);
-    grouped[1].description = "Beta scope is included. ".repeat(160);
+    grouped[0].description = "Alpha scope is included. ".repeat(12);
+    grouped[1].description = "Beta scope is included. ".repeat(12);
     const pricingContent: Block[] = [
       { id: crypto.randomUUID(), type: "pricing_table" },
     ];
@@ -527,11 +531,20 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     pricingText = pricingText.replace(/\s+/g, " ");
     await pricingLoading.destroy();
     for (const item of longQuote) expect(pricingText).toContain(item.name);
-    expect(pricingText.match(/Alpha scope is included\./g)).toHaveLength(160);
-    expect(pricingText.match(/Beta scope is included\./g)).toHaveLength(160);
+    expect(pricingText.match(/Alpha scope is included\./g)).toHaveLength(12);
+    expect(pricingText.match(/Beta scope is included\./g)).toHaveLength(12);
     expect(pricingText).toContain("$2,750");
     expect(pricingText).toContain("$25");
     await writeFile(`${dir}/long-pricing-group.pdf`, pricingPdf.pdf);
+    const oversized = structuredClone(pricingVersion);
+    oversized.quote[0].description = "Oversized scope. ".repeat(500);
+    oversized.content_hash = versionHash(oversized);
+    await expect(
+      sealedPdf(oversized, [], [], active.currency, {
+        settings,
+        document: { id: active.id, title: active.title },
+      }),
+    ).rejects.toThrow("too tall for one PDF page");
     await writeFile(`${dir}/long-proposal.pdf`, pdf.pdf);
     await writeFile(
       `${dir}/pagination.json`,
@@ -607,7 +620,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .filter({ has: page.locator('[data-field="unknown.field"]') });
     await invalid.evaluate((el) => (el as HTMLElement).focus());
     await invalid
-      .getByRole("button", { name: "Remove block", exact: true })
+      .getByRole("button", { name: "Delete block", exact: true })
       .click();
     await expect(page.locator(".document-page-count")).toHaveAttribute(
       "data-page-count",

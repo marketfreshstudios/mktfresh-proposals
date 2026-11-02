@@ -3,7 +3,7 @@ import type { Block, Quote } from "./model";
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
 export const printCss = `
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f;overflow-wrap:anywhere}
-@page{size:Letter;margin:18mm}h1{font:600 40px/1.15 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 20px;letter-spacing:-.025em}h2{font:600 25px/1.25 var(--proposal-heading,"Source Serif 4",serif);margin:28px 0 12px;letter-spacing:-.015em}h3{font:600 17px/1.35 var(--proposal-heading,"Source Serif 4",serif);margin:16px 0}p{margin:10px 0}ul,ol{margin:10px 0;padding-left:24px}img{max-width:100%;max-height:320px;object-fit:contain}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border:1px solid #ddd}tr{break-inside:avoid}.field-chip{padding:0;border:0;background:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}.print-cover p{font:500 12px/1.5 "Instrument Sans",sans-serif}.print-cover .byline{padding-bottom:20px;color:#6b6963}.print-cover .eyebrow{text-transform:uppercase;letter-spacing:.07em}.print-sheet{width:100%;height:calc(1056px - 36mm);overflow:hidden;break-after:page;display:flow-root}.print-sheet:last-child{break-after:auto}.print-root{width:calc(816px - 36mm)}.print-source{display:contents}.print-atom{display:flow-root}.print-atom>*:first-child{margin-top:0}.print-atom{padding-top:10px;padding-bottom:0}.print-atom h2{margin-top:18px}.print-atom img{display:block}.print-signature{break-inside:avoid;padding-top:24px}.print-signature img{max-height:100px}.print-sheet> :first-child{padding-top:0}
+@page{size:Letter;margin:18mm}h1{font:600 40px/1.15 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 20px;letter-spacing:-.025em}h2{font:600 25px/1.25 var(--proposal-heading,"Source Serif 4",serif);margin:28px 0 12px;letter-spacing:-.015em}h3{font:600 17px/1.35 var(--proposal-heading,"Source Serif 4",serif);margin:16px 0}p{margin:10px 0}ul,ol{margin:10px 0;padding-left:24px}img{max-width:100%;max-height:320px;object-fit:contain}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border:1px solid #ddd}tr{break-inside:avoid}.field-chip{padding:0;border:0;background:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}.print-cover p{font:500 12px/1.5 "Instrument Sans",sans-serif}.print-cover .byline{padding-bottom:20px;color:#6b6963}.print-cover .eyebrow{text-transform:uppercase;letter-spacing:.07em}.print-sheet{width:100%;height:calc(1056px - 36mm);overflow:hidden;break-after:page;display:flow-root}.print-sheet:last-child{break-after:auto}.print-root{width:calc(816px - 36mm)}.print-source{display:contents}.print-atom{display:flow-root}.print-atom>*:first-child{margin-top:0}.print-atom{padding-top:10px;padding-bottom:0}.print-atom h2{margin-top:18px}.print-atom img{display:block}.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature{break-inside:avoid;page-break-inside:avoid}.print-signature{break-inside:avoid;padding-top:24px}.print-signature img{max-height:100px}.print-sheet> :first-child{padding-top:0}
 `;
 export function printContent(input: {
   title: string;
@@ -49,6 +49,7 @@ export type PageBoundary = {
   block: string;
   offset: number;
   explicit: boolean;
+  unit?: string;
 };
 /** Runs in Chromium in BOTH the PDF job and a non-executable editor measurement frame.
  * Splits oversize text with DOM Ranges, preserving markup. Content is never evaluated.
@@ -65,14 +66,21 @@ export function paginatePrintDocument(root: HTMLElement): {
     count = 0,
     currentBlock = "cover",
     offset = 0,
-    pendingBreak = false;
+    pendingBreak = false,
+    currentUnit: string | undefined;
   function newPage(explicit = false) {
     page = doc.createElement("div");
     page.className = "print-sheet";
     root.append(page);
     count++;
     if (count > 1)
-      boundaries.push({ page: count, block: currentBlock, offset, explicit });
+      boundaries.push({
+        page: count,
+        block: currentBlock,
+        offset,
+        explicit,
+        ...(currentUnit ? { unit: currentUnit } : {}),
+      });
   }
   newPage();
   const height = page.getBoundingClientRect().height;
@@ -93,6 +101,15 @@ export function paginatePrintDocument(root: HTMLElement): {
     return { node: el, offset: el.childNodes.length };
   }
   function add(node: HTMLElement) {
+    const previousUnit = currentUnit;
+    currentUnit = node.dataset.printUnit ?? currentUnit;
+    try {
+      addContent(node);
+    } finally {
+      currentUnit = previousUnit;
+    }
+  }
+  function addContent(node: HTMLElement) {
     const wrapper = doc.createElement("div");
     wrapper.className = "print-atom";
     wrapper.append(node);
@@ -104,13 +121,22 @@ export function paginatePrintDocument(root: HTMLElement): {
     const unbrokenHeight = wrapper.getBoundingClientRect().height;
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
+    const indivisible = node.matches(
+      ".print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature",
+    );
+    if (indivisible && unbrokenHeight > height)
+      throw new Error(
+        "A pricing card, choice group or signature is too tall for one PDF page. Shorten its content before sending.",
+      );
     const atomic =
+      indivisible ||
       node.matches("img,table,.print-signature") ||
       !!node.querySelector("img,table");
     if (atomic) {
       // Decompose an over-page container BEFORE starting a new page. Moving an
       // impossible-to-fit group first would strand its heading on an empty page.
       if (
+        !indivisible &&
         unbrokenHeight > height &&
         !node.matches("img,table") &&
         node.children.length
@@ -206,7 +232,9 @@ export function paginatePrintDocument(root: HTMLElement): {
     // Preserve semantic paragraphs and list items as breakable units; headings stay readable.
     if (
       el.matches("div,section") &&
-      !el.matches(".print-signature") &&
+      !el.matches(
+        ".print-signature,.print-pricing-unit,.print-pricing-card,.print-choice-group",
+      ) &&
       el.children.length &&
       !el.querySelector("table,img")
     )
@@ -231,7 +259,13 @@ export function paginatePrintDocument(root: HTMLElement): {
       : [source];
     for (let n = 0; n < nodes.length; n++) {
       // Keep headings with the following paragraph when that pair fits on a page.
-      if (nodes[n].matches("h2,h3") && nodes[n + 1]) {
+      if (
+        nodes[n].matches("h2,h3") &&
+        nodes[n + 1] &&
+        !nodes[n + 1].matches(
+          ".print-signature,.print-pricing-unit,.print-choice-group",
+        )
+      ) {
         const group = doc.createElement("section");
         group.append(nodes[n], nodes[++n]);
         add(group);

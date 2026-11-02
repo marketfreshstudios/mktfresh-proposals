@@ -1,204 +1,108 @@
 "use client";
 import { FieldEditor } from "./field-editor";
-import { useState } from "react";
-import { Button } from "./ui";
+import { FieldTextArea, FieldOptions } from "./field-options";
 import type { Block } from "../lib/model";
+/** The inspector edits one existing block; document insertion/deletion lives in its gutter. */
 export function BlocksEditor({
   content,
   onChange,
   map,
-  library = [],
+  onSlash,
 }: {
   content: Block[];
-  onChange: (b: Block[]) => void;
+  onChange: (blocks: Block[]) => void;
   map: Record<string, string>;
-  library?: { id: string; name: string; block: Block }[];
+  onSlash?: () => void;
 }) {
-  const [variable, setVariable] = useState(
-    Object.keys(map)[0] ?? "proposal.title",
-  );
-  const replace = (i: number, b: Block) =>
-    onChange(content.map((v, n) => (n === i ? b : v)));
-  function add(block: Block) {
-    onChange([...content, block]);
-  }
-  async function image(file: File) {
-    if (file.size > 700000)
-      throw new Error("Use a PNG or JPEG smaller than 700 KB");
-    const data = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    add({ type: "image", src: data, alt: file.name });
-  }
   return (
-    <>
-      <div className="toolbar" aria-label="Insert a block">
-        <Button onClick={() => add({ type: "heading", text: "New heading" })}>
-          Heading
-        </Button>
-        <Button
-          onClick={() =>
-            add({
-              type: "paragraph",
-              content: { type: "doc", content: [{ type: "paragraph" }] },
-            })
-          }
-        >
-          Text
-        </Button>
-        <label className="btn">
-          Image
-          <input
-            className="screen-reader"
-            type="file"
-            accept="image/png,image/jpeg"
-            onChange={(e) => {
-              if (e.target.files?.[0])
-                void image(e.target.files[0]).catch((e) => alert(e.message));
-            }}
-          />
-        </label>
-        <Button onClick={() => add({ type: "pricing_table" })}>
-          Pricing table
-        </Button>
-        <Button
-          onClick={() => add({ type: "signature_block", role: "client" })}
-        >
-          Client signature
-        </Button>
-        <Button
-          onClick={() => add({ type: "signature_block", role: "company" })}
-        >
-          Company signature
-        </Button>
-        <Button onClick={() => add({ type: "page_break" })}>Page break</Button>
-        <select
-          aria-label="Variable"
-          value={variable}
-          onChange={(e) => setVariable(e.target.value)}
-        >
-          {Object.entries(map).map(([k, v]) => (
-            <option value={k} key={k}>
-              {k} — {v || "unresolved"}
-            </option>
-          ))}
-        </select>
-        <Button onClick={() => add({ type: "variable", path: variable })}>
-          Insert variable
-        </Button>
-        {library.length > 0 && (
-          <select
-            aria-label="Insert from content library"
-            value=""
-            onChange={(e) => {
-              const b = library.find((v) => v.id === e.target.value);
-              if (b) add(structuredClone(b.block));
-            }}
-          >
-            <option value="">Insert from content library</option>
-            {library.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-      <div className="paper">
-        {content.map((b, i) => (
-          <section className="editor-block" key={i}>
-            <div className="block-actions">
-              <Button
-                variant="ghost"
-                disabled={i === 0}
-                aria-label={`Move block ${i + 1} up`}
-                onClick={() => {
-                  const next = [...content];
-                  [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                  onChange(next);
-                }}
-              >
-                ↑
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={i === content.length - 1}
-                aria-label={`Move block ${i + 1} down`}
-                onClick={() => {
-                  const next = [...content];
-                  [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                  onChange(next);
-                }}
-              >
-                ↓
-              </Button>
-              <Button
-                variant="ghost"
-                aria-label={`Remove block ${i + 1}`}
-                onClick={() => onChange(content.filter((_, n) => n !== i))}
-              >
-                Remove
-              </Button>
-            </div>
+    <div className="template-block-fields">
+      {content.map((b, n) => {
+        const patch = (block: Block) =>
+          onChange(content.map((v, j) => (j === n ? block : v)));
+        return (
+          <section key={b.id ?? n}>
             {b.type === "heading" ? (
-              <input
-                aria-label={`Heading ${i + 1}`}
-                value={b.text ?? ""}
-                onChange={(e) => replace(i, { ...b, text: e.target.value })}
-              />
+              <label className="field">
+                Heading
+                <FieldTextArea
+                  aria-label={`Heading ${n + 1}`}
+                  rows={2}
+                  autoFocus
+                  value={b.text ?? ""}
+                  onValue={(text) => patch({ ...b, text })}
+                />
+              </label>
             ) : b.type === "paragraph" ? (
               <FieldEditor
+                autoFocus
                 map={map}
-                showNames={true}
+                showNames={false}
                 value={
                   b.content ?? {
                     type: "doc",
                     content: [
                       {
                         type: "paragraph",
-                        content: [{ type: "text", text: b.text ?? "" }],
+                        ...(b.text
+                          ? { content: [{ type: "text", text: b.text }] }
+                          : {}),
                       },
                     ],
                   }
                 }
                 onChange={(content) =>
-                  replace(i, { type: "paragraph", content })
+                  patch({ ...b, content, text: undefined })
                 }
+                onSlash={onSlash}
               />
             ) : b.type === "image" ? (
               <>
                 <img src={b.src} alt={b.alt ?? ""} />
-                <input
-                  aria-label="Image description"
-                  value={b.alt ?? ""}
-                  onChange={(e) => replace(i, { ...b, alt: e.target.value })}
+                <label className="field">
+                  Image description
+                  <input
+                    value={b.alt ?? ""}
+                    onChange={(e) => patch({ ...b, alt: e.target.value })}
+                  />
+                </label>
+              </>
+            ) : b.type === "signature_block" ? (
+              <label className="field">
+                Signer role
+                <select
+                  value={b.role ?? "client"}
+                  onChange={(e) =>
+                    patch({
+                      ...b,
+                      role: e.target.value as "client" | "company",
+                    })
+                  }
+                >
+                  <option value="client">Client</option>
+                  <option value="company">Company</option>
+                </select>
+              </label>
+            ) : b.type === "variable" ? (
+              <>
+                <p>
+                  {`{{${b.path}}}`} · {map[b.path ?? ""] || "—"}
+                </p>
+                <FieldOptions
+                  map={map}
+                  onInsert={(path) => patch({ ...b, path })}
                 />
               </>
-            ) : b.type === "variable" ? (
-              <p className={map[b.path ?? ""] ? "" : "danger"}>
-                {`{{${b.path}}}`} → {map[b.path ?? ""] || "Unresolved variable"}
-              </p>
-            ) : b.type === "signature_block" ? (
-              <p>
-                Signature:{" "}
-                {b.role === "client"
-                  ? "Client"
-                  : map["company.name"] || "Company"}
-              </p>
             ) : b.type === "pricing_table" ? (
               <p className="muted">
-                Pricing table — edit the lines in the quote panel.
+                Pricing table — edit products in the template’s default quote.
               </p>
             ) : (
-              <hr className="page-break" />
+              <p className="muted">Page break</p>
             )}
           </section>
-        ))}
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 }
 export { QuoteEditor as ProposalEditor } from "./quote-editor";

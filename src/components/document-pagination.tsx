@@ -28,7 +28,7 @@ export function DocumentPagination({
     [markers, setMarkers] = useState<
       { page: number; y: number; explicit: boolean }[]
     >([]),
-    [failure, setFailure] = useState(false);
+    [failure, setFailure] = useState<string | null>(null);
   const markup = useMemo(() => {
     try {
       const p = {
@@ -55,7 +55,7 @@ export function DocumentPagination({
       setSource("");
       setLayout(null);
       setMarkers([]);
-      setFailure(true);
+      setFailure("Check unresolved fields and document content.");
       return;
     }
     const timer = setTimeout(() => setSource(markup), 450);
@@ -77,7 +77,13 @@ export function DocumentPagination({
                   );
             if (!el || !el.getClientRects().length) return null;
             let y = el.getBoundingClientRect().top - bounds.top;
-            if (b.offset) {
+            const unit = b.unit
+              ? el.querySelector<HTMLElement>(
+                  `[data-print-unit="${CSS.escape(b.unit)}"]`,
+                )
+              : null;
+            if (unit) y = unit.getBoundingClientRect().top - bounds.top;
+            else if (b.offset) {
               const walker = document.createTreeWalker(
                 el,
                 NodeFilter.SHOW_TEXT,
@@ -150,9 +156,15 @@ export function DocumentPagination({
               doc.querySelector<HTMLElement>(".print-root")!,
             );
             setLayout(result);
-            setFailure(false);
-          } catch {
-            setFailure(true);
+            setFailure(null);
+          } catch (error) {
+            setLayout(null);
+            setMarkers([]);
+            setFailure(
+              error instanceof Error && error.message.includes("too tall")
+                ? error.message
+                : "Check fields and document content, then try again.",
+            );
           }
         }}
       />
@@ -175,7 +187,7 @@ export function DocumentPagination({
         data-document-pages={layout?.pages}
       >
         {failure
-          ? "Page preview unavailable — keep editing and try again"
+          ? `Page preview unavailable — ${failure}`
           : layout
             ? `${layout.pages} document ${layout.pages === 1 ? "page" : "pages"} + completion certificate after signing`
             : "Measuring PDF pages…"}

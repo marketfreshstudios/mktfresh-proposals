@@ -1,16 +1,20 @@
 "use client";
 import {
   BlockScope,
+  DocumentFormattingBar,
+  useBlockFeedback,
+  useBlockToolbar,
   BlockFrame,
   BlockAction,
   useBlockSelection,
 } from "./block-controls";
 import type { ComponentProps } from "react";
 import { productMappings } from "../lib/workspace-setup";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import { DocumentCover } from "./document-cover";
-import { withoutTitleHeading } from "../lib/editor-document";
+import { FieldOptions } from "./field-options";
+import { withoutTitleHeading, appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { Activity } from "../lib/studio";
@@ -1101,6 +1105,8 @@ function TemplatesStudioContent({
   selected?: string;
   blocksOnly?: boolean;
 }) {
+  const blockFeedback = useBlockFeedback();
+  const fieldInsertion = useBlockToolbar();
   const selection = useBlockSelection();
   const original = data.templates.find((t) => t.id === selected);
   const [mode, setMode] = useState(blocksOnly ? "blocks" : "templates"),
@@ -1118,7 +1124,10 @@ function TemplatesStudioContent({
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
-    [mobile, setMobile] = useState(false);
+    [mobile, setMobile] = useState(false),
+    [insertAt, setInsertAt] = useState<number | null>(null),
+    [insertError, setInsertError] = useState(""),
+    [replaceEmpty, setReplaceEmpty] = useState(false);
   const save = useSave(run);
   useEffect(() => {
     const q = matchMedia("(max-width:1099px)");
@@ -1129,10 +1138,29 @@ function TemplatesStudioContent({
   }, []);
   const content =
     mode === "blocks" ? (saved ? [saved.block] : []) : (draft?.content ?? []);
+  const currentContent = useRef(content);
+  currentContent.current = content;
   const patch = (next: Block[]) => {
     if (mode === "blocks" && saved) setSaved({ ...saved, block: next[0] });
     else if (draft) setDraft({ ...draft, content: next });
   };
+  function insertBlock(block: Block) {
+    const next = [...currentContent.current],
+      at = insertAt ?? next.length;
+    if (
+      block.type === "pricing_table" &&
+      next.some((b) => b.type === "pricing_table")
+    )
+      return;
+    next.splice(at, replaceEmpty ? 1 : 0, {
+      ...structuredClone(block),
+      id: crypto.randomUUID(),
+    });
+    patch(next);
+    setInsertAt(null);
+    setInsertError("");
+    setIndex(at);
+  }
   const map = {
     "proposal.title": "A new proposal",
     "proposal.date": "October 30, 2026",
@@ -1157,18 +1185,16 @@ function TemplatesStudioContent({
         data={data}
         map={map}
         onChange={(b) => patch(content.map((v, n) => (n === index ? b : v)))}
-        onSaveBlock={() => {
-          setSaved({
-            name: content[index].text || "Reusable block",
-            block: structuredClone(content[index]),
-          });
-          setMode("blocks");
-          setIndex(0);
+        saveAction={blockFeedback.reuseButton(content[index], true)}
+        onSlash={() => {
+          setReplaceEmpty(true);
+          setInsertAt(index);
         }}
       />
     ) : null;
   return (
     <div className="studio-template-layout">
+      {blockFeedback.feedback}
       <aside className="studio-template-list">
         <div
           className="studio-tabs"
@@ -1275,7 +1301,12 @@ function TemplatesStudioContent({
                   }
                 />
               </Field>
-              <Button onClick={() => setFields(true)}>Fields</Button>
+              {mode === "templates" && !content.length && (
+                <Button onClick={() => setInsertAt(0)}>Add first block</Button>
+              )}
+              <Button data-field-insert onClick={() => setFields(true)}>
+                Fields
+              </Button>
               <Button
                 variant="primary"
                 busy={save.busy}
@@ -1325,6 +1356,7 @@ function TemplatesStudioContent({
               }}
             >
               <div className="studio-blocks">
+                {!(mobile && inspector) && <DocumentFormattingBar />}
                 <div className="paper proposal-typography document-reading template-cover">
                   <style>{fontCss(data.settings)}</style>
                   <DocumentCover
@@ -1348,6 +1380,55 @@ function TemplatesStudioContent({
                       id={`template-${b.id ?? n}`}
                       label={`Template block ${n + 1}`}
                       className="studio-block-card"
+                      insert={
+                        mode === "templates"
+                          ? (edge) => {
+                              setReplaceEmpty(false);
+                              setInsertAt(n + (edge === "below" ? 1 : 0));
+                            }
+                          : undefined
+                      }
+                      onInsertField={
+                        ["paragraph", "heading"].includes(b.type)
+                          ? (path) => {
+                              patch(
+                                content.map((v, j) =>
+                                  j === n ? appendField(v, path) : v,
+                                ),
+                              );
+                              setIndex(n);
+                              requestAnimationFrame(() => {
+                                const host =
+                                  document.querySelector(".studio-inspector") ??
+                                  document.querySelector(
+                                    "[aria-labelledby].foundation-sheet[open]",
+                                  );
+                                const text =
+                                  host?.querySelector<HTMLElement>(".tiptap");
+                                if (text) {
+                                  text.focus();
+                                  const range = document.createRange();
+                                  range.selectNodeContents(text);
+                                  range.collapse(false);
+                                  getSelection()?.removeAllRanges();
+                                  getSelection()?.addRange(range);
+                                  document.dispatchEvent(
+                                    new Event("selectionchange"),
+                                  );
+                                } else {
+                                  const input = host?.querySelector<
+                                    HTMLInputElement | HTMLTextAreaElement
+                                  >("input,textarea");
+                                  input?.focus();
+                                  input?.setSelectionRange(
+                                    input.value.length,
+                                    input.value.length,
+                                  );
+                                }
+                              });
+                            }
+                          : undefined
+                      }
                       ai={!!b.ai_review && !b.ai_review.reviewed}
                       onReviewed={() =>
                         patch(
@@ -1407,14 +1488,33 @@ function TemplatesStudioContent({
                               >
                                 Move down
                               </BlockAction>
+                              {blockFeedback.reuseButton(b)}
                               <BlockAction
-                                aria-label={`Remove block ${n + 1}`}
-                                onClick={() => {
-                                  patch(content.filter((_, j) => j !== n));
-                                  setIndex(null);
-                                }}
+                                aria-label="Delete block"
+                                onClick={() =>
+                                  blockFeedback.remove(
+                                    b,
+                                    () => {
+                                      patch(
+                                        currentContent.current.filter(
+                                          (v) => v !== b,
+                                        ),
+                                      );
+                                      setIndex(null);
+                                    },
+                                    () => {
+                                      const next = [...currentContent.current];
+                                      next.splice(
+                                        Math.min(n, next.length),
+                                        0,
+                                        b,
+                                      );
+                                      patch(next);
+                                    },
+                                  )
+                                }
                               >
-                                Remove block
+                                Delete block
                               </BlockAction>
                             </>
                           )}
@@ -1520,25 +1620,60 @@ function TemplatesStudioContent({
                                       >
                                         Move clause down
                                       </BlockAction>
+                                      {blockFeedback.reuseButton({
+                                        id: c.id,
+                                        type: "contract",
+                                        text: c.heading,
+                                        clauses: [c],
+                                      })}
                                       <BlockAction
-                                        aria-label="Remove clause"
-                                        onClick={() => {
-                                          patch(
-                                            content.map((v, j) =>
-                                              j === n
-                                                ? {
-                                                    ...b,
-                                                    clauses: b.clauses!.filter(
-                                                      (_, i) => i !== k,
-                                                    ),
-                                                  }
-                                                : v,
-                                            ),
-                                          );
-                                          setIndex(null);
-                                        }}
+                                        aria-label="Delete clause"
+                                        onClick={() =>
+                                          blockFeedback.remove(
+                                            { type: "contract" },
+                                            () => {
+                                              patch(
+                                                currentContent.current.map(
+                                                  (v) =>
+                                                    v === b
+                                                      ? {
+                                                          ...b,
+                                                          clauses:
+                                                            b.clauses!.filter(
+                                                              (v) =>
+                                                                v.id !== c.id,
+                                                            ),
+                                                        }
+                                                      : v,
+                                                ),
+                                              );
+                                              setIndex(null);
+                                            },
+                                            () => {
+                                              patch(
+                                                currentContent.current.map(
+                                                  (v) => {
+                                                    if (v.id !== b.id) return v;
+                                                    const clauses = [
+                                                      ...(v.clauses ?? []),
+                                                    ];
+                                                    clauses.splice(
+                                                      Math.min(
+                                                        k,
+                                                        clauses.length,
+                                                      ),
+                                                      0,
+                                                      c,
+                                                    );
+                                                    return { ...v, clauses };
+                                                  },
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        }
                                       >
-                                        Remove clause
+                                        Delete clause
                                       </BlockAction>
                                     </>
                                   }
@@ -1578,73 +1713,6 @@ function TemplatesStudioContent({
             </Reorder>
             {mode === "templates" && (
               <>
-                <div className="actions">
-                  <Field label="Add block">
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        if (!e.target.value) return;
-                        const type = e.target.value as Block["type"];
-                        patch([
-                          ...content,
-                          {
-                            id: crypto.randomUUID(),
-                            type,
-                            ...(type === "contract"
-                              ? {
-                                  text: "Statement of Work & Contract",
-                                  clauses: [],
-                                }
-                              : type === "signature_block"
-                                ? { role: "client" as const }
-                                : { text: "" }),
-                          },
-                        ]);
-                        setIndex(content.length);
-                      }}
-                    >
-                      <option value="">Choose a block type</option>
-                      {[
-                        "heading",
-                        "paragraph",
-                        "image",
-                        "pricing_table",
-                        "contract",
-                        "signature_block",
-                        "page_break",
-                      ].map((t) => (
-                        <option key={t} value={t}>
-                          {blockName({ type: t as Block["type"] })}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Insert saved block">
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        const b = data.library.find(
-                          (b) => b.id === e.target.value,
-                        );
-                        if (b)
-                          patch([
-                            ...content,
-                            {
-                              ...structuredClone(b.block),
-                              id: crypto.randomUUID(),
-                            },
-                          ]);
-                      }}
-                    >
-                      <option value="">Choose a saved block</option>
-                      {data.library.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
                 <section className="studio-section">
                   <h2>Default quote</h2>
                   <TemplateWarnings
@@ -1675,23 +1743,136 @@ function TemplatesStudioContent({
         )}
       </main>
       {!mobile && inspector && (
-        <aside className="studio-inspector stack">{inspector}</aside>
+        <aside className="studio-inspector stack block-owned-dialog">
+          {inspector}
+        </aside>
       )}
       {mobile && inspector && (
         <Sheet title="Edit block" onClose={() => setIndex(null)}>
+          <DocumentFormattingBar />
           {inspector}
+        </Sheet>
+      )}
+      {insertAt !== null && (
+        <Sheet title="Add a block" onClose={() => setInsertAt(null)}>
+          <div className="block-menu">
+            {insertError && (
+              <Banner tone="danger" title="Unable to add image">
+                {insertError}
+              </Banner>
+            )}
+            {(
+              [
+                ["Heading", "heading"],
+                ["Text", "paragraph"],
+                ["List", "paragraph"],
+                ["Pricing table", "pricing_table"],
+                ["Contract", "contract"],
+                ["Client signature", "signature_block"],
+                ["Company signature", "signature_block"],
+                ["Page break", "page_break"],
+              ] as const
+            ).map(([label, type]) => (
+              <Button
+                key={label}
+                disabled={
+                  type === "pricing_table" &&
+                  content.some((b) => b.type === type)
+                }
+                onClick={() =>
+                  insertBlock({
+                    type,
+                    ...(type === "contract"
+                      ? { text: "Statement of Work & Contract", clauses: [] }
+                      : type === "signature_block"
+                        ? {
+                            role:
+                              label === "Client signature"
+                                ? "client"
+                                : "company",
+                          }
+                        : type === "paragraph"
+                          ? {
+                              content: {
+                                type: "doc",
+                                content:
+                                  label === "List"
+                                    ? [
+                                        {
+                                          type: "bulletList",
+                                          content: [
+                                            {
+                                              type: "listItem",
+                                              content: [{ type: "paragraph" }],
+                                            },
+                                          ],
+                                        },
+                                      ]
+                                    : [{ type: "paragraph" }],
+                              },
+                            }
+                          : { text: type === "heading" ? "New section" : "" }),
+                  })
+                }
+              >
+                {label}
+              </Button>
+            ))}
+            <label className="btn">
+              Image
+              <input
+                type="file"
+                className="sr-only"
+                accept="image/png,image/jpeg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (
+                    file.size > 700000 ||
+                    !["image/png", "image/jpeg"].includes(file.type)
+                  ) {
+                    setInsertError("Use a PNG or JPEG smaller than 700 KB");
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () =>
+                    insertBlock({
+                      type: "image",
+                      src: String(reader.result),
+                      alt: file.name,
+                    });
+                  reader.onerror = () =>
+                    setInsertError(
+                      "Unable to read image. Your template is unchanged.",
+                    );
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+            {data.library.map((saved) => (
+              <Button
+                key={saved.id}
+                disabled={
+                  saved.block.type === "pricing_table" &&
+                  content.some((b) => b.type === "pricing_table")
+                }
+                onClick={() => insertBlock(saved.block)}
+              >
+                Saved block · {saved.name}
+              </Button>
+            ))}
+          </div>
         </Sheet>
       )}
       {fields && (
         <Sheet title="Fields" onClose={() => setFields(false)}>
-          <div className="stack">
-            {Object.entries(map).map(([key, value]) => (
-              <div className="row" key={key}>
-                <code>{`{{${key}}}`}</code>
-                <span>{value}</span>
-              </div>
-            ))}
-          </div>
+          <FieldOptions
+            map={map}
+            onInsert={(path) => {
+              setFields(false);
+              requestAnimationFrame(() => fieldInsertion?.insert(path));
+            }}
+          />
         </Sheet>
       )}
     </div>
@@ -1714,17 +1895,19 @@ function BlockPanel({
   onChange,
   data,
   map,
-  onSaveBlock,
+  saveAction,
   clause,
   setClause,
+  onSlash,
 }: {
+  onSlash?: () => void;
   clause: number;
   setClause: (index: number) => void;
   block: Block;
   onChange: (b: Block) => void;
   data: Data;
   map: Record<string, string>;
-  onSaveBlock: () => void;
+  saveAction: ReactNode;
 }) {
   if (b.type !== "contract")
     return (
@@ -1736,8 +1919,9 @@ function BlockPanel({
             if (next[0]) onChange(next[0]);
           }}
           map={map}
+          onSlash={onSlash}
         />
-        <Button onClick={onSaveBlock}>Save for reuse</Button>
+        {saveAction}
       </div>
     );
   const c = b.clauses?.[clause];
@@ -1918,7 +2102,7 @@ function BlockPanel({
       >
         + Add clause
       </Button>
-      <Button onClick={onSaveBlock}>Save contract for reuse</Button>
+      {saveAction}
     </div>
   );
 }
