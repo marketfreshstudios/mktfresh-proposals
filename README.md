@@ -214,3 +214,9 @@ The edge + buttons and an empty paragraph’s `/` open the shared anchored block
 Workspace → Proposal styles sets Title, Heading 1/2/3 and Body defaults, with contrast checking and a desktop/phone sample. Templates can override those defaults; draft proposals have a Styles tab and Reset to workspace. Sent versions freeze their resolved styles alongside their signed-content hash. The editor, client reading view and PDF use the same resolved map and fonts.
 
 Use the pinned Text style selector or start an empty paragraph with `# `, `## ` or `### `. Heading 1 starts an outline section; Heading 2 and 3 are indented subheadings. Existing draft/template headings gain level 1 via `20261102065523_editor_heading_levels_styles.sql`; sent and signed content is never migrated. Apply that migration through the normal migration process for this app's project only.
+
+### PDF-accurate authoring and previews
+
+The editor uses fixed US Letter geometry (816 CSS px, 18 mm margins) with Fit / 100% zoom. Sections and the right tools panel can collapse; narrow windows use drawers instead of shrinking the internal page. Cmd+backslash / Ctrl+backslash toggles tools. Fields now lives beside Quote, Styles and Review & send; per-item Look up opens pricing references.
+
+Preview PDF opens the actual server-rendered document, watermarked “Preview — not signed”, with thumbnails/zoom/download. The same render supplies source block/line anchors for page markers. Updated layout is debounced; stale markers say approximate. The authenticated `GET/POST /api/proposals/:id/preview-pdf` operation is read-only (POST previews an ephemeral revision-checked draft overlay). It creates no persistent render, version, job or audit record. The normal sealing path still appends the completion certificate after signature.

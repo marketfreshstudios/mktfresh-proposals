@@ -466,16 +466,54 @@ test("block controls own one block and never move document content on hover, foc
               .click();
             await expect(paragraph).toHaveAttribute("data-selected", "true");
             await shot("formatting-bar", width, theme);
-            const paperBox = (await page
+            const emptyPaper = await page
               .locator(".editor-paper")
-              .boundingBox())!;
-            await page.mouse.click(paperBox.x + 5, 400);
+              .evaluate((paper) => {
+                const box = paper.getBoundingClientRect(),
+                  bar = document
+                    .querySelector(".document-formatting-bar")!
+                    .getBoundingClientRect(),
+                  x = Math.min(innerWidth - 5, box.right - 5);
+                for (
+                  let y = Math.max(box.top + 5, bar.bottom + 5);
+                  y < Math.min(innerHeight - 5, box.bottom - 5);
+                  y += 4
+                )
+                  if (document.elementFromPoint(x, y) === paper)
+                    return { x, y };
+                throw new Error(
+                  "No empty paper margin visible below formatting bar",
+                );
+              });
+            await page.mouse.click(emptyPaper.x, emptyPaper.y);
             await expect(paragraph).toHaveAttribute("data-selected", "false");
             await paragraph.evaluate((el) =>
               (el as HTMLElement).focus({ preventScroll: true }),
             );
             if (width === 1440) {
-              await page.locator(".editor-outline > .eyebrow").first().click();
+              const outline = page
+                .locator(".editor-outline > .eyebrow")
+                .first();
+              if (await outline.isVisible()) await outline.click();
+              else {
+                await page
+                  .getByRole("button", {
+                    name: "Toggle Sections sidebar",
+                    exact: true,
+                  })
+                  .click();
+                const sections = page.getByRole("dialog", {
+                  name: "Sections",
+                  exact: true,
+                });
+                await sections
+                  .locator(".outline-overlay-content > .eyebrow")
+                  .first()
+                  .click();
+                await sections
+                  .getByRole("button", { name: "Done", exact: true })
+                  .click();
+              }
               await expect(paragraph).toHaveAttribute("data-selected", "false");
               await paragraph.evaluate((el) =>
                 (el as HTMLElement).focus({ preventScroll: true }),

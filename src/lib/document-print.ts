@@ -50,8 +50,11 @@ export type PageBoundary = {
   offset: number;
   explicit: boolean;
   unit?: string;
+  part?: string;
+  part_offset?: number;
+  start_text?: string;
 };
-/** Runs in Chromium in BOTH the PDF job and a non-executable editor measurement frame.
+/** Runs in Chromium for both the sealing job and the read-only preview/layout endpoint.
  * Splits oversize text with DOM Ranges, preserving markup. Content is never evaluated.
  */
 export function paginatePrintDocument(root: HTMLElement): {
@@ -67,7 +70,8 @@ export function paginatePrintDocument(root: HTMLElement): {
     currentBlock = "cover",
     offset = 0,
     pendingBreak = false,
-    currentUnit: string | undefined;
+    currentUnit: string | undefined,
+    currentPart: { id: string; start: number } | undefined;
   function newPage(explicit = false) {
     page = doc.createElement("div");
     page.className = "print-sheet";
@@ -80,6 +84,9 @@ export function paginatePrintDocument(root: HTMLElement): {
         offset,
         explicit,
         ...(currentUnit ? { unit: currentUnit } : {}),
+        ...(currentPart
+          ? { part: currentPart.id, part_offset: offset - currentPart.start }
+          : {}),
       });
   }
   newPage();
@@ -101,12 +108,16 @@ export function paginatePrintDocument(root: HTMLElement): {
     return { node: el, offset: el.childNodes.length };
   }
   function add(node: HTMLElement) {
-    const previousUnit = currentUnit;
+    const previousUnit = currentUnit,
+      previousPart = currentPart;
+    if (node.dataset.printPart && currentPart?.id !== node.dataset.printPart)
+      currentPart = { id: node.dataset.printPart, start: offset };
     currentUnit = node.dataset.printUnit ?? currentUnit;
     try {
       addContent(node);
     } finally {
       currentUnit = previousUnit;
+      currentPart = previousPart;
     }
   }
   function addContent(node: HTMLElement) {
@@ -267,6 +278,8 @@ export function paginatePrintDocument(root: HTMLElement): {
         )
       ) {
         const group = doc.createElement("section");
+        if (nodes[n].dataset.printPart)
+          group.dataset.printPart = nodes[n].dataset.printPart;
         group.append(nodes[n], nodes[++n]);
         add(group);
       } else add(nodes[n]);

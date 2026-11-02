@@ -148,7 +148,8 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const dir = ".data/evidence/quote-editor";
-  await mkdir(dir, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir, { recursive: true });
   const captures: {
     file: string;
     frame: string;
@@ -164,7 +165,8 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   ) {
     await page.evaluate(() => document.fonts.ready);
     const file = `${state}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
+    if (captureEvidence)
+      await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth + 1,
@@ -197,7 +199,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       } else if (width === 768) {
         await capture("tablet-document", "5g", width, theme);
         await page
-          .getByRole("button", { name: "Quote & totals", exact: true })
+          .getByRole("button", { name: "Toggle right panel", exact: true })
           .click();
       }
       await expect(
@@ -212,8 +214,9 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         theme,
       );
       await page
-        .getByRole("tab", { name: "Pricing reference", exact: true })
+        .getByRole("button", { name: "Look up", exact: true })
         .filter({ visible: true })
+        .first()
         .click();
       await expect(
         page
@@ -233,6 +236,10 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         width,
         theme,
       );
+      await page
+        .getByRole("dialog", { name: "Pricing reference", exact: true })
+        .getByRole("button", { name: "Done", exact: true })
+        .click();
       await page
         .getByRole("tab", { name: "Quote", exact: true })
         .filter({ visible: true })
@@ -280,13 +287,15 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await expect(
     page.getByRole("switch", { name: "Show names", exact: true }),
   ).toHaveCount(0);
-  await expect(page.locator(".editor-outline .field-options")).toContainText(
+  await page.getByRole("tab", { name: "Fields", exact: true }).click();
+  await expect(page.locator(".editor-sidepanel .field-options")).toContainText(
     "Client first name",
   );
-  await expect(page.locator(".editor-outline .field-options")).toContainText(
+  await expect(page.locator(".editor-sidepanel .field-options")).toContainText(
     "{{client.first_name}}",
   );
 
+  await page.getByRole("tab", { name: "Quote", exact: true }).click();
   await expect(
     page.locator(".editor-paper .tiptap .field-chip").first(),
   ).toHaveText("Jane");
@@ -417,6 +426,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       await capture("client-signed", "5f", width, theme);
     }
   expect(errors).toEqual([]);
+  if (!captureEvidence) return;
   await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
   // Capture the exact supplied frames. 5e/f are billing/completion in this export; 5g/h are the editor.
   const refs = await context.newPage();

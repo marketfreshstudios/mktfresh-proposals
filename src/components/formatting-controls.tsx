@@ -67,6 +67,9 @@ export function FormattingControls({
     >
       <Icon name={icon} />
       <span className="formatting-label">{label}</span>
+      {label === "Insert field" && (
+        <span className="format-chevron" aria-hidden="true" />
+      )}
     </button>
   );
   return (
@@ -94,13 +97,16 @@ export function FormattingControls({
         )}
       </div>
       {textStyle !== undefined && (
-        <div className="formatting-group">
+        <div className="formatting-group format-style-control">
+          <Icon name="heading" />
           <label className="sr-only" htmlFor="document-text-style">
             Text style
           </label>
           <select
             id="document-text-style"
+            className="select-compact"
             aria-label="Text style"
+            title={`Text style · ${["Paragraph", "Heading 1", "Heading 2", "Heading 3"][textStyle?.value ?? 0]}`}
             disabled={!textStyle}
             value={textStyle?.value ?? 0}
             onChange={(e) =>
@@ -124,6 +130,7 @@ export function FormattingControls({
           () => editor?.chain().focus().toggleBold().run(),
           !editor,
           marks?.bold,
+          mac ? "Bold (⌘B)" : "Bold (Ctrl+B)",
         )}
         {button(
           "Italic",
@@ -131,6 +138,7 @@ export function FormattingControls({
           () => editor?.chain().focus().toggleItalic().run(),
           !editor,
           marks?.italic,
+          mac ? "Italic (⌘I)" : "Italic (Ctrl+I)",
         )}
       </div>
       <div className="formatting-group" role="group" aria-label="Lists">

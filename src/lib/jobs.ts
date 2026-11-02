@@ -78,7 +78,9 @@ export class Worker {
     private storage: Storage,
     private mailer: Mailer,
     public providers: Record<"qbo" | "stripe", BillingProvider>,
-    private render?: typeof import("./pdf").sealedPdf,
+    private render?: (
+      ...args: Parameters<typeof import("./pdf").sealedPdf>
+    ) => Promise<{ body: Uint8Array; pdf: Uint8Array; bodyHash: string }>,
   ) {}
   async drain(id?: string, kind?: Job["kind"]) {
     const results = [];

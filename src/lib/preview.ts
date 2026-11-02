@@ -4,7 +4,10 @@ import type { Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
 import { publicResult } from "./service";
 import { variables, versionHash } from "./content";
-export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
+export function previewProposal(
+  proposal: Proposal,
+  settings: WorkspaceSettings,
+) {
   const p = structuredClone(proposal);
   p.workspace_settings =
     p.status === "draft" ? settings : (p.workspace_settings ?? settings);
@@ -40,5 +43,9 @@ export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
   p.files = [];
   p.billing_links = [];
   p.client_signed_at = null;
-  return publicResult(p);
+  return p;
+}
+
+export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
+  return publicResult(previewProposal(proposal, settings));
 }

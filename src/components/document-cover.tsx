@@ -9,6 +9,8 @@ export function DocumentCover({
   validUntil,
   timezone,
   onTitle,
+  workspace,
+  logo,
 }: {
   title: string;
   company: string;
@@ -16,10 +18,20 @@ export function DocumentCover({
   validUntil?: string | null;
   timezone?: string;
   onTitle?: (title: string) => void;
+  workspace?: string;
+  logo?: string;
 }) {
   const history = useEditorHistory();
   return (
     <header className="document-cover">
+      {logo && (
+        <img
+          src={logo}
+          alt="Company logo"
+          style={{ maxHeight: 60, maxWidth: 180 }}
+        />
+      )}
+      {workspace && <p className="print-workspace">{workspace}</p>}
       <p className="flow-eyebrow">Proposal for {company}</p>
       {onTitle ? (
         <h1>
