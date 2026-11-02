@@ -371,10 +371,7 @@ export class ProposalService {
       if (input.brief !== undefined) p.brief = input.brief;
       if (actor.actor.startsWith("ai:")) p.ai_connector = actor.actor.slice(3);
       if (input.content)
-        p.content = reviewBlocks(
-          withoutTitleHeading(input.content),
-          actor.actor.startsWith("ai:"),
-        );
+        p.content = reviewBlocks(input.content, actor.actor.startsWith("ai:"));
       p.ai_unreviewed =
         actor.actor.startsWith("ai:") || pendingSections(p).length > 0;
       if (input.quote)

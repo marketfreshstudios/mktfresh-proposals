@@ -58,7 +58,7 @@ export function Sortable({
         {
           "--block-space-before":
             spaceBefore === undefined ? undefined : `${spaceBefore}px`,
-          transform: CSS.Transform.toString(transform),
+          transform: CSS.Translate.toString(transform),
           transition,
           opacity: isDragging ? 0.5 : 1,
         } as CSSProperties

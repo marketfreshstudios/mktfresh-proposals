@@ -1,5 +1,10 @@
 import type { Block } from "./model";
 import { contentSections } from "./ai-review";
+import {
+  assertBlockMove,
+  documentSectionRanges,
+  moveBlockRange,
+} from "./editor-moves";
 export function authoringPages(content: Block[]) {
   const pages: { id: string; marker: Block | null; blocks: Block[] }[] = [
     { id: "start", marker: null, blocks: [] },
@@ -26,7 +31,16 @@ export function movePage(content: Block[], from: string, to: string) {
   if (a < 0 || b < 0 || a === b) return content;
   const [p] = pages.splice(a, 1);
   pages.splice(b, 0, p);
-  return flatten(pages);
+  // Separators belong to page slots. Reuse each original marker exactly once,
+  // including when the original first page becomes a later page.
+  const markers = content.filter((block) => block.type === "page_break");
+  return assertBlockMove(
+    content,
+    pages.flatMap((page, n) => [
+      ...(n ? [markers[n - 1]] : []),
+      ...page.blocks,
+    ]),
+  );
 }
 export function movePageSection(
   content: Block[],
@@ -38,15 +52,17 @@ export function movePageSection(
     source = pages.find((p) => p.sections.some((s) => s.id === sectionId)),
     target = pages.find((p) => p.id === pageId);
   if (!source || !target || before === sectionId) return content;
-  const section = source.sections.find((s) => s.id === sectionId)!;
-  const moved = section.indices.map((n) => source.blocks[n]),
-    ids = new Set(moved.map((b) => b.id));
-  source.blocks = source.blocks.filter((b) => !ids.has(b.id));
+  const range = documentSectionRanges(content).find((s) => s.id === sectionId)!;
+  const pageIndex = pages.indexOf(target),
+    nextPage = pages[pageIndex + 1];
   const at = before
-    ? target.blocks.findIndex((b) => b.id === before)
-    : target.blocks.length;
-  target.blocks.splice(at < 0 ? target.blocks.length : at, 0, ...moved);
-  return flatten(pages);
+    ? content.findIndex((b) => b.id === before)
+    : nextPage
+      ? content.findIndex((b) => b === nextPage.marker)
+      : content.length;
+  if (at < 0 || (before && !target.blocks.some((b) => b.id === before)))
+    return content;
+  return moveBlockRange(content, range.start, range.end, at);
 }
 export function addPage(content: Block[], after?: string) {
   const pages = authoringPages(content),

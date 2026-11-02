@@ -339,7 +339,7 @@ export function PagedPaper({
       {Array.from({ length: pages }, (_, n) => (
         <section
           key={n}
-          className="editor-page-sheet"
+          className="editor-page-sheet page-sheet"
           data-editor-page={n + 1}
           data-source-fragments={JSON.stringify(
             displayLayout?.sheets?.[n]?.fragments ?? [],

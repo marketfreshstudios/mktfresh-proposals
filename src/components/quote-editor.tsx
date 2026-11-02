@@ -2,6 +2,12 @@
 import { useManagedPopover } from "./editor-popovers";
 import { quoteTotalText } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
+import {
+  applyDocumentMove,
+  canMoveAdjacentBlock,
+  moveAdjacentBlock,
+  moveDocumentBlock,
+} from "../lib/editor-moves";
 import { PagedPaper } from "./paged-paper";
 import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
@@ -27,11 +33,7 @@ import { QuoteItemBody } from "./quote-item-body";
 import { DocumentCover } from "./document-cover";
 import { BlockMenu } from "./block-menu";
 import { useSessionHistory } from "./editor-history";
-import {
-  withoutTitleHeading,
-  moveSection,
-  duplicateBlock,
-} from "../lib/editor-document";
+import { duplicateBlock } from "../lib/editor-document";
 import { DocumentPagination } from "./document-pagination";
 import type { ComponentProps, CSSProperties } from "react";
 import {
@@ -154,13 +156,11 @@ function QuoteEditorContent({
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
       ...initial,
-      content: withoutTitleHeading(initial.content),
+      content: initial.content,
       quote: draftItems(initial.quote),
     }),
     [customerErrors, setCustomerErrors] = useState<string[]>([]),
-    [dirty, setDirty] = useState(
-      withoutTitleHeading(initial.content) !== initial.content,
-    ),
+    [dirty, setDirty] = useState(false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [stale, setStale] = useState(false),
@@ -647,9 +647,30 @@ function QuoteEditorContent({
     setItems([...items, value]);
     if (window.innerWidth < 700) setLineId(id);
   }
-  function patchBlock(index: number, block: Block) {
-    change({ content: p.content.map((b, n) => (n === index ? block : b)) });
+  function move(operation: (content: Block[]) => Block[]) {
+    return applyDocumentMove(
+      latest.current.content,
+      operation,
+      (content) => {
+        selection.clear();
+        const id = contentSections(latest.current.content)[section ?? -1]?.id;
+        const next = contentSections(content).findIndex((s) => s.id === id);
+        setSection(next < 0 ? null : next);
+        change({ content });
+      },
+      blockFeedback.error,
+    );
   }
+  function patchBlock(block: Block) {
+    // Rich-text callbacks can outlive a drag render. Address the stable ID in
+    // the latest document, never the old position or a captured block array.
+    change({
+      content: latest.current.content.map((b) =>
+        b.id === block.id ? block : b,
+      ),
+    });
+  }
+
   const doc = documents.find((d) => d.id === documentId),
     range = quoteRange(items);
   const refPanel = (
@@ -1417,6 +1438,7 @@ function QuoteEditorContent({
       <p className="eyebrow">Pages</p>
       <PagesOutline
         content={p.content}
+        onMove={move}
         layout={pdfPreview.data?.layout}
         onChange={(content) => {
           selection.clear();
@@ -1550,63 +1572,26 @@ function QuoteEditorContent({
             <>
               <BlockAction
                 variant="ghost"
-                disabled={
-                  b.type === "heading" && (b.level ?? 1) === 1
-                    ? sections.findIndex((s) => s.indices.includes(n)) === 0
-                    : n === 0
+                disabled={!canMoveAdjacentBlock(p.content, b.id!, -1)}
+                onClick={() =>
+                  move((content) => moveAdjacentBlock(content, b.id!, -1))
                 }
-                onClick={() => {
-                  if (b.type === "heading" && (b.level ?? 1) === 1) {
-                    const sn = sections.findIndex((s) => s.indices.includes(n));
-                    if (sections[sn - 1])
-                      change({
-                        content: moveSection(
-                          p.content,
-                          b.id!,
-                          sections[sn - 1].id,
-                        ),
-                      });
-                    return;
-                  }
-                  const next = [...p.content];
-                  [next[n - 1], next[n]] = [next[n], next[n - 1]];
-                  change({ content: next });
-                }}
               >
                 Move up
               </BlockAction>
               <BlockAction
                 variant="ghost"
-                disabled={
-                  b.type === "heading" && (b.level ?? 1) === 1
-                    ? sections.findIndex((s) => s.indices.includes(n)) ===
-                      sections.length - 1
-                    : n === p.content.length - 1
+                disabled={!canMoveAdjacentBlock(p.content, b.id!, 1)}
+                onClick={() =>
+                  move((content) => moveAdjacentBlock(content, b.id!, 1))
                 }
-                onClick={() => {
-                  if (b.type === "heading" && (b.level ?? 1) === 1) {
-                    const sn = sections.findIndex((s) => s.indices.includes(n));
-                    if (sections[sn + 1])
-                      change({
-                        content: moveSection(
-                          p.content,
-                          b.id!,
-                          sections[sn + 1].id,
-                        ),
-                      });
-                    return;
-                  }
-                  const next = [...p.content];
-                  [next[n + 1], next[n]] = [next[n], next[n + 1]];
-                  change({ content: next });
-                }}
               >
                 Move down
               </BlockAction>
               {b.type === "contract" && (
                 <BlockAction
                   onClick={() =>
-                    patchBlock(n, {
+                    patchBlock({
                       ...b,
                       contract_edited: true,
                       clauses: [
@@ -1694,7 +1679,7 @@ function QuoteEditorContent({
                 rows={1}
                 value={b.text ?? ""}
                 onValue={(text) =>
-                  patchBlock(n, {
+                  patchBlock({
                     ...b,
                     text: text.replace(/[\r\n]+/g, " "),
                   })
@@ -1721,7 +1706,7 @@ function QuoteEditorContent({
                 }
               }
               onChange={(content) =>
-                patchBlock(n, { ...b, content, text: undefined })
+                patchBlock({ ...b, content, text: undefined })
               }
               map={map}
               showNames={false}
@@ -1826,7 +1811,7 @@ function QuoteEditorContent({
                     b.clauses!.findIndex((c) => c.id === from),
                     b.clauses!.findIndex((c) => c.id === to),
                   );
-                  patchBlock(n, { ...b, contract_edited: true, clauses });
+                  patchBlock({ ...b, contract_edited: true, clauses });
                 }}
               >
                 {(b.clauses ?? []).map((c, k) =>
@@ -1867,7 +1852,7 @@ function QuoteEditorContent({
                                 blockFeedback.remove(
                                   { type: "contract" },
                                   () =>
-                                    patchBlock(n, {
+                                    patchBlock({
                                       ...b,
                                       contract_edited: true,
                                       clauses: b.clauses!.filter(
@@ -1914,7 +1899,7 @@ function QuoteEditorContent({
                                   clauses[k],
                                   clauses[k - 1],
                                 ];
-                                patchBlock(n, {
+                                patchBlock({
                                   ...b,
                                   contract_edited: true,
                                   clauses,
@@ -1932,7 +1917,7 @@ function QuoteEditorContent({
                                   clauses[k],
                                   clauses[k + 1],
                                 ];
-                                patchBlock(n, {
+                                patchBlock({
                                   ...b,
                                   contract_edited: true,
                                   clauses,
@@ -1977,7 +1962,7 @@ function QuoteEditorContent({
                     <select
                       value={b.role ?? "client"}
                       onChange={(e) =>
-                        patchBlock(n, {
+                        patchBlock({
                           ...b,
                           role: e.target.value as "client" | "company",
                         })
@@ -2020,7 +2005,7 @@ function QuoteEditorContent({
                     <input
                       value={b.alt ?? ""}
                       onChange={(e) =>
-                        patchBlock(n, { ...b, alt: e.target.value })
+                        patchBlock({ ...b, alt: e.target.value })
                       }
                     />
                   </Field>
@@ -2298,23 +2283,25 @@ function QuoteEditorContent({
         <aside
           className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
         >
-          <button
-            className="sidebar-arrow"
-            type="button"
-            aria-label={
-              panels.left ? "Collapse Pages sidebar" : "Expand Pages sidebar"
-            }
-            title={
-              panels.left
-                ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-            }
-            onClick={toggleLeft}
-          >
-            {panels.left ? "‹" : "›"}
-          </button>
+          <div className="editor-sidebar-header">
+            <button
+              className="sidebar-arrow"
+              type="button"
+              aria-label={
+                panels.left ? "Collapse Pages sidebar" : "Expand Pages sidebar"
+              }
+              title={
+                panels.left
+                  ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+                  : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+              }
+              onClick={toggleLeft}
+            >
+              {panels.left ? "‹" : "›"}
+            </button>
+          </div>
           {panels.left ? (
-            outline
+            <div className="editor-sidebar-scroll">{outline}</div>
           ) : (
             <button
               type="button"
@@ -2514,25 +2501,11 @@ function QuoteEditorContent({
                 {firstBlock}
                 <Reorder
                   ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
-                  onMove={(from, to) => {
-                    selection.clear();
-                    const ids = p.content.map((b, n) => `block-${b.id ?? n}`);
-                    const source = ids.indexOf(from),
-                      destination = ids.indexOf(to);
-                    change({
-                      content:
-                        p.content[source]?.type === "heading" &&
-                        (p.content[source]?.level ?? 1) === 1
-                          ? moveSection(
-                              p.content,
-                              p.content[source].id!,
-                              sections.find((s) =>
-                                s.indices.includes(destination),
-                              )?.id ?? "",
-                            )
-                          : arrayMove(p.content, source, destination),
-                    });
-                  }}
+                  onMove={(from, to) =>
+                    move((content) =>
+                      moveDocumentBlock(content, from.slice(6), to.slice(6)),
+                    )
+                  }
                 >
                   {sections.map((s, n) => (
                     <div
@@ -2565,21 +2538,23 @@ function QuoteEditorContent({
         <aside
           className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
         >
-          <button
-            type="button"
-            className="sidebar-arrow"
-            aria-label={
-              panels.right ? "Collapse tools sidebar" : "Expand tools sidebar"
-            }
-            title={
-              panels.right
-                ? "Collapse tools (⌘\\ / Ctrl+\\)"
-                : "Expand tools (⌘\\ / Ctrl+\\)"
-            }
-            onClick={toggleRight}
-          >
-            {panels.right ? "›" : "‹"}
-          </button>
+          <div className="editor-sidebar-header">
+            <button
+              type="button"
+              className="sidebar-arrow"
+              aria-label={
+                panels.right ? "Collapse tools sidebar" : "Expand tools sidebar"
+              }
+              title={
+                panels.right
+                  ? "Collapse tools (⌘\\ / Ctrl+\\)"
+                  : "Expand tools (⌘\\ / Ctrl+\\)"
+              }
+              onClick={toggleRight}
+            >
+              {panels.right ? "›" : "‹"}
+            </button>
+          </div>
           {panels.right
             ? panel
             : (
@@ -2690,7 +2665,7 @@ function QuoteEditorContent({
             c = b?.clauses?.[clauseEdit.clause];
           if (!c) return null;
           const patch = (update: Partial<typeof c>) =>
-            patchBlock(clauseEdit.block, {
+            patchBlock({
               ...b,
               contract_edited: true,
               clauses: b.clauses!.map((v, n) =>

@@ -9,6 +9,12 @@ import { authoringPreview } from "../lib/authoring-preview";
 import { variables } from "../lib/presentation";
 import { documentQuote } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
+import {
+  applyDocumentMove,
+  canMoveAdjacentBlock,
+  moveAdjacentBlock,
+  moveDocumentBlock,
+} from "../lib/editor-moves";
 import { pageMetrics } from "../lib/proposal-styles";
 import { ProposalStyles } from "./proposal-styles";
 import {
@@ -41,7 +47,7 @@ import { renderBlocks, escape } from "../lib/presentation";
 import { DocumentCover } from "./document-cover";
 import { FieldEditor } from "./field-editor";
 import { FieldOptions } from "./field-options";
-import { withoutTitleHeading, appendField } from "../lib/editor-document";
+import { appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { Activity } from "../lib/studio";
@@ -1170,7 +1176,7 @@ function TemplatesStudioContent({
     [draft, setDraft] = useState<Template | null>(
       (() => {
         const t = original ?? data.templates[0];
-        return t ? { ...t, content: withoutTitleHeading(t.content) } : null;
+        return t ?? null;
       })(),
     ),
     [saved, setSaved] = useState<{
@@ -1259,6 +1265,17 @@ function TemplatesStudioContent({
     if (mode === "blocks" && saved) editSaved({ ...saved, block: next[0] });
     else if (draft) editDraft({ ...draft, content: next });
   };
+  const move = (operation: (content: Block[]) => Block[]) =>
+    applyDocumentMove(
+      currentContent.current,
+      operation,
+      (next) => {
+        selection.clear();
+        patch(next);
+        setIndex(null);
+      },
+      blockFeedback.error,
+    );
   function insertBlock(block: Block) {
     const next = [...currentContent.current],
       at = insertAt ?? next.length;
@@ -1300,7 +1317,9 @@ function TemplatesStudioContent({
         setClause={setClauseIndex}
         data={data}
         map={map}
-        onChange={(b) => patch(content.map((v, n) => (n === index ? b : v)))}
+        onChange={(b) =>
+          patch(currentContent.current.map((v) => (v.id === b.id ? b : v)))
+        }
         saveAction={blockFeedback.reuseButton(content[index], true)}
         onSlash={(anchor) => {
           setInsertAnchor(anchor ?? null);
@@ -1378,6 +1397,7 @@ function TemplatesStudioContent({
           <p className="eyebrow">Pages</p>
           <PagesOutline
             content={content}
+            onMove={move}
             layout={templatePreview.data?.layout}
             onChange={(content) => {
               selection.clear();
@@ -1423,20 +1443,22 @@ function TemplatesStudioContent({
       <aside
         className={`studio-template-list ${templatePanels.left ? "" : "sidebar-rail"}`}
       >
-        <button
-          className="sidebar-arrow"
-          aria-label={
-            templatePanels.left
-              ? "Collapse Pages sidebar"
-              : "Expand Pages sidebar"
-          }
-          title="Pages sidebar"
-          onClick={toggleTemplateLeft}
-        >
-          {templatePanels.left ? "‹" : "›"}
-        </button>
+        <div className="editor-sidebar-header">
+          <button
+            className="sidebar-arrow"
+            aria-label={
+              templatePanels.left
+                ? "Collapse Pages sidebar"
+                : "Expand Pages sidebar"
+            }
+            title="Pages sidebar"
+            onClick={toggleTemplateLeft}
+          >
+            {templatePanels.left ? "‹" : "›"}
+          </button>
+        </div>
         {templatePanels.left ? (
-          templateSidebar
+          <div className="editor-sidebar-scroll">{templateSidebar}</div>
         ) : (
           <button
             aria-label="Open Pages"
@@ -1566,14 +1588,15 @@ function TemplatesStudioContent({
               >
                 <Reorder
                   ids={content.map((_, n) => String(n))}
-                  onMove={(from, to) => {
-                    selection.clear();
-                    const next = [...content];
-                    const [moved] = next.splice(Number(from), 1);
-                    next.splice(Number(to), 0, moved);
-                    patch(next);
-                    setIndex(null);
-                  }}
+                  onMove={(from, to) =>
+                    move((blocks) =>
+                      moveDocumentBlock(
+                        blocks,
+                        content[Number(from)].id!,
+                        content[Number(to)].id!,
+                      ),
+                    )
+                  }
                 >
                   <div
                     ref={templatePaper}
@@ -1728,31 +1751,27 @@ function TemplatesStudioContent({
                                 <>
                                   <BlockAction
                                     aria-label={`Move block ${n + 1} up`}
-                                    disabled={n === 0}
-                                    onClick={() => {
-                                      const next = [...content];
-                                      [next[n - 1], next[n]] = [
-                                        next[n],
-                                        next[n - 1],
-                                      ];
-                                      patch(next);
-                                      setIndex(null);
-                                    }}
+                                    disabled={
+                                      !canMoveAdjacentBlock(content, b.id!, -1)
+                                    }
+                                    onClick={() =>
+                                      move((blocks) =>
+                                        moveAdjacentBlock(blocks, b.id!, -1),
+                                      )
+                                    }
                                   >
                                     Move up
                                   </BlockAction>
                                   <BlockAction
                                     aria-label={`Move block ${n + 1} down`}
-                                    disabled={n === content.length - 1}
-                                    onClick={() => {
-                                      const next = [...content];
-                                      [next[n + 1], next[n]] = [
-                                        next[n],
-                                        next[n + 1],
-                                      ];
-                                      patch(next);
-                                      setIndex(null);
-                                    }}
+                                    disabled={
+                                      !canMoveAdjacentBlock(content, b.id!, 1)
+                                    }
+                                    onClick={() =>
+                                      move((blocks) =>
+                                        moveAdjacentBlock(blocks, b.id!, 1),
+                                      )
+                                    }
                                   >
                                     Move down
                                   </BlockAction>
@@ -2139,23 +2158,25 @@ function TemplatesStudioContent({
       <aside
         className={`studio-inspector stack ${templatePanels.right ? "block-owned-dialog" : "sidebar-rail"}`}
       >
-        <button
-          className="sidebar-arrow"
-          aria-label={
-            templatePanels.right
-              ? "Collapse tools sidebar"
-              : "Expand tools sidebar"
-          }
-          title="Tools sidebar"
-          onClick={toggleTemplateRight}
-        >
-          {templatePanels.right ? "›" : "‹"}
-        </button>
+        <div className="editor-sidebar-header">
+          <button
+            className="sidebar-arrow"
+            aria-label={
+              templatePanels.right
+                ? "Collapse tools sidebar"
+                : "Expand tools sidebar"
+            }
+            title="Tools sidebar"
+            onClick={toggleTemplateRight}
+          >
+            {templatePanels.right ? "›" : "‹"}
+          </button>
+        </div>
         {templatePanels.right ? (
-          <>
+          <div className="editor-sidebar-scroll">
             <Button onClick={() => setIndex(null)}>Styles</Button>
             {templateTools}
-          </>
+          </div>
         ) : (
           <>
             <button
