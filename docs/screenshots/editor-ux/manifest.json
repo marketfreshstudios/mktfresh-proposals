@@ -1,0 +1,590 @@
+[
+  {
+    "file": "document-375-light.png",
+    "state": "document",
+    "width": 375,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-375-light.png",
+    "state": "selected-block",
+    "width": 375,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-375-light.png",
+    "state": "template",
+    "width": 375,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-375-light.png",
+    "state": "template-selected",
+    "width": 375,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-375-light.png",
+    "state": "client-preview",
+    "width": 375,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "document-768-light.png",
+    "state": "document",
+    "width": 768,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-768-light.png",
+    "state": "selected-block",
+    "width": 768,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-768-light.png",
+    "state": "template",
+    "width": 768,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-768-light.png",
+    "state": "template-selected",
+    "width": 768,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-768-light.png",
+    "state": "client-preview",
+    "width": 768,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "document-1440-light.png",
+    "state": "document",
+    "width": 1440,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-1440-light.png",
+    "state": "selected-block",
+    "width": 1440,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-1440-light.png",
+    "state": "template",
+    "width": 1440,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-1440-light.png",
+    "state": "template-selected",
+    "width": 1440,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-1440-light.png",
+    "state": "client-preview",
+    "width": 1440,
+    "theme": "light",
+    "stage": "before"
+  },
+  {
+    "file": "document-375-dark.png",
+    "state": "document",
+    "width": 375,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-375-dark.png",
+    "state": "selected-block",
+    "width": 375,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-375-dark.png",
+    "state": "template",
+    "width": 375,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-375-dark.png",
+    "state": "template-selected",
+    "width": 375,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-375-dark.png",
+    "state": "client-preview",
+    "width": 375,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "document-768-dark.png",
+    "state": "document",
+    "width": 768,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-768-dark.png",
+    "state": "selected-block",
+    "width": 768,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-768-dark.png",
+    "state": "template",
+    "width": 768,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-768-dark.png",
+    "state": "template-selected",
+    "width": 768,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-768-dark.png",
+    "state": "client-preview",
+    "width": 768,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "document-1440-dark.png",
+    "state": "document",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "selected-block-1440-dark.png",
+    "state": "selected-block",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-1440-dark.png",
+    "state": "template",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "template-selected-1440-dark.png",
+    "state": "template-selected",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "client-preview-1440-dark.png",
+    "state": "client-preview",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "before"
+  },
+  {
+    "file": "document-375-light.png",
+    "state": "document",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-375-light.png",
+    "state": "selected-block",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-375-light.png",
+    "state": "block-menu",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-375-light.png",
+    "state": "review-confirm",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-375-light.png",
+    "state": "document-pricing",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-375-light.png",
+    "state": "template",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-375-light.png",
+    "state": "template-selected",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-375-light.png",
+    "state": "client-preview",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-768-light.png",
+    "state": "document",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-768-light.png",
+    "state": "selected-block",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-768-light.png",
+    "state": "block-menu",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-768-light.png",
+    "state": "review-confirm",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-768-light.png",
+    "state": "document-pricing",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-768-light.png",
+    "state": "template",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-768-light.png",
+    "state": "template-selected",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-768-light.png",
+    "state": "client-preview",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-1440-light.png",
+    "state": "document",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-1440-light.png",
+    "state": "selected-block",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-1440-light.png",
+    "state": "block-menu",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-1440-light.png",
+    "state": "review-confirm",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-1440-light.png",
+    "state": "document-pricing",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-1440-light.png",
+    "state": "template",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-1440-light.png",
+    "state": "template-selected",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-1440-light.png",
+    "state": "client-preview",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "document-375-dark.png",
+    "state": "document",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-375-dark.png",
+    "state": "selected-block",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-375-dark.png",
+    "state": "block-menu",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-375-dark.png",
+    "state": "review-confirm",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-375-dark.png",
+    "state": "document-pricing",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-375-dark.png",
+    "state": "template",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-375-dark.png",
+    "state": "template-selected",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-375-dark.png",
+    "state": "client-preview",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "document-768-dark.png",
+    "state": "document",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-768-dark.png",
+    "state": "selected-block",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-768-dark.png",
+    "state": "block-menu",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-768-dark.png",
+    "state": "review-confirm",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-768-dark.png",
+    "state": "document-pricing",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-768-dark.png",
+    "state": "template",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-768-dark.png",
+    "state": "template-selected",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-768-dark.png",
+    "state": "client-preview",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "document-1440-dark.png",
+    "state": "document",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "selected-block-1440-dark.png",
+    "state": "selected-block",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "block-menu-1440-dark.png",
+    "state": "block-menu",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "review-confirm-1440-dark.png",
+    "state": "review-confirm",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "document-pricing-1440-dark.png",
+    "state": "document-pricing",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-1440-dark.png",
+    "state": "template",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "template-selected-1440-dark.png",
+    "state": "template-selected",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "client-preview-1440-dark.png",
+    "state": "client-preview",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-375-light.png",
+    "state": "page-break",
+    "width": 375,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-768-light.png",
+    "state": "page-break",
+    "width": 768,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-1440-light.png",
+    "state": "page-break",
+    "width": 1440,
+    "theme": "light",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-375-dark.png",
+    "state": "page-break",
+    "width": 375,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-768-dark.png",
+    "state": "page-break",
+    "width": 768,
+    "theme": "dark",
+    "stage": "after"
+  },
+  {
+    "file": "page-break-1440-dark.png",
+    "state": "page-break",
+    "width": 1440,
+    "theme": "dark",
+    "stage": "after"
+  }
+]

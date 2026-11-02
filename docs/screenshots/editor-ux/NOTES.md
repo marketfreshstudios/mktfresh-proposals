@@ -1,0 +1,15 @@
+# Proposal editor review
+
+1 November 2026. All proposals, staff names, clients, signatures and provider results in this evidence are synthetic. No external services were called.
+
+- 30 matched **before** captures from merged main `810882d` and 54 **after** captures: 375/768/1440, light/dark. Common states pair directly; insertion/review dialogs, document pricing sorting and PDF guides are new states.
+- Original frames: **2a** desktop editor, **2c** phone section editing, **5g** tablet editor and **7a** template Studio. The copied source-frame captures are unchanged from the redesign exports. The owner's latest instructions override the old separate title input, purple review/reserved rows and missing insertion/pagination controls. The three-column desktop structure and responsive sheets remain.
+- Cover title and row contents are shared with the client view. A browser assertion compares every block's x/y/width/height relative to its paper in the editor and actual `/p/…?preview=1` page, at 1440 and 375, within 2px. Phone offers Full document in addition to section editing. No view/sign/billing action occurs in preview.
+- Existing hover/focus/touch coverage checks every block and clause in both editors, no movement or scroll changes greater than 1px, only one active block toolbar, persistence on pointer leave and Escape clearing.
+- Keyboard checks lift/drop with Space and move with arrows. They verify whole sections (including their following blocks), a pricing group and its options persist in the shared quote order. The expected destination is asserted through the drag live region before dropping.
+- The PDF fixture has 32 numbered paragraphs, one paragraph larger than a full page, an explicit break and both signature slots. The editor and generated PDF both have **11 pages** (10 document pages plus the preview/certificate page). Extraction retains all **645** repeated sentences, every numbered paragraph and the final text. The title appears once in the PDF body; the certificate independently identifies its document.
+- Print guides use the same print markup, Letter size, 18mm margins, font assets, CSS and pagination function as the sealed job. Responsive reading text reflows; guides map those print boundaries back to content without inserting gaps into the reading view. Stored signed versions/hashes and previously sealed files remain unchanged.
+
+Reproduce after with `npx playwright test e2e/editor-ux.spec.ts e2e/block-controls.spec.ts`, then `node --import tsx scripts/package-editor-ux.ts`. Before uses the same fixture/spec and `EDITOR_UX_BEFORE=1` in an isolated main checkout. Captures are at a 1000px viewport height. Local baseline used Next's alternate development bundler to resolve the isolated dependency link; application source/assets were unchanged.
+
+[Rendered PDF contact sheet](pdf-contact-sheet.png). Every page was visually checked for clipping and unwanted blanks. Conditional clauses follow the current quote defaults in both reading surfaces; Contract settings still exposes clauses that are hidden for those choices.

@@ -65,3 +65,5 @@ Regenerate with `npx playwright test e2e/redesign-records.spec.ts e2e/redesign-q
 - [Workspace email templates](emails/index.html): Emails list/editor at 375/768/1440 light/dark, all client/staff HTML and plain-text previews, and standalone 375/600 light/dark email renders. [Compatibility notes](emails/COMPATIBILITY.md) distinguish browser evidence from pending native inbox checks.
 
 - [Billing confirmations](billing-confirmations/index.html): Checkout mode copy, returning/timeout/verified states, yearly billing and staff status at 375/768/1440 light/dark; four client/sender HTML/plain-text receipts and browser renders.
+
+[Proposal editor UX pass](editor-ux/index.html): paired before/after captures at 375/768/1440, light and dark, original editor/Studio frames, insertion and AI-review dialogs, pricing reordering and PDF page guides. Includes the 11-page long fixture and page-count evidence.
