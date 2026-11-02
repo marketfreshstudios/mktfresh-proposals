@@ -1,0 +1,313 @@
+/* Editing chrome owns a permanent gutter. Selection changes paint, never geometry. */
+.staff-foundation .paper.editor-paper {
+  padding-left: 100px;
+}
+.document-reading .draft-block {
+  margin-block: 24px;
+}
+.document-reading .block-frame > .block-tools,
+.studio-block-card > .block-tools,
+.studio-clause-frame > .block-tools {
+  top: var(--block-first-line-offset, 0px);
+  right: auto;
+  left: -70px;
+  width: 64px;
+  max-width: none;
+  height: auto;
+  padding: 44px 0 2px;
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
+  white-space: normal;
+  border-radius: 6px;
+  z-index: 15;
+}
+.block-tools .block-action {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.block-tools .block-ai-marker {
+  display: none;
+}
+.block-tools :is(.block-review-action, .block-reviewed) {
+  width: 44px;
+  min-height: 44px;
+  height: auto;
+  white-space: normal;
+  padding: 4px 2px;
+  font: 10px/1.3 var(--font-ui);
+  text-align: center;
+}
+.document-reading .block-sortable > .drag-handle,
+.studio-blocks .block-sortable > .drag-handle {
+  left: -60px;
+  top: var(--block-first-line-offset, 0px);
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  transform: none;
+  z-index: 16;
+}
+.document-reading .block-insert-above {
+  top: -34px;
+}
+.document-reading .block-insert-below {
+  bottom: -34px;
+}
+.document-formatting-bar {
+  position: sticky;
+  top: var(--formatting-top, 110px);
+  z-index: 24;
+  min-height: 54px;
+  margin: 0 auto 16px;
+  padding: 4px;
+  width: 100%;
+  max-width: 704px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-menu);
+  font: 12px var(--font-ui);
+}
+.document-formatting-bar .rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  height: auto;
+  min-height: 44px;
+  opacity: 1;
+  overflow: visible;
+}
+.document-formatting-bar .btn {
+  padding-inline: 7px;
+  min-height: 44px;
+  height: 44px;
+  white-space: nowrap;
+}
+.document-formatting-bar :is(.field-picker, .email-link-picker) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  padding: 16px;
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-menu);
+}
+.studio-blocks {
+  padding-left: 56px;
+}
+.studio-blocks .document-formatting-bar {
+  --formatting-top: 0px;
+  margin-left: -56px;
+  width: calc(100% + 56px);
+}
+/* Nested clauses share the outer gutter, rather than cutting into contract text. */
+.studio-block-card.block-frame .contract-clause-list {
+  padding-inline: 0;
+}
+.block-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-menu);
+}
+.block-dialog::backdrop {
+  background: #0006;
+}
+.block-dialog form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.block-dialog .field {
+  width: 100%;
+}
+.block-feedback-toast {
+  position: fixed;
+  z-index: 200;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-menu);
+  font: 14px/1.5 var(--font-ui);
+}
+.block-feedback-toast.error {
+  border-color: var(--danger);
+}
+.block-feedback-toast button {
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+}
+@media (max-width: 699px) {
+  .staff-foundation .paper.editor-paper {
+    padding-left: 76px;
+  }
+  .document-formatting-bar {
+    min-height: 98px;
+  }
+  .document-formatting-bar .btn {
+    padding-inline: 9px;
+  }
+}
+
+@media (max-width: 699px) {
+  .block-feedback-toast {
+    bottom: 88px;
+  }
+}
+.field-options {
+  min-width: 0;
+  text-align: left;
+}
+.field-option-group {
+  margin: 14px 0;
+  min-width: 0;
+}
+.field-option-group h3 {
+  font: 600 12px/1.4 var(--font-ui);
+  margin: 0 0 6px;
+  color: var(--ink-muted);
+}
+.field-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: 12px/1.4 var(--font-ui);
+  cursor: pointer;
+}
+.field-option:hover {
+  background: var(--row-hover);
+}
+.field-option:focus-visible {
+  outline: var(--focus-outline, 2px solid var(--accent));
+  outline-offset: -2px;
+}
+.field-option-label {
+  font-weight: 500;
+}
+.field-option-value {
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+.field-option code {
+  font: 10px/1.5 var(--font-mono, monospace);
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+}
+.field-picker .field-options {
+  max-height: min(420px, 50vh);
+  overflow: auto;
+}
+.subject-field {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.subject-field > input {
+  flex: 1 1 180px;
+}
+.subject-field-menu {
+  flex: 1 0 100%;
+  max-height: 350px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px;
+}
+.document-formatting-bar .field-option {
+  justify-content: flex-start;
+}
+
+.block-tools :is(.block-review-action, .block-reviewed) {
+  width: 62px;
+  margin-left: 0;
+  font-size: 11px;
+}
+.block-tools .block-review-action {
+  flex-direction: column;
+  gap: 1px;
+}
+
+.field-options-menu .field-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+.field-options-menu .field-option-value {
+  grid-column: 1 / -1;
+  font-size: 11px;
+}
+.studio-blocks .block-insert-above {
+  top: -26px;
+}
+.studio-blocks .block-insert-below {
+  bottom: -26px;
+}
+.template-block-fields .tiptap {
+  min-height: 100px;
+}
+
+.field-options-menu .field-option-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.quote-workspace .empty-document-insert {
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 24px auto;
+  padding: 0;
+  border: 1px solid var(--block-active-outline);
+  border-radius: 50%;
+  background: var(--block-toolbar-ground);
+  color: var(--block-toolbar-ink);
+  font: 24px/1 var(--font-ui);
+  cursor: pointer;
+}
+/* ProseMirror's break-spaces wraps a trailing space differently from the client
+   on Linux. pre-wrap preserves editing whitespace while hanging end spaces. */
+.document-reading .tiptap {
+  white-space: pre-wrap;
+}

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Data } from "./staff-app";
 import { api, post, Button, Field, Banner, date } from "./ui";
 import { Sheet, Skeleton } from "./foundation";
+import { SubjectField } from "./field-options";
 import { FieldEditor } from "./field-editor";
 import {
   emailFields,
@@ -144,10 +145,8 @@ function EmailEditor({
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
-    [reset, setReset] = useState(false),
-    [field, setField] = useState("client.first_name");
-  const subject = useRef<HTMLInputElement>(null),
-    testId = useRef(crypto.randomUUID());
+    [reset, setReset] = useState(false);
+  const testId = useRef(crypto.randomUUID());
   let validation = "";
   try {
     validateTemplate({
@@ -265,47 +264,18 @@ function EmailEditor({
       <div className="email-editor-grid">
         <section className="email-edit-fields" aria-label="Email content">
           <Field label="Subject">
-            <input
-              ref={subject}
+            <SubjectField
               value={form.subject}
-              maxLength={300}
               readOnly={form.staff}
-              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              map={
+                preview?.values ??
+                Object.fromEntries(
+                  Object.keys(emailFields).map((k) => [k, `{{${k}}}`]),
+                )
+              }
+              onChange={(subject) => setForm({ ...form, subject })}
             />
           </Field>
-          {!form.staff && (
-            <div className="email-subject-fields">
-              <Field label="Subject field">
-                <select
-                  value={field}
-                  onChange={(e) => setField(e.target.value)}
-                >
-                  {Object.entries(emailFields).map(([k, label]) => (
-                    <option key={k} value={k}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Button
-                onClick={() => {
-                  const el = subject.current,
-                    start = el?.selectionStart ?? form.subject.length,
-                    end = el?.selectionEnd ?? start;
-                  setForm({
-                    ...form,
-                    subject:
-                      form.subject.slice(0, start) +
-                      `{{${field}}}` +
-                      form.subject.slice(end),
-                  });
-                  el?.focus();
-                }}
-              >
-                Insert field in subject
-              </Button>
-            </div>
-          )}
           <div className="field">
             <span>Body</span>
             {form.staff ? (

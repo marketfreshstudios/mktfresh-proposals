@@ -1,10 +1,12 @@
 "use client";
 import { createPortal } from "react-dom";
 import { useBlockToolbar } from "./block-controls";
+import { FieldOptions } from "./field-options";
+import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import type { RichText } from "../lib/model";
 import { Button } from "./ui";
 /** Draft-only editing adapter. Historical content is never passed through this. */
@@ -45,6 +47,9 @@ export function FieldEditor({
   allowLinks = false,
   label,
   onSlash,
+  standalone = false,
+  autoFocus = false,
+  onBeforeInsert,
 }: {
   value: RichText;
   onChange: (v: RichText) => void;
@@ -53,8 +58,19 @@ export function FieldEditor({
   allowLinks?: boolean;
   label?: string;
   onSlash?: () => void;
+  standalone?: boolean;
+  autoFocus?: boolean;
+  onBeforeInsert?: () => void;
 }) {
-  const toolbar = useBlockToolbar();
+  const scope = useBlockToolbar();
+  const afterVisible = useVisibleEditorAction();
+  const toolbar = standalone ? undefined : scope;
+  const root = useRef<HTMLDivElement>(null);
+  const cursor = useRef<{ from: number; to: number } | null>(null);
+  const reveal = useRef(onBeforeInsert);
+  reveal.current = onBeforeInsert;
+  const editorId = useId();
+  allowLinks = allowLinks || !!toolbar;
   const change = useRef(onChange),
     values = useRef(map),
     names = useRef(showNames),
@@ -65,10 +81,10 @@ export function FieldEditor({
   const [linkPicker, setLinkPicker] = useState(false),
     [href, setHref] = useState(""),
     [linkError, setLinkError] = useState("");
-  const [picker, setPicker] = useState(false),
-    [field, setField] = useState("client.first_name");
+  const [picker, setPicker] = useState(false);
   const editor = useEditor({
     immediatelyRender: false,
+    autofocus: autoFocus ? "end" : false,
     editorProps: {
       attributes: label
         ? { role: "textbox", "aria-label": label, "aria-multiline": "true" }
@@ -141,6 +157,12 @@ export function FieldEditor({
       }),
     ],
     content: fieldNodes(value),
+    onSelectionUpdate: ({ editor }) => {
+      cursor.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      };
+    },
     onUpdate: ({ editor }) => {
       change.current(editor.getJSON() as RichText);
       if (
@@ -152,6 +174,48 @@ export function FieldEditor({
         setPicker(true);
     },
   });
+  function insertField(path: string, atEnd = false) {
+    if (!editor) return;
+    const size = editor.state.doc.content.size;
+    let { from, to } = atEnd
+      ? { from: Math.max(1, size - 1), to: Math.max(1, size - 1) }
+      : (cursor.current ?? editor.state.selection);
+    from = Math.max(1, Math.min(from, size - 1));
+    to = Math.max(from, Math.min(to, size - 1));
+    if (editor.state.doc.textBetween(Math.max(0, from - 2), from) === "{{")
+      from -= 2;
+    const apply = () => {
+      if (editor.isDestroyed) return;
+      editor
+        .chain()
+        .setTextSelection({ from, to })
+        .insertContent({ type: "variable", attrs: { path } })
+        .run();
+      // The modal is closed and the owning section has committed. Avoid the
+      // focus command's additional RAF, which can race another focus owner.
+      editor.view.focus();
+      editor.commands.scrollIntoView();
+      cursor.current = {
+        from: editor.state.selection.from,
+        to: editor.state.selection.to,
+      };
+      toolbar?.remember(editorId);
+    };
+    setPicker(false);
+    reveal.current?.();
+    afterVisible(editor.view.dom, apply);
+  }
+  useEffect(() => {
+    if (!editor || !toolbar) return;
+    const block =
+      root.current?.closest<HTMLElement>(".block-frame")?.dataset.blockId ??
+      null;
+    return toolbar.register(editorId, {
+      block,
+      rich: true,
+      insert: insertField,
+    });
+  }, [editor, editorId, !!toolbar]);
   useEffect(() => {
     const next = fieldNodes(value);
     if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(next))
@@ -200,25 +264,9 @@ export function FieldEditor({
       </Button>
     </div>
   );
-  return (
-    <div
-      className="field-editor"
-      onKeyDown={(e) => {
-        if (e.key === "/" && onSlash && editor?.isEmpty) {
-          e.preventDefault();
-          onSlash();
-        }
-        if (e.key === "Escape") {
-          setPicker(false);
-          setLinkPicker(false);
-        }
-      }}
-    >
-      {toolbar === undefined
-        ? formatting
-        : toolbar
-          ? createPortal(formatting, toolbar)
-          : null}
+  const controls = (
+    <>
+      {formatting}
       {linkPicker && (
         <div className="email-link-picker">
           <label className="field">
@@ -256,43 +304,39 @@ export function FieldEditor({
           {linkError && <p role="alert">{linkError}</p>}
         </div>
       )}
-      <EditorContent editor={editor} />
       {picker && (
         <div className="field-picker">
-          <label className="field">
-            Field
-            <select value={field} onChange={(e) => setField(e.target.value)}>
-              {Object.keys(map).map((k) => (
-                <option key={k}>{k}</option>
-              ))}
-            </select>
-          </label>
-          <Button
-            onClick={() => {
-              if (editor) {
-                const pos = editor.state.selection.from;
-                if (
-                  editor.state.doc.textBetween(Math.max(0, pos - 2), pos) ===
-                  "{{"
-                )
-                  editor
-                    .chain()
-                    .focus()
-                    .deleteRange({ from: pos - 2, to: pos })
-                    .run();
-                editor
-                  .chain()
-                  .focus()
-                  .insertContent({ type: "variable", attrs: { path: field } })
-                  .run();
-              }
-              setPicker(false);
-            }}
-          >
-            Insert
-          </Button>
+          <FieldOptions
+            variant="menu"
+            map={map}
+            onInsert={(path) => insertField(path)}
+          />
         </div>
       )}
+    </>
+  );
+  return (
+    <div
+      className="field-editor"
+      ref={root}
+      onFocusCapture={() => toolbar?.remember(editorId)}
+      onKeyDown={(e) => {
+        if (e.key === "/" && onSlash && editor?.isEmpty) {
+          e.preventDefault();
+          onSlash();
+        }
+        if (e.key === "Escape") {
+          setPicker(false);
+          setLinkPicker(false);
+        }
+      }}
+    >
+      {toolbar === undefined
+        ? controls
+        : toolbar.target && toolbar.owner === editorId
+          ? createPortal(controls, toolbar.target)
+          : null}
+      <EditorContent editor={editor} />
     </div>
   );
 }

@@ -7,7 +7,7 @@ test("block controls own one block and never move document content on hover, foc
   page,
   context,
 }) => {
-  test.setTimeout(180000);
+  test.setTimeout(240000);
   page.setDefaultTimeout(8000);
   const { repo, service, draft, settings, members } = await setup();
   const content: Block[] = [
@@ -54,6 +54,7 @@ test("block controls own one block and never move document content on hover, foc
   )!;
   template.content = structuredClone(content);
   await repo.put("templates", template);
+  let failReuse = false;
   await page.route("**/api/**", async (route) => {
     const req = route.request(),
       parts = new URL(req.url()).pathname.split("/").filter(Boolean).slice(1);
@@ -78,6 +79,10 @@ test("block controls own one block and never move document content on hover, foc
           );
         value = parts[1] ? active : { items: [active], total: 1 };
       } else if (req.method() === "POST") {
+        if (parts[0] === "content_library" && failReuse) {
+          failReuse = false;
+          throw new Error("Storage unavailable — try again");
+        }
         value = req.postDataJSON();
         await repo.put(parts[0] as any, value as any);
       } else value = await repo.entities(parts[0] as any);
@@ -86,7 +91,7 @@ test("block controls own one block and never move document content on hover, foc
       await route.fulfill({ status: 400, json: { error: String(e) } });
     }
   });
-  const dir = ".data/evidence/block-controls";
+  const dir = ".data/evidence/editor-followup";
   await mkdir(dir, { recursive: true });
   const captures: {
     file: string;
@@ -117,7 +122,16 @@ test("block controls own one block and never move document content on hover, foc
     }
     await block.evaluate((el) => {
       el.scrollIntoView({ block: "start" });
-      window.scrollBy(0, -190);
+      const bar = document.querySelector(".document-formatting-bar");
+      window.scrollBy(
+        0,
+        -(
+          (bar
+            ? parseFloat(getComputedStyle(bar).top) +
+              bar.getBoundingClientRect().height
+            : 160) + 30
+        ),
+      );
     });
   }
   async function positions(p: Page) {
@@ -145,6 +159,76 @@ test("block controls own one block and never move document content on hover, foc
           Math.abs(after.blocks[n][key] - before.blocks[n][key]),
           `${before.blocks[n].id} ${key}`,
         ).toBeLessThanOrEqual(1);
+  }
+  async function noTextOverlap(block: Locator) {
+    const intersections = await block.evaluate((selected) => {
+      const controls = [
+        ...selected.querySelectorAll<HTMLElement>(
+          ":scope > .block-tools button,:scope > .block-insert",
+        ),
+        ...selected.parentElement!.querySelectorAll<HTMLElement>(
+          ":scope > .drag-handle",
+        ),
+      ];
+      const texts: DOMRect[] = [];
+      document
+        .querySelectorAll<HTMLElement>(".block-frame > .block-content")
+        .forEach((content) => {
+          if (content === selected.querySelector(":scope > .block-content"))
+            return;
+          const walker = document.createTreeWalker(
+            content,
+            NodeFilter.SHOW_TEXT,
+          );
+          let node: Node | null;
+          while ((node = walker.nextNode())) {
+            if (
+              !node.textContent?.trim() ||
+              node.parentElement?.closest(
+                ".block-tools,.block-insert,.drag-handle,.heading-measure",
+              )
+            )
+              continue;
+            const closed = node.parentElement?.closest("details:not([open])");
+            if (closed && !node.parentElement?.closest("summary")) continue;
+            if (node.parentElement?.closest(".block-frame") === selected)
+              continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            texts.push(...Array.from(range.getClientRects()));
+          }
+          content
+            .querySelectorAll<HTMLElement>("textarea,input")
+            .forEach((input) => {
+              if (input.closest(".block-frame") !== selected)
+                texts.push(input.getBoundingClientRect());
+            });
+        });
+      return controls.flatMap((control) => {
+        if (!control.checkVisibility()) return [];
+        const a = control.getBoundingClientRect();
+        return texts
+          .filter(
+            (b) =>
+              b.width &&
+              b.height &&
+              Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+              Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1,
+          )
+          .map((b) =>
+            JSON.stringify({
+              control: control.getAttribute("aria-label"),
+              a: { x: a.x, y: a.y, w: a.width, h: a.height },
+              b: { x: b.x, y: b.y, w: b.width, h: b.height },
+              margin: getComputedStyle(selected).margin,
+            }),
+          );
+      });
+    });
+    expect(
+      intersections,
+      (await block.getAttribute("aria-label")) ?? "Block",
+    ).toEqual([]);
   }
   for (const theme of ["light", "dark"]) {
     await context.addInitScript(
@@ -230,6 +314,16 @@ test("block controls own one block and never move document content on hover, foc
             (el as HTMLElement).focus({ preventScroll: true }),
           );
           await unchanged(before);
+          await noTextOverlap(block);
+          expect(
+            await block
+              .locator(":scope > .block-tools button")
+              .evaluateAll((buttons) =>
+                buttons.every(
+                  (button) => !!button.getAttribute("title")?.trim(),
+                ),
+              ),
+          ).toBe(true);
           await page.mouse.move(1, 1);
           await expect(block).toHaveAttribute("data-active", "true");
           await unchanged(before);
@@ -259,6 +353,149 @@ test("block controls own one block and never move document content on hover, foc
           );
         }
         await shot(`${editor}-after`, width, theme);
+        if (width !== 768) {
+          await paragraph
+            .getByRole("button", { name: "Save for reuse", exact: true })
+            .click();
+          const dialog = page.getByRole("dialog", {
+            name: "Save for reuse",
+            exact: true,
+          });
+          await expect(
+            dialog.getByRole("textbox", { name: "Name", exact: true }),
+          ).not.toHaveValue("");
+          await dialog
+            .getByRole("textbox", { name: "Name", exact: true })
+            .fill("Reusable scope");
+          await expect(paragraph).toHaveAttribute("data-selected", "true");
+          await shot(`${editor}-reuse-dialog`, width, theme);
+          if (editor === "proposal" && width === 1440 && theme === "light") {
+            failReuse = true;
+            await dialog
+              .getByRole("button", { name: "Save", exact: true })
+              .click();
+            await expect(
+              page
+                .getByRole("alert")
+                .filter({ hasText: "Storage unavailable" }),
+            ).toBeVisible();
+            await expect(dialog).toBeVisible();
+          }
+          await dialog
+            .getByRole("button", { name: "Save", exact: true })
+            .click();
+          await expect(dialog).toHaveCount(0);
+          await expect(
+            page
+              .getByRole("status")
+              .filter({ hasText: "Saved to Templates & blocks" }),
+          ).toBeVisible();
+          await expect(
+            paragraph.getByRole("button", {
+              name: "Save for reuse",
+              exact: true,
+            }),
+          ).toHaveAttribute("title", "Saved as Reusable scope");
+          await expect(
+            page.getByRole("link", { name: "View", exact: true }),
+          ).toHaveAttribute("href", "/studio/templates?view=blocks");
+          await expect(paragraph).toHaveAttribute("data-selected", "true");
+          await shot(`${editor}-reuse-success`, width, theme);
+          const id = await paragraph.getAttribute("data-block-id");
+          await paragraph
+            .getByRole("button", { name: "Delete block", exact: true })
+            .click();
+          await expect(page.locator(`[data-block-id="${id}"]`)).toHaveCount(0);
+          await expect(
+            page.getByRole("status").filter({ hasText: "Block deleted" }),
+          ).toBeVisible();
+          await shot(`${editor}-delete-undo`, width, theme);
+          await page.getByRole("button", { name: "Undo", exact: true }).click();
+          await expect(page.locator(`[data-block-id="${id}"]`)).toBeVisible();
+          // A real outside pointer-down hides the selected rail and insertion buttons.
+          await paragraph.evaluate((el) =>
+            (el as HTMLElement).focus({ preventScroll: true }),
+          );
+          await page.mouse.click(2, 900);
+          await expect(
+            page.locator('.block-frame[data-selected="true"]'),
+          ).toHaveCount(0);
+          await expect(
+            page.locator(".block-tools:visible,.block-insert:visible"),
+          ).toHaveCount(0);
+          await paragraph.evaluate((el) =>
+            (el as HTMLElement).focus({ preventScroll: true }),
+          );
+          await showBlock(blocks.nth(2), width, editor);
+          await blocks
+            .nth(2)
+            .locator(":scope > .block-content")
+            .click({ position: { x: 20, y: 20 } });
+          await expect(blocks.nth(2)).toHaveAttribute("data-selected", "true");
+          await expect(paragraph).toHaveAttribute("data-selected", "false");
+          if (editor === "proposal") {
+            await showBlock(paragraph, width, editor);
+            await paragraph.locator(".tiptap").click();
+            const format = page.getByRole("toolbar", {
+              name: "Document formatting",
+              exact: true,
+            });
+            await expect(
+              format.getByRole("button", { name: "Bold", exact: true }),
+            ).toBeEnabled();
+            await format
+              .getByRole("button", { name: "Bold", exact: true })
+              .click();
+            await expect(paragraph).toHaveAttribute("data-selected", "true");
+            await paragraph
+              .getByRole("button", { name: "Add block below", exact: true })
+              .click();
+            await expect(
+              page.getByRole("dialog", { name: "Add a block", exact: true }),
+            ).toBeVisible();
+            await expect(paragraph).toHaveAttribute("data-selected", "true");
+            await page
+              .getByRole("dialog", { name: "Add a block", exact: true })
+              .getByRole("button", { name: "Done", exact: true })
+              .click();
+            await expect(paragraph).toHaveAttribute("data-selected", "true");
+            await shot("formatting-bar", width, theme);
+            const paperBox = (await page
+              .locator(".editor-paper")
+              .boundingBox())!;
+            await page.mouse.click(paperBox.x + 5, 400);
+            await expect(paragraph).toHaveAttribute("data-selected", "false");
+            await paragraph.evaluate((el) =>
+              (el as HTMLElement).focus({ preventScroll: true }),
+            );
+            if (width === 1440) {
+              await page.locator(".editor-outline > .eyebrow").first().click();
+              await expect(paragraph).toHaveAttribute("data-selected", "false");
+              await paragraph.evaluate((el) =>
+                (el as HTMLElement).focus({ preventScroll: true }),
+              );
+              await page
+                .locator(".editor-sidepanel")
+                .getByRole("tab", { name: "Quote", exact: true })
+                .click();
+              await expect(paragraph).toHaveAttribute("data-selected", "false");
+            }
+            await page
+              .locator(".quote-editor-top")
+              .getByRole("button", { name: "Review & send", exact: true })
+              .click();
+            await expect(
+              page.locator('input[aria-label="Valid until"]:visible'),
+            ).toBeVisible();
+            await shot("review-validity", width, theme);
+            if (width === 375)
+              await page
+                .getByRole("dialog", { name: "Review & send", exact: true })
+                .getByRole("button", { name: "Done", exact: true })
+                .click();
+          }
+        }
+
         const next = blocks.nth(2);
         await showBlock(next, width, editor);
         await next.evaluate((el) =>
@@ -297,6 +534,38 @@ test("block controls own one block and never move document content on hover, foc
       }
     }
   }
+  // Template insertion uses the same edges/slash flow; the inspector has no obsolete add/delete toolbar.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/studio/templates/${template.id}`);
+  const templateBlocks = page.locator(".studio-block-card");
+  await templateBlocks
+    .first()
+    .evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
+  await templateBlocks
+    .first()
+    .getByRole("button", { name: "Add block below", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Add a block", exact: true })
+    .getByRole("button", { name: "Text", exact: true })
+    .click();
+  await expect(templateBlocks).toHaveCount(6);
+  const inspectorText = page.locator(".studio-inspector .tiptap");
+  await expect(inspectorText).toBeFocused();
+  await inspectorText.press("/");
+  await page
+    .getByRole("dialog", { name: "Add a block", exact: true })
+    .getByRole("button", { name: "Heading", exact: true })
+    .click();
+  await expect(templateBlocks).toHaveCount(6);
+  await expect(
+    page
+      .locator(".studio-inspector")
+      .getByRole("textbox", { name: "Heading 1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Add block", exact: true }),
+  ).toHaveCount(0);
   // Review changes state, never inserts or removes a row above the content.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${active.id}`);

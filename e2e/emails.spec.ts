@@ -218,6 +218,27 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await page.goto("/studio/emails/proposal_sent");
   const subject = page.getByRole("textbox", { name: "Subject", exact: true }),
     body = page.getByRole("textbox", { name: "Email body", exact: true });
+  await subject.fill("Hello friend");
+  await subject.evaluate((el) =>
+    (el as HTMLInputElement).setSelectionRange(6, 12),
+  );
+  await subject.dispatchEvent("select");
+  await page
+    .getByRole("button", { name: "Insert field in subject", exact: true })
+    .click();
+  await page
+    .locator(".subject-field-menu")
+    .getByRole("searchbox", { name: "Search fields" })
+    .fill("first name");
+  await page
+    .locator(".subject-field-menu")
+    .getByRole("button", {
+      name: "Client first name — {{client.first_name}}",
+      exact: true,
+    })
+    .click();
+  await expect(subject).toHaveValue("Hello {{client.first_name}}");
+  await expect(subject).toBeFocused();
   await subject.fill("{{client.frist_name}}");
   await expect(
     page.getByRole("alert").filter({ hasText: "Check this email" }),
@@ -249,9 +270,16 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await expect(body.locator("ol li").first()).toBeVisible();
   await page.getByRole("button", { name: "Insert field", exact: true }).click();
   await page
-    .getByRole("combobox", { name: "Field", exact: true })
-    .selectOption("workspace.name");
-  await page.getByRole("button", { name: "Insert", exact: true }).click();
+    .locator(".field-picker")
+    .getByRole("searchbox", { name: "Search fields" })
+    .fill("workspace.name");
+  await page
+    .locator(".field-picker")
+    .getByRole("button", {
+      name: "Workspace name — {{workspace.name}}",
+      exact: true,
+    })
+    .click();
   await expect(body.locator('[data-field="workspace.name"]')).toHaveCount(1);
   // Replace the formatting exercise with the intended shared note for the send flow.
   await body.fill("Hi {{client.first_name}}, here is the scope we agreed.");
