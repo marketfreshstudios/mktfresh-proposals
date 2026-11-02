@@ -1,7 +1,10 @@
 "use client";
+import { printView } from "../lib/print-view";
+import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
-import { PagedPaper } from "./paged-paper";
-import { PageAccuracyNote } from "./document-pagination";
+import { paginateBrowser } from "./browser-pagination";
+import { type BrowserPages, PagedPaper } from "./paged-paper";
+import { DocumentPagination } from "./document-pagination";
 import { SourceParagraph } from "./page-spacers";
 import { PagesOutline } from "./pages-outline";
 import { useEditorPanels } from "./use-editor-panels";
@@ -1225,6 +1228,16 @@ function TemplatesStudioContent({
     applyModel(value);
   };
   const templatePaper = useRef<HTMLDivElement>(null);
+  const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
+  const pagePlan = useRef<import("../lib/page-plan").PagePlan | undefined>(
+    undefined,
+  );
+  const receivePagination = (value: BrowserPages) => {
+    pagePlan.current = value.plan;
+    setBrowserPages((old) =>
+      JSON.stringify(old) === JSON.stringify(value) ? old : value,
+    );
+  };
   const templatePanels = useEditorPanels(data.user.actor, templatePaper, true);
   const [templateListOpen, setTemplateListOpen] = useState(false),
     [templateToolsOpen, setTemplateToolsOpen] = useState(false);
@@ -1262,6 +1275,10 @@ function TemplatesStudioContent({
   const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
   currentContent.current = content;
+  const saveTemplate = () => {
+    templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
+    return post("/api/templates", { ...draft, pagination: pagePlan.current });
+  };
   const patch = (next: Block[]) => {
     if (mode === "blocks" && saved) editSaved({ ...saved, block: next[0] });
     else if (draft) editDraft({ ...draft, content: next });
@@ -1399,7 +1416,16 @@ function TemplatesStudioContent({
           <PagesOutline
             content={content}
             onMove={move}
-            layout={templatePreview.data?.layout}
+            pagination={browserPages}
+            measure={(content) =>
+              paginateBrowser(
+                templatePaper.current!,
+                content,
+                templateStyles,
+                false,
+                true,
+              )
+            }
             onChange={(content) => {
               selection.clear();
               setIndex(null);
@@ -1440,6 +1466,10 @@ function TemplatesStudioContent({
       className="studio-template-layout"
       style={{ gridTemplateColumns: templatePanels.columns }}
     >
+      <PageBreakController
+        content={mode === "templates" ? content : []}
+        onChange={patch}
+      />
       {blockFeedback.feedback}
       <aside
         className={`studio-template-list ${templatePanels.left ? "" : "sidebar-rail"}`}
@@ -1471,15 +1501,6 @@ function TemplatesStudioContent({
         )}
       </aside>
       <main className="studio-template-main stack">
-        {mode === "templates" && (
-          <small
-            className="pages-updating-indicator"
-            role="status"
-            data-updating={templatePreview.approximate}
-          >
-            Updating pages…
-          </small>
-        )}
         <div className="actions">
           <nav className="editor-breadcrumb" aria-label="Breadcrumb">
             <a href="/studio">Studio</a> / Templates &amp; blocks
@@ -1548,7 +1569,7 @@ function TemplatesStudioContent({
                   save.save(
                     () =>
                       mode === "templates"
-                        ? post("/api/templates", draft)
+                        ? saveTemplate()
                         : post("/api/content_library", {
                             ...saved,
                             id: saved!.id ?? crypto.randomUUID(),
@@ -1609,7 +1630,7 @@ function TemplatesStudioContent({
                             "--editor-ui-scale": 1 / templatePanels.scale,
                             transform: `scale(${templatePanels.scale})`,
                             transformOrigin: "top left",
-                            minHeight: `max(var(--page-sheets-height, 0px), ${(templatePreview.data?.layout.pages ?? 1) * 1080 - 24}px)`,
+                            minHeight: `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`,
                             padding: `${templateMetrics.margins.top * 96}px ${templateMetrics.margins.right * 96}px ${templateMetrics.margins.bottom * 96}px ${templateMetrics.margins.left * 96}px`,
                           } as CSSProperties)
                         : undefined
@@ -1618,11 +1639,15 @@ function TemplatesStudioContent({
                     {mode === "templates" && (
                       <PagedPaper
                         paper={templatePaper}
-                        layout={templatePreview.data?.layout}
                         styles={templateStyles}
-                        approximate={templatePreview.approximate}
-                        contentKey={templatePreview.visualKey}
-                        fingerprint={templatePreview.data?.fingerprint}
+                        content={content}
+                        contentKey={JSON.stringify([
+                          printView(content, templatePreview.quote),
+                          draft?.default_quote,
+                          draft?.default_items,
+                          draft?.style_overrides,
+                        ])}
+                        onPagination={receivePagination}
                       />
                     )}
                     <div className="proposal-typography document-reading template-cover">
@@ -2120,9 +2145,7 @@ function TemplatesStudioContent({
                       </Sortable>
                     ))}
                     {mode === "templates" && (
-                      <output className="document-page-count template-page-accuracy">
-                        <PageAccuracyNote />
-                      </output>
+                      <DocumentPagination pagination={browserPages?.plan} />
                     )}
                   </div>
                 </Reorder>
@@ -2140,7 +2163,11 @@ function TemplatesStudioContent({
                     template={draft!}
                     data={data}
                     onChange={(default_items) =>
-                      editDraft({ ...draft!, default_items, default_quote: [] })
+                      editDraft({
+                        ...draft!,
+                        default_items,
+                        default_quote: [],
+                      })
                     }
                   />
                 </section>

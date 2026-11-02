@@ -1,3 +1,4 @@
+import { applyPagePlan, plannedPrintCss } from "./planned-print";
 import { documentStyleCss, styleFonts } from "./proposal-styles";
 import {
   completionCertificate,
@@ -84,7 +85,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${printPageCss(version.resolved_styles)}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${printPageCss(version.resolved_styles)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             title:
               version.variables_resolved["proposal.title"] ??
@@ -108,6 +109,8 @@ export async function sealedPdf(
             logo: brand?.logo,
             signatory: brand?.settings?.company_signatory,
             currentLayout: !!version.resolved_styles?.layout,
+            planned: !!version.pagination,
+            styles: version.resolved_styles,
             workspace:
               brand?.settings?.company_name ??
               version.variables_resolved["company.name"],
@@ -122,14 +125,45 @@ export async function sealedPdf(
     });
     // Serialize only this trusted repository function, never document content.
     // tsx preserves nested function names with __name; keep that helper scoped here.
-    const layout: PrintLayout = await page.evaluate<
-      ReturnType<typeof paginatePrintDocument>
-    >(
-      `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
-    );
+    const layout: PrintLayout = version.pagination
+      ? await page.evaluate(
+          ({ fn, plan }) => {
+            const apply = new Function(
+              "const __name = value => value; return (" + fn + ");",
+            )() as typeof applyPagePlan;
+            return apply(document.querySelector(".print-root")!, plan);
+          },
+          { fn: applyPagePlan.toString(), plan: version.pagination },
+        )
+      : await page.evaluate<ReturnType<typeof paginatePrintDocument>>(
+          `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
+        );
     layout.sheets = await page.evaluate<ReturnType<typeof collectPrintSheets>>(
       `(() => { const __name = value => value; return (${collectPrintSheets.toString()})(Array.from(document.querySelectorAll(".print-sheet"))); })()`,
     );
+    if (version.pagination) {
+      const fragments = await page
+        .locator(".print-sheet")
+        .evaluateAll((sheets) =>
+          sheets.map((sheet) => {
+            const top = sheet.getBoundingClientRect().top;
+            return Array.from(
+              sheet.querySelectorAll<HTMLElement>("[data-print-block]"),
+            ).map((el) => {
+              const box = el.getBoundingClientRect();
+              return {
+                block: el.dataset.printBlock!,
+                offset: 0,
+                y: box.top - top,
+                height: box.height,
+                box_top: box.top - top,
+                box_bottom: box.bottom - top,
+              };
+            });
+          }),
+        );
+      layout.sheets!.forEach((sheet, n) => (sheet.fragments = fragments[n]));
+    }
     const pricingIds = new Set(
       version.content
         .filter((b) => b.type === "pricing_table")
@@ -165,7 +199,10 @@ export async function sealedPdf(
       printBackground: true,
       preferCSSPageSize: true,
     });
-    if ((await PDFDocument.load(body)).getPageCount() !== layout.pages)
+    if (
+      !version.pagination &&
+      (await PDFDocument.load(body)).getPageCount() !== layout.pages
+    )
       throw new Error("PDF pagination differs from the document layout");
     const bodyHash = sha256(body);
     if (options?.preview)

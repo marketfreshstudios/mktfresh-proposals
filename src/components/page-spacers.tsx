@@ -3,7 +3,11 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useLayoutEffect, useRef, useState } from "react";
-export type SourceSpacer = { offset: number; height: number };
+export type SourceSpacer = {
+  offset: number;
+  height: number;
+  paragraph?: number;
+};
 export const pageSpacerKey = new PluginKey<SourceSpacer[]>("pdf-page-spacers");
 export function pageSpacers(values: () => Record<string, string>) {
   return Extension.create({
@@ -23,18 +27,33 @@ export function pageSpacers(values: () => Record<string, string>) {
                 state.doc,
                 spacers.map((space) => {
                   let consumed = 0,
-                    at = state.doc.content.size;
+                    at = state.doc.content.size,
+                    paragraph = 0;
                   state.doc.descendants((node, pos) => {
+                    if (space.paragraph !== undefined) {
+                      if (
+                        node.type.name === "paragraph" ||
+                        node.type.name === "listItem"
+                      ) {
+                        if (paragraph++ === space.paragraph) at = pos + 1;
+                      }
+                      return true;
+                    }
                     if (consumed > space.offset) return false;
                     const length = node.isText
                       ? (node.text?.length ?? 0)
                       : node.type.name === "variable"
-                        ? (values()[node.attrs.path]?.length ?? 0)
+                        ? (values()[node.attrs.path]?.replace(
+                            node.attrs.path === "client.address"
+                              ? /\n/g
+                              : /$^/g,
+                            "",
+                          ).length ?? 0)
                         : 0;
                     if (
                       length &&
                       consumed <= space.offset &&
-                      consumed + length >= space.offset
+                      consumed + length > space.offset
                     ) {
                       at = pos + (node.isText ? space.offset - consumed : 0);
                       consumed = space.offset + 1;
@@ -53,7 +72,10 @@ export function pageSpacers(values: () => Record<string, string>) {
                       span.style.height = `${Math.max(0, space.height)}px`;
                       return span;
                     },
-                    { side: -1, key: `${space.offset}:${space.height}` },
+                    {
+                      side: -1,
+                      key: `${space.offset}:${space.paragraph}:${space.height}`,
+                    },
                   );
                 }),
               );
@@ -80,12 +102,7 @@ export function SourceParagraph({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
   let start = 0;
   for (const space of [...spacers].sort((a, b) => a.offset - b.offset)) {
-    let at = 0,
-      count = 0;
-    while (at < text.length && count < space.offset) {
-      if (text[at] !== "\n") count++;
-      at++;
-    }
+    const at = space.offset;
     parts.push(
       text.slice(start, at),
       <span

@@ -9,7 +9,7 @@ export async function editorFixture(
   long = false,
   options: {
     content?: Block[];
-    quote?: Quote;
+    quote?: Quote | ((base: Quote) => Quote);
     onLayout?: (input: any, data: PdfPreview) => Promise<void>;
   } = {},
 ) {
@@ -48,7 +48,14 @@ export async function editorFixture(
     {
       revision: f.draft.revision,
       content,
-      ...(options.quote ? { quote: options.quote } : {}),
+      ...(options.quote
+        ? {
+            quote:
+              typeof options.quote === "function"
+                ? options.quote(f.draft.quote)
+                : options.quote,
+          }
+        : {}),
     },
     staff,
   );

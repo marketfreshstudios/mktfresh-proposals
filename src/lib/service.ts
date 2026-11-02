@@ -1,3 +1,4 @@
+import { validatePagePlan, type PagePlan } from "./page-plan";
 import { validateStyles } from "./studio";
 import {
   freezeStyles,
@@ -129,7 +130,9 @@ export class ProposalService {
     public clock = () => new Date(),
     private members = workspaceStaff,
     private stripeApi?: StripeTransport,
-    private printLayout?: (p: Proposal) => Promise<{ pricing_pages?: number }>,
+    private printLayout?: (
+      p: Proposal,
+    ) => Promise<{ pricing_pages?: number; overflow_pages?: number[] }>,
   ) {}
   async checkReady(proposal: Proposal, confirmAiReview = false) {
     const p = await this.forRead(proposal);
@@ -139,9 +142,16 @@ export class ProposalService {
       this.clock(),
       confirmAiReview,
     );
-    if (this.printLayout && p.content.some((b) => b.type === "pricing_table")) {
+    if (
+      this.printLayout &&
+      (p.pagination || p.content.some((b) => b.type === "pricing_table"))
+    ) {
       try {
         const layout = await this.printLayout(p);
+        for (const page of layout.overflow_pages ?? [])
+          ready.warnings.push(
+            `Page ${page} overflows in the PDF · Preview PDF`,
+          );
         if ((layout.pricing_pages ?? 0) > 1)
           ready.warnings.push(
             `Pricing table spans ${layout.pricing_pages} pages — use Standard density or trim descriptions.`,
@@ -315,6 +325,7 @@ export class ProposalService {
     id: string,
     input: {
       revision: number;
+      pagination?: PagePlan;
       style_overrides?: StyleOverrides;
       template_style_overrides?: StyleOverrides;
       title?: string;
@@ -355,6 +366,27 @@ export class ProposalService {
         409,
       );
       delete p.workspace_settings;
+      if (input.pagination) {
+        check(
+          actor.actor.startsWith("staff:"),
+          "Only staff can set document pagination",
+          403,
+        );
+        p.pagination = validatePagePlan(
+          input.pagination,
+          input.content ?? p.content,
+        );
+      } else if (
+        [
+          "content",
+          "quote",
+          "title",
+          "valid_until",
+          "style_overrides",
+          "template_style_overrides",
+        ].some((key) => key in input)
+      )
+        delete p.pagination;
       if (input.style_overrides !== undefined)
         p.style_overrides = StyleOverridesSchema.parse(input.style_overrides);
       if (input.template_style_overrides !== undefined)
@@ -635,6 +667,7 @@ export class ProposalService {
           p.template_style_overrides,
           p.style_overrides,
         ),
+        ...(p.pagination ? { pagination: structuredClone(p.pagination) } : {}),
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -647,6 +680,7 @@ export class ProposalService {
         quote: version.quote,
         variables_resolved: map,
         resolved_styles: version.resolved_styles,
+        pagination: version.pagination,
       });
       p.versions.push(version);
       event(
@@ -738,6 +772,7 @@ export class ProposalService {
         quote: v.quote,
         variables_resolved: v.variables_resolved,
         resolved_styles: v.resolved_styles,
+        pagination: v.pagination,
       });
       event(p, "quote_changed", actor, {
         item_id: input.item_id,
@@ -821,6 +856,7 @@ export class ProposalService {
           quote: v.quote,
           variables_resolved: v.variables_resolved,
           resolved_styles: v.resolved_styles,
+          pagination: v.pagination,
         });
         p.client_signed_at = now;
         p.status = "signed_by_client";
@@ -998,6 +1034,7 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
     timezone: p.workspace_settings?.timezone ?? "UTC",
     proposal_fonts: p.workspace_settings?.proposal_fonts,
     resolved_styles: v.resolved_styles,
+    pagination: v.pagination,
     contact: {
       name: p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
       email: p.sender?.email ?? p.workspace_settings?.email ?? "",

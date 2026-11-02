@@ -1,31 +1,15 @@
 "use client";
-import type { usePdfPreview } from "./use-pdf-preview";
-export function PageAccuracyNote() {
-  return (
-    <span className="browser-page-note" role="status">
-      Page breaks approximate in this browser · Preview PDF for exact
-    </span>
-  );
-}
-/** Page placement belongs to PagedPaper; this output reports the shared renderer result. */
-export function DocumentPagination({
-  preview,
-}: {
-  preview: ReturnType<typeof usePdfPreview>;
-}) {
-  const layout = preview.data?.layout;
+import type { PagePlan } from "../lib/page-plan";
+export function DocumentPagination({ pagination }: { pagination?: PagePlan }) {
+  const pages = pagination?.pages ?? 1;
   return (
     <output
       className="document-page-count"
-      data-page-count={layout ? layout.pages + 1 : undefined}
-      data-document-pages={layout?.pages}
+      data-page-count={pages + 1}
+      data-document-pages={pages}
     >
-      {preview.error
-        ? `Page preview unavailable — ${preview.error}`
-        : layout
-          ? `${layout.pages} document ${layout.pages === 1 ? "page" : "pages"}${preview.approximate ? " · updating" : ""} + completion certificate after signing`
-          : "Computing PDF pages…"}
-      <PageAccuracyNote />
+      {pages} document {pages === 1 ? "page" : "pages"} + completion certificate
+      after signing
     </output>
   );
 }

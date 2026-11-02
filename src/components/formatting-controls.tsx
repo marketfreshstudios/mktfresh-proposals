@@ -1,4 +1,5 @@
 "use client";
+import { PageBreakAction } from "./page-break-action";
 import { TextStylePicker } from "./text-style-picker";
 import { useEffect, useState } from "react";
 import { useEditorState } from "@tiptap/react";
@@ -75,6 +76,7 @@ export function FormattingControls({
   );
   return (
     <div className="rich-toolbar formatting-controls">
+      <PageBreakAction />
       <div className="formatting-group" role="group" aria-label="History">
         {button(
           "Undo",

@@ -1,3 +1,4 @@
+import { readiness } from "../src/lib/quote";
 import { authoringPages } from "../src/lib/editor-pages";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import { freezeStyles } from "../src/lib/proposal-styles";
@@ -440,6 +441,14 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       "data-page-count",
       /[0-9]+/,
     );
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+      "data-layout-settled",
+      "true",
+    );
+    const plan = JSON.parse(
+      (await page.locator(".editor-paper").getAttribute("data-pagination"))!,
+    );
     const count = Number(
       await page
         .locator(".document-page-count")
@@ -452,6 +461,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         content: active.content,
         quote: active.quote,
         variables_resolved: map,
+        pagination: plan,
         resolved_styles: freezeStyles(
           settings,
           active.template_style_overrides,
@@ -501,6 +511,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     const pricingVersion = {
       ...version,
       content: pricingContent,
+      pagination: undefined,
       quote: longQuote,
       variables_resolved: pricingVariables,
     };
@@ -600,9 +611,14 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     );
     await page.goto(`/proposals/${active.id}`);
     await expect(page.locator(".quote-workspace")).toBeVisible();
-    await expect(page.locator(".document-page-count")).toContainText(
-      "Page preview unavailable",
+    await expect(page.locator(".document-page-count")).toHaveAttribute(
+      "data-page-count",
+      /[0-9]+/,
     );
+    expect(
+      readiness(active, await repo.entities<any>("pricing_items"), new Date())
+        .errors,
+    ).toContain("Unresolved variable: unknown.field");
     for (const theme of ["light", "dark"])
       for (const width of [375, 768, 1440]) {
         await page.setViewportSize({ width, height: 1000 });

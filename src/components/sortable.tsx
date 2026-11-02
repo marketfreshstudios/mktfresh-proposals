@@ -25,6 +25,7 @@ export function Sortable({
   label,
   children,
   block = false,
+  draggable = true,
   printUnit,
   documentKind,
   spaceBefore,
@@ -32,6 +33,7 @@ export function Sortable({
   id: string;
   label: string;
   block?: boolean;
+  draggable?: boolean;
   printUnit?: string;
   documentKind?: "card" | "group";
   spaceBefore?: number;
@@ -45,7 +47,7 @@ export function Sortable({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: { draggable: !draggable } });
   return (
     <div
       ref={setNodeRef}
@@ -65,44 +67,46 @@ export function Sortable({
       }
       className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
     >
-      <button
-        type="button"
-        className="drag-handle"
-        aria-label={`Drag ${label}`}
-        title={`Drag ${label}`}
-        onPointerOver={(e) => {
-          if (block) {
-            e.stopPropagation();
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.hover(id);
-          }
-        }}
-        onFocus={(e) => {
-          if (block) {
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.select(id);
-          }
-        }}
-        onPointerDownCapture={(e) => {
-          if (block) {
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.select(id);
-          }
-        }}
-        {...attributes}
-        {...listeners}
-      >
-        <span aria-hidden="true">⋮⋮</span>
-      </button>
+      {draggable && (
+        <button
+          type="button"
+          className="drag-handle"
+          aria-label={`Drag ${label}`}
+          title={`Drag ${label}`}
+          onPointerOver={(e) => {
+            if (block) {
+              e.stopPropagation();
+              const id =
+                e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                  ":scope > .block-frame",
+                )?.dataset.blockId;
+              if (id) selection.hover(id);
+            }
+          }}
+          onFocus={(e) => {
+            if (block) {
+              const id =
+                e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                  ":scope > .block-frame",
+                )?.dataset.blockId;
+              if (id) selection.select(id);
+            }
+          }}
+          onPointerDownCapture={(e) => {
+            if (block) {
+              const id =
+                e.currentTarget.parentElement?.querySelector<HTMLElement>(
+                  ":scope > .block-frame",
+                )?.dataset.blockId;
+              if (id) selection.select(id);
+            }
+          }}
+          {...attributes}
+          {...listeners}
+        >
+          <span aria-hidden="true">⋮⋮</span>
+        </button>
+      )}
       {children}
     </div>
   );
@@ -114,7 +118,7 @@ export function Reorder({
   pages = false,
 }: {
   ids: string[];
-  onMove: (from: string, to: string) => void;
+  onMove: (from: string, to: string, edge?: "before" | "after") => void;
   children: ReactNode;
   pages?: boolean;
 }) {
@@ -127,7 +131,9 @@ export function Reorder({
     if (!active || !collisionRect) return;
     const targets =
       pages && String(active.id).startsWith("page:")
-        ? ids.filter((id) => id.startsWith("page:"))
+        ? ids.filter(
+            (id) => id.startsWith("page:") && !id.startsWith("page:computed-"),
+          )
         : ids;
     const index = targets.indexOf(String(over?.id ?? active.id));
     const target = targets[index + (event.code === "ArrowDown" ? 1 : -1)];
@@ -152,7 +158,10 @@ export function Reorder({
     const filtered = {
       ...args,
       droppableContainers: args.droppableContainers.filter(
-        (d) => !page || String(d.id).startsWith("page:"),
+        (d) =>
+          !page ||
+          (String(d.id).startsWith("page:") &&
+            !String(d.id).startsWith("page:computed-")),
       ),
     };
     if (page || !args.pointerCoordinates) return closestCenter(filtered);
@@ -167,13 +176,32 @@ export function Reorder({
     <DndContext
       sensors={sensors}
       collisionDetection={collision}
-      onDragEnd={({ active, over }: DragEndEvent) => {
-        if (over && active.id !== over.id)
-          onMove(String(active.id), String(over.id));
+      onDragEnd={({ active, over, delta, activatorEvent }: DragEndEvent) => {
+        if (over && active.id !== over.id) {
+          const pointer = activatorEvent as PointerEvent;
+          const distance =
+            pointer.clientY + delta.y - (over.rect.top + over.rect.height / 2);
+          // A drop on the row centre keeps sortable's direction semantics. The
+          // upper/lower edge is an explicit before/after slot.
+          const edge =
+            typeof pointer.clientY === "number" && Math.abs(distance) > 8
+              ? distance < 0
+                ? "before"
+                : "after"
+              : undefined;
+          onMove(String(active.id), String(over.id), edge);
+        }
       }}
     >
       <SortableContext
-        items={pages ? ids.filter((id) => id.startsWith("page:")) : ids}
+        items={
+          pages
+            ? ids.filter(
+                (id) =>
+                  id.startsWith("page:") && !id.startsWith("page:computed-"),
+              )
+            : ids
+        }
         strategy={verticalListSortingStrategy}
       >
         {children}

@@ -137,6 +137,10 @@ test("block controls own one block and never move document content on hover, foc
     });
   }
   async function positions(p: Page) {
+    await p.evaluate(() => document.fonts.ready);
+    const sheets = p.locator(".editor-page-sheets:visible");
+    if (await sheets.count())
+      await expect(sheets).toHaveAttribute("data-layout-settled", "true");
     return p.locator(".block-frame").evaluateAll((els) => ({
       scroll: scrollY,
       blocks: els.map((el) => {
@@ -641,10 +645,16 @@ test("block controls own one block and never move document content on hover, foc
   await expect(ai).toHaveCount(1);
   await ai.scrollIntoViewIfNeeded();
   await ai.evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
+  const recovery = page.getByText(
+    "Your unsaved edits were kept as a suggestion.",
+    { exact: true },
+  );
+  await expect(recovery).toBeVisible();
   const before = await positions(page);
   await ai.getByRole("button", { name: "Mark reviewed", exact: true }).click();
   await expect(page.locator('.block-frame[data-ai="true"]')).toHaveCount(0);
   await unchanged(before);
+  await expect(recovery).toBeVisible();
   // The gutter remains an operational keyboard drag handle, not a decorative icon.
   const roots = page.locator(
     ".document-section > .block-sortable > .block-frame",

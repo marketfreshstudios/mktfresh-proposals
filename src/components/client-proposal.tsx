@@ -1,4 +1,5 @@
 "use client";
+import { ClientPrint } from "./client-print";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
 import { documentSpacing } from "../lib/document-spacing";
 import type { CSSProperties } from "react";
@@ -1321,6 +1322,7 @@ function FlowDocument({
       className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >
+      <ClientPrint proposal={p} />
       <DocumentCover
         title={p.title}
         company={p.recipient.company}

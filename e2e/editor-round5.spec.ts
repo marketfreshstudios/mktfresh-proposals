@@ -245,7 +245,13 @@ test("adjacent list and paragraph spacing uses the larger style gap in editor, c
     "margin-bottom",
     "0px",
   );
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.renders.length).toBe(1);
   const pdf = f.renders.at(-1)!;
+  await page
+    .getByRole("dialog", { name: "Preview PDF", exact: true })
+    .getByRole("button", { name: "Close PDF preview", exact: true })
+    .click();
   expect(
     (
       await PDFDocument.load(Buffer.from(pdf.pdf_base64, "base64"))
@@ -323,6 +329,12 @@ test("compact products share name/price rows and accessible selections across ed
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
   await ready(page);
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.renders.length).toBe(1);
+  await page
+    .getByRole("dialog", { name: "Preview PDF", exact: true })
+    .getByRole("button", { name: "Close PDF preview", exact: true })
+    .click();
   for (const target of [".editor-paper", ".flow-document"]) {
     if (target === ".flow-document")
       await page.goto(`/p/${f.draft.id}?preview=1`);
@@ -369,285 +381,5 @@ test("compact products share name/price rows and accessible selections across ed
   expect(text).toContain("Kickoff");
 });
 
-test("moving a signature recomputes authoritative pages without opening Preview PDF; cached undo has no render request", async ({
-  page,
-}) => {
-  const content: Block[] = [
-    { id: id(), type: "heading", text: "Agreement" },
-    ...Array.from({ length: 14 }, (_, n) => ({
-      id: id(),
-      type: "paragraph" as const,
-      text: `Scope ${String(n).padStart(2, "0")}: ${"A clear delivery and support plan. ".repeat(9)}`,
-    })),
-    { id: id(), type: "signature_block", role: "client" },
-  ];
-  const signature = content.at(-1)!;
-  const f = await editorFixture(page, false, { content });
-  await page.setViewportSize({ width: 1920, height: 1000 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  await ready(page);
-  const before = JSON.stringify(f.active().content),
-    handle = page.getByRole("button", {
-      name: `Drag block ${content.length}`,
-      exact: true,
-    });
-  await page.locator(`[data-block-id="block-${signature.id}"]`).focus();
-  await handle.focus();
-  await handle.press("Space");
-  await expect(handle).toHaveAttribute("aria-pressed", "true");
-  await page.evaluate(
-    () =>
-      new Promise<void>((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => r())),
-      ),
-  );
-  for (let n = 0; n < 13; n++) {
-    await page.keyboard.press("ArrowUp");
-    await page.evaluate(
-      () =>
-        new Promise<void>((r) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => r())),
-        ),
-    );
-  }
-  await page.keyboard.press("Space");
-  await expect.poll(() => f.active().content[2]?.id).toBe(signature.id);
-  const paper = await ready(page),
-    data = f.renders.at(-1)!;
-  await expect(paper).toHaveAttribute(
-    "data-layout-fingerprint",
-    data.fingerprint,
-  );
-  const text = await pdfText(data);
-  const pageIndex = text.findIndex((p) => p.includes("Client signature"));
-  expect(pageIndex).toBeGreaterThanOrEqual(0);
-  const pageIds = data.layout
-    .sheets!.map((s, n) =>
-      s.fragments.some((f) => f.block === signature.id) ? n : -1,
-    )
-    .filter((n) => n >= 0);
-  expect(pageIds).toEqual([pageIndex]);
-  const signatureBounds = await paper
-    .locator(`[data-block-id="block-${signature.id}"] .editor-signature`)
-    .evaluate((el) => {
-      const root = el.closest<HTMLElement>(".editor-paper")!,
-        scale = root.getBoundingClientRect().width / root.offsetWidth;
-      return {
-        top:
-          (el.getBoundingClientRect().top - root.getBoundingClientRect().top) /
-          scale,
-        bottom:
-          (el.getBoundingClientRect().bottom -
-            root.getBoundingClientRect().top) /
-          scale,
-      };
-    });
-  expect(signatureBounds.top).toBeGreaterThanOrEqual(pageIndex * 1080 + 72 - 1);
-  expect(signatureBounds.bottom).toBeLessThanOrEqual(
-    pageIndex * 1080 + 1056 - 72 + 1,
-  );
-  for (let n = 0; n < 14; n++) {
-    const marker = `Scope ${String(n).padStart(2, "0")}:`,
-      pdfPage = text.findIndex((p) => p.includes(marker));
-    const position = await paper
-      .locator(`[data-block-id="block-${content[n + 1].id}"] .tiptap`)
-      .evaluate((el) => {
-        const root = el.closest<HTMLElement>(".editor-paper")!,
-          scale = root.getBoundingClientRect().width / root.offsetWidth;
-        return (
-          (el.getBoundingClientRect().top - root.getBoundingClientRect().top) /
-          scale
-        );
-      });
-    expect(Math.floor(position / 1080)).toBe(pdfPage);
-  }
-  expect(
-    await page
-      .getByRole("dialog", { name: "Preview PDF", exact: true })
-      .count(),
-  ).toBe(0);
-  const calls = f.calls.length;
-  await page.keyboard.press("Control+z");
-  await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
-  await ready(page);
-  await page.waitForTimeout(450);
-  expect(f.calls.length).toBe(calls);
-});
-
-test("cached undo restores continuation spacers when contract text remounts", async ({
-  page,
-}) => {
-  const contract: Block = {
-    id: id(),
-    type: "contract",
-    text: "Terms",
-    clauses: [
-      {
-        id: id(),
-        heading: "Working together",
-        body: Array.from(
-          { length: 80 },
-          (_, n) => `Clause line ${n}. Plain terms for this project.`,
-        ).join("\n"),
-        show_when: null,
-      },
-    ],
-  };
-  const f = await editorFixture(page, false, { content: [contract] });
-  await page.setViewportSize({ width: 1920, height: 1000 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  const paper = await ready(page),
-    block = paper.locator(`[data-block-id="block-${contract.id}"]`),
-    spacers = block.locator("[data-pagination-spacer]"),
-    count = await spacers.count(),
-    data = f.renders.at(-1)!;
-  expect(count).toBeGreaterThan(0);
-  await block.focus();
-  await block
-    .locator(":scope > .block-tools")
-    .getByRole("button", { name: "Delete block", exact: true })
-    .click();
-  await expect(block).toHaveCount(0);
-  await ready(page);
-  const calls = f.calls.length;
-  await page.keyboard.press("Control+z");
-  await expect(block).toHaveCount(1);
-  await ready(page);
-  await expect(spacers).toHaveCount(count);
-  const pages = await pdfText(data);
-  const positions = await block.locator("[data-source-text]").evaluate((el) => {
-    const root = el.closest<HTMLElement>(".editor-paper")!,
-      scale = root.getBoundingClientRect().width / root.offsetWidth;
-    return Array.from({ length: 80 }, (_, n) => {
-      let offset = el.textContent!.indexOf(`Clause line ${n}.`);
-      const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      let node: Node | null;
-      while ((node = walk.nextNode())) {
-        if (offset < node.textContent!.length) {
-          const range = document.createRange();
-          range.setStart(node, offset);
-          range.setEnd(node, offset + 1);
-          return Math.floor(
-            (range.getBoundingClientRect().top -
-              root.getBoundingClientRect().top) /
-              scale /
-              1080,
-          );
-        }
-        offset -= node.textContent!.length;
-      }
-      return -1;
-    });
-  });
-  for (const [n, position] of positions.entries())
-    expect(position).toBe(
-      pages.findIndex((p) => p.includes(`Clause line ${n}.`)),
-    );
-  await page.waitForTimeout(450);
-  expect(f.calls.length).toBe(calls);
-});
-
-test("rapid edits retain the last sheets and only the newest server response may commit", async ({
-  page,
-}) => {
-  let release: () => void = () => {},
-    held = false;
-  const gate = new Promise<void>((r) => (release = r)),
-    pendingTitle = "Pending layout ".repeat(14);
-  const f = await editorFixture(page, true, {
-    onLayout: async (input) => {
-      if (input.title === pendingTitle) {
-        held = true;
-        await gate;
-      }
-    },
-  });
-  await page.setViewportSize({ width: 1920, height: 1000 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  const paper = await ready(page),
-    old = await paper.locator(".editor-page-sheets").innerHTML();
-  const title = page.getByRole("textbox", {
-    name: "Proposal title",
-    exact: true,
-  });
-  await title.fill(pendingTitle);
-  await expect.poll(() => held).toBe(true);
-  await expect(
-    page.getByRole("status").filter({ hasText: "Updating pages…" }),
-  ).toBeVisible();
-  expect(await paper.locator(".editor-page-sheets").innerHTML()).toBe(old);
-  await expect(paper).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await title.fill("Intermediate title");
-  await title.fill("Latest title");
-  await expect
-    .poll(() =>
-      f.renders.some(
-        (r) =>
-          r.fingerprint !== f.renders[0].fingerprint &&
-          f.calls.at(-1)?.title === "Latest title",
-      ),
-    )
-    .toBe(true);
-  await ready(page);
-  const newest = f.renders.at(-1)!;
-  await expect(paper).toHaveAttribute(
-    "data-layout-fingerprint",
-    newest.fingerprint,
-  );
-  release();
-  await page.waitForTimeout(450);
-  await expect(paper).toHaveAttribute(
-    "data-layout-fingerprint",
-    newest.fingerprint,
-  );
-  await expect(paper.locator(".editor-page-sheets")).toHaveAttribute(
-    "data-approximate",
-    "false",
-  );
-  expect(f.calls.some((c) => c.title === "Intermediate title")).toBe(false);
-});
-
-test("density, margins and font changes automatically refresh the server layout without a PDF viewer", async ({
-  page,
-}) => {
-  const f = await editorFixture(page, true);
-  await page.setViewportSize({ width: 1920, height: 1000 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  const paper = await ready(page);
-  let fingerprint = f.renders.at(-1)!.fingerprint;
-  const standardPages = f.renders.at(-1)!.layout.pages;
-  await page.getByRole("tab", { name: "Styles", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "Density", exact: true })
-    .selectOption("comfortable");
-  await expect.poll(() => f.renders.at(-1)!.fingerprint).not.toBe(fingerprint);
-  await ready(page);
-  expect(f.renders.at(-1)!.layout.pages).toBeGreaterThanOrEqual(standardPages);
-  fingerprint = f.renders.at(-1)!.fingerprint;
-  await page
-    .getByRole("spinbutton", { name: "Page margin top", exact: true })
-    .fill("1.25");
-  await expect.poll(() => f.renders.at(-1)!.fingerprint).not.toBe(fingerprint);
-  await ready(page);
-  fingerprint = f.renders.at(-1)!.fingerprint;
-  await page
-    .getByRole("combobox", { name: "Text level", exact: true })
-    .selectOption("body");
-  await page
-    .getByRole("combobox", { name: "Body font", exact: true })
-    .selectOption("lora");
-  await expect.poll(() => f.renders.at(-1)!.fingerprint).not.toBe(fingerprint);
-  await ready(page);
-  await expect(paper).toHaveAttribute(
-    "data-layout-fingerprint",
-    f.renders.at(-1)!.fingerprint,
-  );
-  await expect(paper.locator(".editor-page-sheet")).toHaveCount(
-    f.renders.at(-1)!.layout.pages,
-  );
-  expect(
-    await page
-      .getByRole("dialog", { name: "Preview PDF", exact: true })
-      .count(),
-  ).toBe(0);
-});
+// Server response races, alignment fallbacks and cached geometry were replaced
+// by browser-source pagination, tested in live-pagination.spec.ts.

@@ -1,4 +1,6 @@
 "use client";
+import { printView } from "../lib/print-view";
+import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
 import { quoteTotalText } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
@@ -8,7 +10,8 @@ import {
   moveAdjacentBlock,
   moveDocumentBlock,
 } from "../lib/editor-moves";
-import { PagedPaper } from "./paged-paper";
+import { paginateBrowser } from "./browser-pagination";
+import { type BrowserPages, PagedPaper } from "./paged-paper";
 import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
@@ -194,8 +197,27 @@ function QuoteEditorContent({
     } | null>(null);
   const paper = useRef<HTMLElement>(null),
     reviewCursor = useRef(-1);
-  const pdfPreview = usePdfPreview(p);
+  const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
+  const pagePlan = useRef(initial.pagination);
+  const pdfPreview = usePdfPreview({
+    ...p,
+    pagination: browserPages?.plan ?? p.pagination,
+  });
+  const receivePagination = (value: BrowserPages) => {
+    pagePlan.current = value.plan;
+    setBrowserPages((old) =>
+      JSON.stringify(old) === JSON.stringify(value) ? old : value,
+    );
+  };
   const panels = useEditorPanels(user?.actor ?? "local", paper, fullDocument);
+  useEffect(() => {
+    if (tab !== "Review & send") return;
+    const timer = setTimeout(
+      () => void pdfPreview.ensure().catch(() => {}),
+      400,
+    );
+    return () => clearTimeout(timer);
+  }, [tab, pdfPreview.visualKey]);
   const openTools = (nextTab: string) => {
     setTab(nextTab);
     if (panels.canRight && !panels.phone) {
@@ -461,16 +483,24 @@ function QuoteEditorContent({
   }
   async function save() {
     if (savingRef.current || stale || offline) return false;
-    if (!dirty) return true;
+    paper.current?.dispatchEvent(new Event("pagination-flush"));
+    if (
+      !dirty &&
+      JSON.stringify(pagePlan.current) ===
+        JSON.stringify(latest.current.pagination)
+    )
+      return true;
     savingRef.current = true;
     setSaving(true);
     const captured = generation.current,
+      clearRecovery = dirty,
       value = latest.current;
     try {
       const result = await api<Proposal>(`/api/proposals/${p.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           revision: revision.current,
+          pagination: pagePlan.current,
           title: value.title,
           content: value.content,
           quote: value.quote,
@@ -483,10 +513,14 @@ function QuoteEditorContent({
       if (captured === generation.current) {
         setP({ ...result, quote: draftItems(result.quote) });
         setDirty(false);
-        try {
-          localStorage.removeItem(cacheKey);
-        } catch {}
-        setRecovery(null);
+        // Recording derived page positions is not a decision about a pending
+        // recovered edit. Keep that suggestion until a content edit/explicit choice.
+        if (clearRecovery) {
+          try {
+            localStorage.removeItem(cacheKey);
+          } catch {}
+          setRecovery(null);
+        }
         onSaved(result);
       } else setP((v) => ({ ...v, revision: result.revision }));
       setError("");
@@ -1230,6 +1264,9 @@ function QuoteEditorContent({
         ))}
         {[
           ...ready.warnings,
+          ...(pdfPreview.data?.layout.overflow_pages ?? []).map(
+            (page) => `Page ${page} overflows in the PDF · Preview PDF`,
+          ),
           ...((pdfPreview.data?.layout.pricing_pages ?? 0) > 1
             ? [
                 `Pricing table spans ${pdfPreview.data!.layout.pricing_pages} pages — use Standard density or trim descriptions.`,
@@ -1439,7 +1476,32 @@ function QuoteEditorContent({
       <PagesOutline
         content={p.content}
         onMove={move}
-        layout={pdfPreview.data?.layout}
+        pagination={browserPages}
+        measure={(content) =>
+          paginateBrowser(
+            paper.current!,
+            content,
+            resolveStyles(
+              p.workspace_settings,
+              p.template_style_overrides,
+              p.style_overrides,
+            ),
+            false,
+            true,
+          )
+        }
+        onPage={(page) => {
+          if (panels.phone) {
+            setSection(0);
+            setFullDocument(true);
+            setOutlineOpen(false);
+          }
+          requestAnimationFrame(() =>
+            document
+              .querySelector(`[data-editor-page="${page}"]`)
+              ?.scrollIntoView({ block: "start" }),
+          );
+        }}
         onChange={(content) => {
           selection.clear();
           const activeId = sections[section ?? -1]?.id;
@@ -1677,6 +1739,28 @@ function QuoteEditorContent({
                 className="document-heading"
                 aria-label={`Heading ${n + 1}`}
                 rows={1}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    event.currentTarget.selectionStart === 0
+                  ) {
+                    event.preventDefault();
+                    const next = [...latest.current.content];
+                    next.splice(
+                      next.findIndex((v) => v.id === b.id),
+                      0,
+                      {
+                        id: uid(),
+                        type: "paragraph",
+                        content: {
+                          type: "doc",
+                          content: [{ type: "paragraph" }],
+                        },
+                      },
+                    );
+                    change({ content: next });
+                  }
+                }}
                 value={b.text ?? ""}
                 onValue={(text) =>
                   patchBlock({
@@ -2104,6 +2188,10 @@ function QuoteEditorContent({
       data-panels-ready={panels.ready}
       className={`quote-workspace editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
+      <PageBreakController
+        content={p.content}
+        onChange={(content) => change({ content })}
+      />
       <header className="quote-editor-top">
         <div className="title-field">
           <nav className="editor-breadcrumb" aria-label="Breadcrumb">
@@ -2148,7 +2236,13 @@ function QuoteEditorContent({
         >
           Preview as client
         </Button>
-        <Button disabled={saving || stale} onClick={() => setPdfOpen(true)}>
+        <Button
+          disabled={saving || stale}
+          onClick={() => {
+            paper.current?.dispatchEvent(new Event("pagination-flush"));
+            setPdfOpen(true);
+          }}
+        >
           Preview PDF
         </Button>
         <Button variant="primary" onClick={() => openTools("Review & send")}>
@@ -2316,13 +2410,6 @@ function QuoteEditorContent({
         <main className="editor-document-region">
           <div className="editor-panel-controls">
             <div className="paper-zoom">
-              <span
-                className="pages-updating-indicator"
-                role="status"
-                data-updating={pdfPreview.approximate}
-              >
-                Updating pages…
-              </span>
               <output aria-label="Editor zoom">
                 {Math.round(panels.scale * 100)}%
               </output>
@@ -2443,7 +2530,7 @@ function QuoteEditorContent({
                       : undefined,
                     transformOrigin: "top left",
                     minHeight: panels.printMode
-                      ? `max(var(--page-sheets-height, 0px), ${(pdfPreview.data?.layout.pages ?? 1) * 1080 - 24}px)`
+                      ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
                       : undefined,
                   } as CSSProperties
                 }
@@ -2451,16 +2538,21 @@ function QuoteEditorContent({
               >
                 <PagedPaper
                   paper={paper}
-                  layout={pdfPreview.data?.layout}
                   styles={resolveStyles(
                     p.workspace_settings,
                     p.template_style_overrides,
                     p.style_overrides,
                   )}
-                  approximate={pdfPreview.approximate}
                   enabled={panels.printMode}
-                  contentKey={pdfPreview.visualKey}
-                  fingerprint={pdfPreview.data?.fingerprint}
+                  content={p.content}
+                  contentKey={JSON.stringify([
+                    p.title,
+                    printView(p.content, p.quote),
+                    p.valid_until,
+                    p.style_overrides,
+                    p.template_style_overrides,
+                  ])}
+                  onPagination={receivePagination}
                 />
                 <style>
                   {fontCss(p.workspace_settings)}
@@ -2488,7 +2580,7 @@ function QuoteEditorContent({
                       : undefined
                   }
                   logo={
-                    panels.printMode && p.workspace_settings?.logo
+                    p.workspace_settings?.logo
                       ? `/api/proposals/${p.id}/preview-logo`
                       : undefined
                   }
@@ -2529,7 +2621,7 @@ function QuoteEditorContent({
                   )}
                   From {settings?.company_name}
                 </p>
-                <DocumentPagination preview={pdfPreview} />
+                <DocumentPagination pagination={browserPages?.plan} />
               </article>
             </div>
           </div>

@@ -1,4 +1,5 @@
 "use client";
+import { PageBreakAction, PageBreakProvider } from "./page-break-action";
 import { EditorPopoverProvider } from "./editor-popovers";
 import {
   createContext,
@@ -151,7 +152,9 @@ function ToastSurface({
 export function BlockScope({ children }: { children: ReactNode }) {
   return (
     <EditorPopoverProvider>
-      <BlockScopeContent>{children}</BlockScopeContent>
+      <PageBreakProvider>
+        <BlockScopeContent>{children}</BlockScopeContent>
+      </PageBreakProvider>
     </EditorPopoverProvider>
   );
 }
@@ -513,6 +516,7 @@ export function BlockFrame({
               </button>
             </>
           )}
+          <PageBreakAction block={id} />
           {tools}
         </div>
         {insert &&

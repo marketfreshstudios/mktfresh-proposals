@@ -14,6 +14,7 @@ export function useTemplatePreview(
   const input = template
     ? {
         id: template.id,
+        pagination: template.pagination,
         content: template.content,
         quote: templateDefaultQuote(template, catalog).quote,
         style_overrides: template.style_overrides ?? {},
@@ -38,7 +39,7 @@ export function useTemplatePreview(
       if (!data.layout) throw new Error("Template layout unavailable");
       return data as PdfPreview;
     },
-    enabled && !!input,
+    false,
   );
   return {
     ...preview,

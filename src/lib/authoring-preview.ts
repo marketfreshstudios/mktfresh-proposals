@@ -8,6 +8,7 @@ export function authoringPreview(
     content: Block[];
     quote: Quote;
     style_overrides?: StyleOverrides;
+    pagination?: import("./page-plan").PagePlan;
   },
   settings: WorkspaceSettings,
   workspace: string,
@@ -46,6 +47,7 @@ export function authoringPreview(
     first_viewed_at: null,
     client_signed_at: null,
     completed_at: null,
+    pagination: input.pagination,
     content: input.content,
     quote: input.quote,
     style_overrides: input.style_overrides,

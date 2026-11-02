@@ -1,3 +1,4 @@
+import { PagePlanSchema } from "./page-plan";
 import { authoringPreview } from "./authoring-preview";
 import { pdfPreview } from "./pdf-preview";
 import { reviewBlocks } from "./ai-review";
@@ -581,6 +582,7 @@ export async function handle(req: Request, path: string[]) {
           content: z.array(z.record(z.string(), z.unknown())).max(300),
           quote: QuoteSchema,
           style_overrides: StyleOverridesSchema.optional(),
+          pagination: PagePlanSchema.optional(),
         })
         .strict()
         .parse(await body(req));
@@ -748,6 +750,7 @@ export async function handle(req: Request, path: string[]) {
                 .max(100),
               active: z.boolean(),
               style_overrides: StyleOverridesSchema.optional(),
+              pagination: PagePlanSchema.optional(),
             })
             .parse(raw);
           entity.content = reviewBlocks(entity.content as Block[], false);
@@ -844,6 +847,7 @@ export async function handle(req: Request, path: string[]) {
               quote: QuoteSchema,
               valid_until: z.string().nullable(),
               style_overrides: StyleOverridesSchema.optional(),
+              pagination: PagePlanSchema.optional(),
               template_style_overrides: StyleOverridesSchema.optional(),
             })
             .strict()
@@ -907,6 +911,7 @@ export async function handle(req: Request, path: string[]) {
           .object({
             revision: z.number().int(),
             style_overrides: StyleOverridesSchema.optional(),
+            pagination: PagePlanSchema.optional(),
             template_style_overrides: StyleOverridesSchema.optional(),
             title: z.string().min(1).max(300).optional(),
             content: z
