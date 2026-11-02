@@ -1,13 +1,43 @@
 name: Proposal system validation
 on:
+  # One run per PR update (not push + pull_request), plus main after merge.
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
+# A newer push to the same PR cancels the older, now-irrelevant run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
+    name: Unit, types, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # verify:fonts renders PDFs with Playwright's Chromium.
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: npm run check:neutral
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run verify:fonts
+  e2e:
+    name: Browser tests (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,16 +47,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
-      - run: npm run check:neutral
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npm run verify:fonts
-      - run: npm run test:e2e
+      # Each shard starts its own app and its own temporary database.
+      - run: npx playwright test --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: proposal-system-evidence
+          name: proposal-system-evidence-${{ matrix.shard }}
           path: |
             test-results/
             .data/evidence/
