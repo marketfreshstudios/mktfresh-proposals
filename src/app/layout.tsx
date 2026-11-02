@@ -13,6 +13,7 @@ import "./editor-round3.css";
 import "./editor-round4.css";
 import "./editor-round5.css";
 import "./editor-round6.css";
+import "./browser-pages.css";
 export default function RootLayout({
   children,
 }: {

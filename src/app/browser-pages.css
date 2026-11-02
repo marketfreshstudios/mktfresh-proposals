@@ -1,0 +1,52 @@
+.browser-page-note {
+  display: none;
+  color: var(--ink-muted);
+  font: 12px/1.5 var(--font-ui);
+}
+:is(.editor-paper, .template-paged-paper):has(
+    > .editor-page-sheets[data-layout-mode="block"]
+  )
+  .browser-page-note {
+  display: block;
+}
+.template-page-accuracy {
+  position: absolute;
+  bottom: -52px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+/* Centre at each edge, then move another half-button outward. Even a block
+   shorter than its touch targets has two separate, text-free insert controls. */
+.document-reading .block-frame > .block-insert {
+  --block-insert-size: 28px;
+  width: var(--block-insert-size);
+  height: var(--block-insert-size);
+  min-height: var(--block-insert-size);
+  left: calc(100% + 24px);
+  right: auto;
+}
+.document-reading .block-frame > .block-insert-above {
+  top: calc(var(--block-insert-size) / -2);
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.document-reading .block-frame > .block-insert-below {
+  top: auto;
+  bottom: calc(var(--block-insert-size) / -2);
+  transform: translateY(50%);
+}
+@media (max-width: 699px) {
+  .document-reading .block-frame > .block-insert {
+    --block-insert-size: calc(
+      var(--editor-touch-target) * var(--editor-ui-scale, 1)
+    );
+    left: calc(100% + var(--space-1) * var(--editor-ui-scale, 1));
+  }
+  .document-reading .block-frame > .block-insert::before {
+    inset: calc(9px * var(--editor-ui-scale, 1));
+  }
+  .document-reading .block-frame > .block-insert::after {
+    font-size: calc(18px * var(--editor-ui-scale, 1));
+  }
+}

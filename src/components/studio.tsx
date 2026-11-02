@@ -1,6 +1,7 @@
 "use client";
 import { useManagedPopover } from "./editor-popovers";
 import { PagedPaper } from "./paged-paper";
+import { PageAccuracyNote } from "./document-pagination";
 import { SourceParagraph } from "./page-spacers";
 import { PagesOutline } from "./pages-outline";
 import { useEditorPanels } from "./use-editor-panels";
@@ -1608,9 +1609,7 @@ function TemplatesStudioContent({
                             "--editor-ui-scale": 1 / templatePanels.scale,
                             transform: `scale(${templatePanels.scale})`,
                             transformOrigin: "top left",
-                            minHeight:
-                              (templatePreview.data?.layout.pages ?? 1) * 1080 -
-                              24,
+                            minHeight: `max(var(--page-sheets-height, 0px), ${(templatePreview.data?.layout.pages ?? 1) * 1080 - 24}px)`,
                             padding: `${templateMetrics.margins.top * 96}px ${templateMetrics.margins.right * 96}px ${templateMetrics.margins.bottom * 96}px ${templateMetrics.margins.left * 96}px`,
                           } as CSSProperties)
                         : undefined
@@ -2120,6 +2119,11 @@ function TemplatesStudioContent({
                         </BlockFrame>
                       </Sortable>
                     ))}
+                    {mode === "templates" && (
+                      <output className="document-page-count template-page-accuracy">
+                        <PageAccuracyNote />
+                      </output>
+                    )}
                   </div>
                 </Reorder>
               </div>

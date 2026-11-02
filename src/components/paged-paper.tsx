@@ -4,6 +4,12 @@ import { flushSync } from "react-dom";
 import type { PrintLayout, PageFragment } from "../lib/document-print";
 import { pageMetrics, type ResolvedStyles } from "../lib/proposal-styles";
 import type { SourceSpacer } from "./page-spacers";
+import {
+  letterSheets,
+  placeBlockPages,
+  singlePageOverflow,
+  type SheetBox,
+} from "./block-page-placement";
 /** Source anchors are emitted by the PDF engine, never inferred from browser page heights. */
 function source(root: HTMLElement, f: PageFragment) {
   const block =
@@ -109,11 +115,18 @@ export function PagedPaper({
   fingerprint?: string;
 }) {
   const metrics = pageMetrics(styles),
-    [displayLayout, setDisplayLayout] = useState<PrintLayout | null>(null),
+    [geometry, setGeometry] = useState<{
+      layout: PrintLayout;
+      boxes: SheetBox[];
+    } | null>(null),
+    [mode, setMode] = useState<"exact" | "block">("exact"),
     [settled, setSettled] = useState(false),
     [maxError, setMaxError] = useState(0),
     [fontVersion, setFontVersion] = useState(0);
   const clear = (root: HTMLElement) => {
+    root
+      .querySelectorAll<HTMLElement>("[data-browser-page]")
+      .forEach((el) => delete el.dataset.browserPage);
     root.querySelectorAll<HTMLElement>("[data-layout-space]").forEach((el) => {
       el.style.removeProperty("margin-top");
       delete el.dataset.layoutSpace;
@@ -128,19 +141,30 @@ export function PagedPaper({
   };
   useEffect(() => {
     const fonts = () => setFontVersion((n) => n + 1);
+    let timer: ReturnType<typeof setTimeout>;
+    const resize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(fonts, 100);
+    };
     document.fonts.addEventListener("loadingdone", fonts);
-    return () => document.fonts.removeEventListener("loadingdone", fonts);
+    window.addEventListener("resize", resize);
+    return () => {
+      clearTimeout(timer);
+      document.fonts.removeEventListener("loadingdone", fonts);
+      window.removeEventListener("resize", resize);
+    };
   }, []);
   useLayoutEffect(() => {
     const root = paper.current;
     if (!root) return;
     if (!enabled) {
       clear(root);
-      setDisplayLayout(null);
+      root.style.removeProperty("--page-sheets-height");
+      setGeometry(null);
       setSettled(false);
       return;
     }
-    if (approximate || !layout?.sheets) return;
+    if (approximate || !layout) return;
     let waiting = false,
       stopped = false,
       frame = 0;
@@ -192,7 +216,7 @@ export function PagedPaper({
           largest = 0;
           errors.length = 0;
           const top = clone.getBoundingClientRect().top;
-          for (const [page, sheet] of layout.sheets!.entries())
+          for (const [page, sheet] of (layout.sheets ?? []).entries())
             for (const f of sheet.fragments) {
               const a = source(clone, f);
               if (!a || !a.range.getBoundingClientRect().height) {
@@ -258,11 +282,35 @@ export function PagedPaper({
             }
           if (largest <= 0.5) break;
         }
+        const overflow = singlePageOverflow(clone, layout);
+        if (overflow > 1) {
+          largest = Math.max(largest, overflow);
+          errors.push({ overflow });
+        }
         root.dataset.layoutErrors = JSON.stringify(errors);
+        if (!layout.sheets) largest = 1000000;
         setMaxError(largest);
+        let boxes = letterSheets(layout.pages),
+          assignments: { element: HTMLElement; page: number }[] = [];
         if (largest > 1) {
           waiting = errors.some((error: any) => error.missing);
-          return;
+          // Font metrics need not match the server. Discard partial line-level
+          // offsets, retain whole blocks/cards and extend their owning sheets.
+          clone
+            .querySelectorAll<HTMLElement>("[data-layout-space]")
+            .forEach((el) => {
+              el.style.removeProperty("margin-top");
+              delete el.dataset.layoutSpace;
+            });
+          clone
+            .querySelectorAll("[data-pagination-spacer]")
+            .forEach((el) => el.remove());
+          gaps.clear();
+          ({ boxes, assignments } = placeBlockPages(
+            clone,
+            layout,
+            metrics.margins,
+          ));
         }
         // Layout effects and metadata-only ProseMirror transactions finish before paint.
         // Plain clause spacer state updates are batched in this same layout commit.
@@ -286,8 +334,18 @@ export function PagedPaper({
             ?.dispatchEvent(
               new CustomEvent("editor-source-spacers", { detail: spaces }),
             );
+        for (const { element, page } of assignments) {
+          const live = original.get(element);
+          if (live) live.dataset.browserPage = String(page);
+        }
+        const last = boxes.at(-1)!;
+        root.style.setProperty(
+          "--page-sheets-height",
+          `${last.top + last.height}px`,
+        );
         root.dataset.layoutFingerprint = fingerprint ?? "";
-        setDisplayLayout(layout);
+        setGeometry({ layout, boxes });
+        setMode(largest > 1 ? "block" : "exact");
         setSettled(true);
       } finally {
         clone.remove();
@@ -324,17 +382,23 @@ export function PagedPaper({
     fontVersion,
     JSON.stringify(styles.layout),
   ]);
-  const pages = displayLayout?.pages ?? 1;
+  // Server page count is authoritative even before placement, or if placement
+  // cannot converge in this browser. Surfaces never wait on the 1px tolerance.
+  const pages = layout?.pages ?? 1,
+    current = !!geometry && geometry.layout === layout,
+    boxes = current ? geometry!.boxes : letterSheets(pages),
+    last = boxes.at(-1)!;
   if (!enabled) return null;
   return (
     <div
       className="editor-page-sheets"
       aria-label="Document pages"
-      data-layout-settled={settled}
-      data-approximate={approximate || !settled || maxError > 1}
+      data-layout-settled={settled && current}
+      data-approximate={approximate || !settled || !current || mode === "block"}
+      data-layout-mode={current ? mode : "pending"}
       data-layout-max-error={maxError}
       data-layout-updating={approximate}
-      style={{ height: pages * 1080 - 24 }}
+      style={{ height: layout ? last.top + last.height : "100%" }}
     >
       {Array.from({ length: pages }, (_, n) => (
         <section
@@ -342,12 +406,12 @@ export function PagedPaper({
           className="editor-page-sheet page-sheet"
           data-editor-page={n + 1}
           data-source-fragments={JSON.stringify(
-            displayLayout?.sheets?.[n]?.fragments ?? [],
+            layout?.sheets?.[n]?.fragments ?? [],
           )}
           style={{
-            top: n * 1080,
+            top: boxes[n].top,
             width: metrics.width,
-            height: metrics.height,
+            height: layout ? boxes[n].height : "100%",
           }}
           aria-label={`Page ${n + 1}${n === 0 ? " · Cover" : ""}`}
         >
