@@ -129,6 +129,7 @@ export class ProposalService {
     public clock = () => new Date(),
     private members = workspaceStaff,
     private stripeApi?: StripeTransport,
+    private printLayout?: (p: Proposal) => Promise<{ pricing_pages?: number }>,
   ) {}
   async checkReady(proposal: Proposal, confirmAiReview = false) {
     const p = await this.forRead(proposal);
@@ -138,6 +139,19 @@ export class ProposalService {
       this.clock(),
       confirmAiReview,
     );
+    if (this.printLayout && p.content.some((b) => b.type === "pricing_table")) {
+      try {
+        const layout = await this.printLayout(p);
+        if ((layout.pricing_pages ?? 0) > 1)
+          ready.warnings.push(
+            `Pricing table spans ${layout.pricing_pages} pages — use Standard density or trim descriptions.`,
+          );
+      } catch {
+        ready.warnings.push(
+          "PDF layout unavailable — preview the PDF before sending.",
+        );
+      }
+    }
     const client =
       (await this.repo.entities<Client>("clients")).find(
         (c) => c.id === p.client.id,

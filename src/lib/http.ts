@@ -1,3 +1,4 @@
+import { authoringPreview } from "./authoring-preview";
 import { pdfPreview } from "./pdf-preview";
 import { reviewBlocks } from "./ai-review";
 import { StyleOverridesSchema, styleFonts } from "./proposal-styles";
@@ -572,6 +573,36 @@ export async function handle(req: Request, path: string[]) {
           },
         });
       return json(rows);
+    }
+    if (method === "POST" && path[0] === "document-preview") {
+      const input = z
+        .object({
+          id: uuid,
+          content: z.array(z.record(z.string(), z.unknown())).max(300),
+          quote: QuoteSchema,
+          style_overrides: StyleOverridesSchema.optional(),
+        })
+        .strict()
+        .parse(await body(req));
+      const settings = (
+        await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+      )[0];
+      check(settings, "Workspace settings required");
+      return json(
+        await pdfPreview(
+          rt.repo,
+          rt.storage,
+          authoringPreview(
+            {
+              ...input,
+              content: reviewBlocks(input.content as Block[], false),
+            },
+            settings,
+            rt.repo.workspaceId,
+          ),
+          settings,
+        ),
+      );
     }
     if (method === "DELETE" && path[0] === "clients" && path[1]) {
       await rt.repo.deleteClient(uuid.parse(path[1]), user);

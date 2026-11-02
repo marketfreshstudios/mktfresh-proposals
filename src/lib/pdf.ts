@@ -7,7 +7,9 @@ import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
 import {
   printContent,
   printCss,
+  printPageCss,
   paginatePrintDocument,
+  type PrintLayout,
 } from "./document-print";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -84,7 +86,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${printPageCss(version.resolved_styles)}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             title:
               version.variables_resolved["proposal.title"] ??
@@ -104,6 +106,7 @@ export async function sealedPdf(
             signatures,
             logo: brand?.logo,
             signatory: brand?.settings?.company_signatory,
+            currentLayout: !!version.resolved_styles?.layout,
             workspace:
               brand?.settings?.company_name ??
               version.variables_resolved["company.name"],
@@ -118,10 +121,79 @@ export async function sealedPdf(
     });
     // Serialize only this trusted repository function, never document content.
     // tsx preserves nested function names with __name; keep that helper scoped here.
-    const layout = await page.evaluate<
+    const layout: PrintLayout = await page.evaluate<
       ReturnType<typeof paginatePrintDocument>
     >(
       `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
+    );
+    layout.sheets = await page.locator(".print-sheet").evaluateAll((sheets) =>
+      sheets.map((sheet) => {
+        const top = sheet.getBoundingClientRect().top;
+        const lineTop = (el: HTMLElement) => {
+          const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          let node;
+          while ((node = walk.nextNode()))
+            if (node.textContent?.trim()) {
+              const range = document.createRange();
+              range.setStart(node, 0);
+              range.setEnd(node, Math.min(1, node.textContent.length));
+              return range.getBoundingClientRect().top;
+            }
+          return el.getBoundingClientRect().top;
+        };
+        return {
+          html: sheet.innerHTML,
+          fragments: Array.from(
+            sheet.querySelectorAll<HTMLElement>(".print-atom"),
+          ).flatMap((atom) => {
+            const common = {
+              block: atom.dataset.sourceBlock!,
+              offset: Number(atom.dataset.sourceOffset),
+              ...(atom.dataset.sourcePart
+                ? {
+                    part: atom.dataset.sourcePart,
+                    part_offset: Number(atom.dataset.sourcePartOffset),
+                  }
+                : {}),
+              ...(atom.dataset.sourceUnit
+                ? { unit: atom.dataset.sourceUnit }
+                : {}),
+            };
+            const targets =
+              atom.querySelectorAll<HTMLElement>("[data-print-unit]");
+            return [
+              {
+                ...common,
+                y: lineTop(atom) - top,
+                height: atom.getBoundingClientRect().height,
+                bottom: atom.getBoundingClientRect().bottom - top,
+              },
+              ...Array.from(targets)
+                .filter((el) => el !== atom.firstElementChild)
+                .map((el) => ({
+                  ...common,
+                  unit: el.dataset.printUnit,
+                  y: lineTop(el) - top,
+                  height: el.getBoundingClientRect().height,
+                  bottom: el.getBoundingClientRect().bottom - top,
+                })),
+            ];
+          }),
+        };
+      }),
+    );
+    const pricingIds = new Set(
+      version.content
+        .filter((b) => b.type === "pricing_table")
+        .map((b, n) => b.id ?? String(n)),
+    );
+    layout.pricing_pages = Math.max(
+      0,
+      ...Array.from(pricingIds).map(
+        (id) =>
+          layout.sheets!.filter((s) => s.fragments.some((f) => f.block === id))
+            .length,
+      ),
     );
     const starts = await page
       .locator(".print-sheet")

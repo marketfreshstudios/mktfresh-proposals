@@ -1,3 +1,4 @@
+import { pdfPreview } from "./pdf-preview";
 import { StripeHttp } from "./providers/stripe-http";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
@@ -68,6 +69,8 @@ function createRuntime(workspaceId: string) {
       providers.stripe instanceof StripeProvider
         ? providers.stripe.api
         : undefined,
+      async (p) =>
+        (await pdfPreview(repo, storage, p, p.workspace_settings!)).layout,
     ),
     worker: new Worker(repo, storage, mailer, providers),
   };

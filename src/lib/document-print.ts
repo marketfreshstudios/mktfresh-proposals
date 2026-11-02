@@ -1,5 +1,12 @@
+import { documentQuote } from "./document-quote";
 import { escape, renderBlocks } from "./presentation";
 import type { Block, Quote } from "./model";
+import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
+export function printPageCss(styles?: ResolvedStyles) {
+  const m = pageMetrics(styles),
+    p = m.margins;
+  return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px}.print-sheet{height:${m.contentHeight}px}`;
+}
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
 export const printCss = `
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f;overflow-wrap:anywhere}
@@ -19,6 +26,7 @@ export function printContent(input: {
   logo?: string;
   workspace?: string;
   signatory?: { name: string; title: string } | null;
+  currentLayout?: boolean;
 }) {
   const cover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
   const blocks = input.content.map((b, n) => {
@@ -31,19 +39,37 @@ export function printContent(input: {
     const body =
       b.type === "page_break"
         ? ""
-        : b.type === "signature_block"
-          ? `<section class="print-signature"><h3>${b.role === "client" ? "Client" : "Company"} signature</h3><strong>${escape(b.role === "client" ? (input.variables["client.full_name"] ?? "Client") : (input.signatory?.name ?? input.variables["company.owner"] ?? input.company))}</strong>${b.role === "company" && input.signatory?.title ? `<p>${escape(input.signatory.title)}</p>` : ""}<p>Awaiting signature</p></section>`
-          : renderBlocks(
-              [b],
-              input.quote,
-              input.variables,
-              input.currency,
-              input.cents,
-            );
-    return `<section class="print-source" data-print-block="${escape(b.id ?? String(n))}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
+        : b.type === "pricing_table" && input.currentLayout
+          ? documentQuote(input.quote, input.currency, input.cents)
+          : b.type === "signature_block"
+            ? `<section class="print-signature"><h3>${b.role === "client" ? "Client" : "Company"} signature</h3><strong>${escape(b.role === "client" ? (input.variables["client.full_name"] ?? "Client") : (input.signatory?.name ?? input.variables["company.owner"] ?? input.company))}</strong>${b.role === "company" && input.signatory?.title ? `<p>${escape(input.signatory.title)}</p>` : ""}<p>Awaiting signature</p></section>`
+            : renderBlocks(
+                [b],
+                input.quote,
+                input.variables,
+                input.currency,
+                input.cents,
+              );
+    return `<section class="print-source" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
   });
-  return `<main class="print-root proposal-typography">${cover}${blocks.join("")}${input.signatures ?? ""}</main>`;
+  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${blocks.join("")}${input.signatures ?? ""}</main>`;
 }
+export type PageFragment = {
+  block: string;
+  offset: number;
+  part?: string;
+  part_offset?: number;
+  unit?: string;
+  y: number;
+  height: number;
+  bottom?: number;
+};
+export type PrintLayout = {
+  pages: number;
+  boundaries: PageBoundary[];
+  sheets?: { html: string; fragments: PageFragment[] }[];
+  pricing_pages?: number;
+};
 export type PageBoundary = {
   page: number;
   block: string;
@@ -123,6 +149,13 @@ export function paginatePrintDocument(root: HTMLElement): {
   function addContent(node: HTMLElement) {
     const wrapper = doc.createElement("div");
     wrapper.className = "print-atom";
+    wrapper.dataset.sourceBlock = currentBlock;
+    wrapper.dataset.sourceOffset = String(offset);
+    if (currentUnit) wrapper.dataset.sourceUnit = currentUnit;
+    if (currentPart) {
+      wrapper.dataset.sourcePart = currentPart.id;
+      wrapper.dataset.sourcePartOffset = String(offset - currentPart.start);
+    }
     wrapper.append(node);
     page.append(wrapper);
     if (fits()) {
@@ -133,7 +166,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
     const indivisible = node.matches(
-      ".print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature",
+      ".print-pricing-intro,.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature",
     );
     if (indivisible && unbrokenHeight > height)
       throw new Error(
@@ -142,6 +175,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     const atomic =
       indivisible ||
       node.matches("img,table,.print-signature") ||
+      node.matches(".print-pricing-table") ||
       !!node.querySelector("img,table");
     if (atomic) {
       // Decompose an over-page container BEFORE starting a new page. Moving an
@@ -244,7 +278,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     if (
       el.matches("div,section") &&
       !el.matches(
-        ".print-signature,.print-pricing-unit,.print-pricing-card,.print-choice-group",
+        ".print-signature,.print-pricing-table,.print-pricing-unit,.print-pricing-card,.print-choice-group",
       ) &&
       el.children.length &&
       !el.querySelector("table,img")
@@ -258,6 +292,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     currentBlock = source.dataset.printBlock ?? currentBlock;
     offset = 0;
     if (source.dataset.printBreak) {
+      if (pendingBreak && root.dataset.currentLayout) newPage(true);
       pendingBreak = true;
       continue;
     }
@@ -285,5 +320,6 @@ export function paginatePrintDocument(root: HTMLElement): {
       } else add(nodes[n]);
     }
   }
+  if (pendingBreak && root.dataset.currentLayout) newPage(true);
   return { pages: count, boundaries };
 }
