@@ -106,10 +106,11 @@ test("draft client preview has live local totals, branded steps and no client wr
           ).toBeDisabled();
         }
         await page.evaluate(() => document.fonts.ready);
-        await page.screenshot({
-          path: `.data/evidence/screens/preview-${step}-${width === 390 ? "phone" : "desktop"}-${theme}.png`,
-          fullPage: true,
-        });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await page.screenshot({
+            path: `.data/evidence/screens/preview-${step}-${width === 390 ? "phone" : "desktop"}-${theme}.png`,
+            fullPage: true,
+          });
       }
     }
   }

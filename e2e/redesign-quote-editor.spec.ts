@@ -194,12 +194,15 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         ).toBeVisible();
         await capture("section-edit", "2c", width, theme);
         await page
-          .getByRole("button", { name: "Quote & totals", exact: true })
+          .getByRole("button", { name: "Open Quote", exact: true })
           .click();
       } else if (width === 768) {
         await capture("tablet-document", "5g", width, theme);
         await page
-          .getByRole("button", { name: "Toggle right panel", exact: true })
+          .getByRole("button", {
+            name: /^(Expand|Collapse) tools sidebar$/,
+            exact: true,
+          })
           .click();
       }
       await expect(

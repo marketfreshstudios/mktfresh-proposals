@@ -68,10 +68,11 @@ test("delegated company signing requires authorization in the UI and seals actua
   await page.getByLabel(authorization, { exact: true }).check();
   await expect(button).toBeEnabled();
   await mkdir(".data/evidence", { recursive: true });
-  await page.screenshot({
-    path: ".data/evidence/company-delegation.png",
-    fullPage: true,
-  });
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await page.screenshot({
+      path: ".data/evidence/company-delegation.png",
+      fullPage: true,
+    });
   await button.click();
   await expect.poll(() => p.status).toBe("completed");
   expect(submitted.authorization_text).toBe(authorization);

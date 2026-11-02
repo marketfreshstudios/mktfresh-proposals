@@ -1,4 +1,5 @@
 "use client";
+import { useManagedPopover } from "./editor-popovers";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
@@ -27,6 +28,7 @@ export function BlockMenu({
   onClose: () => void;
   signatures?: boolean;
 }) {
+  useManagedPopover(true, onClose);
   const [host, setHost] = useState<Element | null>(null),
     [query, setQuery] = useState(""),
     [active, setActive] = useState(0),

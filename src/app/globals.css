@@ -896,6 +896,7 @@ pre {
 
 /* Keep arrow space after all control padding/background shorthands. */
 select,
+.select-compact[role="combobox"],
 .field select,
 .toolbar select,
 .paper select,
@@ -908,15 +909,18 @@ select,
   background-repeat: no-repeat;
 }
 /* Opt-in toolbar variant; shares the same chevron, focus and hover rules. */
-select.select-compact {
+select.select-compact,
+.select-compact[role="combobox"] {
   --select-padding-right: var(--select-compact-padding-right);
   --select-chevron-offset: var(--select-compact-chevron-offset);
 }
-select.select-compact:disabled {
+select.select-compact:disabled,
+.select-compact[role="combobox"]:disabled {
   cursor: not-allowed;
   opacity: var(--opacity-disabled);
 }
 select:hover:not(:disabled),
+.select-compact[role="combobox"]:hover:not(:disabled),
 .field select:hover:not(:disabled),
 .toolbar select:hover:not(:disabled),
 .paper select:hover:not(:disabled),

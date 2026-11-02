@@ -174,6 +174,12 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await expect(page.getByText("Sender name", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Sender email", { exact: true })).toHaveCount(0);
   await page.goto(`/proposals/${p.id}/edit`);
+  await expect(
+    page.locator(".editor-sidepanel:not(.sidebar-rail)"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tab", { name: "Quote", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await page
     .getByRole("spinbutton", { name: "Amount Website build", exact: true })
     .first()
@@ -295,10 +301,11 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
   await mkdir(".data/evidence", { recursive: true });
   await writeFile(".data/evidence/countersigned-proposal.pdf", pdf);
-  await page.screenshot({
-    path: ".data/evidence/signing-harness.png",
-    fullPage: true,
-  });
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await page.screenshot({
+      path: ".data/evidence/signing-harness.png",
+      fullPage: true,
+    });
   expect(
     (
       await request.post(`/api/public/${p.token}/quote`, {

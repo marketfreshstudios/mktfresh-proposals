@@ -1,4 +1,5 @@
 "use client";
+import { printView, viewKey } from "../lib/print-view";
 import { useEffect, useRef, useState } from "react";
 import type { Proposal } from "../lib/model";
 import type { PdfPreview } from "../lib/pdf-preview";
@@ -11,10 +12,20 @@ export const pdfPreviewInput = (p: Proposal) => ({
   style_overrides: p.style_overrides ?? {},
   template_style_overrides: p.template_style_overrides ?? {},
 });
+const visualKey = (p: Proposal) =>
+  viewKey({
+    ...pdfPreviewInput(p),
+    ...printView(p.content, p.quote),
+    revision: undefined,
+    id: p.id,
+    client: p.client,
+    settings: p.workspace_settings,
+    sender: p.sender,
+  });
 export function usePdfPreview(proposal: Proposal) {
   const latest = useRef(proposal);
   latest.current = proposal;
-  const key = JSON.stringify(pdfPreviewInput(proposal));
+  const key = visualKey(proposal);
   const [loaded, setLoaded] = useState<{
       key: string;
       data: PdfPreview;
@@ -24,11 +35,11 @@ export function usePdfPreview(proposal: Proposal) {
   currentKey.current = key;
   const request = async (p: Proposal, signal?: AbortSignal) => {
     const input = pdfPreviewInput(p),
-      requested = JSON.stringify(input);
+      requested = visualKey(p);
     const res = await fetch(`/api/proposals/${p.id}/preview-pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: requested,
+      body: JSON.stringify(input),
       signal,
     });
     const data = await res.json();
@@ -42,6 +53,7 @@ export function usePdfPreview(proposal: Proposal) {
     return data as PdfPreview;
   };
   useEffect(() => {
+    if (loaded?.key === key) return;
     const cancel = new AbortController();
     setError("");
     const timer = setTimeout(
@@ -55,9 +67,10 @@ export function usePdfPreview(proposal: Proposal) {
       clearTimeout(timer);
       cancel.abort();
     };
-  }, [key, proposal.id]);
+  }, [key, proposal.id, proposal.revision]);
   return {
     data: loaded?.data ?? null,
+    visualKey: key,
     approximate: loaded?.key !== key,
     error,
     ensure: () =>

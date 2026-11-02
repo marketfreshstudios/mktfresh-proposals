@@ -625,7 +625,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await expect(page.locator(".quote-workspace")).toBeVisible();
       if (width < 1100)
         await page
-          .getByRole("button", { name: "Quote & totals", exact: true })
+          .getByRole("button", { name: "Open Quote", exact: true })
           .click();
       await expect(
         page

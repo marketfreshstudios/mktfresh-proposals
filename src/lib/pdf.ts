@@ -7,7 +7,10 @@ import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
 import {
   printContent,
   printCss,
+  printPageCss,
   paginatePrintDocument,
+  collectPrintSheets,
+  type PrintLayout,
 } from "./document-print";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -75,16 +78,13 @@ export async function sealedPdf(
     const style = `<style>${families.join("")}${custom}body{--proposal-body:${fontFamily(brand?.settings?.proposal_fonts?.body)};--proposal-heading:${fontFamily(brand?.settings?.proposal_fonts?.heading)};font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}</style>`;
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());
-    const signatures = signers
-      .map(
-        (s) =>
-          `<section class="print-signature" style="break-inside:avoid"><h2>${s.role === "client" ? "Client" : "Company"} signature</h2><p>${escape(s.name)} · ${escape(s.title)}${s.company ? ` · ${escape(s.company)}` : ` · ${escape(s.email)}`}</p>${s.kind === "drawn" ? `<img alt="Signature" src="${s.image}" style="max-width:100%;max-height:160px;object-fit:contain" />` : `<p><em>${escape(s.typed_name!)}</em></p>`}<p>${escape(certificateTime(s.signed_at, brand?.settings?.timezone))}</p><p>${escape(s.consent_text)}</p></section>`,
-      )
-      .join("");
+    const signedBlock = (s: Signer) =>
+      `<section class="print-signature" style="break-inside:avoid"><h2>${s.role === "client" ? "Client" : "Company"} signature</h2><p>${escape(s.name)} · ${escape(s.title)}${s.company ? ` · ${escape(s.company)}` : ` · ${escape(s.email)}`}</p>${s.kind === "drawn" ? `<img alt="Signature" src="${s.image}" style="max-width:100%;max-height:160px;object-fit:contain" />` : `<p><em>${escape(s.typed_name!)}</em></p>`}<p>${escape(certificateTime(s.signed_at, brand?.settings?.timezone))}</p><p>${escape(s.consent_text)}</p></section>`;
+    const signatures = signers.map(signedBlock).join("");
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${printPageCss(version.resolved_styles)}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             title:
               version.variables_resolved["proposal.title"] ??
@@ -102,8 +102,12 @@ export async function sealedPdf(
             currency,
             cents: brand?.settings?.money?.cents ?? "auto",
             signatures,
+            signatureBlocks: Object.fromEntries(
+              signers.map((s) => [s.role, signedBlock(s)]),
+            ),
             logo: brand?.logo,
             signatory: brand?.settings?.company_signatory,
+            currentLayout: !!version.resolved_styles?.layout,
             workspace:
               brand?.settings?.company_name ??
               version.variables_resolved["company.name"],
@@ -118,10 +122,26 @@ export async function sealedPdf(
     });
     // Serialize only this trusted repository function, never document content.
     // tsx preserves nested function names with __name; keep that helper scoped here.
-    const layout = await page.evaluate<
+    const layout: PrintLayout = await page.evaluate<
       ReturnType<typeof paginatePrintDocument>
     >(
       `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
+    );
+    layout.sheets = await page.evaluate<ReturnType<typeof collectPrintSheets>>(
+      `(() => { const __name = value => value; return (${collectPrintSheets.toString()})(Array.from(document.querySelectorAll(".print-sheet"))); })()`,
+    );
+    const pricingIds = new Set(
+      version.content
+        .filter((b) => b.type === "pricing_table")
+        .map((b, n) => b.id ?? String(n)),
+    );
+    layout.pricing_pages = Math.max(
+      0,
+      ...Array.from(pricingIds).map(
+        (id) =>
+          layout.sheets!.filter((s) => s.fragments.some((f) => f.block === id))
+            .length,
+      ),
     );
     const starts = await page
       .locator(".print-sheet")

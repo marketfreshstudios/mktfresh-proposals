@@ -72,7 +72,8 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
       ),
     ).toBe(true);
     const file = `${state}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
     captures.push({ file, state, width, theme });
   }
   async function record(state: string, width: number, theme: string) {
@@ -269,11 +270,13 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
           ),
         ).toBe(true);
         const file = `email-${key}-${width}-${theme}.png`;
-        await email.screenshot({ path: `${dir}/${file}`, fullPage: true });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await email.screenshot({ path: `${dir}/${file}`, fullPage: true });
         captures.push({ file, state: `email-${key}`, width, theme });
       }
     }
     await email.close();
   }
-  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

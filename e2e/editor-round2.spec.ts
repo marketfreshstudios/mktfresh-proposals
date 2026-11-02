@@ -178,14 +178,17 @@ for (const width of [1440, 375]) {
       await expect(frame.locator(`h${level + 1} textarea`)).toBeFocused();
       await expect(
         bar.getByRole("combobox", { name: "Text style", exact: true }),
-      ).toHaveValue(String(level));
+      ).toHaveText(`Heading ${level}`);
       await frame.locator("textarea").fill(`Level ${level}`);
       await expect
         .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
         .toBe(level);
       await bar
         .getByRole("combobox", { name: "Text style", exact: true })
-        .selectOption("0");
+        .click();
+      await page
+        .getByRole("option", { name: "Paragraph", exact: true })
+        .click();
       await expect(frame.locator(".tiptap")).toBeFocused();
     }
     await frame.locator(".tiptap").fill("A retained sentence");
@@ -204,12 +207,21 @@ for (const width of [1440, 375]) {
       .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
       .toBe(2);
     if (width === 1440) {
+      if (
+        !(await page.locator(".editor-outline .outline-subheading").isVisible())
+      )
+        await page
+          .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+          .click();
       await expect(
         page.locator(".editor-outline .outline-subheading"),
       ).toHaveCount(1);
       await expect(
         page.locator('.editor-outline [aria-label^="Drag section"]'),
       ).toHaveCount(1);
+      const pages = page.getByRole("dialog", { name: "Pages", exact: true });
+      if (await pages.isVisible())
+        await pages.getByRole("button", { name: "Done", exact: true }).click();
     }
     const pricing = page.locator(`[data-block-id="block-${f.pricing}"]`);
     await pricing.click();
@@ -292,7 +304,7 @@ for (const width of [1440, 375]) {
     await expect.poll(() => f.current().quote[0].id).not.toBe(beforeOrder);
     if (width === 375)
       await page
-        .getByRole("button", { name: "Quote & totals", exact: true })
+        .getByRole("button", { name: "Open Quote", exact: true })
         .click();
     await page.getByRole("tab", { name: "Styles", exact: true }).click();
     const styles = page.getByRole("region", {
@@ -486,7 +498,15 @@ test("Workspace and templates save style overrides and show responsive live samp
     }),
   ).toHaveValue("17");
   await page.goto(`/studio/templates/${f.template.id}`);
-  await page.locator(".template-style-settings summary").click();
+  if (
+    await page
+      .getByRole("button", { name: "Open Styles", exact: true })
+      .isVisible()
+  )
+    await page
+      .getByRole("button", { name: "Open Styles", exact: true })
+      .click();
+  else await page.getByRole("button", { name: "Styles", exact: true }).click();
   const templateStyles = page.getByRole("region", {
     name: "Proposal styles",
     exact: true,
@@ -522,7 +542,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     page
       .getByRole("toolbar", { name: "Document formatting", exact: true })
       .getByRole("combobox", { name: "Text style", exact: true }),
-  ).toHaveValue("3");
+  ).toHaveText("Heading 3");
   await page
     .getByRole("button", { name: "Save template", exact: true })
     .click();

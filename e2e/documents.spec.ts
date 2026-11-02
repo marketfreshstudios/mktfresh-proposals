@@ -105,10 +105,11 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
           .getByRole("button", { name: "Edit Linked pricing", exact: true })
           .click();
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({
-        path: `.data/evidence/screens/${screen}-desktop-${theme}.png`,
-        fullPage: true,
-      });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await page.screenshot({
+          path: `.data/evidence/screens/${screen}-desktop-${theme}.png`,
+          fullPage: true,
+        });
     }
   }
   expect(await page.locator("body").innerText()).not.toContain(

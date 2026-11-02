@@ -86,6 +86,38 @@ export function ProposalStyles({
   return (
     <section className="proposal-styles stack" aria-label="Proposal styles">
       <label className="field">
+        Density
+        <select
+          value={styles.layout!.density}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              density: e.target.value as "standard" | "comfortable",
+            })
+          }
+        >
+          <option value="standard">Standard</option>
+          <option value="comfortable">Comfortable</option>
+        </select>
+      </label>
+      <fieldset className="style-fields">
+        <legend>Page margins (inches)</legend>
+        {(["top", "right", "bottom", "left"] as const).map((side) => (
+          <StyleNumber
+            key={side}
+            name={side[0].toUpperCase() + side.slice(1)}
+            ariaLabel={`Page margin ${side}`}
+            value={styles.layout!.margins[side]}
+            min={0.25}
+            max={2}
+            step={0.05}
+            onChange={(n) =>
+              onChange({ ...value, margins: { ...value?.margins, [side]: n } })
+            }
+          />
+        ))}
+      </fieldset>
+      <label className="field">
         Text level
         <select
           value={level}

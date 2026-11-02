@@ -193,26 +193,29 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
             ),
         ).toBe(true);
         const file = `${name}-${width}-${theme}.png`;
-        await page.screenshot({ path: `${dir}/${file}`, fullPage: true });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await page.screenshot({ path: `${dir}/${file}`, fullPage: true });
         captures.push({ file, route: url, width, theme, frame });
         if (name === "home") {
           await page.setViewportSize({
             width,
             height: width === 1440 ? 960 : width === 768 ? 1100 : 780,
           });
-          await page.screenshot({
-            path: `${dir}/home-frame-${width}-${theme}.png`,
-          });
+          if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+            await page.screenshot({
+              path: `${dir}/home-frame-${width}-${theme}.png`,
+            });
           await page.setViewportSize({ width, height: 1000 });
         }
       }
       active = draft;
       await page.goto("/proposals?new=1");
       await expect(page.getByRole("dialog")).toBeVisible();
-      await page.screenshot({
-        path: `${dir}/new-${width}-${theme}.png`,
-        fullPage: true,
-      });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await page.screenshot({
+          path: `${dir}/new-${width}-${theme}.png`,
+          fullPage: true,
+        });
       captures.push({
         file: `new-${width}-${theme}.png`,
         route: "/proposals?new=1",
@@ -232,10 +235,11 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         await page.getByRole("link", { name: "Studio", exact: true }).click();
         await expect(page.locator(".studio-page")).toBeVisible();
       } else await expect(page.locator(".desktop-studio")).toBeVisible();
-      await page.screenshot({
-        path: `${dir}/studio-menu-${width}-${theme}.png`,
-        fullPage: true,
-      });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await page.screenshot({
+          path: `${dir}/studio-menu-${width}-${theme}.png`,
+          fullPage: true,
+        });
       captures.push({
         file: `studio-menu-${width}-${theme}.png`,
         route: "Studio navigation",
@@ -281,16 +285,19 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
     "animation-name",
     "none",
   );
-  await page.screenshot({
-    path: `${dir}/skeleton-1440-dark.png`,
-    fullPage: true,
-  });
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await page.screenshot({
+      path: `${dir}/skeleton-1440-dark.png`,
+      fullPage: true,
+    });
   delayAuth = false;
   release?.();
   await expect(
     page.getByText("Loading your workspace…", { exact: true }),
   ).toHaveCount(0);
   expect(JSON.stringify(await repo.get(draft.id))).toBe(stateBefore);
+  expect(externalFonts).toEqual([]);
+  if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   await writeFile(
     `${dir}/manifest.json`,
     JSON.stringify(
@@ -362,16 +369,18 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         .locator(":scope > div")
         .nth(1);
       await expect(node).toBeVisible();
-      await node.screenshot({ path: `${dir}/reference-${frame}-light.png` });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await node.screenshot({ path: `${dir}/reference-${frame}-light.png` });
     }
   }
   await design.goto(
     "http://127.0.0.1:4176/Redesign%2004%20-%20Design%20System.dc.html",
   );
   await design.evaluate(() => document.fonts.ready);
-  await design
-    .locator("#t4")
-    .screenshot({ path: `${dir}/reference-04-components.png` });
+  if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+    await design
+      .locator("#t4")
+      .screenshot({ path: `${dir}/reference-04-components.png` });
   expect(externalFonts).toEqual([]);
   await design.close();
 });

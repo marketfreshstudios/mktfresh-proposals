@@ -252,7 +252,8 @@ test("client completion: exact charges, one contact footer, reading width, email
       name + " fits",
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({ path: `${dir}/${file}`, fullPage });
     captures.push({ file, frame, width, theme });
   }
   const line = (i: QuoteItem) => i.sublines[0].id;
@@ -477,6 +478,7 @@ test("client completion: exact charges, one contact footer, reading width, email
   expect(writes).toBe(0);
   expect(verifies).toBe(0);
   expect(JSON.stringify(completed)).toBe(before);
+  if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   const refs = await context.newPage();
   for (const [file, frames] of [
     [
@@ -492,11 +494,12 @@ test("client completion: exact charges, one contact footer, reading width, email
         w.__dcSetProps(w.__dcRootName(), { theme: t });
       }, theme);
       for (const frame of frames)
-        await refs
-          .locator(`[id="${frame}"]`)
-          .locator(":scope > div")
-          .nth(1)
-          .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await refs
+            .locator(`[id="${frame}"]`)
+            .locator(":scope > div")
+            .nth(1)
+            .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
     }
   }
   await refs.close();

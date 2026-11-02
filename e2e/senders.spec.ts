@@ -45,10 +45,39 @@ test("From lists the workspace team, defaults to the current user and submits a 
       value = await repo.entities("pricing_items");
     await route.fulfill({ json: value });
   });
-  await page.goto(`/proposals/${p.id}/send`);
+  await page.addInitScript(
+    (actor) =>
+      localStorage.setItem(
+        `proposal-editor-panels:${actor}`,
+        JSON.stringify({ left: false, right: false }),
+      ),
+    staff.actor,
+  );
   const from = page.getByRole("combobox", { name: "From", exact: true });
-  await expect(from).toHaveValue(staff.actor.slice(6));
-  await expect(from.locator("option")).toHaveCount(2);
+  for (const width of [1440, 1100, 768, 375]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`/proposals/${p.id}/send`);
+    await expect(
+      page
+        .getByRole("tab", { name: "Review & send", exact: true })
+        .filter({ visible: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(from).toHaveValue(staff.actor.slice(6));
+    await expect(from.locator("option")).toHaveCount(2);
+    await expect(
+      page.getByRole("textbox", { name: "To", exact: true }),
+    ).toHaveValue(/jane@example.test/);
+    await expect(
+      page.getByRole("textbox", { name: "Note", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("switch", { name: "Require a password", exact: true })
+      .check();
+    await page.getByLabel("Password", { exact: true }).fill("test-password");
+    await page
+      .getByRole("switch", { name: "Require a password", exact: true })
+      .uncheck();
+  }
   await from.selectOption(members[1].user_id);
   await page.getByRole("button", { name: "Send to Jane", exact: true }).click();
   await expect.poll(() => p.sender?.email).toBe("franz@example.test");

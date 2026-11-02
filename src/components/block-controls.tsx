@@ -1,4 +1,5 @@
 "use client";
+import { EditorPopoverProvider } from "./editor-popovers";
 import {
   createContext,
   useContext,
@@ -49,11 +50,13 @@ export function DocumentFormattingBar() {
       ref.current.style.setProperty("--formatting-top", "0px");
       return;
     }
-    const update = () =>
-      ref.current?.style.setProperty(
-        "--formatting-top",
-        `${Math.max(0, header.getBoundingClientRect().height)}px`,
-      );
+    const update = () => {
+      const height = Math.max(0, header.getBoundingClientRect().height);
+      ref.current?.style.setProperty("--formatting-top", `${height}px`);
+      header
+        .closest<HTMLElement>(".quote-workspace")
+        ?.style.setProperty("--editor-header-height", `${height}px`);
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(header);
@@ -146,6 +149,13 @@ function ToastSurface({
     : null;
 }
 export function BlockScope({ children }: { children: ReactNode }) {
+  return (
+    <EditorPopoverProvider>
+      <BlockScopeContent>{children}</BlockScopeContent>
+    </EditorPopoverProvider>
+  );
+}
+function BlockScopeContent({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<string | null>(null),
     [hovered, setHovered] = useState<string | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null),
@@ -281,7 +291,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
             onPointerDownCapture={(e) => {
               if (
                 !(e.target as Element).closest(
-                  ".field-editor,.document-formatting-bar,[role=dialog]",
+                  ".field-editor,.document-formatting-bar,.block-tools,.block-insert,.block-popover,[role=dialog]",
                 )
               )
                 activate(null);
@@ -289,7 +299,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
             onFocusCapture={(e) => {
               if (
                 !(e.target as Element).closest(
-                  ".field-editor,.document-formatting-bar,[role=dialog]",
+                  ".field-editor,.document-formatting-bar,.block-tools,.block-insert,.block-popover,[role=dialog]",
                 )
               )
                 activate(null);
@@ -297,6 +307,14 @@ export function BlockScope({ children }: { children: ReactNode }) {
             onPointerLeave={() => setHovered(null)}
             onKeyDownCapture={(e) => {
               if (e.key === "Escape") {
+                // The first Escape belongs to the open tool, which restores its
+                // trigger. A subsequent Escape in the document deselects it.
+                if (
+                  (e.target as Element).closest(
+                    ".toolbar-popover,.block-popover",
+                  )
+                )
+                  return;
                 clear();
                 if ((e.target as Element).closest(".block-frame")) {
                   (e.target as HTMLElement).blur();
@@ -416,7 +434,9 @@ export function BlockFrame({
       const top = first
         ? Math.max(
             0,
-            first.getBoundingClientRect().top - el.getBoundingClientRect().top,
+            (first.getBoundingClientRect().top -
+              el.getBoundingClientRect().top) /
+              (el.getBoundingClientRect().width / el.offsetWidth),
           )
         : 0;
       sortable.style.setProperty("--block-first-line-offset", `${top}px`);

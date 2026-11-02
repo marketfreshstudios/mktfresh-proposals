@@ -7,12 +7,12 @@ import { previewProposal } from "./preview";
 import { canonical, sha256 } from "./content";
 import { readFont, validateStyles } from "./studio";
 import { styleFonts } from "./proposal-styles";
-import type { PageBoundary } from "./document-print";
+import type { PrintLayout } from "./document-print";
 export type PdfPreview = {
   pdf_base64: string;
   fingerprint: string;
   revision: number;
-  layout: { pages: number; boundaries: PageBoundary[] };
+  layout: PrintLayout;
 };
 // Short-lived process memory only. No proposal/files/jobs/events or sealed evidence
 // are written. Single-flight avoids duplicate Chromium launches for preview/layout.

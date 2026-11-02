@@ -1,3 +1,4 @@
+import { documentQuoteCss } from "./document-quote";
 import { AppError } from "./model";
 import { z } from "zod";
 import {
@@ -49,10 +50,50 @@ export const StyleOverridesSchema = z
     heading2: StyleEntrySchema.partial().optional(),
     heading3: StyleEntrySchema.partial().optional(),
     body: StyleEntrySchema.partial().optional(),
+    density: z.enum(["standard", "comfortable"]).optional(),
+    margins: z
+      .object({
+        top: z.number().min(0.25).max(2).optional(),
+        right: z.number().min(0.25).max(2).optional(),
+        bottom: z.number().min(0.25).max(2).optional(),
+        left: z.number().min(0.25).max(2).optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type StyleOverrides = z.infer<typeof StyleOverridesSchema>;
-export type ResolvedStyles = Record<StyleLevel, TextStyle>;
+export type DocumentLayout = {
+  density: "standard" | "comfortable";
+  margins: { top: number; right: number; bottom: number; left: number };
+};
+export type ResolvedStyles = Record<StyleLevel, TextStyle> & {
+  layout?: DocumentLayout;
+};
+/** Missing layout means an older frozen style map; preserve its print metrics. */
+export function documentLayout(styles?: ResolvedStyles): DocumentLayout {
+  return (
+    styles?.layout ?? {
+      density: "comfortable",
+      margins: {
+        top: 18 / 25.4,
+        right: 18 / 25.4,
+        bottom: 18 / 25.4,
+        left: 18 / 25.4,
+      },
+    }
+  );
+}
+export function pageMetrics(styles?: ResolvedStyles) {
+  const { margins } = documentLayout(styles);
+  return {
+    width: 816,
+    height: 1056,
+    margins,
+    contentWidth: 816 - 96 * (margins.left + margins.right),
+    contentHeight: 1056 - 96 * (margins.top + margins.bottom),
+  };
+}
 type Settings = {
   proposal_fonts?: { heading: FontChoice; body: FontChoice };
   proposal_styles?: StyleOverrides;
@@ -60,6 +101,7 @@ type Settings = {
 };
 export function defaultStyles(
   fonts?: Settings["proposal_fonts"],
+  density: DocumentLayout["density"] = "standard",
 ): ResolvedStyles {
   const base: TextStyle = {
     font: fonts?.heading ?? "serif",
@@ -68,8 +110,8 @@ export function defaultStyles(
     colour: "ink",
     letter_case: "normal",
     letter_spacing: -0.015,
-    space_above: 28,
-    space_below: 12,
+    space_above: density === "standard" ? 27.5 : 28,
+    space_below: density === "standard" ? 8.75 : 12,
   };
   return {
     title: {
@@ -84,15 +126,15 @@ export function defaultStyles(
       ...base,
       size: 17,
       letter_spacing: 0,
-      space_above: 16,
-      space_below: 16,
+      space_above: density === "standard" ? 18.7 : 16,
+      space_below: density === "standard" ? 5.95 : 16,
     },
     heading3: {
       ...base,
       size: 15,
       letter_spacing: 0,
-      space_above: 12,
-      space_below: 8,
+      space_above: density === "standard" ? 16.5 : 12,
+      space_below: density === "standard" ? 5.25 : 8,
     },
     body: {
       ...base,
@@ -100,8 +142,8 @@ export function defaultStyles(
       size: 16,
       weight: 400,
       letter_spacing: 0,
-      space_above: 10,
-      space_below: 10,
+      space_above: density === "standard" ? 0 : 10,
+      space_below: density === "standard" ? 9.6 : 10,
     },
   };
 }
@@ -111,8 +153,13 @@ export function resolveStyles(
   template?: StyleOverrides,
   proposal?: StyleOverrides,
 ): ResolvedStyles {
-  const defaults = defaultStyles(settings?.proposal_fonts);
-  return Object.fromEntries(
+  const density =
+    proposal?.density ??
+    template?.density ??
+    settings?.proposal_styles?.density ??
+    "standard";
+  const defaults = defaultStyles(settings?.proposal_fonts, density);
+  const text = Object.fromEntries(
     styleLevels.map((level) => [
       level,
       {
@@ -122,7 +169,20 @@ export function resolveStyles(
         ...proposal?.[level],
       },
     ]),
-  ) as ResolvedStyles;
+  ) as unknown as ResolvedStyles;
+  text.layout = {
+    density,
+    margins: {
+      top: 0.75,
+      right: 0.75,
+      bottom: 0.75,
+      left: 0.75,
+      ...settings?.proposal_styles?.margins,
+      ...template?.margins,
+      ...proposal?.margins,
+    },
+  };
+  return text;
 }
 export function styleColour(value: string, accent = "#365c4a") {
   return value === "ink" ? "#25241f" : value === "accent" ? accent : value;
@@ -192,27 +252,37 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
       )
       .join(",");
   };
-  return styleLevels
-    .map((level) => {
-      const s = styles[level],
-        lh =
-          level === "title"
-            ? 1.15
-            : level === "heading1"
-              ? 1.25
-              : level === "body"
-                ? 1.65
-                : 1.35;
-      const declaration = `font-family:${fontFamily(s.font)};font-size:${s.size}px;font-weight:${s.weight};line-height:${lh};color:${styleColour(s.colour, accent)};text-transform:${s.letter_case === "normal" ? "none" : "uppercase"};letter-spacing:${s.letter_spacing}em;`;
-      return (
-        `${selector(level)}{${declaration}${level === "body" ? "" : `margin-top:${s.space_above}px;margin-bottom:${s.space_below}px;`}}` +
-        (level === "body"
-          ? roots
-              .map((root) => `${scope}${root} p,${scope} ${root} p`)
-              .join(",") +
-            `{margin-top:${s.space_above}px;margin-bottom:${s.space_below}px}`
-          : "")
-      );
-    })
-    .join("");
+  return (
+    styleLevels
+      .map((level) => {
+        const s = styles[level],
+          lh =
+            level === "title"
+              ? 1.15
+              : level === "heading1"
+                ? 1.25
+                : level === "body"
+                  ? documentLayout(styles).density === "standard"
+                    ? 1.5
+                    : 1.65
+                  : 1.35;
+        const declaration = `font-family:${fontFamily(s.font)};font-size:${s.size}px;font-weight:${s.weight};line-height:${lh};color:${styleColour(s.colour, accent)};text-transform:${s.letter_case === "normal" ? "none" : "uppercase"};letter-spacing:${s.letter_spacing}em;`;
+        return (
+          `${selector(level)}{${declaration}${level === "body" ? "" : `margin-top:${s.space_above}px;margin-bottom:${s.space_below}px;`}}` +
+          (level === "body"
+            ? roots
+                .map((root) => `${scope}${root} p,${scope} ${root} p`)
+                .join(",") +
+              `{margin-top:${s.space_above}px;margin-bottom:${s.space_below}px}`
+            : "")
+        );
+      })
+      .join("") +
+    (styles.layout ? documentQuoteCss : "") +
+    (documentLayout(styles).density === "standard"
+      ? `${scope} li{margin-block:.25em}${scope} ul,${scope} ol{margin-block:.6em}${scope} .print-atom,${scope} .draft-block,${scope} .studio-block-card{padding-top:0}${scope} .flow-quote-line{padding-block:12px;margin-block:4px}${scope} .flow-quote-line p{font-size:.9em;line-height:1.5;margin-block:.35em}${scope} .print-pricing-unit{margin:0!important}${scope} .print-choice-group{margin:4px 0!important}${scope} .print-pricing-card p{font-size:.9em;line-height:1.5;margin-block:.35em}`
+      : styles.layout
+        ? `${scope} .flow-quote-line{padding-block:20px;margin-block:12px}`
+        : "")
+  );
 }

@@ -130,7 +130,10 @@ async function fields(page: Page) {
     !(await page.getByRole("tab", { name: "Fields", exact: true }).isVisible())
   )
     await page
-      .getByRole("button", { name: "Toggle right panel", exact: true })
+      .getByRole("button", {
+        name: /^(Expand|Collapse) tools sidebar$/,
+        exact: true,
+      })
       .click();
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
   return page.locator(".field-options").filter({ visible: true });
@@ -172,7 +175,7 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
     );
     expect(
       parseFloat(await paper.evaluate((e) => getComputedStyle(e).paddingLeft)),
-    ).toBeCloseTo((18 * 96) / 25.4, 2);
+    ).toBeCloseTo(72, 2);
     expect(
       await paper.evaluate((e) => e.getBoundingClientRect().width),
     ).toBeLessThanOrEqual(width);
@@ -183,33 +186,52 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
       await page.getByRole("button", { name: "Fit", exact: true }).click();
     }
   }
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({ width: 1920, height: 1000 });
   await page
-    .getByRole("button", { name: "Toggle right panel", exact: true })
+    .getByRole("button", {
+      name: /^(Expand|Collapse) tools sidebar$/,
+      exact: true,
+    })
     .click();
-  await expect(page.locator(".editor-sidepanel")).toHaveCount(0);
+  await expect(
+    page.locator(".editor-sidepanel:not(.sidebar-rail)"),
+  ).toHaveCount(0);
   await page.reload();
-  await expect(page.locator(".editor-sidepanel")).toHaveCount(0);
+  await expect(
+    page.locator(".editor-sidepanel:not(.sidebar-rail)"),
+  ).toHaveCount(0);
   await expect(page.locator(".quote-workspace")).toHaveAttribute(
     "data-panels-ready",
     "true",
   );
   await page.keyboard.press("Control+Backslash");
-  await expect(page.locator(".editor-sidepanel")).toBeVisible();
+  await expect(
+    page.locator(".editor-sidepanel:not(.sidebar-rail)"),
+  ).toBeVisible();
   await page
-    .getByRole("button", { name: "Toggle Sections sidebar", exact: true })
+    .getByRole("button", {
+      name: /^(Expand|Collapse) Pages sidebar$/,
+      exact: true,
+    })
     .click();
-  await expect(page.locator(".editor-outline")).toHaveCount(0);
+  await expect(page.locator(".editor-outline:not(.sidebar-rail)")).toHaveCount(
+    0,
+  );
   await page.reload();
-  await expect(page.locator(".editor-outline")).toHaveCount(0);
+  await expect(page.locator(".editor-outline:not(.sidebar-rail)")).toHaveCount(
+    0,
+  );
   await page.setViewportSize({ width: 768, height: 1000 });
   await page
-    .getByRole("button", { name: "Toggle Sections sidebar", exact: true })
+    .getByRole("button", {
+      name: /^(Expand|Collapse) Pages sidebar$/,
+      exact: true,
+    })
     .click();
-  const sections = page.getByRole("dialog", { name: "Sections", exact: true });
+  const sections = page.getByRole("dialog", { name: "Pages", exact: true });
   await expect(sections).toBeVisible();
   await sections
-    .getByRole("button", { name: "01 The approach", exact: true })
+    .getByRole("button", { name: "The approach", exact: true })
     .click();
   await expect(sections).toHaveCount(0);
 });
@@ -225,13 +247,13 @@ test("collapsed tools open all four tabs and close at 1440, 1100 and 768", async
       "true",
     );
     const toggle = page.getByRole("button", {
-      name: "Toggle right panel",
+      name: /^(Expand|Collapse) tools sidebar$/,
       exact: true,
     });
-    if (await page.locator(".editor-sidepanel").isVisible())
+    if (await page.locator(".editor-sidepanel:not(.sidebar-rail)").isVisible())
       await toggle.click();
     const open = page.getByRole("button", {
-      name: "Quote & totals",
+      name: "Open Quote",
       exact: true,
     });
     await expect(open).toBeVisible();
@@ -307,9 +329,12 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
       new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
     );
     await select.focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(select).toBeFocused();
     await expect(select).toHaveCSS("outline-style", "solid");
     await expect(select).toHaveCSS("outline-width", "2px");
-    await select.evaluate((el: HTMLSelectElement) => {
+    await select.evaluate((el: HTMLButtonElement) => {
       el.disabled = true;
     });
     await expect(select).toHaveCSS("cursor", "not-allowed");
@@ -317,7 +342,7 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
       "background-image",
       new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
     );
-    await select.evaluate((el: HTMLSelectElement) => {
+    await select.evaluate((el: HTMLButtonElement) => {
       el.disabled = false;
     });
   }
@@ -360,7 +385,10 @@ test("Fields tab remembers cursor across tabs and closes tablet drawer before re
       !(await page.getByRole("tab", { name: "Quote", exact: true }).isVisible())
     )
       await page
-        .getByRole("button", { name: "Toggle right panel", exact: true })
+        .getByRole("button", {
+          name: /^(Expand|Collapse) tools sidebar$/,
+          exact: true,
+        })
         .click();
     await page.getByRole("tab", { name: "Quote", exact: true }).click();
     await page
@@ -398,24 +426,18 @@ test("actual preview PDF and every editor marker use the server's page starts, w
   );
   const result = f.results.at(-1)!;
   expect(result.layout.pages).toBeGreaterThan(3);
-  const markers = await page
-    .locator('.page-guide[data-approximate="false"]')
-    .evaluateAll((els) =>
-      els.map((e) => ({
-        page: Number((e as HTMLElement).dataset.page),
-        block: (e as HTMLElement).dataset.block,
-        offset: Number((e as HTMLElement).dataset.offset),
-        line: (e as HTMLElement).dataset.lineStart,
-      })),
-    );
-  expect(markers).toEqual(
-    result.layout.boundaries.map((b) => ({
-      page: b.page,
-      block: b.block,
-      offset: b.offset,
-      line: b.start_text,
-    })),
+  await expect(page.locator(".editor-page-sheet")).toHaveCount(
+    result.layout.pages,
   );
+  expect(
+    await page
+      .locator(".editor-page-sheet")
+      .evaluateAll((els) =>
+        els.map((el) =>
+          JSON.parse((el as HTMLElement).dataset.sourceFragments!),
+        ),
+      ),
+  ).toEqual(result.layout.sheets!.map((s) => s.fragments));
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loading = getDocument({
     data: new Uint8Array(Buffer.from(result.pdf_base64, "base64")),
@@ -434,77 +456,22 @@ test("actual preview PDF and every editor marker use the server's page starts, w
       value.startsWith(b.start_text!.replace(/\s/g, "").slice(0, 70)),
     ).toBe(true);
   }
-  // Check the actual displayed line anchor, not just copied layout metadata.
-  for (const boundary of result.layout.boundaries.filter(
-    (b) => b.offset > 0 && !b.unit && !b.part,
-  )) {
-    const delta = await page
-      .locator(`[data-block-id="block-${boundary.block}"] .block-content`)
-      .evaluate((el, b) => {
-        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-        let node;
-        let offset = b.offset;
-        while ((node = walker.nextNode())) {
-          if (offset <= (node.textContent?.length ?? 0)) {
-            const r = document.createRange();
-            r.setStart(node, offset);
-            r.setEnd(node, Math.min(offset + 1, node.textContent!.length));
-            const marker = document.querySelector<HTMLElement>(
-              `.page-guide[data-page="${b.page}"]`,
-            )!;
-            const paper = document.querySelector<HTMLElement>(".editor-paper")!;
-            const scale =
-              paper.getBoundingClientRect().width / paper.offsetWidth;
-            return Math.abs(
-              marker.getBoundingClientRect().top +
-                6 * scale -
-                r.getBoundingClientRect().top,
-            );
-          }
-          offset -= node.textContent?.length ?? 0;
-        }
-        throw new Error("Page start outside block");
-      }, boundary);
-    expect(delta).toBeLessThanOrEqual(1);
-  }
-  const clauseStarts = result.layout.boundaries.filter(
-    (b) => b.part && b.part_offset! > 0,
+  // Round 4 replaces marker paint with real sheets. The long source-line and
+  // clause alignment remains checked through the shared page projection.
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
   );
-  expect(clauseStarts.length).toBeGreaterThan(0);
-  for (const b of clauseStarts) {
-    const prefix = b.start_text!.slice(0, 50);
-    const delta = await page
-      .locator(`[data-block-id="clause-${b.part}"] p`)
-      .evaluate(
-        (el, { prefix, page }) => {
-          const node = el.firstChild!,
-            raw = node.textContent!,
-            normalized = raw.replace(/\n/g, ""),
-            found = normalized.indexOf(prefix);
-          if (found < 0) throw new Error("PDF line absent from clause");
-          let at = 0,
-            count = 0;
-          while (at < raw.length && count < found) {
-            if (raw[at] !== "\n") count++;
-            at++;
-          }
-          const r = document.createRange();
-          r.setStart(node, at);
-          r.setEnd(node, at + 1);
-          const paper = document.querySelector<HTMLElement>(".editor-paper")!,
-            scale = paper.getBoundingClientRect().width / paper.offsetWidth;
-          return Math.abs(
-            document
-              .querySelector(`.page-guide[data-page="${page}"]`)!
-              .getBoundingClientRect().top +
-              6 * scale -
-              r.getBoundingClientRect().top,
-          );
-        },
-        { prefix, page: b.page },
-      );
-    expect(delta).toBeLessThanOrEqual(1);
-  }
+  expect(
+    Number(
+      await page
+        .locator(".editor-page-sheets")
+        .getAttribute("data-layout-max-error"),
+    ),
+    (await page.locator(".editor-paper").getAttribute("data-layout-errors")) ??
+      "page anchors",
+  ).toBeLessThanOrEqual(1);
+  await expect(page.locator(".editor-page-sheet")).toHaveCount(pdf.numPages);
   const firstText = (await (await pdf.getPage(1)).getTextContent()).items
     .map((i) => ("str" in i ? i.str : ""))
     .join("")

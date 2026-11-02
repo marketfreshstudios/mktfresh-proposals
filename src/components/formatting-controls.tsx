@@ -1,4 +1,5 @@
 "use client";
+import { TextStylePicker } from "./text-style-picker";
 import { useEffect, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import type { TextStyleControl } from "../lib/editor-document";
@@ -15,8 +16,8 @@ export function FormattingControls({
   textStyle,
 }: {
   editor?: Editor | null;
-  onLink?: () => void;
-  onField?: () => void;
+  onLink?: (trigger: HTMLElement) => void;
+  onField?: (trigger: HTMLElement) => void;
   allowLinks?: boolean;
   independent?: boolean;
   textStyle?: TextStyleControl | null;
@@ -51,7 +52,7 @@ export function FormattingControls({
   const button = (
     label: string,
     icon: keyof typeof icons,
-    action: () => void,
+    action: (trigger: HTMLElement) => void,
     disabled = !editor,
     pressed?: boolean,
     title = label,
@@ -63,7 +64,7 @@ export function FormattingControls({
       title={title}
       disabled={disabled}
       aria-pressed={pressed}
-      onClick={action}
+      onClick={(e) => action(e.currentTarget)}
     >
       <Icon name={icon} />
       <span className="formatting-label">{label}</span>
@@ -96,33 +97,7 @@ export function FormattingControls({
           mac ? "Redo (⇧⌘Z)" : "Redo (Ctrl+Shift+Z or Ctrl+Y)",
         )}
       </div>
-      {textStyle !== undefined && (
-        <div className="formatting-group format-style-control">
-          <Icon name="heading" />
-          <label className="sr-only" htmlFor="document-text-style">
-            Text style
-          </label>
-          <select
-            id="document-text-style"
-            className="select-compact"
-            aria-label="Text style"
-            title={`Text style · ${["Paragraph", "Heading 1", "Heading 2", "Heading 3"][textStyle?.value ?? 0]}`}
-            disabled={!textStyle}
-            value={textStyle?.value ?? 0}
-            onChange={(e) =>
-              textStyle?.change(Number(e.target.value) as 0 | 1 | 2 | 3)
-            }
-          >
-            {["Paragraph", "Heading 1", "Heading 2", "Heading 3"].map(
-              (name, n) => (
-                <option key={n} value={n}>
-                  {name}
-                </option>
-              ),
-            )}
-          </select>
-        </div>
-      )}
+      {textStyle !== undefined && <TextStylePicker value={textStyle} />}
       <div className="formatting-group" role="group" aria-label="Text style">
         {button(
           "Bold",
@@ -159,11 +134,17 @@ export function FormattingControls({
       </div>
       {allowLinks && (
         <div className="formatting-group" role="group" aria-label="Links">
-          {button("Link", "link", () => onLink?.(), !editor, marks?.link)}
+          {button(
+            "Link",
+            "link",
+            (trigger) => onLink?.(trigger),
+            !editor,
+            marks?.link,
+          )}
         </div>
       )}
       <div className="formatting-group" role="group" aria-label="Fields">
-        {button("Insert field", "code", () => onField?.())}
+        {button("Insert field", "code", (trigger) => onField?.(trigger))}
       </div>
     </div>
   );

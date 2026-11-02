@@ -1,4 +1,8 @@
 "use client";
+import { useManagedPopover } from "./editor-popovers";
+import { quoteTotalText } from "../lib/document-quote";
+import { PagedPaper } from "./paged-paper";
+import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { useEditorPanels } from "./use-editor-panels";
@@ -41,24 +45,11 @@ import { fontCss } from "../lib/proposal-fonts";
 import { ValidityField } from "./validity-field";
 import { readableDate } from "../lib/validity";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  type KeyboardCoordinateGetter,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Reorder, Sortable } from "./sortable";
+export { Reorder, Sortable } from "./sortable";
+import { PagesOutline } from "./pages-outline";
+import { pageMetrics } from "../lib/proposal-styles";
 import type { Block, Item, Proposal, QuoteItem, Actor } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { ReferenceDocument } from "../lib/documents";
@@ -78,134 +69,6 @@ import { FieldOptions, SubjectField, FieldTextArea } from "./field-options";
 import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
-export function Sortable({
-  id,
-  label,
-  children,
-  block = false,
-  printUnit,
-  documentKind,
-}: {
-  id: string;
-  label: string;
-  block?: boolean;
-  printUnit?: string;
-  documentKind?: "card" | "group";
-  children: ReactNode;
-}) {
-  const selection = useBlockSelection();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      data-print-unit={printUnit}
-      onPointerLeave={() => {
-        if (block) selection.hover(null);
-      }}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
-      className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
-    >
-      <button
-        type="button"
-        className="drag-handle"
-        aria-label={`Drag ${label}`}
-        title={`Drag ${label}`}
-        onPointerOver={(e) => {
-          if (block) {
-            e.stopPropagation();
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.hover(id);
-          }
-        }}
-        onFocus={(e) => {
-          if (block) {
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.select(id);
-          }
-        }}
-        onPointerDownCapture={(e) => {
-          if (block) {
-            const id =
-              e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                ":scope > .block-frame",
-              )?.dataset.blockId;
-            if (id) selection.select(id);
-          }
-        }}
-        {...attributes}
-        {...listeners}
-      >
-        <span aria-hidden="true">⋮⋮</span>
-      </button>
-      {children}
-    </div>
-  );
-}
-export function Reorder({
-  ids,
-  onMove,
-  children,
-}: {
-  ids: string[];
-  onMove: (from: string, to: string) => void;
-  children: ReactNode;
-}) {
-  // Align centres for vertical keyboard moves. The stock getter bottom-aligns
-  // differently sized cards, which leaves a tall choice group over itself.
-  const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
-    if (!["ArrowDown", "ArrowUp"].includes(event.code))
-      return sortableKeyboardCoordinates(event, args);
-    const { active, over, droppableRects, collisionRect } = args.context;
-    if (!active || !collisionRect) return;
-    const index = ids.indexOf(String(over?.id ?? active.id));
-    const target = ids[index + (event.code === "ArrowDown" ? 1 : -1)];
-    const rect = target && droppableRects.get(target);
-    if (!rect || index < 0) return;
-    event.preventDefault();
-    return {
-      x: rect.left + (rect.width - collisionRect.width) / 2,
-      y: rect.top + (rect.height - collisionRect.height) / 2,
-    };
-  };
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: keyboardCoordinates,
-      scrollBehavior: "auto",
-    }),
-  );
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={({ active, over }: DragEndEvent) => {
-        if (over && active.id !== over.id)
-          onMove(String(active.id), String(over.id));
-      }}
-    >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        {children}
-      </SortableContext>
-    </DndContext>
-  );
-}
 function Sheet({
   title,
   close,
@@ -279,6 +142,7 @@ function QuoteEditorContent({
   const blockFeedback = useBlockFeedback();
   const fields = useBlockToolbar();
   const [fieldsOpen, setFieldsOpen] = useState(false);
+  useManagedPopover(fieldsOpen, () => setFieldsOpen(false));
   const pendingField = useRef<string | null>(null);
   const pendingOutline = useRef<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false),
@@ -337,6 +201,22 @@ function QuoteEditorContent({
       if (!panels.right) panels.toggle("right");
     } else setDrawer(true);
   };
+  useEffect(() => {
+    // A direct send route is an action, so it must override a saved collapse.
+    // Wait for preference hydration and measurement before choosing dock/drawer.
+    if (panels.ready && initialTab === "Review & send")
+      openTools("Review & send");
+  }, [initialTab, panels.ready]);
+  useEffect(() => {
+    if (panels.right) setDrawer(false);
+  }, [panels.right]);
+  useEffect(() => {
+    if (panels.left) setOutlineOpen(false);
+  }, [panels.left]);
+  const toggleLeft = () => {
+    if (panels.canLeft && !panels.phone) panels.toggle("left");
+    else setOutlineOpen((v) => !v);
+  };
   const toggleRight = () => {
     if (panels.canRight && !panels.phone) panels.toggle("right");
     else setDrawer((v) => !v);
@@ -349,12 +229,13 @@ function QuoteEditorContent({
         (event.key === "\\" || event.code === "Backslash")
       ) {
         event.preventDefault();
-        toggleRight();
+        if (event.shiftKey) toggleLeft();
+        else toggleRight();
       }
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, [panels.canRight, panels.phone]);
+  }, [panels.canRight, panels.canLeft, panels.phone]);
   async function review(sectionIds: string[], reviewed: boolean) {
     if (reviewBusy) return;
     setReviewBusy(true);
@@ -1317,7 +1198,14 @@ function QuoteEditorContent({
             </div>
           </li>
         ))}
-        {ready.warnings.map((e, n) => (
+        {[
+          ...ready.warnings,
+          ...((pdfPreview.data?.layout.pricing_pages ?? 0) > 1
+            ? [
+                `Pricing table spans ${pdfPreview.data!.layout.pricing_pages} pages — use Standard density or trim descriptions.`,
+              ]
+            : []),
+        ].map((e, n) => (
           <li className="readiness-row warning" key={n}>
             <Icon name="review" />
             <div>
@@ -1499,72 +1387,46 @@ function QuoteEditorContent({
       </div>
     </div>
   );
+  const focusBlock = (id: string) => {
+    const index = p.content.findIndex((b) => b.id === id);
+    const group = sections.findIndex((s) => s.indices.includes(index));
+    if (group >= 0) setSection(group);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(
+          id === "cover"
+            ? "#cover-title"
+            : `[data-block-id="block-${CSS.escape(id)}"]`,
+        );
+        el?.scrollIntoView({ block: "center" });
+        (el?.querySelector<HTMLElement>("textarea,.tiptap") ?? el)?.focus();
+      }),
+    );
+  };
   const outline = (
     <>
-      <p className="eyebrow">Sections</p>
-      <nav>
-        <Reorder
-          ids={sections.map((s) => s.id)}
-          onMove={(from, to) => {
-            selection.clear();
-            change({ content: moveSection(p.content, from, to) });
-          }}
-        >
-          {sections.map((s, n) => (
-            <Sortable key={s.id} id={s.id} label={`section ${s.title}`}>
-              <button
-                data-outline-target={`draft-section-${n}`}
-                aria-label={`${String(n + 1).padStart(2, "0")} ${s.title}${s.pending ? " · Needs AI review" : ""}`}
-                className={section === n ? "active" : ""}
-                onClick={() => {
-                  setSection(n);
-                  document
-                    .getElementById(`draft-section-${n}`)
-                    ?.scrollIntoView({
-                      behavior: matchMedia("(prefers-reduced-motion: reduce)")
-                        .matches
-                        ? "auto"
-                        : "smooth",
-                      block: "start",
-                    });
-                }}
-              >
-                <span>{String(n + 1).padStart(2, "0")}</span>
-                {s.title}
-                {s.pending && (
-                  <small className="review-dot" aria-label="Needs AI review" />
-                )}
-              </button>
-              {s.indices
-                .filter(
-                  (j) =>
-                    p.content[j].type === "heading" &&
-                    (p.content[j].level ?? 1) > 1,
-                )
-                .map((j) => (
-                  <button
-                    key={p.content[j].id ?? j}
-                    data-outline-target={`block-${p.content[j].id ?? j}`}
-                    className={`outline-subheading outline-level-${p.content[j].level}`}
-                    onClick={() => {
-                      setSection(n);
-                      requestAnimationFrame(() =>
-                        document
-                          .querySelector(
-                            `[data-block-id="block-${p.content[j].id ?? j}"]`,
-                          )
-                          ?.scrollIntoView({ block: "center" }),
-                      );
-                    }}
-                  >
-                    {p.content[j].text || "Untitled subheading"}
-                  </button>
-                ))}
-            </Sortable>
-          ))}
-        </Reorder>
-      </nav>
-
+      <p className="eyebrow">Pages</p>
+      <PagesOutline
+        content={p.content}
+        layout={pdfPreview.data?.layout}
+        onChange={(content) => {
+          selection.clear();
+          const activeId = sections[section ?? -1]?.id;
+          const next = contentSections(content).findIndex(
+            (s) => s.id === activeId,
+          );
+          setSection(next < 0 ? null : next);
+          change({ content });
+        }}
+        onFocus={(id) => {
+          if (outlineOpen) {
+            pendingOutline.current = id;
+            document
+              .querySelector<HTMLDialogElement>("dialog.sections-overlay")
+              ?.close();
+          } else focusBlock(id);
+        }}
+      />
       <p className="eyebrow">AI review</p>
       <p>
         {sections.length - pending.length} of {sections.length} sections
@@ -1927,6 +1789,16 @@ function QuoteEditorContent({
                     </Sortable>
                   ))}
                 </Reorder>
+                <p
+                  className="print-quote-totals"
+                  data-print-unit="quote-totals"
+                >
+                  {quoteTotalText(
+                    items,
+                    p.currency,
+                    p.workspace_settings?.money?.cents,
+                  )}
+                </p>
               </div>
             </div>
           ) : b.type === "contract" ? (
@@ -2064,17 +1936,19 @@ function QuoteEditorContent({
                       >
                         <details open={panels.printMode || undefined}>
                           <summary>
-                            {c.heading.replace(
-                              /{{\s*([\w.-]+)\s*}}/g,
-                              (_, key) => map[key] ?? key,
-                            )}
+                            <h3>
+                              {c.heading.replace(
+                                /{{\s*([\w.-]+)\s*}}/g,
+                                (_, key) => map[key] ?? key,
+                              )}
+                            </h3>
                           </summary>
-                          <p style={{ whiteSpace: "pre-wrap" }}>
-                            {c.body.replace(
+                          <SourceParagraph
+                            text={c.body.replace(
                               /{{\s*([\w.-]+)\s*}}/g,
                               (_, key) => map[key] ?? key,
                             )}
-                          </p>
+                          />
                         </details>
                       </BlockFrame>
                     </Sortable>
@@ -2277,15 +2151,6 @@ function QuoteEditorContent({
         <Button disabled={saving || stale} onClick={() => setPdfOpen(true)}>
           Preview PDF
         </Button>
-        {!panels.right && (
-          <Button
-            aria-label="Quote & totals"
-            aria-expanded={drawer}
-            onClick={() => openTools("Quote")}
-          >
-            Quote & totals
-          </Button>
-        )}
         <Button variant="primary" onClick={() => openTools("Review & send")}>
           Review & send
         </Button>
@@ -2412,23 +2277,46 @@ function QuoteEditorContent({
         className="editor-layout"
         ref={panels.container}
         style={{
-          gridTemplateColumns: `${panels.left ? "208px " : ""}minmax(0,1fr)${panels.right ? " 344px" : ""}`,
+          gridTemplateColumns: panels.columns,
         }}
       >
-        {panels.left && <aside className="editor-outline">{outline}</aside>}
+        <aside
+          className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
+        >
+          <button
+            className="sidebar-arrow"
+            type="button"
+            aria-label={
+              panels.left ? "Collapse Pages sidebar" : "Expand Pages sidebar"
+            }
+            title={
+              panels.left
+                ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+                : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+            }
+            onClick={toggleLeft}
+          >
+            {panels.left ? "‹" : "›"}
+          </button>
+          {panels.left ? (
+            outline
+          ) : (
+            <button
+              type="button"
+              aria-label="Open Pages"
+              title="Pages"
+              onClick={toggleLeft}
+            >
+              <Icon name="file-lines" />
+            </button>
+          )}
+        </aside>
         <main className="editor-document-region">
           <div className="editor-panel-controls">
-            <Button
-              aria-label="Toggle Sections sidebar"
-              aria-expanded={panels.left || outlineOpen}
-              onClick={() => {
-                if (panels.canLeft && !panels.phone) panels.toggle("left");
-                else setOutlineOpen((v) => !v);
-              }}
-            >
-              Sections
-            </Button>
             <div className="paper-zoom">
+              {pdfPreview.approximate && (
+                <span role="status">Updating pages…</span>
+              )}
               <output aria-label="Editor zoom">
                 {Math.round(panels.scale * 100)}%
               </output>
@@ -2436,14 +2324,6 @@ function QuoteEditorContent({
                 {panels.fit ? "100%" : "Fit"}
               </Button>
             </div>
-            <Button
-              aria-label="Toggle right panel"
-              title="Toggle right panel (⌘\ / Ctrl+\)"
-              aria-expanded={panels.right || drawer}
-              onClick={toggleRight}
-            >
-              Quote & tools
-            </Button>
           </div>
           <DocumentFormattingBar />
           {blockFeedback.feedback}
@@ -2545,14 +2425,36 @@ function QuoteEditorContent({
                 style={
                   {
                     "--accent": current.workspace_settings?.accent_colour,
+                    "--editor-ui-scale": panels.printMode
+                      ? 1 / panels.scale
+                      : 1,
+                    "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
+                    "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
+                    "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
+                    "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
                     transform: panels.printMode
                       ? `scale(${panels.scale})`
                       : undefined,
                     transformOrigin: "top left",
+                    minHeight: panels.printMode
+                      ? (pdfPreview.data?.layout.pages ?? 1) * 1080 - 24
+                      : undefined,
                   } as CSSProperties
                 }
                 className="paper editor-paper proposal-typography document-reading"
               >
+                <PagedPaper
+                  paper={paper}
+                  layout={pdfPreview.data?.layout}
+                  styles={resolveStyles(
+                    p.workspace_settings,
+                    p.template_style_overrides,
+                    p.style_overrides,
+                  )}
+                  approximate={pdfPreview.approximate}
+                  enabled={panels.printMode}
+                  contentKey={pdfPreview.visualKey}
+                />
                 <style>
                   {fontCss(p.workspace_settings)}
                   {styleFontFaces(
@@ -2634,18 +2536,51 @@ function QuoteEditorContent({
                   )}
                   From {settings?.company_name}
                 </p>
-                <DocumentPagination
-                  proposal={p}
-                  settings={settings}
-                  paper={paper}
-                  preview={pdfPreview}
-                />
+                <DocumentPagination preview={pdfPreview} />
               </article>
             </div>
           </div>
           {reviewBanner}
         </main>
-        {panels.right && <aside className="editor-sidepanel">{panel}</aside>}
+        <aside
+          className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
+        >
+          <button
+            type="button"
+            className="sidebar-arrow"
+            aria-label={
+              panels.right ? "Collapse tools sidebar" : "Expand tools sidebar"
+            }
+            title={
+              panels.right
+                ? "Collapse tools (⌘\\ / Ctrl+\\)"
+                : "Expand tools (⌘\\ / Ctrl+\\)"
+            }
+            onClick={toggleRight}
+          >
+            {panels.right ? "›" : "‹"}
+          </button>
+          {panels.right
+            ? panel
+            : (
+                [
+                  ["Quote", "table"],
+                  ["Fields", "code"],
+                  ["Styles", "heading"],
+                  ["Review & send", "review"],
+                ] as const
+              ).map(([name, icon]) => (
+                <button
+                  key={name}
+                  type="button"
+                  aria-label={`Open ${name}`}
+                  title={name}
+                  onClick={() => openTools(name)}
+                >
+                  <Icon name={icon} />
+                </button>
+              ))}
+        </aside>
       </div>
       {pdfOpen && (
         <PdfPreviewViewer
@@ -2655,30 +2590,16 @@ function QuoteEditorContent({
       )}
       {outlineOpen && (
         <Sheet
-          title="Sections"
+          title="Pages"
           close={() => setOutlineOpen(false)}
           extra="sections-overlay"
           onCloseComplete={() => {
             const id = pendingOutline.current;
             pendingOutline.current = null;
-            if (id)
-              requestAnimationFrame(() =>
-                document.getElementById(id)?.scrollIntoView({ block: "start" }),
-              );
+            if (id) focusBlock(id);
           }}
         >
-          <div
-            className="editor-outline outline-overlay-content"
-            onClick={(event) => {
-              const button = (
-                event.target as Element
-              ).closest<HTMLButtonElement>("button[data-outline-target]");
-              if (button) {
-                pendingOutline.current = button.dataset.outlineTarget!;
-                event.currentTarget.closest("dialog")?.close();
-              }
-            }}
-          >
+          <div className="editor-outline outline-overlay-content">
             {outline}
           </div>
         </Sheet>

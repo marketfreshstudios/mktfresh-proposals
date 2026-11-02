@@ -111,3 +111,46 @@ it("a sent snapshot cannot accept edited preview input", async () => {
   expect(state.render).not.toHaveBeenCalled();
   expect(JSON.stringify(await f.repo.get(sent.id))).toBe(before);
 });
+it("template document previews are staff-only ephemeral specimens with no persistence", async () => {
+  const f = await setup(),
+    put = vi.fn();
+  state.rt = { repo: f.repo, storage: { put, get: vi.fn() } };
+  state.user = { ...staff, workspace_id: f.repo.workspaceId };
+  const input = {
+    id: crypto.randomUUID(),
+    content: f.draft.content,
+    quote: f.draft.quote,
+    style_overrides: { density: "comfortable", margins: { left: 1 } },
+  };
+  const request = (token: string) =>
+    new Request("http://localhost/api/document-preview", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+  expect((await handle(request("no"), ["document-preview"])).status).toBe(401);
+  const before = JSON.stringify(await f.repo.get(f.draft.id));
+  const response = await handle(request("staff"), ["document-preview"]);
+  expect(response.status).toBe(200);
+  expect((await response.json()).layout.pages).toBe(1);
+  expect(state.render).toHaveBeenCalledWith(
+    expect.objectContaining({
+      resolved_styles: expect.objectContaining({
+        layout: expect.objectContaining({
+          density: "comfortable",
+          margins: expect.objectContaining({ left: 1 }),
+        }),
+      }),
+    }),
+    [],
+    [],
+    expect.any(String),
+    expect.any(Object),
+    { preview: true },
+  );
+  expect(put).not.toHaveBeenCalled();
+  expect(JSON.stringify(await f.repo.get(f.draft.id))).toBe(before);
+});
