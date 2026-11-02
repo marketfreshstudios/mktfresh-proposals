@@ -1,3 +1,9 @@
+import { validateStyles } from "./studio";
+import {
+  freezeStyles,
+  StyleOverridesSchema,
+  type StyleOverrides,
+} from "./proposal-styles";
 import { completedCheckouts, publicCompletion } from "./billing-confirmation";
 import {
   emailTemplates,
@@ -236,6 +242,7 @@ export class ProposalService {
         actor.actor.startsWith("ai:"),
       ),
 
+      template_style_overrides: structuredClone(template.style_overrides ?? {}),
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -294,6 +301,8 @@ export class ProposalService {
     id: string,
     input: {
       revision: number;
+      style_overrides?: StyleOverrides;
+      template_style_overrides?: StyleOverrides;
       title?: string;
       brief?: string;
       content?: Block[];
@@ -303,6 +312,27 @@ export class ProposalService {
     actor: Actor,
   ) {
     const catalog = await this.repo.entities<Item>("pricing_items");
+    const current = await this.repo.get(id);
+    if (
+      input.style_overrides !== undefined ||
+      input.template_style_overrides !== undefined
+    ) {
+      check(
+        actor.actor.startsWith("staff:"),
+        "Only staff can change proposal styles",
+        403,
+      );
+      await validateStyles(
+        this.repo,
+        (await this.repo.entities<WorkspaceSettings>("workspace_settings"))[0],
+        input.template_style_overrides === undefined
+          ? current?.template_style_overrides
+          : StyleOverridesSchema.parse(input.template_style_overrides),
+        input.style_overrides === undefined
+          ? current?.style_overrides
+          : StyleOverridesSchema.parse(input.style_overrides),
+      );
+    }
     const result = await mutate(this.repo, id, (p) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       check(
@@ -311,6 +341,12 @@ export class ProposalService {
         409,
       );
       delete p.workspace_settings;
+      if (input.style_overrides !== undefined)
+        p.style_overrides = StyleOverridesSchema.parse(input.style_overrides);
+      if (input.template_style_overrides !== undefined)
+        p.template_style_overrides = StyleOverridesSchema.parse(
+          input.template_style_overrides,
+        );
       if (input.title !== undefined) {
         check(
           input.title.trim() && input.title.length <= 300,
@@ -487,6 +523,12 @@ export class ProposalService {
     const catalog = await this.repo.entities<Item>("pricing_items");
     const before = await this.repo.get(id);
     check(before, "Not found", 404);
+    await validateStyles(
+      this.repo,
+      settings,
+      before.template_style_overrides,
+      before.style_overrides,
+    );
     renderTemplate(mailContent, {
       ...before,
       workspace_settings: settingsSnapshot(settings),
@@ -577,6 +619,11 @@ export class ProposalService {
         id: randomUUID(),
         version_no: p.versions.length + 1,
 
+        resolved_styles: freezeStyles(
+          p.workspace_settings,
+          p.template_style_overrides,
+          p.style_overrides,
+        ),
         content: structuredClone(p.content),
         quote: structuredClone(p.quote),
         variables_resolved: map,
@@ -588,6 +635,7 @@ export class ProposalService {
         content: version.content,
         quote: version.quote,
         variables_resolved: map,
+        resolved_styles: version.resolved_styles,
       });
       p.versions.push(version);
       event(
@@ -678,6 +726,7 @@ export class ProposalService {
         content: v.content,
         quote: v.quote,
         variables_resolved: v.variables_resolved,
+        resolved_styles: v.resolved_styles,
       });
       event(p, "quote_changed", actor, {
         item_id: input.item_id,
@@ -760,6 +809,7 @@ export class ProposalService {
           content: v.content,
           quote: v.quote,
           variables_resolved: v.variables_resolved,
+          resolved_styles: v.resolved_styles,
         });
         p.client_signed_at = now;
         p.status = "signed_by_client";
@@ -936,6 +986,7 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
     money_cents: p.workspace_settings?.money?.cents ?? "auto",
     timezone: p.workspace_settings?.timezone ?? "UTC",
     proposal_fonts: p.workspace_settings?.proposal_fonts,
+    resolved_styles: v.resolved_styles,
     contact: {
       name: p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
       email: p.sender?.email ?? p.workspace_settings?.email ?? "",

@@ -31,13 +31,17 @@ export function canonical(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 export const versionHash = (
-  v: Pick<Version, "content" | "quote" | "variables_resolved">,
+  v: Pick<
+    Version,
+    "content" | "quote" | "variables_resolved" | "resolved_styles"
+  >,
 ) =>
   sha256(
     canonical({
       content: v.content,
       quote: v.quote,
       variables_resolved: v.variables_resolved,
+      ...(v.resolved_styles ? { resolved_styles: v.resolved_styles } : {}),
     }),
   );
 export function hashPassword(password: string) {

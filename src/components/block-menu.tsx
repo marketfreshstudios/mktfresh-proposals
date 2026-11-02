@@ -35,6 +35,9 @@ export function BlockMenu({
     input = useRef<HTMLInputElement>(null),
     file = useRef<HTMLInputElement>(null);
   const fallback = useRef<HTMLElement | null>(null);
+  const close = useRef(onClose),
+    restoreTrigger = useRef(false);
+  close.current = onClose;
   const text = (kind?: string): Block => ({
     type: "paragraph",
     content: {
@@ -50,13 +53,18 @@ export function BlockMenu({
     },
   });
   const allOptions: Option[] = [
-    {
+    ...([1, 2, 3] as const).map((level) => ({
       group: "Text",
-      name: "Heading",
-      description: "Start a new section",
-      icon: "heading",
-      block: { type: "heading", text: "New section" },
-    },
+      name: `Heading ${level}`,
+      description:
+        level === 1 ? "Start a new section" : "Subheading within this section",
+      icon: "heading" as const,
+      block: {
+        type: "heading" as const,
+        level,
+        text: level === 1 ? "New section" : "Subheading",
+      },
+    })),
     {
       group: "Text",
       name: "Text",
@@ -165,32 +173,82 @@ export function BlockMenu({
       popover.dataset.placement = y < (a?.top ?? 0) ? "above" : "below";
     };
     place();
-    input.current?.focus();
+    input.current?.focus({ preventScroll: true });
     const resize = new ResizeObserver(place);
     resize.observe(popover);
     window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
+
     return () => {
       resize.disconnect();
       window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
+
       popover.hidePopover();
+      if (restoreTrigger.current) {
+        restoreTrigger.current = false;
+        (anchor?.matches("button") ? anchor : fallback.current)?.focus({
+          preventScroll: true,
+        });
+      }
     };
   }, [host, anchor]);
   useEffect(() => {
     const outside = (e: PointerEvent) => {
       if (
         !ref.current?.contains(e.target as Node) &&
-        !anchor?.contains(e.target as Node)
+        !(anchor?.matches("button") && anchor.contains(e.target as Node))
       )
-        onClose();
+        close.current();
+    };
+    // A focus/scrollIntoView from the preceding block insertion can have a
+    // queued scroll event when this menu opens. Only movement after opening
+    // dismisses it; unrelated panels and the menu's own scrolling do not.
+    const positions = new Map<Element, { top: number; left: number }>();
+    let ancestor: Element | null = anchor ?? fallback.current;
+    while (ancestor) {
+      positions.set(ancestor, {
+        top: ancestor.scrollTop,
+        left: ancestor.scrollLeft,
+      });
+      ancestor = ancestor.parentElement;
+    }
+    const page = document.scrollingElement;
+    if (page)
+      positions.set(page, { top: page.scrollTop, left: page.scrollLeft });
+    const scroll = (event: Event) => {
+      if (ref.current?.contains(event.target as Node)) return;
+      const element =
+        event.target === document
+          ? document.scrollingElement
+          : (event.target as Element);
+      const before = element && positions.get(element);
+      if (
+        before &&
+        (element.scrollTop !== before.top || element.scrollLeft !== before.left)
+      )
+        close.current();
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      restoreTrigger.current = true;
+      close.current();
     };
     document.addEventListener("pointerdown", outside, true);
-    return () => document.removeEventListener("pointerdown", outside, true);
-  }, [anchor, onClose]);
+    document.addEventListener("keydown", escape, true);
+    window.addEventListener("scroll", scroll, true);
+    return () => {
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("keydown", escape, true);
+      window.removeEventListener("scroll", scroll, true);
+    };
+  }, [anchor]);
   const choose = (option: Option) => {
     if (option.image) file.current?.click();
-    else if (option.block) onChoose(structuredClone(option.block));
+    else if (option.block) {
+      onChoose(structuredClone(option.block));
+      onClose();
+    }
   };
   const focusRow = (at: number) => {
     const n = (at + options.length) % options.length;

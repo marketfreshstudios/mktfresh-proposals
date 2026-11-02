@@ -1,3 +1,4 @@
+import type { StyleOverrides, ResolvedStyles } from "./proposal-styles";
 import type { WorkspaceSettings } from "./workspace";
 import { z } from "zod";
 export const ClientSchema = z.object({
@@ -115,6 +116,7 @@ export type Block = {
     | "variable"
     | "contract";
   text?: string;
+  level?: 1 | 2 | 3;
   content?: RichText;
   src?: string;
   alt?: string;
@@ -139,6 +141,7 @@ export type RichText = {
   attrs?: { path?: string };
 };
 export type Template = {
+  style_overrides?: StyleOverrides;
   id: string;
   name: string;
   content: Block[];
@@ -217,6 +220,7 @@ export type Audit = Actor & {
   metadata: Record<string, unknown>;
 };
 export type Version = {
+  resolved_styles?: ResolvedStyles;
   id: string;
   version_no: number;
   content: Block[];
@@ -257,6 +261,8 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  style_overrides?: StyleOverrides;
+  template_style_overrides?: StyleOverrides;
   archived_at?: string | null;
   archived_by?: string;
   marked_won_by?: string;

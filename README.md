@@ -208,3 +208,9 @@ Write on the document and use the grouped pinned formatting bar for the current 
 Fields show their friendly labels, current values and tokens. Search by label or token, then insert at the last text cursor/selection. Without a text target the editor asks where to insert. Use the Fields sheet on phone/tablet. PDF page guides keep whole pricing cards, choice groups and signatures together; shorten any complete unit that cannot fit one page. Historical signed records and sealed files are immutable.
 
 The edge + buttons and an empty paragraph’s `/` open the shared anchored block menu. Search built-in and saved blocks; use arrows/Enter/Escape. A second pricing table is hidden. The menu flips above its insertion point when space is limited. Text and contract blocks can be duplicated with new IDs; required pricing/signature blocks are not duplicated.
+
+### Proposal typography
+
+Workspace → Proposal styles sets Title, Heading 1/2/3 and Body defaults, with contrast checking and a desktop/phone sample. Templates can override those defaults; draft proposals have a Styles tab and Reset to workspace. Sent versions freeze their resolved styles alongside their signed-content hash. The editor, client reading view and PDF use the same resolved map and fonts.
+
+Use the pinned Text style selector or start an empty paragraph with `# `, `## ` or `### `. Heading 1 starts an outline section; Heading 2 and 3 are indented subheadings. Existing draft/template headings gain level 1 via `20261102065523_editor_heading_levels_styles.sql`; sent and signed content is never migrated. Apply that migration through the normal migration process for this app's project only.

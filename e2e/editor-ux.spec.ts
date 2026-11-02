@@ -1,3 +1,4 @@
+import { freezeStyles } from "../src/lib/proposal-styles";
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { setup, staff } from "../tests/helpers";
@@ -393,7 +394,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     ).toBeVisible();
     await page
       .getByRole("dialog", { name: "Add a block" })
-      .getByRole("menuitem", { name: "Heading", exact: true })
+      .getByRole("menuitem", { name: "Heading 1", exact: true })
       .click();
     await expect(page.locator(".document-heading:focus")).toHaveValue(
       "New section",
@@ -461,6 +462,11 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         content: active.content,
         quote: active.quote,
         variables_resolved: map,
+        resolved_styles: freezeStyles(
+          settings,
+          active.template_style_overrides,
+          active.style_overrides,
+        ),
         content_hash: "",
         created_at: active.created_at,
         frozen: false,

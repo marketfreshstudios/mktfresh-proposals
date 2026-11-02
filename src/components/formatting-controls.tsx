@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useEditorState } from "@tiptap/react";
+import type { TextStyleControl } from "../lib/editor-document";
 import type { Editor } from "@tiptap/core";
 import { Icon } from "./ui";
 import { textHistoryScope, useHistoryStatus } from "./editor-history";
@@ -11,12 +12,14 @@ export function FormattingControls({
   onField,
   allowLinks = true,
   independent = false,
+  textStyle,
 }: {
   editor?: Editor | null;
   onLink?: () => void;
   onField?: () => void;
   allowLinks?: boolean;
   independent?: boolean;
+  textStyle?: TextStyleControl | null;
 }) {
   const status = useHistoryStatus();
   const { canUndo, canRedo } = status;
@@ -90,6 +93,30 @@ export function FormattingControls({
           mac ? "Redo (⇧⌘Z)" : "Redo (Ctrl+Shift+Z or Ctrl+Y)",
         )}
       </div>
+      {textStyle !== undefined && (
+        <div className="formatting-group">
+          <label className="sr-only" htmlFor="document-text-style">
+            Text style
+          </label>
+          <select
+            id="document-text-style"
+            aria-label="Text style"
+            disabled={!textStyle}
+            value={textStyle?.value ?? 0}
+            onChange={(e) =>
+              textStyle?.change(Number(e.target.value) as 0 | 1 | 2 | 3)
+            }
+          >
+            {["Paragraph", "Heading 1", "Heading 2", "Heading 3"].map(
+              (name, n) => (
+                <option key={n} value={n}>
+                  {name}
+                </option>
+              ),
+            )}
+          </select>
+        </div>
+      )}
       <div className="formatting-group" role="group" aria-label="Text style">
         {button(
           "Bold",

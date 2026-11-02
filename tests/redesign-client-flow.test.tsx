@@ -28,6 +28,7 @@ it("previews are read-only and future signed versions keep their frozen hash", a
       content: v.content,
       quote: v.quote,
       variables_resolved: v.variables_resolved,
+      resolved_styles: v.resolved_styles,
     }),
   ).toBe(v.content_hash);
   const before = JSON.stringify(v);

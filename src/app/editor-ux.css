@@ -787,3 +787,108 @@
     inset: 9px;
   }
 }
+
+/* Pricing handles stay inside the card, including nested choice options. */
+.document-quote .document-sortable-card > .drag-handle,
+.document-quote .document-sortable-group > .drag-handle {
+  left: 4px;
+  top: 8px;
+  width: 44px;
+  height: 44px;
+}
+/* Reserve the same interior gutter in authoring and reading; drag chrome must
+   not change a card's wrapping or the position of later document blocks. */
+.document-reading .flow-quote-line {
+  padding-left: 52px;
+  min-height: 64px;
+}
+.document-reading .flow-choice-group > h3 {
+  padding-left: 44px;
+}
+.block-frame.is-selected .document-quote .drag-handle,
+.block-frame[data-selected="true"] .document-quote .drag-handle {
+  opacity: 1;
+}
+.editor-outline nav .outline-subheading {
+  margin-left: 24px;
+  width: calc(100% - 24px);
+  font-size: 12px;
+}
+.editor-outline nav .outline-level-3 {
+  margin-left: 36px;
+  width: calc(100% - 36px);
+}
+.proposal-styles {
+  min-width: 0;
+}
+.style-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.style-fields .field,
+.style-fields select,
+.style-fields input {
+  min-width: 0;
+  max-width: 100%;
+}
+.style-fields > p {
+  grid-column: 1 / -1;
+}
+.style-preview-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.style-preview-viewport {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: 12px;
+}
+.style-sample {
+  background: white;
+  color: #25241f;
+  padding: 28px;
+  width: 672px;
+  max-width: none;
+}
+.style-preview-viewport[data-width="phone"] .style-sample {
+  width: 335px;
+  padding: 20px;
+}
+.template-style-settings > summary {
+  cursor: pointer;
+  padding: 12px;
+}
+.formatting-controls select {
+  min-width: 100px;
+  width: auto;
+  max-width: 130px;
+  font-size: 12px;
+  min-height: 40px;
+}
+
+.document-reading .document-heading-edit .document-heading {
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.template-text-preview {
+  font-weight: 400;
+}
+.template-text-preview :first-child {
+  margin-top: 0;
+}
+
+.phone-section-list > .outline-subheading {
+  margin-left: 20px;
+  width: calc(100% - 20px);
+}
+.phone-section-list > .outline-level-3 {
+  margin-left: 32px;
+  width: calc(100% - 32px);
+}

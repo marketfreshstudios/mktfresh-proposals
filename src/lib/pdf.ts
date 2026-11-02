@@ -1,3 +1,4 @@
+import { documentStyleCss, styleFonts } from "./proposal-styles";
 import {
   completionCertificate,
   certificateTime,
@@ -47,6 +48,7 @@ export async function sealedPdf(
   try {
     const chosen = brand?.settings?.proposal_fonts;
     const ids = new Set([
+      ...styleFonts(version.resolved_styles),
       chosen?.heading ?? "serif",
       chosen?.body ?? "serif",
       "mono",
@@ -81,7 +83,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}</style>` +
+          `<style>${printCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             title:
               version.variables_resolved["proposal.title"] ??

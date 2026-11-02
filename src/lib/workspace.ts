@@ -1,3 +1,4 @@
+import { StyleOverridesSchema } from "./proposal-styles";
 import { fontChoice } from "./proposal-fonts";
 import { z } from "zod";
 export const LOCAL_WORKSPACE_ID = "00000000-0000-4000-8000-000000000001";
@@ -18,6 +19,7 @@ export const onBehalfText = (name: string, company: string) =>
 export const WorkspaceSettingsSchema = z.object({
   id: z.string().uuid(),
   currency: z.enum(["USD", "CAD", "GBP", "EUR", "AUD"]).default("USD"),
+  proposal_styles: StyleOverridesSchema.optional(),
   proposal_fonts: z
     .object({ heading: fontChoice, body: fontChoice })
     .optional(),

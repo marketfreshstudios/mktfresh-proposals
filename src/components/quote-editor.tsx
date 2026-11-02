@@ -1,4 +1,11 @@
 "use client";
+import { ProposalStyles } from "./proposal-styles";
+import {
+  resolveStyles,
+  documentStyleCss,
+  styleFontFaces,
+} from "../lib/proposal-styles";
+import { convertTextStyle, type TextLevel } from "../lib/editor-document";
 import {
   BlockScope,
   DocumentFormattingBar,
@@ -38,6 +45,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  type KeyboardCoordinateGetter,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -73,11 +81,13 @@ export function Sortable({
   children,
   block = false,
   printUnit,
+  documentKind,
 }: {
   id: string;
   label: string;
   block?: boolean;
   printUnit?: string;
+  documentKind?: "card" | "group";
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
@@ -101,7 +111,7 @@ export function Sortable({
         transition,
         opacity: isDragging ? 0.5 : 1,
       }}
-      className={`quote-sortable ${block ? "block-sortable" : ""}`}
+      className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
     >
       <button
         type="button"
@@ -154,10 +164,27 @@ export function Reorder({
   onMove: (from: string, to: string) => void;
   children: ReactNode;
 }) {
+  // Align centres for vertical keyboard moves. The stock getter bottom-aligns
+  // differently sized cards, which leaves a tall choice group over itself.
+  const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
+    if (!["ArrowDown", "ArrowUp"].includes(event.code))
+      return sortableKeyboardCoordinates(event, args);
+    const { active, over, droppableRects, collisionRect } = args.context;
+    if (!active || !collisionRect) return;
+    const index = ids.indexOf(String(over?.id ?? active.id));
+    const target = ids[index + (event.code === "ArrowDown" ? 1 : -1)];
+    const rect = target && droppableRects.get(target);
+    if (!rect || index < 0) return;
+    event.preventDefault();
+    return {
+      x: rect.left + (rect.width - collisionRect.width) / 2,
+      y: rect.top + (rect.height - collisionRect.height) / 2,
+    };
+  };
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+      coordinateGetter: keyboardCoordinates,
       scrollBehavior: "auto",
     }),
   );
@@ -475,6 +502,8 @@ function QuoteEditorContent({
           content: p.content,
           quote: p.quote,
           valid_until: p.valid_until,
+          style_overrides: p.style_overrides ?? {},
+          template_style_overrides: p.template_style_overrides ?? {},
         }),
       );
       setDeviceSaved(true);
@@ -492,6 +521,8 @@ function QuoteEditorContent({
     content: v.content,
     quote: v.quote,
     valid_until: v.valid_until,
+    style_overrides: v.style_overrides ?? {},
+    template_style_overrides: v.template_style_overrides ?? {},
   });
   const history = useSessionHistory(
     initial.id,
@@ -530,6 +561,8 @@ function QuoteEditorContent({
           content: value.content,
           quote: value.quote,
           valid_until: value.valid_until,
+          style_overrides: value.style_overrides ?? {},
+          template_style_overrides: value.template_style_overrides ?? {},
         }),
       });
       revision.current = result.revision;
@@ -1437,7 +1470,7 @@ function QuoteEditorContent({
   const panel = (
     <>
       <div className="editor-tabs" role="tablist" aria-label="Proposal tools">
-        {["Quote", "Pricing reference", "Review & send"].map((t) => (
+        {["Quote", "Pricing reference", "Styles", "Review & send"].map((t) => (
           <button
             role="tab"
             aria-selected={tab === t}
@@ -1449,15 +1482,45 @@ function QuoteEditorContent({
         ))}
       </div>
       <div role="tabpanel">
-        {tab === "Quote"
-          ? quotePanel
-          : tab === "Pricing reference"
-            ? refPanel
-            : sendPanel}
+        {tab === "Quote" ? (
+          quotePanel
+        ) : tab === "Pricing reference" ? (
+          refPanel
+        ) : tab === "Styles" ? (
+          <ProposalStyles
+            settings={p.workspace_settings}
+            inherited={p.template_style_overrides}
+            value={p.style_overrides}
+            onChange={(style_overrides) => change({ style_overrides })}
+            resetLabel="Reset to workspace"
+            onReset={() =>
+              change({ style_overrides: {}, template_style_overrides: {} })
+            }
+          />
+        ) : (
+          sendPanel
+        )}
       </div>
     </>
   );
   function blockEditor(b: Block, n: number) {
+    const HeadingTag = `h${(b.level ?? 1) + 1}` as "h2" | "h3" | "h4";
+    const style = (level: TextLevel, text?: string) => {
+      const next = p.content.map((v, j) =>
+        j === n ? convertTextStyle(b, level, text) : v,
+      );
+      change({ content: next });
+      setSection(contentSections(next).findIndex((s) => s.indices.includes(n)));
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          document
+            .querySelector<HTMLElement>(
+              `[data-block-id="block-${b.id ?? n}"] textarea,[data-block-id="block-${b.id ?? n}"] .tiptap`,
+            )
+            ?.focus({ preventScroll: true }),
+        ),
+      );
+    };
     return (
       <Sortable
         block
@@ -1497,12 +1560,12 @@ function QuoteEditorContent({
               <BlockAction
                 variant="ghost"
                 disabled={
-                  b.type === "heading"
+                  b.type === "heading" && (b.level ?? 1) === 1
                     ? sections.findIndex((s) => s.indices.includes(n)) === 0
                     : n === 0
                 }
                 onClick={() => {
-                  if (b.type === "heading") {
+                  if (b.type === "heading" && (b.level ?? 1) === 1) {
                     const sn = sections.findIndex((s) => s.indices.includes(n));
                     if (sections[sn - 1])
                       change({
@@ -1524,13 +1587,13 @@ function QuoteEditorContent({
               <BlockAction
                 variant="ghost"
                 disabled={
-                  b.type === "heading"
+                  b.type === "heading" && (b.level ?? 1) === 1
                     ? sections.findIndex((s) => s.indices.includes(n)) ===
                       sections.length - 1
                     : n === p.content.length - 1
                 }
                 onClick={() => {
-                  if (b.type === "heading") {
+                  if (b.type === "heading" && (b.level ?? 1) === 1) {
                     const sn = sections.findIndex((s) => s.indices.includes(n));
                     if (sections[sn + 1])
                       change({
@@ -1623,7 +1686,10 @@ function QuoteEditorContent({
           }
         >
           {b.type === "heading" ? (
-            <h2 className="document-heading-edit">
+            <HeadingTag
+              className="document-heading-edit"
+              data-heading-level={b.level ?? 1}
+            >
               <span className="heading-measure" aria-hidden="true">
                 {b.text || "\u200b"}
               </span>
@@ -1631,6 +1697,7 @@ function QuoteEditorContent({
                 onBeforeInsert={() =>
                   setSection(sections.findIndex((s) => s.indices.includes(n)))
                 }
+                textStyle={{ value: b.level ?? 1, change: style }}
                 className="document-heading"
                 aria-label={`Heading ${n + 1}`}
                 rows={1}
@@ -1642,9 +1709,10 @@ function QuoteEditorContent({
                   })
                 }
               />
-            </h2>
+            </HeadingTag>
           ) : b.type === "paragraph" ? (
             <FieldEditor
+              onTextStyle={style}
               onBeforeInsert={() =>
                 setSection(sections.findIndex((s) => s.indices.includes(n)))
               }
@@ -1693,6 +1761,9 @@ function QuoteEditorContent({
                     <Sortable
                       key={id}
                       id={id}
+                      documentKind={
+                        unitItems(id)[0].choice_group_id ? "group" : "card"
+                      }
                       printUnit={unitItems(id)[0].id}
                       label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
                     >
@@ -1723,6 +1794,7 @@ function QuoteEditorContent({
                               <Sortable
                                 key={i.id}
                                 id={i.id}
+                                documentKind="card"
                                 label={`document option ${i.name}`}
                               >
                                 {documentItem(i)}
@@ -2173,6 +2245,9 @@ function QuoteEditorContent({
                         content: p.content,
                         quote: p.quote,
                         valid_until: p.valid_until,
+                        style_overrides: p.style_overrides ?? {},
+                        template_style_overrides:
+                          p.template_style_overrides ?? {},
                       };
                       const current = await api<Proposal>(
                         `/api/proposals/${p.id}`,
@@ -2241,6 +2316,30 @@ function QuoteEditorContent({
                       />
                     )}
                   </button>
+                  {s.indices
+                    .filter(
+                      (j) =>
+                        p.content[j].type === "heading" &&
+                        (p.content[j].level ?? 1) > 1,
+                    )
+                    .map((j) => (
+                      <button
+                        key={p.content[j].id ?? j}
+                        className={`outline-subheading outline-level-${p.content[j].level}`}
+                        onClick={() => {
+                          setSection(n);
+                          requestAnimationFrame(() =>
+                            document
+                              .querySelector(
+                                `[data-block-id="block-${p.content[j].id ?? j}"]`,
+                              )
+                              ?.scrollIntoView({ block: "center" }),
+                          );
+                        }}
+                      >
+                        {p.content[j].text || "Untitled subheading"}
+                      </button>
+                    ))}
                 </Sortable>
               ))}
             </Reorder>
@@ -2270,13 +2369,39 @@ function QuoteEditorContent({
                 : "Add your first section."}
             </p>
             {firstBlock}
-            {sections.map((s, n) => (
+            {sections.flatMap((s, n) => [
               <button key={s.id} onClick={() => setSection(n)}>
                 <span>{String(n + 1).padStart(2, "0")}</span>
                 <strong>{s.title}</strong>
                 <small>{s.pending ? "Review" : "✓"} ›</small>
-              </button>
-            ))}
+              </button>,
+              ...s.indices
+                .filter(
+                  (j) =>
+                    p.content[j].type === "heading" &&
+                    (p.content[j].level ?? 1) > 1,
+                )
+                .map((j) => (
+                  <button
+                    key={`sub-${p.content[j].id ?? j}`}
+                    className={`outline-subheading outline-level-${p.content[j].level}`}
+                    onClick={() => {
+                      setSection(n);
+                      requestAnimationFrame(() =>
+                        document
+                          .querySelector(
+                            `[data-block-id="block-${p.content[j].id ?? j}"]`,
+                          )
+                          ?.scrollIntoView({ block: "center" }),
+                      );
+                    }}
+                  >
+                    <strong>
+                      {p.content[j].text || "Untitled subheading"}
+                    </strong>
+                  </button>
+                )),
+            ])}
             <Button
               onClick={() => {
                 setTab("Quote");
@@ -2325,7 +2450,24 @@ function QuoteEditorContent({
             }
             className="paper editor-paper proposal-typography document-reading"
           >
-            <style>{fontCss(p.workspace_settings)}</style>
+            <style>
+              {fontCss(p.workspace_settings)}
+              {styleFontFaces(
+                resolveStyles(
+                  p.workspace_settings,
+                  p.template_style_overrides,
+                  p.style_overrides,
+                ),
+              )}
+              {documentStyleCss(
+                resolveStyles(
+                  p.workspace_settings,
+                  p.template_style_overrides,
+                  p.style_overrides,
+                ),
+                p.workspace_settings?.accent_colour,
+              )}
+            </style>
             <DocumentCover
               title={p.title}
               company={p.client.company}
@@ -2344,7 +2486,8 @@ function QuoteEditorContent({
                   destination = ids.indexOf(to);
                 change({
                   content:
-                    p.content[source]?.type === "heading"
+                    p.content[source]?.type === "heading" &&
+                    (p.content[source]?.level ?? 1) === 1
                       ? moveSection(
                           p.content,
                           p.content[source].id!,

@@ -1,3 +1,5 @@
+import { reviewBlocks } from "./ai-review";
+import { StyleOverridesSchema, styleFonts } from "./proposal-styles";
 import {
   emailTemplates,
   saveEmailTemplate,
@@ -11,6 +13,7 @@ import {
   uploadedFonts,
   readFont,
   validateFonts,
+  validateStyles,
   workspaceEvent,
 } from "./studio";
 import { whiteContrast, accessibleAccent } from "./brand";
@@ -193,9 +196,10 @@ export async function handle(req: Request, path: string[]) {
       if (method === "GET" && action === "fonts") {
         const p = await rt.repo.byToken(token);
         check(p, "Font unavailable", 404);
-        const font = Object.values(
-          p.workspace_settings?.proposal_fonts ?? {},
-        ).find((f) => typeof f !== "string" && f.id === path[3]);
+        const font = [
+          ...Object.values(p.workspace_settings?.proposal_fonts ?? {}),
+          ...styleFonts(p.versions.at(-1)?.resolved_styles),
+        ].find((f) => typeof f !== "string" && f.id === path[3]);
         check(
           font &&
             typeof font !== "string" &&
@@ -625,6 +629,7 @@ export async function handle(req: Request, path: string[]) {
           }
           delete entity.default_password_enabled;
           await validateFonts(rt.repo, entity.proposal_fonts);
+          await validateStyles(rt.repo, entity);
           check(
             whiteContrast(entity.accent_colour) >= 4.5 ||
               previous?.accent_colour === entity.accent_colour,
@@ -710,8 +715,17 @@ export async function handle(req: Request, path: string[]) {
                 )
                 .max(100),
               active: z.boolean(),
+              style_overrides: StyleOverridesSchema.optional(),
             })
             .parse(raw);
+          entity.content = reviewBlocks(entity.content as Block[], false);
+          await validateStyles(
+            rt.repo,
+            (
+              await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+            )[0],
+            entity.style_overrides,
+          );
         } else
           entity = z
             .object({
@@ -812,6 +826,8 @@ export async function handle(req: Request, path: string[]) {
         const input = z
           .object({
             revision: z.number().int(),
+            style_overrides: StyleOverridesSchema.optional(),
+            template_style_overrides: StyleOverridesSchema.optional(),
             title: z.string().min(1).max(300).optional(),
             content: z
               .array(z.record(z.string(), z.unknown()))

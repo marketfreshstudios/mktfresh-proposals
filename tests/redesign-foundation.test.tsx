@@ -114,8 +114,11 @@ it("current money preferences parse while current signed rendering and content h
   expect(publicResult((await repo.get(signed.id))!)).toEqual(view);
   expect(view.html).toContain("$2,750");
   expect(view.html).toContain("$25");
-  const { content, quote, variables_resolved } = signed.versions[0];
-  expect(versionHash({ content, quote, variables_resolved })).toBe(hash);
+  const { content, quote, variables_resolved, resolved_styles } =
+    signed.versions[0];
+  expect(
+    versionHash({ content, quote, variables_resolved, resolved_styles }),
+  ).toBe(hash);
   expect(JSON.stringify(await repo.get(signed.id))).toBe(before);
   expect(signed.quote[0]).toHaveProperty("sublines");
 });

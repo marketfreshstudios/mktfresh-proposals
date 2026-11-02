@@ -107,3 +107,7 @@ Validity: `create_proposal_draft` and `update_proposal_draft` accept optional `v
 Phone input defaults to US; international input requires `+country code`. Saving validates and stores E.164. Client responses include `phone` plus `phone_formatted`; a pre-existing invalid unsaved number returns `phone: null`, its original display value, and `phone_needs_review: true`. Address fields are all optional strings; `country` is an alpha-2 country code and defaults to `US`. Supplying an address replaces its contents; use empty strings to clear fields. `address_formatted` and `{{client.address}}` use multiple lines, with no blank paragraph for an absent address.
 
 AI tools cannot set Stripe/QuickBooks customer IDs, link/unlink customers, or delete clients. Staff review case-insensitive exact-email Stripe matches on the client page. `check_ready` reports ambiguous unlinked matches with `customerChoiceUrl`; the staff send endpoint repeats that check. New provider customers receive the saved phone/address. Existing provider addresses are never overwritten.
+
+### Heading levels and typography
+
+In proposal Markdown, `#` creates Heading 1 and starts a section; `##` and `###` create Heading 2 and 3 within it. Higher Markdown depths are limited to Heading 3. The connector's returned blocks include the numeric `level`. Only Heading 1 defines AI review/outline sections. Typography comes from the template and workspace; staff can override it in the app. Sent versions freeze their resolved styles and signed-content hashes, and connector writes remain draft-only.
