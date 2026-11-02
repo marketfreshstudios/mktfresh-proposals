@@ -1,6 +1,13 @@
 "use client";
+import { ProposalStyles } from "./proposal-styles";
+import {
+  resolveStyles,
+  documentStyleCss,
+  styleFontFaces,
+  type StyleOverrides,
+} from "../lib/proposal-styles";
 import { useSessionHistory } from "./editor-history";
-import { duplicateBlock } from "../lib/editor-document";
+import { blockText, duplicateBlock } from "../lib/editor-document";
 import { BlockMenu } from "./block-menu";
 import {
   BlockScope,
@@ -15,6 +22,7 @@ import type { ComponentProps } from "react";
 import { productMappings } from "../lib/workspace-setup";
 import { useEffect, useState, useRef, type ReactNode } from "react";
 import type { Data } from "./staff-app";
+import { renderBlocks, escape } from "../lib/presentation";
 import { DocumentCover } from "./document-cover";
 import { FieldOptions } from "./field-options";
 import { withoutTitleHeading, appendField } from "../lib/editor-document";
@@ -96,6 +104,9 @@ function Section({
 }
 export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
   const s = data.settings;
+  const [styles, setStyles] = useState<StyleOverrides>(
+    s?.proposal_styles ?? {},
+  );
   const [accent, setAccent] = useState(s?.accent_colour ?? "#245547"),
     [logo, setLogo] = useState(s?.logo ?? null),
     [image, setImage] = useState(s?.company_signatory?.image ?? null),
@@ -135,13 +146,19 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
   return (
     <div className="studio-workspace stack">
       <nav className="studio-tabs" aria-label="Workspace sections">
-        {["Brand", "Money", "Team", "Signatory", "Fonts", "Client links"].map(
-          (t) => (
-            <a href={`#${t.toLowerCase().replaceAll(" ", "-")}`} key={t}>
-              {t}
-            </a>
-          ),
-        )}
+        {[
+          "Brand",
+          "Money",
+          "Team",
+          "Signatory",
+          "Fonts",
+          "Proposal styles",
+          "Client links",
+        ].map((t) => (
+          <a href={`#${t.toLowerCase().replaceAll(" ", "-")}`} key={t}>
+            {t}
+          </a>
+        ))}
       </nav>
       <form
         className="stack"
@@ -157,6 +174,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                 logo,
                 accent_colour: accent,
                 proposal_fonts: { heading, body },
+                proposal_styles: styles,
                 money: { cents: f.get("cents") },
                 default_validity_days: Number(f.get("default_validity_days")),
                 reminder_days: String(f.get("reminder_days"))
@@ -385,6 +403,25 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
               defaultValue={s?.consent_text}
             />
           </Field>
+        </Section>
+        <Section
+          title="Proposal styles"
+          id="proposal-styles"
+          description="Defaults for new proposals. Sent and signed documents keep their saved styles."
+        >
+          <ProposalStyles
+            settings={
+              {
+                ...s,
+                accent_colour: accent,
+                proposal_fonts: { heading, body },
+                proposal_styles: {},
+              } as WorkspaceSettings
+            }
+            value={styles}
+            availableFonts={allFonts}
+            onChange={setStyles}
+          />
         </Section>
         <Section
           title="Proposal fonts"
@@ -1376,6 +1413,19 @@ function TemplatesStudioContent({
                 Active template
               </label>
             )}
+            {mode === "templates" && draft && (
+              <details className="template-style-settings">
+                <summary>Proposal styles</summary>
+                <ProposalStyles
+                  settings={data.settings}
+                  value={draft.style_overrides}
+                  onChange={(style_overrides) =>
+                    editDraft({ ...draft, style_overrides })
+                  }
+                  resetLabel="Reset to workspace"
+                />
+              </details>
+            )}
             <Reorder
               ids={content.map((_, n) => String(n))}
               onMove={(from, to) => {
@@ -1387,10 +1437,19 @@ function TemplatesStudioContent({
                 setIndex(null);
               }}
             >
-              <div className="studio-blocks">
+              <div className="studio-blocks proposal-typography document-reading">
                 {!(mobile && inspector) && <DocumentFormattingBar />}
                 <div className="paper proposal-typography document-reading template-cover">
-                  <style>{fontCss(data.settings)}</style>
+                  <style>
+                    {fontCss(data.settings)}
+                    {styleFontFaces(
+                      resolveStyles(data.settings, draft?.style_overrides),
+                    )}
+                    {documentStyleCss(
+                      resolveStyles(data.settings, draft?.style_overrides),
+                      data.settings?.accent_colour,
+                    )}
+                  </style>
                   <DocumentCover
                     title="Proposal title"
                     company="Client company"
@@ -1574,13 +1633,20 @@ function TemplatesStudioContent({
                           selection.select(`template-${b.id ?? n}`)
                         }
                       >
-                        <strong>
-                          {b.type === "heading"
-                            ? b.text
-                            : b.type === "contract"
+                        {["heading", "paragraph"].includes(b.type) ? (
+                          <div
+                            className="template-text-preview"
+                            dangerouslySetInnerHTML={{
+                              __html: templateTextPreview(b, map),
+                            }}
+                          />
+                        ) : (
+                          <strong>
+                            {b.type === "contract"
                               ? b.text || "Statement of Work & Contract"
                               : blockName(b)}
-                        </strong>
+                          </strong>
+                        )}
                         <small>{blockName(b)}</small>
                       </button>
                       {b.type === "contract" && (
@@ -1829,7 +1895,7 @@ function TemplatesStudioContent({
 }
 function blockName(b: Block) {
   return {
-    heading: "Heading",
+    heading: `Heading ${b.level ?? 1}`,
     paragraph: "Text",
     image: "Image",
     pricing_table: "Pricing table",
@@ -2708,4 +2774,20 @@ export function TemplatesStudio(
       <TemplatesStudioContent {...props} />
     </BlockScope>
   );
+}
+
+function templateTextPreview(block: Block, map: Record<string, string>) {
+  // Drafts can contain fields awaiting client data or incomplete links. Keep
+  // those authorable rather than turning the template screen into an error page.
+  try {
+    return renderBlocks(
+      [block],
+      [],
+      new Proxy(map, {
+        get: (values, path: string) => values[path] ?? `{{${path}}}`,
+      }),
+    );
+  } catch {
+    return `<p>${escape(blockText(block))}</p>`;
+  }
 }

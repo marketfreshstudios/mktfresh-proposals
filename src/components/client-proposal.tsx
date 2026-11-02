@@ -1,4 +1,5 @@
 "use client";
+import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
 import {
   BillingItems,
   BillingRecurringTotal,
@@ -421,6 +422,12 @@ function NewClientFlow({
               ? `/api/workspace-fonts/${f.id}`
               : `/api/public/${token}/fonts/${f.id}`,
           )}
+          {styleFontFaces(p.resolved_styles, (f) =>
+            preview
+              ? `/api/workspace-fonts/${f.id}`
+              : `/api/public/${token}/fonts/${f.id}`,
+          )}
+          {documentStyleCss(p.resolved_styles, brand.accent_colour)}
         </style>
       )}
       {preview && (

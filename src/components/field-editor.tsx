@@ -8,6 +8,7 @@ import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { useEditorHistory, textHistoryScope } from "./editor-history";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { blockText, type TextLevel } from "../lib/editor-document";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, useId } from "react";
 import type { RichText } from "../lib/model";
@@ -53,6 +54,7 @@ export function FieldEditor({
   standalone = false,
   autoFocus = false,
   onBeforeInsert,
+  onTextStyle,
 }: {
   value: RichText;
   onChange: (v: RichText) => void;
@@ -64,6 +66,7 @@ export function FieldEditor({
   standalone?: boolean;
   autoFocus?: boolean;
   onBeforeInsert?: () => void;
+  onTextStyle?: (level: TextLevel, text?: string) => void;
 }) {
   const scope = useBlockToolbar();
   const history = useEditorHistory();
@@ -71,6 +74,8 @@ export function FieldEditor({
   const toolbar = standalone ? undefined : scope;
   const root = useRef<HTMLDivElement>(null);
   const cursor = useRef<{ from: number; to: number } | null>(null);
+  const styleChange = useRef(onTextStyle);
+  styleChange.current = onTextStyle;
   const reveal = useRef(onBeforeInsert);
   reveal.current = onBeforeInsert;
   const editorId = useId();
@@ -221,6 +226,10 @@ export function FieldEditor({
     return toolbar.register(editorId, {
       block,
       rich: true,
+      textStyle: () => ({
+        value: 0,
+        change: (level) => styleChange.current?.(level),
+      }),
       insert: insertField,
     });
   }, [editor, editorId, !!toolbar]);
@@ -237,6 +246,13 @@ export function FieldEditor({
   const formatting = (
     <FormattingControls
       independent={standalone}
+      textStyle={
+        onTextStyle
+          ? { value: 0, change: (level) => onTextStyle(level) }
+          : toolbar
+            ? null
+            : undefined
+      }
       editor={editor}
       allowLinks={allowLinks}
       onLink={() => setLinkPicker(!linkPicker)}
@@ -305,6 +321,29 @@ export function FieldEditor({
       onFocusCapture={() => toolbar?.remember(editorId)}
       onPointerDownCapture={() => toolbar?.remember(editorId)}
       onKeyDown={(e) => {
+        const prefix = editor?.state.selection.$from.parent.textBetween(
+          0,
+          editor.state.selection.$from.parentOffset,
+        );
+        if (
+          e.key === " " &&
+          onTextStyle &&
+          editor &&
+          editor.state.selection.empty &&
+          /^#{1,3}$/.test(prefix ?? "") &&
+          editor.state.selection.$from.parent.type.name === "paragraph" &&
+          editor.state.doc.childCount === 1
+        ) {
+          e.preventDefault();
+          onTextStyle(
+            prefix!.length as 1 | 2 | 3,
+            blockText({
+              type: "paragraph",
+              content: editor.getJSON() as RichText,
+            }).slice(prefix!.length),
+          );
+          return;
+        }
         if (e.key === "/" && onSlash && editor?.isEmpty) {
           e.preventDefault();
           onSlash(e.currentTarget);

@@ -11,12 +11,14 @@ import {
 import { Icon, Button, post } from "./ui";
 import type { Block, RichText } from "../lib/model";
 import { createPortal } from "react-dom";
+import type { TextStyleControl } from "../lib/editor-document";
 import { FormattingControls } from "./formatting-controls";
 import { EditorHistoryProvider, useEditorHistory } from "./editor-history";
 const Formatting = createContext<
   | {
       target: HTMLElement | null;
       owner: string | null;
+      textStyle?: TextStyleControl;
       activate: (id: string | null) => void;
       setTarget: (el: HTMLElement | null) => void;
       register: (
@@ -24,6 +26,7 @@ const Formatting = createContext<
         target: {
           block: string | null;
           rich?: boolean;
+          textStyle?: () => TextStyleControl;
           insert: (path: string, end: boolean) => void;
         },
       ) => () => void;
@@ -67,7 +70,9 @@ export function DocumentFormattingBar() {
       }}
     >
       <div ref={state?.setTarget} className="document-formatting-target" />
-      {!state?.owner && <FormattingControls />}
+      {!state?.owner && (
+        <FormattingControls textStyle={state?.textStyle ?? null} />
+      )}
     </div>
   );
 }
@@ -145,12 +150,14 @@ export function BlockScope({ children }: { children: ReactNode }) {
     [hovered, setHovered] = useState<string | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null),
     [owner, activate] = useState<string | null>(null);
+  const [textStyle, setTextStyle] = useState<TextStyleControl>();
   const targets = useRef(
     new Map<
       string,
       {
         block: string | null;
         rich?: boolean;
+        textStyle?: () => TextStyleControl;
         insert: (path: string, end: boolean) => void;
       }
     >(),
@@ -191,6 +198,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
   const clear = () => {
     pendingFieldTarget.current = null;
     activate(null);
+    setTextStyle(undefined);
     selectedRef.current = null;
     setSelected(null);
     setHovered(null);
@@ -226,6 +234,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
       setSelected(null);
       setHovered(null);
       activate(null);
+      setTextStyle(undefined);
     };
     document.addEventListener("pointerdown", outside, true);
     return () => document.removeEventListener("pointerdown", outside, true);
@@ -237,7 +246,11 @@ export function BlockScope({ children }: { children: ReactNode }) {
           target,
           setTarget,
           owner,
-          activate,
+          textStyle,
+          activate: (id) => {
+            activate(id);
+            if (!id) setTextStyle(undefined);
+          },
           insert,
           register: (id, target) => {
             targets.current.set(id, target);
@@ -249,6 +262,7 @@ export function BlockScope({ children }: { children: ReactNode }) {
           },
           remember: (id) => {
             lastText.current = id;
+            setTextStyle(targets.current.get(id)?.textStyle?.());
             activate(targets.current.get(id)?.rich ? id : null);
           },
         }}
@@ -319,7 +333,7 @@ export function BlockAction({
       ? "Delete clause"
       : rawLabel;
   const icon = /duplicate/i.test(label)
-    ? "copy"
+    ? "clone"
     : /up/i.test(label)
       ? "↑"
       : /down/i.test(label)
@@ -342,7 +356,7 @@ export function BlockAction({
         props.onClick?.(e);
       }}
     >
-      {icon === "trash-can" || icon === "floppy-disk" ? (
+      {icon === "trash-can" || icon === "floppy-disk" || icon === "clone" ? (
         <Icon name={icon} />
       ) : (
         <span aria-hidden="true">{icon}</span>

@@ -96,3 +96,21 @@ it("groups friendly fields and appends only inside a selected text block", () =>
     type: "pricing_table",
   });
 });
+
+it("Duplicate block renders the licensed clone SVG, not clipboard copy or text", async () => {
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { BlockAction } = await import("../src/components/block-controls");
+  const icons = (await import("../src/components/icons.json")).default;
+  const html = renderToStaticMarkup(
+    createElement(
+      BlockAction,
+      { "aria-label": "Duplicate block" },
+      "Duplicate block",
+    ),
+  );
+  expect(html).toContain('aria-label="Duplicate block"');
+  expect(html).toContain("<svg");
+  expect(html).toContain(icons.clone.path);
+  expect(html).not.toContain(icons.copy.path);
+});

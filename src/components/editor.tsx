@@ -1,4 +1,5 @@
 "use client";
+import { convertTextStyle, type TextLevel } from "../lib/editor-document";
 import { FieldEditor } from "./field-editor";
 import { FieldTextArea, FieldOptions } from "./field-options";
 import type { Block } from "../lib/model";
@@ -19,12 +20,25 @@ export function BlocksEditor({
       {content.map((b, n) => {
         const patch = (block: Block) =>
           onChange(content.map((v, j) => (j === n ? block : v)));
+        const style = (level: TextLevel, text?: string) => {
+          patch(convertTextStyle(b, level, text));
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLElement>(
+                  `[data-history-block="block-${b.id ?? n}"] textarea,[data-history-block="block-${b.id ?? n}"] .tiptap`,
+                )
+                ?.focus(),
+            ),
+          );
+        };
         return (
           <section key={b.id ?? n} data-history-block={`block-${b.id ?? n}`}>
             {b.type === "heading" ? (
               <label className="field">
                 Heading
                 <FieldTextArea
+                  textStyle={{ value: b.level ?? 1, change: style }}
                   aria-label={`Heading ${n + 1}`}
                   rows={2}
                   autoFocus
@@ -54,6 +68,7 @@ export function BlocksEditor({
                   patch({ ...b, content, text: undefined })
                 }
                 onSlash={onSlash}
+                onTextStyle={style}
               />
             ) : b.type === "image" ? (
               <>

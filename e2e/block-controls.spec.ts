@@ -561,7 +561,7 @@ test("block controls own one block and never move document content on hover, foc
   await inspectorText.press("/");
   await page
     .getByRole("dialog", { name: "Add a block", exact: true })
-    .getByRole("menuitem", { name: "Heading", exact: true })
+    .getByRole("menuitem", { name: "Heading 1", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
   await expect(

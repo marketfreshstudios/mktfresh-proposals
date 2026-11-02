@@ -400,7 +400,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .click();
   await page
     .getByRole("dialog", { name: "Add a block", exact: true })
-    .getByRole("menuitem", { name: "Heading", exact: true })
+    .getByRole("menuitem", { name: "Heading 1", exact: true })
     .click();
   await expect(
     page.getByRole("textbox", { name: "Heading 1", exact: true }),

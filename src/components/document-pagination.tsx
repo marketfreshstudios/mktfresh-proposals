@@ -7,6 +7,11 @@ import {
   type PageBoundary,
 } from "../lib/document-print";
 import { curatedFonts, curatedFontFaces, fontCss } from "../lib/proposal-fonts";
+import {
+  resolveStyles,
+  documentStyleCss,
+  styleFontFaces,
+} from "../lib/proposal-styles";
 import { variables } from "../lib/presentation";
 import type { Proposal } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
@@ -36,7 +41,7 @@ export function DocumentPagination({
           workspace_settings: settings ?? proposal.workspace_settings,
         },
         map = variables(p);
-      return `<!doctype html><html><head><style>${printCss}${curatedFontFaces(curatedFonts)}${fontCss(p.workspace_settings)}</style></head><body class="proposal-typography">${printContent({ title: p.title, company: p.client.company, sender: map["sender.name"], validity: map["proposal.valid_until"], content: p.content, quote: p.quote, variables: map, currency: p.currency, workspace: p.workspace_settings?.company_name, signatory: p.workspace_settings?.company_signatory, logo: p.workspace_settings?.logo ? `/api/proposals/${p.id}/preview-logo` : undefined, cents: p.workspace_settings?.money?.cents })}</body></html>`;
+      return `<!doctype html><html><head><style>${printCss}${curatedFontFaces(curatedFonts)}${fontCss(p.workspace_settings)}${styleFontFaces(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides))}${documentStyleCss(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides), p.workspace_settings?.accent_colour)}</style></head><body class="proposal-typography">${printContent({ title: p.title, company: p.client.company, sender: map["sender.name"], validity: map["proposal.valid_until"], content: p.content, quote: p.quote, variables: map, currency: p.currency, workspace: p.workspace_settings?.company_name, signatory: p.workspace_settings?.company_signatory, logo: p.workspace_settings?.logo ? `/api/proposals/${p.id}/preview-logo` : undefined, cents: p.workspace_settings?.money?.cents })}</body></html>`;
     } catch {
       return "";
     }
@@ -47,6 +52,8 @@ export function DocumentPagination({
     proposal.valid_until,
     settings,
     proposal.workspace_settings,
+    proposal.style_overrides,
+    proposal.template_style_overrides,
   ]);
   const currentMarkup = useRef(markup);
   currentMarkup.current = markup;

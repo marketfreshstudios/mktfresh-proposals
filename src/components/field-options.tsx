@@ -6,6 +6,7 @@ import {
   useId,
   type TextareaHTMLAttributes,
 } from "react";
+import type { TextStyleControl } from "../lib/editor-document";
 import { fieldGroup, fieldLabel } from "../lib/field-labels";
 import { useBlockToolbar } from "./block-controls";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
@@ -163,16 +164,18 @@ export function FieldTextArea({
   value,
   onValue,
   onBeforeInsert,
+  textStyle,
   ...props
 }: Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange"> & {
   value: string;
   onValue: (text: string) => void;
   onBeforeInsert?: () => void;
+  textStyle?: TextStyleControl;
 }) {
   const scope = useBlockToolbar(),
     id = useId(),
     ref = useRef<HTMLTextAreaElement>(null),
-    latest = useRef({ value, onValue, onBeforeInsert }),
+    latest = useRef({ value, onValue, onBeforeInsert, textStyle }),
     cursor = useRef<{ start: number; end: number } | null>(null);
   const afterVisible = useVisibleEditorAction();
   const history = useEditorHistory();
@@ -182,7 +185,7 @@ export function FieldTextArea({
           latest.current.onValue(text),
         )
       : latest.current.onValue(text);
-  latest.current = { value, onValue, onBeforeInsert };
+  latest.current = { value, onValue, onBeforeInsert, textStyle };
   const remember = () => {
     if (ref.current)
       cursor.current = {
@@ -194,6 +197,7 @@ export function FieldTextArea({
     if (!scope) return;
     return scope.register(id, {
       rich: false,
+      textStyle: () => latest.current.textStyle!,
       block:
         ref.current?.closest<HTMLElement>(".block-frame")?.dataset.blockId ??
         null,
@@ -216,6 +220,9 @@ export function FieldTextArea({
       },
     });
   }, [id, !!scope]);
+  useEffect(() => {
+    if (ref.current === document.activeElement) scope?.remember(id);
+  }, [textStyle?.value]);
   return (
     <textarea
       {...props}
