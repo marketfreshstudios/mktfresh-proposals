@@ -284,3 +284,6 @@ Owner workflow supersedes earlier screenshot defaults: Jonathan manually tests t
 - Existing focused browser tests capture galleries only when `CAPTURE_EDITOR_EVIDENCE=1`; this request generates no screenshots or comparison galleries.
 
 A hit-test regression identified quote-row drag handles overlapping a selected preceding block’s Save action. Quote handles have their own sub-layer (5), below block actions/selection (10) and the selected block’s handle (11), all below formatting (20). Hover/drag behavior is retained without intercepting the selected rail. Toasts follow the currently open modal host and are re-promoted on layer changes so native modal inertness cannot disable Undo.
+
+
+PR #41 formatting reuse fix: inline formatting owns an auto-height layout row, with editable content in the next row. A higher paint layer is insufficient when a legacy 44px toolbar allows wrapped controls to spill into text. Shared selectors apply the same token scale to inline and pinned variants, rather than patching only the Emails screen. Reserved-height and real hit-target/click tests cover 1440px and 375px; existing plain-text clause editors remain plain text. No timeout/tolerance increases or forced clicks.

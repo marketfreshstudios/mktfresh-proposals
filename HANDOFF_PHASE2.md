@@ -609,3 +609,16 @@ No screenshots/gallery updates, migrations, hosted/provider actions or signed-ve
 Validation: **242 unit/database tests across 39 files**, formatting, TypeScript and neutrality pass. Four focused macOS browser suites pass (history/menu/layers, existing hover/focus/no-movement, editor/document geometry and pagination, field selection/focus). Targeted Linux history and field checks pass, including the document-switch guard. The final layer rerun also confirms the Save hit target and clicking delete Undo while a native dialog is open. Native production build and API renderer tracing pass (**327 files**).
 
 A supplemental ARM Linux container compiled the production app, but the existing serverless PDF smoke binary is x86-only and could not launch in that ARM environment. The native trace check passes; the unchanged x86 GitHub runner remains responsible for that serverless launch smoke. No check was weakened. Screenshots/galleries were not generated. CI is not awaited; Jonathan will monitor it and test the live site.
+
+
+## PR #41 follow-up — shared formatting rows
+
+The Emails CI failure was a deterministic layout bug: a legacy shared inspector rule fixed inline toolbars at 44px while their grouped controls wrapped beyond that height. The new regression measured 46px of button overflow in the 1440px Emails column before the fix. Raising a z-index alone would still leave buttons over text.
+
+Shared `FieldEditor` now gives inline formatting an auto-height row above a separate content row, using `--z-formatting` and `--z-document` within an isolated editor. The old fixed/collapsing toolbar rules are removed. Pinned proposal/template bars retain their own existing row, and their content wrappers use the document layer. Inline controls retain selection on pointer-down and share the phone icon treatment. This covers Emails, sender notes and reuse in inspectors without adding new formatting to the existing plain-text contract clause fields.
+
+A new browser test at **1440 and 375** checks reserved row height, no control overflow, content below inline formatting, centre-point hit targets and real clicks for all eight controls (Undo, Redo, Bold, Italic, List, Numbered list, Link and Insert field). It exercises Emails, proposal body, template inspector and sender note; contract clause reading keeps non-text formatting disabled. Links are applied and fields inserted through their menus. The pre-fix test fails on row geometry; timeouts are unchanged and no forced clicks are used.
+
+The full Emails regression now runs without exporting screenshot/HTML galleries unless `CAPTURE_EDITOR_EVIDENCE=1`; its functional preview/render checks remain enabled. No galleries, hosted operations or signed-version changes for this fix. Validation results are recorded below; GitHub CI is left for Jonathan to monitor.
+
+Validation for the shared-row fix: **242 unit/database tests (39 files)**; the full Emails regression on macOS and Linux; the new all-editor formatting click/geometry test at both requested widths on macOS and Linux; the existing remembered-cursor/field-insertion regression; formatting, TypeScript, neutrality, and the native production build/API trace (**327 files**) pass. No captures or galleries were generated. Push to PR #41 and hand back without waiting for GitHub CI.

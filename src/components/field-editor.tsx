@@ -299,7 +299,7 @@ export function FieldEditor({
   );
   return (
     <div
-      className="field-editor"
+      className={`field-editor ${toolbar === undefined ? "field-editor-inline" : "field-editor-external"}`}
       data-history-independent={standalone || undefined}
       ref={root}
       onFocusCapture={() => toolbar?.remember(editorId)}
@@ -315,12 +315,21 @@ export function FieldEditor({
         }
       }}
     >
-      {toolbar === undefined
-        ? controls
-        : toolbar.target && toolbar.owner === editorId
-          ? createPortal(controls, toolbar.target)
-          : null}
-      <EditorContent editor={editor} />
+      {toolbar === undefined ? (
+        <div
+          className="inline-formatting-row"
+          role="toolbar"
+          aria-label="Text formatting"
+          onMouseDown={(e) => {
+            if ((e.target as Element).closest("button")) e.preventDefault();
+          }}
+        >
+          {controls}
+        </div>
+      ) : toolbar.target && toolbar.owner === editorId ? (
+        createPortal(controls, toolbar.target)
+      ) : null}
+      <EditorContent className="field-editor-content" editor={editor} />
     </div>
   );
 }

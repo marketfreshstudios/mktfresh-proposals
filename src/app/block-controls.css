@@ -198,17 +198,6 @@
     min-height: 44px;
   }
 }
-/* Inspector text editors keep their formatting row, including keyboard focus. */
-.field-editor > .rich-toolbar,
-.field-editor:hover > .rich-toolbar,
-.field-editor:focus-within > .rich-toolbar {
-  height: 44px;
-  min-height: 44px;
-  margin: 6px 0;
-  overflow: visible;
-  opacity: 1;
-}
-
 .block-tools :focus-visible {
   outline-offset: -2px;
 }

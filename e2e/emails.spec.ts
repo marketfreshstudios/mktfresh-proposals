@@ -109,7 +109,8 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const dir = ".data/evidence/emails";
-  await mkdir(dir + "/html", { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir + "/html", { recursive: true });
   const captures: {
     file: string;
     state: string;
@@ -144,7 +145,8 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       ),
     ).toBe(true);
     const file = `${state}-${width}-${theme}.png`;
-    await page.screenshot({ path: dir + "/" + file, fullPage: false });
+    if (captureEvidence)
+      await page.screenshot({ path: dir + "/" + file, fullPage: false });
     captures.push({ file, state, width, theme });
   }
   // The new navigation item is shared by the desktop section, tablet popover and phone page.
@@ -380,8 +382,10 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       t.key,
       {},
     );
-    await writeFile(`${dir}/html/${t.key}.html`, result.html);
-    await writeFile(`${dir}/html/${t.key}.txt`, result.text);
+    if (captureEvidence) {
+      await writeFile(`${dir}/html/${t.key}.html`, result.html);
+      await writeFile(`${dir}/html/${t.key}.txt`, result.text);
+    }
     const emailPage = await context.newPage();
     for (const theme of ["light", "dark"] as const) {
       await emailPage.emulateMedia({ colorScheme: theme });
@@ -395,11 +399,16 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
           ),
         ).toBe(true);
         const file = `render-${t.key}-${width}-${theme}.png`;
-        await emailPage.screenshot({ path: `${dir}/${file}`, fullPage: true });
+        if (captureEvidence)
+          await emailPage.screenshot({
+            path: `${dir}/${file}`,
+            fullPage: true,
+          });
         captures.push({ file, state: `render-${t.key}`, width, theme });
       }
     }
     await emailPage.close();
   }
-  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+  if (captureEvidence)
+    await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

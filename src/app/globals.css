@@ -1699,18 +1699,6 @@ select:hover:not(:disabled),
   opacity: 1;
   margin-top: 6px;
 }
-.rich-toolbar {
-  height: 0;
-  overflow: hidden;
-  opacity: 0;
-  margin: 0;
-}
-.field-editor:hover .rich-toolbar,
-.field-editor:focus-within .rich-toolbar {
-  height: auto;
-  opacity: 1;
-  margin: 6px 0;
-}
 [data-theme="dark"] .editor-sidepanel .editor-choice-group,
 [data-theme="dark"] .editor-sheet .editor-choice-group {
   background: var(--accent-soft);
