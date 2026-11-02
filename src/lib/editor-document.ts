@@ -10,6 +10,7 @@ export function duplicateBlock(block: Block): Block {
 /** Draft/template authoring only. Never apply to a stored sent/signed version. */
 export function withoutTitleHeading(content: Block[]) {
   return content[0]?.type === "heading" &&
+    (content[0].level ?? 1) === 1 &&
     content[0].text === "{{proposal.title}}"
     ? content.slice(1)
     : content;
@@ -44,4 +45,41 @@ export function appendField(block: Block, path: string): Block {
   }
   (last.content ??= []).push({ type: "variable", attrs: { path } });
   return next;
+}
+
+export type TextLevel = 0 | 1 | 2 | 3;
+export type TextStyleControl = {
+  value: TextLevel;
+  change: (level: TextLevel) => void;
+};
+export function blockText(block: Block): string {
+  const walk = (node: NonNullable<Block["content"]>): string =>
+    node.type === "variable"
+      ? `{{${node.attrs?.path ?? ""}}}`
+      : (node.text ??
+        (node.content ?? []).map(walk).join(node.type === "doc" ? "\n" : ""));
+  return block.content ? walk(block.content) : (block.text ?? "");
+}
+/** Preserve the block ID/review state; no conversion ever touches stored versions. */
+export function convertTextStyle(
+  block: Block,
+  level: TextLevel,
+  text = blockText(block),
+): Block {
+  if (!["heading", "paragraph"].includes(block.type)) return block;
+  return level === 0
+    ? {
+        ...block,
+        type: "paragraph",
+        level: undefined,
+        text,
+        content: undefined,
+      }
+    : {
+        ...block,
+        type: "heading",
+        level,
+        text: text.replace(/[\r\n]+/g, " "),
+        content: undefined,
+      };
 }

@@ -239,6 +239,7 @@ it("excludes unchosen contract clauses from the signed evidence and keeps old fr
       content: v.content,
       quote: v.quote,
       variables_resolved: v.variables_resolved,
+      resolved_styles: v.resolved_styles,
     }),
   ).toBe(hash);
 });

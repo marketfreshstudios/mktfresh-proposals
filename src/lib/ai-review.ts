@@ -1,12 +1,19 @@
-import type { Block, Proposal } from "./model";
+import { check, type Block, type Proposal } from "./model";
 export function reviewBlocks(content: Block[], ai: boolean) {
   const seen = new Set<string>();
   return content.map((b, index) => {
     let id = b.id ?? `block-${index}`;
     while (seen.has(id)) id += `-${index}`;
     seen.add(id);
+    check(
+      b.type !== "heading" ||
+        b.level === undefined ||
+        [1, 2, 3].includes(b.level),
+      "Heading level must be 1, 2 or 3",
+    );
     return {
       ...b,
+      ...(b.type === "heading" ? { level: b.level ?? 1 } : {}),
       id,
       ...(ai && !["contract", "signature_block", "page_break"].includes(b.type)
         ? { ai_review: { source: "assistant", reviewed: false } }
@@ -22,12 +29,13 @@ export function contentSections(content: Block[]) {
     pending: boolean;
   }[] = [];
   for (const [n, b] of content.entries()) {
-    const starts = b.type === "heading" || !sections.length;
+    const starts =
+      (b.type === "heading" && (b.level ?? 1) === 1) || !sections.length;
     if (starts)
       sections.push({
         id: b.id ?? `block-${n}`,
         title:
-          b.type === "heading"
+          b.type === "heading" && (b.level ?? 1) === 1
             ? b.text || "Untitled section"
             : b.type === "pricing_table"
               ? "Your investment"

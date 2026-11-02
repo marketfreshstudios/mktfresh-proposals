@@ -26,7 +26,11 @@ export function markdownBlocks(
   for (const t of marked.lexer(markdown)) {
     if (t.type === "space") continue;
     if (t.type === "heading") {
-      blocks.push({ type: "heading", text: t.text });
+      blocks.push({
+        type: "heading",
+        level: Math.min(3, t.depth) as 1 | 2 | 3,
+        text: t.text,
+      });
       continue;
     }
     if (t.type === "paragraph") {

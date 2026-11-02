@@ -1,3 +1,4 @@
+import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { proposalLink } from "./links";
@@ -312,16 +313,23 @@ export class Worker {
           settings: renderSettings,
           document: { id: p.id, title: p.title },
           fonts: await Promise.all(
-            Object.values(renderSettings?.proposal_fonts ?? {})
-              .filter((f) => typeof f !== "string")
-              .map(async (f) => {
-                return {
-                  ...f,
-                  data: Buffer.from(
-                    await readFont(this.storage, f, this.repo.workspaceId),
-                  ).toString("base64"),
-                };
-              }),
+            [
+              ...new Map(
+                [
+                  ...Object.values(renderSettings?.proposal_fonts ?? {}),
+                  ...styleFonts(v.resolved_styles),
+                ]
+                  .filter((f) => typeof f !== "string")
+                  .map((f) => [f.id, f]),
+              ).values(),
+            ].map(async (f) => {
+              return {
+                ...f,
+                data: Buffer.from(
+                  await readFont(this.storage, f, this.repo.workspaceId),
+                ).toString("base64"),
+              };
+            }),
           ),
           logo: renderSettings?.logo
             ? "data:image/png;base64," +
@@ -453,6 +461,7 @@ export class Worker {
         content: v.content,
         quote: v.quote,
         variables_resolved: v.variables_resolved,
+        resolved_styles: v.resolved_styles,
       }) === file.version_hash;
     return {
       valid: actual === file.sha256 && bodyValid && versionValid,

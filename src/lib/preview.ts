@@ -1,3 +1,4 @@
+import { freezeStyles } from "./proposal-styles";
 import { draftItems } from "./quote-model";
 import type { Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
@@ -14,6 +15,11 @@ export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
       id: p.id,
       version_no: 0,
 
+      resolved_styles: freezeStyles(
+        p.workspace_settings,
+        p.template_style_overrides,
+        p.style_overrides,
+      ),
       content: p.content,
       quote: p.quote,
       variables_resolved: variables(p, p.quote),
@@ -25,6 +31,7 @@ export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
       content: version.content,
       quote: version.quote,
       variables_resolved: version.variables_resolved,
+      resolved_styles: version.resolved_styles,
     });
     p.versions = [version];
   }

@@ -1,3 +1,10 @@
+import {
+  styleFonts,
+  resolveStyles,
+  validateStyleContrast,
+  type StyleOverrides,
+} from "./proposal-styles";
+import type { WorkspaceSettings } from "./workspace";
 import { randomUUID } from "node:crypto";
 import type { Repository } from "./repository";
 import type { Storage } from "./storage";
@@ -157,4 +164,21 @@ export function activityCsv(rows: Activity[]) {
   ]
     .map((r) => r.map(cell).join(","))
     .join("\r\n");
+}
+
+/** Resolve and validate every level, including uploaded fonts owned by this workspace. */
+export async function validateStyles(
+  repo: Repository,
+  settings?: Partial<WorkspaceSettings> | null,
+  template?: StyleOverrides,
+  proposal?: StyleOverrides,
+) {
+  const styles = resolveStyles(
+    settings as WorkspaceSettings,
+    template,
+    proposal,
+  );
+  validateStyleContrast(styles, settings?.accent_colour);
+  for (const font of styleFonts(styles))
+    await validateFonts(repo, { heading: font, body: font });
 }

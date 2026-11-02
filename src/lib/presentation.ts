@@ -174,8 +174,10 @@ export function renderBlocks(
   return blocks
     .map((b) => {
       switch (b.type) {
-        case "heading":
-          return `<h2>${escapedResolved(b.text ?? "", map)}</h2>`;
+        case "heading": {
+          const level = [1, 2, 3].includes(b.level ?? 1) ? (b.level ?? 1) : 1;
+          return `<h${level + 1} data-heading-level="${level}">${escapedResolved(b.text ?? "", map)}</h${level + 1}>`;
+        }
         case "paragraph":
           return b.content
             ? rich(b.content, map)
