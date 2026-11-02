@@ -175,17 +175,21 @@ function Sheet({
   close,
   children,
   extra = "",
+  onCloseComplete,
 }: {
   title: string;
   close: () => void;
-  children: ReactNode;
+  children: ReactNode | ((dismiss: () => void) => ReactNode);
   extra?: string;
+  onCloseComplete?: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
-    return () => ref.current?.close();
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => dialog?.close();
   }, []);
+  const dismiss = () => ref.current?.close();
   return (
     <dialog
       ref={ref}
@@ -193,14 +197,23 @@ function Sheet({
       className={`editor-sheet ${["Add a block", "Clause settings", "Image settings", "Signature settings"].includes(title) ? "block-owned-dialog" : ""} ${extra}`}
       onCancel={(e) => {
         e.preventDefault();
+        dismiss();
+      }}
+      onClose={(e) => {
+        // Strict Mode can close/reopen the same node before its queued event.
+        if (e.currentTarget.open) return;
+        // Native close has removed inertness and restored its previous focus.
         close();
+        onCloseComplete?.();
       }}
     >
       <header>
         <h2>{title}</h2>
-        <Button onClick={close}>Done</Button>
+        <Button onClick={dismiss}>Done</Button>
       </header>
-      <div className="sheet-body">{children}</div>
+      <div className="sheet-body">
+        {typeof children === "function" ? children(dismiss) : children}
+      </div>
     </dialog>
   );
 }
@@ -230,6 +243,7 @@ function QuoteEditorContent({
   const blockFeedback = useBlockFeedback();
   const fields = useBlockToolbar();
   const [fieldsOpen, setFieldsOpen] = useState(false);
+  const pendingField = useRef<string | null>(null);
   const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
   const money = useMoney(),
@@ -2358,14 +2372,24 @@ function QuoteEditorContent({
         <aside className="editor-sidepanel">{panel}</aside>
       </div>
       {fieldsOpen && (
-        <Sheet title="Fields" close={() => setFieldsOpen(false)}>
-          <FieldOptions
-            map={map}
-            onInsert={(path) => {
-              setFieldsOpen(false);
-              requestAnimationFrame(() => fields?.insert(path));
-            }}
-          />
+        <Sheet
+          title="Fields"
+          close={() => setFieldsOpen(false)}
+          onCloseComplete={() => {
+            const path = pendingField.current;
+            pendingField.current = null;
+            if (path) fields?.insert(path);
+          }}
+        >
+          {(dismiss) => (
+            <FieldOptions
+              map={map}
+              onInsert={(path) => {
+                pendingField.current = path;
+                dismiss();
+              }}
+            />
+          )}
         </Sheet>
       )}
       {reviewConfirm && (

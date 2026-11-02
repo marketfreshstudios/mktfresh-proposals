@@ -267,3 +267,8 @@ References: [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfi
 - Cross-platform editor text uses `white-space: pre-wrap`: ProseMirror's injected `break-spaces` can wrap a trailing space onto another line on Linux. The retained reading-shape assertion reproduced the discrepancy and verifies the fix; no comparison tolerance is relaxed.
 
 Owner workflow update (1 November 2026): open/update PRs as soon as local checks pass and hand them back without waiting for GitHub CI; Jonathan monitors CI and reports failures. Future UI-only changes default to 1440px and 375px light screenshots unless the owner asks for more. Explicit capture requirements for the current follow-up remain in place.
+
+
+PR #39 phone field insertion (1 November 2026): modal teardown and section visibility are lifecycle conditions, not frame-count delays. Close the native sheet before dispatching insertion, wait for a mounted/visible/non-inert editor after React commits, then insert and focus without Tiptap's extra focus RAF. Observer work is cancelled on completion/unmount. Keep the existing test timeouts; simulate delayed section visibility and native trigger focus restoration to exercise the failure deterministically.
+
+Owner workflow supersedes earlier screenshot defaults: Jonathan manually tests the live site. Do not generate screenshot galleries or comparison evidence unless the specific request asks for them. Keep automated tests, open/update PRs after local checks pass and hand them back without waiting for GitHub CI.

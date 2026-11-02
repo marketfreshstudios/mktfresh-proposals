@@ -2,6 +2,7 @@
 import { createPortal } from "react-dom";
 import { useBlockToolbar } from "./block-controls";
 import { FieldOptions } from "./field-options";
+import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -62,6 +63,7 @@ export function FieldEditor({
   onBeforeInsert?: () => void;
 }) {
   const scope = useBlockToolbar();
+  const afterVisible = useVisibleEditorAction();
   const toolbar = standalone ? undefined : scope;
   const root = useRef<HTMLDivElement>(null);
   const cursor = useRef<{ from: number; to: number } | null>(null);
@@ -186,10 +188,13 @@ export function FieldEditor({
       if (editor.isDestroyed) return;
       editor
         .chain()
-        .focus()
         .setTextSelection({ from, to })
         .insertContent({ type: "variable", attrs: { path } })
         .run();
+      // The modal is closed and the owning section has committed. Avoid the
+      // focus command's additional RAF, which can race another focus owner.
+      editor.view.focus();
+      editor.commands.scrollIntoView();
       cursor.current = {
         from: editor.state.selection.from,
         to: editor.state.selection.to,
@@ -197,10 +202,8 @@ export function FieldEditor({
       toolbar?.remember(editorId);
     };
     setPicker(false);
-    if (reveal.current) {
-      reveal.current();
-      requestAnimationFrame(apply);
-    } else apply();
+    reveal.current?.();
+    afterVisible(editor.view.dom, apply);
   }
   useEffect(() => {
     if (!editor || !toolbar) return;

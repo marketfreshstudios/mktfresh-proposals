@@ -53,7 +53,8 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   });
   const captures: any[] = [],
     dir = ".data/evidence/editor-followup-fields";
-  await mkdir(dir, { recursive: true });
+  const captureEvidence = process.env.CAPTURE_EDITOR_EVIDENCE === "1";
+  if (captureEvidence) await mkdir(dir, { recursive: true });
   async function shot(state: string, width: number, theme: string) {
     const file = `${state}-${width}-${theme}.png`;
     await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
@@ -107,6 +108,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     localStorage.setItem("proposal-theme", "light"),
   );
   async function captureState(state: string, fieldPanel = false) {
+    if (!captureEvidence) return;
     for (const theme of ["light", "dark"])
       for (const width of [375, 768, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
@@ -302,6 +304,64 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect
     .poll(savedText)
     .toBe("Hello {{client.first_name}}friend, welcome.");
+  await expect(
+    hiddenText.locator('[data-field="client.first_name"]'),
+  ).toHaveCount(1);
+  await expect(hiddenText).toHaveText("Hello Janefriend, welcome.");
+  // Hold the reopened section invisible/inert beyond the old nested RAFs.
+  // Closing the native sheet must restore its trigger BEFORE editor focus wins.
+  await reset(375);
+  const delayedText = await setCursor(6, 12);
+  await page.getByRole("button", { name: "‹ Sections", exact: true }).click();
+  panel = await choices(375);
+  await page.locator(".editor-paper").evaluate((paper) => {
+    (paper as HTMLElement).style.visibility = "hidden";
+    (paper as HTMLElement).inert = true;
+  });
+  await panel.evaluate((dialog) => {
+    dialog.addEventListener(
+      "close",
+      () => {
+        document
+          .querySelector<HTMLButtonElement>("button[data-field-insert]")
+          ?.focus();
+        document.body.dataset.fieldSheetClosed = "true";
+      },
+      { once: true },
+    );
+  });
+  await panel
+    .getByRole("button", {
+      name: "Client company — {{client.company}}",
+      exact: true,
+    })
+    .click();
+  await expect(panel).not.toBeVisible();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-field-sheet-closed",
+    "true",
+  );
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(delayedText.locator("[data-field]")).toHaveCount(0);
+  await expect(delayedText).not.toBeFocused();
+  await page.locator(".editor-paper").evaluate((paper) => {
+    (paper as HTMLElement).style.removeProperty("visibility");
+    (paper as HTMLElement).inert = false;
+  });
+  await expect(delayedText).toBeVisible();
+  await expect(
+    delayedText.locator('[data-field="client.company"]'),
+  ).toHaveCount(1);
+  await expect.poll(savedText).toBe("Hello {{client.company}}, welcome.");
+  await expect(delayedText).toBeFocused();
+  // Subsequent typing proves the caret was restored just after the inserted atom.
+  await page.keyboard.type(" dear");
+  await expect.poll(savedText).toBe("Hello {{client.company}} dear, welcome.");
   // Escape cancels the phone sheet's temporary selected-block fallback.
   await page.setViewportSize({ width: 375, height: 1000 });
   await reset(375);
@@ -346,5 +406,6 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     page.getByRole("textbox", { name: "Heading 1", exact: true }),
   ).toBeFocused();
   await expect.poll(() => active.content.length).toBe(1);
-  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+  if (captureEvidence)
+    await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
 });

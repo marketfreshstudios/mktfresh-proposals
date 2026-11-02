@@ -8,6 +8,7 @@ import {
 } from "react";
 import { fieldGroup, fieldLabel } from "../lib/field-labels";
 import { useBlockToolbar } from "./block-controls";
+import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { Button } from "./ui";
 export function FieldOptions({
   map,
@@ -172,6 +173,7 @@ export function FieldTextArea({
     ref = useRef<HTMLTextAreaElement>(null),
     latest = useRef({ value, onValue, onBeforeInsert }),
     cursor = useRef<{ start: number; end: number } | null>(null);
+  const afterVisible = useVisibleEditorAction();
   latest.current = { value, onValue, onBeforeInsert };
   const remember = () => {
     if (ref.current)
@@ -195,7 +197,8 @@ export function FieldTextArea({
           end = range?.end ?? start,
           token = `{{${path}}}`;
         onValue(value.slice(0, start) + token + value.slice(end));
-        requestAnimationFrame(() => {
+        if (!ref.current) return;
+        afterVisible(ref.current, () => {
           ref.current?.focus();
           ref.current?.setSelectionRange(
             start + token.length,
