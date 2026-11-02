@@ -199,3 +199,10 @@ Workspace email defaults live in **Studio → Emails** (`/studio/emails`). Staff
 Verified Stripe webhooks now trigger an immediate post-response proposal drain; cron remains recovery. Checkout returns poll `/api/public/:token/state` (same token/password checks, no view mutation) for up to one minute, then retain an honest pending state. Only verified completion displays products/rates, card and next billing date and queues client/sender confirmations. See [billing confirmation evidence](docs/screenshots/billing-confirmations/index.html) and the [handoff](HANDOFF_PHASE2.md#billing-confirmation-fixes--31-october-2026). No new migration is required; PR #35's email tables are reused.
 
 The proposal editor uses the cover as its single editable title. AI content review has individual/bulk controls and an undo; it never clears held prices. Sections and pricing rows support keyboard sorting, selected blocks have insertion menus, and PDF page guides use the sealed renderer's print layout. See the [editor review gallery](docs/screenshots/editor-ux/index.html) and the latest `HANDOFF_PHASE2.md` entry. The staff-only `POST /api/proposals/:id/review` accepts a revision, section IDs and a reviewed boolean; it is not exposed to AI connectors.
+
+
+## Editor controls and fields
+
+Write on the document and use the pinned formatting bar for the current text selection. Select a block for its gutter actions and edge insertion buttons; click outside or press Escape to clear selection. Save for reuse opens a name dialog; ordinary deletion offers Undo for eight seconds. Pricing/signature deletion asks first. Set or clear expiry in Review & send.
+
+Fields show their friendly labels, current values and tokens. Search by label or token, then insert at the last text cursor/selection. Without a text target the editor asks where to insert. Use the Fields sheet on phone/tablet. PDF page guides keep whole pricing cards, choice groups and signatures together; shorten any complete unit that cannot fit one page. Historical signed records and sealed files are immutable.
