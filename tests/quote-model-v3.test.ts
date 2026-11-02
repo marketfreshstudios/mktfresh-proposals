@@ -476,9 +476,9 @@ it("quote-only MCP edits reopen the quote section while preserving reviewed text
   expect(
     p.content.find((b) => b.type === "pricing_table")!.ai_review?.reviewed,
   ).toBe(false);
-  expect(p.content.find((b) => b.type === "heading")!.ai_review?.reviewed).toBe(
-    true,
-  );
+  expect(
+    p.content.find((b) => b.type === "paragraph")!.ai_review?.reviewed,
+  ).toBe(true);
   p = await service.edit(
     p.id,
     { revision: p.revision, title: "Unrelated staff edit" },

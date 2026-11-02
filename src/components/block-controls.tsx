@@ -97,6 +97,10 @@ export function BlockFrame({
   className = "",
   ai = false,
   onReviewed,
+  reviewed = false,
+  reviewPending = false,
+  onUndo,
+  insert,
 }: {
   id: string;
   label: string;
@@ -105,6 +109,10 @@ export function BlockFrame({
   className?: string;
   ai?: boolean;
   onReviewed?: () => void;
+  reviewed?: boolean;
+  reviewPending?: boolean;
+  onUndo?: () => void;
+  insert?: (edge: "above" | "below") => void;
 }) {
   const selection = useBlockSelection();
   const [toolbar, setToolbar] = useState<HTMLSpanElement | null>(null);
@@ -112,6 +120,7 @@ export function BlockFrame({
     <ToolbarTarget.Provider value={toolbar}>
       <div
         className={`block-frame ${className}`}
+        id={id}
         data-block-id={id}
         data-active={selection.active === id}
         data-selected={selection.selected === id}
@@ -137,17 +146,45 @@ export function BlockFrame({
           role="toolbar"
           aria-label={`${label} actions`}
         >
-          {ai && (
+          {(ai || reviewPending) && (
             <>
               <span className="block-ai-marker">AI-written · review</span>
-              <BlockAction aria-label="Mark reviewed" onClick={onReviewed}>
-                Mark reviewed
-              </BlockAction>
+              <button
+                type="button"
+                className="block-review-action"
+                onClick={onReviewed}
+              >
+                <span aria-hidden="true">✓</span> Mark reviewed
+              </button>
+            </>
+          )}
+          {reviewed && (
+            <>
+              <span className="block-reviewed">Reviewed ✓</span>
+              <button
+                type="button"
+                className="block-review-action"
+                onClick={onUndo}
+              >
+                Undo review
+              </button>
             </>
           )}
           {tools}
           <span className="block-formatting-target" ref={setToolbar} />
         </div>
+        {insert &&
+          (["above", "below"] as const).map((edge) => (
+            <button
+              key={edge}
+              type="button"
+              className={`block-insert block-insert-${edge}`}
+              aria-label={`Add block ${edge}`}
+              onClick={() => insert(edge)}
+            >
+              +
+            </button>
+          ))}
         <div className="block-content">{children}</div>
       </div>
     </ToolbarTarget.Provider>

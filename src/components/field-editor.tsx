@@ -44,6 +44,7 @@ export function FieldEditor({
   showNames,
   allowLinks = false,
   label,
+  onSlash,
 }: {
   value: RichText;
   onChange: (v: RichText) => void;
@@ -51,6 +52,7 @@ export function FieldEditor({
   showNames: boolean;
   allowLinks?: boolean;
   label?: string;
+  onSlash?: () => void;
 }) {
   const toolbar = useBlockToolbar();
   const change = useRef(onChange),
@@ -202,6 +204,10 @@ export function FieldEditor({
     <div
       className="field-editor"
       onKeyDown={(e) => {
+        if (e.key === "/" && onSlash && editor?.isEmpty) {
+          e.preventDefault();
+          onSlash();
+        }
         if (e.key === "Escape") {
           setPicker(false);
           setLinkPicker(false);

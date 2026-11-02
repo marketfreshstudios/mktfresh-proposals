@@ -108,7 +108,6 @@ export async function seed(repo: Repository, mockMappings = false) {
     name: "Website proposal sample",
     active: true,
     content: [
-      { type: "heading", text: "{{proposal.title}}" },
       {
         type: "paragraph",
         text: "Prepared for {{client.company}}. Your investment is {{quote.one_time_total}} and {{quote.monthly_total}} per month.",

@@ -1,0 +1,496 @@
+import { test, expect } from "@playwright/test";
+import { mkdir, writeFile } from "node:fs/promises";
+import { setup, staff } from "../tests/helpers";
+import { PDFDocument } from "pdf-lib";
+import { sealedPdf } from "../src/lib/pdf";
+import { variables, versionHash } from "../src/lib/content";
+import { cloneQuote } from "../src/lib/quote-model";
+import { previewResult } from "../src/lib/preview";
+import type { Block } from "../src/lib/model";
+
+test("editor UX evidence and interactions", async ({ page, context }) => {
+  test.setTimeout(240000);
+  page.setDefaultTimeout(10000);
+  const { repo, service, draft, settings, members } = await setup();
+  const unusedProduct = (await repo.entities<any>("pricing_items")).find(
+    (i) => !draft.quote.some((q) => q.pricing_item_id === i.id),
+  )!;
+  const content: Block[] = [
+    { id: crypto.randomUUID(), type: "heading", text: "Your next chapter" },
+    {
+      id: crypto.randomUUID(),
+      type: "paragraph",
+      text: "Hello {{client.first_name}}. Together we’ll agree a clear scope, keep you informed and prepare your next steps.",
+      ai_review: { source: "assistant", reviewed: false },
+    },
+    {
+      id: crypto.randomUUID(),
+      type: "heading",
+      text: "The approach",
+      ai_review: { source: "assistant", reviewed: false },
+    },
+    {
+      id: crypto.randomUUID(),
+      type: "paragraph",
+      text: "Discovery, design and a supported launch, with clear milestones along the way.",
+    },
+    {
+      id: crypto.randomUUID(),
+      type: "pricing_table",
+      ai_review: { source: "assistant", reviewed: false },
+    },
+    {
+      id: crypto.randomUUID(),
+      type: "contract",
+      text: "Agreement",
+      clauses: [
+        {
+          id: crypto.randomUUID(),
+          heading: "Scope and changes",
+          body: "We’ll agree changes in writing before work begins.",
+          show_when: null,
+        },
+        {
+          id: crypto.randomUUID(),
+          heading: "Optional scope",
+          body: "Only applies when that product is selected.",
+          show_when: {
+            kind: "item_selected",
+            pricing_item_id: unusedProduct.id,
+          },
+        },
+      ],
+    },
+    { id: crypto.randomUUID(), type: "page_break" },
+    { id: crypto.randomUUID(), type: "signature_block", role: "client" },
+    { id: crypto.randomUUID(), type: "signature_block", role: "company" },
+  ];
+  const quote = cloneQuote(draft.quote),
+    group = crypto.randomUUID();
+  const alternative = structuredClone(quote[0]);
+  alternative.id = crypto.randomUUID();
+  alternative.name = "Alternative project";
+  alternative.sublines = alternative.sublines.map((s) => ({
+    ...s,
+    id: crypto.randomUUID(),
+  }));
+  quote[0] = {
+    ...quote[0],
+    optional: true,
+    default_selected: true,
+    choice_group_id: group,
+  };
+  alternative.optional = true;
+  alternative.default_selected = false;
+  alternative.choice_group_id = group;
+  quote.splice(1, 0, alternative);
+  let active = await service.edit(
+    draft.id,
+    { revision: draft.revision, content, quote },
+    staff,
+  );
+  const template = (await repo.entities<any>("templates"))[0];
+  template.content = structuredClone(content);
+  await repo.put("templates", template);
+  await page.route("**/api/**", async (route) => {
+    const req = route.request(),
+      parts = new URL(req.url()).pathname.split("/").filter(Boolean).slice(1);
+    try {
+      let value: unknown = [];
+      if (parts[0] === "auth")
+        value = {
+          user: staff,
+          settings,
+          staff: members,
+          app_url: "http://127.0.0.1:3100",
+          signatory_version: "fixture",
+        };
+      else if (parts[0] === "proposals") {
+        if (req.method() === "PATCH")
+          active = await service.edit(active.id, req.postDataJSON(), staff);
+        if (parts[2] === "preview") value = previewResult(active, settings);
+        else if (parts[2] === "review")
+          value = active = await service.reviewSections(
+            active.id,
+            req.postDataJSON(),
+            staff,
+          );
+        else value = parts[1] ? active : { items: [active], total: 1 };
+      } else if (req.method() === "POST") {
+        value = req.postDataJSON();
+        await repo.put(parts[0] as any, value as any);
+      } else value = await repo.entities(parts[0] as any);
+      await route.fulfill({ json: value });
+    } catch (e) {
+      await route.fulfill({ status: 400, json: { error: String(e) } });
+    }
+  });
+  const stage = process.env.EDITOR_UX_BEFORE ? "before" : "after",
+    dir = `.data/evidence/editor-ux/${stage}`;
+  await mkdir(dir, { recursive: true });
+  const captures: any[] = [];
+  async function shot(state: string, width: number, theme: string) {
+    await page.evaluate((t) => {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("proposal-theme", t);
+    }, theme);
+    await page.evaluate(() => document.fonts.ready);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    const file = `${state}-${width}-${theme}.png`;
+    await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
+    captures.push({ file, state, width, theme, stage });
+  }
+  for (const theme of process.env.EDITOR_UX_FAST
+    ? ["light"]
+    : ["light", "dark"]) {
+    await context.addInitScript(
+      (t) => localStorage.setItem("proposal-theme", t),
+      theme,
+    );
+    for (const width of process.env.EDITOR_UX_FAST
+      ? [1440]
+      : [375, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(`/proposals/${active.id}`);
+      await expect(page.locator(".quote-workspace")).toBeVisible();
+      if (width === 375)
+        await page.locator(".phone-section-list button").first().click();
+      if (stage === "after") {
+        await expect(page.locator(".document-page-count")).toHaveAttribute(
+          "data-page-count",
+          /[0-9]+/,
+        );
+        await expect(page.locator("#cover-title")).toBeVisible();
+      }
+      await shot("document", width, theme);
+      await page.locator(".draft-block .tiptap").first().click();
+      await shot("selected-block", width, theme);
+      if (stage === "after") {
+        await page
+          .locator('.draft-block[data-selected="true"]')
+          .getByRole("button", { name: "Add block below", exact: true })
+          .click();
+        await expect(
+          page.getByRole("dialog", { name: "Add a block" }),
+        ).toBeVisible();
+        await shot("block-menu", width, theme);
+        await page.keyboard.press("Escape");
+        await page
+          .getByRole("button", { name: "Mark all reviewed", exact: true })
+          .first()
+          .click();
+        await expect(
+          page.getByRole("dialog", { name: "Review all AI-written sections" }),
+        ).toBeVisible();
+        await shot("review-confirm", width, theme);
+        await page.keyboard.press("Escape");
+        const pricing = page.locator(".editor-investment");
+        if (width === 375 && !(await pricing.isVisible())) {
+          await page
+            .getByRole("button", { name: "‹ Sections", exact: true })
+            .click();
+          await page.locator(".phone-section-list button").nth(1).click();
+        }
+        await pricing.scrollIntoViewIfNeeded();
+        await pricing.locator(".drag-handle").first().focus();
+        await shot("document-pricing", width, theme);
+      }
+      await page.goto(`/studio/templates/${template.id}`);
+      await expect(page.locator(".studio-blocks")).toBeVisible();
+      await shot("template", width, theme);
+      await page.locator(".studio-block-card").first().hover();
+      await shot("template-selected", width, theme);
+      await page.goto(`/p/${active.id}?preview=1`);
+      await expect(page.locator("#proposal-document")).toBeVisible();
+      await shot("client-preview", width, theme);
+    }
+  }
+  if (stage === "after") {
+    // Compare each block in its own document coordinate system. App navigation/panels are outside the paper.
+    for (const width of [1440, 375]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(`/p/${active.id}?preview=1`);
+      await expect(page.locator("#proposal-document")).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      const reading = await page
+        .locator("#proposal-document")
+        .evaluate((root) => {
+          const r = root.getBoundingClientRect();
+          return Array.from(
+            root.querySelectorAll<HTMLElement>("[data-document-block]"),
+          ).map((el) => {
+            const b = el.getBoundingClientRect();
+            return {
+              id: el.dataset.documentBlock!,
+              x: b.x - r.x,
+              y: b.y - r.y,
+              w: b.width,
+              h: b.height,
+            };
+          });
+        });
+      await page.goto(`/proposals/${active.id}`);
+      if (width === 375)
+        await page.locator(".phone-section-list button").first().click();
+      // A full-document reading view is available on phone as well as the section editor.
+      if (width === 375)
+        await page
+          .getByRole("button", { name: "Full document", exact: true })
+          .click();
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page.locator(".document-page-count")).toHaveAttribute(
+        "data-page-count",
+        /[0-9]+/,
+      );
+      await page.mouse.move(1, 1);
+      await page.keyboard.press("Escape");
+      const editing = await page.locator(".editor-paper").evaluate((root) => {
+        const r = root.getBoundingClientRect();
+        return Array.from(
+          root.querySelectorAll<HTMLElement>(".draft-block"),
+        ).map((el) => {
+          const b = el.getBoundingClientRect();
+          return {
+            id: el.dataset.blockId!.replace(/^block-/, ""),
+            x: b.x - r.x,
+            y: b.y - r.y,
+            w: b.width,
+            h: b.height,
+          };
+        });
+      });
+      expect(editing).toHaveLength(reading.length);
+      for (const actual of editing) {
+        const expected = reading.find((b) => b.id === actual.id)!;
+        for (const key of ["x", "y", "w", "h"] as const)
+          expect(
+            Math.abs(actual[key] - expected[key]),
+            `${width}px ${active.content.find((b) => b.id === actual.id)?.type} ${key}: editor ${actual[key]}, client ${expected[key]}`,
+          ).toBeLessThanOrEqual(2);
+      }
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(`/proposals/${active.id}`);
+    await page
+      .getByRole("textbox", { name: "Proposal title", exact: true })
+      .fill("A clear next chapter");
+    await expect.poll(() => active.title).toBe("A clear next chapter");
+    await page.locator(".editor-breadcrumb button").click();
+    await expect(page.locator("#cover-title")).toBeFocused();
+    // Both drag surfaces reorder the same quote, including alternatives.
+    async function keyboardMove(name: string, key: string, target: string) {
+      const handle = page.getByRole("button", { name, exact: true });
+      await handle.focus();
+      await page.keyboard.press("Space");
+      await page.evaluate(
+        () =>
+          new Promise<void>((r) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => r())),
+          ),
+      );
+      await page.keyboard.press(key);
+      await expect(
+        page
+          .locator('[id^="DndLiveRegion"]')
+          .filter({ hasText: `over droppable area ${target}.` }),
+      ).toHaveCount(1);
+      await page.keyboard.press("Space");
+    }
+    const first = content[0].id!,
+      second = content[2].id!;
+    await keyboardMove("Drag section Your next chapter", "ArrowDown", second);
+    await expect.poll(() => active.content[0].id).toBe(second);
+    expect(active.content.at(-1)?.id).toBe(content[1].id);
+    await keyboardMove("Drag section Your next chapter", "ArrowUp", second);
+    await expect.poll(() => active.content[0].id).toBe(first);
+    const originalOrder = active.quote.map((i) => i.id);
+    await page.locator(".editor-investment").scrollIntoViewIfNeeded();
+    await keyboardMove(
+      "Drag document choice group",
+      "ArrowDown",
+      originalOrder[2],
+    );
+    await expect.poll(() => active.quote[0].id).toBe(originalOrder[2]);
+    expect(active.quote.slice(1).map((i) => i.id)).toEqual(
+      originalOrder.slice(0, 2),
+    );
+    await keyboardMove(
+      "Drag document option " + alternative.name,
+      "ArrowUp",
+      originalOrder[0],
+    );
+    await expect.poll(() => active.quote[1].id).toBe(alternative.id);
+    const contract = page.locator(".contract-editor");
+    await contract.scrollIntoViewIfNeeded();
+    await contract
+      .locator("..")
+      .locator("..")
+      .evaluate((el) => (el as HTMLElement).focus());
+    await page
+      .getByRole("button", { name: "Contract settings", exact: true })
+      .click();
+    await page
+      .getByRole("combobox", { name: "Clause", exact: true })
+      .selectOption("1");
+    await expect(
+      page.getByRole("textbox", { name: "Clause body", exact: true }),
+    ).toHaveValue("Only applies when that product is selected.");
+    await page.keyboard.press("Escape");
+    // Slash insertion and focus do not leave the slash in document text.
+    const paragraph = page
+      .locator(".draft-block")
+      .filter({ has: page.locator(".tiptap") })
+      .first();
+    await paragraph.locator(".tiptap").click();
+    await paragraph
+      .getByRole("button", { name: "Add block below", exact: true })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Add a block" })
+      .getByRole("button", { name: "Text", exact: true })
+      .click();
+    const empty = page.locator(".tiptap:focus");
+    await expect(empty).toBeVisible();
+    await empty.press("/");
+    await expect(
+      page.getByRole("dialog", { name: "Add a block" }),
+    ).toBeVisible();
+    await page
+      .getByRole("dialog", { name: "Add a block" })
+      .getByRole("button", { name: "Heading", exact: true })
+      .click();
+    await expect(page.locator(".document-heading:focus")).toHaveValue(
+      "New section",
+    );
+    // Bulk review only clears content review. It writes one event with the listed sections.
+    await page
+      .getByRole("button", { name: "Mark all reviewed", exact: true })
+      .first()
+      .click();
+    const prior = active.events.filter(
+      (e) => e.type === "ai_sections_reviewed",
+    ).length;
+    await page
+      .getByRole("button", { name: "Confirm all reviewed", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect
+      .poll(
+        () =>
+          active.events.filter((e) => e.type === "ai_sections_reviewed").length,
+      )
+      .toBe(prior + 1);
+    expect(
+      active.content
+        .filter((b) => b.ai_review)
+        .every((b) => b.ai_review?.reviewed),
+    ).toBe(true);
+    // Long, rich text (including a paragraph larger than a page), explicit breaks, and no lost content.
+    const longContent: Block[] = [
+      { id: crypto.randomUUID(), type: "heading", text: "Long scope" },
+      ...Array.from({ length: 32 }, (_, n): Block => ({
+        id: crypto.randomUUID(),
+        type: "paragraph",
+        text:
+          `Section ${n + 1}. ` +
+          "Agreed scope and milestones. ".repeat(n === 10 ? 180 : 15),
+      })),
+      { id: crypto.randomUUID(), type: "page_break" },
+      {
+        id: crypto.randomUUID(),
+        type: "paragraph",
+        text: "The final agreed step.",
+      },
+      ...active.content.filter((b) => b.type === "signature_block"),
+    ];
+    active = await service.edit(
+      active.id,
+      { revision: active.revision, content: longContent },
+      staff,
+    );
+    await page.goto(`/proposals/${active.id}`);
+    await expect(page.locator(".document-page-count")).toHaveAttribute(
+      "data-page-count",
+      /[0-9]+/,
+    );
+    const count = Number(
+      await page
+        .locator(".document-page-count")
+        .getAttribute("data-page-count"),
+    );
+    const map = variables(active),
+      version = {
+        id: crypto.randomUUID(),
+        version_no: 1,
+        content: active.content,
+        quote: active.quote,
+        variables_resolved: map,
+        content_hash: "",
+        created_at: active.created_at,
+        frozen: false,
+      };
+    version.content_hash = versionHash(version);
+    const pdf = await sealedPdf(version, [], [], active.currency, {
+      settings,
+      document: { id: active.id, title: active.title },
+    });
+    expect((await PDFDocument.load(pdf.pdf)).getPageCount()).toBe(count);
+    const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const textLoading = getDocument({
+      data: new Uint8Array(pdf.body),
+      useSystemFonts: true,
+    });
+    const textDocument = await textLoading.promise;
+    let extracted = "";
+    for (let n = 1; n <= textDocument.numPages; n++)
+      extracted +=
+        (await (await textDocument.getPage(n)).getTextContent()).items
+          .map((i) => ("str" in i ? i.str : ""))
+          .join(" ") + " ";
+    extracted = extracted.replace(/\s+/g, " ");
+    await textLoading.destroy();
+    for (let n = 1; n <= 32; n++) expect(extracted).toContain(`Section ${n}.`);
+    expect(extracted.match(/Agreed scope and milestones\./g)).toHaveLength(645);
+    expect(extracted).toContain("The final agreed step.");
+    expect(extracted.split(active.title)).toHaveLength(2);
+    await writeFile(`${dir}/long-proposal.pdf`, pdf.pdf);
+    await writeFile(
+      `${dir}/pagination.json`,
+      JSON.stringify({
+        editor: count,
+        pdf: (await PDFDocument.load(pdf.pdf)).getPageCount(),
+      }),
+    );
+    for (const theme of ["light", "dark"])
+      for (const width of [375, 768, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.evaluate(
+          (t) => (document.documentElement.dataset.theme = t),
+          theme,
+        );
+        if (width === 375) {
+          await page.goto(`/proposals/${active.id}`);
+          await page.evaluate(
+            (t) => (document.documentElement.dataset.theme = t),
+            theme,
+          );
+          await page.locator(".phone-section-list button").first().click();
+          await page
+            .getByRole("button", { name: "Full document", exact: true })
+            .click();
+        }
+        const last = page.locator(".editor-page-break");
+        await last.scrollIntoViewIfNeeded();
+        await expect(page.locator(".document-page-count")).toHaveAttribute(
+          "data-page-count",
+          String(count),
+        );
+        await shot("page-break", width, theme);
+      }
+  }
+  await writeFile(`${dir}/manifest.json`, JSON.stringify(captures, null, 2));
+});

@@ -8,7 +8,8 @@ import {
 import { stripeCustomerMatches } from "./client-billing";
 import type { StripeTransport } from "./catalog";
 import { defaultValidUntil } from "./validity";
-import { reviewBlocks, pendingSections } from "./ai-review";
+import { withoutTitleHeading } from "./editor-document";
+import { reviewBlocks, contentSections, pendingSections } from "./ai-review";
 import {
   cloneQuote,
   draftItems,
@@ -226,7 +227,7 @@ export class ProposalService {
       client_signed_at: null,
       completed_at: null,
       content: reviewBlocks(
-        input.content ?? structuredClone(template.content),
+        withoutTitleHeading(input.content ?? structuredClone(template.content)),
         actor.actor.startsWith("ai:"),
       ),
       quote: prepareQuote(
@@ -310,11 +311,20 @@ export class ProposalService {
         409,
       );
       delete p.workspace_settings;
-      if (input.title) p.title = input.title;
+      if (input.title !== undefined) {
+        check(
+          input.title.trim() && input.title.length <= 300,
+          "Title required (maximum 300 characters)",
+        );
+        p.title = input.title;
+      }
       if (input.brief !== undefined) p.brief = input.brief;
       if (actor.actor.startsWith("ai:")) p.ai_connector = actor.actor.slice(3);
       if (input.content)
-        p.content = reviewBlocks(input.content, actor.actor.startsWith("ai:"));
+        p.content = reviewBlocks(
+          withoutTitleHeading(input.content),
+          actor.actor.startsWith("ai:"),
+        );
       p.ai_unreviewed =
         actor.actor.startsWith("ai:") || pendingSections(p).length > 0;
       if (input.quote)
@@ -371,6 +381,45 @@ export class ProposalService {
           .filter((i) => i.price_review && Object.keys(i.price_review).length)
           .map((i) => ({ item_id: i.id, decisions: i.price_review })),
       });
+    });
+    return this.forRead(result);
+  }
+  async reviewSections(
+    id: string,
+    input: { revision: number; section_ids: string[]; reviewed: boolean },
+    actor: Actor,
+  ) {
+    check(
+      actor.actor.startsWith("staff:"),
+      "Only staff may review assistant content",
+      403,
+    );
+    const result = await mutate(this.repo, id, (p) => {
+      check(
+        p.status === "draft" && p.source === "native" && !p.archived_at,
+        "Only drafts can be reviewed",
+        409,
+      );
+      check(p.revision === input.revision, "Proposal changed; reload", 409);
+      const sections = contentSections(p.content),
+        chosen = sections.filter((s) => input.section_ids.includes(s.id));
+      check(
+        chosen.length > 0 && chosen.length === new Set(input.section_ids).size,
+        "Unknown section",
+      );
+      const indices = new Set(chosen.flatMap((s) => s.indices));
+      p.content = p.content.map((b, n) =>
+        indices.has(n) && b.ai_review
+          ? { ...b, ai_review: { ...b.ai_review, reviewed: input.reviewed } }
+          : b,
+      );
+      p.ai_unreviewed = pendingSections(p).length > 0;
+      event(
+        p,
+        input.reviewed ? "ai_sections_reviewed" : "ai_review_undone",
+        actor,
+        { sections: chosen.map((s) => ({ id: s.id, title: s.title })) },
+      );
     });
     return this.forRead(result);
   }

@@ -22,10 +22,7 @@ export function contentSections(content: Block[]) {
     pending: boolean;
   }[] = [];
   for (const [n, b] of content.entries()) {
-    const starts =
-      b.type === "heading" ||
-      ["pricing_table", "contract", "signature_block"].includes(b.type) ||
-      !sections.length;
+    const starts = b.type === "heading" || !sections.length;
     if (starts)
       sections.push({
         id: b.id ?? `block-${n}`,

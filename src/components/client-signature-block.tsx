@@ -23,9 +23,13 @@ export function ClientSignatureBlock({
     >
       <h3>{role === "client" ? "Client" : "Company"} signature</h3>
       <strong>{name}</strong>
-      {(signer?.title || (role === "company" && p.company.signatory_title)) && (
+      {(signer?.title ||
+        (role === "client"
+          ? p.recipient.title
+          : p.company.signatory_title)) && (
         <p>
-          {signer?.title || p.company.signatory_title}
+          {signer?.title ||
+            (role === "client" ? p.recipient.title : p.company.signatory_title)}
           {role === "company" ? ` · ${signer?.company || p.company.name}` : ""}
         </p>
       )}

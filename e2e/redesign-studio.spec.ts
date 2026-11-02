@@ -485,6 +485,8 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await page.goto(`/proposals/${editing.id}`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
       await context.setOffline(true);
+      if (width === 375)
+        await page.locator(".editor-breadcrumb button").click();
       await page
         .getByLabel("Proposal title", { exact: true })
         .fill(`My offline title ${width} ${theme}`);
@@ -518,12 +520,20 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         .click();
       const aiDraft = (await repo.get(editing.id))!;
       aiDraft.ai_unreviewed = true;
+      aiDraft.content = aiDraft.content.map((b) =>
+        ["heading", "paragraph", "pricing_table"].includes(b.type)
+          ? { ...b, ai_review: { source: "assistant", reviewed: false } }
+          : b,
+      );
       await repo.save(aiDraft, aiDraft.revision);
       await page.goto(`/proposals/${editing.id}`);
       await expect(
-        page.getByText("Assistant draft — ready for your review", {
-          exact: true,
-        }),
+        page
+          .getByRole("complementary", {
+            name: "AI review progress",
+            exact: true,
+          })
+          .first(),
       ).toBeVisible();
       await capture("ai-draft-review", "8d", width, theme);
       scenario = "catalog-error";

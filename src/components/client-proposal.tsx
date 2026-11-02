@@ -22,6 +22,8 @@ import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
 import type { BillingLine } from "../lib/model";
 import type { publicResult } from "../lib/service";
+import { QuoteItemBody } from "./quote-item-body";
+import { DocumentCover } from "./document-cover";
 import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
@@ -1297,49 +1299,28 @@ function FlowDocument({
   onToggle?: (id: string, selected: boolean) => void;
 }) {
   const content = selectedContent(p.content, p.quote as QuoteItem[]);
-  const sections = content
-    .map((block, index) => ({ block, index }))
-    .filter(
-      ({ block, index }) =>
-        block.type === "heading" &&
-        !(index === 0 && resolve(block.text ?? "", p.variables) === p.title),
-    );
   return (
     <article
-      className="paper flow-document proposal-typography"
+      className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >
-      <p className="flow-eyebrow">Proposal for {p.recipient.company}</p>
-      <h1>{p.title}</h1>
-      <p className="flow-byline">
-        From {p.contact.name || p.company.name}
-        {p.valid_until && (
-          <> · Valid until {readableDate(p.valid_until, p.timezone)}</>
-        )}
-      </p>
-      {sections.length > 1 && (
-        <details className="flow-outline">
-          <summary>
-            On this page <small>{sections.length} sections</small>
-          </summary>
-          <nav>
-            {sections.map(({ block, index }) => (
-              <a key={index} href={`#section-${index}`}>
-                {(block.text ?? "").replace(
-                  /\{\{([^}]+)\}\}/g,
-                  (_, key) => p.variables[key] ?? key,
-                )}
-              </a>
-            ))}
-          </nav>
-        </details>
-      )}
+      <DocumentCover
+        title={p.title}
+        company={p.recipient.company}
+        sender={p.contact.name || p.company.name}
+        validUntil={p.valid_until}
+        timezone={p.timezone}
+      />
       {content.map((block, index) =>
         index === 0 &&
         block.type === "heading" &&
-        resolve(block.text ?? "", p.variables) ===
-          p.title ? null : block.type === "pricing_table" ? (
-          <section key={index} id={`section-${index}`}>
+        block.text === "{{proposal.title}}" ? null : block.type ===
+          "pricing_table" ? (
+          <section
+            data-document-block={block.id ?? index}
+            key={index}
+            id={`section-${index}`}
+          >
             <h2>Your investment</h2>
             {!frozen && (
               <p>Optional items are your choice. Totals update as you go.</p>
@@ -1358,6 +1339,7 @@ function FlowDocument({
             key={index}
             id={`section-${index}`}
             className="flow-contract"
+            data-document-block={block.id ?? index}
           >
             <h2>{block.text || "Statement of Work & Contract"}</h2>
             {(block.clauses ?? []).map((c) => (
@@ -1370,14 +1352,13 @@ function FlowDocument({
             ))}
           </section>
         ) : block.type === "signature_block" ? (
-          <ClientSignatureBlock
-            key={index}
-            proposal={p}
-            role={block.role ?? "client"}
-          />
+          <div data-document-block={block.id ?? index} key={index}>
+            <ClientSignatureBlock proposal={p} role={block.role ?? "client"} />
+          </div>
         ) : (
           <div
             id={`section-${index}`}
+            data-document-block={block.id ?? index}
             key={index}
             dangerouslySetInnerHTML={{
               __html: renderBlocks(
@@ -1416,54 +1397,12 @@ function ClientItems({
   function option(i: QuoteItem) {
     const active = !i.optional || !!i.selected;
     const body = (
-      <div>
-        <div className="flow-line-title">
-          <strong>{i.name}</strong>
-        </div>
-        {i.description && <p>{i.description}</p>}
-        {i.sublines.map((s) => (
-          <div className="flow-subline" key={s.id}>
-            <span>
-              {s.label ||
-                (s.interval === "one_time"
-                  ? "One-time"
-                  : s.interval === "month"
-                    ? "Monthly"
-                    : "Yearly")}
-              {s.qty !== 1 && ` × ${s.qty}`}
-            </span>
-            <strong>
-              {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
-              {intervalSuffix(s.interval)}
-            </strong>
-          </div>
-        ))}
-        {i.schedule && (
-          <p className="flow-terms">
-            {formatMoney(
-              i.sublines.find((s) => s.interval !== "one_time")?.amount ?? 0,
-              p.currency,
-              p.money_cents,
-            )}
-            /{i.sublines.some((s) => s.interval === "year") ? "year" : "month"}{" "}
-            for {i.schedule.after_paid_invoices} paid invoices, then{" "}
-            {formatMoney(i.schedule.then.amount, p.currency, p.money_cents)}/
-            {i.sublines.some((s) => s.interval === "year") ? "year" : "month"}.
-          </p>
-        )}
-        {typeof i.plan_terms?.client_copy === "string" &&
-          i.plan_terms.client_copy && (
-            <p className="flow-terms">{i.plan_terms.client_copy}</p>
-          )}
-        {i.min_term_months && (
-          <p className="flow-terms">
-            {i.min_term_months}-month minimum commitment.
-          </p>
-        )}
-        <small>
-          {i.optional ? (active ? "Included" : "Not included") : "Required"}
-        </small>
-      </div>
+      <QuoteItemBody
+        item={i}
+        active={active}
+        currency={p.currency}
+        cents={p.money_cents}
+      />
     );
     return i.optional && !frozen ? (
       <label

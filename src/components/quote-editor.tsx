@@ -5,7 +5,11 @@ import {
   BlockAction,
   useBlockSelection,
 } from "./block-controls";
-import type { ComponentProps } from "react";
+import { QuoteItemBody } from "./quote-item-body";
+import { DocumentCover } from "./document-cover";
+import { withoutTitleHeading, moveSection } from "../lib/editor-document";
+import { DocumentPagination } from "./document-pagination";
+import type { ComponentProps, CSSProperties } from "react";
 import {
   emailDefaults,
   plainBody,
@@ -219,10 +223,13 @@ function QuoteEditorContent({
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
       ...initial,
+      content: withoutTitleHeading(initial.content),
       quote: draftItems(initial.quote),
     }),
     [customerErrors, setCustomerErrors] = useState<string[]>([]),
-    [dirty, setDirty] = useState(false),
+    [dirty, setDirty] = useState(
+      withoutTitleHeading(initial.content) !== initial.content,
+    ),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [stale, setStale] = useState(false),
@@ -233,6 +240,7 @@ function QuoteEditorContent({
     [search, setSearch] = useState(""),
     [documentId, setDocumentId] = useState(documents[0]?.id ?? ""),
     [section, setSection] = useState<number | null>(null),
+    [fullDocument, setFullDocument] = useState(false),
     [names, setNames] = useState(false),
     [confirmed, setConfirmed] = useState(false),
     [sender, setSender] = useState(
@@ -245,7 +253,105 @@ function QuoteEditorContent({
     [emailRetry, setEmailRetry] = useState(0),
     [protectedLink, setProtected] = useState(!!initial.password_hash),
     [password, setPassword] = useState(""),
-    [sending, setSending] = useState(false);
+    [sending, setSending] = useState(false),
+    [reviewConfirm, setReviewConfirm] = useState(false),
+    [reviewBusy, setReviewBusy] = useState(false),
+    [insertAt, setInsertAt] = useState<number | null>(null),
+    [replaceEmpty, setReplaceEmpty] = useState(false),
+    [clauseEdit, setClauseEdit] = useState<{
+      block: number;
+      clause: number;
+    } | null>(null);
+  const paper = useRef<HTMLElement>(null),
+    reviewCursor = useRef(-1);
+  async function review(sectionIds: string[], reviewed: boolean) {
+    if (reviewBusy) return;
+    setReviewBusy(true);
+    try {
+      for (let attempts = 0; savingRef.current && attempts < 200; attempts++)
+        await new Promise((r) => setTimeout(r, 50));
+      if (!(await save())) return;
+      const captured = generation.current;
+      const result = await post<Proposal>(`/api/proposals/${p.id}/review`, {
+        revision: revision.current,
+        section_ids: sectionIds,
+        reviewed,
+      });
+      revision.current = result.revision;
+      if (captured === generation.current)
+        setP({ ...result, quote: draftItems(result.quote) });
+      else
+        setP((current) => ({
+          ...current,
+          revision: result.revision,
+          events: result.events,
+          ai_unreviewed: result.ai_unreviewed,
+          content: current.content.map((b) => {
+            const returned = result.content.find((v) => v.id === b.id);
+            return returned?.ai_review
+              ? { ...b, ai_review: returned.ai_review }
+              : b;
+          }),
+        }));
+      onSaved(result);
+      setReviewConfirm(false);
+      setError("");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) setStale(true);
+      setError((e as Error).message);
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+  function showReview() {
+    const pending = contentSections(latest.current.content).filter(
+      (s) => s.pending,
+    );
+    if (!pending.length) return;
+    reviewCursor.current = (reviewCursor.current + 1) % pending.length;
+    const target = pending[reviewCursor.current],
+      n = contentSections(latest.current.content).findIndex(
+        (s) => s.id === target.id,
+      );
+    setSection(n);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`draft-section-${n}`);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      const frame = el?.querySelector<HTMLElement>(
+        ".block-frame[data-ai=true]",
+      );
+      if (frame) {
+        selection.select(frame.dataset.blockId!);
+        frame.focus({ preventScroll: true });
+      }
+    });
+  }
+  const reviewCount = pendingSections(p).length;
+  const reviewBanner = p.content.some((b) => b.ai_review) && (
+    <aside className="ai-review-banner" aria-label="AI review progress">
+      <strong>
+        {reviewCount
+          ? `${reviewCount} AI-written ${reviewCount === 1 ? "section needs" : "sections need"} review`
+          : "All AI-written sections reviewed ✓"}
+      </strong>
+      <div>
+        <Button
+          disabled={reviewBusy || !reviewCount}
+          onClick={() => setReviewConfirm(true)}
+        >
+          Mark all reviewed
+        </Button>
+        <button
+          type="button"
+          disabled={!reviewCount}
+          className="text-link"
+          onClick={showReview}
+        >
+          Show me
+        </button>
+      </div>
+    </aside>
+  );
   const subjectEdited = useRef(false),
     subjectTemplate = useRef("");
   useEffect(() => {
@@ -345,6 +451,7 @@ function QuoteEditorContent({
     latest = useRef(p);
   latest.current = p;
   function change(update: Partial<Proposal>) {
+    if (!stale) setError("");
     generation.current++;
     setDirty(true);
     setP((current) => ({ ...current, ...update }));
@@ -389,10 +496,10 @@ function QuoteEditorContent({
     }
   }
   useEffect(() => {
-    if (!dirty || saving || stale || error || offline) return;
+    if (!dirty || saving || stale || error || offline || reviewBusy) return;
     const id = setTimeout(() => void save(), 900);
     return () => clearTimeout(id);
-  }, [p, dirty, saving, stale, error, offline]);
+  }, [p, dirty, saving, stale, error, offline, reviewBusy]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) {
@@ -1277,28 +1384,49 @@ function QuoteEditorContent({
           label={`Proposal block ${n + 1}`}
           className="draft-block"
           ai={!!b.ai_review && !b.ai_review.reviewed}
+          reviewPending={sections.find((s) => s.indices.includes(n))?.pending}
+          reviewed={
+            !!sections.find(
+              (s) =>
+                s.indices.includes(n) &&
+                s.indices.some((j) => p.content[j].ai_review) &&
+                !s.pending,
+            )
+          }
           onReviewed={() => {
-            const section = sections.find((s) => s.indices.includes(n));
-            change({
-              content: p.content.map((v, j) =>
-                section?.indices.includes(j)
-                  ? {
-                      ...v,
-                      ai_review: {
-                        source: v.ai_review?.source ?? "assistant",
-                        reviewed: true,
-                      },
-                    }
-                  : v,
-              ),
-            });
+            const s = sections.find((s) => s.indices.includes(n));
+            if (s) void review([s.id], true);
+          }}
+          onUndo={() => {
+            const s = sections.find((s) => s.indices.includes(n));
+            if (s) void review([s.id], false);
+          }}
+          insert={(edge) => {
+            setReplaceEmpty(false);
+            setInsertAt(n + (edge === "below" ? 1 : 0));
           }}
           tools={
             <>
               <BlockAction
                 variant="ghost"
-                disabled={n === 0}
+                disabled={
+                  b.type === "heading"
+                    ? sections.findIndex((s) => s.indices.includes(n)) === 0
+                    : n === 0
+                }
                 onClick={() => {
+                  if (b.type === "heading") {
+                    const sn = sections.findIndex((s) => s.indices.includes(n));
+                    if (sections[sn - 1])
+                      change({
+                        content: moveSection(
+                          p.content,
+                          b.id!,
+                          sections[sn - 1].id,
+                        ),
+                      });
+                    return;
+                  }
                   const next = [...p.content];
                   [next[n - 1], next[n]] = [next[n], next[n - 1]];
                   change({ content: next });
@@ -1308,8 +1436,25 @@ function QuoteEditorContent({
               </BlockAction>
               <BlockAction
                 variant="ghost"
-                disabled={n === p.content.length - 1}
+                disabled={
+                  b.type === "heading"
+                    ? sections.findIndex((s) => s.indices.includes(n)) ===
+                      sections.length - 1
+                    : n === p.content.length - 1
+                }
                 onClick={() => {
+                  if (b.type === "heading") {
+                    const sn = sections.findIndex((s) => s.indices.includes(n));
+                    if (sections[sn + 1])
+                      change({
+                        content: moveSection(
+                          p.content,
+                          b.id!,
+                          sections[sn + 1].id,
+                        ),
+                      });
+                    return;
+                  }
                   const next = [...p.content];
                   [next[n + 1], next[n]] = [next[n], next[n + 1]];
                   change({ content: next });
@@ -1317,6 +1462,14 @@ function QuoteEditorContent({
               >
                 Move down
               </BlockAction>
+              {b.type === "contract" && b.clauses?.length ? (
+                <BlockAction
+                  aria-label="Contract settings"
+                  onClick={() => setClauseEdit({ block: n, clause: 0 })}
+                >
+                  Contract settings
+                </BlockAction>
+              ) : null}
               <BlockAction
                 variant="ghost"
                 onClick={async () => {
@@ -1348,12 +1501,23 @@ function QuoteEditorContent({
           }
         >
           {b.type === "heading" ? (
-            <input
-              className="document-heading"
-              aria-label={`Heading ${n + 1}`}
-              value={b.text ?? ""}
-              onChange={(e) => patchBlock(n, { ...b, text: e.target.value })}
-            />
+            <h2 className="document-heading-edit">
+              <span className="heading-measure" aria-hidden="true">
+                {b.text || "\u200b"}
+              </span>
+              <textarea
+                className="document-heading"
+                aria-label={`Heading ${n + 1}`}
+                rows={1}
+                value={b.text ?? ""}
+                onChange={(e) =>
+                  patchBlock(n, {
+                    ...b,
+                    text: e.target.value.replace(/[\r\n]+/g, " "),
+                  })
+                }
+              />
+            </h2>
           ) : b.type === "paragraph" ? (
             <FieldEditor
               value={
@@ -1374,54 +1538,71 @@ function QuoteEditorContent({
               }
               map={map}
               showNames={names}
+              onSlash={() => {
+                setReplaceEmpty(true);
+                setInsertAt(n);
+              }}
             />
           ) : b.type === "pricing_table" ? (
             <div className="editor-investment">
               <h2>Your investment</h2>
-              {units.map((id) => (
-                <div
-                  key={id}
-                  className={
-                    unitItems(id)[0].choice_group_id
-                      ? "editor-choice-group"
-                      : ""
+              <p>Optional items are your choice. Totals update as you go.</p>
+              <div className="flow-quote document-quote">
+                <Reorder
+                  ids={units}
+                  onMove={(from, to) =>
+                    setItems(
+                      arrayMove(
+                        units,
+                        units.indexOf(from),
+                        units.indexOf(to),
+                      ).flatMap(unitItems),
+                    )
                   }
                 >
-                  {unitItems(id)[0].choice_group_id && (
-                    <p className="eyebrow">Choose one</p>
-                  )}
-                  {unitItems(id).map((i) => (
-                    <div className="document-item" key={i.id}>
-                      <span>
-                        {i.optional ? (i.default_selected ? "◉" : "○") : "✓"}
-                      </span>
-                      <div>
-                        <strong>{i.name}</strong>
-                        <p>{i.description}</p>
-                        {i.sublines.map((s) => (
-                          <p className="document-subline" key={s.id}>
-                            <span>{s.label || intervalLabel(s.interval)}</span>
-                            <strong>
-                              {money(s.amount * s.qty, p.currency)}
-                              {s.interval === "month"
-                                ? "/mo"
-                                : s.interval === "year"
-                                  ? "/yr"
-                                  : ""}
-                            </strong>
-                          </p>
-                        ))}
-                        {i.min_term_months && (
-                          <small>
-                            {i.min_term_months}-month minimum commitment.
-                          </small>
-                        )}
-                      </div>
-                    </div>
+                  {units.map((id) => (
+                    <Sortable
+                      key={id}
+                      id={id}
+                      label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
+                    >
+                      {unitItems(id)[0].choice_group_id ? (
+                        <div className="flow-choice-group">
+                          <h3>Choose one</h3>
+                          <Reorder
+                            ids={unitItems(id).map((i) => i.id)}
+                            onMove={(from, to) => {
+                              const group = unitItems(id),
+                                next = arrayMove(
+                                  group,
+                                  group.findIndex((i) => i.id === from),
+                                  group.findIndex((i) => i.id === to),
+                                );
+                              setItems(
+                                units.flatMap((u) =>
+                                  u === id ? next : unitItems(u),
+                                ),
+                              );
+                            }}
+                          >
+                            {unitItems(id).map((i) => (
+                              <Sortable
+                                key={i.id}
+                                id={i.id}
+                                label={`document option ${i.name}`}
+                              >
+                                {documentItem(i)}
+                              </Sortable>
+                            ))}
+                          </Reorder>
+                        </div>
+                      ) : (
+                        documentItem(unitItems(id)[0])
+                      )}
+                    </Sortable>
                   ))}
-                </div>
-              ))}
-              <Totals lines={items} currency={p.currency} />
+                </Reorder>
+              </div>
             </div>
           ) : b.type === "contract" ? (
             <div className="contract-editor">
@@ -1441,140 +1622,96 @@ function QuoteEditorContent({
                   patchBlock(n, { ...b, contract_edited: true, clauses });
                 }}
               >
-                {(b.clauses ?? []).map((c, k) => (
-                  <Sortable
-                    block
-                    key={c.id}
-                    id={c.id}
-                    label={`clause ${k + 1}`}
-                  >
-                    <BlockFrame
-                      id={`clause-${c.id}`}
-                      label={`Proposal clause ${k + 1}`}
-                      tools={
-                        <>
-                          {" "}
-                          <BlockAction
-                            variant="ghost"
-                            onClick={() =>
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses: b.clauses!.filter((_, j) => j !== k),
-                              })
-                            }
-                          >
-                            Remove clause
-                          </BlockAction>
-                          <BlockAction
-                            variant="ghost"
-                            disabled={k === 0}
-                            onClick={() => {
-                              const clauses = [...b.clauses!];
-                              [clauses[k - 1], clauses[k]] = [
-                                clauses[k],
-                                clauses[k - 1],
-                              ];
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses,
-                              });
-                            }}
-                          >
-                            Move clause up
-                          </BlockAction>
-                          <BlockAction
-                            variant="ghost"
-                            disabled={k === b.clauses!.length - 1}
-                            onClick={() => {
-                              const clauses = [...b.clauses!];
-                              [clauses[k + 1], clauses[k]] = [
-                                clauses[k],
-                                clauses[k + 1],
-                              ];
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses,
-                              });
-                            }}
-                          >
-                            Move clause down
-                          </BlockAction>
-                        </>
-                      }
+                {(b.clauses ?? []).map((c, k) =>
+                  !c.show_when ||
+                  items.some(
+                    (i) =>
+                      i.pricing_item_id === c.show_when?.pricing_item_id &&
+                      (!i.optional || i.default_selected),
+                  ) ? (
+                    <Sortable
+                      block
+                      key={c.id}
+                      id={c.id}
+                      label={`clause ${k + 1}`}
                     >
-                      <details open>
-                        <summary>
-                          {c.heading}
-                          {c.draft && " · Draft wording"}
-                        </summary>
-                        <Field label="Clause heading">
-                          <input
-                            value={c.heading}
-                            onChange={(e) =>
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses: b.clauses!.map((v, j) =>
-                                  j === k
-                                    ? { ...v, heading: e.target.value }
-                                    : v,
-                                ),
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label="Clause body">
-                          <textarea
-                            value={c.body}
-                            onChange={(e) =>
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses: b.clauses!.map((v, j) =>
-                                  j === k ? { ...v, body: e.target.value } : v,
-                                ),
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label="Show when">
-                          <select
-                            value={c.show_when?.pricing_item_id ?? ""}
-                            onChange={(e) =>
-                              patchBlock(n, {
-                                ...b,
-                                contract_edited: true,
-                                clauses: b.clauses!.map((v, j) =>
-                                  j === k
-                                    ? {
-                                        ...v,
-                                        show_when: e.target.value
-                                          ? {
-                                              kind: "item_selected",
-                                              pricing_item_id: e.target.value,
-                                            }
-                                          : null,
-                                      }
-                                    : v,
-                                ),
-                              })
-                            }
-                          >
-                            <option value="">Always</option>
-                            {sellableCatalogue(catalog).map((i) => (
-                              <option key={i.id} value={i.id}>
-                                {itemDisplayName(i)} is selected
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                      </details>
-                    </BlockFrame>
-                  </Sortable>
-                ))}
+                      <BlockFrame
+                        id={`clause-${c.id}`}
+                        label={`Proposal clause ${k + 1}`}
+                        tools={
+                          <>
+                            <BlockAction
+                              aria-label="Clause settings"
+                              onClick={() =>
+                                setClauseEdit({ block: n, clause: k })
+                              }
+                            >
+                              Clause settings
+                            </BlockAction>{" "}
+                            <BlockAction
+                              variant="ghost"
+                              onClick={() =>
+                                patchBlock(n, {
+                                  ...b,
+                                  contract_edited: true,
+                                  clauses: b.clauses!.filter((_, j) => j !== k),
+                                })
+                              }
+                            >
+                              Remove clause
+                            </BlockAction>
+                            <BlockAction
+                              variant="ghost"
+                              disabled={k === 0}
+                              onClick={() => {
+                                const clauses = [...b.clauses!];
+                                [clauses[k - 1], clauses[k]] = [
+                                  clauses[k],
+                                  clauses[k - 1],
+                                ];
+                                patchBlock(n, {
+                                  ...b,
+                                  contract_edited: true,
+                                  clauses,
+                                });
+                              }}
+                            >
+                              Move clause up
+                            </BlockAction>
+                            <BlockAction
+                              variant="ghost"
+                              disabled={k === b.clauses!.length - 1}
+                              onClick={() => {
+                                const clauses = [...b.clauses!];
+                                [clauses[k + 1], clauses[k]] = [
+                                  clauses[k],
+                                  clauses[k + 1],
+                                ];
+                                patchBlock(n, {
+                                  ...b,
+                                  contract_edited: true,
+                                  clauses,
+                                });
+                              }}
+                            >
+                              Move clause down
+                            </BlockAction>
+                          </>
+                        }
+                      >
+                        <details>
+                          <summary>{c.heading}</summary>
+                          <p style={{ whiteSpace: "pre-wrap" }}>
+                            {c.body.replace(
+                              /{{\s*([\w.-]+)\s*}}/g,
+                              (_, key) => map[key] ?? key,
+                            )}
+                          </p>
+                        </details>
+                      </BlockFrame>
+                    </Sortable>
+                  ) : null,
+                )}
               </Reorder>
               <Button
                 onClick={() =>
@@ -1597,52 +1734,64 @@ function QuoteEditorContent({
               </Button>
             </div>
           ) : b.type === "signature_block" ? (
-            <div className="editor-signature">
-              <Field label="Signer role">
-                <select
-                  value={b.role ?? "client"}
-                  onChange={(e) =>
-                    patchBlock(n, {
-                      ...b,
-                      role: e.target.value as "client" | "company",
-                    })
-                  }
-                >
-                  <option value="client">Client</option>
-                  <option value="company">Company</option>
-                </select>
-              </Field>
-              <p className="eyebrow">
+            <div className="editor-signature client-signature">
+              <div className="signature-settings">
+                <Field label="Signer role">
+                  <select
+                    value={b.role ?? "client"}
+                    onChange={(e) =>
+                      patchBlock(n, {
+                        ...b,
+                        role: e.target.value as "client" | "company",
+                      })
+                    }
+                  >
+                    <option value="client">Client</option>
+                    <option value="company">Company</option>
+                  </select>
+                </Field>
+              </div>
+              <h3>
                 {b.role === "client" ? "Client signature" : "Company signature"}
-              </p>
+              </h3>
               <strong>
                 {b.role === "client"
                   ? `${p.client.first_name} ${p.client.last_name}`
                   : settings?.company_signatory?.name || settings?.owner}
               </strong>
-              <p>
-                {b.role === "client"
-                  ? p.client.title
-                  : settings?.company_signatory?.title}
-              </p>
-              <div className="signature-rule" />
+              {(b.role === "client"
+                ? p.client.title
+                : settings?.company_signatory?.title) && (
+                <p>
+                  {b.role === "client"
+                    ? p.client.title
+                    : `${settings?.company_signatory?.title} · ${settings?.company_name}`}
+                </p>
+              )}
+              <p className="muted">Awaiting signature</p>
             </div>
           ) : b.type === "image" ? (
             <>
               <img src={b.src} alt={b.alt ?? ""} />
-              <Field label="Image description">
-                <input
-                  value={b.alt ?? ""}
-                  onChange={(e) => patchBlock(n, { ...b, alt: e.target.value })}
-                />
-              </Field>
+              <div className="image-settings">
+                <Field label="Image description">
+                  <input
+                    value={b.alt ?? ""}
+                    onChange={(e) =>
+                      patchBlock(n, { ...b, alt: e.target.value })
+                    }
+                  />
+                </Field>
+              </div>
             </>
           ) : b.type === "variable" ? (
             <span className="field-chip">
               {names ? `{{${b.path}}}` : map[b.path ?? ""]}
             </span>
           ) : (
-            <hr />
+            <div className="editor-page-break" data-explicit-break>
+              Page break
+            </div>
           )}
         </BlockFrame>
       </Sortable>
@@ -1652,6 +1801,7 @@ function QuoteEditorContent({
     return (
       <section
         className="document-section"
+        data-ai-pending={s.pending}
         id={`draft-section-${n}`}
         key={s.id}
       >
@@ -1659,41 +1809,118 @@ function QuoteEditorContent({
       </section>
     );
   }
-  const insert = (type: Block["type"]) => {
-    change({
-      content: [
-        ...p.content,
-        {
-          id: uid(),
-          type,
-          ...(type === "heading"
-            ? { text: "New section" }
-            : type === "paragraph"
-              ? { content: { type: "doc", content: [{ type: "paragraph" }] } }
-              : type === "contract"
-                ? { clauses: [] }
-                : type === "signature_block"
-                  ? { role: "client" as const }
-                  : {}),
-        },
-      ],
+  function insertBlock(block: Block) {
+    const id = uid(),
+      next = [...p.content],
+      index = insertAt ?? p.content.length;
+    next.splice(index, replaceEmpty ? 1 : 0, { ...block, id });
+    setReplaceEmpty(false);
+    change({ content: next });
+    setInsertAt(null);
+    const ss = contentSections(next),
+      sn = ss.findIndex((s) => s.indices.includes(index));
+    setSection(sn);
+    requestAnimationFrame(() => {
+      const frame = document.getElementById(`block-${id}`);
+      const focus =
+        frame?.querySelector<HTMLElement>(
+          "input, textarea, [contenteditable=true]",
+        ) ?? frame;
+      selection.select(`block-${id}`);
+      focus?.focus();
+      frame?.scrollIntoView({ block: "center" });
     });
-  };
+  }
+  const insert = (type: Block["type"], list = false) =>
+    insertBlock({
+      type,
+      ...(type === "heading"
+        ? { text: "New section" }
+        : type === "paragraph"
+          ? {
+              content: {
+                type: "doc",
+                content: list
+                  ? [
+                      {
+                        type: "bulletList",
+                        content: [
+                          {
+                            type: "listItem",
+                            content: [{ type: "paragraph" }],
+                          },
+                        ],
+                      },
+                    ]
+                  : [{ type: "paragraph" }],
+              },
+            }
+          : type === "contract"
+            ? { clauses: [] }
+            : type === "signature_block"
+              ? { role: "client" as const }
+              : {}),
+    });
+  function documentItem(i: QuoteItem) {
+    const active = !i.optional || i.default_selected;
+    return (
+      <div
+        className={`flow-quote-line ${i.optional && active ? "selected" : ""}`}
+      >
+        {i.optional ? (
+          <input
+            aria-label={`Default selection for ${i.name}`}
+            type={i.choice_group_id ? "radio" : "checkbox"}
+            name={`document-${i.choice_group_id ?? i.id}`}
+            checked={active}
+            onChange={() =>
+              setItems(
+                items.map((v) =>
+                  v.choice_group_id && v.choice_group_id === i.choice_group_id
+                    ? { ...v, default_selected: v.id === i.id }
+                    : v.id === i.id
+                      ? { ...v, default_selected: !v.default_selected }
+                      : v,
+                ),
+              )
+            }
+          />
+        ) : (
+          <Icon name="lock" />
+        )}
+        <QuoteItemBody
+          item={i}
+          active={active}
+          currency={p.currency}
+          cents={p.workspace_settings?.money?.cents}
+        />
+      </div>
+    );
+  }
   return (
     <div
-      className={`quote-workspace ${section === null ? "section-list-mode" : "section-edit-mode"}`}
+      className={`quote-workspace ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
       <header className="quote-editor-top">
-        <a href="/proposals">‹ Proposals</a>
         <div className="title-field">
-          <label className="screen-reader" htmlFor="draft-title">
-            Proposal title
-          </label>
-          <input
-            id="draft-title"
-            value={p.title}
-            onChange={(e) => change({ title: e.target.value })}
-          />
+          <nav className="editor-breadcrumb" aria-label="Breadcrumb">
+            <a href="/proposals">Proposals</a>
+            <span>/</span>
+            <button
+              type="button"
+              title={p.title}
+              onClick={() => {
+                setSection(0);
+                requestAnimationFrame(() => {
+                  const el = document.getElementById("cover-title");
+                  el?.scrollIntoView({ block: "center", behavior: "smooth" });
+                  el?.focus({ preventScroll: true });
+                });
+              }}
+            >
+              {p.title}
+            </button>
+          </nav>
           <small role="status">
             {saving
               ? "Saving…"
@@ -1732,12 +1959,6 @@ function QuoteEditorContent({
           Review & send
         </Button>
       </header>
-      {p.ai_unreviewed && (
-        <Banner tone="ai" title="Assistant draft — ready for your review">
-          Read the saved sections as they appear. A person reviews the content
-          and entered prices before sending.
-        </Banner>
-      )}
       {offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
           {deviceSaved
@@ -1843,23 +2064,41 @@ function QuoteEditorContent({
         <aside className="editor-outline">
           <p className="eyebrow">Sections</p>
           <nav>
-            {sections.map((s, n) => (
-              <button
-                className={section === n ? "active" : ""}
-                key={s.id}
-                onClick={() => {
-                  setSection(n);
-                  document
-                    .getElementById(`draft-section-${n}`)
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                <span>{String(n + 1).padStart(2, "0")}</span>
-                {s.title}
-                <small>{s.pending ? "Review" : "✓"}</small>
-              </button>
-            ))}
+            <Reorder
+              ids={sections.map((s) => s.id)}
+              onMove={(from, to) => {
+                selection.clear();
+                change({ content: moveSection(p.content, from, to) });
+              }}
+            >
+              {sections.map((s, n) => (
+                <Sortable key={s.id} id={s.id} label={`section ${s.title}`}>
+                  <button
+                    className={section === n ? "active" : ""}
+                    onClick={() => {
+                      setSection(n);
+                      document
+                        .getElementById(`draft-section-${n}`)
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                    }}
+                  >
+                    <span>{String(n + 1).padStart(2, "0")}</span>
+                    {s.title}
+                    {s.pending && (
+                      <small
+                        className="review-dot"
+                        aria-label="Needs AI review"
+                      />
+                    )}
+                  </button>
+                </Sortable>
+              ))}
+            </Reorder>
           </nav>
+
           <p className="eyebrow">AI review</p>
           <p>
             {sections.length - pending.length} of {sections.length} sections
@@ -1930,7 +2169,17 @@ function QuoteEditorContent({
             </Button>
           </div>
           <div className="phone-section-nav">
-            <Button onClick={() => setSection(null)}>‹ Sections</Button>
+            <Button
+              onClick={() => {
+                setFullDocument(false);
+                setSection(null);
+              }}
+            >
+              ‹ Sections
+            </Button>
+            <Button onClick={() => setFullDocument((v) => !v)}>
+              {fullDocument ? "One section" : "Full document"}
+            </Button>
             <div>
               <Button
                 aria-label="Previous section"
@@ -1948,38 +2197,43 @@ function QuoteEditorContent({
               </Button>
             </div>
           </div>
-          <article className="paper editor-paper proposal-typography">
+          {reviewBanner}
+          <article
+            ref={paper}
+            style={
+              {
+                "--accent": current.workspace_settings?.accent_colour,
+              } as CSSProperties
+            }
+            className="paper editor-paper proposal-typography document-reading"
+          >
             <style>{fontCss(p.workspace_settings)}</style>
-            <header className="editor-cover">
-              <p className="eyebrow">Proposal for {p.client.company}</p>
-              <h1>{p.title}</h1>
-              <p>
-                From <span className="field-chip">{map["sender.name"]}</span>
-                {p.valid_until && (
-                  <>
-                    {" "}
-                    · Valid until{" "}
-                    <span className="field-chip">
-                      {readableDate(
-                        p.valid_until,
-                        p.workspace_settings?.timezone,
-                      )}
-                    </span>
-                  </>
-                )}
-              </p>
-            </header>
+            <DocumentCover
+              title={p.title}
+              company={p.client.company}
+              sender={map["sender.name"]}
+              validUntil={p.valid_until}
+              timezone={p.workspace_settings?.timezone}
+              onTitle={(title) => change({ title })}
+            />
+
             <Reorder
               ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
               onMove={(from, to) => {
                 selection.clear();
                 const ids = p.content.map((b, n) => `block-${b.id ?? n}`);
+                const source = ids.indexOf(from),
+                  destination = ids.indexOf(to);
                 change({
-                  content: arrayMove(
-                    p.content,
-                    ids.indexOf(from),
-                    ids.indexOf(to),
-                  ),
+                  content:
+                    p.content[source]?.type === "heading"
+                      ? moveSection(
+                          p.content,
+                          p.content[source].id!,
+                          sections.find((s) => s.indices.includes(destination))
+                            ?.id ?? "",
+                        )
+                      : arrayMove(p.content, source, destination),
                 });
               }}
             >
@@ -1992,7 +2246,23 @@ function QuoteEditorContent({
                 </div>
               ))}{" "}
             </Reorder>
+            <p className="muted document-end">
+              {p.valid_until && (
+                <>
+                  Valid until{" "}
+                  {readableDate(p.valid_until, p.workspace_settings?.timezone)}{" "}
+                  ·{" "}
+                </>
+              )}
+              From {settings?.company_name}
+            </p>
+            <DocumentPagination
+              proposal={p}
+              settings={settings}
+              paper={paper}
+            />
           </article>
+          {reviewBanner}
           <div className="editor-insert">
             <label className="btn">
               Add image
@@ -2045,7 +2315,14 @@ function QuoteEditorContent({
                 "signature_block",
                 "page_break",
               ].map((t) => (
-                <option key={t} value={t}>
+                <option
+                  key={t}
+                  value={t}
+                  disabled={
+                    t === "pricing_table" &&
+                    p.content.some((b) => b.type === "pricing_table")
+                  }
+                >
                   {t.replaceAll("_", " ")}
                 </option>
               ))}
@@ -2084,6 +2361,196 @@ function QuoteEditorContent({
         </main>
         <aside className="editor-sidepanel">{panel}</aside>
       </div>
+      {reviewConfirm && (
+        <Sheet
+          title="Review all AI-written sections"
+          close={() => setReviewConfirm(false)}
+        >
+          <p>Confirm you have read these sections:</p>
+          <ul>
+            {sections
+              .filter((s) => s.pending)
+              .map((s) => (
+                <li key={s.id}>{s.title}</li>
+              ))}
+          </ul>
+          <p>Price holds still require Use list or Keep.</p>
+          <Button
+            disabled={reviewBusy}
+            onClick={() =>
+              void review(
+                sections.filter((s) => s.pending).map((s) => s.id),
+                true,
+              )
+            }
+          >
+            Confirm all reviewed
+          </Button>
+        </Sheet>
+      )}
+      {insertAt !== null && (
+        <Sheet title="Add a block" close={() => setInsertAt(null)}>
+          <div className="block-menu">
+            {(
+              [
+                ["Heading", "heading"],
+                ["Text", "paragraph"],
+                ["List", "paragraph"],
+                ["Pricing table", "pricing_table"],
+                ["Contract", "contract"],
+                ["Page break", "page_break"],
+              ] as const
+            ).map(([label, type]) => (
+              <Button
+                key={label}
+                disabled={
+                  type === "pricing_table" &&
+                  p.content.some((b) => b.type === type)
+                }
+                onClick={() => insert(type, label === "List")}
+              >
+                {label}
+              </Button>
+            ))}
+            <label className="btn">
+              Image
+              <input
+                type="file"
+                className="sr-only"
+                accept="image/png,image/jpeg"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (
+                    file.size > 700000 ||
+                    !["image/png", "image/jpeg"].includes(file.type)
+                  ) {
+                    setError("Use a PNG or JPEG smaller than 700 KB");
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () =>
+                    insertBlock({
+                      type: "image",
+                      src: String(reader.result),
+                      alt: file.name,
+                    });
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+            <label className="field">
+              Saved block…
+              <select
+                value=""
+                onChange={(e) => {
+                  const saved = library.find((b) => b.id === e.target.value);
+                  if (
+                    saved &&
+                    !(
+                      saved.block.type === "pricing_table" &&
+                      p.content.some((b) => b.type === "pricing_table")
+                    )
+                  )
+                    insertBlock(structuredClone(saved.block));
+                }}
+              >
+                <option value="">Choose a saved block</option>
+                {library.map((b) => (
+                  <option
+                    key={b.id}
+                    value={b.id}
+                    disabled={
+                      b.block.type === "pricing_table" &&
+                      p.content.some((v) => v.type === "pricing_table")
+                    }
+                  >
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </Sheet>
+      )}
+      {clauseEdit &&
+        (() => {
+          const b = p.content[clauseEdit.block],
+            c = b?.clauses?.[clauseEdit.clause];
+          if (!c) return null;
+          const patch = (update: Partial<typeof c>) =>
+            patchBlock(clauseEdit.block, {
+              ...b,
+              contract_edited: true,
+              clauses: b.clauses!.map((v, n) =>
+                n === clauseEdit.clause ? { ...v, ...update } : v,
+              ),
+            });
+          return (
+            <Sheet title="Clause settings" close={() => setClauseEdit(null)}>
+              <Field label="Clause">
+                <select
+                  value={clauseEdit.clause}
+                  onChange={(e) =>
+                    setClauseEdit({
+                      ...clauseEdit,
+                      clause: Number(e.target.value),
+                    })
+                  }
+                >
+                  {b.clauses!.map((clause, k) => (
+                    <option key={clause.id} value={k}>
+                      {clause.heading}
+                      {clause.show_when &&
+                      !items.some(
+                        (i) =>
+                          i.pricing_item_id ===
+                            clause.show_when?.pricing_item_id &&
+                          (!i.optional || i.default_selected),
+                      )
+                        ? " — hidden for current choices"
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Clause heading">
+                <input
+                  value={c.heading}
+                  onChange={(e) => patch({ heading: e.target.value })}
+                />
+              </Field>
+              <Field label="Clause body">
+                <textarea
+                  value={c.body}
+                  onChange={(e) => patch({ body: e.target.value })}
+                />
+              </Field>
+              <Field label="Show when">
+                <select
+                  value={c.show_when?.pricing_item_id ?? ""}
+                  onChange={(e) =>
+                    patch({
+                      show_when: e.target.value
+                        ? {
+                            kind: "item_selected",
+                            pricing_item_id: e.target.value,
+                          }
+                        : null,
+                    })
+                  }
+                >
+                  <option value="">Always</option>
+                  {sellableCatalogue(catalog).map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {itemDisplayName(i)} is selected
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </Sheet>
+          );
+        })()}
       {drawer && (
         <Sheet title={tab} close={() => setDrawer(false)} extra="tools-sheet">
           {panel}

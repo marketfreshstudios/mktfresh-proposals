@@ -4,7 +4,7 @@
 }
 .block-frame {
   position: relative;
-  padding: 48px 10px 10px;
+  padding: 10px;
   margin: 12px 0;
   outline: 1px solid transparent;
   outline-offset: 2px;
@@ -21,12 +21,12 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: var(--ai);
+  background: var(--review-amber);
   border-radius: 3px;
 }
 .block-tools {
   position: absolute;
-  top: 2px;
+  top: -42px;
   right: 2px;
   max-width: calc(100% - 4px);
   height: 40px;
@@ -87,7 +87,7 @@
 .block-sortable > .drag-handle {
   position: absolute;
   left: -26px;
-  top: 48px;
+  top: 10px;
   width: 24px;
   height: 32px;
   min-height: 32px;
@@ -160,11 +160,11 @@
 }
 @media (pointer: coarse), (max-width: 699px) {
   .block-frame {
-    padding-top: 56px;
-    padding-left: 30px;
+    padding: 10px;
   }
   .block-tools {
     height: 48px;
+    top: -48px;
   }
   .block-action {
     width: 44px;
@@ -172,7 +172,7 @@
     min-height: 44px;
   }
   .block-sortable > .drag-handle {
-    top: 56px;
+    top: 10px;
     left: -16px;
     width: 44px;
     min-height: 44px;

@@ -9,6 +9,8 @@ import type { ComponentProps } from "react";
 import { productMappings } from "../lib/workspace-setup";
 import { useEffect, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
+import { DocumentCover } from "./document-cover";
+import { withoutTitleHeading } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { Activity } from "../lib/studio";
@@ -1103,7 +1105,10 @@ function TemplatesStudioContent({
   const original = data.templates.find((t) => t.id === selected);
   const [mode, setMode] = useState(blocksOnly ? "blocks" : "templates"),
     [draft, setDraft] = useState<Template | null>(
-      original ?? data.templates[0] ?? null,
+      (() => {
+        const t = original ?? data.templates[0];
+        return t ? { ...t, content: withoutTitleHeading(t.content) } : null;
+      })(),
     ),
     [saved, setSaved] = useState<{
       id?: string;
@@ -1196,8 +1201,8 @@ function TemplatesStudioContent({
                 content: [
                   {
                     id: crypto.randomUUID(),
-                    type: "heading",
-                    text: "{{proposal.title}}",
+                    type: "paragraph",
+                    text: "",
                   },
                 ],
               });
@@ -1320,6 +1325,18 @@ function TemplatesStudioContent({
               }}
             >
               <div className="studio-blocks">
+                <div className="paper proposal-typography document-reading template-cover">
+                  <style>{fontCss(data.settings)}</style>
+                  <DocumentCover
+                    title="Proposal title"
+                    company="Client company"
+                    sender={
+                      data.settings?.owner ||
+                      data.settings?.company_name ||
+                      "Company"
+                    }
+                  />
+                </div>
                 {content.map((b, n) => (
                   <Sortable
                     block
