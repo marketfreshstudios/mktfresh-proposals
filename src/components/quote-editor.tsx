@@ -202,6 +202,12 @@ function QuoteEditorContent({
     } else setDrawer(true);
   };
   useEffect(() => {
+    // A direct send route is an action, so it must override a saved collapse.
+    // Wait for preference hydration and measurement before choosing dock/drawer.
+    if (panels.ready && initialTab === "Review & send")
+      openTools("Review & send");
+  }, [initialTab, panels.ready]);
+  useEffect(() => {
     if (panels.right) setDrawer(false);
   }, [panels.right]);
   useEffect(() => {

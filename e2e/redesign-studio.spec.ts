@@ -311,10 +311,11 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       name + " fits",
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
-    await page.screenshot({
-      path: `${dir}/${file}`,
-      fullPage: name === "workspace",
-    });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({
+        path: `${dir}/${file}`,
+        fullPage: name === "workspace",
+      });
     captures.push({ file, frame, width, theme });
   }
   const image = settings.company_signatory!.image;
@@ -572,10 +573,14 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await page.keyboard.press("Escape");
       await page.goto(`/proposals/${editing.id}?view=send`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
-      if (width < 1100)
-        await page
-          .getByRole("button", { name: "Review & send", exact: true })
-          .click();
+      await expect(
+        page
+          .getByRole("tab", { name: "Review & send", exact: true })
+          .filter({ visible: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(
+        page.getByRole("combobox", { name: "From", exact: true }),
+      ).toBeVisible();
       await capture("send-checks", "8l", width, theme);
       if (width < 1100) await page.keyboard.press("Escape");
       await page.goto(`/proposals/${signed.id}?action=countersign`);
@@ -596,6 +601,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       settings.company_signatory!.image = image;
     }
   }
+  if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   const refs = await context.newPage();
   for (const [file, frames] of [
     [
@@ -614,11 +620,12 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         w.__dcSetProps(w.__dcRootName(), { theme: t });
       }, theme);
       for (const frame of frames)
-        await refs
-          .locator(`[id="${frame}"]`)
-          .locator(":scope > div")
-          .nth(1)
-          .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await refs
+            .locator(`[id="${frame}"]`)
+            .locator(":scope > div")
+            .nth(1)
+            .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
     }
   }
   await refs.close();

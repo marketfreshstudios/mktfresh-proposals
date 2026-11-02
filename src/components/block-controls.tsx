@@ -307,6 +307,14 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
             onPointerLeave={() => setHovered(null)}
             onKeyDownCapture={(e) => {
               if (e.key === "Escape") {
+                // The first Escape belongs to the open tool, which restores its
+                // trigger. A subsequent Escape in the document deselects it.
+                if (
+                  (e.target as Element).closest(
+                    ".toolbar-popover,.block-popover",
+                  )
+                )
+                  return;
                 clear();
                 if ((e.target as Element).closest(".block-frame")) {
                   (e.target as HTMLElement).blur();

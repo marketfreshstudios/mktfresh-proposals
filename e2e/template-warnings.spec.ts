@@ -76,10 +76,11 @@ test("sync-deactivated defaults warn on templates and Pricing settings and clear
       await expect(warning).toContainText(template.name);
       await expect(warning).toContainText("Retired service (inactive)");
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({
-        path: `.data/evidence/screens/${name}-desktop-${theme}.png`,
-        fullPage: true,
-      });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await page.screenshot({
+          path: `.data/evidence/screens/${name}-desktop-${theme}.png`,
+          fullPage: true,
+        });
     }
   }
   await page.goto(`/templates/${template.id}/edit`);

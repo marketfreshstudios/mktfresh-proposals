@@ -178,14 +178,17 @@ for (const width of [1440, 375]) {
       await expect(frame.locator(`h${level + 1} textarea`)).toBeFocused();
       await expect(
         bar.getByRole("combobox", { name: "Text style", exact: true }),
-      ).toHaveValue(String(level));
+      ).toHaveText(`Heading ${level}`);
       await frame.locator("textarea").fill(`Level ${level}`);
       await expect
         .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
         .toBe(level);
       await bar
         .getByRole("combobox", { name: "Text style", exact: true })
-        .selectOption("0");
+        .click();
+      await page
+        .getByRole("option", { name: "Paragraph", exact: true })
+        .click();
       await expect(frame.locator(".tiptap")).toBeFocused();
     }
     await frame.locator(".tiptap").fill("A retained sentence");
@@ -539,7 +542,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     page
       .getByRole("toolbar", { name: "Document formatting", exact: true })
       .getByRole("combobox", { name: "Text style", exact: true }),
-  ).toHaveValue("3");
+  ).toHaveText("Heading 3");
   await page
     .getByRole("button", { name: "Save template", exact: true })
     .click();

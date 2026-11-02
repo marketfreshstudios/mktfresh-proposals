@@ -249,7 +249,8 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       name + " fits " + width,
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({ path: `${dir}/${file}`, fullPage: false });
     captures.push({ file, frame, width, theme });
   }
   for (const theme of ["light", "dark"]) {
@@ -618,6 +619,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await expect
     .poll(async () => (await repo.get(waiting.id))!.status)
     .toBe("sent");
+  if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   const refs = await context.newPage();
   for (const [file, frames] of [
     [
@@ -637,24 +639,26 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         w.__dcSetProps(w.__dcRootName(), { theme: t });
       }, theme);
       for (const frame of frames)
-        await refs
-          .locator(`[id="${frame}"]`)
-          .locator(":scope > div")
-          .nth(1)
-          .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await refs
+            .locator(`[id="${frame}"]`)
+            .locator(":scope > div")
+            .nth(1)
+            .screenshot({ path: `${dir}/reference-${frame}-${theme}.png` });
       if (file.includes("03")) {
         await refs
           .locator('[id="3a"]')
           .getByRole("button", { name: "Countersign", exact: true })
           .click();
         for (const frame of ["3a", "3b", "3c"])
-          await refs
-            .locator(`[id="${frame}"]`)
-            .locator(":scope > div")
-            .nth(1)
-            .screenshot({
-              path: `${dir}/reference-countersign-${frame}-${theme}.png`,
-            });
+          if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+            await refs
+              .locator(`[id="${frame}"]`)
+              .locator(":scope > div")
+              .nth(1)
+              .screenshot({
+                path: `${dir}/reference-countersign-${frame}-${theme}.png`,
+              });
         await refs
           .getByRole("button", { name: "Close", exact: true })
           .first()

@@ -329,9 +329,12 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
       new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
     );
     await select.focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(select).toBeFocused();
     await expect(select).toHaveCSS("outline-style", "solid");
     await expect(select).toHaveCSS("outline-width", "2px");
-    await select.evaluate((el: HTMLSelectElement) => {
+    await select.evaluate((el: HTMLButtonElement) => {
       el.disabled = true;
     });
     await expect(select).toHaveCSS("cursor", "not-allowed");
@@ -339,7 +342,7 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
       "background-image",
       new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
     );
-    await select.evaluate((el: HTMLSelectElement) => {
+    await select.evaluate((el: HTMLButtonElement) => {
       el.disabled = false;
     });
   }

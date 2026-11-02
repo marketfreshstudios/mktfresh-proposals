@@ -55,7 +55,9 @@ export function useEditorPanels(
     setHeight(el.offsetHeight);
     return () => observer.disconnect();
   }, [paper]);
-  const canRight = width >= 44 + 816 + 48 + 420,
+  // Desktop starts with usable Quote tools. Letter paper scales without reflow
+  // while the 420px tools column stays readable; narrower surfaces use drawers.
+  const canRight = width >= 1100,
     right = preferences.right && canRight && !phone;
   const canLeft = width >= 240 + 816 + 48 + (right ? 420 : 44),
     left = preferences.left && canLeft && !phone;

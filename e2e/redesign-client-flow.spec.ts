@@ -158,7 +158,8 @@ test("client redesign: every responsive state, safe preview and signature retrie
       ),
     ).toBe(true);
     const file = `${state}-${width}-${theme}.png`;
-    await page.screenshot({ path: `${dir}/${file}`, fullPage: true });
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({ path: `${dir}/${file}`, fullPage: true });
     captures.push({ file, width, theme, frames, state });
     if (["review", "sign"].includes(state)) {
       const height =
@@ -174,9 +175,10 @@ test("client redesign: every responsive state, safe preview and signature retrie
               ? 1300
               : 980;
       await page.setViewportSize({ width, height });
-      await page.screenshot({
-        path: `${dir}/${state}-frame-${width}-${theme}.png`,
-      });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await page.screenshot({
+          path: `${dir}/${state}-frame-${width}-${theme}.png`,
+        });
       await page.setViewportSize({ width, height: 1000 });
     }
   }
@@ -555,6 +557,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
   expect(signPosts).toBe(12);
   expect(quotePosts).toBe(18);
   expect(JSON.stringify(await repo.get(sent.id))).toBe(original);
+  if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   await writeFile(
     `${dir}/manifest.json`,
     JSON.stringify(
@@ -592,7 +595,8 @@ test("client redesign: every responsive state, safe preview and signature retrie
         .locator(":scope > div")
         .nth(1);
       await expect(node).toBeVisible();
-      await node.screenshot({ path: `${dir}/reference-${frame}-light.png` });
+      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+        await node.screenshot({ path: `${dir}/reference-${frame}-light.png` });
     }
     if (file.startsWith("Redesign 01")) {
       await design.evaluate(() => {
@@ -600,11 +604,12 @@ test("client redesign: every responsive state, safe preview and signature retrie
         w.__dcSetProps(w.__dcRootName(), { theme: "dark" });
       });
       for (const frame of frames)
-        await design
-          .locator(`[id="${frame}"]`)
-          .locator(":scope > div")
-          .nth(1)
-          .screenshot({ path: `${dir}/reference-${frame}-dark.png` });
+        if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+          await design
+            .locator(`[id="${frame}"]`)
+            .locator(":scope > div")
+            .nth(1)
+            .screenshot({ path: `${dir}/reference-${frame}-dark.png` });
     }
   }
   await design.close();

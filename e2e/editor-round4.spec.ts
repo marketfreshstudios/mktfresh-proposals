@@ -222,7 +222,7 @@ test("sidebar rails open every tab, remember collapse and support both shortcuts
   ).toBeVisible();
   for (const width of [1440, 1100, 768]) {
     await page.setViewportSize({ width, height: 1000 });
-    if (width < 1328)
+    if (width < 1100)
       await expect(
         page.getByRole("button", { name: "Expand tools sidebar", exact: true }),
       ).toBeVisible();
@@ -250,6 +250,43 @@ test("sidebar rails open every tab, remember collapse and support both shortcuts
   }
 });
 
+test("template creation stays reachable with collapsed Pages at desktop, tablet and phone widths", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.addInitScript(
+    (user) =>
+      localStorage.setItem(
+        `proposal-editor-panels:${user}`,
+        JSON.stringify({ left: false, right: false }),
+      ),
+    staff.actor,
+  );
+  for (const width of [1440, 768, 375]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/studio/templates");
+    const create = page.getByRole("button", {
+      name: "+ New template",
+      exact: true,
+    });
+    await expect(create).toBeVisible();
+    await create.click();
+    const name = page.getByRole("textbox", {
+      name: "Template name",
+      exact: true,
+    });
+    await expect(name).toHaveValue("Untitled template");
+    await name.fill(`New template at ${width}`);
+    if (width >= 700) {
+      await expect(page.locator(".sidebar")).toBeVisible();
+      await expect(page.locator(".sidebar")).toHaveCSS(
+        "width",
+        width >= 1100 ? "232px" : "64px",
+      );
+    }
+  }
+});
+
 test("every popover pair replaces the previous surface; outside, Escape and insertion close it", async ({
   page,
 }) => {
@@ -263,7 +300,7 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
       exact: true,
     });
   const visible = page.locator(
-    '.toolbar-popover:popover-open,.block-popover:popover-open,select[aria-expanded="true"]',
+    ".toolbar-popover:popover-open,.block-popover:popover-open",
   );
   const open = [
     () => bar.getByRole("button", { name: "Link", exact: true }).click(),
@@ -287,6 +324,9 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
         await expect(visible, `${a} -> ${b}`).toHaveCount(1);
         await page.keyboard.press("Escape");
         await expect(visible).toHaveCount(0);
+        await expect(
+          bar.getByRole("combobox", { name: "Text style" }),
+        ).toHaveAttribute("aria-expanded", "false");
       }
   await text.click();
   await open[1]();
@@ -297,6 +337,20 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
   await expect(visible).toHaveCount(0);
   await open[0]();
   await page.locator(".quote-editor-top").click({ position: { x: 5, y: 5 } });
+  await expect(visible).toHaveCount(0);
+  const style = bar.getByRole("combobox", { name: "Text style", exact: true });
+  await text.click();
+  await style.press("ArrowDown");
+  await expect(
+    page.getByRole("listbox", { name: "Text styles" }),
+  ).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(style).toHaveText("Heading 1");
+  await expect(visible).toHaveCount(0);
+  await style.click();
+  await page.keyboard.press("Escape");
+  await expect(style).toBeFocused();
   await expect(visible).toHaveCount(0);
 });
 test("pricing moves as a whole when it fits; tall quotes split only at intact card/group boundaries; density and margins affect page count", async () => {

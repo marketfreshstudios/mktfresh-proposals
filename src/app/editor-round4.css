@@ -1,16 +1,6 @@
-/* Authoring chrome fills the viewport; print geometry is independent of viewport size. */
-.staff-foundation:has(.quote-workspace) .workspace,
-.staff-foundation:has(.studio-template-layout) .workspace {
-  max-width: none;
-  width: 100%;
-  margin-left: 0;
-}
-.staff-foundation:has(.quote-workspace) .sidebar,
-.staff-foundation:has(.studio-template-layout) .sidebar {
-  display: none;
-}
-.staff-foundation:has(.quote-workspace) .page-body,
-.staff-foundation:has(.studio-template-layout) .page-body {
+/* Fill the editor's content area; the global shell still owns its navigation/rail. */
+.staff-foundation .page-body:has(.quote-workspace),
+.staff-foundation .page-body:has(.studio-template-layout) {
   padding: 0;
   max-width: none;
 }
@@ -25,13 +15,40 @@
 .format-style-control {
   width: 180px;
 }
-.format-style-control select {
+.format-style-control [role="combobox"] {
   width: 180px;
   min-width: 180px;
   max-width: 180px;
   color: var(--ink);
   padding-left: var(--space-2);
   background-color: var(--surface);
+  height: var(--tap-min);
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+.toolbar-popover.text-style-popover {
+  width: 180px;
+}
+.text-style-popover [role="option"] {
+  display: block;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.text-style-popover [role="option"][data-active="true"] {
+  background: var(--row-hover);
+}
+.text-style-popover [role="option"][aria-selected="true"] {
+  font-weight: 600;
 }
 .editor-round3 .editor-layout {
   grid-template-columns: 240px minmax(0, 1fr) minmax(420px, 600px);
@@ -243,7 +260,7 @@
     padding-inline: 44px;
   }
   .format-style-control,
-  .format-style-control select {
+  .format-style-control [role="combobox"] {
     width: 180px;
     min-width: 180px;
     max-width: 180px;

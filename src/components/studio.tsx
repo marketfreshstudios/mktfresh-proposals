@@ -1327,32 +1327,6 @@ function TemplatesStudioContent({
           </button>
         ))}
       </div>
-      <Button
-        onClick={() => {
-          setIndex(null);
-          if (mode === "templates")
-            setDraft({
-              id: crypto.randomUUID(),
-              name: "Untitled template",
-              active: true,
-              default_quote: [],
-              content: [
-                {
-                  id: crypto.randomUUID(),
-                  type: "paragraph",
-                  text: "",
-                },
-              ],
-            });
-          else
-            setSaved({
-              name: "Untitled block",
-              block: { id: crypto.randomUUID(), type: "paragraph", text: "" },
-            });
-        }}
-      >
-        + New {mode === "templates" ? "template" : "block"}
-      </Button>
       {mode === "templates" ? (
         data.templates.length ? (
           data.templates.map((t) => (
@@ -1471,9 +1445,38 @@ function TemplatesStudioContent({
         )}
       </aside>
       <main className="studio-template-main stack">
-        <nav className="editor-breadcrumb" aria-label="Breadcrumb">
-          <a href="/studio">Studio</a> / Templates &amp; blocks
-        </nav>
+        <div className="actions">
+          <nav className="editor-breadcrumb" aria-label="Breadcrumb">
+            <a href="/studio">Studio</a> / Templates &amp; blocks
+          </nav>
+          <Button
+            onClick={() => {
+              setIndex(null);
+              setTemplateListOpen(false);
+              if (mode === "templates")
+                setDraft({
+                  id: crypto.randomUUID(),
+                  name: "Untitled template",
+                  active: true,
+                  default_quote: [],
+                  content: [
+                    { id: crypto.randomUUID(), type: "paragraph", text: "" },
+                  ],
+                });
+              else
+                setSaved({
+                  name: "Untitled block",
+                  block: {
+                    id: crypto.randomUUID(),
+                    type: "paragraph",
+                    text: "",
+                  },
+                });
+            }}
+          >
+            + New {mode === "templates" ? "template" : "block"}
+          </Button>
+        </div>
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
             <header className="actions">
