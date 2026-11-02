@@ -11,6 +11,11 @@ import {
 } from "../lib/editor-pages";
 import { Reorder, Sortable } from "./sortable";
 import { Button } from "./ui";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useBlockFeedback } from "./block-controls";
 export function PagesOutline({
   content,
   layout,
@@ -24,6 +29,7 @@ export function PagesOutline({
 }) {
   const pages = authoringPages(content),
     focus = useRef(onFocus);
+  const feedback = useBlockFeedback();
   focus.current = onFocus;
   const add = (after?: string) => {
     const next = addPage(content, after);
@@ -38,8 +44,10 @@ export function PagesOutline({
   ]);
   return (
     <nav className="pages-outline" aria-label="Pages">
+      {feedback.feedback}
       <Reorder
         ids={ids}
+        pages
         onMove={(from, to) => {
           if (from.startsWith("page:")) {
             const target = pages.find(
@@ -84,8 +92,8 @@ export function PagesOutline({
                     p.blocks.some((block) => block.id === b.block),
                 )?.page ?? n + 1);
           return (
-            <div className="outline-page" key={p.id}>
-              <Sortable id={`page:${p.id}`} label={`page ${number}`}>
+            <Sortable key={p.id} id={`page:${p.id}`} label={`page ${number}`}>
+              <div className="outline-page">
                 <div className="outline-page-title">
                   <button
                     type="button"
@@ -107,75 +115,77 @@ export function PagesOutline({
                     aria-label={`Delete page ${number}`}
                     title="Delete page"
                     onClick={() => {
-                      if (
-                        confirm(
-                          `Delete page ${number}${n === 0 ? " (Cover)" : ""} and its content? This can be undone.`,
-                        )
-                      )
-                        onChange(deletePage(content, p.id));
+                      feedback.removePage(() =>
+                        onChange(deletePage(content, p.id)),
+                      );
                     }}
                   >
                     ×
                   </button>
                 </div>
-              </Sortable>
-              {p.sections.map((s) => (
-                <Sortable
-                  key={s.id}
-                  id={`section:${s.id}`}
-                  label={`section ${s.title}`}
+                <SortableContext
+                  items={p.sections.map((s) => `section:${s.id}`)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <button
-                    type="button"
-                    className="outline-section"
-                    onClick={() => onFocus(s.id)}
-                  >
-                    {s.title}
-                    {s.pending && (
-                      <small
-                        className="review-dot"
-                        aria-label="Needs AI review"
-                      />
-                    )}
-                  </button>
-                  {s.indices
-                    .filter(
-                      (i) =>
-                        p.blocks[i].type === "heading" &&
-                        (p.blocks[i].level ?? 1) > 1,
-                    )
-                    .map((i) => (
+                  {p.sections.map((s) => (
+                    <Sortable
+                      key={s.id}
+                      id={`section:${s.id}`}
+                      label={`section ${s.title}`}
+                    >
                       <button
-                        key={p.blocks[i].id}
-                        className="outline-subheading"
-                        onClick={() => onFocus(p.blocks[i].id!)}
+                        type="button"
+                        className="outline-section"
+                        onClick={() => onFocus(s.id)}
                       >
-                        {p.blocks[i].text || "Untitled subheading"}
+                        {s.title}
+                        {s.pending && (
+                          <small
+                            className="review-dot"
+                            aria-label="Needs AI review"
+                          />
+                        )}
                       </button>
-                    ))}
-                </Sortable>
-              ))}
-              {(layout?.boundaries ?? [])
-                .filter(
-                  (b) =>
-                    !b.explicit &&
-                    p.blocks.some((block) => block.id === b.block),
-                )
-                .map((b) => (
-                  <button
-                    key={b.page}
-                    type="button"
-                    className="outline-continued"
-                    onClick={() =>
-                      document
-                        .querySelector(`[data-editor-page="${b.page}"]`)
-                        ?.scrollIntoView({ block: "start" })
-                    }
-                  >
-                    Page {b.page} (continued)
-                  </button>
-                ))}
-            </div>
+                      {s.indices
+                        .filter(
+                          (i) =>
+                            p.blocks[i].type === "heading" &&
+                            (p.blocks[i].level ?? 1) > 1,
+                        )
+                        .map((i) => (
+                          <button
+                            key={p.blocks[i].id}
+                            className="outline-subheading"
+                            onClick={() => onFocus(p.blocks[i].id!)}
+                          >
+                            {p.blocks[i].text || "Untitled subheading"}
+                          </button>
+                        ))}
+                    </Sortable>
+                  ))}
+                </SortableContext>
+                {(layout?.boundaries ?? [])
+                  .filter(
+                    (b) =>
+                      !b.explicit &&
+                      p.blocks.some((block) => block.id === b.block),
+                  )
+                  .map((b) => (
+                    <button
+                      key={b.page}
+                      type="button"
+                      className="outline-continued"
+                      onClick={() =>
+                        document
+                          .querySelector(`[data-editor-page="${b.page}"]`)
+                          ?.scrollIntoView({ block: "start" })
+                      }
+                    >
+                      Page {b.page} (continued)
+                    </button>
+                  ))}
+              </div>
+            </Sortable>
           );
         })}
       </Reorder>

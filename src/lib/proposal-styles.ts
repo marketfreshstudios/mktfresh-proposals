@@ -1,4 +1,5 @@
 import { documentQuoteCss } from "./document-quote";
+import { documentFlowCss } from "./document-spacing";
 import { AppError } from "./model";
 import { z } from "zod";
 import {
@@ -278,11 +279,14 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
         );
       })
       .join("") +
-    (styles.layout ? documentQuoteCss : "") +
+    (styles.layout
+      ? documentQuoteCss + `.proposal-typography{--quote-accent:${accent}}`
+      : "") +
     (documentLayout(styles).density === "standard"
-      ? `${scope} li{margin-block:.25em}${scope} ul,${scope} ol{margin-block:.6em}${scope} .print-atom,${scope} .draft-block,${scope} .studio-block-card{padding-top:0}${scope} .flow-quote-line{padding-block:12px;margin-block:4px}${scope} .flow-quote-line p{font-size:.9em;line-height:1.5;margin-block:.35em}${scope} .print-pricing-unit{margin:0!important}${scope} .print-choice-group{margin:4px 0!important}${scope} .print-pricing-card p{font-size:.9em;line-height:1.5;margin-block:.35em}`
+      ? `${scope} .print-atom,${scope} .draft-block,${scope} .studio-block-card{padding-top:0}${scope} .flow-quote-line{padding-block:12px}${scope} .print-pricing-unit{margin:0!important}`
       : styles.layout
-        ? `${scope} .flow-quote-line{padding-block:20px;margin-block:12px}`
-        : "")
+        ? `${scope} .flow-quote-line{padding-block:20px}`
+        : "") +
+    (styles.layout ? documentFlowCss(styles) : "")
   );
 }

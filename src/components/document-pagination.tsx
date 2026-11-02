@@ -16,8 +16,8 @@ export function DocumentPagination({
       {preview.error
         ? `Page preview unavailable — ${preview.error}`
         : layout
-          ? `${layout.pages} document ${layout.pages === 1 ? "page" : "pages"}${preview.approximate ? " · approximate" : ""} + completion certificate after signing`
-          : "Pages approximate · computing PDF layout…"}
+          ? `${layout.pages} document ${layout.pages === 1 ? "page" : "pages"}${preview.approximate ? " · updating" : ""} + completion certificate after signing`
+          : "Computing PDF pages…"}
     </output>
   );
 }

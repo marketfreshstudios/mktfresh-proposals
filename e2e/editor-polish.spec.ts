@@ -345,6 +345,17 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   expect(
     (await menu.boundingBox())!.y + (await menu.boundingBox())!.height,
   ).toBeLessThanOrEqual((await plus.boundingBox())!.y);
+  // A server page update can move the anchor without a scroll/resize event.
+  // The menu follows it and constrains its own scroll area on the chosen side.
+  await plus.evaluate((el) => (el.style.translate = "0 -40px"));
+  await expect
+    .poll(async () => {
+      const m = (await menu.boundingBox())!,
+        a = (await plus.boundingBox())!;
+      return a.y - (m.y + m.height);
+    })
+    .toBeCloseTo(6, 0);
+  await plus.evaluate((el) => (el.style.translate = ""));
   await page.keyboard.press("Escape");
   await expect(menu).not.toBeVisible();
   // Toggles/radios have no native text undo; they must still reach document history.

@@ -14,28 +14,41 @@ export function QuoteItemBody({
   cents?: CentsMode;
 }) {
   return (
-    <div>
+    <div className="quote-item-body" data-included={active}>
       <div className="flow-line-title">
         <strong>{item.name}</strong>
-      </div>
-      {item.description && <p>{item.description}</p>}
-      {item.sublines.map((s) => (
-        <div className="flow-subline" key={s.id}>
-          <span>
-            {s.label ||
-              (s.interval === "one_time"
-                ? "One-time"
-                : s.interval === "month"
-                  ? "Monthly"
-                  : "Yearly")}
-            {s.qty !== 1 && ` × ${s.qty}`}
-          </span>
-          <strong>
-            {formatMoney(s.amount * s.qty, currency, cents)}
-            {intervalSuffix(s.interval)}
+        {item.sublines.length === 1 && (
+          <strong className="amount">
+            {formatMoney(
+              item.sublines[0].amount * item.sublines[0].qty,
+              currency,
+              cents,
+            )}
+            {intervalSuffix(item.sublines[0].interval)}
           </strong>
-        </div>
-      ))}
+        )}
+      </div>
+      {item.description && (
+        <p className="quote-description">{item.description}</p>
+      )}
+      {item.sublines.length > 1 &&
+        item.sublines.map((s) => (
+          <div className="flow-subline" key={s.id}>
+            <span>
+              {s.label ||
+                (s.interval === "one_time"
+                  ? "Setup fee"
+                  : s.interval === "month"
+                    ? "Subscription"
+                    : "Annual subscription")}
+              {s.qty !== 1 && ` × ${s.qty}`}
+            </span>
+            <strong>
+              {formatMoney(s.amount * s.qty, currency, cents)}
+              {intervalSuffix(s.interval)}
+            </strong>
+          </div>
+        ))}
       {item.schedule && (
         <p className="flow-terms">
           {formatMoney(
@@ -58,9 +71,6 @@ export function QuoteItemBody({
           {item.min_term_months}-month minimum commitment.
         </p>
       )}
-      <small>
-        {item.optional ? (active ? "Included" : "Not included") : "Required"}
-      </small>
     </div>
   );
 }

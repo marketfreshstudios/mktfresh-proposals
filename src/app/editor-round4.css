@@ -179,6 +179,9 @@
 .pdf-width-editor .paper.editor-paper {
   isolation: isolate;
   background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
   outline: none !important;
   padding: var(--page-margin-top, 72px) var(--page-margin-right, 72px)
     var(--page-margin-bottom, 72px) var(--page-margin-left, 72px) !important;
@@ -393,14 +396,6 @@
   max-width: 100%;
   object-fit: contain;
 }
-.pdf-width-editor
-  .paper.editor-paper:not(
-    :has(
-      .editor-page-sheets[data-layout-settled="true"][data-approximate="false"]
-    )
-  ) {
-  background: var(--paper) !important;
-}
 @media (max-width: 699px) {
   .editor-round3.phone-editing .editor-document-region {
     padding-inline: 44px;
@@ -478,15 +473,6 @@
 }
 .template-page-viewport {
   margin-bottom: 32px;
-}
-.editor-page-sheets[data-approximate="true"] .editor-page-sheet > small {
-  visibility: hidden;
-}
-.editor-paper:has(
-    .editor-page-sheets[data-layout-settled="true"][data-approximate="true"]
-  )
-  .document-page-count::after {
-  content: " · layout approximate";
 }
 .studio-template-list:not(.sidebar-rail) > .sidebar-arrow {
   margin-left: auto;

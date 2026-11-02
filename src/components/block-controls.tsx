@@ -570,13 +570,14 @@ export function useBlockFeedback() {
     block: Pick<Block, "type">,
     action: () => void,
     undo: () => void,
+    message = "Block deleted",
   ) {
     const apply = () => {
       action();
       const controller = history?.controller,
         id = controller?.engine.lastId;
       setToast({
-        message: "Block deleted",
+        message,
         undo:
           controller && id !== undefined
             ? () => controller.undo(undefined, id)
@@ -591,6 +592,13 @@ export function useBlockFeedback() {
   return {
     reuse,
     remove,
+    removePage: (action: () => void) =>
+      remove(
+        { type: "paragraph" },
+        action,
+        () => history?.controller?.undo(),
+        "Page deleted",
+      ),
     reuseButton: (block: Block, labelled = false) =>
       labelled ? (
         <Button

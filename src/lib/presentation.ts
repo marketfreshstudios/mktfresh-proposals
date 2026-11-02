@@ -161,7 +161,7 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
     !body.replace(/<[^>]*>/g, "").trim() &&
     /proposal\.valid|client\.address/.test(JSON.stringify(node))
     ? ""
-    : `<${tag}>${body}</${tag}>`;
+    : `<${tag}>${tag === "p" && !body ? "<br>" : body}</${tag}>`;
 }
 export function renderBlocks(
   blocks: Block[],

@@ -1,111 +1,12 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { setup, staff, signature, clientActor } from "../tests/helpers";
-import { authoringPreview } from "../src/lib/authoring-preview";
 import { templateDefaultQuote } from "../src/lib/template-quote";
 import { sealedPdf } from "../src/lib/pdf";
 import { previewProposal } from "../src/lib/preview";
 import { freezeStyles } from "../src/lib/proposal-styles";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import type { Block } from "../src/lib/model";
-async function fixture(page: Page, long = false) {
-  const f = await setup();
-  const content: Block[] = [
-    {
-      id: crypto.randomUUID(),
-      type: "heading",
-      text: "First section",
-      level: 1,
-    },
-    {
-      id: crypto.randomUUID(),
-      type: "paragraph",
-      ai_review: long ? { source: "assistant", reviewed: false } : undefined,
-      text: long
-        ? "Long paragraph with a clear and useful plan. ".repeat(340)
-        : "A clear and useful plan.",
-    },
-    { id: crypto.randomUUID(), type: "page_break" },
-    {
-      id: crypto.randomUUID(),
-      type: "heading",
-      text: "Second section",
-      level: 1,
-    },
-    { id: crypto.randomUUID(), type: "paragraph", text: "Next steps." },
-    { id: crypto.randomUUID(), type: "pricing_table" },
-    { id: crypto.randomUUID(), type: "signature_block", role: "client" },
-  ];
-  const template = (await f.repo.entities<any>("templates"))[0];
-  template.content = structuredClone(content);
-  await f.repo.put("templates", template);
-  let active = await f.service.edit(
-    f.draft.id,
-    { revision: f.draft.revision, content },
-    staff,
-  );
-  const renders: Awaited<ReturnType<typeof pdfPreview>>[] = [];
-  await page.route("**/api/**", async (route) => {
-    const req = route.request(),
-      parts = new URL(req.url()).pathname.split("/").filter(Boolean).slice(1);
-    try {
-      let value: unknown = [];
-      if (parts[0] === "auth")
-        value = {
-          user: staff,
-          settings: f.settings,
-          staff: f.members,
-          app_url: "http://127.0.0.1:3100",
-          signatory_version: "fixture",
-        };
-      else if (parts[0] === "proposals") {
-        if (req.method() === "PATCH")
-          active = await f.service.edit(active.id, req.postDataJSON(), staff);
-        if (parts[2] === "review")
-          active = await f.service.reviewSections(
-            active.id,
-            req.postDataJSON(),
-            staff,
-          );
-        if (parts[2] === "preview-pdf") {
-          value = await pdfPreview(
-            f.repo,
-            {
-              get: async () => new Uint8Array(),
-              put: async () => {
-                throw new Error("No writes");
-              },
-            },
-            { ...active, ...req.postDataJSON() },
-            f.settings,
-          );
-          renders.push(value as any);
-        } else value = parts[1] ? active : { items: [active], total: 1 };
-      } else if (parts[0] === "document-preview") {
-        const p = authoringPreview(
-          req.postDataJSON(),
-          f.settings,
-          f.repo.workspaceId,
-        );
-        value = await pdfPreview(
-          f.repo,
-          {
-            get: async () => new Uint8Array(),
-            put: async () => {
-              throw new Error("No writes");
-            },
-          },
-          p,
-          f.settings,
-        );
-        renders.push(value as any);
-      } else value = await f.repo.entities(parts[0] as any);
-      await route.fulfill({ json: value });
-    } catch (e) {
-      await route.fulfill({ status: 400, json: { error: String(e) } });
-    }
-  });
-  return { ...f, content, active: () => active, renders };
-}
+import { editorFixture as fixture } from "./editor-fixture";
 test("real page sheets align server PDF line starts without changing stored text", async ({
   page,
 }) => {
@@ -496,11 +397,14 @@ test("page add/delete and undo use normal authoring history; templates use the s
       () => f.active().content.filter((b) => b.type === "page_break").length,
     )
     .toBe(2);
-  page.once("dialog", (d) => d.accept());
   await page
-    .getByRole("button", { name: "Delete page 3", exact: true })
+    .getByRole("button", { name: /^Delete page / })
+    .last()
     .click();
   await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
+  await expect(
+    page.getByRole("status").filter({ hasText: "Page deleted" }),
+  ).toBeVisible();
   await bar.getByRole("button", { name: "Undo", exact: true }).click();
   await expect
     .poll(
@@ -556,7 +460,7 @@ test("whole pages and sections move through normal undo without moving the follo
   await expect(
     page
       .locator('[id^="DndLiveRegion"]')
-      .filter({ hasText: `over droppable area section:${f.content[0].id}.` }),
+      .filter({ hasText: `over droppable area page:start.` }),
   ).toHaveCount(1);
   await page.keyboard.press("Space");
   await expect.poll(() => f.active().content[0]?.id).toBe(second);

@@ -1,6 +1,7 @@
 "use client";
 import { useManagedPopover } from "./editor-popovers";
 import { quoteTotalText } from "../lib/document-quote";
+import { documentSpacing } from "../lib/document-spacing";
 import { PagedPaper } from "./paged-paper";
 import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
@@ -533,6 +534,14 @@ function QuoteEditorContent({
     };
   }, [p.id, p.revision]);
   const current = withDraftSettings(p, settings),
+    blockSpaces = documentSpacing(
+      p.content,
+      resolveStyles(
+        current.workspace_settings,
+        p.template_style_overrides,
+        p.style_overrides,
+      ),
+    ),
     items = orderedItems(p.quote),
     sections = contentSections(p.content),
     pending = pendingSections(p),
@@ -1506,6 +1515,7 @@ function QuoteEditorContent({
       <Sortable
         block
         id={`block-${b.id ?? n}`}
+        spaceBefore={blockSpaces[b.id ?? String(n)]}
         label={`block ${n + 1}`}
         key={b.id ?? n}
       >
@@ -2066,12 +2076,10 @@ function QuoteEditorContent({
     const active = !i.optional || i.default_selected;
     const Row = i.optional ? "label" : "div";
     return (
-      <Row
-        className={`flow-quote-line ${i.optional && active ? "selected" : ""}`}
-      >
+      <Row className={`flow-quote-line ${active ? "selected" : ""}`}>
         {i.optional ? (
           <input
-            aria-label={`Default selection for ${i.name}`}
+            aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
             type={i.choice_group_id ? "radio" : "checkbox"}
             name={`document-${i.choice_group_id ?? i.id}`}
             checked={active}
@@ -2088,7 +2096,14 @@ function QuoteEditorContent({
             }
           />
         ) : (
-          <Icon name="lock" />
+          <span
+            className="quote-required"
+            role="img"
+            aria-label="Required"
+            title="Required"
+          >
+            <Icon name="lock" />
+          </span>
         )}
         <QuoteItemBody
           item={i}
@@ -2314,9 +2329,13 @@ function QuoteEditorContent({
         <main className="editor-document-region">
           <div className="editor-panel-controls">
             <div className="paper-zoom">
-              {pdfPreview.approximate && (
-                <span role="status">Updating pages…</span>
-              )}
+              <span
+                className="pages-updating-indicator"
+                role="status"
+                data-updating={pdfPreview.approximate}
+              >
+                Updating pages…
+              </span>
               <output aria-label="Editor zoom">
                 {Math.round(panels.scale * 100)}%
               </output>
@@ -2454,6 +2473,7 @@ function QuoteEditorContent({
                   approximate={pdfPreview.approximate}
                   enabled={panels.printMode}
                   contentKey={pdfPreview.visualKey}
+                  fingerprint={pdfPreview.data?.fingerprint}
                 />
                 <style>
                   {fontCss(p.workspace_settings)}

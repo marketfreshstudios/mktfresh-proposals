@@ -11,7 +11,7 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { blockText, type TextLevel } from "../lib/editor-document";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useRef, useState, useId } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useId } from "react";
 import type { RichText } from "../lib/model";
 import { Button } from "./ui";
 /** Draft-only editing adapter. Historical content is never passed through this. */
@@ -104,6 +104,7 @@ export function FieldEditor({
     extensions: [
       pageSpacers(() => values.current),
       StarterKit.configure({
+        trailingNode: false,
         undoRedo: history && !standalone ? false : undefined,
         heading: false,
         code: allowLinks ? false : undefined,
@@ -246,7 +247,7 @@ export function FieldEditor({
   useEffect(() => {
     for (const paint of painters.current) paint();
   }, [showNames, JSON.stringify(map), editor]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor || !root.current) return;
     const el = root.current;
     const receive = (e: Event) => {
