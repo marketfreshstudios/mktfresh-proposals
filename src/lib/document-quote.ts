@@ -108,6 +108,7 @@ export const documentQuoteCss = `
 .proposal-typography.proposal-typography .document-totals strong,.client-flow.client-flow .document-totals strong{font:650 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);font-variant-numeric:tabular-nums;color:#1C1B18}
 .proposal-typography.proposal-typography .document-totals small,.client-flow.client-flow .document-totals small{font:400 14px/1.3 var(--font-ui,"Instrument Sans",sans-serif);color:#5F5B53;margin-left:2px}
 .print-pricing-card,.print-choice-group{break-inside:avoid}
-/* Tracking stays on screen; PDF glyph gaps can be extracted as word spaces. */
-@media print{.proposal-typography.proposal-typography .flow-choice-group>h3,.proposal-typography.proposal-typography .document-totals span,.client-flow.client-flow .document-totals span{letter-spacing:normal}}
+/* Keep screen typography. In Linux PDFs, tracking and kerned pairs can emit
+   separate text runs that extractors interpret as word boundaries. */
+@media print{.proposal-typography.proposal-typography .flow-choice-group>h3,.proposal-typography.proposal-typography .document-totals span,.client-flow.client-flow .document-totals span{letter-spacing:normal;font-kerning:none}}
 `;

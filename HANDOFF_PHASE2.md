@@ -915,3 +915,11 @@ Required and optional product rows now have the same explicit 20px control slot 
 The cover menu now uses a styled Upload logo button with a hidden file input, retaining the existing upload validation and keyboard activation. Only this menu requests title avoidance: placement tries clear space above or beside its trigger before falling back when space is limited. Other toolbar menus keep their placement. The pricing and cover after-images in the PR evidence are refreshed at the same 1440px viewport.
 
 Validation for this polish: 39 focused browser checks passed, with one optional capture skipped; all 311 unit/database tests, TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed. Alignment checks compare both row types at 1440/375px in editor/client views and compare PDF text x-coordinates. The upload test exercises Enter → file chooser → persisted logo and asserts matching button styling and a clear title.
+
+### PR #56 CI review — Linux kerning and PDF text runs
+
+Reproduced the unchanged signing assertion in an isolated Ubuntu 24.04.4 Playwright 1.63.0 container, using Node 24.20.0 and poppler-utils 24.02.0-1ubuntu9.11 (`pdftotext` 24.02.0). No local environment files or credentials were copied. The original CI PDF keeps both labels whole in Poppler 24.02, but PDF.js (the first extraction checked by the test) returns separate ONE-/TIME and MONTHL/Y runs. Linux Instrument Sans kerning causes these run boundaries; changing the source text to uppercase does not fix them.
+
+Printed totals/choice labels now disable font kerning as well as tracking. A Linux renderer comparison confirms each complete label is extracted intact by both PDF.js and Poppler 24.02; screen typography is unchanged. The existing name and four-label PDF assertions are unchanged. Added a computed-print-style assertion for disabled totals kerning. The original signing test failed before the fix in that container.
+
+Verification: all 37 tests in browser shard 1/4 passed in the Ubuntu/Poppler 24.02 container (4.7 minutes), including the unchanged signing extraction assertions. Poppler 24.02 rendered the resulting PDF for visual inspection. All 311 unit/database tests, TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed locally. No screenshot gallery was added; CI is not awaited.

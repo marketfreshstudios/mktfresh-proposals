@@ -28,6 +28,8 @@ test("document labels keep screen tracking but print whole words without glyph g
   await page.emulateMedia({ media: "print" });
   for (const label of await labels.all())
     await expect(label).toHaveCSS("letter-spacing", "normal");
+  for (const label of await page.locator(".document-totals span").all())
+    await expect(label).toHaveCSS("font-kerning", "none");
 });
 
 test("delegated company signing requires authorization in the UI and seals actual actor evidence in the PDF", async ({
