@@ -341,3 +341,71 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
     );
   expect(darkBorders).toEqual([]);
 });
+
+test("edit bar and insertion/style menus use the measured prototype typography", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const f = await editorFixture(page);
+  await f.editRemote({
+    content: f.content.map((b, n) =>
+      n === 1
+        ? { ...b, ai_review: { source: "assistant", reviewed: false } }
+        : b,
+    ),
+  });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
+  await block.locator(".tiptap").focus();
+  const bar = page.getByRole("toolbar", { name: "Text tools", exact: true });
+  await expect(
+    bar.getByRole("button", { name: "Bold", exact: true }).locator("b"),
+  ).toHaveCSS("font-size", "14px");
+  const italic = bar
+    .getByRole("button", { name: "Italic", exact: true })
+    .locator("i");
+  await expect(italic).toHaveCSS("font-size", "16px");
+  await expect(italic).toHaveCSS("font-family", /Source Serif 4/);
+  await expect(
+    bar.getByRole("button", { name: "Save for reuse", exact: true }),
+  ).toHaveCSS("font-size", "12px");
+  await expect(
+    block.getByRole("button", {
+      name: "Mark this AI-written block reviewed",
+      exact: true,
+    }),
+  ).toHaveCSS("font-size", "13px");
+  await bar.getByRole("button", { name: "Text style", exact: true }).click();
+  for (const [name, size] of [
+    ["Paragraph", "14px"],
+    ["Heading 1", "17px"],
+    ["Heading 2", "15px"],
+    ["Heading 3", "13px"],
+  ]) {
+    await expect(
+      page.getByRole("menuitemradio", { name, exact: true }),
+    ).toHaveCSS("font-size", size);
+    await expect(
+      page.getByRole("menuitemradio", { name, exact: true }),
+    ).toHaveCSS("min-height", "38px");
+  }
+  await page.keyboard.press("Escape");
+  await block
+    .getByRole("button", { name: "Add a block above", exact: true })
+    .click();
+  const menu = page.getByRole("dialog", { name: "Add a block", exact: true });
+  await expect(
+    menu.getByRole("searchbox", { name: "Search blocks", exact: true }),
+  ).toHaveCSS("height", "36px");
+  await expect(menu.locator(".editor-block-menu-heading")).toHaveCSS(
+    "font-size",
+    "13px",
+  );
+  await expect(
+    menu.getByRole("heading", { name: "Text", exact: true }),
+  ).toHaveCSS("font-size", "11px");
+});
