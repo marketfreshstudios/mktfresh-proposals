@@ -5,7 +5,7 @@ import { setup, staff, clientActor } from "../tests/helpers";
 import { authoringPreview } from "../src/lib/authoring-preview";
 import { pdfPreview, type PdfPreview } from "../src/lib/pdf-preview";
 import { previewResult } from "../src/lib/preview";
-import type { Block, Quote } from "../src/lib/model";
+import type { Block, Proposal, Quote } from "../src/lib/model";
 export async function editorFixture(
   page: Page,
   long = false,
@@ -13,6 +13,7 @@ export async function editorFixture(
     content?: Block[];
     quote?: Quote | ((base: Quote) => Quote);
     beforeSave?: (input: any) => Promise<void>;
+    onReview?: (result: Proposal) => Promise<void>;
     onLayout?: (input: any, data: PdfPreview) => Promise<void>;
   } = {},
 ) {
@@ -85,8 +86,16 @@ export async function editorFixture(
           await options.beforeSave?.(input);
           active = await f.service.edit(active.id, input, staff);
         }
-        if (parts[2] === "send")
-          active = await f.service.send(active.id, staff);
+        if (parts[2] === "send") {
+          const input = req.postDataJSON();
+          active = await f.service.send(
+            active.id,
+            staff,
+            input.confirm_ai_review,
+            input.sender_user_id,
+            { expected_revision: input.revision },
+          );
+        }
         if (parts[2] === "actions") {
           const input = req.postDataJSON();
           active = await proposalAction(
@@ -100,12 +109,14 @@ export async function editorFixture(
             f.service,
           );
         }
-        if (parts[2] === "review")
+        if (parts[2] === "review") {
           active = await f.service.reviewSections(
             active.id,
             req.postDataJSON(),
             staff,
           );
+          await options.onReview?.(active);
+        }
         if (parts[2] === "preview-pdf") {
           calls.push(req.postDataJSON());
           value = await pdfPreview(

@@ -312,43 +312,55 @@ function QuoteEditorContent({
     window.addEventListener("keydown", guard, true);
     return () => window.removeEventListener("keydown", guard, true);
   }, [stale, locked]);
-  async function review(sectionIds: string[], reviewed: boolean) {
-    if (reviewBusy) return;
-    setReviewBusy(true);
-    try {
-      for (let attempts = 0; savingRef.current && attempts < 200; attempts++)
-        await new Promise((r) => setTimeout(r, 50));
-      if (!(await save())) return;
-      const captured = generation.current;
-      const result = await post<Proposal>(`/api/proposals/${p.id}/review`, {
-        revision: revision.current,
-        section_ids: sectionIds,
-        reviewed,
-      });
-      revision.current = result.revision;
-      if (captured === generation.current)
-        setP({ ...result, quote: editorQuote(result) });
-      else
-        setP((current) => ({
-          ...current,
-          revision: result.revision,
-          events: result.events,
-          ai_unreviewed: result.ai_unreviewed,
-          content: current.content.map((b) => {
-            const returned = result.content.find((v) => v.id === b.id);
-            return returned?.ai_review
-              ? { ...b, ai_review: returned.ai_review }
-              : b;
-          }),
-        }));
-      onSaved(result);
-      setError("");
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) setStale(true);
-      setError((e as Error).message);
-    } finally {
-      setReviewBusy(false);
-    }
+  function review(sectionIds: string[], reviewed: boolean): Promise<boolean> {
+    if (sendFlight.current) return Promise.resolve(false);
+    if (reviewFlight.current) return reviewFlight.current;
+    const flight = (async () => {
+      setReviewBusy(true);
+      try {
+        // Review is a revision-changing write too. Drain the actual save promise,
+        // then keep other saves/Send behind this acknowledgment (not a timer).
+        if (!(await saveContent())) return false;
+        const captured = generation.current;
+        const result = await post<Proposal>(`/api/proposals/${p.id}/review`, {
+          revision: revision.current,
+          section_ids: sectionIds,
+          reviewed,
+        });
+        revision.current = result.revision;
+        latest.current =
+          captured === generation.current
+            ? { ...result, quote: editorQuote(result) }
+            : {
+                ...latest.current,
+                revision: result.revision,
+                events: result.events,
+                ai_unreviewed: result.ai_unreviewed,
+                content: latest.current.content.map((b) => {
+                  const returned = result.content.find((v) => v.id === b.id);
+                  return returned?.ai_review
+                    ? { ...b, ai_review: returned.ai_review }
+                    : b;
+                }),
+              };
+        setP(latest.current);
+        setLastSaved(result.updated_at ?? null);
+        onSaved(result);
+        setError("");
+        return true;
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409) setStale(true);
+        setError((e as Error).message);
+        return false;
+      } finally {
+        setReviewBusy(false);
+      }
+    })();
+    reviewFlight.current = flight;
+    void flight.finally(() => {
+      if (reviewFlight.current === flight) reviewFlight.current = null;
+    });
+    return flight;
   }
   function showReview() {
     if (drawer) {
@@ -491,11 +503,12 @@ function QuoteEditorContent({
   const [lastSaved, setLastSaved] = useState<string | null>(
     initial.updated_at ?? null,
   );
-  const saveFlight = useRef<Promise<boolean> | null>(null);
+  const saveFlight = useRef<Promise<boolean> | null>(null),
+    reviewFlight = useRef<Promise<boolean> | null>(null),
+    sendFlight = useRef<Promise<boolean> | null>(null);
   const allowLeave = useRef(false);
   const generation = useRef(0),
     revision = useRef(initial.revision),
-    savingRef = useRef(false),
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
@@ -573,7 +586,15 @@ function QuoteEditorContent({
       return false;
     }
   }
+  async function settleEdits(): Promise<boolean> {
+    while (reviewFlight.current)
+      if (!(await reviewFlight.current)) return false;
+    return saveContent();
+  }
   function save(): Promise<boolean> {
+    return sendFlight.current ?? settleEdits();
+  }
+  function saveContent(): Promise<boolean> {
     // A derived plan never starts a write, changes the revision, or becomes a
     // recovered edit. Attach a fresh plan only to an actual content save.
     if (saveFlight.current) return saveFlight.current;
@@ -584,7 +605,6 @@ function QuoteEditorContent({
       return Promise.resolve(false);
     }
     const flight = (async () => {
-      savingRef.current = true;
       setSaving(true);
       try {
         while (dirtyRef.current) {
@@ -650,7 +670,6 @@ function QuoteEditorContent({
         setError(e instanceof Error ? e.message : "Unable to save");
         return false;
       } finally {
-        savingRef.current = false;
         setSaving(false);
       }
     })();
@@ -661,10 +680,47 @@ function QuoteEditorContent({
     return flight;
   }
   useEffect(() => {
-    if (!dirty || saving || stale || error || offline || reviewBusy) return;
+    if (!dirty || saving || stale || error || offline || reviewBusy || sending)
+      return;
     const id = setTimeout(() => void save(), 900);
     return () => clearTimeout(id);
-  }, [p, dirty, saving, stale, error, offline, reviewBusy]);
+  }, [p, dirty, saving, stale, error, offline, reviewBusy, sending]);
+  function sendProposal(): Promise<boolean> {
+    if (sendFlight.current) return sendFlight.current;
+    const flight = (async () => {
+      setSending(true);
+      try {
+        if (!(await settleEdits())) return false;
+        paper.current?.dispatchEvent(new Event("pagination-flush"));
+        await post(`/api/proposals/${p.id}/send`, {
+          revision: revision.current,
+          pagination: pagePlan.current,
+          confirm_ai_review: confirmed,
+          sender_user_id: sender,
+          subject: emailSubject,
+          body: note,
+          ...(!protectedLink
+            ? { password: null }
+            : password
+              ? { password }
+              : {}),
+        });
+        location.href = `/proposals/${p.id}`;
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to send");
+        return false;
+      } finally {
+        setSending(false);
+      }
+    })();
+    // A second click/save cannot start another write while publication is pending.
+    sendFlight.current = flight;
+    void flight.finally(() => {
+      if (sendFlight.current === flight) sendFlight.current = null;
+    });
+    return flight;
+  }
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirtyRef.current && !allowLeave.current) {
@@ -1628,7 +1684,6 @@ function QuoteEditorContent({
               !!emailError ||
               stale ||
               offline ||
-              saving ||
               sending ||
               (protectedLink && !p.password_hash && password.length < 8)
             }
@@ -1638,31 +1693,7 @@ function QuoteEditorContent({
                 : undefined
             }
             busy={sending}
-            onClick={async () => {
-              if (!(await save())) return;
-              setSending(true);
-              try {
-                paper.current?.dispatchEvent(new Event("pagination-flush"));
-                await post(`/api/proposals/${p.id}/send`, {
-                  revision: revision.current,
-                  pagination: pagePlan.current,
-                  confirm_ai_review: confirmed,
-                  sender_user_id: sender,
-                  subject: emailSubject,
-                  body: note,
-                  ...(!protectedLink
-                    ? { password: null }
-                    : password
-                      ? { password }
-                      : {}),
-                });
-                location.href = `/proposals/${p.id}`;
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "Unable to send");
-              } finally {
-                setSending(false);
-              }
-            }}
+            onClick={() => void sendProposal()}
           >
             Send to {p.client.first_name || "client"}
           </Button>
