@@ -2895,7 +2895,7 @@
   :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
     .outline-page-title
     > button:first-child {
-    padding: 0 10px;
+    padding: 0 10px 0 12px;
     min-height: 30px;
     font: 600 11px/16px var(--font-ui);
     color: var(--ink-muted);
@@ -2934,7 +2934,8 @@
   :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
     .sections-nav
     .outline-subheading {
-    padding-left: 22px;
+    margin-left: 0;
+    width: 100%;
   }
   :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
     .sections-nav
@@ -5867,22 +5868,22 @@
   background: var(--surface-page);
 }
 .sections-nav .outline-page > .quote-sortable {
-  padding-left: 16px !important;
+  padding-left: 0 !important;
 }
-.sections-nav .outline-page > .quote-sortable > .drag-handle {
-  left: 0;
+nav.sections-nav .outline-page > .quote-sortable > .drag-handle {
+  left: -12px;
   width: 16px;
   min-width: 16px;
   transform: none;
 }
-.sections-nav > .quote-sortable > .drag-handle {
-  left: 0;
+nav.sections-nav > .quote-sortable > .drag-handle {
+  left: -12px;
   top: 8px;
   width: 16px;
   min-width: 16px;
 }
 .sections-nav .outline-page-title {
-  padding-left: 16px;
+  padding-left: 0;
 }
 .sections-nav .outline-page-title > button:first-child {
   color: var(--ink-quiet);

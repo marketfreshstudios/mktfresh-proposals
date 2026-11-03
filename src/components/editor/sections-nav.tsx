@@ -15,6 +15,43 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useBlockFeedback, useBlockSelection } from "../block-controls";
+function SectionRow({
+  label,
+  onClick,
+  current,
+  pending,
+  subheading,
+  className = "",
+  title = label,
+}: {
+  label: string;
+  onClick: () => void;
+  current?: boolean;
+  pending?: boolean;
+  subheading?: boolean;
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`section-row ${subheading ? "outline-subheading" : "outline-section"} ${className}`}
+      aria-current={current ? "location" : undefined}
+      title={title}
+      onClick={onClick}
+    >
+      <span className="section-label">{label}</span>
+      {pending && <small className="review-dot" aria-label="Needs AI review" />}
+    </button>
+  );
+}
+function blockLabel(block: Block) {
+  return block.type === "pricing_table"
+    ? block.text || "Investment"
+    : block.type === "contract"
+      ? block.text || "Statement of Work & Contract"
+      : "Signatures";
+}
 export function SectionsNav({
   content,
   pagination,
@@ -160,7 +197,9 @@ export function SectionsNav({
                         ?.scrollIntoView({ block: "start" });
                   }}
                 >
-                  Page {p.number}
+                  <span className="section-label page-label">
+                    Page {p.number}
+                  </span>
                 </button>
                 {
                   <>
@@ -185,16 +224,11 @@ export function SectionsNav({
                 }
               </div>
               {p.number === 1 && (
-                <button
-                  type="button"
-                  className="outline-section"
-                  aria-current={
-                    currentSectionId === "cover" ? "location" : undefined
-                  }
+                <SectionRow
+                  label="Cover"
+                  current={currentSectionId === "cover"}
                   onClick={() => onFocus("cover")}
-                >
-                  <span className="section-label">Cover</span>
-                </button>
+                />
               )}
               <SortableContext
                 items={p.sections.map((s) => `section:${s.id}`)}
@@ -206,45 +240,31 @@ export function SectionsNav({
                     id={`section:${s.id}`}
                     label={`section ${s.title}`}
                   >
-                    <button
-                      type="button"
-                      className="outline-section"
-                      aria-current={
-                        currentSectionId === s.id ? "location" : undefined
+                    <SectionRow
+                      label={
+                        [
+                          "pricing_table",
+                          "signature_block",
+                          "contract",
+                        ].includes(s.blocks[0]?.type)
+                          ? blockLabel(s.blocks[0])
+                          : s.title
                       }
+                      current={currentSectionId === s.id}
+                      pending={s.pending}
                       title={s.title}
                       onClick={() => onFocus(s.id)}
-                    >
-                      <span className="section-label">
-                        {s.blocks[0]?.type === "pricing_table"
-                          ? s.blocks[0].text || "Investment"
-                          : s.blocks[0]?.type === "signature_block"
-                            ? "Signatures"
-                            : s.title}
-                      </span>
-                      {s.pending && (
-                        <small
-                          className="review-dot"
-                          aria-label="Needs AI review"
-                        />
-                      )}
-                    </button>
+                    />
                     {s.blocks
                       .filter((b) => b.type === "heading" && (b.level ?? 1) > 1)
                       .map((b) => (
-                        <button
+                        <SectionRow
                           key={b.id}
-                          className="outline-subheading"
-                          aria-current={
-                            currentSectionId === b.id ? "location" : undefined
-                          }
-                          title={b.text || "Untitled subheading"}
+                          subheading
+                          label={b.text || "Untitled subheading"}
+                          current={currentSectionId === b.id}
                           onClick={() => onFocus(b.id!)}
-                        >
-                          <span className="section-label">
-                            {b.text || "Untitled subheading"}
-                          </span>
-                        </button>
+                        />
                       ))}
                   </Sortable>
                 ))}
@@ -253,58 +273,34 @@ export function SectionsNav({
                 pageBlocks(p.number)
                   .filter((b) => !p.sections.some((s) => s.id === b.id))
                   .map((b) => (
-                    <button
-                      type="button"
-                      className="outline-section outline-block"
+                    <SectionRow
+                      className="outline-block"
                       key={b.id}
-                      aria-current={
+                      label={blockLabel(b)}
+                      current={
                         selected === `block-${b.id}` ||
                         selected === `template-${b.id}`
-                          ? "location"
-                          : undefined
                       }
                       onClick={() => onFocus(b.id!)}
-                      title={
-                        b.type === "pricing_table"
-                          ? b.text || "Investment"
-                          : b.type === "contract"
-                            ? b.text || "Statement of Work & Contract"
-                            : "Signatures"
-                      }
-                    >
-                      <span className="section-label">
-                        {b.type === "pricing_table"
-                          ? b.text || "Investment"
-                          : b.type === "contract"
-                            ? b.text || "Statement of Work & Contract"
-                            : "Signatures"}
-                      </span>
-                    </button>
+                    />
                   ))}
               {!p.sections.length &&
                 !pageBlocks(p.number).length &&
                 p.continuing && (
-                  <button
-                    type="button"
-                    className="outline-section outline-continuing"
+                  <SectionRow
+                    className="outline-continuing"
+                    label={`${p.continuing.title} (continued)`}
                     onClick={() => onPage?.(p.number)}
-                  >
-                    <span className="section-label">
-                      {p.continuing.title} (continued)
-                    </span>
-                  </button>
+                  />
                 )}
               {p.number > 1 &&
                 !p.sections.length &&
                 !pageBlocks(p.number).length &&
                 !p.continuing && (
-                  <button
-                    type="button"
-                    className="outline-section"
+                  <SectionRow
+                    label="Empty page"
                     onClick={() => onPage?.(p.number)}
-                  >
-                    <span className="section-label">Empty page</span>
-                  </button>
+                  />
                 )}
               <button
                 type="button"
