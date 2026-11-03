@@ -1,0 +1,330 @@
+{
+  "after:quote": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Item name",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Description",
+        "height": "54px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Sub-line label for Own It Over Time",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 12px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Amount Kickoff",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "0px",
+        "font": ""
+      },
+      {
+        "name": "Quantity Kickoff",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Interval Kickoff",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Sub-line label for Own It Over Time",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 12px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Amount Monthly",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "0px",
+        "font": ""
+      },
+      {
+        "name": "Quantity Monthly",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Interval Monthly",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(54, 92, 74)",
+        "radius": "9px",
+        "font": "500 14px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(28, 27, 24)",
+        "radius": "0px",
+        "font": "500 14px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "40px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "10px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "after:fields": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Search fields",
+        "height": "40px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "after:styles": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Page margin top",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin right",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin bottom",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin left",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "600 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 font",
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 size (px)",
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "600 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 weight",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 space above (px)",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 space below (px)",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "0px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 letter spacing (em)",
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "after:send": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": "500 13px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "12px / 17px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Valid until",
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Subject",
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": "14px / 18px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "after:sections": {
+    "box": {
+      "x": 0,
+      "y": 56,
+      "width": 220,
+      "height": 1044,
+      "top": 56,
+      "right": 220,
+      "bottom": 1100,
+      "left": 0
+    },
+    "inputs": []
+  }
+}

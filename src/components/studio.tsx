@@ -1,6 +1,8 @@
 "use client";
 import { contentSections } from "../lib/ai-review";
 import { EditorHeader, PanelChevron } from "./editor-header";
+import { EditorButton } from "./editor/editor-button";
+import { EditorNotice } from "./editor/editor-notice";
 import { TemplateHistoryControls } from "./editor/template-history-controls";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
@@ -1757,12 +1759,13 @@ function TemplatesStudioContent({
           </Button>
         </EditorHeader>
         {templateRecovery && (
-          <Banner
-            tone="warning"
-            title="Your unsaved edits were kept as a suggestion."
-          >
-            <p>{templateRecovery.name}</p>
-            <Button
+          <EditorNotice kind="recovered">
+            <span title={templateRecovery.name}>
+              Your unsaved edits were kept as a suggestion.{" "}
+              {templateRecovery.name}
+            </span>
+            <EditorButton
+              variant="primary"
               onClick={() => {
                 if (mode === "templates") editDraft(templateRecovery);
                 else editSaved(templateRecovery);
@@ -1770,16 +1773,26 @@ function TemplatesStudioContent({
               }}
             >
               Restore my edits
-            </Button>
-            <Button
+            </EditorButton>
+            <EditorButton
               onClick={() => {
                 localStorage.removeItem(templateCache(currentResource.key));
                 setTemplateRecovery(null);
               }}
             >
               Keep current draft
-            </Button>
-          </Banner>
+            </EditorButton>
+          </EditorNotice>
+        )}
+        {templateError && (
+          <EditorNotice kind="error">
+            <span title={templateError}>
+              Your changes are still here. {templateError}
+            </span>
+            <EditorButton variant="primary" onClick={() => void saveTemplate()}>
+              Retry
+            </EditorButton>
+          </EditorNotice>
         )}
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
@@ -1824,7 +1837,6 @@ function TemplatesStudioContent({
               Edits apply to new proposals only. Existing agreements keep their
               saved copy.
             </p>
-            <SaveError error={templateError} />
             {mode === "templates" && (
               <label className="check">
                 <input

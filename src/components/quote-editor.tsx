@@ -4,6 +4,7 @@ import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
 import { ReadOnlyRegion } from "./editor/read-only-region";
 import { EditorNotice } from "./editor/editor-notice";
+import { EditorButton } from "./editor/editor-button";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
@@ -572,6 +573,8 @@ function QuoteEditorContent({
       setLastSaved(current.updated_at ?? null);
       latest.current = { ...current, quote: editorQuote(current) };
       setP(latest.current);
+      // A rejected acknowledgement belongs to the old revision, not this reload.
+      setConfirmed(false);
       setDirty(false);
       setStale(false);
       setError("");
@@ -974,6 +977,8 @@ function QuoteEditorContent({
         className="quote-item quote-row"
         data-expanded={expanded}
         data-details={itemDetails === i.id}
+        data-default={i.default_selected}
+        data-optional={i.optional}
         key={i.id}
       >
         <button
@@ -1006,71 +1011,76 @@ function QuoteEditorContent({
               value={i.name}
               onChange={(e) => updateItem(i.id, { name: e.target.value })}
             />
-            <Field label="Description">
-              <textarea
-                value={i.description}
-                onChange={(e) =>
-                  updateItem(i.id, { description: e.target.value })
-                }
-              />
-            </Field>
+            <textarea
+              aria-label="Description"
+              placeholder="Description"
+              rows={2}
+              value={i.description}
+              onChange={(e) =>
+                updateItem(i.id, { description: e.target.value })
+              }
+            />
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
                 <div className="subline-grid">
                   <div className="subline-label">
-                    <input
-                      aria-label={`Sub-line label for ${i.name}`}
-                      placeholder="Sub-line label (optional)"
-                      value={s.label ?? ""}
-                      onChange={(e) =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.map((v) =>
-                            v.id === s.id ? { ...v, label: e.target.value } : v,
-                          ),
-                        })
-                      }
-                    />
-                    {i.sublines.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
-                        onClick={() =>
+                    {i.sublines.length === 1 ? (
+                      <span>Amount</span>
+                    ) : (
+                      <input
+                        aria-label={`Sub-line label for ${i.name}`}
+                        placeholder="Label"
+                        value={s.label ?? ""}
+                        onChange={(e) =>
                           updateItem(i.id, {
-                            sublines: i.sublines.filter((v) => v.id !== s.id),
+                            sublines: i.sublines.map((v) =>
+                              v.id === s.id
+                                ? { ...v, label: e.target.value }
+                                : v,
+                            ),
                           })
                         }
-                      >
-                        Remove
-                      </Button>
+                      />
                     )}
                   </div>
                   <Field label={`Amount · ${p.currency}`}>
-                    <input
-                      aria-label={`Amount ${s.label || i.name}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={s.amount / 100}
-                      onChange={(e) =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.map((v) =>
-                            v.id === s.id
-                              ? {
-                                  ...v,
-                                  amount: Math.round(
-                                    Number(e.target.value) * 100,
-                                  ),
-                                }
-                              : v,
-                          ),
-                          price_review: Object.fromEntries(
-                            Object.entries(i.price_review ?? {}).filter(
-                              ([key]) => key !== s.id,
-                            ),
-                          ),
+                    <span className="currency-input">
+                      <span aria-hidden="true">
+                        {new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: p.currency,
                         })
-                      }
-                    />
+                          .formatToParts(0)
+                          .find((part) => part.type === "currency")?.value ??
+                          p.currency}
+                      </span>
+                      <input
+                        aria-label={`Amount ${s.label || i.name}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={s.amount / 100}
+                        onChange={(e) =>
+                          updateItem(i.id, {
+                            sublines: i.sublines.map((v) =>
+                              v.id === s.id
+                                ? {
+                                    ...v,
+                                    amount: Math.round(
+                                      Number(e.target.value) * 100,
+                                    ),
+                                  }
+                                : v,
+                            ),
+                            price_review: Object.fromEntries(
+                              Object.entries(i.price_review ?? {}).filter(
+                                ([key]) => key !== s.id,
+                              ),
+                            ),
+                          })
+                        }
+                      />
+                    </span>
                   </Field>
                   <Field label="Qty">
                     <input
@@ -1153,6 +1163,19 @@ function QuoteEditorContent({
                   className="quote-mapping-details"
                 >
                   <summary>Billing mapping</summary>
+                  {i.sublines.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
+                      onClick={() =>
+                        updateItem(i.id, {
+                          sublines: i.sublines.filter((v) => v.id !== s.id),
+                        })
+                      }
+                    >
+                      Remove sub-line
+                    </Button>
+                  )}
                   <Field label="Stripe lookup key">
                     <input
                       value={s.stripe_lookup_key ?? ""}
@@ -1249,14 +1272,7 @@ function QuoteEditorContent({
                 </label>
               )}
             </div>
-            {i.choice_group_id ? (
-              <Button
-                variant="ghost"
-                onClick={() => unlink(i.choice_group_id!)}
-              >
-                Remove alternative link
-              </Button>
-            ) : (
+            {!i.choice_group_id && i.optional ? (
               <Field label="Link as alternative">
                 <select value="" onChange={(e) => link(i, e.target.value)}>
                   <option value="">Choose another optional item</option>
@@ -1269,28 +1285,30 @@ function QuoteEditorContent({
                     ))}
                 </select>
               </Field>
-            )}
-            {i.source === "custom" && (
-              <Field label="Custom family">
-                <select
-                  value={i.custom_family_id ?? ""}
-                  onChange={(e) =>
-                    updateItem(i.id, {
-                      custom_family_id: e.target.value || null,
-                    })
-                  }
-                >
-                  <option value="">No family — one-time only</option>
-                  {families
-                    .filter((f) => f.active)
-                    .map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-            )}
+            ) : null}
+            {i.source === "custom" &&
+              itemDetails === i.id &&
+              i.sublines.some((s) => s.interval !== "one_time") && (
+                <Field label="Custom family">
+                  <select
+                    value={i.custom_family_id ?? ""}
+                    onChange={(e) =>
+                      updateItem(i.id, {
+                        custom_family_id: e.target.value || null,
+                      })
+                    }
+                  >
+                    <option value="">Choose a family</option>
+                    {families
+                      .filter((f) => f.active)
+                      .map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              )}
             <details
               open={itemDetails === i.id}
               className="quote-mapping-details"
@@ -1430,25 +1448,27 @@ function QuoteEditorContent({
             </Sortable>
           ))}
         </Reorder>
-        <Field label="+ Add product">
-          <select
-            value=""
-            onChange={(e) => {
-              const item = catalog.find((i) => i.id === e.target.value);
-              if (item) addItem(item);
-            }}
-          >
-            <option value="">Choose an item</option>
-            {sellableCatalogue(catalog)
-              .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {itemDisplayName(c)}
-                </option>
-              ))}
-          </select>
-        </Field>
-        <Button onClick={() => addItem()}>+ Custom</Button>
+        <div className="quote-add-row">
+          <Field label="+ Add product">
+            <select
+              value=""
+              onChange={(e) => {
+                const item = catalog.find((i) => i.id === e.target.value);
+                if (item) addItem(item);
+              }}
+            >
+              <option value="">+ Add product</option>
+              {sellableCatalogue(catalog)
+                .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {itemDisplayName(c)}
+                  </option>
+                ))}
+            </select>
+          </Field>
+          <Button onClick={() => addItem()}>+ Custom</Button>
+        </div>
       </div>
       <footer>
         <p className="eyebrow">Client sees by default</p>
@@ -1485,24 +1505,26 @@ function QuoteEditorContent({
   ) : null;
   const sendPanel = (
     <div className="send-panel stack">
-      <h3>Ready to send?</h3>
       <ul className="send-checklist">
-        {ready.errors.map((e, n) => (
-          <li className="readiness-row blocker" key={n}>
-            <span className="readiness-badge" aria-hidden="true">
-              !
-            </span>
-            <div>
-              <strong>Blocker</strong>
-              <p>{e}</p>
-              {e === "Choose which Stripe customer this client is" && (
-                <a href={`/clients/${p.client.id}#stripe-customers`}>
-                  Choose Stripe customer
-                </a>
-              )}
-            </div>
-          </li>
-        ))}
+        {ready.errors
+          .filter((e) => !e.startsWith("Confirm review of AI changes"))
+          .map((e, n) => (
+            <li className="readiness-row blocker" key={n}>
+              <span className="readiness-badge" aria-hidden="true">
+                !
+              </span>
+              <div>
+                <p>
+                  <strong>Needs attention.</strong> {e}
+                </p>
+                {e === "Choose which Stripe customer this client is" && (
+                  <a href={`/clients/${p.client.id}#stripe-customers`}>
+                    Choose Stripe customer
+                  </a>
+                )}
+              </div>
+            </li>
+          ))}
         {[
           ...ready.warnings,
           ...(pdfPreview.data?.layout.overflow_pages ?? []).map(
@@ -1519,22 +1541,48 @@ function QuoteEditorContent({
               ?
             </span>
             <div>
-              <strong>Review</strong>
-              <p>{e}</p>
+              <p>
+                {e.includes(": custom — check scope and price") ? (
+                  <>
+                    <strong>Custom line.</strong> {e.split(": custom —")[0]} has
+                    a manual price. Check the scope and price.
+                  </>
+                ) : (
+                  <>
+                    <strong>Review.</strong> {e}
+                  </>
+                )}
+              </p>
             </div>
           </li>
         ))}
-        {ready.ready && (
+        {ready.errors.every((e) =>
+          e.startsWith("Confirm review of AI changes"),
+        ) && (
           <li className="readiness-row success">
             <span className="readiness-badge" aria-hidden="true">
               ✓
             </span>
-            <p>Content, quote and signature blocks are ready.</p>
+            <p>Quote, contract and signature blocks are in place.</p>
           </li>
         )}
       </ul>
-      {pending.length > 0 && (
-        <div className="send-ai-review">
+      {/* A fast review response must not detach the native control mid-activation. */}
+      <div
+        className="send-ai-review readiness-row blocker"
+        hidden={pending.length === 0}
+      >
+        <span className="readiness-badge" aria-hidden="true">
+          !
+        </span>
+        <div className="send-ai-review-body">
+          <p>
+            <strong>
+              {pending.length} AI-written{" "}
+              {pending.length === 1 ? "section" : "sections"}.
+            </strong>{" "}
+            {pending.join(", ")}
+          </p>
           <label className="check">
             <input
               type="checkbox"
@@ -1551,13 +1599,12 @@ function QuoteEditorContent({
               }}
             />
             I've reviewed these AI-written sections
-            <span>{pending.join(", ")}</span>
           </label>
           <button type="button" className="text-link" onClick={showReview}>
             Show me
           </button>
         </div>
-      )}
+      </div>
       <Field label="Valid until">
         <ValidityField
           timezone={settings?.timezone ?? "UTC"}
@@ -1686,11 +1733,6 @@ function QuoteEditorContent({
               offline ||
               sending ||
               (protectedLink && !p.password_hash && password.length < 8)
-            }
-            note={
-              !ready.ready
-                ? "Resolve the checks above before sending."
-                : undefined
             }
             busy={sending}
             onClick={() => void sendProposal()}
@@ -2637,9 +2679,9 @@ function QuoteEditorContent({
           <span title="This proposal changed in another tab or by another person.">
             This proposal changed in another tab or by another person.
           </span>
-          <button type="button" onClick={() => void reloadConflict()}>
+          <EditorButton variant="primary" onClick={() => void reloadConflict()}>
             Reload
-          </button>
+          </EditorButton>
         </EditorNotice>
       )}
       {recovery && !stale && (
@@ -2666,7 +2708,8 @@ function QuoteEditorContent({
               <p>{recovery.quote?.length ?? 0} saved quote items.</p>
             </div>
           </details>
-          <Button
+          <EditorButton
+            variant="primary"
             disabled={locked}
             onClick={async () => {
               const edits = editable(
@@ -2679,8 +2722,8 @@ function QuoteEditorContent({
             }}
           >
             Keep
-          </Button>
-          <Button
+          </EditorButton>
+          <EditorButton
             onClick={async () => {
               if (staleRef.current && !(await reloadConflict())) return;
               localStorage.removeItem(cacheKey);
@@ -2688,14 +2731,16 @@ function QuoteEditorContent({
             }}
           >
             Discard
-          </Button>
+          </EditorButton>
         </EditorNotice>
       )}
-      {panels.phone && error && !stale && (
-        <Banner tone="danger" title="Your changes are kept here">
-          {error}
-          <Button onClick={() => void save()}>Try saving again</Button>
-        </Banner>
+      {error && !stale && (
+        <EditorNotice kind="error">
+          <span title={error}>Your changes are kept here. {error}</span>
+          <EditorButton variant="primary" onClick={() => void save()}>
+            Retry
+          </EditorButton>
+        </EditorNotice>
       )}
       {p.creation_warnings?.length ? (
         <Banner tone="warning" title="Template defaults skipped">

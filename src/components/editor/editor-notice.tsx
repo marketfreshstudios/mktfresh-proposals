@@ -4,13 +4,13 @@ export function EditorNotice({
   kind,
   children,
 }: {
-  kind: "recovered" | "stale";
+  kind: "recovered" | "stale" | "error";
   children: ReactNode;
 }) {
   return (
     <div
       className={`editor-notice editor-notice-${kind}`}
-      role={kind === "stale" ? "alert" : "status"}
+      role={kind === "recovered" ? "status" : "alert"}
     >
       {children}
     </div>

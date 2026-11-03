@@ -149,3 +149,96 @@ test("Send retains the 409 protection for another session's edit after review", 
   expect(f.active().title).toBe("Another staff member's newer title");
   expect(f.active().events.filter((e) => e.type === "sent")).toHaveLength(0);
 });
+
+test("review acknowledgement stays attached and checked when a completed row is hidden", async ({
+  page,
+}) => {
+  const response = gate();
+  const f = await editorFixture(page, false, {
+    content: aiContent(),
+    onReview: async () => response.promise,
+  });
+  const reviews: any[] = [];
+  page.on("request", (request) => {
+    if (
+      new URL(request.url()).pathname === `/api/proposals/${f.draft.id}/review`
+    )
+      reviews.push(request.postDataJSON());
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.getByRole("tab", { name: "Send", exact: true }).click();
+  const checkbox = page.getByRole("checkbox", {
+    name: /I've reviewed these AI-written sections/,
+  });
+  const nativeControl = (await checkbox.elementHandle())!;
+  try {
+    // One ordinary label click toggles immediately, independently of the response.
+    await page
+      .getByText("I've reviewed these AI-written sections", { exact: true })
+      .click();
+    await expect(checkbox).toBeChecked();
+    await expect.poll(() => reviews.length).toBe(1);
+    response.release();
+    await expect(checkbox).toHaveCount(0);
+    await expect(page.locator(".editor-ai-done")).toBeVisible();
+    // The activating browser/assistive-technology node must survive completion;
+    // unmounting here races the native checked-state verification in CI.
+    expect(await nativeControl.evaluate((el) => el.isConnected)).toBe(true);
+    expect(
+      await nativeControl.evaluate((el) => (el as HTMLInputElement).checked),
+    ).toBe(true);
+    await expect(page.locator(".send-ai-review")).toBeHidden();
+    expect(reviews).toHaveLength(1);
+    expect(f.active().content[1].ai_review?.reviewed).toBe(true);
+  } finally {
+    response.release();
+  }
+});
+
+test("review acknowledgement toggles once on a concurrent-edit 409 and resets for the reloaded revision", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, { content: aiContent() });
+  const sends: any[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === `/api/proposals/${f.draft.id}/send`)
+      sends.push(request.postDataJSON());
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.getByRole("tab", { name: "Send", exact: true }).click();
+  const checkbox = page.getByRole("checkbox", {
+    name: /I've reviewed these AI-written sections/,
+  });
+  const nativeControl = (await checkbox.elementHandle())!;
+  await f.editRemote({ title: "Another session's version needs review" });
+  const rejected = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === `/api/proposals/${f.draft.id}/review`,
+  );
+  await checkbox.check();
+  expect((await rejected).status()).toBe(409);
+  await expect(page.locator(".editor-notice-stale")).toBeVisible();
+  expect(
+    await nativeControl.evaluate((el) => (el as HTMLInputElement).checked),
+  ).toBe(true);
+  await expect(page.locator(".send-ai-review input")).toBeDisabled();
+  expect(f.active().content[1].ai_review?.reviewed).toBe(false);
+  expect(sends).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  // The rejected acknowledgement cannot approve the newly loaded revision.
+  await expect(checkbox).not.toBeChecked();
+  await expect(checkbox).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Send to Jane", exact: true }),
+  ).toBeDisabled();
+  const accepted = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === `/api/proposals/${f.draft.id}/review`,
+  );
+  await checkbox.check();
+  expect((await accepted).status()).toBe(200);
+  await expect(checkbox).toHaveCount(0);
+  expect(f.active().content[1].ai_review?.reviewed).toBe(true);
+  expect(sends).toHaveLength(0);
+});

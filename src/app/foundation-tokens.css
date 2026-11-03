@@ -41,6 +41,17 @@
   --ai-soft: #eee8fb;
   --neutral: #5f5b53;
   --neutral-soft: #ece8e1;
+  --ink-quiet: #8a857b;
+  --editor-control-border: #ddd8ce;
+  --editor-rule: #e3ded4;
+  --editor-drag-ink: #a39d92;
+  --editor-disabled-ground: #d8d3ca;
+  --editor-disabled-ink: #5f5b53;
+  --editor-shadow-card: 0 2px 6px rgba(20, 18, 14, 0.06);
+  --editor-menu-serif: "Source Serif 4", Georgia, serif;
+  --editor-preview-title-scale: 0.6;
+  --editor-preview-heading-scale: 0.7083333;
+  --editor-preview-body-scale: 0.8235294;
   --overlay: rgba(20, 18, 14, 0.45);
   --shadow-md:
     0 2px 4px rgba(20, 18, 14, 0.06), 0 8px 16px rgba(20, 18, 14, 0.08);

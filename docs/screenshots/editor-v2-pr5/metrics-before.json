@@ -1,0 +1,560 @@
+{
+  "before:quote": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Item name",
+        "height": "40px",
+        "border": "rgb(28, 27, 24)",
+        "radius": "0px",
+        "font": "600 14px / 20px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "44px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "12px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Sub-line label for Own It Over Time",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "7px",
+        "font": "12px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Amount Kickoff",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Quantity Kickoff",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Interval Kickoff",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "12px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Sub-line label for Own It Over Time",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "7px",
+        "font": "12px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Amount Monthly",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Quantity Monthly",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Interval Monthly",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "12px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(54, 92, 74)",
+        "radius": "20px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(28, 27, 24)",
+        "radius": "0px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "prototype:quote": {
+    "box": {
+      "x": 1039,
+      "y": 57,
+      "width": 401,
+      "height": 1043,
+      "top": 57,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1039
+    },
+    "inputs": [
+      {
+        "name": "Item name",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 14px \"Instrument Sans\""
+      },
+      {
+        "name": "Description",
+        "height": "54px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "13px / 18px \"Instrument Sans\""
+      },
+      {
+        "name": "Amount",
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": ""
+      },
+      {
+        "name": "Interval",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 13px \"Instrument Sans\""
+      },
+      {
+        "name": "Amount",
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": ""
+      },
+      {
+        "name": "Interval",
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "500 13px \"Instrument Sans\""
+      }
+    ]
+  },
+  "before:fields": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Search fields",
+        "height": "40px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "prototype:fields": {
+    "box": {
+      "x": 1039,
+      "y": 57,
+      "width": 401,
+      "height": 1043,
+      "top": 57,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1039
+    },
+    "inputs": [
+      {
+        "name": "Search fields",
+        "height": "40px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "14px \"Instrument Sans\""
+      }
+    ]
+  },
+  "before:styles": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": "Page margin top",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin right",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin bottom",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Page margin left",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 font",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 size (px)",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 weight",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 space above (px)",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 space below (px)",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "0px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Heading 1 letter spacing (em)",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "prototype:styles": {
+    "box": {
+      "x": 1039,
+      "y": 57,
+      "width": 401,
+      "height": 1043,
+      "top": 57,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1039
+    },
+    "inputs": [
+      {
+        "name": "Top margin",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": "Right margin",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": "Bottom margin",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": "Left margin",
+        "height": "34px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "600 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "600 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "36px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "8px",
+        "font": "600 13px \"Instrument Sans\""
+      }
+    ]
+  },
+  "before:send": {
+    "box": {
+      "x": 1040,
+      "y": 56,
+      "width": 400,
+      "height": 1044,
+      "top": 56,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1040
+    },
+    "inputs": [
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": "14px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "auto",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Valid until",
+        "height": "44px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": "Subject",
+        "height": "42px",
+        "border": "rgb(138, 133, 123)",
+        "radius": "10px",
+        "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      },
+      {
+        "name": null,
+        "height": "18px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": "14px / 22px \"Instrument Sans\", system-ui, sans-serif"
+      }
+    ]
+  },
+  "prototype:send": {
+    "box": {
+      "x": 1039,
+      "y": 57,
+      "width": 401,
+      "height": 1043,
+      "top": 57,
+      "right": 1440,
+      "bottom": 1100,
+      "left": 1039
+    },
+    "inputs": [
+      {
+        "name": null,
+        "height": "13px",
+        "border": "rgb(0, 0, 0)",
+        "radius": "0px",
+        "font": "13.3333px Arial"
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "38px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "500 14px \"Instrument Sans\""
+      },
+      {
+        "name": null,
+        "height": "80px",
+        "border": "rgb(221, 216, 206)",
+        "radius": "9px",
+        "font": "14px / 20px \"Instrument Sans\""
+      }
+    ]
+  },
+  "before:sections": {
+    "box": {
+      "x": 0,
+      "y": 56,
+      "width": 220,
+      "height": 1044,
+      "top": 56,
+      "right": 220,
+      "bottom": 1100,
+      "left": 0
+    },
+    "inputs": []
+  },
+  "prototype:sections": {
+    "box": {
+      "x": 0,
+      "y": 57,
+      "width": 220,
+      "height": 1043,
+      "top": 57,
+      "right": 220,
+      "bottom": 1100,
+      "left": 0
+    },
+    "inputs": []
+  }
+}

@@ -5,8 +5,8 @@ export function DocumentPagination({ pagination }: { pagination?: PagePlan }) {
   return (
     <output
       className="document-page-count"
-      data-page-count={pages + 1}
-      data-document-pages={pages}
+      data-page-count={pagination ? pages + 1 : undefined}
+      data-document-pages={pagination ? pages : undefined}
     >
       {pages} document {pages === 1 ? "page" : "pages"} + completion certificate
       after signing
