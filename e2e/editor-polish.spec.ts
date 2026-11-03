@@ -81,8 +81,16 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     name: "Document formatting",
     exact: true,
   });
-  const undo = bar.getByRole("button", { name: "Undo", exact: true }),
-    redo = bar.getByRole("button", { name: "Redo", exact: true });
+  const undo = page
+      .locator(
+        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+      )
+      .getByRole("button", { name: "Undo", exact: true }),
+    redo = page
+      .locator(
+        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+      )
+      .getByRole("button", { name: "Redo", exact: true });
   const block = (id: string) => page.locator(`[data-block-id="block-${id}"]`),
     text = block(first).locator(".tiptap");
   const savedText = () => {
@@ -318,7 +326,10 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   expect(layers[0]).toBeLessThan(layers[1]);
   expect(layers[1]).toBeLessThan(layers[2]);
   await text.evaluate((el) =>
-    window.scrollBy(0, el.getBoundingClientRect().top - 20),
+    (el.closest<HTMLElement>(".editor-document-region") ?? window).scrollBy(
+      0,
+      el.getBoundingClientRect().top - 20,
+    ),
   );
   expect(
     await page.locator(".quote-editor-top").evaluate((el) => {
@@ -338,7 +349,9 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   });
   await plus.evaluate((el) => {
     el.scrollIntoView({ block: "end" });
-    window.scrollBy(0, 80);
+    (
+      document.querySelector<HTMLElement>(".editor-document-region") ?? window
+    ).scrollBy(0, 80);
   });
   await plus.click();
   await expect(menu).toHaveAttribute("data-placement", "above");
@@ -385,7 +398,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   ).toEqual([true, true]);
   // A reload discards session history, not the saved proposal.
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(undo).toBeDisabled();
@@ -404,7 +417,12 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await expect(page.locator(".studio-block-card")).toHaveCount(
     content.length + 1,
   );
-  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
   await expect(page.locator(".studio-block-card")).toHaveCount(content.length);
   const beforeSwitch = page.locator(".studio-block-card").nth(1);
   await beforeSwitch.click();
@@ -422,7 +440,10 @@ test("editor history, layered chrome and searchable anchored insertion", async (
       .isVisible())
   )
     await page
-      .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+      .getByRole("button", {
+        name: /^Expand (Pages|Sections) sidebar$/,
+        exact: true,
+      })
       .click();
   await page
     .locator(".template-link")
@@ -432,7 +453,11 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await expect(page.locator(".studio-block-card")).toHaveCount(1);
   await expect(page.locator(".studio-block-card")).toContainText("Text");
   await expect(
-    bar.getByRole("button", { name: "Undo", exact: true }),
+    page
+      .locator(
+        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+      )
+      .getByRole("button", { name: "Undo", exact: true }),
   ).toBeDisabled();
   expect(errors).toEqual([]);
 });

@@ -128,7 +128,11 @@ test("block controls own one block and never move document content on hover, foc
     await block.evaluate((el) => {
       el.scrollIntoView({ block: "start" });
       const bar = document.querySelector(".document-formatting-bar");
-      window.scrollBy(
+      const canvas =
+        innerWidth >= 700
+          ? el.closest<HTMLElement>(".editor-document-region")
+          : null;
+      (canvas ?? window).scrollBy(
         0,
         -(
           (bar
@@ -146,6 +150,9 @@ test("block controls own one block and never move document content on hover, foc
       await expect(sheets).toHaveAttribute("data-layout-settled", "true");
     return p.locator(".block-frame").evaluateAll((els) => ({
       scroll: scrollY,
+      canvasScroll:
+        document.querySelector<HTMLElement>(".editor-document-region")
+          ?.scrollTop ?? 0,
       blocks: els.map((el) => {
         const r = el.getBoundingClientRect();
         return {
@@ -162,6 +169,9 @@ test("block controls own one block and never move document content on hover, foc
     const after = await positions(page);
     expect(after.blocks.length).toBe(before.blocks.length);
     expect(Math.abs(after.scroll - before.scroll)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(after.canvasScroll - before.canvasScroll),
+    ).toBeLessThanOrEqual(1);
     for (let n = 0; n < before.blocks.length; n++)
       for (const key of ["x", "y", "w", "h"] as const)
         expect(
@@ -523,26 +533,29 @@ test("block controls own one block and never move document content on hover, foc
             );
             if (width === 1440) {
               const outline = page
-                .locator(".editor-outline > .eyebrow")
+                .locator(".editor-outline > .editor-sidebar-header")
                 .first();
               if (await outline.isVisible()) await outline.click();
               else {
                 await page
                   .getByRole("button", {
-                    name: /^(Expand|Collapse) Pages sidebar$/,
+                    name: /^(Expand|Collapse) (Pages|Sections) sidebar$/,
                     exact: true,
                   })
                   .click();
                 const sections = page.getByRole("dialog", {
-                  name: "Pages",
+                  name: /^(Pages|Sections)$/,
                   exact: true,
                 });
                 await sections
-                  .locator(".outline-overlay-content > .eyebrow")
+                  .locator("header, .editor-sidebar-header")
                   .first()
                   .click();
                 await sections
-                  .getByRole("button", { name: "Done", exact: true })
+                  .getByRole("button", {
+                    name: /^(Done|Collapse Sections sidebar)$/,
+                    exact: true,
+                  })
                   .click();
               }
               await expect(paragraph).toHaveAttribute("data-selected", "false");
@@ -565,8 +578,11 @@ test("block controls own one block and never move document content on hover, foc
             await shot("review-validity", width, theme);
             if (width === 375)
               await page
-                .getByRole("dialog", { name: "Review & send", exact: true })
-                .getByRole("button", { name: "Done", exact: true })
+                .getByRole("dialog", { name: "Send", exact: true })
+                .getByRole("button", {
+                  name: /^(Done|Collapse tools sidebar)$/,
+                  exact: true,
+                })
                 .click();
           }
         }
@@ -658,17 +674,10 @@ test("block controls own one block and never move document content on hover, foc
     },
     staff,
   );
-  await expect(
-    page.getByText("This draft changed elsewhere", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".editor-notice-stale")).toBeVisible();
   await expect(ai.locator(".tiptap")).toHaveText(localText);
-  await page
-    .getByRole("button", { name: "Reload and keep mine", exact: true })
-    .click();
-  const recovery = page.getByText(
-    "Your unsaved edits were kept as a suggestion.",
-    { exact: true },
-  );
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  const recovery = page.locator(".editor-notice-recovered");
   await expect(recovery).toBeVisible();
   await ai.focus();
   const before = await positions(page);

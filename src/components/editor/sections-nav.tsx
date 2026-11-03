@@ -1,22 +1,21 @@
 "use client";
-import type { Block } from "../lib/model";
-import type { BrowserPages } from "./browser-pagination";
+import type { Block } from "../../lib/model";
+import type { BrowserPages } from "../browser-pagination";
 import {
   authoringPages,
   addPage,
   deletePage,
   movePage,
-} from "../lib/editor-pages";
-import { assertBlockMove, documentSectionRanges } from "../lib/editor-moves";
-import { computedPages, moveComputedSection } from "../lib/computed-pages";
-import { Reorder, Sortable } from "./sortable";
-import { Button } from "./ui";
+} from "../../lib/editor-pages";
+import { assertBlockMove, documentSectionRanges } from "../../lib/editor-moves";
+import { computedPages, moveComputedSection } from "../../lib/computed-pages";
+import { Reorder, Sortable } from "../sortable";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useBlockFeedback } from "./block-controls";
-export function PagesOutline({
+import { useBlockFeedback } from "../block-controls";
+export function SectionsNav({
   content,
   pagination,
   onChange,
@@ -24,7 +23,9 @@ export function PagesOutline({
   onFocus,
   measure,
   onPage,
+  currentSectionId,
 }: {
+  currentSectionId?: string | null;
   content: Block[];
   pagination?: BrowserPages | null;
   onChange: (v: Block[]) => void;
@@ -47,7 +48,7 @@ export function PagesOutline({
     ...p.sections.map((s) => `section:${s.id}`),
   ]);
   return (
-    <nav className="pages-outline" aria-label="Pages">
+    <nav className="pages-outline sections-nav" aria-label="Sections">
       {feedback.feedback}
       <Reorder
         ids={ids}
@@ -143,18 +144,16 @@ export function PagesOutline({
                   }}
                 >
                   Page {p.number}
-                  {p.number === 1 ? " · Cover" : ""}
                 </button>
-                {p.explicit && (
+                {
                   <>
                     <button
-                      type="button"
-                      aria-label={`Add page after page ${p.number}`}
-                      onClick={() => add(p.id)}
-                    >
-                      +
-                    </button>
-                    <button
+                      disabled={!p.explicit}
+                      title={
+                        p.explicit
+                          ? `Delete page ${p.number}`
+                          : "Automatic overflow page — edit its content to remove it"
+                      }
                       type="button"
                       aria-label={`Delete page ${p.number}`}
                       onClick={() =>
@@ -166,15 +165,18 @@ export function PagesOutline({
                       ×
                     </button>
                   </>
-                )}
+                }
               </div>
-              {p.continuing && (
+              {p.number === 1 && content.length > 0 && (
                 <button
                   type="button"
-                  className="outline-continued"
-                  onClick={() => onFocus(p.continuing!.id)}
+                  className="outline-section"
+                  aria-current={
+                    currentSectionId === "cover" ? "location" : undefined
+                  }
+                  onClick={() => onFocus("cover")}
                 >
-                  {p.continuing.title} (continued)
+                  <span className="section-label">Cover</span>
                 </button>
               )}
               <SortableContext
@@ -190,9 +192,13 @@ export function PagesOutline({
                     <button
                       type="button"
                       className="outline-section"
+                      aria-current={
+                        currentSectionId === s.id ? "location" : undefined
+                      }
+                      title={s.title}
                       onClick={() => onFocus(s.id)}
                     >
-                      {s.title}
+                      <span className="section-label">{s.title}</span>
                       {s.pending && (
                         <small
                           className="review-dot"
@@ -206,9 +212,15 @@ export function PagesOutline({
                         <button
                           key={b.id}
                           className="outline-subheading"
+                          aria-current={
+                            currentSectionId === b.id ? "location" : undefined
+                          }
+                          title={b.text || "Untitled subheading"}
                           onClick={() => onFocus(b.id!)}
                         >
-                          {b.text || "Untitled subheading"}
+                          <span className="section-label">
+                            {b.text || "Untitled subheading"}
+                          </span>
                         </button>
                       ))}
                   </Sortable>
@@ -222,13 +234,16 @@ export function PagesOutline({
                   onFocus(p.sections.at(-1)?.id ?? p.first ?? "cover")
                 }
               >
-                End of page {p.number}
+                <span>End of page {p.number}</span>
               </button>
             </div>
           </Sortable>
         ))}
       </Reorder>
-      <Button onClick={() => add()}>+ Add page</Button>
+      {!content.length && <p className="muted">No sections yet</p>}
+      <button type="button" className="sections-add-page" onClick={() => add()}>
+        + Add page
+      </button>
     </nav>
   );
 }

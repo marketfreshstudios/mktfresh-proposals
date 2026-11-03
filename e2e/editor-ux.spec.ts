@@ -298,7 +298,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         .isVisible())
     )
       await page
-        .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+        .getByRole("button", {
+          name: /^Expand (Pages|Sections) sidebar$/,
+          exact: true,
+        })
         .click();
     await keyboardMove("Drag section Your next chapter", "ArrowDown", second);
     await expect.poll(() => active.content[0].id).toBe(second);
@@ -310,7 +313,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     );
     await keyboardMove("Drag section Your next chapter", "ArrowUp", second);
     await expect.poll(() => active.content[0].id).toBe(first);
-    const pages = page.getByRole("dialog", { name: "Pages", exact: true });
+    const pages = page.getByRole("dialog", {
+      name: /^(Pages|Sections)$/,
+      exact: true,
+    });
     if (await pages.isVisible())
       await pages.getByRole("button", { name: "Done", exact: true }).click();
     const originalOrder = active.quote.map((i) => i.id);

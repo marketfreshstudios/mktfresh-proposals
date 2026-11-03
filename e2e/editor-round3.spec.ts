@@ -153,7 +153,7 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
       exact: true,
     });
     const rows = await bar
-      .locator(".formatting-button,select")
+      .locator(".formatting-button:visible,select:visible")
       .evaluateAll((els) =>
         els.map((e) => {
           const r = e.getBoundingClientRect();
@@ -210,7 +210,7 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
   ).toBeVisible();
   await page
     .getByRole("button", {
-      name: /^(Expand|Collapse) Pages sidebar$/,
+      name: /^(Expand|Collapse) (Pages|Sections) sidebar$/,
       exact: true,
     })
     .click();
@@ -224,11 +224,14 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
   await page.setViewportSize({ width: 768, height: 1000 });
   await page
     .getByRole("button", {
-      name: /^(Expand|Collapse) Pages sidebar$/,
+      name: /^(Expand|Collapse) (Pages|Sections) sidebar$/,
       exact: true,
     })
     .click();
-  const sections = page.getByRole("dialog", { name: "Pages", exact: true });
+  const sections = page.getByRole("dialog", {
+    name: /^(Pages|Sections)$/,
+    exact: true,
+  });
   await expect(sections).toBeVisible();
   await sections
     .getByRole("button", { name: "The approach", exact: true })
@@ -258,7 +261,7 @@ test("collapsed tools open all four tabs and close at 1440, 1100 and 768", async
     });
     await expect(open).toBeVisible();
     await open.click();
-    for (const name of ["Quote", "Fields", "Styles", "Review & send"]) {
+    for (const name of ["Quote", "Fields", "Styles", "Send"]) {
       const tab = page
         .getByRole("tab", { name, exact: true })
         .filter({ visible: true });
@@ -272,7 +275,12 @@ test("collapsed tools open all four tabs and close at 1440, 1100 and 768", async
       .getByRole("dialog")
       .filter({ has: page.getByRole("tablist", { name: "Proposal tools" }) });
     if (await sheet.isVisible())
-      await sheet.getByRole("button", { name: "Done", exact: true }).click();
+      await sheet
+        .getByRole("button", {
+          name: /^(Done|Collapse tools sidebar)$/,
+          exact: true,
+        })
+        .click();
     else await toggle.click();
     await expect(
       page
@@ -286,11 +294,16 @@ test("collapsed tools open all four tabs and close at 1440, 1100 and 768", async
       .click();
     await expect(
       page
-        .getByRole("tab", { name: "Review & send", exact: true })
+        .getByRole("tab", { name: "Send", exact: true })
         .filter({ visible: true }),
     ).toHaveAttribute("aria-selected", "true");
     if (await sheet.isVisible())
-      await sheet.getByRole("button", { name: "Done", exact: true }).click();
+      await sheet
+        .getByRole("button", {
+          name: /^(Done|Collapse tools sidebar)$/,
+          exact: true,
+        })
+        .click();
     else await toggle.click();
   }
 });
@@ -347,7 +360,7 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
     });
   }
 });
-test("Fields tab remembers cursor across tabs and closes tablet drawer before restoring text focus; pricing references remain searchable", async ({
+test("Fields tab remembers cursor across tabs and closes tablet drawer before restoring text focus; reference UI stays removed", async ({
   page,
 }) => {
   const f = await fixture(page);
@@ -391,25 +404,19 @@ test("Fields tab remembers cursor across tabs and closes tablet drawer before re
         })
         .click();
     await page.getByRole("tab", { name: "Quote", exact: true }).click();
-    await page
-      .getByRole("button", { name: "Look up", exact: true })
-      .filter({ visible: true })
-      .first()
-      .click();
-    const ref = page.getByRole("dialog", {
-      name: "Pricing reference",
-      exact: true,
-    });
-    await expect(ref).toBeVisible();
-    await ref
-      .getByRole("searchbox", { name: "Search reference" })
-      .fill("Hosting");
-    await expect(ref.locator("pre")).toHaveText("Hosting and support");
-    await ref.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Look up", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("dialog", { name: "Pricing reference", exact: true }),
+    ).toHaveCount(0);
     if (width === 768)
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Done", exact: true })
+        .getByRole("button", {
+          name: /^(Done|Collapse tools sidebar)$/,
+          exact: true,
+        })
         .click();
   }
 });

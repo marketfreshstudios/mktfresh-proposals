@@ -1,0 +1,792 @@
+/* Document headers have one stable identity/status row and an action group. */
+.staff-foundation:has(.studio-template-layout) .page-header {
+  display: none;
+}
+.editor-document-header.editor-document-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-editor-header);
+  padding: var(--space-3) var(--space-4);
+  margin: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.editor-header-identity,
+.editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.editor-header-identity > .button-wrap {
+  flex: none;
+}
+.editor-header-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-weight: 600;
+}
+.editor-header-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.editor-save-status {
+  justify-self: center;
+  max-width: 100%;
+  font: 500 12px/1.4 var(--font-sans);
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill, 999px);
+}
+.editor-save-status > :is(span, button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+.editor-save-status[data-state="error"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+.editor-save-status button {
+  cursor: pointer;
+  min-height: var(--control-lg);
+}
+.editor-save-status button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.panel-chevron {
+  display: block;
+  flex: none;
+  vertical-align: middle;
+}
+:is(
+    .editor-outline,
+    .editor-sidepanel,
+    .studio-template-list,
+    .studio-inspector
+  )
+  .sidebar-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--control-sm);
+  width: var(--control-sm);
+  min-width: var(--control-sm);
+  max-width: var(--control-sm);
+  height: var(--control-sm);
+  min-height: var(--control-sm);
+  max-height: var(--control-sm);
+  line-height: 0;
+  padding: 0;
+}
+.sidebar-arrow > svg {
+  display: block;
+  margin: 0;
+  transform: none;
+}
+@media (max-width: 1399px) {
+  .editor-header-actions {
+    grid-column: 1/-1;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 699px) {
+  .editor-document-header.editor-document-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+  .editor-header-identity {
+    gap: var(--space-1);
+  }
+  .editor-header-identity .btn {
+    padding-inline: var(--space-2);
+    font-size: 12px;
+  }
+  .editor-header-title {
+    font-size: 12px;
+  }
+  .editor-save-status {
+    font-size: 11px;
+  }
+  .editor-save-status > :is(span, button) {
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
+  }
+  .editor-header-actions {
+    justify-content: center;
+    gap: var(--space-1);
+  }
+  .editor-header-actions .btn {
+    font-size: 12px;
+    padding-inline: var(--space-2);
+  }
+}
+
+/* Editor v2 shell only. The legacy phone layout and document controls remain
+   until their dedicated PRs; this file owns every new shell rule. */
+.editor-readonly-region,
+.editor-readonly-region > fieldset {
+  display: contents;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.quote-workspace[data-stale="true"]
+  :is(.block-tools, .block-insert, .drag-handle, .document-formatting-bar) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.editor-notice {
+  flex: none;
+  min-height: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  font: 500 13px/18px var(--font-ui);
+  position: relative;
+  z-index: var(--z-editor-header);
+}
+.editor-notice > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.editor-notice-stale {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.editor-notice-recovered {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.editor-notice :is(button, summary) {
+  white-space: nowrap;
+  font: 600 13px/18px var(--font-ui);
+  color: inherit;
+  cursor: pointer;
+}
+.editor-notice button {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+.editor-notice .button-wrap {
+  flex: none;
+}
+.editor-notice details {
+  margin-left: auto;
+  flex: none;
+}
+.editor-notice .recovery-copy {
+  position: absolute;
+  inset: 40px 12px auto;
+  max-height: min(60dvh, 480px);
+  overflow: auto;
+  padding: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-popover);
+}
+.editor-v2 :is(button, a, input, select, textarea):focus-visible,
+.editor-v2-drawer :is(button, input, select, textarea):focus-visible,
+.editor-v2-sections-drawer button:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+@media (min-width: 700px) {
+  .staff-foundation:has(.quote-workspace.editor-v2) .sidebar {
+    display: none;
+  }
+  .staff-foundation:has(.quote-workspace.editor-v2) .workspace {
+    width: 100%;
+    margin: 0;
+    max-width: none;
+    min-width: 0;
+  }
+  .staff-foundation:has(.quote-workspace.editor-v2) .page-body {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    gap: 0;
+  }
+  .quote-workspace.editor-v2 {
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface-page);
+  }
+  .editor-v2 .editor-layout {
+    display: grid;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+    width: 100%;
+  }
+  .editor-v2 .editor-document-region {
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: auto;
+    padding: 32px 16px 160px;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+    background: var(--surface-page);
+  }
+  .editor-v2 .pdf-paper-viewport {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .editor-v2 .document-formatting-bar {
+    --formatting-top: 0px !important;
+  }
+  .editor-v2 .document-formatting-bar [aria-label="History"] {
+    display: none;
+  }
+  .editor-document-header.editor-v2-header {
+    display: flex;
+    align-items: center;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    flex: none;
+    gap: 10px;
+    padding: 0 12px;
+    position: relative;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-sizing: border-box;
+  }
+  .editor-v2-header > * {
+    flex: none;
+  }
+  .editor-v2-header button {
+    border: 0;
+    height: 36px;
+    min-height: 36px;
+    border-radius: 8px;
+    background: none;
+    color: var(--ink-muted);
+    font: 500 13px/18px var(--font-ui);
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .editor-v2-header button:hover {
+    background: var(--neutral-soft);
+  }
+  .editor-v2-header button:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  .editor-v2-header .editor-v2-back {
+    order: 0;
+    padding: 0 10px;
+  }
+  .editor-header-divider {
+    order: 1;
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+  .editor-v2-header .editor-header-title {
+    order: 2;
+    flex: 0 1 auto;
+    min-width: 120px;
+    font: 600 15px/20px var(--font-ui);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  .editor-v2-header .editor-save-status {
+    order: 3;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: 0;
+    color: var(--ink-muted);
+    font: 500 12px/18px var(--font-ui);
+    white-space: nowrap;
+  }
+  .editor-v2-header .editor-save-status > :is(span, button) {
+    display: inline;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+  }
+  .editor-v2-header .editor-save-status[data-state="stale"],
+  .editor-v2-header .editor-save-status[data-state="error"] {
+    color: var(--danger);
+  }
+  .editor-v2-header .editor-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong);
+  }
+  .editor-v2-header
+    .editor-save-status:is([data-state="stale"], [data-state="error"])
+    .editor-status-dot {
+    background: var(--danger);
+  }
+  .editor-v2-header
+    .editor-save-status[data-state="saving"]
+    .editor-status-dot {
+    animation: editor-save-pulse 1.4s ease-in-out infinite;
+  }
+  .editor-v2-header .editor-header-spacer {
+    order: 4;
+    flex: 1;
+    min-width: 0;
+  }
+  .editor-v2-header .editor-ai-pill {
+    order: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    color: var(--ai);
+    background: var(--ai-soft);
+    font: 600 13px/18px var(--font-ui);
+    white-space: nowrap;
+  }
+  .editor-v2-header .editor-ai-pill:hover {
+    background: color-mix(in oklch, var(--ai-soft) 90%, var(--ai));
+  }
+  .editor-v2-header .editor-ai-done {
+    color: var(--success);
+    background: var(--success-soft);
+  }
+  .editor-v2-header .editor-header-history {
+    order: 6;
+    display: flex;
+    gap: 2px;
+  }
+  .editor-header-history > button {
+    width: 36px;
+    padding: 0;
+  }
+  .editor-v2-header .editor-header-pill {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 0 14px;
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .editor-header-pdf {
+    order: 7;
+  }
+  .editor-header-client {
+    order: 8;
+  }
+  .editor-v2-header .editor-header-send {
+    order: 9;
+    padding-inline: 16px;
+    border: 0;
+    background: var(--ink);
+    color: var(--surface);
+  }
+  .editor-v2-header .editor-header-send:hover {
+    background: color-mix(in oklch, var(--ink) 85%, var(--surface));
+  }
+
+  .editor-v2 .editor-layout > :is(.editor-outline, .editor-sidepanel) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 0;
+    height: 100%;
+    max-height: none;
+    top: auto;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border-radius: 0;
+  }
+  .editor-v2-sections {
+    border-right: 1px solid var(--border);
+  }
+  .editor-v2-panel {
+    border-left: 1px solid var(--border);
+  }
+  .editor-v2 :is(.editor-sidebar-header, .editor-tools-header),
+  .editor-v2-drawer .editor-tools-header,
+  .editor-v2-sections-drawer .editor-sidebar-header {
+    min-height: 56px;
+    height: 56px;
+    flex: none;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    position: relative;
+  }
+  .editor-v2 .editor-sidebar-header strong,
+  .editor-v2-sections-drawer .editor-sidebar-header strong {
+    margin-right: auto;
+    font: 600 13px/18px var(--font-ui);
+  }
+  :is(.editor-v2, .editor-v2-drawer, .editor-v2-sections-drawer)
+    .sidebar-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 0;
+    line-height: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--editor-tab-active, var(--surface-raised));
+    color: var(--ink-muted);
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--paper-ink) 6%, transparent);
+    cursor: pointer;
+    font-size: 15px;
+  }
+  :is(.editor-v2, .editor-v2-drawer, .editor-v2-sections-drawer)
+    .sidebar-arrow:hover {
+    background: var(--neutral-soft);
+  }
+  .editor-v2 .sidebar-rail {
+    align-items: center;
+    gap: 0;
+  }
+  .editor-v2 .editor-sidebar-scroll,
+  .editor-v2-sections-drawer .editor-sidebar-scroll {
+    padding: 0 12px 24px 16px;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor-v2-sections .legacy-sections-progress,
+  .editor-v2-sections .legacy-sections-progress ~ :is(p, progress) {
+    display: none;
+  }
+  .editor-v2 .editor-tools-header,
+  .editor-v2-drawer .editor-tools-header {
+    padding-right: 52px;
+  }
+  :is(.editor-v2-panel, .editor-v2-drawer) .editor-tabs {
+    position: static;
+    height: 36px;
+    min-height: 36px;
+    width: 100%;
+    flex: 1;
+    margin: 0;
+    padding: 3px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    border: 0;
+    border-radius: 10px;
+    background: var(--neutral-soft);
+    box-sizing: border-box;
+  }
+  :is(.editor-v2-panel, .editor-v2-drawer) .editor-tabs > button {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-muted);
+    font: 600 13px/18px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  :is(.editor-v2-panel, .editor-v2-drawer)
+    .editor-tabs
+    > [aria-selected="true"] {
+    background: var(--editor-tab-active, var(--surface-raised));
+    color: var(--ink);
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--paper-ink) 8%, transparent);
+  }
+  :is(.editor-v2-panel, .editor-v2-drawer) .editor-tab-content {
+    overflow: auto;
+    min-height: 0;
+    flex: 1;
+    padding: 16px;
+    scrollbar-gutter: stable;
+  }
+  :is(.editor-v2-panel, .editor-v2-drawer) .panel-collapse {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+  }
+  .editor-v2-panel .panel-rail-tab {
+    width: 56px;
+    height: 48px;
+    min-height: 48px;
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    color: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .editor-v2-panel .panel-rail-tab > span {
+    font: 600 17px/20px var(--font-mono);
+  }
+  .editor-v2-panel .panel-rail-tab > small {
+    font: 500 10px/14px var(--font-ui);
+  }
+  .editor-v2-panel .panel-rail-totals {
+    margin: auto 0 20px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font: 500 12px/18px var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .editor-v2-drawer,
+  .editor-v2-sections-drawer {
+    position: fixed;
+    inset: 56px 0 0 auto;
+    width: var(--drawer-tablet);
+    max-width: calc(100vw - 56px);
+    height: calc(100dvh - 56px);
+    max-height: calc(100dvh - 56px);
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    color: var(--ink);
+    background: var(--surface);
+    z-index: var(--z-dialog);
+  }
+  :is(.editor-v2-drawer, .editor-v2-sections-drawer)[open] {
+    display: flex;
+    flex-direction: column;
+  }
+  :is(.editor-v2-drawer, .editor-v2-sections-drawer)::backdrop {
+    background: var(--overlay);
+  }
+  .editor-v2-sections-drawer {
+    inset: 56px auto 0 0;
+    width: 220px;
+  }
+  .editor-v2-sections-drawer .editor-outline {
+    padding: 0;
+  }
+  .editor-v2 .sections-nav,
+  .editor-v2-sections-drawer .sections-nav,
+  .studio-template-layout .sections-nav {
+    display: block;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    .quote-sortable {
+    padding-left: 0;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    .drag-handle {
+    width: 16px;
+    min-width: 16px;
+    min-height: 32px;
+    top: 0;
+    left: -14px;
+    font-size: 10px;
+    opacity: 0;
+  }
+  .sections-nav .quote-sortable:is(:hover, :focus-within) > .drag-handle {
+    opacity: 1;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .outline-page {
+    padding: 0 0 4px;
+    border: 0;
+  }
+  .sections-nav .outline-page-title {
+    padding-top: 8px;
+    display: flex;
+    align-items: center;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .outline-page-title
+    > button:first-child {
+    padding: 0 10px;
+    min-height: 30px;
+    font: 600 11px/16px var(--font-ui);
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .sections-nav .outline-page-title > button[aria-label^="Delete page"] {
+    opacity: 0;
+    flex: none;
+  }
+  .sections-nav
+    .outline-page-title:is(:hover, :focus-within)
+    > button[aria-label^="Delete page"] {
+    opacity: 1;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    :is(.outline-section, .outline-subheading) {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 32px;
+    height: 32px;
+    padding: 0 10px;
+    gap: 8px;
+    border: 0;
+    border-left: 2px solid transparent;
+    border-radius: 0 6px 6px 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: 500 13px/18px var(--font-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    .outline-subheading {
+    padding-left: 22px;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    [aria-current="location"] {
+    color: var(--ink);
+    font-weight: 600;
+    border-left-color: var(--accent);
+  }
+  .sections-nav .review-dot {
+    width: 6px;
+    height: 6px;
+    margin-left: auto;
+    flex: none;
+    border-radius: 50%;
+    background: var(--ai);
+  }
+  .sections-nav .outline-page-end {
+    display: block;
+    min-height: 8px;
+    height: 8px;
+    width: 100%;
+    padding: 0;
+    font-size: 0;
+    color: transparent;
+  }
+  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
+    .sections-nav
+    .outline-page-end
+    > span {
+    color: inherit;
+    font: inherit;
+  }
+  .sections-nav .outline-page-end:focus-visible {
+    height: 32px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+  .sections-nav .sections-add-page {
+    width: 100%;
+    margin-top: 14px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    height: 34px;
+    min-height: 34px;
+    font: 600 12px/18px var(--font-ui);
+  }
+}
+@keyframes editor-save-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-v2-header
+    .editor-save-status[data-state="saving"]
+    .editor-status-dot {
+    animation: none;
+  }
+}
+.quote-workspace.editor-v2 {
+  --editor-tab-active: var(--paper);
+}
+[data-theme="dark"] .quote-workspace.editor-v2 {
+  --editor-tab-active: var(--surface-raised);
+}
+
+@media (min-width: 700px) {
+  .editor-v2-header .editor-save-status > .editor-status-dot {
+    display: inline-block;
+    flex: none;
+  }
+  .sections-nav .section-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: inherit;
+    font: inherit;
+  }
+}
+
+@media (min-width: 700px) {
+  .editor-v2-sections-drawer .legacy-sections-progress,
+  .editor-v2-sections-drawer .legacy-sections-progress ~ :is(p, progress) {
+    display: none;
+  }
+}

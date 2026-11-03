@@ -1,5 +1,9 @@
 "use client";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
+import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
+import { SectionsPanel } from "./editor/sections-panel";
+import { ReadOnlyRegion } from "./editor/read-only-region";
+import { EditorNotice } from "./editor/editor-notice";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
@@ -59,7 +63,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { Reorder, Sortable } from "./sortable";
 export { Reorder, Sortable } from "./sortable";
-import { PagesOutline } from "./pages-outline";
+import { SectionsNav } from "./editor/sections-nav";
 import { pageMetrics } from "../lib/proposal-styles";
 import type { Block, Item, Proposal, QuoteItem, Actor } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
@@ -157,7 +161,7 @@ function QuoteEditorContent({
   const pendingField = useRef<string | null>(null);
   const pendingOutline = useRef<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false),
-    [outlineOpen, setOutlineOpen] = useState(false);
+    [phoneOutlineOpen, setOutlineOpen] = useState(false);
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
@@ -172,8 +176,10 @@ function QuoteEditorContent({
     [saving, setSaving] = useState(false),
     [error, setError, errorRef] = useCurrentState(""),
     [stale, setStale, staleRef] = useCurrentState(false),
-    [tab, setTab] = useState(initialTab),
-    [drawer, setDrawer] = useState(false),
+    [tab, setTab] = useState(
+      initialTab === "Review & send" ? "Send" : initialTab,
+    ),
+    [phoneDrawer, setDrawer] = useState(false),
     [lineId, setLineId] = useState<string | null>(null),
     [reference, setReference] = useState(false),
     [search, setSearch] = useState(""),
@@ -215,9 +221,19 @@ function QuoteEditorContent({
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
     );
   };
-  const panels = useEditorPanels(user?.actor ?? "local", paper, fullDocument);
+  const panels = useEditorPanels(
+    user?.actor ?? "local",
+    paper,
+    fullDocument,
+    true,
+  );
+  const drawer =
+    phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
+  const outlineOpen =
+    phoneOutlineOpen ||
+    (!panels.phone && panels.mode === "drawer" && panels.left);
   useEffect(() => {
-    if (tab !== "Review & send") return;
+    if (tab !== "Send") return;
     const timer = setTimeout(
       () => void pdfPreview.ensure().catch(() => {}),
       400,
@@ -226,15 +242,14 @@ function QuoteEditorContent({
   }, [tab, pdfPreview.visualKey]);
   const openTools = (nextTab: string) => {
     setTab(nextTab);
-    if (panels.canRight && !panels.phone) {
+    if (!panels.phone) {
       if (!panels.right) panels.toggle("right");
     } else setDrawer(true);
   };
   useEffect(() => {
     // A direct send route is an action, so it must override a saved collapse.
     // Wait for preference hydration and measurement before choosing dock/drawer.
-    if (panels.ready && initialTab === "Review & send")
-      openTools("Review & send");
+    if (panels.ready && initialTab === "Review & send") openTools("Send");
   }, [initialTab, panels.ready]);
   useEffect(() => {
     if (panels.right) setDrawer(false);
@@ -243,11 +258,11 @@ function QuoteEditorContent({
     if (panels.left) setOutlineOpen(false);
   }, [panels.left]);
   const toggleLeft = () => {
-    if (panels.canLeft && !panels.phone) panels.toggle("left");
+    if (!panels.phone) panels.toggle("left");
     else setOutlineOpen((v) => !v);
   };
   const toggleRight = () => {
-    if (panels.canRight && !panels.phone) panels.toggle("right");
+    if (!panels.phone) panels.toggle("right");
     else setDrawer((v) => !v);
   };
   useEffect(() => {
@@ -265,6 +280,21 @@ function QuoteEditorContent({
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
   }, [panels.canRight, panels.canLeft, panels.phone]);
+  useEffect(() => {
+    if (!stale) return;
+    selection.clear();
+    const guard = (event: KeyboardEvent) => {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        ["z", "y"].includes(event.key.toLowerCase())
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener("keydown", guard, true);
+    return () => window.removeEventListener("keydown", guard, true);
+  }, [stale]);
   async function review(sectionIds: string[], reviewed: boolean) {
     if (reviewBusy) return;
     setReviewBusy(true);
@@ -361,7 +391,7 @@ function QuoteEditorContent({
   const subjectEdited = useRef(false),
     subjectTemplate = useRef("");
   useEffect(() => {
-    if (tab !== "Review & send" || emailLoaded) return;
+    if (tab !== "Send" || emailLoaded) return;
     let live = true;
     void api<EmailTemplate[]>("/api/email-templates")
       .then((ts) => {
@@ -1187,9 +1217,6 @@ function QuoteEditorContent({
             <Button onClick={() => setLineId(i.id)}>Edit item</Button>
           </div>
         )}
-        <Button variant="ghost" onClick={() => setReference(true)}>
-          Look up
-        </Button>
       </section>
     );
   }
@@ -1548,10 +1575,22 @@ function QuoteEditorContent({
       }),
     );
   };
+  const selectedIndex = p.content.findIndex(
+    (b) =>
+      `block-${b.id}` === selection.selected ||
+      b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
+  );
+  const currentSectionId =
+    selectedIndex < 0
+      ? null
+      : (p.content
+          .slice(0, selectedIndex + 1)
+          .filter((b) => b.type === "heading")
+          .at(-1)?.id ?? "cover");
   const outline = (
     <>
-      <p className="eyebrow">Pages</p>
-      <PagesOutline
+      <SectionsNav
+        currentSectionId={currentSectionId}
         content={p.content}
         onMove={move}
         pagination={browserPages}
@@ -1598,7 +1637,7 @@ function QuoteEditorContent({
           } else focusBlock(id);
         }}
       />
-      <p className="eyebrow">AI review</p>
+      <p className="eyebrow legacy-sections-progress">AI review</p>
       <p>
         {sections.length - pending.length} of {sections.length} sections
         reviewed
@@ -1609,52 +1648,47 @@ function QuoteEditorContent({
       />
     </>
   );
+  const panelBody = (
+    <ReadOnlyRegion locked={stale}>
+      {tab === "Quote" ? (
+        quotePanel
+      ) : tab === "Fields" ? (
+        <FieldOptions
+          map={map}
+          onInsert={(path) => {
+            if (drawer) {
+              pendingField.current = path;
+              document
+                .querySelector<HTMLDialogElement>("dialog.tools-sheet")
+                ?.close();
+            } else fields?.insert(path);
+          }}
+        />
+      ) : tab === "Styles" ? (
+        <ProposalStyles
+          settings={p.workspace_settings}
+          inherited={p.template_style_overrides}
+          value={p.style_overrides}
+          onChange={(style_overrides) => change({ style_overrides })}
+          resetLabel="Reset to workspace"
+          onReset={() =>
+            change({ style_overrides: {}, template_style_overrides: {} })
+          }
+        />
+      ) : (
+        sendPanel
+      )}
+    </ReadOnlyRegion>
+  );
   const panel = (
     <>
-      <div className="editor-tabs" role="tablist" aria-label="Proposal tools">
-        {["Quote", "Fields", "Styles", "Review & send"].map((t) => (
-          <button
-            role="tab"
-            aria-selected={tab === t}
-            key={t}
-            onClick={() => setTab(t)}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel">
-        {tab === "Quote" ? (
-          quotePanel
-        ) : tab === "Fields" ? (
-          <FieldOptions
-            map={map}
-            onInsert={(path) => {
-              if (drawer) {
-                pendingField.current = path;
-                document
-                  .querySelector<HTMLDialogElement>("dialog.tools-sheet")
-                  ?.close();
-              } else fields?.insert(path);
-            }}
-          />
-        ) : tab === "Styles" ? (
-          <ProposalStyles
-            settings={p.workspace_settings}
-            inherited={p.template_style_overrides}
-            value={p.style_overrides}
-            onChange={(style_overrides) => change({ style_overrides })}
-            resetLabel="Reset to workspace"
-            onReset={() =>
-              change({ style_overrides: {}, template_style_overrides: {} })
-            }
-          />
-        ) : (
-          sendPanel
-        )}
+      <PanelTabs tab={tab as EditorTab} onTab={setTab} />
+      <div role="tabpanel" id="editor-active-panel">
+        {panelBody}
       </div>
     </>
   );
+
   function blockEditor(b: Block, n: number) {
     const HeadingTag = `h${(b.level ?? 1) + 1}` as "h2" | "h3" | "h4";
     const style = (level: TextLevel, text?: string) => {
@@ -2264,7 +2298,10 @@ function QuoteEditorContent({
   return (
     <div
       data-panels-ready={panels.ready}
-      className={`quote-workspace editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
+      data-stale={stale}
+      data-compact={panels.compact}
+      data-shell-mode={panels.phone ? "phone" : "v2"}
+      className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
       <PageBreakController
         content={p.content}
@@ -2275,6 +2312,24 @@ function QuoteEditorContent({
           allowLeave.current = true;
         }}
         className="quote-editor-top"
+        phone={panels.phone}
+        compact={panels.viewportWidth < 1180}
+        locked={false}
+        published="draft"
+        stale={stale}
+        recovered={!!recovery}
+        aiPending={reviewCount}
+        hadAi={p.content.some((b) => b.ai_review)}
+        onNextAi={showReview}
+        onPreviewPdf={() => {
+          paper.current?.dispatchEvent(new Event("pagination-flush"));
+          setPdfOpen(true);
+        }}
+        onPreviewClient={async () => {
+          if (await save())
+            window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
+        }}
+        onReviewSend={() => openTools("Send")}
         title={p.title}
         backLabel="Proposals"
         backHref="/proposals"
@@ -2305,7 +2360,7 @@ function QuoteEditorContent({
         >
           Preview PDF
         </Button>
-        <Button variant="primary" onClick={() => openTools("Review & send")}>
+        <Button variant="primary" onClick={() => openTools("Send")}>
           Review & send
         </Button>
         <span className="tablet-tools">
@@ -2323,7 +2378,7 @@ function QuoteEditorContent({
           </Button>
         </span>
       </EditorHeader>
-      {offline && (
+      {panels.phone && offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
           {deviceSaved
             ? "Your changes are kept on this device."
@@ -2331,15 +2386,25 @@ function QuoteEditorContent({
           We’ll save them when you’re back online.
         </Banner>
       )}
-      {recovery && (
-        <Banner
-          tone="warning"
-          title="Your unsaved edits were kept as a suggestion."
-        >
-          <p>
-            Review the current draft before restoring your edits. Nothing has
-            been overwritten.
-          </p>
+      {stale && (
+        <EditorNotice kind="stale">
+          <span title="This proposal changed in another tab or by another person.">
+            This proposal changed in another tab or by another person.
+          </span>
+          <button type="button" onClick={() => void reloadConflict()}>
+            Reload
+          </button>
+        </EditorNotice>
+      )}
+      {recovery && !stale && (
+        <EditorNotice kind="recovered">
+          <span title="Your unsaved edits were kept as a suggestion.">
+            We found unsaved changes from{" "}
+            {recovery.updated_at
+              ? new Date(recovery.updated_at).toLocaleString()
+              : "this device"}
+            .
+          </span>
           <details>
             <summary>See my saved changes</summary>
             <div className="recovery-copy">
@@ -2366,7 +2431,7 @@ function QuoteEditorContent({
               setRecovery(null);
             }}
           >
-            Restore my edits
+            Keep
           </Button>
           <Button
             onClick={async () => {
@@ -2375,23 +2440,14 @@ function QuoteEditorContent({
               setRecovery(null);
             }}
           >
-            Keep current draft
+            Discard
           </Button>
-        </Banner>
+        </EditorNotice>
       )}
-      {error && (
-        <Banner
-          tone="danger"
-          title={
-            stale
-              ? "This draft changed elsewhere"
-              : "Your changes are kept here"
-          }
-        >
+      {panels.phone && error && !stale && (
+        <Banner tone="danger" title="Your changes are kept here">
           {error}
-          <Button onClick={() => (stale ? void reloadConflict() : void save())}>
-            {stale ? "Reload and keep mine" : "Try saving again"}
-          </Button>
+          <Button onClick={() => void save()}>Try saving again</Button>
         </Banner>
       )}
       {p.creation_warnings?.length ? (
@@ -2406,300 +2462,339 @@ function QuoteEditorContent({
           gridTemplateColumns: panels.columns,
         }}
       >
-        <aside
-          className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
-        >
-          <div className="editor-sidebar-header">
-            <button
-              className="sidebar-arrow"
-              type="button"
-              aria-label={
-                panels.left ? "Collapse Pages sidebar" : "Expand Pages sidebar"
-              }
-              title={
-                panels.left
-                  ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                  : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-              }
-              onClick={toggleLeft}
-            >
-              <PanelChevron direction={panels.left ? "left" : "right"} />
-            </button>
-          </div>
-          {panels.left ? (
-            <div className="editor-sidebar-scroll">{outline}</div>
-          ) : (
-            <button
-              type="button"
-              aria-label="Open Pages"
-              title="Pages"
-              onClick={toggleLeft}
-            >
-              <Icon name="file-lines" />
-            </button>
-          )}
-        </aside>
-        <main className="editor-document-region">
-          <div className="editor-panel-controls">
-            <div className="paper-zoom">
-              <output aria-label="Editor zoom">
-                {Math.round(panels.scale * 100)}%
-              </output>
-              <Button onClick={() => panels.setFit((v) => !v)}>
-                {panels.fit ? "100%" : "Fit"}
-              </Button>
-            </div>
-          </div>
-          <DocumentFormattingBar />
-          {blockFeedback.feedback}
-          <div className="phone-section-list">
-            <p className="eyebrow">Proposal for {p.client.company}</p>
-            <h1>{p.title}</h1>
-            <p>
-              {p.content.length
-                ? "Choose a section to edit."
-                : "Add your first section."}
-            </p>
-            {firstBlock}
-            {sections.flatMap((s, n) => [
-              <button key={s.id} onClick={() => setSection(n)}>
-                <span>{String(n + 1).padStart(2, "0")}</span>
-                <strong>{s.title}</strong>
-                <small>{s.pending ? "Review" : "✓"} ›</small>
-              </button>,
-              ...s.indices
-                .filter(
-                  (j) =>
-                    p.content[j].type === "heading" &&
-                    (p.content[j].level ?? 1) > 1,
-                )
-                .map((j) => (
-                  <button
-                    key={`sub-${p.content[j].id ?? j}`}
-                    className={`outline-subheading outline-level-${p.content[j].level}`}
-                    onClick={() => {
-                      setSection(n);
-                      requestAnimationFrame(() =>
-                        document
-                          .querySelector(
-                            `[data-block-id="block-${p.content[j].id ?? j}"]`,
-                          )
-                          ?.scrollIntoView({ block: "center" }),
-                      );
-                    }}
-                  >
-                    <strong>
-                      {p.content[j].text || "Untitled subheading"}
-                    </strong>
-                  </button>
-                )),
-            ])}
-            <Button
-              onClick={() => {
-                setTab("Quote");
-                if (window.innerWidth < 1100) setDrawer(true);
-              }}
-            >
-              Edit quote
-            </Button>
-          </div>
-          <div className="phone-section-nav">
-            <Button
-              onClick={() => {
-                setFullDocument(false);
-                setSection(null);
-              }}
-            >
-              ‹ Sections
-            </Button>
-            <Button onClick={() => setFullDocument((v) => !v)}>
-              {fullDocument ? "One section" : "Full document"}
-            </Button>
-            <div>
-              <Button
-                aria-label="Previous section"
-                disabled={section === null || section === 0}
-                onClick={() => setSection((section ?? 1) - 1)}
-              >
-                ‹ Previous
-              </Button>
-              <Button
-                aria-label="Next section"
-                disabled={section === null || section >= sections.length - 1}
-                onClick={() => setSection((section ?? 0) + 1)}
-              >
-                Next ›
-              </Button>
-            </div>
-          </div>
-          {reviewBanner}
-          <div className="pdf-paper-viewport">
-            <div
-              className="pdf-paper-size"
-              style={
-                panels.printMode
-                  ? {
-                      width: 816 * panels.scale,
-                      height: panels.height * panels.scale,
-                    }
-                  : undefined
-              }
-            >
-              <article
-                ref={paper}
-                style={
-                  {
-                    "--accent": current.workspace_settings?.accent_colour,
-                    "--editor-ui-scale": panels.printMode
-                      ? 1 / panels.scale
-                      : 1,
-                    "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
-                    "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
-                    "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
-                    "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
-                    transform: panels.printMode
-                      ? `scale(${panels.scale})`
-                      : undefined,
-                    transformOrigin: "top left",
-                    minHeight: panels.printMode
-                      ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
-                      : undefined,
-                  } as CSSProperties
+        {!panels.phone ? (
+          <SectionsPanel
+            open={panels.left}
+            mode={panels.mode}
+            onToggle={toggleLeft}
+            onCloseComplete={() => {
+              const id = pendingOutline.current;
+              pendingOutline.current = null;
+              if (id) focusBlock(id);
+            }}
+          >
+            <ReadOnlyRegion locked={stale}>{outline}</ReadOnlyRegion>
+          </SectionsPanel>
+        ) : (
+          <aside
+            className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
+          >
+            <div className="editor-sidebar-header">
+              <button
+                className="sidebar-arrow"
+                type="button"
+                aria-label={
+                  panels.left
+                    ? "Collapse Pages sidebar"
+                    : "Expand Pages sidebar"
                 }
-                className="paper editor-paper proposal-typography document-reading"
+                title={
+                  panels.left
+                    ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+                    : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
+                }
+                onClick={toggleLeft}
               >
-                <PagedPaper
-                  paper={paper}
-                  styles={resolveStyles(
-                    p.workspace_settings,
-                    p.template_style_overrides,
-                    p.style_overrides,
-                  )}
-                  enabled={panels.printMode}
-                  content={p.content}
-                  contentKey={JSON.stringify([
-                    p.title,
-                    printView(p.content, p.quote),
-                    p.valid_until,
-                    p.style_overrides,
-                    p.template_style_overrides,
-                  ])}
-                  onPagination={receivePagination}
-                />
-                <style>
-                  {fontCss(p.workspace_settings)}
-                  {styleFontFaces(
-                    resolveStyles(
-                      p.workspace_settings,
-                      p.template_style_overrides,
-                      p.style_overrides,
-                    ),
-                  )}
-                  {documentStyleCss(
-                    resolveStyles(
-                      p.workspace_settings,
-                      p.template_style_overrides,
-                      p.style_overrides,
-                    ),
-                    p.workspace_settings?.accent_colour,
-                  )}
-                </style>
-                <DocumentCover
-                  title={p.title}
-                  workspace={
-                    panels.printMode
-                      ? p.workspace_settings?.company_name
-                      : undefined
-                  }
-                  logo={
-                    p.workspace_settings?.logo
-                      ? `/api/proposals/${p.id}/preview-logo`
-                      : undefined
-                  }
-                  company={p.client.company}
-                  sender={map["sender.name"]}
-                  validUntil={p.valid_until}
-                  timezone={p.workspace_settings?.timezone}
-                  onTitle={(title) => change({ title })}
-                />
-                {firstBlock}
-                <Reorder
-                  ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
-                  onMove={(from, to) =>
-                    move((content) =>
-                      moveDocumentBlock(content, from.slice(6), to.slice(6)),
-                    )
-                  }
-                >
-                  {sections.map((s, n) => (
-                    <div
-                      className={section === n ? "phone-active-section" : ""}
-                      key={s.id}
-                    >
-                      {sectionEditor(s, n)}
-                    </div>
-                  ))}{" "}
-                </Reorder>
-                <p className="muted document-end">
-                  {p.valid_until && (
-                    <>
-                      Valid until{" "}
-                      {readableDate(
-                        p.valid_until,
-                        p.workspace_settings?.timezone,
-                      )}{" "}
-                      ·{" "}
-                    </>
-                  )}
-                  From {settings?.company_name}
-                </p>
-                <DocumentPagination pagination={browserPages?.plan} />
-              </article>
+                <PanelChevron direction={panels.left ? "left" : "right"} />
+              </button>
             </div>
-          </div>
-          {reviewBanner}
-        </main>
-        <aside
-          className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
-        >
-          <div className="editor-sidebar-header">
-            <button
-              type="button"
-              className="sidebar-arrow"
-              aria-label={
-                panels.right ? "Collapse tools sidebar" : "Expand tools sidebar"
-              }
-              title={
-                panels.right
-                  ? "Collapse tools (⌘\\ / Ctrl+\\)"
-                  : "Expand tools (⌘\\ / Ctrl+\\)"
-              }
-              onClick={toggleRight}
-            >
-              <PanelChevron direction={panels.right ? "right" : "left"} />
-            </button>
-          </div>
-          {panels.right
-            ? panel
-            : (
-                [
-                  ["Quote", "table"],
-                  ["Fields", "code"],
-                  ["Styles", "heading"],
-                  ["Review & send", "review"],
-                ] as const
-              ).map(([name, icon]) => (
-                <button
-                  key={name}
-                  type="button"
-                  aria-label={`Open ${name}`}
-                  title={name}
-                  onClick={() => openTools(name)}
+            {panels.left ? (
+              <div className="editor-sidebar-scroll">{outline}</div>
+            ) : (
+              <button
+                type="button"
+                aria-label="Open Pages"
+                title="Pages"
+                onClick={toggleLeft}
+              >
+                <Icon name="file-lines" />
+              </button>
+            )}
+          </aside>
+        )}
+        <main className="editor-document-region">
+          <ReadOnlyRegion locked={stale}>
+            <div className="editor-panel-controls">
+              <div className="paper-zoom">
+                <output aria-label="Editor zoom">
+                  {Math.round(panels.scale * 100)}%
+                </output>
+                <Button onClick={() => panels.setFit((v) => !v)}>
+                  {panels.fit ? "100%" : "Fit"}
+                </Button>
+              </div>
+            </div>
+            <DocumentFormattingBar />
+            {blockFeedback.feedback}
+            <div className="phone-section-list">
+              <p className="eyebrow">Proposal for {p.client.company}</p>
+              <h1>{p.title}</h1>
+              <p>
+                {p.content.length
+                  ? "Choose a section to edit."
+                  : "Add your first section."}
+              </p>
+              {firstBlock}
+              {sections.flatMap((s, n) => [
+                <button key={s.id} onClick={() => setSection(n)}>
+                  <span>{String(n + 1).padStart(2, "0")}</span>
+                  <strong>{s.title}</strong>
+                  <small>{s.pending ? "Review" : "✓"} ›</small>
+                </button>,
+                ...s.indices
+                  .filter(
+                    (j) =>
+                      p.content[j].type === "heading" &&
+                      (p.content[j].level ?? 1) > 1,
+                  )
+                  .map((j) => (
+                    <button
+                      key={`sub-${p.content[j].id ?? j}`}
+                      className={`outline-subheading outline-level-${p.content[j].level}`}
+                      onClick={() => {
+                        setSection(n);
+                        requestAnimationFrame(() =>
+                          document
+                            .querySelector(
+                              `[data-block-id="block-${p.content[j].id ?? j}"]`,
+                            )
+                            ?.scrollIntoView({ block: "center" }),
+                        );
+                      }}
+                    >
+                      <strong>
+                        {p.content[j].text || "Untitled subheading"}
+                      </strong>
+                    </button>
+                  )),
+              ])}
+              <Button
+                onClick={() => {
+                  setTab("Quote");
+                  if (window.innerWidth < 1100) setDrawer(true);
+                }}
+              >
+                Edit quote
+              </Button>
+            </div>
+            <div className="phone-section-nav">
+              <Button
+                onClick={() => {
+                  setFullDocument(false);
+                  setSection(null);
+                }}
+              >
+                ‹ Sections
+              </Button>
+              <Button onClick={() => setFullDocument((v) => !v)}>
+                {fullDocument ? "One section" : "Full document"}
+              </Button>
+              <div>
+                <Button
+                  aria-label="Previous section"
+                  disabled={section === null || section === 0}
+                  onClick={() => setSection((section ?? 1) - 1)}
                 >
-                  <Icon name={icon} />
-                </button>
-              ))}
-        </aside>
+                  ‹ Previous
+                </Button>
+                <Button
+                  aria-label="Next section"
+                  disabled={section === null || section >= sections.length - 1}
+                  onClick={() => setSection((section ?? 0) + 1)}
+                >
+                  Next ›
+                </Button>
+              </div>
+            </div>
+            {reviewBanner}
+            <div className="pdf-paper-viewport">
+              <div
+                className="pdf-paper-size"
+                style={
+                  panels.printMode
+                    ? {
+                        width: 816 * panels.scale,
+                        height: panels.height * panels.scale,
+                      }
+                    : undefined
+                }
+              >
+                <article
+                  ref={paper}
+                  style={
+                    {
+                      "--accent": current.workspace_settings?.accent_colour,
+                      "--editor-ui-scale": panels.printMode
+                        ? 1 / panels.scale
+                        : 1,
+                      "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
+                      "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
+                      "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
+                      "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
+                      transform: panels.printMode
+                        ? `scale(${panels.scale})`
+                        : undefined,
+                      transformOrigin: "top left",
+                      minHeight: panels.printMode
+                        ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
+                        : undefined,
+                    } as CSSProperties
+                  }
+                  className="paper editor-paper proposal-typography document-reading"
+                >
+                  <PagedPaper
+                    paper={paper}
+                    styles={resolveStyles(
+                      p.workspace_settings,
+                      p.template_style_overrides,
+                      p.style_overrides,
+                    )}
+                    enabled={panels.printMode}
+                    content={p.content}
+                    contentKey={JSON.stringify([
+                      p.title,
+                      printView(p.content, p.quote),
+                      p.valid_until,
+                      p.style_overrides,
+                      p.template_style_overrides,
+                    ])}
+                    onPagination={receivePagination}
+                  />
+                  <style>
+                    {fontCss(p.workspace_settings)}
+                    {styleFontFaces(
+                      resolveStyles(
+                        p.workspace_settings,
+                        p.template_style_overrides,
+                        p.style_overrides,
+                      ),
+                    )}
+                    {documentStyleCss(
+                      resolveStyles(
+                        p.workspace_settings,
+                        p.template_style_overrides,
+                        p.style_overrides,
+                      ),
+                      p.workspace_settings?.accent_colour,
+                    )}
+                  </style>
+                  <DocumentCover
+                    title={p.title}
+                    workspace={
+                      panels.printMode
+                        ? p.workspace_settings?.company_name
+                        : undefined
+                    }
+                    logo={
+                      p.workspace_settings?.logo
+                        ? `/api/proposals/${p.id}/preview-logo`
+                        : undefined
+                    }
+                    company={p.client.company}
+                    sender={map["sender.name"]}
+                    validUntil={p.valid_until}
+                    timezone={p.workspace_settings?.timezone}
+                    onTitle={(title) => change({ title })}
+                  />
+                  {firstBlock}
+                  <Reorder
+                    ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
+                    onMove={(from, to) =>
+                      move((content) =>
+                        moveDocumentBlock(content, from.slice(6), to.slice(6)),
+                      )
+                    }
+                  >
+                    {sections.map((s, n) => (
+                      <div
+                        className={section === n ? "phone-active-section" : ""}
+                        key={s.id}
+                      >
+                        {sectionEditor(s, n)}
+                      </div>
+                    ))}{" "}
+                  </Reorder>
+                  <p className="muted document-end">
+                    {p.valid_until && (
+                      <>
+                        Valid until{" "}
+                        {readableDate(
+                          p.valid_until,
+                          p.workspace_settings?.timezone,
+                        )}{" "}
+                        ·{" "}
+                      </>
+                    )}
+                    From {settings?.company_name}
+                  </p>
+                  <DocumentPagination pagination={browserPages?.plan} />
+                </article>
+              </div>
+            </div>
+            {reviewBanner}
+          </ReadOnlyRegion>
+        </main>
+        {!panels.phone ? (
+          <ToolsPanel
+            tab={tab as EditorTab}
+            open={panels.right}
+            mode={panels.mode}
+            onTab={openTools}
+            onToggle={toggleRight}
+            totals={`${money(totals(items).one_time_total, p.currency)} · ${money(totals(items).monthly_total, p.currency)}/mo`}
+            onCloseComplete={() => {
+              const path = pendingField.current;
+              pendingField.current = null;
+              if (path) fields?.insert(path);
+            }}
+          >
+            {panelBody}
+          </ToolsPanel>
+        ) : (
+          <aside
+            className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
+          >
+            <div className="editor-sidebar-header">
+              <button
+                type="button"
+                className="sidebar-arrow"
+                aria-label={
+                  panels.right
+                    ? "Collapse tools sidebar"
+                    : "Expand tools sidebar"
+                }
+                title={
+                  panels.right
+                    ? "Collapse tools (⌘\\ / Ctrl+\\)"
+                    : "Expand tools (⌘\\ / Ctrl+\\)"
+                }
+                onClick={toggleRight}
+              >
+                <PanelChevron direction={panels.right ? "right" : "left"} />
+              </button>
+            </div>
+            {panels.right
+              ? panel
+              : (
+                  [
+                    ["Quote", "table"],
+                    ["Fields", "code"],
+                    ["Styles", "heading"],
+                    ["Send", "review"],
+                  ] as const
+                ).map(([name, icon]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    aria-label={`Open ${name}`}
+                    title={name}
+                    onClick={() => openTools(name)}
+                  >
+                    <Icon name={icon} />
+                  </button>
+                ))}
+          </aside>
+        )}
       </div>
       {pdfOpen && (
         <PdfPreviewViewer
@@ -2707,7 +2802,7 @@ function QuoteEditorContent({
           close={() => setPdfOpen(false)}
         />
       )}
-      {outlineOpen && (
+      {phoneOutlineOpen && (
         <Sheet
           title="Pages"
           close={() => setOutlineOpen(false)}
@@ -2861,7 +2956,7 @@ function QuoteEditorContent({
             </Sheet>
           );
         })()}
-      {drawer && (
+      {phoneDrawer && (
         <Sheet
           title={tab}
           close={() => setDrawer(false)}

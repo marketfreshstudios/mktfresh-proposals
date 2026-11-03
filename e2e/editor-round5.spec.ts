@@ -141,7 +141,7 @@ test("pointer page dragging moves every block, updates real sheets, and page del
   expect(surfaces.every((s) => s.bg === "rgb(255, 255, 255)")).toBe(true);
   page.off("dialog", onDialog);
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   await page.goto("/studio/templates");
   const templatePaper = await ready(page, true);

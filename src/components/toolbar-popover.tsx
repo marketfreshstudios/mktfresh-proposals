@@ -56,12 +56,33 @@ export function ToolbarPopover({
       )
         close();
     };
+    // A toolbar action can keep focus on its trigger. In that case the first
+    // Escape still belongs to the open menu, before the document deselects and
+    // removes its portal/trigger. Never steal focus from a subsequent click.
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !trigger?.contains(event.target as Node))
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const active = document.activeElement;
+      close();
+      requestAnimationFrame(() => {
+        if (
+          trigger?.isConnected &&
+          (document.activeElement === active ||
+            document.activeElement === document.body)
+        )
+          trigger.focus({ preventScroll: true });
+      });
+    };
+    window.addEventListener("keydown", escape, true);
     document.addEventListener("pointerdown", outside, true);
     return () => {
       resize.disconnect();
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
       document.removeEventListener("pointerdown", outside, true);
+      window.removeEventListener("keydown", escape, true);
       el.hidePopover();
     };
   }, []);

@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
+import { useHistoryStatus } from "./editor-history";
+import { EditorIcon } from "./editor/editor-icon";
 /** Event handlers and pending requests must read current state before React paints. */
 export function useCurrentState<T>(initial: T) {
   const [value, update] = useState(initial),
@@ -11,19 +13,31 @@ export function useCurrentState<T>(initial: T) {
   }, []);
   return [value, set, ref] as const;
 }
-export function PanelChevron({ direction }: { direction: "left" | "right" }) {
+export function PanelChevron({
+  direction,
+  double = false,
+}: {
+  direction: "left" | "right";
+  double?: boolean;
+}) {
   return (
     <svg
       className="panel-chevron"
       width="16"
       height="16"
-      viewBox="0 0 24 24"
+      viewBox={double ? "0 0 30 24" : "0 0 24 24"}
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
       aria-hidden="true"
     >
       <path d={direction === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
+      {double && (
+        <path
+          transform="translate(6 0)"
+          d={direction === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"}
+        />
+      )}
     </svg>
   );
 }
@@ -41,6 +55,19 @@ export function EditorHeader({
   children,
   className = "",
   beforeLeave,
+  phone = false,
+  compact = false,
+  locked = false,
+  published = "draft",
+  stale = false,
+  recovered = false,
+  aiPending = 0,
+  hadAi = false,
+  onNextAi,
+  onPreviewPdf,
+  onPreviewClient,
+  onReviewSend,
+  onDuplicate,
 }: {
   title: string;
   backLabel: string;
@@ -55,9 +82,41 @@ export function EditorHeader({
   children?: ReactNode;
   className?: string;
   beforeLeave?: () => void;
+  phone?: boolean;
+  compact?: boolean;
+  locked?: boolean;
+  published?: "draft" | "live";
+  stale?: boolean;
+  recovered?: boolean;
+  aiPending?: number;
+  hadAi?: boolean;
+  onNextAi?: () => void;
+  onPreviewPdf?: () => void;
+  onPreviewClient?: () => void;
+  onReviewSend?: () => void;
+  onDuplicate?: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
   const pending = leaving || saving;
+  const history = useHistoryStatus();
+  const goBack = async () => {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      const ok = await save();
+      if (
+        ok ||
+        window.confirm(
+          "Your changes could not be saved. Leave the editor anyway? Your edits are kept on this device.",
+        )
+      ) {
+        beforeLeave?.();
+        window.location.assign(backHref);
+      }
+    } finally {
+      setLeaving(false);
+    }
+  };
   const label = offline
     ? "Offline — changes kept on this device"
     : pending
@@ -79,6 +138,139 @@ export function EditorHeader({
   const tooltip = lastSaved
     ? `Last saved ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(new Date(lastSaved))}`
     : "Not saved yet";
+  if (!phone && onReviewSend) {
+    const state = stale
+      ? "stale"
+      : offline
+        ? "offline"
+        : pending
+          ? "saving"
+          : error
+            ? "error"
+            : recovered
+              ? "recovered"
+              : dirty
+                ? "dirty"
+                : "saved";
+    const text = locked
+      ? "Signed · locked"
+      : stale
+        ? "Edited elsewhere · Reload"
+        : offline
+          ? "Offline · saved on this device"
+          : pending
+            ? "Saving…"
+            : error
+              ? "Couldn't save · Retry"
+              : recovered
+                ? "Unsaved changes recovered"
+                : dirty
+                  ? "Unsaved changes"
+                  : `${published === "live" ? "Live" : "Draft"} · Saved`;
+    return (
+      <header
+        className={`editor-document-header editor-v2-header ${className}`}
+      >
+        <button
+          type="button"
+          className="editor-v2-back"
+          onClick={goBack}
+          disabled={leaving}
+          title={`Back to ${backLabel.toLowerCase()}`}
+          aria-label={`Back to ${backLabel.toLowerCase()}`}
+        >
+          ‹ {backLabel}
+        </button>
+        <span className="editor-header-divider" aria-hidden="true" />
+        <span className="editor-header-title" title={title} aria-label={title}>
+          {title}
+        </span>
+        <div
+          className="editor-save-status"
+          data-state={state}
+          title={tooltip}
+          role="status"
+        >
+          <span className="editor-status-dot" aria-hidden="true" />
+          {stale || (error && !offline && !pending) ? (
+            <button type="button" onClick={retry}>
+              {text}
+            </button>
+          ) : (
+            <span>{text}</span>
+          )}
+        </div>
+        <span className="editor-header-spacer" />
+        <div className="editor-header-history">
+          <button
+            type="button"
+            aria-label="Undo"
+            title="Undo (⌘Z / Ctrl+Z)"
+            disabled={locked || stale || !history.canUndo}
+            onClick={() => history.controller?.undo()}
+          >
+            <EditorIcon name="undo" />
+          </button>
+          <button
+            type="button"
+            aria-label="Redo"
+            title="Redo (⇧⌘Z / Ctrl+Shift+Z)"
+            disabled={locked || stale || !history.canRedo}
+            onClick={() => history.controller?.redo()}
+          >
+            <EditorIcon name="redo" />
+          </button>
+        </div>
+        <button
+          type="button"
+          className="editor-header-pill editor-header-pdf"
+          aria-label="Preview PDF"
+          title="Preview PDF"
+          disabled={saving || stale}
+          onClick={onPreviewPdf}
+        >
+          {compact ? "PDF" : "Preview PDF"}
+        </button>
+        <button
+          type="button"
+          className="editor-header-pill editor-header-client"
+          aria-label="Preview as client"
+          title="Preview as client"
+          disabled={saving || stale}
+          onClick={onPreviewClient}
+        >
+          {compact ? "Preview" : "Preview as client"}
+        </button>
+        <button
+          type="button"
+          className="editor-header-pill editor-header-send"
+          disabled={stale || offline || (locked && !onDuplicate)}
+          title={offline ? "Reconnect to send" : undefined}
+          onClick={locked ? onDuplicate : onReviewSend}
+        >
+          {locked ? "Duplicate as new draft" : "Review & send"}
+        </button>
+        {hadAi &&
+          (aiPending ? (
+            <button
+              type="button"
+              className="editor-ai-pill"
+              aria-label={`${aiPending} to review · Next`}
+              title="Go to the next unreviewed AI section"
+              disabled={locked || stale}
+              onClick={onNextAi}
+            >
+              <Icon name="ai" />
+              {aiPending} to review{!compact && " · Next ›"}
+            </button>
+          ) : (
+            <span className="editor-ai-pill editor-ai-done">
+              ✓ AI review done
+            </span>
+          ))}
+      </header>
+    );
+  }
   return (
     <header className={`editor-document-header ${className}`}>
       <div className="editor-header-identity">
@@ -86,24 +278,7 @@ export function EditorHeader({
           title={`Back to ${backLabel.toLowerCase()}`}
           aria-label={`Back to ${backLabel.toLowerCase()}`}
           disabled={leaving}
-          onClick={async () => {
-            if (leaving) return;
-            setLeaving(true);
-            try {
-              const ok = await save();
-              if (
-                ok ||
-                window.confirm(
-                  "Your changes could not be saved. Leave the editor anyway? Your edits are kept on this device.",
-                )
-              ) {
-                beforeLeave?.();
-                window.location.assign(backHref);
-              }
-            } finally {
-              setLeaving(false);
-            }
-          }}
+          onClick={goBack}
         >
           <PanelChevron direction="left" />
           {backLabel}

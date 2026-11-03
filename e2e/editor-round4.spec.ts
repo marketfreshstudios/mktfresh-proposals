@@ -19,21 +19,30 @@ test("sidebar rails open every tab, remember collapse and support both shortcuts
     "true",
   );
   await page
-    .getByRole("button", { name: "Collapse Pages sidebar", exact: true })
+    .getByRole("button", {
+      name: /^Collapse (Pages|Sections) sidebar$/,
+      exact: true,
+    })
     .click();
   await page
     .getByRole("button", { name: "Collapse tools sidebar", exact: true })
     .click();
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Expand Pages sidebar", exact: true }),
+    page.getByRole("button", {
+      name: /^Expand (Pages|Sections) sidebar$/,
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Expand tools sidebar", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Control+Shift+Backslash");
   await expect(
-    page.getByRole("button", { name: "Collapse Pages sidebar", exact: true }),
+    page.getByRole("button", {
+      name: /^Collapse (Pages|Sections) sidebar$/,
+      exact: true,
+    }),
   ).toBeVisible();
   await page.keyboard.press("Control+Backslash");
   await expect(
@@ -45,7 +54,7 @@ test("sidebar rails open every tab, remember collapse and support both shortcuts
       await expect(
         page.getByRole("button", { name: "Expand tools sidebar", exact: true }),
       ).toBeVisible();
-    for (const name of ["Quote", "Fields", "Styles", "Review & send"]) {
+    for (const name of ["Quote", "Fields", "Styles", "Send"]) {
       if (
         await page
           .getByRole("button", { name: "Collapse tools sidebar", exact: true })
@@ -64,7 +73,12 @@ test("sidebar rails open every tab, remember collapse and support both shortcuts
         .getByRole("dialog")
         .filter({ has: page.getByRole("tablist", { name: "Proposal tools" }) });
       if (await dialog.isVisible())
-        await dialog.getByRole("button", { name: "Done", exact: true }).click();
+        await dialog
+          .getByRole("button", {
+            name: /^(Done|Collapse tools sidebar)$/,
+            exact: true,
+          })
+          .click();
     }
   }
 });
@@ -307,9 +321,19 @@ test("page add/delete and undo use normal authoring history; templates use the s
     name: "Document formatting",
     exact: true,
   });
-  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
   await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
-  await bar.getByRole("button", { name: "Redo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Redo", exact: true })
+    .click();
   await expect
     .poll(
       () => f.active().content.filter((b) => b.type === "page_break").length,
@@ -323,7 +347,12 @@ test("page add/delete and undo use normal authoring history; templates use the s
   await expect(
     page.getByRole("status").filter({ hasText: "Page deleted" }),
   ).toBeVisible();
-  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
   await expect
     .poll(
       () => f.active().content.filter((b) => b.type === "page_break").length,
@@ -331,7 +360,7 @@ test("page add/delete and undo use normal authoring history; templates use the s
     .toBe(2);
   await page.goto("/studio/templates");
   await expect(
-    page.getByRole("navigation", { name: "Pages", exact: true }),
+    page.getByRole("navigation", { name: "Sections", exact: true }),
   ).toBeVisible();
   await expect(
     page.locator(".template-paged-paper .editor-page-sheets"),
@@ -384,7 +413,12 @@ test("whole pages and sections move through normal undo without moving the follo
     name: "Document formatting",
     exact: true,
   });
-  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
   await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
   const section = page.getByRole("button", {
     name: "Drag section First section",
@@ -407,7 +441,12 @@ test("whole pages and sections move through normal undo without moving the follo
   ).toHaveCount(1);
   await page.keyboard.press("Space");
   await expect.poll(() => f.active().content[0]?.type).toBe("page_break");
-  await bar.getByRole("button", { name: "Undo", exact: true }).click();
+  await page
+    .locator(
+      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+    )
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
   await expect.poll(() => JSON.stringify(f.active().content)).toBe(before);
 });
 test("real signatures retain their authored page positions in new PDFs", async () => {
@@ -474,7 +513,11 @@ test("review-only changes retain page geometry and page decorations never enter 
         const r = el.getBoundingClientRect();
         return {
           id: el.getAttribute("data-block-id"),
-          top: r.top + scrollY,
+          top:
+            r.top +
+            scrollY +
+            (el.closest<HTMLElement>(".editor-document-region")?.scrollTop ??
+              0),
           height: r.height,
         };
       }),

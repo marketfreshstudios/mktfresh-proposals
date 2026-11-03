@@ -90,7 +90,9 @@ test("Overview moves preserve every saved block and page marker through controls
   await ready(page);
   const overview = page.locator(`[data-block-id="block-${blocks[0].id}"]`),
     undo = page
-      .getByRole("toolbar", { name: "Document formatting", exact: true })
+      .locator(
+        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+      )
       .getByRole("button", { name: "Undo", exact: true });
   async function changed(first: string, last: string) {
     await expect.poll(() => f.active().content[0]?.id).toBe(first);
@@ -182,7 +184,7 @@ test("sidebar shells stay fixed, arrows retain their size, and every sheet is pa
     }
   }
   for (const [shellName, arrowName, scrollSelector] of [
-    [".editor-outline", "Pages", ".editor-sidebar-scroll"],
+    [".editor-outline", "Sections", ".editor-sidebar-scroll"],
     [".editor-sidepanel", "tools", '[role="tabpanel"]'],
   ]) {
     const shell = page.locator(shellName),
@@ -272,7 +274,7 @@ test("moving a title-field section to the top survives saving and reload without
       .sort(),
   ).toEqual(ids);
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   const revision = f.active().revision;
   await page.reload();
@@ -317,13 +319,19 @@ test("text style has symmetric divider gaps and balanced inner chevron padding",
       .evaluate((el) => {
         const button = el.querySelector<HTMLElement>('[role="combobox"]')!,
           r = button.getBoundingClientRect(),
-          left = el.previousElementSibling!.getBoundingClientRect(),
+          leftElement = el.previousElementSibling as HTMLElement,
+          left = leftElement.offsetParent
+            ? leftElement.getBoundingClientRect()
+            : null,
           right = el
             .nextElementSibling!.querySelector("button")!
             .getBoundingClientRect(),
           style = getComputedStyle(button);
         return {
-          before: r.left - left.right,
+          before: left
+            ? r.left - left.right
+            : parseFloat(getComputedStyle(el).marginLeft) +
+              parseFloat(getComputedStyle(el).paddingLeft),
           after: right.left - r.right,
           padding: style.paddingLeft,
           arrow: style.backgroundPositionX,

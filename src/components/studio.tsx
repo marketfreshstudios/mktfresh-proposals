@@ -7,7 +7,7 @@ import { paginateBrowser } from "./browser-pagination";
 import { type BrowserPages, PagedPaper } from "./paged-paper";
 import { DocumentPagination } from "./document-pagination";
 import { SourceParagraph } from "./page-spacers";
-import { PagesOutline } from "./pages-outline";
+import { SectionsNav } from "./editor/sections-nav";
 import { useEditorPanels } from "./use-editor-panels";
 import { useTemplatePreview } from "./use-template-preview";
 import { authoringPreview } from "../lib/authoring-preview";
@@ -1560,8 +1560,16 @@ function TemplatesStudioContent({
       )}
       {mode === "templates" && draft && (
         <>
-          <p className="eyebrow">Pages</p>
-          <PagesOutline
+          <p className="eyebrow">Sections</p>
+          <SectionsNav
+            currentSectionId={
+              index === null
+                ? null
+                : content
+                    .slice(0, index + 1)
+                    .filter((b) => b.type === "heading")
+                    .at(-1)?.id
+            }
             content={content}
             onMove={move}
             pagination={browserPages}
@@ -1580,6 +1588,12 @@ function TemplatesStudioContent({
               patch(content);
             }}
             onFocus={(id) => {
+              if (id === "cover") {
+                templatePaper.current
+                  ?.querySelector(".template-cover")
+                  ?.scrollIntoView({ block: "start" });
+                return;
+              }
               const n = content.findIndex((b) => b.id === id);
               if (templateListOpen) {
                 setTemplateListOpen(false);

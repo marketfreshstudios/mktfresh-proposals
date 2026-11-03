@@ -1,21 +1,23 @@
-# Editor v2 shell — owner clarification before implementation
+# Editor v2 shell — owner decisions
 
-PR 1 is paused at the request's instruction: “If the spec is silent, or it contradicts the prototype or this prompt, stop and ask in the PR. Don't guess.” No application code or behavior has changed.
+Source: `design/editor-v2/specs/editor-v2.md`, the browser-served `Redesign 10 - Editor Prototype.dc.html`, and the PR 1 request. Implementation starts from main `76ea8f2`.
 
-Source: `design/editor-v2/specs/editor-v2.md` and the browser-served `Redesign 10 - Editor Prototype.dc.html`, from main `76ea8f2`.
+## Confirmed: preserve the phone editor below 700px
 
-## 1. Phone header for PR 1
+Jonathan confirmed that PR 1 keeps the current phone header and editor layout below 700px. The Redesign 11 phone header belongs to PR 4. The 375px PR screenshot therefore intentionally shows the existing phone header. An automated check verifies Review & send remains fully inside that viewport.
 
-The request says “Review & send” must always remain fully visible, retains the exact desktop header order/minimum title width, and asks for a 375px screenshot. The supplied Redesign 10 prototype clips the header at that width. In the browser at 375px, the header has `clientWidth = 375` and `scrollWidth = 832`; Review & send spans approximately x=711–832. At 924px it fits (the button ends at x=912 inside a 924px header).
+## Confirmed: 409 temporarily locks editing
 
-The new phone header is described separately in §6.5, assigned to PR 4, and is outside PR 1's listed scope.
+Jonathan confirmed that a revision conflict is an exception to “Never block typing”. The stale bar offers Reload; document text, block actions and quote fields are read-only until reload. The existing reloadConflict/recovery callbacks remain unchanged. Reload retains the local version as a suggestion; Keep reapplies it through normal revision-checked saving. Saving itself never disables typing.
 
-**Decision needed:** should PR 1 retain the current functional phone header until PR 4, or bring the Redesign 11 phone header forward into this PR? Alternatively, confirm that temporary Redesign 10 header clipping below 700px is intended for this intermediate PR.
+## Pending: new header between 700px and approximately 840px
 
-## 2. Typing after a 409
+With a 200-character title (minimum 120px), the AI pill and the exact requested controls/gaps, the new 56px header needs approximately 840px even with the compact PDF/Preview labels. At 768px the header scroll width is 840px and Review & send extends outside the viewport. The requested 924/1024/1180/1440px cases fit.
 
-The request's status rules say “Never block typing.” Its acceptance checks and spec §12 say a forced 409 disables editing until Reload. The current editor permits continued typing after a conflict while preventing saves and keeping the newest local text for recovery.
+The prompt requires the new header at 700px and above and Review & send visible at every width. These cannot both be met with the fixed control sizes and single-row order. Per “If the spec is silent, or it contradicts the prototype or this prompt, stop and ask in the PR. Don't guess”, a decision is pending on [PR #51](https://github.com/marketfreshstudios/mktfresh-proposals/pull/51#issuecomment-6594692239):
 
-**Decision needed:** confirm that 409 is an explicit exception to “Never block typing,” and that this PR should disable editing until Reload; or keep the current editable conflict-recovery behavior.
+1. Keep the current header until 924px.
+2. Put secondary actions in an overflow menu at narrow tablet widths.
+3. Permit a two-row header at those widths.
 
-Once these are resolved, implement the agreed shell without changing save/autosave/history/review/readiness/pagination/sorting/API behavior, run the existing browser suite and new shell checks, and add implementation screenshots at 1440/1024/375 to this same PR.
+No exception has been selected without the owner's answer. The extra 768px geometry regression remains active to expose the unresolved fit. The PR stays a draft until this decision and its test are resolved.

@@ -432,12 +432,18 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         width,
         theme,
       );
-      if (width < 1100)
+      if (
+        width < 1100 &&
+        !(await page
+          .getByRole("tab", { name: "Quote", exact: true })
+          .filter({ visible: true })
+          .isVisible())
+      )
         await page
           .getByRole("button", { name: "Open Quote", exact: true })
           .click();
       await page
-        .getByRole("tab", { name: "Review & send", exact: true })
+        .getByRole("tab", { name: "Send", exact: true })
         .filter({ visible: true })
         .click();
       await expect(

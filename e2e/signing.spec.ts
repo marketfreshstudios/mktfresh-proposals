@@ -185,11 +185,11 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     .first()
     .fill("2751");
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep $2,751", exact: true }).click();
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Review & send", exact: true })

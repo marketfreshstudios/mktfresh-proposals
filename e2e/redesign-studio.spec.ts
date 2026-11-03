@@ -492,33 +492,28 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         .getByLabel("Proposal title", { exact: true })
         .fill(`My offline title ${width} ${theme}`);
       await expect(
-        page.getByText("Your changes are kept on this device.", {
-          exact: false,
-        }),
+        page.getByText(
+          /Your changes are kept on this device\.|Offline · saved on this device/,
+          {
+            exact: false,
+          },
+        ),
       ).toBeVisible();
       await capture("editor-offline", "8e", width, theme);
       await context.setOffline(false);
       await expect(
-        page.getByText("All changes saved", { exact: true }),
+        page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
       ).toBeVisible();
       rejectSave = true;
       await page
         .getByLabel("Proposal title", { exact: true })
         .fill(`My conflict title ${width} ${theme}`);
-      await expect(
-        page.getByText("This draft changed elsewhere", { exact: true }),
-      ).toBeVisible();
+      await expect(page.locator(".editor-notice-stale")).toBeVisible();
       await capture("editor-conflict", "8f", width, theme);
       rejectSave = false;
-      await page.getByRole("button", { name: "Reload and keep mine" }).click();
-      await expect(
-        page.getByText("Your unsaved edits were kept as a suggestion.", {
-          exact: true,
-        }),
-      ).toBeVisible();
-      await page
-        .getByRole("button", { name: "Keep current draft", exact: true })
-        .click();
+      await page.getByRole("button", { name: "Reload", exact: true }).click();
+      await expect(page.locator(".editor-notice-recovered")).toBeVisible();
+      await page.getByRole("button", { name: "Discard", exact: true }).click();
       const aiDraft = (await repo.get(editing.id))!;
       aiDraft.ai_unreviewed = true;
       aiDraft.content = aiDraft.content.map((b) =>
@@ -575,7 +570,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await expect(page.locator(".quote-workspace")).toBeVisible();
       await expect(
         page
-          .getByRole("tab", { name: "Review & send", exact: true })
+          .getByRole("tab", { name: "Send", exact: true })
           .filter({ visible: true }),
       ).toHaveAttribute("aria-selected", "true");
       await expect(
