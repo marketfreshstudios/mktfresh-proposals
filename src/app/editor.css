@@ -1628,3 +1628,152 @@
     cursor: default;
   }
 }
+
+/* PR 3: responsive drawing only. The canonical PDF-width clone never uses these rules. */
+@media (min-width: 700px) {
+  :is(.pdf-paper-viewport, .template-page-viewport):has(
+    [data-sheet-view="true"]
+  ) {
+    width: 100%;
+    overflow: visible;
+    padding: 1px;
+  }
+  .pdf-paper-size:has([data-sheet-view="true"]) {
+    width: 100%;
+    height: auto;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    ) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 760px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box;
+    padding: clamp(40px, 6vw, 72px) clamp(52px, 6vw, 88px) 88px
+      clamp(64px, 7vw, 88px) !important;
+    min-height: var(--projected-sheets-height, 320px) !important;
+    transform: none !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none;
+    position: relative;
+    isolation: isolate;
+    --sheet-block-gap: 12px;
+  }
+  :is(
+      .editor-paper,
+      .template-paged-paper
+    )[data-sheet-view="true"][data-editor-density="comfortable"] {
+    --sheet-block-gap: 22px;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    )
+    .block-sortable:not([data-layout-space]) {
+    margin-top: var(--sheet-block-gap) !important;
+    margin-bottom: 0;
+  }
+  /* The old Comfortable inset belongs to canonical print geometry only. */
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    )
+    .block-frame[data-controls="v2"]
+    > .block-content {
+    margin-block: -6px;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    )
+    .block-sortable:has(> .sheet-break-marker) {
+    display: none !important;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    )
+    :is(.document-page-count, .document-end, .empty-sheet-cover) {
+    display: none !important;
+  }
+  .editor-page-sheets[data-sheet-view="true"] {
+    position: absolute;
+    inset: 0 0 auto;
+    width: 100%;
+    background: transparent;
+    z-index: var(--z-document);
+  }
+  .editor-page-sheets[data-sheet-view="true"] > .page-sheet {
+    position: absolute;
+    width: 100%;
+    max-width: 760px;
+    min-height: 320px;
+    margin: 0 auto;
+    padding: clamp(40px, 6vw, 72px) clamp(52px, 6vw, 88px) 88px
+      clamp(64px, 7vw, 88px);
+    box-sizing: border-box;
+    background: var(--paper);
+    border: 0;
+    border-radius: 4px;
+    box-shadow:
+      0 1px 3px rgba(20, 18, 14, 0.08),
+      0 14px 32px rgba(20, 18, 14, 0.08);
+    pointer-events: auto;
+  }
+  .editor-page-sheets[data-sheet-view="true"] .editor-sheet-gap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 52px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--surface-page);
+    color: var(--ink-muted);
+    font: 600 11px/16px var(--font-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    pointer-events: auto;
+    z-index: calc(var(--z-block-controls) + 1);
+  }
+  /* Gaps mask continuous selection decorations without changing editable source. */
+  .editor-page-sheets[data-sheet-view="true"] {
+    display: contents;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    )
+    > .editor-page-sheets {
+    position: static;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]
+    .empty-document-insert {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border: 0;
+    padding: 0;
+    background: none;
+    color: var(--ink-muted);
+    font: 500 13px/18px var(--font-ui);
+    cursor: pointer;
+  }
+  .empty-sheet-plus {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--accent);
+    font: 24px/1 var(--font-ui);
+  }
+}

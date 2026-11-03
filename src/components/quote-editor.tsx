@@ -1338,7 +1338,16 @@ function QuoteEditorContent({
         setInsertAt(0);
       }}
     >
-      +
+      {panels.phone ? (
+        "+"
+      ) : (
+        <>
+          <span className="empty-sheet-plus" aria-hidden="true">
+            +
+          </span>
+          <span>Add your first block</span>
+        </>
+      )}
     </button>
   ) : null;
   const sendPanel = (
@@ -1733,7 +1742,7 @@ function QuoteEditorContent({
               </button>
             ) : undefined
           }
-          className="draft-block"
+          className={`draft-block ${b.type === "page_break" ? "sheet-break-marker" : ""}`}
           ai={!!b.ai_review && !b.ai_review.reviewed}
           reviewPending={sections.find((s) => s.indices.includes(n))?.pending}
           reviewed={
@@ -2539,16 +2548,18 @@ function QuoteEditorContent({
         )}
         <main className="editor-document-region">
           <ReadOnlyRegion locked={stale}>
-            <div className="editor-panel-controls">
-              <div className="paper-zoom">
-                <output aria-label="Editor zoom">
-                  {Math.round(panels.scale * 100)}%
-                </output>
-                <Button onClick={() => panels.setFit((v) => !v)}>
-                  {panels.fit ? "100%" : "Fit"}
-                </Button>
+            {panels.phone && (
+              <div className="editor-panel-controls">
+                <div className="paper-zoom">
+                  <output aria-label="Editor zoom">
+                    {Math.round(panels.scale * 100)}%
+                  </output>
+                  <Button onClick={() => panels.setFit((v) => !v)}>
+                    {panels.fit ? "100%" : "Fit"}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
             <PhoneFormattingBar />
             {blockFeedback.feedback}
             <div className="phone-section-list">
@@ -2636,7 +2647,7 @@ function QuoteEditorContent({
               <div
                 className="pdf-paper-size"
                 style={
-                  panels.printMode
+                  panels.phone && panels.printMode
                     ? {
                         width: 816 * panels.scale,
                         height: panels.height * panels.scale,
@@ -2646,6 +2657,7 @@ function QuoteEditorContent({
               >
                 <article
                   ref={paper}
+                  data-sheet-view={!panels.phone ? "true" : undefined}
                   data-editor-density={
                     resolveStyles(
                       p.workspace_settings,
@@ -2656,20 +2668,21 @@ function QuoteEditorContent({
                   style={
                     {
                       "--accent": current.workspace_settings?.accent_colour,
-                      "--editor-ui-scale": panels.printMode
-                        ? 1 / panels.scale
-                        : 1,
+                      "--editor-ui-scale":
+                        panels.phone && panels.printMode ? 1 / panels.scale : 1,
                       "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
                       "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
                       "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
                       "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
-                      transform: panels.printMode
-                        ? `scale(${panels.scale})`
-                        : undefined,
+                      transform:
+                        panels.phone && panels.printMode
+                          ? `scale(${panels.scale})`
+                          : undefined,
                       transformOrigin: "top left",
-                      minHeight: panels.printMode
-                        ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
-                        : undefined,
+                      minHeight:
+                        panels.phone && panels.printMode
+                          ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
+                          : undefined,
                     } as CSSProperties
                   }
                   className="paper editor-paper proposal-typography document-reading"
@@ -2682,6 +2695,7 @@ function QuoteEditorContent({
                       p.style_overrides,
                     )}
                     enabled={panels.printMode}
+                    sheets={!panels.phone}
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,
@@ -2710,24 +2724,26 @@ function QuoteEditorContent({
                       p.workspace_settings?.accent_colour,
                     )}
                   </style>
-                  <DocumentCover
-                    title={p.title}
-                    workspace={
-                      panels.printMode
-                        ? p.workspace_settings?.company_name
-                        : undefined
-                    }
-                    logo={
-                      p.workspace_settings?.logo
-                        ? `/api/proposals/${p.id}/preview-logo`
-                        : undefined
-                    }
-                    company={p.client.company}
-                    sender={map["sender.name"]}
-                    validUntil={p.valid_until}
-                    timezone={p.workspace_settings?.timezone}
-                    onTitle={(title) => change({ title })}
-                  />
+                  {(panels.phone || p.content.length > 0) && (
+                    <DocumentCover
+                      title={p.title}
+                      workspace={
+                        panels.printMode
+                          ? p.workspace_settings?.company_name
+                          : undefined
+                      }
+                      logo={
+                        p.workspace_settings?.logo
+                          ? `/api/proposals/${p.id}/preview-logo`
+                          : undefined
+                      }
+                      company={p.client.company}
+                      sender={map["sender.name"]}
+                      validUntil={p.valid_until}
+                      timezone={p.workspace_settings?.timezone}
+                      onTitle={(title) => change({ title })}
+                    />
+                  )}
                   {firstBlock}
                   <Reorder
                     ids={p.content.map((b, n) => `block-${b.id ?? n}`)}

@@ -231,7 +231,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     }
   }
   if (stage === "after") {
-    // Round 3 deliberately uses PDF geometry instead of the fluid client page.
+    // PR 3 uses responsive sheets on desktop; phone retains its existing PDF view.
     for (const width of [1440, 768, 375]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(`/proposals/${active.id}`);
@@ -245,18 +245,26 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         "data-panels-ready",
         "true",
       );
-      expect(
-        await page
-          .locator(".editor-paper")
-          .evaluate((el) => (el as HTMLElement).offsetWidth),
-      ).toBe(816);
-      expect(
-        parseFloat(
-          await page
-            .locator(".editor-paper")
-            .evaluate((el) => getComputedStyle(el).paddingLeft),
-        ),
-      ).toBeCloseTo(72, 2);
+      const paper = page.locator(".editor-paper");
+      const paperWidth = await paper.evaluate(
+        (el) => (el as HTMLElement).offsetWidth,
+      );
+      if (width < 700) {
+        expect(paperWidth).toBe(816);
+        expect(
+          parseFloat(
+            await paper.evaluate((el) => getComputedStyle(el).paddingLeft),
+          ),
+        ).toBeCloseTo(72, 2);
+      } else {
+        expect(paperWidth).toBeLessThanOrEqual(760);
+        expect(
+          parseFloat(
+            await paper.evaluate((el) => getComputedStyle(el).paddingLeft),
+          ),
+        ).toBeGreaterThanOrEqual(64);
+        await expect(page.getByLabel("Editor zoom")).toHaveCount(0);
+      }
     }
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`/proposals/${active.id}`);
@@ -594,7 +602,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
             .getByRole("button", { name: "Full document", exact: true })
             .click();
         }
-        const last = page.locator(".editor-page-break");
+        const last =
+          width < 700
+            ? page.locator(".editor-page-break")
+            : page.locator(".editor-paper .page-sheet").last();
         await last.scrollIntoViewIfNeeded();
         await expect(page.locator(".document-page-count")).toHaveAttribute(
           "data-page-count",
