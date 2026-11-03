@@ -1,0 +1,34 @@
+{
+  "_about": "Editor v2 icons, copied exactly from 'Redesign 10 - Editor Prototype.dc.html'. Each icon is a list of SVG elements. Render with <EditorIcon name=…/> (see specs/editor-v2.md §11.9): map each element to React.createElement(tag, attrs). Colors use currentColor so the parent sets them. Default size = viewBox size.",
+  "undo":      { "viewBox": "0 0 16 16", "els": [
+    ["path", { "d": "M5.5 3.5 2.5 6.5l3 3", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round", "strokeLinejoin": "round" }],
+    ["path", { "d": "M3 6.5h6.5a3.5 3.5 0 0 1 0 7H7", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round" }] ] },
+  "redo":      { "viewBox": "0 0 16 16", "mirror": true, "note": "Same elements as undo, rendered with transform: scaleX(-1).", "els": [
+    ["path", { "d": "M5.5 3.5 2.5 6.5l3 3", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round", "strokeLinejoin": "round" }],
+    ["path", { "d": "M3 6.5h6.5a3.5 3.5 0 0 1 0 7H7", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round" }] ] },
+  "list-bulleted": { "viewBox": "0 0 16 14", "els": [
+    ["circle", { "cx": 2, "cy": 2.5, "r": 1.4, "fill": "currentColor" }],
+    ["circle", { "cx": 2, "cy": 7, "r": 1.4, "fill": "currentColor" }],
+    ["circle", { "cx": 2, "cy": 11.5, "r": 1.4, "fill": "currentColor" }],
+    ["rect", { "x": 5.5, "y": 1.8, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 5.5, "y": 6.3, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 5.5, "y": 10.8, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }] ] },
+  "list-numbered": { "viewBox": "0 0 16 14", "els": [
+    ["text", { "x": 0, "y": 4.5, "fontSize": 5, "fontWeight": 700, "fontFamily": "Instrument Sans, sans-serif", "fill": "currentColor", "children": "1" }],
+    ["text", { "x": 0, "y": 9, "fontSize": 5, "fontWeight": 700, "fontFamily": "Instrument Sans, sans-serif", "fill": "currentColor", "children": "2" }],
+    ["text", { "x": 0, "y": 13.5, "fontSize": 5, "fontWeight": 700, "fontFamily": "Instrument Sans, sans-serif", "fill": "currentColor", "children": "3" }],
+    ["rect", { "x": 5.5, "y": 1.8, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 5.5, "y": 6.3, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 5.5, "y": 10.8, "width": 10, "height": 1.5, "rx": 0.75, "fill": "currentColor" }] ] },
+  "link":      { "viewBox": "0 0 16 16", "els": [
+    ["path", { "d": "M6.8 9.2l2.4-2.4", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round" }],
+    ["path", { "d": "M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1", "fill": "none", "stroke": "currentColor", "strokeWidth": 1.6, "strokeLinecap": "round" }] ] },
+  "duplicate": { "viewBox": "0 0 14 14", "els": [
+    ["rect", { "x": 4, "y": 4, "width": 9, "height": 9, "rx": 2, "fill": "none", "stroke": "currentColor", "strokeWidth": 1.4 }],
+    ["rect", { "x": 1, "y": 1, "width": 9, "height": 9, "rx": 2, "fill": "none", "stroke": "currentColor", "strokeWidth": 1.4, "opacity": 0.55 }] ] },
+  "trash":     { "viewBox": "0 0 13 14", "els": [
+    ["rect", { "x": 1, "y": 2.5, "width": 11, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 4.5, "y": 0.5, "width": 4, "height": 1.5, "rx": 0.75, "fill": "currentColor" }],
+    ["rect", { "x": 2.5, "y": 5, "width": 8, "height": 8.5, "rx": 1.5, "fill": "none", "stroke": "currentColor", "strokeWidth": 1.4 }] ] },
+  "_existing": "Keep using src/components/icons.json for: ai (AI pill), send, review, verified, declined, lock, search, plus."
+}
