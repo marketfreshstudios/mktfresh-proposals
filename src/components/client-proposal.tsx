@@ -961,7 +961,19 @@ function NewClientFlow({
                     </Button>
                   </div>
                 </div>
-                {showCopy && <FlowDocument proposal={p} frozen />}
+                {showCopy && (
+                  <FlowDocument
+                    proposal={p}
+                    frozen
+                    logo={
+                      p.cover && p.company.logo
+                        ? preview
+                          ? `/api/proposals/${token}/preview-logo`
+                          : `/api/public/${token}/logo`
+                        : undefined
+                    }
+                  />
+                )}
               </section>
             ) : step === "sign" ? (
               <section className="flow-sign">
@@ -1003,6 +1015,16 @@ function NewClientFlow({
                   )}
                 </section>
                 <SignatureForm
+                  clientCompany={p.recipient.company}
+                  companySignatory={{
+                    role: "company",
+                    name:
+                      p.company.signatory_name ||
+                      p.variables["company.owner"] ||
+                      p.company.name,
+                    title: p.company.signatory_title,
+                    company: p.company.name,
+                  }}
                   preview={preview}
                   consentText={p.consent_text}
                   name={p.recipient.name}
@@ -1050,6 +1072,13 @@ function NewClientFlow({
             ) : (
               <>
                 <FlowDocument
+                  logo={
+                    p.cover && p.company.logo
+                      ? preview
+                        ? `/api/proposals/${token}/preview-logo`
+                        : `/api/public/${token}/logo`
+                      : undefined
+                  }
                   proposal={p}
                   frozen={stale}
                   busy={busy}
@@ -1290,11 +1319,13 @@ function SeparateInvoice({
   ) : null;
 }
 function FlowDocument({
+  logo,
   proposal: p,
   frozen = false,
   busy = false,
   onToggle,
 }: {
+  logo?: string;
   proposal: PublicProposal;
   frozen?: boolean;
   busy?: boolean;
@@ -1313,8 +1344,11 @@ function FlowDocument({
       className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >
-      <ClientPrint proposal={p} />
+      <ClientPrint proposal={p} logo={logo} />
       <DocumentCover
+        logo={logo}
+        cover={p.cover}
+        map={p.variables}
         title={p.title}
         company={p.recipient.company}
         sender={p.contact.name || p.company.name}

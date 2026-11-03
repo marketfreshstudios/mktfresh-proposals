@@ -5,7 +5,7 @@ import {
 } from "./signature-presentation";
 import { documentSpacing } from "./document-spacing";
 import { documentQuote } from "./document-quote";
-import { escape, renderBlocks } from "./presentation";
+import { escape, renderBlocks, resolve } from "./presentation";
 import type { Block, Quote } from "./model";
 import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
 export function printPageCss(styles?: ResolvedStyles) {
@@ -20,6 +20,7 @@ export const printCss = `
 ${signatureCss}
 `;
 export function printContent(input: {
+  cover?: import("./cover").Cover;
   title: string;
   company: string;
   sender: string;
@@ -39,7 +40,9 @@ export function printContent(input: {
   planned?: boolean;
   pagination?: import("./page-plan").PagePlan;
 }) {
-  const cover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const cover = input.cover
+    ? `<header class="print-cover" data-print-block="cover">${(input.cover.logo === null ? undefined : input.cover.logo || input.logo) ? `<img src="${escape(input.cover.logo || input.logo || "")}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}<p class="print-workspace">${escape(resolve(input.cover.workspace, input.variables))}</p><p class="eyebrow">${escape(resolve(input.cover.eyebrow, input.variables))}</p><h1>${escape(input.title)}</h1><p class="byline">${escape(resolve(input.cover.byline, input.variables))}</p></header>`
+    : `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
     : {};

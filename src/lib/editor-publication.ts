@@ -6,6 +6,7 @@ import { freezeStyles } from "./proposal-styles";
 /** Staff work and client publication are distinct until a readiness-checked commit. */
 export type EditorialWork = Pick<
   Proposal,
+  | "cover"
   | "title"
   | "brief"
   | "content"
@@ -17,7 +18,11 @@ export type EditorialWork = Pick<
 >;
 export type PublishedState = Pick<
   Proposal,
-  "title" | "valid_until" | "style_overrides" | "template_style_overrides"
+  | "cover"
+  | "title"
+  | "valid_until"
+  | "style_overrides"
+  | "template_style_overrides"
 >;
 export function editableProposal(p: Proposal) {
   return (
@@ -30,6 +35,7 @@ export function editableProposal(p: Proposal) {
 }
 export function editorialWork(p: Proposal): EditorialWork {
   return structuredClone({
+    cover: p.cover,
     title: p.title,
     brief: p.brief,
     content: p.content,
@@ -42,6 +48,7 @@ export function editorialWork(p: Proposal): EditorialWork {
 }
 export function publicationState(p: Proposal): PublishedState {
   return structuredClone({
+    cover: p.cover,
     title: p.title,
     valid_until: p.valid_until,
     style_overrides: p.style_overrides,
@@ -67,6 +74,7 @@ export function editorialVersion(p: Proposal, now: string): Version {
       p.style_overrides,
     ),
     ...(p.pagination ? { pagination: structuredClone(p.pagination) } : {}),
+    ...(p.cover ? { cover: structuredClone(p.cover) } : {}),
     content: structuredClone(p.content),
     quote: structuredClone(p.quote),
     variables_resolved: map,
@@ -82,6 +90,7 @@ export function restorePublishedForSigning(p: Proposal) {
   const v = p.versions.at(-1)!;
   if (p.live_blockers?.length) p.unpublished_work = editorialWork(p);
   if (p.published_state) Object.assign(p, p.published_state);
+  p.cover = structuredClone(v.cover);
   p.content = structuredClone(v.content);
   p.quote = structuredClone(v.quote);
   p.pagination = structuredClone(v.pagination);

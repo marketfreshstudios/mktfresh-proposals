@@ -148,7 +148,9 @@ for (const width of [1440, 1180, 1024, 924])
       page.getByRole("dialog", { name: "Signature settings", exact: true }),
     ).toHaveCount(0);
     await expect(
-      page.locator(".document-cover [data-editor-chrome]"),
+      page.locator(
+        ".document-cover :is(.editor-edit-bar,.editor-gutter,.editor-ai-check)",
+      ),
     ).toHaveCount(0);
   });
 test("924px preserves the modal tools drawer: scrim, focus trap and Escape", async ({

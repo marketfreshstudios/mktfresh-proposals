@@ -379,3 +379,42 @@ test("client signing shows the signature pair live; the locked editor renders th
   ).not.toHaveText(/Date signed/);
   await expect(page.locator(".editor-edit-bar")).toHaveCount(0);
 });
+
+test("cover fields keep tokens, persist per proposal, remove logo, and inherit in template preview", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  await expect(
+    page.locator('.cover-field .field-chip[data-field="workspace.name"]'),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .fill("Prepared especially for {{client.first_name}}");
+  await expect
+    .poll(() => f.active().cover?.eyebrow)
+    .toBe("Prepared especially for {{client.first_name}}");
+  await page
+    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .blur();
+  await expect(
+    page.locator('.cover-field .field-chip[data-field="client.first_name"]'),
+  ).toContainText("Jane");
+  await page
+    .getByRole("button", { name: "Edit cover logo", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Remove logo", exact: true }).click();
+  await expect.poll(() => f.active().cover?.logo).toBeNull();
+  await page
+    .getByRole("button", { name: "Edit cover logo", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Use workspace logo", exact: true })
+    .click();
+  await expect.poll(() => f.active().cover?.logo).toBeUndefined();
+});

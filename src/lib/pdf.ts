@@ -98,6 +98,7 @@ export async function sealedPdf(
         style +
           `<style>${printCss}${printPageCss(version.resolved_styles)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
+            cover: version.cover,
             title:
               version.variables_resolved["proposal.title"] ??
               brand?.document?.title ??

@@ -37,11 +37,13 @@ export const versionHash = (
     | "quote"
     | "variables_resolved"
     | "resolved_styles"
+    | "cover"
     | "pagination"
   >,
 ) =>
   sha256(
     canonical({
+      ...(v.cover ? { cover: v.cover } : {}),
       content: v.content,
       quote: v.quote,
       variables_resolved: v.variables_resolved,

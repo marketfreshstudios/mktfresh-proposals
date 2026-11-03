@@ -1,4 +1,5 @@
 "use client";
+import { readableDate } from "../lib/validity";
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { printContent, printCss, printPageCss } from "../lib/document-print";
@@ -8,7 +9,13 @@ import { fontCss } from "../lib/proposal-fonts";
 import { signatureHtml } from "../lib/signature-presentation";
 import type { PublicProposal } from "./client-proposal";
 /** Browser print uses the same immutable source positions as preview and sealing. */
-export function ClientPrint({ proposal: p }: { proposal: PublicProposal }) {
+export function ClientPrint({
+  proposal: p,
+  logo,
+}: {
+  proposal: PublicProposal;
+  logo?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null),
     [mounted, setMounted] = useState(false);
   useLayoutEffect(() => setMounted(true), []);
@@ -26,15 +33,13 @@ export function ClientPrint({ proposal: p }: { proposal: PublicProposal }) {
             (s.role === "client" ? p.recipient.company : p.company.name),
           image: s.image,
           typedName: s.kind === "typed" ? s.typed_name || s.name : undefined,
-          date: new Intl.DateTimeFormat("en-US", {
-            dateStyle: "long",
-            timeStyle: "short",
-            timeZone: p.timezone,
-          }).format(new Date(s.signed_at)),
+          date: readableDate(s.signed_at, p.timezone),
         }),
       ]),
     );
     ref.current.innerHTML = printContent({
+      logo,
+      cover: p.cover,
       title: p.title,
       company: p.recipient.company,
       sender: p.contact.name,
@@ -61,7 +66,7 @@ export function ClientPrint({ proposal: p }: { proposal: PublicProposal }) {
       // A print-only failure must never prevent reading or signing.
       ref.current.dataset.printError = "true";
     }
-  }, [p, mounted]);
+  }, [p, mounted, logo]);
   if (!mounted || !p.pagination) return null;
   return createPortal(
     <div className="client-print-projection">

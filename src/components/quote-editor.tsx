@@ -491,6 +491,7 @@ function QuoteEditorContent({
         cacheKey,
         JSON.stringify({
           revision: p.revision,
+          cover: p.cover,
           title: p.title,
           content: p.content,
           quote: p.quote,
@@ -516,6 +517,7 @@ function QuoteEditorContent({
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
+    cover: v.cover,
     title: v.title,
     content: v.content,
     quote: draftItems(v.quote ?? []),
@@ -2849,6 +2851,7 @@ function QuoteEditorContent({
                       p.valid_until,
                       p.style_overrides,
                       p.template_style_overrides,
+                      p.cover,
                     ])}
                     onPagination={receivePagination}
                   />
@@ -2873,6 +2876,11 @@ function QuoteEditorContent({
                   {p.content.length > 0 && (
                     <DocumentCover
                       title={p.title}
+                      cover={p.cover}
+                      map={map}
+                      onCover={
+                        locked ? undefined : (cover) => change({ cover })
+                      }
                       workspace={
                         panels.printMode
                           ? p.workspace_settings?.company_name

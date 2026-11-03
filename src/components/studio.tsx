@@ -1,4 +1,5 @@
 "use client";
+import { defaultCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
 import { contentSections } from "../lib/ai-review";
@@ -1492,6 +1493,7 @@ function TemplatesStudioContent({
             id: draft.id,
             content,
             quote: templatePreview.quote,
+            cover: draft.cover,
             style_overrides: draft.style_overrides,
           },
           data.settings,
@@ -1740,6 +1742,7 @@ function TemplatesStudioContent({
                 setDraft({
                   id: crypto.randomUUID(),
                   name: "Untitled template",
+                  cover: defaultCover(),
                   active: true,
                   default_quote: [],
                   content: [
@@ -1903,6 +1906,7 @@ function TemplatesStudioContent({
                           draft?.default_quote,
                           draft?.default_items,
                           draft?.style_overrides,
+                          draft?.cover,
                         ])}
                         onPagination={receivePagination}
                         sheets
@@ -1923,6 +1927,13 @@ function TemplatesStudioContent({
                       </style>
                       <DocumentCover
                         title="Proposal title"
+                        cover={draft?.cover}
+                        map={map}
+                        onCover={
+                          mode === "templates"
+                            ? (cover) => editDraft({ ...draft!, cover })
+                            : undefined
+                        }
                         workspace={data.settings?.company_name}
                         logo={
                           data.settings?.logo

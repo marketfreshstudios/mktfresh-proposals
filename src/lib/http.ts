@@ -1,3 +1,4 @@
+import { CoverSchema } from "./cover";
 import { publishedExpiry } from "./editor-publication";
 import { PagePlanSchema } from "./page-plan";
 import { authoringPreview } from "./authoring-preview";
@@ -582,6 +583,7 @@ export async function handle(req: Request, path: string[]) {
           id: uuid,
           content: z.array(z.record(z.string(), z.unknown())).max(300),
           quote: QuoteSchema,
+          cover: CoverSchema.optional(),
           style_overrides: StyleOverridesSchema.optional(),
           pagination: PagePlanSchema.optional(),
         })
@@ -750,6 +752,7 @@ export async function handle(req: Request, path: string[]) {
                 )
                 .max(100),
               active: z.boolean(),
+              cover: CoverSchema.optional(),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
             })
@@ -847,6 +850,7 @@ export async function handle(req: Request, path: string[]) {
               content: z.array(z.record(z.string(), z.unknown())).max(300),
               quote: QuoteSchema,
               valid_until: z.string().nullable(),
+              cover: CoverSchema.optional(),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
               template_style_overrides: StyleOverridesSchema.optional(),
@@ -913,6 +917,7 @@ export async function handle(req: Request, path: string[]) {
         const input = z
           .object({
             revision: z.number().int(),
+            cover: CoverSchema.optional(),
             style_overrides: StyleOverridesSchema.optional(),
             pagination: PagePlanSchema.optional(),
             template_style_overrides: StyleOverridesSchema.optional(),

@@ -289,6 +289,7 @@ export async function proposalAction(
               ...(p.pagination
                 ? { pagination: structuredClone(p.pagination) }
                 : {}),
+              ...(p.cover ? { cover: structuredClone(p.cover) } : {}),
               resolved_styles: freezeStyles(
                 settings,
                 p.template_style_overrides,
