@@ -1,4 +1,5 @@
 "use client";
+import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
 import { documentSpacing } from "../lib/document-spacing";
@@ -1162,32 +1163,21 @@ function NewClientFlow({
 }
 export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
   return (
-    <div className="totals flow-totals" aria-label="Proposal totals">
-      <div>
-        <span>One-time</span>
-        <strong>
-          {formatMoney(p.totals.one_time_total, p.currency, p.money_cents)}
-        </strong>
-      </div>
-      <div>
-        <span>Monthly</span>
-        <strong>
-          {formatMoney(p.totals.monthly_total, p.currency, p.money_cents)}
-          <small>/mo</small>
-        </strong>
-      </div>
-      {p.quote.some((i) => i.sublines.some((s) => s.interval === "year")) && (
-        <div>
-          <span>Yearly</span>
-          <strong>
-            {formatMoney(p.totals.yearly_total, p.currency, p.money_cents)}
-            <small>/yr</small>
-          </strong>
-        </div>
-      )}
-    </div>
+    <DocumentTotals
+      oneTime={p.totals.one_time_total}
+      monthly={p.totals.monthly_total}
+      yearly={
+        p.quote.some((i) => i.sublines.some((s) => s.interval === "year"))
+          ? p.totals.yearly_total
+          : undefined
+      }
+      currency={p.currency}
+      cents={p.money_cents}
+      className="totals flow-totals"
+    />
   );
 }
+
 function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
   return (
     <>

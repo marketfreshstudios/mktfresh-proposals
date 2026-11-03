@@ -1,4 +1,5 @@
 "use client";
+import { DocumentTotals } from "./document-totals";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
 import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
@@ -8,7 +9,7 @@ import { EditorButton } from "./editor/editor-button";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
-import { quoteTotalText } from "../lib/document-quote";
+import { quoteTotalValues } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
 import {
   applyDocumentMove,
@@ -2208,16 +2209,12 @@ function QuoteEditorContent({
                     </Sortable>
                   ))}
                 </Reorder>
-                <p
+                <DocumentTotals
+                  {...quoteTotalValues(items)}
+                  currency={p.currency}
+                  cents={p.workspace_settings?.money?.cents}
                   className="print-quote-totals"
-                  data-print-unit="quote-totals"
-                >
-                  {quoteTotalText(
-                    items,
-                    p.currency,
-                    p.workspace_settings?.money?.cents,
-                  )}
-                </p>
+                />
               </div>
             </div>
           ) : b.type === "contract" ? (

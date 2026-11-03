@@ -36,7 +36,27 @@ export function documentQuote(
   });
   const heading =
     "<h2>Your investment</h2><p>Optional items are your choice. Totals update as you go.</p>";
-  return `<section class="print-pricing-table"><section class="print-pricing-intro">${heading}${rendered[0] ?? ""}</section>${rendered.slice(1).join("")}<p class="print-quote-totals" data-print-unit="quote-totals">${esc(quoteTotalText(quote, currency, cents))}</p></section>`;
+  return `<section class="print-pricing-table"><section class="print-pricing-intro">${heading}${rendered[0] ?? ""}</section>${rendered.slice(1).join("")}${documentTotalsHtml(quote, currency, cents)}</section>`;
+}
+export function quoteTotalValues(quote: Quote) {
+  const lines = quoteSublines(quote);
+  const sum = (interval: string) =>
+    lines
+      .filter((l) => l.interval === interval && (!l.optional || l.selected))
+      .reduce((n, l) => n + l.amount * l.qty, 0);
+  return {
+    oneTime: sum("one_time"),
+    monthly: sum("month"),
+    yearly: lines.some((l) => l.interval === "year") ? sum("year") : undefined,
+  };
+}
+export function documentTotalsHtml(
+  quote: Quote,
+  currency: string,
+  cents: "auto" | "always" = "auto",
+) {
+  const v = quoteTotalValues(quote);
+  return `<div class="document-totals print-quote-totals" aria-label="Proposal totals" data-print-unit="quote-totals">${([["One-time", v.oneTime, ""], ["Monthly", v.monthly, "/mo"], ...(v.yearly === undefined ? [] : [["Yearly", v.yearly, "/yr"]])] as [string, number, string][]).map(([label, amount, suffix]) => `<div><span>${label}</span><strong>${formatMoney(amount, currency, cents)}${suffix ? `<small>${suffix}</small>` : ""}</strong></div>`).join("")}</div>`;
 }
 export function quoteTotalText(
   quote: Quote,
@@ -76,5 +96,11 @@ export const documentQuoteCss = `
 .print-radio[data-checked=true]{background:white;color:#365c4a}.print-radio[data-checked=true] svg{display:none}.print-radio[data-checked=true]::after{content:"";display:block;width:10px;height:10px;border-radius:50%;background:#365c4a}
 .print-selection svg{width:16px;height:16px}
 .quote-required{display:block;width:20px;height:20px;margin-top:2px}
+.proposal-typography.proposal-typography .document-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:#F6F4EF;border:0;border-radius:12px;padding:14px 16px;margin:4px 0 0;break-inside:avoid}
+.proposal-typography.proposal-typography .document-totals:has(>div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
+.proposal-typography.proposal-typography .document-totals>div{display:flex;flex-direction:column;gap:4px;padding:0}
+.proposal-typography.proposal-typography .document-totals span{font:600 11px/1.5 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.08em;text-transform:uppercase;color:#6b6963}
+.proposal-typography.proposal-typography .document-totals strong{font:650 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);font-variant-numeric:tabular-nums;color:#25241f}
+.proposal-typography.proposal-typography .document-totals small{font:400 14px/1.3 var(--font-ui,"Instrument Sans",sans-serif);color:#6b6963;margin-left:2px}
 .print-pricing-card,.print-choice-group{break-inside:avoid}
 `;

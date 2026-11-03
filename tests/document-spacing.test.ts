@@ -74,7 +74,10 @@ it("prints compact single-price rows, labelled multiple sub-lines, accessible ch
   expect(html).toContain('aria-label="not included"');
   expect(html).toContain("print-radio");
   expect(visible).not.toMatch(/Required|Included|Not included|Monthly\$195/);
-  expect(visible).toContain("One-time: $0 · Monthly: $0/mo");
+  expect(html).toContain("<span>One-time</span><strong>$0</strong>");
+  expect(html).toContain(
+    "<span>Monthly</span><strong>$0<small>/mo</small></strong>",
+  );
   item.sublines.push({
     ...item.sublines[0],
     id: crypto.randomUUID(),
