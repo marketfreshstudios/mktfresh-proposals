@@ -4,6 +4,7 @@ import { Button, Icon } from "./ui";
 import { useHistoryStatus } from "./editor-history";
 import { PhoneEditorHeader } from "./editor/phone-header";
 import { EditorIcon } from "./editor/editor-icon";
+import { EditorButton } from "./editor/editor-button";
 /** Event handlers and pending requests must read current state before React paints. */
 export function useCurrentState<T>(initial: T) {
   const [value, update] = useState(initial),
@@ -297,8 +298,7 @@ export function EditorHeader({
             </button>
           </div>
         )}
-        <button
-          type="button"
+        <EditorButton
           className="editor-header-pill editor-header-pdf"
           aria-label="Preview PDF"
           title="Preview PDF"
@@ -306,9 +306,8 @@ export function EditorHeader({
           onClick={onPreviewPdf}
         >
           {tablet || compact ? "PDF" : "Preview PDF"}
-        </button>
-        <button
-          type="button"
+        </EditorButton>
+        <EditorButton
           className="editor-header-pill editor-header-client"
           aria-label="Preview as client"
           title="Preview as client"
@@ -316,9 +315,9 @@ export function EditorHeader({
           onClick={onPreviewClient}
         >
           {tablet || compact ? "Preview" : "Preview as client"}
-        </button>
-        <button
-          type="button"
+        </EditorButton>
+        <EditorButton
+          variant="primary"
           className="editor-header-pill editor-header-send"
           disabled={
             stale ||
@@ -333,7 +332,7 @@ export function EditorHeader({
         >
           {primaryLabel ??
             (locked ? "Duplicate as new draft" : "Review & send")}
-        </button>
+        </EditorButton>
         {hadAi &&
           (aiPending ? (
             <button

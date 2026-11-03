@@ -4,6 +4,7 @@ import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
 import { ReadOnlyRegion } from "./editor/read-only-region";
 import { EditorNotice } from "./editor/editor-notice";
+import { EditorButton } from "./editor/editor-button";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
@@ -2674,9 +2675,9 @@ function QuoteEditorContent({
           <span title="This proposal changed in another tab or by another person.">
             This proposal changed in another tab or by another person.
           </span>
-          <button type="button" onClick={() => void reloadConflict()}>
+          <EditorButton variant="primary" onClick={() => void reloadConflict()}>
             Reload
-          </button>
+          </EditorButton>
         </EditorNotice>
       )}
       {recovery && !stale && (
@@ -2703,7 +2704,8 @@ function QuoteEditorContent({
               <p>{recovery.quote?.length ?? 0} saved quote items.</p>
             </div>
           </details>
-          <Button
+          <EditorButton
+            variant="primary"
             disabled={locked}
             onClick={async () => {
               const edits = editable(
@@ -2716,8 +2718,8 @@ function QuoteEditorContent({
             }}
           >
             Keep
-          </Button>
-          <Button
+          </EditorButton>
+          <EditorButton
             onClick={async () => {
               if (staleRef.current && !(await reloadConflict())) return;
               localStorage.removeItem(cacheKey);
@@ -2725,14 +2727,16 @@ function QuoteEditorContent({
             }}
           >
             Discard
-          </Button>
+          </EditorButton>
         </EditorNotice>
       )}
-      {panels.phone && error && !stale && (
-        <Banner tone="danger" title="Your changes are kept here">
-          {error}
-          <Button onClick={() => void save()}>Try saving again</Button>
-        </Banner>
+      {error && !stale && (
+        <EditorNotice kind="error">
+          <span title={error}>Your changes are kept here. {error}</span>
+          <EditorButton variant="primary" onClick={() => void save()}>
+            Retry
+          </EditorButton>
+        </EditorNotice>
       )}
       {p.creation_warnings?.length ? (
         <Banner tone="warning" title="Template defaults skipped">
