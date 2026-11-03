@@ -14,14 +14,18 @@ Measured the existing neutral TEST 3 regression fixture at 1440px with Sections 
 
 The before capture is [break-before.png](screenshots/editor-v2-pr6/break-before.png). The raw owner export remains outside git; only the existing neutral fixture was used for this capture.
 
-## Signature grouping question
+## Confirmed signature grouping
 
-The prototype's `isSig` is one paired block, but the app stores client and company signatures as independent blocks. They can be separated by an explicit page break and body text; `e2e/editor-round4.spec.ts:457` deliberately exercises that authored layout.
-
-For fix 5, should pairing apply only to adjacent client/company signature blocks, preserving intentional separation, or should all unsigned signature blocks be brought together regardless of their current positions?
-
-Recommended: pair adjacent blocks; retain explicitly separated blocks in their authored positions. All frozen PagePlans remain authoritative either way. No choice has been implemented yet.
+Jonathan chose adjacent pairs only: client/company signature blocks are paired when adjacent; intervening text and explicit page breaks stay where the author placed them. A frozen PagePlan that starts a new page between the two blocks remains authoritative. Signature roles display Client on the left and Company on the right without changing the stored block order.
 
 ## Delivery sequence
 
-Each numbered fix will have its own implementation commit: (1) wrapping and widow/orphan rules, (2) Sections handle alignment, (3) pricing rows, (4) totals, (5) signatures, (6) cover, (7) sub-lines. Cover data can use the existing proposal/template/version JSON; no schema migration is currently indicated. Stripe, billing, readiness policy, publication policy and the sealed certificate page are outside this PR.
+Each numbered fix has its own implementation commit: (1) wrapping and widow/orphan rules, (2) Sections handle alignment, (3) pricing rows, (4) totals, (5) signatures, (6) cover, (7) sub-lines. Cover data can use the existing proposal/template/version JSON; no schema migration is needed. Stripe, billing, readiness policy, publication policy and the sealed certificate page are outside this PR.
+
+## Final implementation and evidence
+
+The wide editor column is now 672px at the measured 1440px layout (788px sheet, 64px left / 52px right). Larger canvases may use an 848px sheet with wider gutters. Painted sheet heights round outward to keep fractional browser margin/top rounding from putting the last unit inside bottom padding; this never changes source boundaries or PDF dimensions. Narrow displays snap only their visual continuation to a line boundary; saved offsets stay canonical. The TEST 3 first new computation starts at the whole “Coming Soon” list item (`regression-9`, offset 229, paragraph 6), rather than at offset 312 inside its text.
+
+New computations apply two-line widow/orphan protection, including short contract clauses. Hidden measurement copies have independent radio names so they cannot change the visible selected option. Keyboard section traversal skips computed-page label drop targets, retaining explicit-page targets; pointer page/section drops retain their existing handlers.
+
+[Before/after screenshots and matching PDF images](editor-v2-pr6-evidence.md) use the neutral TEST 3 fixture at a 1440px viewport. The raw owner export is not committed.

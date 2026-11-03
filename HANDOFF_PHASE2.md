@@ -888,4 +888,16 @@ Six new browser regressions cover failed fonts/images, a stalled image and a sta
 
 ## PR 6 — owner-review fixes (preflight)
 
-Started from main `30297b8`. The neutral TEST 3 fixture confirms the reported mid-line break: its display column is 585.6px versus the PDF's 672px, and source offset 312 falls inside a display line. Baseline capture and the pending question about non-adjacent signatures are in `docs/editor-v2-pr6-preflight.md`. Implementation will use one commit per numbered fix; no database migration is currently indicated for cover data in existing JSON.
+Started from main `30297b8`. The neutral TEST 3 fixture confirms the reported mid-line break: its display column is 585.6px versus the PDF's 672px, and source offset 312 falls inside a display line. Baseline measurements and the resolved adjacent-only signature decision are in `docs/editor-v2-pr6-preflight.md`. Each numbered fix has its own implementation commit; cover data uses existing JSON without a database migration.
+
+## Editor v2 owner review — PR 6 / PR #56
+
+Seven implementation commits cover the seven requested fixes. TEST 3 confirmed that the old 585.6px visible text column disagreed with the 672px PDF column. The editor now uses the PDF column whenever it fits; narrow displays snap the painted continuation to a line start without changing canonical offsets. New pagination keeps short paragraphs/list items whole and enforces two lines on each side of paragraph/list/clause splits. Existing frozen PagePlans, hash inputs for versions without a cover, and signing conflict guards are retained.
+
+Sections handles align with the title's first line. Pricing rows, choices, the totals grid and signatures share their screen/print presentation. Adjacent client/company signatures pair; authored separations and frozen breaks remain intact. The same signature pair previews the client's entry while signing and displays accepted signatures in the locked editor. Pricing drag controls remain usable without covering names, prices or selection controls. Hidden measurement clones cannot uncheck visible radio groups.
+
+Covers are optional proposal/template/version JSON: logo override/removal/default, workspace line, eyebrow and byline with fields. New templates start with the requested default fields; drafts inherit the template cover. Existing records without a stored cover retain their previous reading/print content. Cover edits use the existing autosave, publication, recovery and version-freezing paths; the cover participates in hashes only when present. No migration or hosted setup is needed.
+
+Sub-line inputs use the exact shared fallback seen in the document and PDF. Duplicate blank labels receive a local warning. Visible 32px remove controls stop at one line, retain labels in storage and use the existing undo/autosave path; the remaining single line is the item's main price.
+
+Evidence: [neutral TEST 3 comparisons and PDF page images](docs/editor-v2-pr6-evidence.md). No owner export, provider credentials or real customer data is included. Final verification: the full unfiltered browser suite passed — 139 tests, with three optional capture tests skipped (11.2 minutes). All 311 unit/database tests (53 files), TypeScript, formatting, neutrality, production build and PDF runtime tracing (327 API files) passed. The unchanged keep-together boundary test also passed three consecutive targeted runs after outward sheet-height rounding fixed fractional display clipping. GitHub CI is not awaited.
