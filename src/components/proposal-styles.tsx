@@ -233,7 +233,7 @@ export function ProposalStyles({
         </label>
       )}
       <p
-        className={contrast < 4.5 ? "warning" : "muted"}
+        className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
         role={contrast < 4.5 ? "alert" : undefined}
       >
         {contrast.toFixed(2)}:1 against white paper
@@ -267,6 +267,7 @@ export function ProposalStyles({
         <strong>Sample</strong>
         <Button
           type="button"
+          className="style-reset"
           onClick={() => {
             if (confirm(`${resetLabel}?`)) (onReset ?? (() => onChange({})))();
           }}
@@ -294,7 +295,11 @@ export function ProposalStyles({
         className="style-preview-viewport"
         data-width={phone ? "phone" : "desktop"}
       >
-        <div id={id} className="proposal-typography style-sample">
+        <div
+          id={id}
+          className="proposal-typography style-sample"
+          data-level={level}
+        >
           <style>
             {curatedFontFaces(curatedFonts)}
             {styleFontFaces(styles)}

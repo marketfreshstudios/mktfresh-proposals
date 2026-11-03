@@ -5,7 +5,8 @@
 import { chromium, type Page, type Locator } from "playwright";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { editorFixture } from "../e2e/editor-fixture";
-import type { Block } from "../src/lib/model";
+import { ItemSchema, type Block } from "../src/lib/model";
+import { catalogQuoteItem } from "../src/lib/quote-model";
 
 const phase = process.argv[2];
 if (phase !== "before" && phase !== "after")
@@ -14,7 +15,7 @@ const dir = "docs/screenshots/editor-v2-pr5";
 const browser = await chromium.launch();
 try {
   const app = await browser.newPage({
-    baseURL: "http://127.0.0.1:3100",
+    baseURL: process.env.EDITOR_CAPTURE_APP_URL ?? "http://127.0.0.1:3100",
     viewport: { width: 1440, height: 1100 },
   });
   const prototype = await browser.newPage({
@@ -34,6 +35,20 @@ try {
     route.fulfill({ contentType: "text/css", body: faces.join("\n") }),
   );
   const f = await editorFixture(app);
+  f.settings.company_name = "MarketFresh Studios";
+  f.settings.owner = "Jonathan Garces";
+  f.members[0].display_name = "Jonathan Garces";
+  await f.repo.put("workspace_settings", f.settings);
+  const presentation = structuredClone(f.active());
+  presentation.created_at = "2026-10-29T12:00:00.000Z";
+  presentation.client = {
+    ...presentation.client,
+    first_name: "Rowan",
+    last_name: "Vale",
+    company: "Brightline Foods",
+    email: "rowan@brightlinefoods.com",
+  };
+  await f.repo.save(presentation, presentation.revision);
   const content: Block[] = [
     {
       id: crypto.randomUUID(),
@@ -52,7 +67,12 @@ try {
       type: "paragraph",
       text: "This proposal covers a new website for {{client.company}}, ongoing care once it’s live, and optional add-ons you can include if they suit you.",
     },
-    { id: crypto.randomUUID(), type: "heading", text: "What we’ll do" },
+    {
+      id: crypto.randomUUID(),
+      type: "heading",
+      text: "What we’ll do",
+      ai_review: { source: "assistant", reviewed: false },
+    },
     {
       id: crypto.randomUUID(),
       type: "paragraph",
@@ -101,49 +121,69 @@ try {
     { id: crypto.randomUUID(), type: "signature_block", role: "client" },
     { id: crypto.randomUUID(), type: "signature_block", role: "company" },
   ];
-  const [base] = f.active().quote,
-    group = crypto.randomUUID();
-  const line = (name: string, amount: number, optional = true) => ({
-    ...structuredClone(base),
-    id: crypto.randomUUID(),
-    name,
-    optional,
-    default_selected: true,
-    description: "",
-    sublines: [
-      {
-        ...base.sublines[0],
-        id: crypto.randomUUID(),
-        amount,
-        list_amount: amount,
-      },
-    ],
-  });
-  const oi = line("Own It Over Time", 50000);
+  const group = crypto.randomUUID();
+  const line = async (
+    name: string,
+    amount: number,
+    optional = true,
+    interval: "one_time" | "month" = "one_time",
+  ) => {
+    const id = crypto.randomUUID();
+    const item = ItemSchema.parse({
+      id,
+      sku: `capture-${id}`,
+      name,
+      amount,
+      interval,
+      stripe_lookup_key: interval === "month" ? `capture-${id}` : null,
+      qbo_item_ref: interval === "one_time" ? "mock-services" : null,
+    });
+    await f.repo.put("pricing_items", item);
+    return {
+      ...catalogQuoteItem(item, 0, crypto.randomUUID(), [crypto.randomUUID()]),
+      optional,
+      default_selected: true,
+    };
+  };
+  const oi = await line("Own It Over Time", 50000);
   oi.description = "Spread the cost; you own the site once it’s paid off.";
   oi.choice_group_id = group;
   oi.sublines[0].label = "Kickoff";
-  oi.sublines.push({
-    ...oi.sublines[0],
-    id: crypto.randomUUID(),
-    label: "Monthly",
-    amount: 17500,
-    list_amount: 17500,
-    interval: "month",
-  });
-  const own = line("Website Build — Own It Now", 275000);
+  const monthly = await line("Installment subscription", 17500, true, "month");
+  oi.sublines.push({ ...monthly.sublines[0], label: "Monthly" });
+  oi.schedule = {
+    after_paid_invoices: 30,
+    then: { amount: 10000, lookup_key: "capture-hosted" },
+  };
+  oi.min_term_months = 18;
+  const own = await line("Website Build — Own It Now", 275000);
+  own.description = "Pay once and own it from launch.";
   own.choice_group_id = group;
   own.default_selected = false;
   const custom = {
-    ...line("Phase 1 — Soft-launch site", 65000, false),
+    ...(await line("Catering menu photography", 65000, false)),
     pricing_item_id: null,
     source: "custom" as const,
   };
+  custom.description = "Half-day shoot, 20 edited images.";
+  custom.sublines[0].list_amount = null;
+  const audit = await line("AI Search Readiness Audit", 29500);
+  audit.sublines[0].amount = 25000;
+  audit.ai_entered = true;
+  audit.default_selected = false;
+  const care = await line("Care Standard", 8500, true, "month");
+  const visibility = await line("Local Visibility Core", 29500, true, "month");
+  visibility.default_selected = false;
   await f.editRemote({
     title: "Brightline Foods — Website & Care",
     content,
-    quote: [oi, own, custom],
-    style_overrides: { body: { size: 17 } },
+    valid_until: "2026-11-28T23:59:59.999Z",
+    quote: [oi, own, custom, audit, care, visibility],
+    style_overrides: {
+      body: { size: 17 },
+      heading1: { size: 24, space_above: 32, space_below: 12 },
+      margins: { left: 0.85, right: 0.85 },
+    },
   });
   await mkdir(dir, { recursive: true });
   await Promise.all([
@@ -185,6 +225,10 @@ try {
   for (const tab of ["Quote", "Fields", "Styles", "Send"]) {
     await app.getByRole("tab", { name: tab, exact: true }).click();
     await prototype.getByRole("tab", { name: tab, exact: true }).click();
+    if (tab === "Styles")
+      await app
+        .getByRole("combobox", { name: "Text level", exact: true })
+        .selectOption("heading1");
     await shot(app, tab.toLowerCase(), app.locator(".editor-v2-panel"), phase);
     if (phase === "before")
       await shot(
@@ -208,14 +252,18 @@ try {
   await app.screenshot({ path: `${dir}/editor-1440-${phase}.png` });
   if (phase === "before")
     await prototype.screenshot({ path: `${dir}/editor-1440-prototype.png` });
-  await app
-    .locator(".editor-paper")
-    .screenshot({ path: `${dir}/sheet-${phase}.png` });
-  if (phase === "before")
-    await prototype
-      .locator("main > div")
-      .first()
-      .screenshot({ path: `${dir}/sheet-prototype.png` });
+  const sheet = await app.locator(".page-sheet").first().boundingBox();
+  await app.screenshot({
+    path: `${dir}/sheet-${phase}.png`,
+    clip: { ...sheet!, height: Math.min(600, sheet!.height) },
+  });
+  if (phase === "before") {
+    const first = await prototype.locator("main > div").first().boundingBox();
+    await prototype.screenshot({
+      path: `${dir}/sheet-prototype.png`,
+      clip: { ...first!, height: Math.min(600, first!.height) },
+    });
+  }
   if (phase === "after") {
     for (const width of [1024, 375]) {
       await app.setViewportSize({ width, height: 1100 });
@@ -255,6 +303,16 @@ try {
     await comparison.setContent(
       `<style>body{margin:0;background:#f3f0ea;font:14px system-ui}main{display:flex;align-items:flex-start;gap:12px;padding:12px}section{flex:none}h2{font-size:14px;text-transform:uppercase}img{display:block;max-width:100%}</style><main>${cards.join("")}</main>`,
     );
+    const naturalWidth = await comparison
+      .locator("section")
+      .evaluateAll((els) =>
+        Math.ceil(
+          els.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0) +
+            (els.length - 1) * 12 +
+            24,
+        ),
+      );
+    await comparison.setViewportSize({ width: naturalWidth, height: 1100 });
     await comparison.screenshot({
       path: `${dir}/${name}-${phase === "before" ? "pair" : "triplet"}.png`,
       fullPage: true,

@@ -278,35 +278,35 @@
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title font",
+        "name": "Heading 1 font",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title size (px)",
+        "name": "Heading 1 size (px)",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title weight",
+        "name": "Heading 1 weight",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title space above (px)",
+        "name": "Heading 1 space above (px)",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title space below (px)",
+        "name": "Heading 1 space below (px)",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
@@ -314,13 +314,13 @@
       },
       {
         "name": null,
-        "height": "42px",
+        "height": "0px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",
         "font": "13px / 22px \"Instrument Sans\", system-ui, sans-serif"
       },
       {
-        "name": "Title letter spacing (em)",
+        "name": "Heading 1 letter spacing (em)",
         "height": "42px",
         "border": "rgb(138, 133, 123)",
         "radius": "10px",

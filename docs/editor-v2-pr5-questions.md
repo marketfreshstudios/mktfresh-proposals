@@ -12,4 +12,12 @@ The owner says the prototype wins and to ask in the PR when unclear. The browser
 | Styles level/font/size | 38px high, 9px radius | shared 40px / 10px panel input style |
 | Styles weight/spacing | 36px high, 8px radius | shared 40px / 10px panel input style |
 
-Should the explicit PR 5 field values (40px/10px and the 15px item name) override those literal prototype values, with the prototype governing the rest, or should the literal prototype sizes win? These panel edits remain pending an owner answer. Pagination investigation is independent. No application code, PagePlan, hash or PDF code has changed.
+Should the explicit PR 5 field values (40px/10px and the 15px item name) override those literal prototype values, with the prototype governing the rest, or should the literal prototype sizes win? This was asked before changing application code; the owner resolution is recorded below.
+
+## Owner answer — resolved
+
+Use the prototype's measured sizes exactly: 36px Quote controls, 34–38px Styles controls, its 8–9px corners and 14px/600 item name. The prompt's 40px/10px/15px values were approximations; the prototype governs whenever they differ. Keep 44px touch targets on phone only, following Redesign 11.
+
+## TEST 3 fixture — resolved
+
+Jonathan authorized the exact proposal API/editor for read-only inspection, with browser writes blocked. Raw JSON and inspection images remain gitignored. The committed regression uses neutral identities, the same block/list structure and lengths, Montserrat / DM Sans, and Standard density with the original default margins. No live proposal/customer identifiers are committed.

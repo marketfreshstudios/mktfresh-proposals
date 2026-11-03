@@ -14,7 +14,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useBlockFeedback } from "../block-controls";
+import { useBlockFeedback, useBlockSelection } from "../block-controls";
 export function SectionsNav({
   content,
   pagination,
@@ -36,6 +36,23 @@ export function SectionsNav({
 }) {
   const pages = computedPages(content, pagination),
     feedback = useBlockFeedback();
+  const selected = useBlockSelection().selected;
+  const assignments = new Map(
+    pagination?.assignments.map((a) => [a.block, a.page]),
+  );
+  // Display-only rows: never create section ranges or change page/drop calculations.
+  const pageBlocks = (number: number) => {
+    let signatures = false;
+    return content.filter((b) => {
+      if (assignments.get(b.id!) !== number) return false;
+      if (b.type === "signature_block") {
+        if (signatures) return false;
+        signatures = true;
+        return true;
+      }
+      return b.type === "pricing_table" || b.type === "contract";
+    });
+  };
   const add = (after?: string) => {
     const next = addPage(content, after);
     onChange(next.content);
@@ -167,7 +184,7 @@ export function SectionsNav({
                   </>
                 }
               </div>
-              {p.number === 1 && content.length > 0 && (
+              {p.number === 1 && (
                 <button
                   type="button"
                   className="outline-section"
@@ -198,7 +215,13 @@ export function SectionsNav({
                       title={s.title}
                       onClick={() => onFocus(s.id)}
                     >
-                      <span className="section-label">{s.title}</span>
+                      <span className="section-label">
+                        {s.blocks[0]?.type === "pricing_table"
+                          ? s.blocks[0].text || "Investment"
+                          : s.blocks[0]?.type === "signature_block"
+                            ? "Signatures"
+                            : s.title}
+                      </span>
                       {s.pending && (
                         <small
                           className="review-dot"
@@ -226,6 +249,63 @@ export function SectionsNav({
                   </Sortable>
                 ))}
               </SortableContext>
+              {!p.sections.some((s) => s.blocks[0]?.type === "heading") &&
+                pageBlocks(p.number)
+                  .filter((b) => !p.sections.some((s) => s.id === b.id))
+                  .map((b) => (
+                    <button
+                      type="button"
+                      className="outline-section outline-block"
+                      key={b.id}
+                      aria-current={
+                        selected === `block-${b.id}` ||
+                        selected === `template-${b.id}`
+                          ? "location"
+                          : undefined
+                      }
+                      onClick={() => onFocus(b.id!)}
+                      title={
+                        b.type === "pricing_table"
+                          ? b.text || "Investment"
+                          : b.type === "contract"
+                            ? b.text || "Statement of Work & Contract"
+                            : "Signatures"
+                      }
+                    >
+                      <span className="section-label">
+                        {b.type === "pricing_table"
+                          ? b.text || "Investment"
+                          : b.type === "contract"
+                            ? b.text || "Statement of Work & Contract"
+                            : "Signatures"}
+                      </span>
+                    </button>
+                  ))}
+              {!p.sections.length &&
+                !pageBlocks(p.number).length &&
+                p.continuing && (
+                  <button
+                    type="button"
+                    className="outline-section outline-continuing"
+                    onClick={() => onPage?.(p.number)}
+                  >
+                    <span className="section-label">
+                      {p.continuing.title} (continued)
+                    </span>
+                  </button>
+                )}
+              {p.number > 1 &&
+                !p.sections.length &&
+                !pageBlocks(p.number).length &&
+                !p.continuing && (
+                  <button
+                    type="button"
+                    className="outline-section"
+                    onClick={() => onPage?.(p.number)}
+                  >
+                    <span className="section-label">Empty page</span>
+                  </button>
+                )}
               <button
                 type="button"
                 className="outline-page-end"

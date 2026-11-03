@@ -24,7 +24,6 @@ export function FieldOptions({
   search?: boolean;
   variant?: "panel" | "menu";
 }) {
-  const toolbar = useBlockToolbar();
   const [query, setQuery] = useState("");
   const keys = Object.keys(map).filter((path) =>
     `${fieldLabel(path)} ${path}`.toLowerCase().includes(query.toLowerCase()),
@@ -33,26 +32,20 @@ export function FieldOptions({
     <div className={`field-options field-options-${variant}`}>
       {variant === "panel" && (
         <p className="fields-hint">
-          {toolbar?.hasTextTarget ? (
-            <>
-              Choose a field to insert it at the end of the selected text. Or
-              type {"{{"} in any paragraph.
-            </>
-          ) : (
-            "Click into a paragraph, then choose a field…"
-          )}
+          Click into a paragraph, then choose a field to insert it. Or type{" "}
+          {"{{"} in any paragraph.
         </p>
       )}
       {search && (
-        <label className="field">
-          Search fields
+        <div className="field field-search">
           <input
             aria-label="Search fields"
+            placeholder="Search fields"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </label>
+        </div>
       )}
       {["Client", "Proposal", "Sender & workspace", "Totals"].map((group) => {
         const items = keys.filter((path) => fieldGroup(path) === group);
@@ -68,8 +61,14 @@ export function FieldOptions({
                 onClick={() => onInsert(path)}
                 aria-label={`${fieldLabel(path)} — {{${path}}}`}
               >
-                <span className="field-option-label">{fieldLabel(path)}</span>
-                <code>{`{{${path}}}`}</code>
+                <span className="field-option-label">
+                  {variant === "panel"
+                    ? fieldLabel(path)
+                        .replace(/^(Client|Proposal) /, "")
+                        .replace(/^./, (c) => c.toUpperCase())
+                    : fieldLabel(path)}
+                </span>
+                <code title={`{{${path}}}`}>{`{{${path}}}`}</code>
                 <span
                   className="field-option-value"
                   title={map[path] || "Empty"}

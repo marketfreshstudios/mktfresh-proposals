@@ -7,6 +7,7 @@ import { useBlockSelection } from "./block-controls";
 import type { Block } from "../lib/model";
 import { pageMetrics, type ResolvedStyles } from "../lib/proposal-styles";
 import { paginateBrowser, type BrowserPages } from "./browser-pagination";
+import { fontFamily } from "../lib/proposal-fonts";
 export type { BrowserPages } from "./browser-pagination";
 /** Browser pagination owns both the sheets and the saved print break points. */
 export function PagedPaper({
@@ -55,6 +56,8 @@ export function PagedPaper({
     let frame = 0,
       stopped = false,
       running = false;
+    let readyAssets = "",
+      waitingAssets = "";
     let width = root.clientWidth;
     const observer = new MutationObserver((records) => {
       if (
@@ -83,6 +86,47 @@ export function PagedPaper({
       observer.disconnect();
       try {
         const v = latest.current;
+        // A settled sheet must use the real font and logo metrics, rather than
+        // publishing a fallback layout that changes during the first click.
+        const images = Array.from(
+          root!.querySelectorAll<HTMLImageElement>("img"),
+        );
+        const fonts = [
+          "title",
+          "heading1",
+          "heading2",
+          "heading3",
+          "body",
+        ] as const;
+        const assets = JSON.stringify([
+          fonts.map((level) => {
+            const style = v.styles[level];
+            return `${style.weight} ${style.size}px ${fontFamily(style.font)}`;
+          }),
+          images.map((image) => image.src),
+        ]);
+        if (v.enabled && readyAssets !== assets) {
+          root!.dataset.layoutAssetsReady = "false";
+          setMeasuredKey("");
+          if (waitingAssets !== assets) {
+            waitingAssets = assets;
+            Promise.allSettled([
+              ...fonts.map((level) => {
+                const style = v.styles[level];
+                return document.fonts.load(
+                  `${style.weight} ${style.size}px ${fontFamily(style.font)}`,
+                );
+              }),
+              ...images.map((image) => image.decode()),
+            ]).then(() => {
+              if (stopped || waitingAssets !== assets) return;
+              readyAssets = assets;
+              schedule();
+            });
+          }
+          return;
+        }
+        root!.dataset.layoutAssetsReady = "true";
         if (
           Array.from(root!.querySelectorAll(".field-editor")).some(
             (el) => !el.querySelector(".tiptap"),

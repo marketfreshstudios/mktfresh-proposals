@@ -1,0 +1,613 @@
+{
+  "content": [
+    {
+      "id": "regression-1",
+      "text": "Where you're starting from",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-2",
+      "text": "You've acquired a brand that people still remember. Shoppers over 40 recognize the name, and that goodwill is worth protecting. The job now is to introduce the brand to a new generation without losing the people who already trust it, and to do it while the new product line is still in development. ",
+      "type": "paragraph",
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-3",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Prepared for {{client.first_name}} {{client.last_name}}, {{client.company}}",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-4",
+      "text": "Our recommendation: Shopify",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-5",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "For a product brand launching with 15 to 25 items and growing toward 50, we recommend building on ",
+                "type": "text"
+              },
+              {
+                "text": "Shopify",
+                "type": "text",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "text": ".",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-6",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Checkout, payments and security are handled by Shopify and kept up to date for you.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Selling coordinated sets and higher-value collections alongside individual items is straightforward.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "It costs less to build and less to run than the alternatives at your size.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-7",
+      "text": "Phase 1: Soft launch",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-8",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "A refined, mobile-first home for the brand while the collection is in development.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-9",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "A professionally designed, mobile-responsive landing page.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "A brand introduction that connects the brand's heritage with its contemporary direction.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Initial product visuals using your renderings, drawings and other available assets.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "A clear \"Coming Soon\" message, with a sign-up form so interested visitors can hear about the launch first.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Foundational on-page SEO.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-10",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Timing:",
+                "type": "text",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "text": " we launch Phase 1 within 10 business days of receiving your logo, copy and images.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-11",
+      "text": "Phase 2: Full online store",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-12",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Built on the Phase 1 foundation once your products are ready.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-13",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "bulletList",
+            "content": [
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "A polished storefront with intuitive navigation and product categories.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Up to 50 products, each with its own page.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Collections and coordinated sets.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Cart and checkout set up with your chosen payment methods.",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "listItem",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "text": "Six store pages, on-page SEO for every page and product, then testing and launch. ",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph"
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-14",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Timing:",
+                "type": "text",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "text": " we'll confirm a Phase 2 launch date in writing once product details and photography are complete.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-15",
+      "text": "Investment",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-16",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Phase 1 is $1,200 and Phase 2 is $3,500, for a total build of $4,700. Each phase is billed half to start and half at launch.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-17",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Once the full store is live, Store Care keeps it updated, monitored and secure. Choose the tier that fits: Lite at $125, Standard at $195 or Pro at $325 per month.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-18",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Your total one-time investment is {{quote.one_time_total}}, plus {{quote.monthly_total}} per month for Store Care. Shopify's own subscription (from about $39 per month) is paid directly to Shopify.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-19",
+      "text": "Next steps",
+      "type": "heading",
+      "level": 1,
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-20",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "text": "Choose your Store Care tier, then accept and sign below, and we'll schedule the Phase 1 kickoff.",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-21",
+      "type": "paragraph",
+      "content": {
+        "type": "doc",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "variable",
+                "attrs": {
+                  "path": "proposal.validity"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-22",
+      "type": "pricing_table",
+      "ai_review": {
+        "source": "assistant",
+        "reviewed": true
+      }
+    },
+    {
+      "id": "regression-23",
+      "role": "company",
+      "type": "signature_block"
+    },
+    {
+      "id": "regression-24",
+      "role": "client",
+      "type": "signature_block"
+    }
+  ],
+  "style_overrides": {
+    "density": "standard"
+  },
+  "proposal_fonts": {
+    "heading": "montserrat",
+    "body": "dm-sans"
+  },
+  "title": "Online shop launch plan and ongoing care proposal"
+}
