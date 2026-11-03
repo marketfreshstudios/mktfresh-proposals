@@ -1,0 +1,66 @@
+/* MarketFresh Proposals — redesign tokens. Same token names as design/system/tokens.css; values updated.
+   Workspace accent is injected per tenant: --accent. Everything accent-derived is computed with color-mix. */
+@font-face{font-family:'Instrument Sans';src:url('/fonts/InstrumentSans-Variable.woff2') format('woff2');font-weight:400 700;font-display:swap}
+/* Source Serif 4 and IBM Plex Mono: keep the existing self-hosted files in /public/fonts. */
+
+:root,[data-theme="light"]{
+  --surface-page:#F3F0EA; --surface:#FBFAF7; --surface-sunken:#E9E5DD; --surface-raised:#FBFAF7;
+  --ink:#1C1B18; --ink-muted:#5F5B53; --border:#DDD8CE; --border-strong:#8A857B;
+  --paper:#FFFFFF; --paper-ink:#1C1B18; --paper-muted:#5F5B53; --paper-border:#E8E4DC; --paper-well:#F6F4EF;
+  --accent:#365C4A; /* tenant */
+  --on-accent:#FFFFFF;
+  --accent-text:var(--accent);
+  --accent-soft:color-mix(in oklch, var(--accent) 10%, white);
+  --choice-ground:color-mix(in oklch, var(--accent) 8%, white);
+  --choice-border:color-mix(in oklch, var(--accent) 55%, white);
+  --success:#146B3F; --success-soft:#E3F1E8;
+  --warning:#7A4800; --warning-soft:#FBEEDB;
+  --danger:#A3261E;  --danger-soft:#FBE9E7;
+  --info:#0B5563;    --info-soft:#E2F2F5;
+  --ai:#5B3FA8;      --ai-soft:#EEE8FB;
+  --neutral:#5F5B53; --neutral-soft:#ECE8E1;
+  --overlay:rgba(20,18,14,.45);
+  --shadow-md:0 2px 4px rgba(20,18,14,.06),0 8px 16px rgba(20,18,14,.08);
+  --shadow-lg:0 12px 32px rgba(20,18,14,.24);
+  --shadow-paper:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);
+  --shadow-bar:0 -8px 24px rgba(20,18,14,.08);
+}
+[data-theme="dark"]{
+  --surface-page:#131311; --surface:#1C1B19; --surface-sunken:#0E0E0C; --surface-raised:#24231F;
+  --ink:#F1EFEA; --ink-muted:#ABA79E; --border:#302F2B; --border-strong:#6E6A61;
+  /* paper-* stay identical to light: the document must match the sealed PDF */
+  --accent-text:color-mix(in oklch, var(--accent) 55%, white);
+  --accent-soft:color-mix(in oklch, var(--accent) 30%, #1C1B19);
+  --success:#58C98D; --success-soft:#12321F;
+  --warning:#F0B429; --warning-soft:#3A2A09;
+  --danger:#FF8A80;  --danger-soft:#3A1512;
+  --info:#58C8DE;    --info-soft:#0D2E36;
+  --ai:#B49CF0;      --ai-soft:#241C3D;
+  --neutral:#ABA79E; --neutral-soft:#2A2926;
+  --overlay:rgba(0,0,0,.6);
+}
+:root{
+  --font-ui:'Instrument Sans',system-ui,sans-serif;
+  --font-doc-heading:var(--workspace-heading-font,'Source Serif 4',Georgia,serif); /* Settings → Workspace → Proposal fonts */
+  --font-doc-body:var(--workspace-body-font,'Source Serif 4',Georgia,serif);
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-7:32px; --space-8:48px; --space-9:64px;
+  --radius-xs:4px; --radius-sm:7px; --radius-md:10px; --radius-lg:12px; --radius-xl:16px; --radius-pill:999px;
+  --control-staff:40px; --control-client:52px; --tap-min:44px;
+  --measure-doc:720px; --rail-desktop:340px; --editor-panel:452px; --drawer-tablet:440px;
+  --focus-ring:2px solid var(--accent-text); --focus-offset:2px;
+}
+/* Type scale (font / line-height / weight / tracking) */
+.t-display{font:600 48px/52px var(--font-doc-heading);letter-spacing:-.02em}
+.t-doc-title{font:600 36px/42px var(--font-doc-heading);letter-spacing:-.015em} /* 35px on phone */
+.t-doc-h2{font:600 24px/30px var(--font-doc-heading)}
+.t-doc-lead{font:400 19px/30px var(--font-doc-body)}
+.t-doc-body{font:400 17px/28px var(--font-doc-body)} /* floor; never smaller */
+.t-doc-small{font:400 15px/22px var(--font-doc-body)}
+.t-ui-title{font:600 20px/26px var(--font-ui)}
+.t-ui-heading{font:600 16px/22px var(--font-ui)}
+.t-ui-body{font:400 15px/22px var(--font-ui)}
+.t-ui-small{font:400 13px/18px var(--font-ui)}
+.t-label{font:600 11px/16px var(--font-ui);letter-spacing:.08em;text-transform:uppercase}
+.t-amount{font:650 28px/34px var(--font-ui);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.t-mono{font:400 13px/20px var(--font-mono)}

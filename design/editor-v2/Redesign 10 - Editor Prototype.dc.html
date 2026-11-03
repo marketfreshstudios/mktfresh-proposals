@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Libre+Caslon+Text:wght@400;700&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#F3F0EA;color:#1C1B18;font-family:'Instrument Sans',system-ui,sans-serif}a{color:#365C4A}a:hover{color:#24402F}button{font-family:inherit}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #365C4A;outline-offset:2px}</style>
+</helmet>
+<div style="height:100vh;display:flex;flex-direction:column;min-width:0">
+
+  <header style="height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px 0 10px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+    <button style="height:36px;padding:0 10px;border:0;border-radius:8px;background:none;font:500 13px 'Instrument Sans';color:#5F5B53;cursor:pointer;white-space:nowrap;flex:none" style-hover="background:#ECE8E1">‹ Proposals</button>
+    <span style="width:1px;height:20px;background:#DDD8CE"></span>
+    <span style="flex:0 1 auto;min-width:120px;font:600 15px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Brightline Foods — Website &amp; Care</span>
+    <span style="display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:#5F5B53;white-space:nowrap;flex:none"><span style="width:6px;height:6px;border-radius:3px;background:#8A857B"></span>Draft · Saved</span>
+    <span style="flex:1"></span>
+    <sc-if value="{{ aiLeft }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ nextAi }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:0;border-radius:999px;background:#EEE8FB;color:#3E2A80;font:600 13px 'Instrument Sans';cursor:pointer;white-space:nowrap;flex:none" style-hover="background:#E4DBF8"><svg width="13" height="12" viewBox="{{ ic.ai.v }}"><path fill="currentColor" d="{{ ic.ai.d }}"></path></svg>{{ aiPill }}</button>
+    </sc-if>
+    <sc-if value="{{ aiDone }}">
+      <span style="display:flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;background:#E3F1E8;color:#146B3F;font:600 13px 'Instrument Sans';white-space:nowrap">✓ AI review done</span>
+    </sc-if>
+    <div style="display:flex;gap:2px;flex:none">
+      <button title="Undo (⌘Z)" aria-label="Undo" onClick="{{ undo }}" style="width:36px;height:36px;border:0;border-radius:8px;background:none;color:#5F5B53;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:#ECE8E1"><svg width="16" height="16" viewBox="0 0 16 16" style=""><path d="M5.5 3.5 2.5 6.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 6.5h6.5a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
+      <button title="Redo (⇧⌘Z)" aria-label="Redo" style="width:36px;height:36px;border:0;border-radius:8px;background:none;color:#B5AFA4;cursor:default;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16" style="transform:scaleX(-1)"><path d="M5.5 3.5 2.5 6.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 6.5h6.5a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
+    </div>
+    <button style="height:36px;padding:0 14px;flex:none;border:1px solid #DDD8CE;border-radius:999px;background:#FBFAF7;font:600 13px 'Instrument Sans';color:#1C1B18;cursor:pointer;white-space:nowrap" style-hover="background:#F3F0EA">{{ pdfLabel }}</button>
+    <button style="height:36px;padding:0 14px;flex:none;border:1px solid #DDD8CE;border-radius:999px;background:#FBFAF7;font:600 13px 'Instrument Sans';color:#1C1B18;cursor:pointer;white-space:nowrap" style-hover="background:#F3F0EA">{{ clientLabel }}</button>
+    <button onClick="{{ openSend }}" style="flex:none;height:36px;padding:0 16px;border:0;border-radius:999px;background:#1C1B18;font:600 13px 'Instrument Sans';color:#fff;cursor:pointer;white-space:nowrap" style-hover="background:#33312C">Review &amp; send</button>
+  </header>
+
+  <div style="flex:1;min-height:0;display:flex">
+
+    <sc-if value="{{ navOpen }}" hint-placeholder-val="{{ true }}"><nav aria-label="Sections" style="width:220px;flex:none;overflow:auto;padding:12px 12px 24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 0 10px;margin-bottom:-6px"><span style="font:600 13px 'Instrument Sans'">Sections</span><button onClick="{{ toggleNav }}" title="Hide sections" aria-label="Hide sections" style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;font:600 15px/1 'Instrument Sans';color:#3E3B35;cursor:pointer;box-shadow:0 1px 2px rgba(20,18,14,.06)" style-hover="background:#ECE8E1">«</button></div>
+      <sc-for list="{{ outline }}" as="o" hint-placeholder-count="8">
+        <sc-if value="{{ o.isPage }}"><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:14px 10px 6px">{{ o.label }}</div></sc-if>
+        <sc-if value="{{ o.isSec }}">
+          <button onClick="{{ o.go }}" style="display:flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;border:0;border-left:2px solid {{ o.bar }};background:none;text-align:left;font:{{ o.font }};color:{{ o.ink }};cursor:pointer;border-radius:0 6px 6px 0" style-hover="background:#ECE8E1"><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.label }}</span><sc-if value="{{ o.ai }}"><span title="Needs AI review" style="width:6px;height:6px;border-radius:3px;background:#5B3FA8;flex:none"></span></sc-if></button>
+        </sc-if>
+      </sc-for>
+      <button onClick="{{ addPage }}" style="margin-top:14px;height:34px;border:1px dashed #C9C3B8;border-radius:8px;background:none;font:600 12px 'Instrument Sans';color:#5F5B53;cursor:pointer" style-hover="background:#ECE8E1">+ Add page</button>
+    </nav></sc-if>
+    <sc-if value="{{ navClosed }}"><div style="width:56px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0"><button onClick="{{ toggleNav }}" title="Show sections" aria-label="Show sections" style="width:36px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;font:600 15px/1 'Instrument Sans';color:#3E3B35;cursor:pointer;box-shadow:0 1px 2px rgba(20,18,14,.06)" style-hover="background:#ECE8E1">»</button></div></sc-if>
+
+    <main ref="{{ centerRef }}" style="flex:1;min-width:0;overflow:auto;padding:32px 16px 160px;box-sizing:border-box">
+      <sc-for list="{{ pages }}" as="pg" hint-placeholder-count="1">
+      <sc-if value="{{ pg.hasBreak }}"><div style="max-width:760px;margin:0 auto;height:52px;display:flex;align-items:center;justify-content:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Page {{ pg.n }}</div></sc-if>
+      <div onClick="{{ clearSel }}" style="position:relative;max-width:760px;min-height:320px;margin:0 auto;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);padding:clamp(40px,6vw,72px) clamp(52px,6vw,88px) 88px clamp(64px,7vw,88px);box-sizing:border-box;display:flex;flex-direction:column;gap:{{ blockGap }}">
+        <sc-for list="{{ pg.blocks }}" as="b" hint-placeholder-count="10">
+          <div data-bid="{{ b.id }}" onClick="{{ b.select }}" style="position:relative;padding:6px 10px;margin:0 -10px;border-radius:8px;box-shadow:{{ b.ring }};cursor:text">
+            <sc-if value="{{ b.ai }}"><span aria-hidden="true" title="Written by Claude" style="position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:2px;background:#9F88E0"></span></sc-if>
+            <sc-if value="{{ b.aiSel }}">
+              <button onClick="{{ b.review }}" title="Mark reviewed" aria-label="Mark this AI-written block reviewed" style="position:absolute;left:calc(100% + 8px);top:4px;z-index:16;width:28px;height:28px;border-radius:14px;border:1.5px solid #9F88E0;background:#fff;color:#6B4FBB;font:700 13px/1 'Instrument Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(20,18,14,.12)" style-hover="background:#9F88E0;color:#fff">✓</button>
+            </sc-if>
+
+            <sc-if value="{{ b.sel }}">
+              <div data-bar="1" role="toolbar" aria-label="{{ b.kind }} tools" onClick="{{ stop }}" style="position:absolute;left:{{ barLeft }};bottom:calc(100% + 8px);z-index:20;display:flex;flex-wrap:nowrap;align-items:center;height:40px;width:max-content;box-sizing:border-box;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;box-shadow:0 10px 28px rgba(20,18,14,.28);font:500 13px 'Instrument Sans';white-space:nowrap;cursor:default">
+                <sc-if value="{{ b.isTextual }}">
+                  <div style="position:relative;flex:none">
+                    <button onClick="{{ b.toggleStyle }}" aria-haspopup="menu" aria-expanded="{{ b.styleOpen }}" title="Text style" style="height:32px;padding:0 10px;border:0;border-radius:8px;background:{{ b.styleBg }};color:#fff;font:500 13px 'Instrument Sans';cursor:pointer;display:flex;gap:6px;align-items:center" style-hover="background:rgba(255,255,255,.1)">{{ b.styleShort }}<span style="opacity:.55">▾</span></button>
+                    <sc-if value="{{ b.styleOpen }}">
+                      <div role="menu" style="position:absolute;left:0;top:calc(100% + 8px);min-width:200px;padding:6px;border-radius:12px;background:#1C1B18;box-shadow:0 10px 28px rgba(20,18,14,.28);display:flex;flex-direction:column">
+                        <sc-for list="{{ b.styleOpts }}" as="so" hint-placeholder-count="4">
+                          <button onClick="{{ so.pick }}" role="menuitemradio" aria-checked="{{ so.on }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px;padding:0 10px;border:0;border-radius:8px;background:{{ so.bg }};color:#fff;font:{{ so.font }};text-align:left;cursor:pointer" style-hover="background:rgba(255,255,255,.1)">{{ so.label }}<span style="font:500 11px 'IBM Plex Mono';color:rgba(255,255,255,.5)">{{ so.key }}</span></button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 2px"></span>
+                  <button title="Bold (⌘B)" aria-label="Bold" style="width:32px;height:32px;border:0;border-radius:8px;background:none;color:#fff;font:700 14px 'Instrument Sans';cursor:pointer" style-hover="background:rgba(255,255,255,.1)">B</button>
+                  <button title="Italic (⌘I)" aria-label="Italic" style="width:32px;height:32px;border:0;border-radius:8px;background:none;color:#fff;font:italic 400 16px 'Source Serif 4',serif;cursor:pointer" style-hover="background:rgba(255,255,255,.1)">I</button>
+                  <button title="Bulleted list" aria-label="Bulleted list" style="width:32px;height:32px;border:0;border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,255,255,.1)"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></button>
+                  <button title="Numbered list" aria-label="Numbered list" style="width:32px;height:32px;border:0;border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,255,255,.1)"><svg width="16" height="14" viewBox="0 0 16 14"><text x="0" y="4.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">1</text><text x="0" y="9" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">2</text><text x="0" y="13.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">3</text><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></button>
+                  <button title="Link (⌘K)" aria-label="Link" style="flex:none;width:32px;height:32px;border:0;border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,255,255,.1)"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
+                  <button onClick="{{ openFields }}" title="Insert field" aria-label="Insert field" style="height:32px;padding:0 8px;border:0;border-radius:8px;background:none;color:#fff;font:500 12px 'IBM Plex Mono';cursor:pointer;white-space:nowrap" style-hover="background:rgba(255,255,255,.1)">{{ fieldLabel }}</button>
+                  <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 2px"></span>
+                </sc-if>
+                <sc-if value="{{ b.isObject }}">
+                  <span style="padding:0 10px;font:600 12px 'Instrument Sans';color:rgba(255,255,255,.75)">{{ b.kind }}</span>
+                  <sc-if value="{{ b.isPricing }}"><button onClick="{{ openQuote }}" style="height:32px;padding:0 10px;border:0;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font:600 12px 'Instrument Sans';cursor:pointer">Edit quote</button></sc-if>
+                  <sc-if value="{{ b.hasSettings }}"><button style="height:32px;padding:0 10px;border:0;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font:600 12px 'Instrument Sans';cursor:pointer">Settings</button></sc-if>
+                  <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+                </sc-if>
+                
+                <button onClick="{{ b.up }}" title="Move up" aria-label="Move up" disabled="{{ b.first }}" style="flex:none;width:30px;height:32px;border:0;border-radius:8px;background:none;color:{{ b.upInk }};font:600 15px 'Instrument Sans';cursor:pointer" style-hover="background:rgba(255,255,255,.1)">↑</button>
+                <button onClick="{{ b.down }}" title="Move down" aria-label="Move down" disabled="{{ b.last }}" style="flex:none;width:30px;height:32px;border:0;border-radius:8px;background:none;color:{{ b.downInk }};font:600 15px 'Instrument Sans';cursor:pointer" style-hover="background:rgba(255,255,255,.1)">↓</button>
+                <button onClick="{{ b.dup }}" title="Duplicate" aria-label="Duplicate" style="flex:none;width:32px;height:32px;border:0;border-radius:8px;background:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,255,255,.1)"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="4" y="4" width="9" height="9" rx="2" fill="none" stroke="#fff" stroke-width="1.4"></rect><rect x="1" y="1" width="9" height="9" rx="2" fill="none" stroke="#fff" stroke-width="1.4" opacity=".55"></rect></svg></button>
+                <button onClick="{{ b.save }}" title="Save for reuse" aria-label="Save for reuse" style="flex:none;height:32px;padding:0 8px;border:0;border-radius:8px;background:none;color:#fff;font:500 12px 'Instrument Sans';cursor:pointer" style-hover="background:rgba(255,255,255,.1)">Save</button>
+                <button onClick="{{ b.del }}" title="Delete block" aria-label="Delete block" style="flex:none;width:32px;height:32px;border:0;border-radius:8px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,120,110,.18)"><svg width="13" height="14" viewBox="0 0 13 14"><rect x="1" y="2.5" width="11" height="1.5" rx=".75" fill="#FF9A90"></rect><rect x="4.5" y="0.5" width="4" height="1.5" rx=".75" fill="#FF9A90"></rect><rect x="2.5" y="5" width="8" height="8.5" rx="1.5" fill="none" stroke="#FF9A90" stroke-width="1.4"></rect></svg></button>
+              </div>
+
+              <div onClick="{{ stop }}" style="position:absolute;left:-52px;top:0;bottom:0;width:30px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;z-index:15">
+                <button onClick="{{ b.addAbove }}" title="Add a block above" aria-label="Add a block above" style="width:26px;height:26px;margin-top:-13px;border-radius:13px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;font:600 16px/1 'Instrument Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(20,18,14,.12)" style-hover="background:#365C4A;color:#fff">+</button>
+                <span title="Drag to move" style="font:700 13px/1 'Instrument Sans';letter-spacing:-3px;color:#A39D92;cursor:grab;padding:4px">⋮⋮</span>
+                <button onClick="{{ b.addBelow }}" title="Add a block below" aria-label="Add a block below" style="width:26px;height:26px;margin-bottom:-13px;border-radius:13px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;font:600 16px/1 'Instrument Sans';cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(20,18,14,.12)" style-hover="background:#365C4A;color:#fff">+</button>
+              </div>
+
+              <sc-if value="{{ b.menuOpen }}">
+                <div role="dialog" aria-label="Add a block" onClick="{{ stop }}" style="position:absolute;left:-52px;top:{{ b.menuTop }};z-index:30;width:320px;max-height:420px;overflow:auto;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:14px;box-shadow:0 2px 4px rgba(20,18,14,.06),0 16px 40px rgba(20,18,14,.16);padding:8px;cursor:default">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px"><span style="font:600 13px 'Instrument Sans'">{{ menuTitle }}</span><button onClick="{{ closeMenu }}" aria-label="Close" style="width:28px;height:28px;border:0;border-radius:7px;background:none;font:500 18px/1 'Instrument Sans';color:#5F5B53;cursor:pointer">×</button></div>
+                  <input value="{{ menuQuery }}" onChange="{{ setMenuQuery }}" placeholder="Search blocks…" aria-label="Search blocks" style="width:100%;box-sizing:border-box;height:36px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:400 14px 'Instrument Sans';background:#fff;margin-bottom:6px"></input>
+                  <sc-for list="{{ menuGroups }}" as="g" hint-placeholder-count="3">
+                    <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:8px 8px 4px">{{ g.name }}</div>
+                    <sc-for list="{{ g.items }}" as="m" hint-placeholder-count="3">
+                      <button onClick="{{ m.pick }}" disabled="{{ m.disabled }}" style="width:100%;display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 8px;border:0;border-radius:9px;background:none;text-align:left;cursor:pointer;opacity:{{ m.op }}" style-hover="background:#ECE8E1">
+                        <span style="width:30px;height:30px;flex:none;border-radius:8px;background:#fff;border:1px solid #E3DED4;display:flex;align-items:center;justify-content:center;font:600 12px 'Instrument Sans';color:#3E3B35">{{ m.glyph }}</span>
+                        <span style="display:flex;flex-direction:column"><span style="font:600 14px/18px 'Instrument Sans';color:#1C1B18">{{ m.name }}</span><span style="font:400 12px/16px 'Instrument Sans';color:#5F5B53">{{ m.desc }}</span></span>
+                      </button>
+                    </sc-for>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ b.isCover }}">
+              <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Proposal for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ v.company }}</span></div>
+              <h1 style="margin:10px 0 10px;font-family:{{ st.title.family }};font-size:{{ st.title.px }};line-height:1.15;font-weight:600;letter-spacing:-.015em;color:{{ st.title.color }}">A website that takes catering orders</h1>
+              <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">From <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ v.sender }}</span> · Valid until <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ v.valid }}</span></div>
+            </sc-if>
+            <sc-if value="{{ b.isH }}">
+              <h2 style="margin:0;font-family:{{ st.h1.family }};font-size:{{ b.hPx }};line-height:1.25;font-weight:600;color:{{ st.h1.color }}"><sc-for list="{{ b.segs }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></h2>
+            </sc-if>
+            <sc-if value="{{ b.isP }}">
+              <p style="margin:0;font-family:{{ st.body.family }};font-size:{{ st.body.px }};line-height:1.65;color:{{ b.pInk }};text-wrap:pretty"><sc-for list="{{ b.segs }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></p>
+            </sc-if>
+            <sc-if value="{{ b.isList }}">
+              <ul style="margin:0;padding-left:22px;font-family:{{ st.body.family }};font-size:{{ st.body.px }};line-height:1.65;list-style:{{ b.listStyle }}"><sc-for list="{{ b.items }}" as="li" hint-placeholder-count="3"><li><sc-for list="{{ li }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></li></sc-for></ul>
+            </sc-if>
+            <sc-if value="{{ b.isImage }}">
+              <div style="height:220px;border-radius:10px;background:repeating-linear-gradient(135deg,#F6F4EF 0 10px,#EFECE5 10px 20px);display:flex;align-items:center;justify-content:center;font:400 12px 'IBM Plex Mono';color:#5F5B53">image · drop a PNG or JPEG</div>
+            </sc-if>
+            <sc-if value="{{ b.isBreak }}">
+              <div style="display:flex;align-items:center;gap:10px;font:600 11px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1.5px dashed #CFC9BE"></span>Page break<span style="flex:1;border-top:1.5px dashed #CFC9BE"></span></div>
+            </sc-if>
+            <sc-if value="{{ b.isPricing }}">
+              <div style="display:flex;flex-direction:column;gap:10px;font-family:'Instrument Sans'">
+                <sc-for list="{{ docUnits }}" as="u" hint-placeholder-count="5">
+                  <sc-if value="{{ u.isGroup }}">
+                    <div style="border:2px solid #9DB3A8;background:#F2F6F3;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px">
+                      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A;padding:2px 6px 0">Choose one</div>
+                      <sc-for list="{{ u.items }}" as="q" hint-placeholder-count="2">
+                        <div style="background:#fff;border:{{ q.cardBorder }};border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+                          <span style="width:20px;height:20px;margin-top:1px;border-radius:10px;border:2px solid {{ q.radioBorder }};display:flex;align-items:center;justify-content:center;box-sizing:border-box;flex:none"><sc-if value="{{ q.def }}"><span style="width:10px;height:10px;border-radius:5px;background:#365C4A"></span></sc-if></span>
+                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span><sc-if value="{{ q.hasTerms }}"><span style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">{{ q.terms }}</span></sc-if></span>
+                          <span style="font:600 15px/21px 'Instrument Sans';font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap">{{ q.amtText }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ u.isSingle }}">
+                    <sc-for list="{{ u.items }}" as="q" hint-placeholder-count="1">
+                      <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 4px;border-bottom:1px solid #ECE8E1">
+                        <sc-if value="{{ q.opt }}"><span style="width:20px;height:20px;margin-top:1px;border-radius:6px;border:2px solid {{ q.radioBorder }};background:{{ q.checkBg }};box-sizing:border-box;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font:700 12px/1 'Instrument Sans'">{{ q.check }}</span></sc-if>
+                        <sc-if value="{{ q.req }}"><span style="width:20px;flex:none"></span></sc-if>
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 15px/21px 'Instrument Sans'">{{ q.name }}</span><span style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">{{ q.desc }}</span></span>
+                        <span style="font:600 15px/21px 'Instrument Sans';font-variant-numeric:tabular-nums;white-space:nowrap">{{ q.amtText }}</span>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                </sc-for>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#F6F4EF;border-radius:12px;padding:14px 16px;margin-top:4px">
+                  <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">One-time</div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</div></div>
+                  <div><div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Monthly</div><div style="font:650 22px/28px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font:400 14px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ b.isContract }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ clauses }}" as="c" hint-placeholder-count="3">
+                  <div><div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">{{ c.h }}</div><p style="margin:0;font-family:{{ st.body.family }};font-size:15px;line-height:1.6"><sc-for list="{{ c.segs }}" as="sg" hint-placeholder-count="1"><sc-if value="{{ sg.v }}"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px">{{ sg.t }}</span></sc-if><sc-if value="{{ sg.plain }}">{{ sg.t }}</sc-if></sc-for></p></div>
+                </sc-for>
+                <div style="font:500 12px 'Instrument Sans';color:#5F5B53">+ 14 more clauses from the template</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ b.isSig }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+                <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Client</span><span style="height:56px;border-bottom:1.5px solid #1C1B18"></span><span style="font:600 14px 'Instrument Sans'">{{ v.clientName }}</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ v.company }} · Date signed</span></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Company</span><span style="height:56px;border-bottom:1.5px solid #1C1B18"></span><span style="font:600 14px 'Instrument Sans'">Jonathan Garces</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ v.workspace }} · Date signed</span></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      </sc-for>
+    </main>
+
+    <sc-if value="{{ panelOpen }}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Proposal tools" style="width:400px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column;min-height:0">
+        <div style="flex:none;display:flex;align-items:center;gap:8px;padding:12px 12px 10px 16px">
+          <div role="tablist" style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1">
+            <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+              <button role="tab" aria-selected="{{ tb.on }}" onClick="{{ tb.go }}" style="flex:1;height:30px;border:0;border-radius:8px;background:{{ tb.bg }};box-shadow:{{ tb.shadow }};font:600 13px 'Instrument Sans';color:{{ tb.ink }};cursor:pointer;white-space:nowrap">{{ tb.label }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ togglePanel }}" title="Collapse panel (⌘\)" aria-label="Collapse panel" style="width:32px;height:32px;flex:none;border:1px solid #DDD8CE;border-radius:8px;background:#fff;font:600 15px/1 'Instrument Sans';color:#3E3B35;cursor:pointer;box-shadow:0 1px 2px rgba(20,18,14,.06)" style-hover="background:#ECE8E1">»</button>
+        </div>
+
+        <sc-if value="{{ tabQuote }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;min-height:0;overflow:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="font:400 12px/17px 'Instrument Sans';color:#5F5B53;padding:0 2px">Enter agreed prices. The app never sets prices. Drag ⋮⋮ to reorder; the client sees this order.</div>
+            <sc-for list="{{ units }}" as="u" hint-placeholder-count="5">
+              <div style="border-left:2px solid {{ u.rail }};padding-left:{{ u.pad }};display:flex;flex-direction:column;gap:4px">
+                <sc-if value="{{ u.isGroup }}"><div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 2px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Choose one<button onClick="{{ u.unlink }}" style="border:0;background:none;padding:4px;font:500 12px 'Instrument Sans';letter-spacing:0;text-transform:none;color:#5F5B53;cursor:pointer">Unlink</button></div></sc-if>
+                <sc-for list="{{ u.items }}" as="q" hint-placeholder-count="1">
+                  <div style="border-radius:12px;background:{{ q.cardBg }};border:1px solid {{ q.cardLine }};box-shadow:{{ q.cardShadow }}">
+                    <button onClick="{{ q.toggle }}" aria-expanded="{{ q.open }}" style="width:100%;display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 12px 6px 8px;border:0;background:none;text-align:left;cursor:pointer;color:#1C1B18">
+                      <span title="Drag to reorder" style="font:700 13px/1 'Instrument Sans';letter-spacing:-3px;color:#A39D92;width:16px;flex:none;cursor:grab">⋮⋮</span>
+                      <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font:600 14px/19px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.name }}</span><span style="font:500 12px/16px 'Instrument Sans';color:{{ q.tagInk }}">{{ q.tag }}</span></span>
+                      <sc-if value="{{ q.flag }}"><span title="AI price differs from list" style="width:8px;height:8px;border-radius:4px;background:#5B3FA8;flex:none"></span></sc-if>
+                      <span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums;white-space:nowrap">{{ q.amtText }}</span>
+                      <span style="color:#8A857B;font-size:11px;width:12px;text-align:center">{{ q.chev }}</span>
+                    </button>
+                    <sc-if value="{{ q.open }}">
+                      <div style="padding:2px 12px 12px;display:flex;flex-direction:column;gap:10px">
+                        <input value="{{ q.name }}" onChange="{{ q.setName }}" aria-label="Item name" style="height:36px;border:1px solid #DDD8CE;border-radius:8px;padding:0 10px;font:600 14px 'Instrument Sans';background:#fff;box-sizing:border-box;width:100%"></input>
+                        <textarea onChange="{{ q.setDesc }}" value="{{ q.desc }}" aria-label="Description" rows="2" style="border:1px solid #DDD8CE;border-radius:8px;padding:8px 10px;font:400 13px/18px 'Instrument Sans';background:#fff;resize:vertical;box-sizing:border-box;width:100%"></textarea>
+                        <sc-for list="{{ q.subs }}" as="s" hint-placeholder-count="1">
+                          <div style="display:grid;grid-template-columns:72px minmax(0,1fr) 40px 104px;gap:6px;align-items:center">
+                            <span style="font:500 12px 'Instrument Sans';color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</span>
+                            <label style="height:36px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;gap:4px;padding:0 8px;box-sizing:border-box;min-width:0"><span style="font:500 13px 'Instrument Sans';color:#5F5B53">$</span><input value="{{ s.amt }}" onChange="{{ s.setAmt }}" inputmode="decimal" aria-label="Amount" style="flex:1;min-width:0;width:100%;border:0;outline:none;background:transparent;font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums"></input></label>
+                            <span style="height:36px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans';box-sizing:border-box">1</span>
+                            <select value="{{ s.iv }}" onChange="{{ s.setIv }}" aria-label="Interval" style="height:36px;width:100%;min-width:0;border:1px solid #DDD8CE;border-radius:8px;background:#fff;padding:0 6px;font:500 13px 'Instrument Sans';box-sizing:border-box"><option value="one">One-time</option><option value="mon">Monthly</option><option value="yr">Yearly</option></select>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ q.hasTerms }}"><div style="font:400 12px/17px 'Instrument Sans';color:#3E3B35;background:#F3F0EA;border-radius:8px;padding:7px 10px">{{ q.terms }}</div></sc-if>
+                        <sc-if value="{{ q.flag }}">
+                          <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;background:#EEE8FB;color:#3E2A80;font:500 13px/18px 'Instrument Sans'">
+                            <div><b>Claude entered $250.</b> The product list price is <b>$295</b>.</div>
+                            <div style="display:flex;gap:8px"><button onClick="{{ q.useList }}" style="height:32px;padding:0 12px;border:0;border-radius:7px;background:#5B3FA8;color:#fff;font:600 13px 'Instrument Sans';cursor:pointer">Use $295</button><button onClick="{{ q.keep }}" style="height:32px;padding:0 12px;border:1px solid #CDBFF0;border-radius:7px;background:#fff;color:#4A3196;font:600 13px 'Instrument Sans';cursor:pointer">Keep $250</button></div>
+                          </div>
+                        </sc-if>
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px">
+                          <button onClick="{{ q.toggleOpt }}" role="switch" aria-checked="{{ q.opt }}" style="display:flex;align-items:center;gap:8px;height:28px;border:0;background:none;padding:0;cursor:pointer;font:500 13px 'Instrument Sans';color:#1C1B18"><span style="width:32px;height:18px;border-radius:9px;background:{{ q.track }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ q.knob }};width:14px;height:14px;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></span>Optional</button>
+                          <sc-if value="{{ q.opt }}"><button onClick="{{ q.toggleDef }}" style="display:flex;align-items:center;gap:6px;height:28px;border:0;background:none;padding:0;cursor:pointer;font:500 13px 'Instrument Sans';color:#1C1B18"><span style="width:16px;height:16px;border-radius:{{ q.defRadius }};border:1.5px solid {{ q.radioBorder }};background:{{ q.checkBg }};box-sizing:border-box"></span>{{ q.defLabel }}</button></sc-if>
+                          <sc-if value="{{ q.canLink }}"><button onClick="{{ q.link }}" style="height:26px;padding:0 9px;border:1px solid #DDD8CE;border-radius:999px;background:none;font:600 12px 'Instrument Sans';color:#5F5B53;cursor:pointer">Link as alternative</button></sc-if>
+                        </div>
+                        <div style="display:flex;gap:14px;align-items:center;font:600 12px 'Instrument Sans';border-top:1px solid #ECE8E1;padding-top:10px">
+                          <button style="border:0;background:none;padding:0;font:600 12px 'Instrument Sans';color:#5F5B53;cursor:pointer">+ Sub-line</button>
+                          <button onClick="{{ q.toggleDetails }}" style="border:0;background:none;padding:0;font:600 12px 'Instrument Sans';color:#5F5B53;cursor:pointer">{{ q.detailsLabel }}</button>
+                          <span style="flex:1"></span>
+                          <button onClick="{{ q.remove }}" style="border:0;background:none;padding:0;font:600 12px 'Instrument Sans';color:#A3261E;cursor:pointer">Remove</button>
+                        </div>
+                        <sc-if value="{{ q.details }}">
+                          <div style="display:flex;flex-direction:column;gap:8px;font:500 12px 'Instrument Sans';color:#5F5B53">
+                            <label style="display:flex;flex-direction:column;gap:4px">Stripe lookup key<input value="{{ q.stripe }}" readonly="{{ true }}" style="height:34px;border:1px solid #DDD8CE;border-radius:8px;padding:0 10px;font:400 12px 'IBM Plex Mono';background:#F6F4EF"></input></label>
+                            <label style="display:flex;flex-direction:column;gap:4px">QuickBooks item<input value="{{ q.qbo }}" readonly="{{ true }}" style="height:34px;border:1px solid #DDD8CE;border-radius:8px;padding:0 10px;font:400 12px 'IBM Plex Mono';background:#F6F4EF"></input></label>
+                            <span style="font:400 12px/17px 'Instrument Sans'">Plan terms come from Products.</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="position:relative;display:flex;gap:8px;margin-top:4px">
+              <button onClick="{{ toggleAdd }}" style="flex:1;height:40px;border:1px dashed #C9C3B8;border-radius:10px;background:none;font:600 13px 'Instrument Sans';color:#5F5B53;cursor:pointer" style-hover="background:#F3F0EA">+ Add product</button>
+              <button onClick="{{ addCustom }}" style="height:40px;padding:0 14px;border:1px dashed #C9C3B8;border-radius:10px;background:none;font:600 13px 'Instrument Sans';color:#5F5B53;cursor:pointer" style-hover="background:#F3F0EA">+ Custom</button>
+              <sc-if value="{{ addOpen }}">
+                <div role="listbox" style="position:absolute;left:0;right:0;bottom:46px;background:#FBFAF7;border:1px solid #DDD8CE;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:6px;z-index:5">
+                  <sc-for list="{{ addable }}" as="a" hint-placeholder-count="3">
+                    <button onClick="{{ a.add }}" style="width:100%;display:flex;justify-content:space-between;gap:10px;min-height:40px;padding:0 10px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer;font:500 14px 'Instrument Sans';align-items:center" style-hover="background:#ECE8E1"><span>{{ a.name }}</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ a.price }}</span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <div style="flex:none;border-top:1px solid #E3DED4;padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;background:#FBFAF7">
+            <div style="grid-column:1/-1;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Client sees by default</div>
+            <div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">One-time</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.one }}</div></div>
+            <div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">Monthly</div><div style="font:650 24px/30px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ t.mon }}<span style="font:400 14px 'Instrument Sans';color:#5F5B53">/mo</span></div></div>
+            <div style="grid-column:1/-1;font:400 12px/17px 'Instrument Sans';color:#5F5B53">Across all choices · {{ t.rangeOne }} one-time · {{ t.rangeMon }}/mo</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabFields }}">
+          <div style="flex:1;min-height:0;overflow:auto;padding:4px 16px 20px;display:flex;flex-direction:column;gap:6px">
+            <div style="font:400 12px/17px 'Instrument Sans';color:#5F5B53;padding:0 2px">{{ fieldsHint }}</div>
+            <input value="{{ fieldQuery }}" onChange="{{ setFieldQuery }}" type="search" placeholder="Search fields" aria-label="Search fields" style="flex:none;height:40px;width:100%;box-sizing:border-box;border:1px solid #DDD8CE;border-radius:9px;padding:0 12px;font:400 14px 'Instrument Sans';background:#fff;margin:4px 0"></input>
+            <sc-for list="{{ fieldGroups }}" as="g" hint-placeholder-count="4">
+              <div style="flex:none;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:12px 2px 4px">{{ g.name }}</div>
+              <sc-for list="{{ g.items }}" as="f" hint-placeholder-count="3">
+                <button onClick="{{ f.insert }}" title="Insert {{ f.label }}" style="flex:none;display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid #E8E4DC;border-radius:10px;background:#fff;text-align:left;cursor:pointer" style-hover="border-color:#9DB3A8;background:#F7FAF8">
+                  <span style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font:600 13px/18px 'Instrument Sans';color:#1C1B18;white-space:nowrap">{{ f.label }}</span><span style="font:400 11px 'IBM Plex Mono';color:#5B3FA8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.token }}</span></span>
+                  <span style="font:400 12px/16px 'Instrument Sans';color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.value }}</span>
+                </button>
+              </sc-for>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabStyles }}">
+          <div style="flex:1;min-height:0;overflow:auto;padding:4px 16px 20px;display:flex;flex-direction:column;gap:14px;font:500 12px 'Instrument Sans';color:#5F5B53">
+            <div style="font:400 12px/17px 'Instrument Sans';padding:0 2px">Changes apply to this proposal only. Workspace defaults live in Studio → Workspace.</div>
+            <div style="display:flex;flex-direction:column;gap:6px">Density
+              <div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1">
+                <button onClick="{{ setStd }}" style="flex:1;height:30px;border:0;border-radius:8px;background:{{ stdBg }};font:600 13px 'Instrument Sans';color:#1C1B18;cursor:pointer">Standard</button>
+                <button onClick="{{ setComf }}" style="flex:1;height:30px;border:0;border-radius:8px;background:{{ comfBg }};font:600 13px 'Instrument Sans';color:#1C1B18;cursor:pointer">Comfortable</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">Page margins (inches)
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+                <sc-for list="{{ margins }}" as="mg" hint-placeholder-count="4">
+                  <label style="display:flex;flex-direction:column;gap:3px;font:500 11px 'Instrument Sans'">{{ mg.side }}<input value="{{ mg.v }}" aria-label="{{ mg.side }} margin" style="height:34px;min-width:0;border:1px solid #DDD8CE;border-radius:8px;padding:0 8px;font:600 13px 'Instrument Sans';background:#fff;box-sizing:border-box;width:100%"></input></label>
+                </sc-for>
+              </div>
+            </div>
+            <div style="height:1px;background:#E3DED4"></div>
+            <label style="display:flex;flex-direction:column;gap:6px">Text level
+              <select value="{{ lvl }}" onChange="{{ setLvl }}" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:600 14px 'Instrument Sans';background:#fff;color:#1C1B18"><option value="title">Title</option><option value="h1">Heading 1</option><option value="body">Body</option></select>
+            </label>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px">
+              <label style="display:flex;flex-direction:column;gap:6px">Font
+                <select value="{{ cur.font }}" onChange="{{ setFont }}" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:500 14px 'Instrument Sans';background:#fff;color:#1C1B18;min-width:0"><optgroup label="Serif"><option value="source">Source Serif 4</option><option value="caslon">Libre Caslon Text</option><option value="news">Newsreader</option></optgroup><optgroup label="Sans"><option value="instrument">Instrument Sans</option></optgroup></select>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px">Size (px)
+                <input value="{{ cur.size }}" onChange="{{ setSize }}" inputmode="numeric" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:600 14px 'Instrument Sans';background:#fff;box-sizing:border-box;width:100%"></input>
+              </label>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">Color
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ colors }}" as="cl" hint-placeholder-count="3">
+                  <button onClick="{{ cl.pick }}" aria-pressed="{{ cl.on }}" style="flex:1;height:38px;border:{{ cl.border }};border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:600 13px 'Instrument Sans';color:#1C1B18;cursor:pointer"><span style="width:14px;height:14px;border-radius:7px;background:{{ cl.hex }}"></span>{{ cl.label }}</button>
+                </sc-for>
+              </div>
+              <span style="font:400 12px 'Instrument Sans';color:#146B3F">{{ contrastText }}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+              <label style="display:flex;flex-direction:column;gap:6px">Weight<input value="600" style="height:36px;border:1px solid #DDD8CE;border-radius:8px;padding:0 8px;font:600 13px 'Instrument Sans';background:#fff;min-width:0;box-sizing:border-box;width:100%"></input></label>
+              <label style="display:flex;flex-direction:column;gap:6px">Space above<input value="32" style="height:36px;border:1px solid #DDD8CE;border-radius:8px;padding:0 8px;font:600 13px 'Instrument Sans';background:#fff;min-width:0;box-sizing:border-box;width:100%"></input></label>
+              <label style="display:flex;flex-direction:column;gap:6px">Space below<input value="12" style="height:36px;border:1px solid #DDD8CE;border-radius:8px;padding:0 8px;font:600 13px 'Instrument Sans';background:#fff;min-width:0;box-sizing:border-box;width:100%"></input></label>
+            </div>
+            <div style="height:1px;background:#E3DED4"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 13px 'Instrument Sans';color:#1C1B18">Sample</span><button onClick="{{ resetStyles }}" style="border:0;background:none;padding:4px 0;font:600 12px 'Instrument Sans';color:#5F5B53;cursor:pointer">Reset to template</button></div>
+            <div style="border:1px solid #E3DED4;border-radius:12px;background:#fff;padding:18px 20px">
+              <div style="font-family:{{ st.title.family }};font-size:24px;font-weight:600;line-height:1.2;color:{{ st.title.color }}">A proposal for your next chapter</div>
+              <div style="font-family:{{ st.h1.family }};font-size:17px;font-weight:600;margin-top:12px;color:{{ st.h1.color }}">Our approach</div>
+              <div style="font-family:{{ st.body.family }};font-size:14px;line-height:1.6;margin-top:4px;color:#1C1B18">Clear goals and thoughtful work, shaped around your business.</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ tabSend }}">
+          <div style="flex:1;min-height:0;overflow:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:14px;font:500 12px 'Instrument Sans';color:#5F5B53">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-if value="{{ aiLeft }}">
+                <div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#FBE9E7;color:#7A1C15">
+                  <span style="width:20px;height:20px;border-radius:10px;background:#A3261E;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 'Instrument Sans';flex:none">!</span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;font:500 13px/18px 'Instrument Sans'"><span><b>{{ aiLabel }}.</b> {{ aiNames }}</span>
+                    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" checked="{{ confirmed }}" onChange="{{ toggleConfirm }}" style="margin-top:2px;accent-color:#365C4A"></input><span>I’ve reviewed these AI-written sections</span></label>
+                    <button onClick="{{ nextAi }}" style="align-self:flex-start;border:0;background:none;padding:0;font:600 13px 'Instrument Sans';color:#7A1C15;text-decoration:underline;cursor:pointer">Show me</button>
+                  </div>
+                </div>
+              </sc-if>
+              <div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#FBEEDB;color:#5C3600;font:500 13px/18px 'Instrument Sans'">
+                <span style="width:20px;height:20px;border-radius:10px;background:#7A4800;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 'Instrument Sans';flex:none">?</span>
+                <span><b>Custom line.</b> Catering menu photography has a manual price. Check the scope and price.</span>
+              </div>
+              <div style="display:flex;gap:10px;padding:12px;border-radius:12px;background:#E3F1E8;color:#0F4F2E;font:500 13px/18px 'Instrument Sans'">
+                <span style="width:20px;height:20px;border-radius:10px;background:#146B3F;color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px/1 'Instrument Sans';flex:none">✓</span>
+                <span>Quote, contract and signature blocks are in place.</span>
+              </div>
+            </div>
+            <label style="display:flex;flex-direction:column;gap:6px">Valid until<input value="November 28, 2026" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:500 14px 'Instrument Sans';background:#fff;color:#1C1B18"></input></label>
+            <label style="display:flex;flex-direction:column;gap:6px">From<select style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:500 14px 'Instrument Sans';background:#fff;color:#1C1B18"><option>Jonathan Garces · MarketFresh Studios</option><option>Franz · MarketFresh Studios</option></select></label>
+            <label style="display:flex;flex-direction:column;gap:6px">To<input value="Rowan Vale <rowan@brightlinefoods.com>" readonly="{{ true }}" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:500 14px 'Instrument Sans';background:#F6F4EF;color:#1C1B18"></input></label>
+            <label style="display:flex;flex-direction:column;gap:6px">Subject<input value="Your proposal from MarketFresh Studios" style="height:38px;border:1px solid #DDD8CE;border-radius:9px;padding:0 10px;font:500 14px 'Instrument Sans';background:#fff;color:#1C1B18"></input></label>
+            <label style="display:flex;flex-direction:column;gap:6px">Note<textarea rows="4" style="border:1px solid #DDD8CE;border-radius:9px;padding:10px;font:400 14px/20px 'Instrument Sans';background:#fff;color:#1C1B18;resize:vertical">Hi Rowan, here’s the proposal we talked about. You can choose the website option that suits you and sign right from the page.</textarea></label>
+            <span style="font:400 12px/17px 'Instrument Sans'">Subject and note start from your Proposal sent email. The client link is added automatically.</span>
+            <button onClick="{{ togglePw }}" role="switch" aria-checked="{{ pw }}" style="display:flex;align-items:center;gap:10px;height:32px;border:0;background:none;padding:0;cursor:pointer;font:500 13px 'Instrument Sans';color:#1C1B18"><span style="width:34px;height:20px;border-radius:10px;background:{{ pwTrack }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ pwKnob }};width:16px;height:16px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></span>Require a password</button>
+          </div>
+          <div style="flex:none;border-top:1px solid #E3DED4;padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px">
+              <button style="height:44px;padding:0 16px;border:1px solid #DDD8CE;border-radius:999px;background:#fff;font:600 14px 'Instrument Sans';color:#1C1B18;cursor:pointer;white-space:nowrap">Preview as client</button>
+              <button onClick="{{ send }}" disabled="{{ sendBlocked }}" style="flex:1;height:44px;border:0;border-radius:999px;background:{{ sendBg }};font:600 14px 'Instrument Sans';color:{{ sendInk }};cursor:pointer">Send to Rowan</button>
+            </div>
+            <sc-if value="{{ sendBlocked }}"><span style="font:500 12px 'Instrument Sans';color:#A3261E">Confirm the AI review above to send.</span></sc-if>
+          </div>
+        </sc-if>
+      </aside>
+    </sc-if>
+
+    <sc-if value="{{ panelClosed }}">
+      <aside aria-label="Proposal tools" style="width:64px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0">
+        <button onClick="{{ togglePanel }}" title="Open panel (⌘\)" aria-label="Open panel" style="width:36px;height:32px;margin-bottom:6px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;font:600 15px/1 'Instrument Sans';color:#3E3B35;cursor:pointer;box-shadow:0 1px 2px rgba(20,18,14,.06)" style-hover="background:#ECE8E1">«</button>
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+          <button onClick="{{ tb.open }}" title="{{ tb.label }}" style="width:56px;min-height:48px;border:0;border-radius:10px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:#3E3B35" style-hover="background:#ECE8E1"><span style="font:600 13px 'Instrument Sans'">{{ tb.glyph }}</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">{{ tb.label }}</span></button>
+        </sc-for>
+        <span style="flex:1"></span>
+        <span style="writing-mode:vertical-rl;transform:rotate(180deg);font:600 12px 'Instrument Sans';color:#3E3B35;padding:8px 0">{{ t.one }} · {{ t.mon }}/mo</span>
+      </aside>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ toast }}">
+    <div role="status" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:12px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';box-shadow:0 12px 32px rgba(20,18,14,.3)">{{ toastText }}<sc-if value="{{ toastUndo }}"><button onClick="{{ undo }}" style="height:28px;padding:0 10px;border:0;border-radius:7px;background:rgba(255,255,255,.14);color:#fff;font:600 12px 'Instrument Sans';cursor:pointer">Undo</button></sc-if></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.centerRef = React.createRef();
+    this.state = {
+      ic: {}, w: 1440, more: false, navOpen: true, sel: null, menu: null, menuQuery: '', tab: 'Quote', panelOpen: true, open: 'oiot', details: null, addOpen: false,
+      fieldQuery: '', density: 'std', lvl: 'h1', pw: false, confirmed: false, toast: null, hist: null,
+      styles: { title: { font: 'source', size: 40, color: 'ink' }, h1: { font: 'source', size: 24, color: 'ink' }, body: { font: 'source', size: 17, color: 'ink' } },
+      blocks: [
+        { id: 'cover', type: 'cover' },
+        { id: 'b1', type: 'h', text: 'Overview', ai: true },
+        { id: 'b2', type: 'p', text: '{{client.first_name}}, thank you for walking us through the new menu and the catering side of the business.', ai: true },
+        { id: 'b3', type: 'p', text: 'This proposal covers a new website for {{client.company}}, ongoing care once it’s live, and optional add-ons you can include if they suit you.', ai: true },
+        { id: 'b4', type: 'h', text: 'What we’ll do', ai: true },
+        { id: 'b5', type: 'list', items: ['Design and build a site with online catering orders', 'Photograph the catering menu and write the menu pages', 'Launch, then keep it updated and secure'], ai: true },
+        { id: 'b6', type: 'h', text: 'Timeline' },
+        { id: 'b7', type: 'p', text: 'We’ll start the week of November 9. Design takes about three weeks and the build about five, so you’d launch in early January.' },
+        { id: 'brk1', type: 'break' },
+        { id: 'b8', type: 'h', text: 'Your investment' },
+        { id: 'b9', type: 'p', text: 'Choose the website option that suits you, and tick any optional item to include it. Your investment is {{quote.one_time_total}} one-time and {{quote.monthly_total}}.' },
+        { id: 'b10', type: 'pricing' },
+        { id: 'brk2', type: 'break' },
+        { id: 'b11', type: 'h', text: 'Statement of Work & Contract' },
+        { id: 'b12', type: 'contract' },
+        { id: 'b13', type: 'h', text: 'Signatures' },
+        { id: 'b14', type: 'sig' },
+      ],
+      items: [
+        { id: 'oiot', name: 'Own It Over Time', desc: 'Spread the cost; you own the site once it’s paid off.', group: 'g1', opt: true, def: true, subs: [{ k: 's1', label: 'Kickoff', amt: '500', iv: 'one' }, { k: 's2', label: 'Monthly', amt: '175', iv: 'mon' }], terms: '$175/month for 30 months, then $100/month. 18-month minimum commitment.', stripe: 'oiot_kickoff · oiot_monthly', qbo: 'Website — Own It Over Time' },
+        { id: 'own', name: 'Website Build — Own It Now', desc: 'Pay once and own it from launch.', group: 'g1', opt: true, def: false, subs: [{ k: 's3', label: 'Website build', amt: '2750', iv: 'one' }], stripe: 'website_own_now', qbo: 'Website Build' },
+        { id: 'photo', name: 'Catering menu photography', desc: 'Half-day shoot, 20 edited images.', custom: true, opt: false, def: true, subs: [{ k: 's4', label: 'Photography', amt: '650', iv: 'one' }], stripe: '—', qbo: 'Photography' },
+        { id: 'audit', name: 'AI Search Readiness Audit', desc: 'How Brightline shows up in AI search, with a fix list.', opt: true, def: false, flag: true, subs: [{ k: 's5', label: 'Audit', amt: '250', iv: 'one' }], stripe: 'ai_search_audit', qbo: 'AI Search Audit' },
+        { id: 'care', name: 'Care Standard', desc: 'Updates, backups, security and small monthly edits.', opt: true, def: true, subs: [{ k: 's6', label: 'Care', amt: '85', iv: 'mon' }], stripe: 'care_standard', qbo: 'Care Standard' },
+        { id: 'vis', name: 'Local Visibility Core', desc: 'Google Business Profile, reviews and local listings.', opt: true, def: false, subs: [{ k: 's7', label: 'Visibility', amt: '295', iv: 'mon' }], stripe: 'local_visibility_core', qbo: 'Local Visibility' },
+      ],
+    };
+  }
+  componentDidMount() {
+    fetch('src/components/icons.json').then(r => r.json()).then(j => { const ic = {}; for (const k in j) ic[k] = { v: j[k].viewBox, d: j[k].path }; this.setState({ ic }); }).catch(() => {});
+    this.onKey = e => { if (e.key === 'Escape') this.setState({ sel: null, menu: null }); if ((e.metaKey || e.ctrlKey) && e.key === '\\') { e.preventDefault(); this.setState(s => ({ panelOpen: !s.panelOpen })); } };
+    window.addEventListener('keydown', this.onKey);
+    this.fit = () => { const w = window.innerWidth; this.setState({ w, navOpen: w >= 1180, panelOpen: w >= 960 }); };
+    this.fit(); this.onResize = () => this.setState({ w: window.innerWidth }); window.addEventListener('resize', this.fit); window.addEventListener('resize', this.onClamp = () => this.clampBar());
+  }
+  componentDidMount2() {}
+  componentDidUpdate() { this.clampBar(); }
+  clampBar() {
+    const c = this.centerRef.current; if (!c) return; const bar = c.querySelector('[data-bar]'); if (!bar) return;
+    bar.style.transform = ''; const br = bar.getBoundingClientRect(), cr = c.getBoundingClientRect();
+    let dx = 0; const over = br.right - cr.right + 12; if (over > 0) dx = -over;
+    const blk = bar.parentElement.getBoundingClientRect(); if (br.left + dx < blk.left) dx = blk.left - br.left;
+    if (dx) bar.style.transform = 'translateX(' + dx + 'px)';
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); window.removeEventListener('resize', this.fit); clearTimeout(this.tt); }
+  toast(text, undo) { clearTimeout(this.tt); this.setState({ toast: { text, undo: !!undo } }); this.tt = setTimeout(() => this.setState({ toast: null }), 5000); }
+  snapshot() { return { blocks: this.state.blocks, items: this.state.items }; }
+  setBlocks(fn, msg, undoable) { const prev = this.snapshot(); this.setState(s => ({ blocks: fn(s.blocks), hist: prev, menu: null })); if (msg) this.toast(msg, undoable); }
+  scrollTo(id) {
+    requestAnimationFrame(() => { const c = this.centerRef.current; if (!c) return; const el = c.querySelector('[data-bid="' + id + '"]'); if (!el) return; c.scrollTop += el.getBoundingClientRect().top - c.getBoundingClientRect().top - 140; });
+  }
+  renderVals() {
+    const S = this.state, dflt = { v: '0 0 1 1', d: '' };
+    const ic = new Proxy(S.ic, { get: (t, k) => t[k] || dflt });
+    const num = v => { const n = parseFloat(String(v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+    const fmt = n => '$' + (Math.round(n * 100) % 100 ? n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(n).toLocaleString('en-US'));
+    const per = iv => iv === 'mon' ? '/mo' : iv === 'yr' ? '/yr' : '';
+    const amtText = it => it.subs.map(s => fmt(num(s.amt)) + per(s.iv)).join(' + ');
+    const sum = sel => { let o = 0, m = 0; S.items.forEach(it => { if (!sel(it)) return; it.subs.forEach(s => { if (s.iv === 'one') o += num(s.amt); else if (s.iv === 'mon') m += num(s.amt); }); }); return [o, m]; };
+    const isOn = it => !it.opt || it.def;
+    const [one, mon] = sum(isOn);
+    const groups = [...new Set(S.items.filter(i => i.group).map(i => i.group))];
+    const free = S.items.filter(i => i.opt && !i.group);
+    let mn = [Infinity, Infinity], mx = [0, 0];
+    (groups.length ? S.items.filter(i => i.group === groups[0]) : [null]).forEach(g => {
+      for (let mask = 0; mask < (1 << free.length); mask++) {
+        const [o, m] = sum(it => !it.opt || it === g || (free.indexOf(it) >= 0 && (mask & (1 << free.indexOf(it)))));
+        mn = [Math.min(mn[0], o), Math.min(mn[1], m)]; mx = [Math.max(mx[0], o), Math.max(mx[1], m)];
+      }
+    });
+    const rng = (a, b) => a === b ? fmt(a) : fmt(a) + '–' + fmt(b);
+    const t = { one: fmt(one), mon: fmt(mon), rangeOne: rng(mn[0], mx[0]), rangeMon: rng(mn[1], mx[1]) };
+    const VAL = { 'client.first_name': 'Rowan', 'client.last_name': 'Vale', 'client.full_name': 'Rowan Vale', 'client.company': 'Brightline Foods', 'client.email': 'rowan@brightlinefoods.com',
+      'proposal.title': 'A website that takes catering orders', 'proposal.date': 'October 29, 2026', 'proposal.valid_until': 'November 28, 2026',
+      'sender.name': 'Jonathan Garces', 'sender.email': 'jonathan@mktfresh.com', 'workspace.name': 'MarketFresh Studios',
+      'quote.one_time_total': t.one, 'quote.monthly_total': t.mon + '/month' };
+    const LABEL = { 'client.first_name': 'First name', 'client.last_name': 'Last name', 'client.full_name': 'Full name', 'client.company': 'Company', 'client.email': 'Email',
+      'proposal.title': 'Title', 'proposal.date': 'Date', 'proposal.valid_until': 'Valid until', 'sender.name': 'Sender name', 'sender.email': 'Sender email', 'workspace.name': 'Workspace name',
+      'quote.one_time_total': 'One-time total', 'quote.monthly_total': 'Monthly total' };
+    const seg = str => str.split(/(\{\{\s*[\w.]+\s*\}\})/).filter(Boolean).map(p => { const m = p.match(/^\{\{\s*([\w.]+)\s*\}\}$/); return m ? { v: true, plain: false, t: VAL[m[1]] ?? '' } : { v: false, plain: true, t: p }; });
+    const v = { company: 'Brightline Foods', sender: 'Jonathan Garces', valid: 'November 28, 2026', clientName: 'Rowan Vale', workspace: 'MarketFresh Studios' };
+    const FAM = { source: "'Source Serif 4',Georgia,serif", caslon: "'Libre Caslon Text',Georgia,serif", news: "'Newsreader',Georgia,serif", instrument: "'Instrument Sans',system-ui,sans-serif" };
+    const COL = { ink: '#1C1B18', accent: '#365C4A', gray: '#5F5B53' };
+    const st = {}; for (const k in S.styles) st[k] = { family: FAM[S.styles[k].font], px: S.styles[k].size + 'px', color: COL[S.styles[k].color] };
+    const mainW = S.w - (S.navOpen ? 220 : 56) - (S.panelOpen ? 400 : 64);
+    const compact = mainW < 760, tight = S.w < 1180;
+    const B = S.blocks, n = B.length;
+    const KIND = { cover: 'Cover', h: 'Heading', p: 'Text', list: 'List', ol: 'Numbered list', image: 'Image', pricing: 'Pricing table', contract: 'Contract', sig: 'Signatures', break: 'Page break' };
+    const STY = { p: 'Paragraph', list: 'Bulleted list', ol: 'Numbered list' };
+    const stop = e => e.stopPropagation();
+    const mk = (type) => ({ h: { type: 'h', text: 'New section' }, p: { type: 'p', text: 'Start typing, or type {{ to insert a field.', placeholder: true }, list: { type: 'list', items: ['First point', 'Second point'] }, ol: { type: 'ol', items: ['First step', 'Second step'] }, image: { type: 'image' }, pricing: { type: 'pricing' }, contract: { type: 'contract' }, break: { type: 'break' }, sig: { type: 'sig' },
+      care: { type: 'p', text: 'Care Standard keeps your site updated, backed up and secure, with small edits each month.' }, about: { type: 'p', text: '{{workspace.name}} is a small creative studio that builds websites for local businesses.' } }[type]);
+    const blocks = B.map((b, i) => {
+      const sel = S.sel === b.id, isTextual = ['h', 'p', 'list', 'ol'].includes(b.type);
+      return {
+        id: b.id, sel, ai: !!b.ai, aiSel: !!b.ai && sel, kind: KIND[b.type], styleShort: b.type === 'h' ? (compact ? 'H' + (b.level || 1) : 'Heading ' + (b.level || 1)) : (compact ? ({ p: '¶', list: '•', ol: '1.' }[b.type] || '') : (STY[b.type] || '')),
+        hPx: (b.level || 1) === 1 ? st.h1.px : (b.level === 2 ? '20px' : '17px'),
+        styleOpen: S.styleMenu === b.id, styleBg: S.styleMenu === b.id ? 'rgba(255,255,255,.14)' : 'transparent',
+        toggleStyle: e => { e.stopPropagation(); this.setState({ styleMenu: S.styleMenu === b.id ? null : b.id }); },
+        styleOpts: [['p', 0, 'Paragraph', '⌥0', "400 14px 'Source Serif 4',serif"], ['h', 1, 'Heading 1', '⌥1', "600 17px 'Source Serif 4',serif"], ['h', 2, 'Heading 2', '⌥2', "600 15px 'Source Serif 4',serif"], ['h', 3, 'Heading 3', '⌥3', "600 13px 'Source Serif 4',serif"]].map(([ty, lv, label, key, font]) => {
+          const on = ty === 'p' ? b.type === 'p' : b.type === 'h' && (b.level || 1) === lv;
+          return { label, key, font, on, bg: on ? 'rgba(255,255,255,.1)' : 'transparent', pick: e => { e.stopPropagation(); const txt = b.text || (b.items || []).join(' '); this.setBlocks(bs => bs.map(x => x.id !== b.id ? x : ty === 'p' ? { id: x.id, ai: x.ai, type: 'p', text: txt } : { id: x.id, ai: x.ai, type: 'h', level: lv, text: txt.trim() || 'New section' })); this.setState({ styleMenu: null }); } };
+        }), isTextual, isObject: !isTextual,
+        isCover: b.type === 'cover', isH: b.type === 'h', isP: b.type === 'p', isList: b.type === 'list' || b.type === 'ol', listStyle: b.type === 'ol' ? 'decimal' : 'disc',
+        isImage: b.type === 'image', isBreak: b.type === 'break', isPricing: b.type === 'pricing', isContract: b.type === 'contract', isSig: b.type === 'sig',
+        hasSettings: ['contract', 'sig', 'image'].includes(b.type), text: b.text, segs: b.text ? seg(b.text) : [], items: (b.items || []).map(seg), pInk: b.placeholder ? '#8A857B' : '#1C1B18',
+        ring: sel ? '0 0 0 1.5px #9DB3A8' : 'none', first: i === 0, last: i === n - 1, upInk: i === 0 ? 'rgba(255,255,255,.3)' : '#fff', downInk: i === n - 1 ? 'rgba(255,255,255,.3)' : '#fff',
+        menuOpen: !!(S.menu && S.menu.id === b.id), menuTop: S.menu && S.menu.edge === 'above' ? '18px' : 'calc(100% + 18px)',
+        select: e => { e.stopPropagation(); if (S.sel !== b.id) this.setState({ sel: b.id, menu: null, styleMenu: null }); },
+        review: e => { e.stopPropagation(); this.setBlocks(bs => bs.map(x => x.id === b.id ? { ...x, ai: false } : x), 'Marked reviewed', true); },
+        up: e => { e.stopPropagation(); if (i > 0) this.setBlocks(bs => { const a = [...bs]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }); },
+        down: e => { e.stopPropagation(); if (i < n - 1) this.setBlocks(bs => { const a = [...bs]; [a[i + 1], a[i]] = [a[i], a[i + 1]]; return a; }); },
+        dup: e => { e.stopPropagation(); const id = 'd' + Date.now(); this.setBlocks(bs => { const a = [...bs]; a.splice(i + 1, 0, { ...b, id }); return a; }, 'Block duplicated', true); this.setState({ sel: id }); },
+        save: e => { e.stopPropagation(); this.toast('Saved to Templates & blocks'); },
+        del: e => { e.stopPropagation(); this.setBlocks(bs => bs.filter(x => x.id !== b.id), KIND[b.type] + ' deleted', true); this.setState({ sel: null }); },
+        addAbove: e => { e.stopPropagation(); this.setState({ menu: S.menu && S.menu.id === b.id && S.menu.edge === 'above' ? null : { id: b.id, edge: 'above' }, menuQuery: '' }); },
+        addBelow: e => { e.stopPropagation(); this.setState({ menu: S.menu && S.menu.id === b.id && S.menu.edge === 'below' ? null : { id: b.id, edge: 'below' }, menuQuery: '' }); },
+      };
+    });
+    const pages = [{ n: 1, hasBreak: false, blocks: [] }];
+    blocks.forEach((bk, i) => { if (B[i].type === 'break') { const bid = B[i].id; pages.push({ n: pages.length + 1, hasBreak: true, blocks: [], removeBreak: () => this.setBlocks(bs => bs.filter(x => x.id !== bid), 'Page break removed', true) }); } else pages[pages.length - 1].blocks.push(bk); });
+    const hasPricing = B.some(b => b.type === 'pricing');
+    const MENU = [
+      { name: 'Text', items: [['h', 'H1', 'Heading', 'Start a new section'], ['p', '¶', 'Text', 'A paragraph of rich text'], ['list', '•', 'Bulleted list', 'An unordered list'], ['ol', '1.', 'Numbered list', 'Steps in order']] },
+      { name: 'Media', items: [['image', '▢', 'Image', 'Upload a PNG or JPEG']] },
+      { name: 'Proposal', items: [['pricing', '$', 'Pricing table', hasPricing ? 'Already in this proposal' : 'The quote with totals'], ['contract', '§', 'Contract', 'Terms and clauses'], ['sig', '✍', 'Signatures', 'Client and company blocks'], ['break', '—', 'Page break', 'Start the next PDF page']] },
+      { name: 'Saved blocks', items: [['care', '★', 'Care plan explainer', 'Saved block'], ['about', '★', 'About MarketFresh', 'Saved block']] },
+    ];
+    const q = S.menuQuery.toLowerCase();
+    const menuGroups = MENU.map(g => ({ name: g.name, items: g.items.filter(x => (x[2] + ' ' + x[3]).toLowerCase().includes(q)).map(([type, glyph, name, desc]) => {
+      const disabled = type === 'pricing' && hasPricing;
+      return { glyph, name, desc, disabled, op: disabled ? 0.45 : 1, pick: e => { e.stopPropagation(); if (disabled || !S.menu) return; const id = 'n' + Date.now(); const at = B.findIndex(x => x.id === S.menu.id) + (S.menu.edge === 'below' ? 1 : 0);
+        this.setBlocks(bs => { const a = [...bs]; a.splice(at, 0, { id, ...mk(type) }); return a; }, name + ' added', true); this.setState({ sel: id }); this.scrollTo(id); } };
+    }) })).filter(g => g.items.length);
+    const menuTitle = S.menu ? (S.menu.edge === 'above' ? 'Add above' : 'Add below') : '';
+    let page = 1; const outline = [{ isPage: true, isSec: false, label: 'Page 1' }];
+    B.forEach(b => {
+      if (b.type === 'break') { page++; outline.push({ isPage: true, isSec: false, label: 'Page ' + page }); return; }
+      if (b.type === 'cover' || b.type === 'h') {
+        const idx = B.indexOf(b); let ai = !!b.ai; for (let j = idx + 1; j < B.length && B[j].type !== 'h' && B[j].type !== 'break'; j++) if (B[j].ai) ai = true;
+        const cur = S.sel === b.id || (S.sel && (() => { const si = B.findIndex(x => x.id === S.sel); let h = null; for (let j = si; j >= 0; j--) if (B[j].type === 'h' || B[j].type === 'cover') { h = B[j].id; break; } return h === b.id; })());
+        outline.push({ isPage: false, isSec: true, label: b.type === 'cover' ? 'Cover' : seg(b.text).map(s => s.t).join(''), ai, bar: cur ? '#365C4A' : 'transparent', ink: cur ? '#1C1B18' : '#5F5B53', font: cur ? "600 13px 'Instrument Sans'" : "500 13px 'Instrument Sans'",
+          go: () => { this.setState({ sel: b.id, menu: null }); this.scrollTo(b.id); } });
+      }
+    });
+    const aiBlocks = B.filter(b => b.ai);
+    const aiSecs = [...new Set(aiBlocks.map(b => { const si = B.indexOf(b); for (let j = si; j >= 0; j--) if (B[j].type === 'h') return B[j].text; return 'Cover'; }))];
+    const aiLeft = aiSecs.length > 0;
+    const nextAi = () => { if (!aiBlocks.length) return; const si = B.findIndex(x => x.id === S.sel); const nx = aiBlocks.find(b => B.indexOf(b) > si) || aiBlocks[0]; this.setState({ sel: nx.id, menu: null }); this.scrollTo(nx.id); };
+    const units = []; const docUnits = []; const seen = {};
+    const rowOf = it => { const open = S.open === it.id, grouped = !!it.group;
+      return { ...it, open, chev: open ? '▴' : '▾', amtText: amtText(it), opt: !!it.opt, req: !it.opt, def: !!it.def, flag: !!it.flag, hasTerms: !!it.terms, details: S.details === it.id, detailsLabel: S.details === it.id ? 'Hide details' : 'Details',
+        tag: grouped ? (it.def ? 'Choose one · default' : 'Choose one') : it.custom ? 'Required · custom line' : it.opt ? (it.def ? 'Optional · ticked for client' : 'Optional · not ticked') : 'Required',
+        tagInk: it.custom ? '#7A4800' : grouped || it.def ? '#365C4A' : '#5F5B53',
+        cardBg: open ? '#fff' : 'transparent', cardLine: open ? '#DDD8CE' : 'transparent', cardShadow: open ? '0 2px 8px rgba(20,18,14,.06)' : 'none',
+        track: it.opt ? '#365C4A' : '#CFC9BE', knob: it.opt ? '16px' : '2px', defRadius: grouped ? '8px' : '4px', radioBorder: it.def ? '#365C4A' : '#8A857B', checkBg: it.def && !grouped ? '#365C4A' : '#fff', check: it.def ? '✓' : '',
+        cardBorder: it.def ? '2px solid #365C4A' : '1px solid #DDD8CE', defLabel: grouped ? 'Selected for client' : 'Ticked for client', canLink: it.opt && !grouped,
+        subs: it.subs.map(s => ({ ...s, setAmt: e => this.patchSub(it.id, s.k, { amt: e.target.value }), setIv: e => this.patchSub(it.id, s.k, { iv: e.target.value }) })),
+        toggle: () => this.setState({ open: open ? null : it.id }),
+        setName: e => this.patchItem(it.id, { name: e.target.value }), setDesc: e => this.patchItem(it.id, { desc: e.target.value }),
+        toggleOpt: () => this.patchItem(it.id, it.opt ? { opt: false, def: true, group: null } : { opt: true }),
+        toggleDef: () => this.setState(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, def: grouped ? true : !x.def } : grouped && x.group === it.group ? { ...x, def: false } : x) })),
+        link: () => this.setState(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, group: 'g1', def: false } : x) })),
+        toggleDetails: () => this.setState({ details: S.details === it.id ? null : it.id }),
+        useList: () => this.setState(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, flag: false, subs: x.subs.map(z => ({ ...z, amt: '295' })) } : x) })),
+        keep: () => this.patchItem(it.id, { flag: false }),
+        remove: () => { this.setState(s => ({ hist: this.snapshot(), items: s.items.filter(x => x.id !== it.id) })); this.toast(it.name + ' removed', true); },
+      }; };
+    S.items.forEach(it => {
+      const key = it.group || it.id; if (seen[key]) return; seen[key] = true;
+      const members = it.group ? S.items.filter(x => x.group === it.group) : [it];
+      const rows = members.map(rowOf);
+      units.push({ isGroup: !!it.group, isSingle: !it.group, items: rows, rail: it.group ? '#365C4A' : 'transparent', pad: it.group ? '10px' : '0px', unlink: () => this.setState(s => ({ items: s.items.map(x => x.group === it.group ? { ...x, group: null } : x) })) });
+      docUnits.push({ isGroup: !!it.group, isSingle: !it.group, items: rows });
+    });
+    const CAT = [['lite', 'Care Lite', [{ label: 'Care', amt: '49', iv: 'mon' }]], ['host', 'Hosting + Essentials', [{ label: 'Hosting', amt: '25', iv: 'mon' }]], ['logo', 'Logo refresh', [{ label: 'Design', amt: '900', iv: 'one' }]]];
+    const addable = CAT.filter(c => !S.items.some(i => i.id === c[0])).map(([id, name, subs]) => ({ name, price: subs.map(s => fmt(num(s.amt)) + per(s.iv)).join(' + '),
+      add: () => this.setState(s => ({ addOpen: false, open: id, items: [...s.items, { id, name, desc: '', opt: false, def: true, subs: subs.map((z, j) => ({ ...z, k: id + j })), stripe: id, qbo: name }] })) }));
+    const TABS = [['Quote', '$'], ['Fields', '{ }'], ['Styles', 'Aa'], ['Send', '➝']];
+    const tabs = TABS.map(([label, glyph]) => ({ label, glyph, on: S.tab === label, bg: S.tab === label ? '#fff' : 'transparent', shadow: S.tab === label ? '0 1px 2px rgba(0,0,0,.08)' : 'none', ink: S.tab === label ? '#1C1B18' : '#5F5B53',
+      go: () => this.setState({ tab: label }), open: () => this.setState({ tab: label, panelOpen: true }) }));
+    const selB = B.find(b => b.id === S.sel); const canInsert = selB && ['p', 'h', 'list', 'ol'].includes(selB.type);
+    const fq = S.fieldQuery.toLowerCase();
+    const FG = [['Client', ['client.first_name', 'client.last_name', 'client.full_name', 'client.company', 'client.email']], ['Proposal', ['proposal.title', 'proposal.date', 'proposal.valid_until']], ['Sender & workspace', ['sender.name', 'sender.email', 'workspace.name']], ['Totals', ['quote.one_time_total', 'quote.monthly_total']]];
+    const fieldGroups = FG.map(([name, keys]) => ({ name, items: keys.filter(k => (LABEL[k] + ' ' + k).toLowerCase().includes(fq)).map(k => ({ label: LABEL[k], value: VAL[k], token: '{{' + k + '}}',
+      insert: () => { if (!canInsert) { this.toast('Click into a paragraph first, then choose a field'); return; }
+        this.setBlocks(bs => bs.map(x => x.id !== S.sel ? x : x.type === 'list' || x.type === 'ol' ? { ...x, items: x.items.map((li, j) => j === x.items.length - 1 ? li + ' {{' + k + '}}' : li) } : { ...x, placeholder: false, text: (x.placeholder ? '' : x.text + ' ') + '{{' + k + '}}' }), LABEL[k] + ' inserted', true); } })) })).filter(g => g.items.length);
+    const cur = S.styles[S.lvl];
+    const setStyle = p => this.setState(s => ({ styles: { ...s.styles, [s.lvl]: { ...s.styles[s.lvl], ...p } } }));
+    const colors = [['ink', 'Ink', '#1C1B18'], ['accent', 'Accent', '#365C4A'], ['gray', 'Gray', '#5F5B53']].map(([k, label, hex]) => ({ label, hex, on: cur.color === k, border: cur.color === k ? '2px solid #365C4A' : '1px solid #DDD8CE', pick: () => setStyle({ color: k }) }));
+    const CR = { ink: '17.1', accent: '7.4', gray: '6.6' };
+    const sendBlocked = aiLeft && !S.confirmed;
+    return {
+      ic, t, v, st, blocks, outline, units, docUnits, addable, tabs, menuGroups, menuTitle, fieldGroups, colors,
+      clauses: [
+        { h: 'Statement of work', segs: seg('Between “us”, {{workspace.name}}, and “you”, {{client.company}}, dated {{proposal.date}}.') },
+        { h: '4.1 Billing schedule', segs: seg('The total budget for this project is {{quote.one_time_total}} one-time and {{quote.monthly_total}}. Fifty percent of the one-time total is invoiced at signing as the deposit.') },
+        { h: '4.4 Own It Over Time', segs: seg('A minimum commitment of 18 monthly payments. The website is paid off after 30 payments of $175; billing then continues at $100/month.') },
+      ],
+      centerRef: this.centerRef, stop, blockGap: S.density === 'comf' ? '22px' : '12px',
+      clearSel: () => this.setState({ sel: null, menu: null, styleMenu: null }), closeMenu: e => { e.stopPropagation(); this.setState({ menu: null }); },
+      menuQuery: S.menuQuery, setMenuQuery: e => this.setState({ menuQuery: e.target.value }),
+      aiLeft, aiDone: !aiLeft, aiLabel: aiSecs.length + ' AI-written ' + (aiSecs.length === 1 ? 'section' : 'sections') + ' to review', aiNames: aiSecs.join(', ') + '.', nextAi,
+      panelOpen: S.panelOpen, panelClosed: !S.panelOpen, panelTitle: S.panelOpen ? 'Collapse panel (⌘\\)' : 'Open panel (⌘\\)', panelBtnBg: S.panelOpen ? '#ECE8E1' : 'transparent',
+      togglePanel: () => this.setState(s => ({ panelOpen: !s.panelOpen, navOpen: !s.panelOpen && window.innerWidth < 1180 ? false : s.navOpen })),
+      barLeft: '0px', fieldLabel: compact ? '{ }' : '{ } Field',
+      pdfLabel: tight ? 'PDF' : 'Preview PDF', clientLabel: tight ? 'Preview' : 'Preview as client',
+      pages, navOpen: S.navOpen, navClosed: !S.navOpen, toggleNav: () => this.setState(s => ({ navOpen: !s.navOpen, panelOpen: !s.navOpen && window.innerWidth < 1180 ? false : s.panelOpen })), navTitle: S.navOpen ? 'Hide sections' : 'Show sections', navBtnBg: S.navOpen ? '#ECE8E1' : 'transparent',
+      aiPill: tight ? aiSecs.length + ' to review' : aiSecs.length + ' to review · Next ›',
+      openSend: () => this.setState({ tab: 'Send', panelOpen: true }), openFields: e => { e.stopPropagation(); this.setState({ tab: 'Fields', panelOpen: true }); }, openQuote: e => { e.stopPropagation(); this.setState({ tab: 'Quote', panelOpen: true }); },
+      tabQuote: S.tab === 'Quote', tabFields: S.tab === 'Fields', tabStyles: S.tab === 'Styles', tabSend: S.tab === 'Send',
+      addOpen: S.addOpen, toggleAdd: () => this.setState(s => ({ addOpen: !s.addOpen })),
+      addCustom: () => { const id = 'c' + Date.now(); this.setState(s => ({ open: id, items: [...s.items, { id, name: 'Custom item', desc: '', custom: true, opt: false, def: true, subs: [{ k: id + 's', label: 'Amount', amt: '0', iv: 'one' }], stripe: '—', qbo: '—' }] })); },
+      addPage: () => { const id = 'n' + Date.now(); this.setBlocks(bs => [...bs, { id: id + 'b', type: 'break' }, { id, type: 'h', text: 'New section' }], 'Page added', true); this.setState({ sel: id }); this.scrollTo(id); },
+      fieldQuery: S.fieldQuery, setFieldQuery: e => this.setState({ fieldQuery: e.target.value }),
+      fieldsHint: canInsert ? 'Choose a field to insert it at the end of the selected ' + (selB.type === 'h' ? 'heading' : 'text') + '. Or type {{ in any paragraph.' : 'Click into a paragraph, then choose a field to insert it. Or type {{ in any paragraph.',
+      stdBg: S.density === 'std' ? '#fff' : 'transparent', comfBg: S.density === 'comf' ? '#fff' : 'transparent', setStd: () => this.setState({ density: 'std' }), setComf: () => this.setState({ density: 'comf' }),
+      margins: [['Top', '0.75'], ['Right', '0.85'], ['Bottom', '0.75'], ['Left', '0.85']].map(([side, vv]) => ({ side, v: vv })),
+      lvl: S.lvl, setLvl: e => this.setState({ lvl: e.target.value }), cur, setFont: e => setStyle({ font: e.target.value }), setSize: e => setStyle({ size: Math.max(8, Math.min(96, parseInt(e.target.value) || 8)) }),
+      contrastText: CR[cur.color] + ':1 against white paper · Passes contrast',
+      resetStyles: () => this.setState({ styles: { title: { font: 'source', size: 40, color: 'ink' }, h1: { font: 'source', size: 24, color: 'ink' }, body: { font: 'source', size: 17, color: 'ink' } } }),
+      confirmed: S.confirmed, toggleConfirm: () => this.setState(s => ({ confirmed: !s.confirmed })),
+      pw: S.pw, togglePw: () => this.setState(s => ({ pw: !s.pw })), pwTrack: S.pw ? '#365C4A' : '#CFC9BE', pwKnob: S.pw ? '16px' : '2px',
+      sendBlocked, sendBg: sendBlocked ? '#D8D3CA' : '#1C1B18', sendInk: sendBlocked ? '#5F5B53' : '#fff', send: () => this.toast('Sending is turned off in this prototype'),
+      toast: !!S.toast, toastText: S.toast ? S.toast.text : '', toastUndo: !!(S.toast && S.toast.undo && S.hist),
+      undo: () => { if (!S.hist) return; this.setState({ blocks: S.hist.blocks, items: S.hist.items, hist: null, toast: null }); },
+    };
+  }
+  patchItem(id, p) { this.setState(s => ({ items: s.items.map(x => x.id === id ? { ...x, ...p } : x) })); }
+  patchSub(id, k, p) { this.setState(s => ({ items: s.items.map(x => x.id !== id ? x : { ...x, flag: false, subs: x.subs.map(z => z.k === k ? { ...z, ...p } : z) }) })); }
+}
+</script>
+</body>
+</html>

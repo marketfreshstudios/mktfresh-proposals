@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E5DD;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18}a{color:#365C4A}a:hover{color:#24402F}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.6);max-width:375px}.dv-card{flex:none;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;position:relative}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55)}</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Editor v2 on tablet and phone · same parts as <a href="Redesign 10 - Editor Prototype.dc.html">Redesign 10</a></span></div>
+  <div style="max-width:1180px;margin:0 0 28px;font:400 14px/21px 'Instrument Sans';color:#3E3B35;display:flex;flex-direction:column;gap:6px">
+    <div><b style="color:#1C1B18">Same parts, different docking.</b> The edit bar, the + insert buttons, the purple AI line with its ✓, and the Quote / Fields / Styles / Send tabs all carry over. Only where they sit changes.</div>
+    <div><b style="color:#1C1B18">Tablet:</b> Sections is a rail and the right panel opens as an overlay drawer, so the page keeps its full width. <b style="color:#1C1B18">Phone:</b> the edit bar docks above the keyboard and the four tabs become a bottom dock that opens sheets.</div>
+  </div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel" style="max-width:768px"><a class="dv-oid" href="#1a">1a</a><span><b style="color:#1C1B18">Tablet 768 · block selected.</b> Header buttons shorten. Sections is a 56px rail; the panel is a 64px rail. The edit bar stays on one line above the block.</span></div>
+      <div class="dv-card" style="width:768px;height:900px;background:#F3F0EA;display:flex;flex-direction:column">
+        <div style="height:56px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="height:36px;padding:0 8px;display:flex;align-items:center;font:500 13px 'Instrument Sans';color:#5F5B53;white-space:nowrap">‹ Proposals</span>
+          <span style="width:1px;height:20px;background:#DDD8CE"></span>
+          <span style="min-width:0;font:600 15px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Brightline Foods — Web…</span>
+          <span style="display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:#5F5B53;white-space:nowrap"><span style="width:6px;height:6px;border-radius:3px;background:#8A857B"></span>Saved</span>
+          <span style="flex:1"></span>
+          <span style="height:34px;padding:0 12px;border-radius:999px;background:#EEE8FB;color:#3E2A80;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap">2 to review</span>
+          <span style="height:36px;padding:0 12px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">PDF</span>
+          <span style="height:36px;padding:0 12px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Preview</span>
+          <span style="height:36px;padding:0 14px;border-radius:999px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap">Review &amp; send</span>
+        </div>
+        <div style="flex:1;min-height:0;display:flex">
+          <div style="width:56px;flex:none;display:flex;flex-direction:column;align-items:center;padding:12px 0"><span style="width:36px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35">»</span></div>
+          <div style="flex:1;min-width:0;padding:28px 0 0;overflow:hidden">
+            <div style="background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);padding:64px 52px 40px 64px;display:flex;flex-direction:column;gap:12px;height:900px;box-sizing:border-box">
+              <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Proposal for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">Brightline Foods</span></div>
+              <h1 style="margin:0;font:600 34px/40px 'Source Serif 4',Georgia,serif">A website that takes catering orders</h1>
+              <div style="font:400 14px 'Instrument Sans';color:#5F5B53;margin-bottom:40px">From Jonathan Garces · Valid until November 28, 2026</div>
+              <h2 style="margin:0;font:600 24px/30px 'Source Serif 4',Georgia,serif">Overview</h2>
+              <div style="position:relative;padding:6px 10px;margin:40px -10px 0;border-radius:8px;box-shadow:0 0 0 1.5px #9DB3A8">
+                <span style="position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:2px;background:#9F88E0"></span>
+                <span style="position:absolute;left:calc(100% + 8px);top:4px;width:28px;height:28px;border-radius:14px;border:1.5px solid #9F88E0;background:#fff;color:#6B4FBB;display:flex;align-items:center;justify-content:center;font:700 13px 'Instrument Sans';box-sizing:border-box">✓</span>
+                <div style="position:absolute;left:-52px;top:0;bottom:0;width:30px;display:flex;flex-direction:column;align-items:center;justify-content:space-between"><span style="width:26px;height:26px;margin-top:-13px;border-radius:13px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;display:flex;align-items:center;justify-content:center;font:600 16px 'Instrument Sans';box-sizing:border-box">+</span><span style="font:700 13px/1 'Instrument Sans';letter-spacing:-3px;color:#A39D92">⋮⋮</span><span style="width:26px;height:26px;margin-bottom:-13px;border-radius:13px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;display:flex;align-items:center;justify-content:center;font:600 16px 'Instrument Sans';box-sizing:border-box">+</span></div>
+                <div style="position:absolute;left:0;bottom:calc(100% + 8px);display:flex;align-items:center;height:40px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap;box-shadow:0 10px 28px rgba(20,18,14,.28)">
+                  <span style="padding:0 10px">¶ <span style="opacity:.55">▾</span></span><span style="width:1px;height:20px;background:rgba(255,255,255,.16)"></span>
+                  <span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span><span style="width:32px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span><span style="width:32px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><text x="0" y="4.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">1</text><text x="0" y="9" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">2</text><text x="0" y="13.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">3</text><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span><span style="width:32px;text-align:center;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></span><span style="padding:0 8px;font:500 12px 'IBM Plex Mono'">{ }</span>
+                  <span style="width:1px;height:20px;background:rgba(255,255,255,.16)"></span>
+                  <span style="width:30px;text-align:center">↑</span><span style="width:30px;text-align:center">↓</span><span style="width:32px;display:flex;justify-content:center"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="4" y="4" width="9" height="9" rx="2" fill="none" stroke="#fff" stroke-width="1.4"></rect><rect x="1" y="1" width="9" height="9" rx="2" fill="none" stroke="#fff" stroke-width="1.4" opacity=".55"></rect></svg></span><span style="padding:0 8px;font-size:12px">Save</span><span style="width:32px;display:flex;justify-content:center"><svg width="13" height="14" viewBox="0 0 13 14"><rect x="1" y="2.5" width="11" height="1.5" rx=".75" fill="#FF9A90"></rect><rect x="4.5" y="0.5" width="4" height="1.5" rx=".75" fill="#FF9A90"></rect><rect x="2.5" y="5" width="8" height="8.5" rx="1.5" fill="none" stroke="#FF9A90" stroke-width="1.4"></rect></svg></span>
+                </div>
+                <p style="margin:0;font:400 17px/28px 'Source Serif 4',Georgia,serif"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px">Rowan</span>, thank you for walking us through the new menu and the catering side of the business.</p>
+              </div>
+              <div style="position:relative;padding:6px 10px;margin:0 -10px"><span style="position:absolute;left:-14px;top:8px;bottom:8px;width:3px;border-radius:2px;background:#9F88E0"></span><p style="margin:0;font:400 17px/28px 'Source Serif 4',Georgia,serif">This proposal covers a new website for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">Brightline Foods</span>, ongoing care once it’s live, and optional add-ons.</p></div>
+            </div>
+          </div>
+          <div style="width:64px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 0">
+            <span style="width:36px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;margin-bottom:6px">«</span>
+            <span style="width:56px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font:600 13px 'Instrument Sans'">$</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Quote</span></span>
+            <span style="width:56px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font:600 13px 'Instrument Sans'">{ }</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Fields</span></span>
+            <span style="width:56px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font:600 13px 'Instrument Sans'">Aa</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Styles</span></span>
+            <span style="width:56px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font:600 13px 'Instrument Sans'">➝</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Send</span></span>
+            <span style="flex:1"></span>
+            <span style="writing-mode:vertical-rl;transform:rotate(180deg);font:600 12px 'Instrument Sans';color:#3E3B35;padding:8px 0">$1,150 · $260/mo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel" style="max-width:768px"><a class="dv-oid" href="#1b">1b</a><span><b style="color:#1C1B18">Tablet 768 · Quote drawer.</b> Tapping a rail tab slides a 440px drawer over the page with a light scrim, instead of squeezing the page. Tap the scrim or » to close.</span></div>
+      <div class="dv-card" style="width:768px;height:900px;background:#F3F0EA">
+        <div style="height:56px;display:flex;align-items:center;gap:8px;padding:0 10px;background:#FBFAF7;border-bottom:1px solid #E3DED4"><span style="font:500 13px 'Instrument Sans';color:#5F5B53;padding:0 8px">‹ Proposals</span><span style="font:600 15px 'Instrument Sans'">Brightline Foods — Web…</span></div>
+        <div style="position:absolute;left:56px;right:64px;top:84px;height:820px;background:#fff;border-radius:4px;opacity:.9"></div>
+        <div style="position:absolute;inset:56px 0 0 0;background:rgba(20,18,14,.28)"></div>
+        <div style="position:absolute;right:0;top:56px;bottom:0;width:440px;background:#FBFAF7;box-shadow:-16px 0 40px rgba(20,18,14,.18);display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 12px 10px 16px">
+            <div style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:30px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">Quote</span><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Fields</span><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Styles</span><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Send</span></div>
+            <span style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">»</span>
+          </div>
+          <div style="flex:1;padding:4px 16px;display:flex;flex-direction:column;gap:4px">
+            <div style="border-left:2px solid #365C4A;padding-left:10px;margin-bottom:4px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A;display:flex;justify-content:space-between">Choose one<span style="text-transform:none;letter-spacing:0;font-weight:500;color:#5F5B53">Unlink</span></div>
+              <sc-for list="{{ grp }}" as="r" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:8px;min-height:52px;padding:0 4px"><span style="font:700 13px/1 'Instrument Sans';letter-spacing:-3px;color:#A39D92;width:16px">⋮⋮</span><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px 'Instrument Sans'">{{ r.name }}</span><span style="font:500 12px 'Instrument Sans';color:#365C4A">{{ r.tag }}</span></span><span style="font:600 14px 'Instrument Sans'">{{ r.amt }}</span><span style="color:#8A857B;font-size:11px">▾</span></div></sc-for>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px;min-height:52px;padding:0 4px"><span style="font:700 13px/1 'Instrument Sans';letter-spacing:-3px;color:#A39D92;width:16px">⋮⋮</span><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px 'Instrument Sans'">{{ r.name }}</span><span style="font:500 12px 'Instrument Sans';color:{{ r.ink }}">{{ r.tag }}</span></span><span style="font:600 14px 'Instrument Sans'">{{ r.amt }}</span><span style="color:#8A857B;font-size:11px">▾</span></div></sc-for>
+          </div>
+          <div style="border-top:1px solid #E3DED4;padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">One-time</div><div style="font:650 24px/30px 'Instrument Sans'">$1,150</div></div><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">Monthly</div><div style="font:650 24px/30px 'Instrument Sans'">$260<span style="font:400 14px 'Instrument Sans';color:#5F5B53">/mo</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><b style="color:#1C1B18">Phone · reading.</b> Pages fill the width with a gap between them. The four tabs become a bottom dock; Quote shows live totals.</span></div>
+      <div class="dv-card" style="width:375px;height:780px;background:#F3F0EA;display:flex;flex-direction:column">
+        <div style="height:52px;flex:none;display:flex;align-items:center;gap:6px;padding:0 10px 0 4px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font:500 20px 'Instrument Sans';color:#5F5B53">‹</span>
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font:600 15px/19px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Brightline Foods</span><span style="font:500 11px/14px 'Instrument Sans';color:#5F5B53">Draft · Saved</span></span>
+          <span style="height:32px;padding:0 10px;border-radius:999px;background:#EEE8FB;color:#3E2A80;display:flex;align-items:center;font:600 12px 'Instrument Sans'">2 to review</span>
+          <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:700 18px 'Instrument Sans';color:#3E3B35">⋯</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:12px 0 0">
+          <div style="background:#fff;padding:28px 36px 28px 40px;display:flex;flex-direction:column;gap:10px">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Proposal for <span style="background:#F0ECE4;border-radius:4px;padding:0 3px">Brightline Foods</span></div>
+            <h1 style="margin:0;font:600 28px/34px 'Source Serif 4',Georgia,serif">A website that takes catering orders</h1>
+            <div style="font:400 13px 'Instrument Sans';color:#5F5B53">From Jonathan Garces</div>
+          </div>
+          <div style="height:12px;display:flex;align-items:center;justify-content:center"></div>
+          <div style="text-align:center;font:600 10px/16px 'Instrument Sans';letter-spacing:.08em;color:#8A857B;margin:-6px 0 6px">PAGE 2</div>
+          <div style="background:#fff;padding:24px 36px 28px 40px;display:flex;flex-direction:column;gap:10px">
+            <h2 style="margin:0;font:600 22px/28px 'Source Serif 4',Georgia,serif">Overview</h2>
+            <div style="position:relative"><span style="position:absolute;left:-14px;top:4px;bottom:4px;width:3px;border-radius:2px;background:#9F88E0"></span><p style="margin:0;font:400 17px/28px 'Source Serif 4',Georgia,serif"><span style="background:#F0ECE4;border-radius:4px;padding:0 3px">Rowan</span>, thank you for walking us through the new menu and the catering side of the business.</p></div>
+          </div>
+        </div>
+        <div style="flex:none;padding:8px 8px 22px;background:#FBFAF7;border-top:1px solid #E3DED4;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:4px">
+          <span style="min-height:52px;border-radius:12px;background:#ECE8E1;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 13px 'Instrument Sans'">$1,150 · $260/mo</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Quote</span></span>
+          <span style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 13px 'Instrument Sans'">{ }</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Fields</span></span>
+          <span style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 13px 'Instrument Sans'">Aa</span><span style="font:500 10px 'Instrument Sans';color:#5F5B53">Styles</span></span>
+          <span style="min-height:52px;border-radius:12px;background:#1C1B18;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 13px 'Instrument Sans'">➝</span><span style="font:500 10px 'Instrument Sans';color:rgba(255,255,255,.75)">Send</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a><span><b style="color:#1C1B18">Phone · editing a block.</b> The edit bar docks above the keyboard and scrolls sideways. “Add above” and “Add below” sit on the block’s top and bottom edges, since the phone has no gutter. The AI ✓ is in the corner.</span></div>
+      <div class="dv-card" style="width:375px;height:780px;background:#F3F0EA;display:flex;flex-direction:column">
+        <div style="height:52px;flex:none;display:flex;align-items:center;gap:6px;padding:0 10px 0 4px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font:500 20px 'Instrument Sans';color:#5F5B53">‹</span>
+          <span style="flex:1;font:600 15px 'Instrument Sans'">Overview</span>
+          <span style="height:36px;padding:0 14px;border-radius:999px;border:1px solid #DDD8CE;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Done</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:12px 0 0">
+          <div style="background:#fff;padding:24px 20px 40px;display:flex;flex-direction:column;gap:14px">
+            <h2 style="margin:0 0 10px;font:600 22px/28px 'Source Serif 4',Georgia,serif">Overview</h2>
+            <div style="position:relative;padding:10px 12px;margin:0 -4px;border-radius:10px;box-shadow:0 0 0 1.5px #9DB3A8">
+              <span style="position:absolute;left:-10px;top:10px;bottom:10px;width:3px;border-radius:2px;background:#9F88E0"></span>
+              <span style="position:absolute;left:50%;top:-16px;transform:translateX(-50%);height:32px;padding:0 12px;border-radius:999px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;display:flex;align-items:center;gap:6px;font:600 13px 'Instrument Sans';box-sizing:border-box;white-space:nowrap;box-shadow:0 2px 6px rgba(20,18,14,.12)">+ Add above</span>
+              <span style="position:absolute;right:-12px;top:-14px;width:32px;height:32px;border-radius:16px;border:1.5px solid #9F88E0;background:#fff;color:#6B4FBB;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';box-sizing:border-box;box-shadow:0 2px 6px rgba(20,18,14,.12)">✓</span>
+              <p style="margin:8px 0;font:400 17px/28px 'Source Serif 4',Georgia,serif"><span style="background:#F0ECE4;border-radius:4px;padding:0 3px">Rowan</span>, thank you for walking us through the new menu and the catering side of the business.<span style="display:inline-block;width:2px;height:20px;background:#365C4A;vertical-align:-4px;margin-left:1px"></span></p>
+              <span style="position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);height:32px;padding:0 12px;border-radius:999px;border:1.5px solid #365C4A;background:#fff;color:#365C4A;display:flex;align-items:center;gap:6px;font:600 13px 'Instrument Sans';box-sizing:border-box;white-space:nowrap;box-shadow:0 2px 6px rgba(20,18,14,.12)">+ Add below</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;height:48px;display:flex;align-items:center;gap:0;padding:0 4px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap;overflow:hidden;position:relative">
+          <span style="flex:none;padding:0 10px;height:44px;display:flex;align-items:center">¶ <span style="opacity:.55;margin-left:4px">▾</span></span>
+          <span style="flex:none;width:1px;height:20px;background:rgba(255,255,255,.16)"></span>
+          <span style="flex:none;width:40px;height:44px;display:flex;align-items:center;justify-content:center;font-weight:700">B</span>
+          <span style="flex:none;width:40px;height:44px;display:flex;align-items:center;justify-content:center;font:italic 16px 'Source Serif 4',serif">I</span>
+          <span style="flex:none;width:40px;height:44px;display:flex;align-items:center;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+          <span style="flex:none;width:40px;height:44px;display:flex;align-items:center;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><text x="0" y="4.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">1</text><text x="0" y="9" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">2</text><text x="0" y="13.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">3</text><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+          <span style="flex:none;width:40px;height:44px;display:flex;align-items:center;justify-content:center;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></span>
+          <span style="flex:none;padding:0 8px;font:500 12px 'IBM Plex Mono'">{ }</span>
+          <span style="flex:none;width:1px;height:20px;background:rgba(255,255,255,.16)"></span>
+          <span style="flex:none;width:36px;text-align:center">↑</span><span style="flex:none;width:36px;text-align:center">↓</span>
+          <span style="position:absolute;right:0;top:0;bottom:0;width:36px;background:linear-gradient(90deg,rgba(28,27,24,0),#1C1B18)"></span>
+        </div>
+        <div style="flex:none;height:210px;background:repeating-linear-gradient(135deg,#D9D5CD 0 10px,#D2CEC5 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">system keyboard</div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1e">
+      <div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a><span><b style="color:#1C1B18">Phone · add a block.</b> Tapping “+ Add below” opens the same block menu as a bottom sheet, with search and the same groups.</span></div>
+      <div class="dv-card" style="width:375px;height:780px;background:#F3F0EA">
+        <div style="height:52px;background:#FBFAF7;border-bottom:1px solid #E3DED4"></div>
+        <div style="position:absolute;inset:52px 0 0 0;background:rgba(20,18,14,.35)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;top:170px;background:#FBFAF7;border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -12px 32px rgba(20,18,14,.16)">
+          <div style="width:36px;height:5px;border-radius:3px;background:#CFC9BE;margin:8px auto 4px"></div>
+          <div style="display:flex;align-items:center;padding:4px 20px 10px"><span style="flex:1;font:600 18px 'Instrument Sans'">Add below</span><span style="min-height:44px;display:flex;align-items:center;font:600 14px 'Instrument Sans';color:#365C4A">Cancel</span></div>
+          <div style="padding:0 16px 6px"><div style="height:44px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 15px 'Instrument Sans';color:#8A857B">Search blocks…</div></div>
+          <div style="flex:1;overflow:hidden;padding:0 12px">
+            <sc-for list="{{ menu }}" as="g" hint-placeholder-count="3">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:12px 8px 4px">{{ g.name }}</div>
+              <sc-for list="{{ g.items }}" as="m" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:4px 8px;border-radius:10px;opacity:{{ m.op }}"><span style="width:34px;height:34px;flex:none;border-radius:9px;background:#fff;border:1px solid #E3DED4;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans'">{{ m.g }}</span><span style="display:flex;flex-direction:column"><span style="font:600 15px/20px 'Instrument Sans'">{{ m.n }}</span><span style="font:400 13px/17px 'Instrument Sans';color:#5F5B53">{{ m.d }}</span></span></div>
+              </sc-for>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1f">
+      <div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a><span><b style="color:#1C1B18">Phone · Quote sheet.</b> Rows are one line, and tapping one expands it in place. Totals stay pinned. Fields, Styles and Send open as the same kind of sheet.</span></div>
+      <div class="dv-card" style="width:375px;height:780px;background:#F3F0EA">
+        <div style="height:52px;background:#FBFAF7;border-bottom:1px solid #E3DED4"></div>
+        <div style="position:absolute;inset:52px 0 0 0;background:rgba(20,18,14,.35)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;top:96px;background:#FBFAF7;border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -12px 32px rgba(20,18,14,.16)">
+          <div style="width:36px;height:5px;border-radius:3px;background:#CFC9BE;margin:8px auto 4px"></div>
+          <div style="padding:4px 16px 10px;display:flex;gap:8px;align-items:center">
+            <div style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:32px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">Quote</span><span style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Fields</span><span style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Styles</span><span style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Send</span></div>
+            <span style="min-height:44px;display:flex;align-items:center;font:600 14px 'Instrument Sans';color:#365C4A">Done</span>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:2px">
+            <div style="border-left:2px solid #365C4A;padding-left:10px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Choose one</div>
+              <div style="border-radius:12px;background:#fff;border:1px solid #DDD8CE;padding:10px 12px;display:flex;flex-direction:column;gap:8px;margin:4px 0">
+                <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font:600 15px 'Instrument Sans'">Own It Over Time</span><span style="color:#8A857B;font-size:11px">▴</span></div>
+                <div style="display:grid;grid-template-columns:64px minmax(0,1fr) 96px;gap:6px;align-items:center;font:500 13px 'Instrument Sans'">
+                  <span style="color:#5F5B53">Kickoff</span><span style="height:44px;border:1px solid #DDD8CE;border-radius:8px;display:flex;align-items:center;padding:0 10px;font-weight:600">$ 500</span><span style="height:44px;border:1px solid #DDD8CE;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 8px">One-time<span style="color:#8A857B">▾</span></span>
+                  <span style="color:#5F5B53">Monthly</span><span style="height:44px;border:1px solid #DDD8CE;border-radius:8px;display:flex;align-items:center;padding:0 10px;font-weight:600">$ 175</span><span style="height:44px;border:1px solid #DDD8CE;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 8px">Monthly<span style="color:#8A857B">▾</span></span>
+                </div>
+                <div style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">$175/month for 30 months, then $100/month. 18-month minimum.</div>
+                <div style="display:flex;gap:14px;font:600 13px 'Instrument Sans';color:#5F5B53;min-height:36px;align-items:center"><span>Optional ●</span><span style="color:#365C4A">Selected for client</span><span style="flex:1"></span><span style="color:#A3261E">Remove</span></div>
+              </div>
+              <div style="display:flex;align-items:center;min-height:52px;font:600 15px 'Instrument Sans'"><span style="flex:1">Own It Now</span><span>$2,750 ▾</span></div>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;min-height:56px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px 'Instrument Sans'">{{ r.name }}</span><span style="font:500 12px 'Instrument Sans';color:{{ r.ink }}">{{ r.tag }}</span></span><span style="font:600 15px 'Instrument Sans'">{{ r.amt }} ▾</span></div></sc-for>
+          </div>
+          <div style="padding:14px 20px 26px;border-top:1px solid #E3DED4;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">One-time</div><div style="font:650 22px/28px 'Instrument Sans'">$1,150</div></div><div><div style="font:500 12px 'Instrument Sans';color:#5F5B53">Monthly</div><div style="font:650 22px/28px 'Instrument Sans'">$260<span style="font:400 13px 'Instrument Sans';color:#5F5B53">/mo</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “make <a class="dv-oid" href="#1d">1d</a> clickable like Redesign 10” · “show the phone Send sheet” · “tablet in portrait with the Sections rail open”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      grp: [{ name: 'Own It Over Time', tag: 'Choose one · default', amt: '$500 + $175/mo' }, { name: 'Website Build — Own It Now', tag: 'Choose one', amt: '$2,750' }],
+      rows: [
+        { name: 'Catering menu photography', tag: 'Required · custom line', ink: '#7A4800', amt: '$650' },
+        { name: 'AI Search Readiness Audit', tag: 'Optional · not ticked', ink: '#5F5B53', amt: '$250' },
+        { name: 'Care Standard', tag: 'Optional · ticked for client', ink: '#365C4A', amt: '$85/mo' },
+        { name: 'Local Visibility Core', tag: 'Optional · not ticked', ink: '#5F5B53', amt: '$295/mo' },
+      ],
+      menu: [
+        { name: 'Text', items: [{ g: 'H1', n: 'Heading', d: 'Start a new section' }, { g: '¶', n: 'Text', d: 'A paragraph of rich text' }, { g: '•', n: 'Bulleted list', d: 'An unordered list' }, { g: '1.', n: 'Numbered list', d: 'Steps in order' }] },
+        { name: 'Media', items: [{ g: '▢', n: 'Image', d: 'Upload a PNG or JPEG' }] },
+        { name: 'Proposal', items: [{ g: '$', n: 'Pricing table', d: 'Already in this proposal', op: 0.45 }, { g: '§', n: 'Contract', d: 'Terms and clauses' }, { g: '—', n: 'Page break', d: 'Start the next PDF page' }] },
+      ].map(g => ({ ...g, items: g.items.map(m => ({ op: 1, ...m })) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
