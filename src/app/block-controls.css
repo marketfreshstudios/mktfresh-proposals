@@ -24,35 +24,6 @@
   background: var(--review-amber);
   border-radius: 3px;
 }
-.block-tools {
-  position: absolute;
-  top: -42px;
-  right: 2px;
-  max-width: calc(100% - 4px);
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 4px;
-  border: 1px solid var(--block-active-outline);
-  border-radius: 7px;
-  background: var(--block-toolbar-ground);
-  box-shadow: 0 2px 8px #0001;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  overflow-x: auto;
-  overflow-y: hidden;
-  white-space: nowrap;
-  z-index: var(--z-block-controls);
-  color: var(--ink);
-  font: 12px var(--font-ui);
-}
-.block-frame[data-active="true"] > .block-tools {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-}
 .block-action {
   flex: none;
   width: 32px;
@@ -110,20 +81,6 @@
 .block-formatting-target {
   display: contents;
 }
-.block-tools .rich-toolbar {
-  display: flex;
-  flex: none;
-  gap: 2px;
-  height: 32px;
-  margin: 0;
-  overflow: visible;
-  opacity: 1;
-}
-.block-tools .rich-toolbar .btn {
-  height: 32px;
-  min-height: 32px;
-  white-space: nowrap;
-}
 .block-frame .field-picker {
   position: absolute;
   z-index: var(--z-popover);
@@ -162,10 +119,6 @@
   .block-frame {
     padding: 10px;
   }
-  .block-tools {
-    height: 48px;
-    top: -48px;
-  }
   .block-action {
     width: 44px;
     height: 44px;
@@ -184,20 +137,5 @@
 }
 
 /* The document keeps paper ink in both themes; tools use app chrome ink. */
-.block-tools {
-  color: var(--block-toolbar-ink);
-  --ink: var(--block-toolbar-ink);
-  --ink-muted: var(--block-toolbar-ink);
-  --surface: var(--block-toolbar-ground);
-  --ai: var(--block-ai-ink);
-}
 @media (pointer: coarse), (max-width: 699px) {
-  .block-tools .rich-toolbar,
-  .block-tools .rich-toolbar .btn {
-    height: 44px;
-    min-height: 44px;
-  }
-}
-.block-tools :focus-visible {
-  outline-offset: -2px;
 }

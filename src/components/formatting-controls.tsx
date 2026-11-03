@@ -1,4 +1,5 @@
 "use client";
+import { EditorIcon } from "./editor/editor-icon";
 import { PageBreakAction } from "./page-break-action";
 import { TextStylePicker } from "./text-style-picker";
 import { useEffect, useState } from "react";
@@ -15,6 +16,8 @@ export function FormattingControls({
   allowLinks = true,
   independent = false,
   textStyle,
+  edit = false,
+  compact = false,
 }: {
   editor?: Editor | null;
   onLink?: (trigger: HTMLElement) => void;
@@ -22,6 +25,8 @@ export function FormattingControls({
   allowLinks?: boolean;
   independent?: boolean;
   textStyle?: TextStyleControl | null;
+  edit?: boolean;
+  compact?: boolean;
 }) {
   const status = useHistoryStatus();
   const { canUndo, canRedo } = status;
@@ -74,8 +79,91 @@ export function FormattingControls({
       )}
     </button>
   );
+  if (edit) {
+    const item = (
+      label: string,
+      action: (el: HTMLElement) => void,
+      content: React.ReactNode,
+      disabled = !editor,
+      pressed?: boolean,
+      title = label,
+    ) => (
+      <button
+        type="button"
+        aria-label={label}
+        title={title}
+        disabled={disabled}
+        aria-pressed={pressed}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={(e) => action(e.currentTarget)}
+      >
+        {content}
+      </button>
+    );
+    return (
+      <div data-editor-chrome className="edit-formatting rich-toolbar">
+        <TextStylePicker
+          value={textStyle ?? null}
+          edit
+          compact={compact}
+          listKind={
+            marks?.bullet ? "bullet" : marks?.ordered ? "numbered" : undefined
+          }
+        />
+        <span className="edit-divider" />
+        {item(
+          "Bold",
+          () => editor?.chain().focus().toggleBold().run(),
+          <b>B</b>,
+          !editor,
+          marks?.bold,
+          mac ? "Bold (⌘B)" : "Bold (Ctrl+B)",
+        )}
+        {item(
+          "Italic",
+          () => editor?.chain().focus().toggleItalic().run(),
+          <i>I</i>,
+          !editor,
+          marks?.italic,
+          mac ? "Italic (⌘I)" : "Italic (Ctrl+I)",
+        )}
+        {item(
+          "Bulleted list",
+          () => editor?.chain().focus().toggleBulletList().run(),
+          <EditorIcon name="list-bulleted" />,
+          !editor,
+          marks?.bullet,
+        )}
+        {item(
+          "Numbered list",
+          () => editor?.chain().focus().toggleOrderedList().run(),
+          <EditorIcon name="list-numbered" />,
+          !editor,
+          marks?.ordered,
+        )}
+        {item(
+          "Link",
+          (el) => onLink?.(el),
+          <EditorIcon name="link" />,
+          !editor,
+          marks?.link,
+          "Link (⌘K)",
+        )}
+        {item(
+          "Insert field",
+          (el) => onField?.(el),
+          <span className="edit-field-label">
+            {"{ }"}
+            {!compact && " Field"}
+          </span>,
+          !onField,
+        )}
+        <span className="edit-divider" />
+      </div>
+    );
+  }
   return (
-    <div className="rich-toolbar formatting-controls">
+    <div data-editor-chrome className="rich-toolbar formatting-controls">
       <PageBreakAction />
       <div className="formatting-group" role="group" aria-label="History">
         {button(

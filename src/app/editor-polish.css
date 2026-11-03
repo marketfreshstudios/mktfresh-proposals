@@ -1,17 +1,6 @@
 .quote-editor-top {
   z-index: var(--z-editor-header);
 }
-.document-formatting-bar {
-  z-index: var(--z-formatting);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: var(--shadow-md);
-  background: var(--surface);
-}
-.document-formatting-bar .formatting-controls {
-  gap: 0;
-  align-items: center;
-}
 /* Shared inline bars reserve their entire wrapped height, never overlay text. */
 .field-editor-inline {
   display: grid;
@@ -175,18 +164,6 @@
   z-index: var(--z-toast);
 }
 @media (max-width: 899px) {
-  .document-formatting-bar .formatting-label,
-  .inline-formatting-row .formatting-label {
-    display: none;
-  }
-  .document-formatting-bar .formatting-button,
-  .inline-formatting-row .formatting-button {
-    width: 36px;
-    padding-inline: 6px;
-  }
-  .document-formatting-bar {
-    min-height: 54px;
-  }
   .formatting-group + .formatting-group {
     margin-left: 3px;
     padding-left: 3px;
@@ -213,22 +190,6 @@
 .studio-blocks {
   position: relative;
   isolation: isolate;
-}
-.document-formatting-bar .toolbar-popover,
-.toolbar-popover {
-  position: fixed;
-  inset: auto;
-  margin: 0;
-  width: min(420px, calc(100vw - 16px));
-  max-height: min(500px, calc(100dvh - 16px));
-  overflow: auto;
-  padding: 16px;
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  z-index: var(--z-popover);
 }
 .toolbar-popover:not(:popover-open) {
   display: none;

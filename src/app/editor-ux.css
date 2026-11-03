@@ -113,12 +113,6 @@
   display: flow-root;
   outline-offset: 4px;
 }
-.document-reading .block-tools {
-  top: -44px;
-  right: -4px;
-  max-width: min(650px, calc(100% + 8px));
-  overflow-x: auto;
-}
 .document-reading .block-sortable > .drag-handle {
   top: 0;
   left: -42px;
@@ -271,9 +265,6 @@
 .block-frame[data-ai="true"]::before {
   background: var(--review-amber);
   left: -8px;
-}
-.block-tools .block-ai-marker {
-  color: var(--review-amber-ink);
 }
 .ai-review-banner {
   max-width: 704px;
@@ -482,11 +473,6 @@
   .section-edit-mode .editor-paper > div:first-of-type {
     display: block;
   }
-  .document-reading .block-tools {
-    top: -48px;
-    max-width: calc(100% + 8px);
-    height: 48px;
-  }
   .document-reading .block-sortable > .drag-handle,
   .document-quote .quote-sortable > .drag-handle {
     left: -24px;
@@ -547,9 +533,6 @@
 /* Undo and review state use amber on white paper even when the app chrome is dark. */
 .document-reading {
   --review-amber: #bd841f;
-}
-.document-reading .block-tools {
-  --review-amber-ink: #825509;
 }
 .document-reading > [data-document-block] {
   display: flow-root;
@@ -632,9 +615,6 @@
 @media (max-width: 699px) {
   .document-reading .document-section {
     display: flow-root;
-  }
-  .block-tools {
-    max-width: 100%;
   }
 }
 @media (max-width: 699px) {
@@ -755,10 +735,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   letter-spacing: inherit;
-}
-
-[data-theme="dark"] .document-reading .block-tools {
-  --review-amber-ink: #f3c56d;
 }
 .block-insert {
   border: 0;

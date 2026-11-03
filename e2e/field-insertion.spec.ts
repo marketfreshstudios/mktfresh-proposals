@@ -270,10 +270,15 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .click();
   const menuText = await setCursor(6, 12);
   await page
-    .getByRole("toolbar", { name: "Document formatting", exact: true })
+    .getByRole("toolbar", {
+      name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
+      exact: true,
+    })
     .getByRole("button", { name: "Insert field", exact: true })
     .click();
-  const menu = page.locator(".document-formatting-bar .field-picker");
+  const menu = page.locator(
+    ":is(.editor-edit-bar,.phone-formatting-bar) .field-picker",
+  );
   await menu
     .getByRole("searchbox", { name: "Search fields" })
     .fill("first name");

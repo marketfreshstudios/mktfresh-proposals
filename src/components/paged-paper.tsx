@@ -41,7 +41,7 @@ export function PagedPaper({
             !(
               r.target instanceof Element ? r.target : r.target.parentElement
             )?.closest(
-              ".block-tools,.block-insert,.editor-page-sheets,.rich-toolbar,.document-page-count",
+              "[data-editor-chrome],.editor-page-sheets,.document-page-count",
             ),
         )
       )

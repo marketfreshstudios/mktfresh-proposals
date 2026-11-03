@@ -149,7 +149,7 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
     const text = page.locator(`[data-block-id="block-${f.id}"] .tiptap`);
     await text.click();
     const bar = page.getByRole("toolbar", {
-      name: "Document formatting",
+      name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
       exact: true,
     });
     const rows = await bar
@@ -311,18 +311,16 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
   page,
 }) => {
   const f = await fixture(page);
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({ width: 375, height: 1000 });
   for (const theme of ["light", "dark"]) {
     await page.addInitScript(
       (t) => localStorage.setItem("proposal-theme", t),
       theme,
     );
     await page.goto(`/proposals/${f.draft.id}`);
+    await page.locator(".phone-section-list button").first().click();
     await page.locator(`[data-block-id="block-${f.id}"] .tiptap`).click();
-    const select = page.getByRole("combobox", {
-      name: "Text style",
-      exact: true,
-    });
+    const select = page.locator('button[aria-label="Text style"]');
     await expect(select).toHaveClass("select-compact");
     await page.mouse.move(0, 0);
     await expect(select).toHaveCSS("appearance", "none");

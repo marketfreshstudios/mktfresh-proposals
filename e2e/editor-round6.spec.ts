@@ -116,7 +116,7 @@ test("Overview moves preserve every saved block and page marker through controls
   }
   await overview.focus();
   await overview
-    .locator(":scope > .block-tools")
+    .locator(":scope > :is(.editor-edit-bar,.phone-block-actions)")
     .getByRole("button", { name: "Move down", exact: true })
     .click();
   await changed(blocks[4].id!, blocks.at(-1)!.id!);
@@ -263,7 +263,7 @@ test("moving a title-field section to the top survives saving and reload without
   const frame = page.locator(`[data-block-id="block-${blocks[2].id}"]`);
   await frame.focus();
   await frame
-    .locator(":scope > .block-tools")
+    .locator(":scope > :is(.editor-edit-bar,.phone-block-actions)")
     .getByRole("button", { name: "Move up", exact: true })
     .click();
   await expect.poll(() => f.active().content[0]?.id).toBe(blocks[2].id);
@@ -311,9 +311,34 @@ test("text style has symmetric divider gaps and balanced inner chevron padding",
         .click();
     }
     const bar = page.getByRole("toolbar", {
-      name: "Document formatting",
+      name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
       exact: true,
     });
+    if (width >= 700) {
+      await page.locator(".draft-block .tiptap").first().focus();
+      const style = bar.locator('button[aria-label="Text style"]');
+      const spacing = await style.evaluate((el) => {
+        const r = el.getBoundingClientRect(),
+          label = el
+            .querySelector(".text-style-label")!
+            .getBoundingClientRect(),
+          caret = el
+            .querySelector(".text-style-caret")!
+            .getBoundingClientRect();
+        return {
+          before: label.left - r.left,
+          after: r.right - caret.right,
+          height: r.height,
+        };
+      });
+      expect(Math.abs(spacing.before - spacing.after)).toBeLessThanOrEqual(1);
+      expect(spacing.before).toBeCloseTo(8, 0);
+      expect(spacing.height).toBeCloseTo(32, 0);
+      const divider = await bar.locator(".edit-divider").first().boundingBox();
+      expect(divider!.width).toBeCloseTo(1, 0);
+      expect(divider!.height).toBeCloseTo(20, 0);
+      continue;
+    }
     const spacing = await bar
       .locator(".format-style-control")
       .evaluate((el) => {

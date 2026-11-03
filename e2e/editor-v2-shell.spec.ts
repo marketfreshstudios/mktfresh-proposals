@@ -253,7 +253,9 @@ test("saving stays editable; a 409 locks controls until Reload and keeps the loc
     "This proposal changed in another tab or by another person.",
   );
   await expect(input).toHaveAttribute("contenteditable", "false");
-  await expect(page.locator(".block-tools").first()).not.toBeVisible();
+  await expect(
+    page.locator(":is(.editor-edit-bar,.phone-block-actions)").first(),
+  ).not.toBeVisible();
   await expect(page.locator(".editor-sidepanel input").first()).toBeDisabled();
   await expect(input).toHaveText(local);
   await page.keyboard.press("Control+z");
@@ -291,10 +293,13 @@ test("Escape from a focused formatting trigger closes the picker before deselect
 }) => {
   const f = await editorFixture(page);
   await ready(page, f.draft.id, 1440);
+  await page
+    .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+    .click();
   const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
   await block.locator(".tiptap").click();
   const bar = page.getByRole("toolbar", {
-    name: "Document formatting",
+    name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
     exact: true,
   });
   const trigger = bar.getByRole("button", {
@@ -308,10 +313,8 @@ test("Escape from a focused formatting trigger closes the picker before deselect
   await expect(page.locator(".field-picker:popover-open")).toHaveCount(0);
   await expect(block).toHaveAttribute("data-selected", "true");
   await block.locator(".tiptap").click();
-  await bar.getByRole("combobox", { name: "Text style", exact: true }).click();
-  await expect(
-    page.getByRole("listbox", { name: "Text styles", exact: true }),
-  ).toBeVisible();
+  await bar.locator('button[aria-label="Text style"]').click();
+  await expect(page.getByLabel("Text styles", { exact: true })).toBeVisible();
 });
 
 test("requested shell screenshots at 1440, 1024 and unchanged phone 375", async ({

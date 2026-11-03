@@ -78,17 +78,17 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${active.id}`);
   const bar = page.getByRole("toolbar", {
-    name: "Document formatting",
+    name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
     exact: true,
   });
   const undo = page
       .locator(
-        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+        '.editor-v2-header, .template-history-controls, [role="toolbar"][aria-label="Document formatting"]',
       )
       .getByRole("button", { name: "Undo", exact: true }),
     redo = page
       .locator(
-        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+        '.editor-v2-header, .template-history-controls, [role="toolbar"][aria-label="Document formatting"]',
       )
       .getByRole("button", { name: "Redo", exact: true });
   const block = (id: string) => page.locator(`[data-block-id="block-${id}"]`),
@@ -258,7 +258,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   expect(native).toBe(false);
   await block(first).click();
   await block(first)
-    .getByRole("button", { name: "Add block below", exact: true })
+    .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
     .click();
   const menu = page.getByRole("dialog", { name: "Add a block", exact: true });
   await expect(
@@ -266,11 +266,20 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   ).toBeFocused();
   await expect(
     menu.getByRole("menuitem", { name: "Pricing table", exact: true }),
-  ).toHaveCount(0);
+  ).toBeDisabled();
   await expect(
     menu.getByRole("group", { name: "Saved blocks", exact: true }),
   ).toBeVisible();
   expect((await menu.boundingBox())!.width).toBeLessThanOrEqual(320);
+  await menu.getByRole("searchbox").fill("Pricing table");
+  await page.keyboard.press("ArrowDown");
+  await expect(menu.getByRole("searchbox")).toBeFocused();
+  await expect(
+    menu.getByRole("menuitem", { name: "Pricing table", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    menu.getByText("Already in this proposal", { exact: true }),
+  ).toBeVisible();
   await menu.getByRole("searchbox").fill("numbered");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
@@ -315,9 +324,11 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   );
   const layers = await page.evaluate(() => {
     const header = document.querySelector<HTMLElement>(".quote-editor-top")!,
-      bar = document.querySelector<HTMLElement>(".document-formatting-bar")!,
+      bar = document.querySelector<HTMLElement>(
+        ":is(.editor-edit-bar,.phone-formatting-bar)",
+      )!,
       control = document.querySelector<HTMLElement>(
-        ".draft-block .block-tools",
+        ".draft-block :is(.editor-edit-bar,.phone-block-actions)",
       )!;
     return [control, bar, header].map((el) =>
       Number(getComputedStyle(el).zIndex),
@@ -344,7 +355,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     (el as HTMLElement).focus({ preventScroll: true }),
   );
   const plus = last.getByRole("button", {
-    name: "Add block below",
+    name: /^Add (a )?block below$/,
     exact: true,
   });
   await plus.evaluate((el) => {
@@ -409,7 +420,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   const templateBlock = page.locator(".studio-block-card").nth(1);
   await templateBlock.click();
   await templateBlock
-    .getByRole("button", { name: "Add block below", exact: true })
+    .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
     .click();
   await expect(menu.getByRole("searchbox")).toBeFocused();
   await menu.getByRole("searchbox").fill("Welcome");
@@ -419,7 +430,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   );
   await page
     .locator(
-      '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+      '.editor-v2-header, .template-history-controls, [role="toolbar"][aria-label="Document formatting"]',
     )
     .getByRole("button", { name: "Undo", exact: true })
     .click();
@@ -455,7 +466,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await expect(
     page
       .locator(
-        '.editor-v2-header, [role="toolbar"][aria-label="Document formatting"]',
+        '.editor-v2-header, .template-history-controls, [role="toolbar"][aria-label="Document formatting"]',
       )
       .getByRole("button", { name: "Undo", exact: true }),
   ).toBeDisabled();

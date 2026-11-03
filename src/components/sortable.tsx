@@ -1,5 +1,6 @@
 "use client";
-import type { ReactNode, CSSProperties } from "react";
+import { type ReactNode, type CSSProperties } from "react";
+import { BlockDragHandle, useControlLayout } from "./editor/control-layout";
 import { useBlockSelection } from "./block-controls";
 import {
   DndContext,
@@ -40,6 +41,7 @@ export function Sortable({
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
+  const { desktop } = useControlLayout();
   const {
     attributes,
     listeners,
@@ -48,6 +50,47 @@ export function Sortable({
     transition,
     isDragging,
   } = useSortable({ id, disabled: { draggable: !draggable } });
+  const handle = draggable ? (
+    <button
+      type="button"
+      data-editor-chrome
+      className="drag-handle"
+      aria-label={`Drag ${label}`}
+      title={`Drag ${label}`}
+      onPointerOver={(e) => {
+        if (block) {
+          e.stopPropagation();
+          const id = e.currentTarget
+            .closest(".block-sortable")
+            ?.querySelector<HTMLElement>(":scope > .block-frame")
+            ?.dataset.blockId;
+          if (id) selection.hover(id);
+        }
+      }}
+      onFocus={(e) => {
+        if (block) {
+          const id = e.currentTarget
+            .closest(".block-sortable")
+            ?.querySelector<HTMLElement>(":scope > .block-frame")
+            ?.dataset.blockId;
+          if (id) selection.select(id);
+        }
+      }}
+      onPointerDownCapture={(e) => {
+        if (block) {
+          const id = e.currentTarget
+            .closest(".block-sortable")
+            ?.querySelector<HTMLElement>(":scope > .block-frame")
+            ?.dataset.blockId;
+          if (id) selection.select(id);
+        }
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      <span aria-hidden="true">⋮⋮</span>
+    </button>
+  ) : null;
   return (
     <div
       ref={setNodeRef}
@@ -67,47 +110,10 @@ export function Sortable({
       }
       className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
     >
-      {draggable && (
-        <button
-          type="button"
-          className="drag-handle"
-          aria-label={`Drag ${label}`}
-          title={`Drag ${label}`}
-          onPointerOver={(e) => {
-            if (block) {
-              e.stopPropagation();
-              const id =
-                e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                  ":scope > .block-frame",
-                )?.dataset.blockId;
-              if (id) selection.hover(id);
-            }
-          }}
-          onFocus={(e) => {
-            if (block) {
-              const id =
-                e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                  ":scope > .block-frame",
-                )?.dataset.blockId;
-              if (id) selection.select(id);
-            }
-          }}
-          onPointerDownCapture={(e) => {
-            if (block) {
-              const id =
-                e.currentTarget.parentElement?.querySelector<HTMLElement>(
-                  ":scope > .block-frame",
-                )?.dataset.blockId;
-              if (id) selection.select(id);
-            }
-          }}
-          {...attributes}
-          {...listeners}
-        >
-          <span aria-hidden="true">⋮⋮</span>
-        </button>
-      )}
-      {children}
+      {!block || !desktop ? handle : null}
+      <BlockDragHandle.Provider value={block && desktop ? handle : null}>
+        {children}
+      </BlockDragHandle.Provider>
     </div>
   );
 }

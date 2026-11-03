@@ -132,7 +132,7 @@ test("formatting rows stay above content and every button is reachable in all ed
         (await local.isVisible())
           ? local
           : page
-              .locator(".editor-v2-header")
+              .locator(".editor-v2-header,.template-history-controls")
               .getByRole("button", { name: action, exact: true })
       ).click();
     }
@@ -146,7 +146,10 @@ test("formatting rows stay above content and every button is reachable in all ed
       "Link",
       "Insert field",
     ]) {
-      const button = bar.getByRole("button", { name: label, exact: true });
+      const button = bar.getByRole("button", {
+        name: label === "List" ? /^(List|Bulleted list)$/ : label,
+        exact: true,
+      });
       await button.scrollIntoViewIfNeeded();
       const hit = await button.evaluate((el) => {
         const r = el.getBoundingClientRect(),
@@ -201,8 +204,12 @@ test("formatting rows stay above content and every button is reachable in all ed
     await page.goto(`/proposals/${current.id}`);
     if (width === 375)
       await page.locator(".phone-section-list button").first().click();
+    if (width === 1440)
+      await page
+        .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+        .click();
     const pinned = page.getByRole("toolbar", {
-      name: "Document formatting",
+      name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
       exact: true,
     });
     await check(
@@ -221,9 +228,14 @@ test("formatting rows stay above content and every button is reachable in all ed
       await clause.locator("summary").click();
     await expect(clause.locator("p")).toBeVisible();
     await clause.locator("p").click();
-    await expect(
-      pinned.getByRole("button", { name: "Bold", exact: true }),
-    ).toBeDisabled();
+    if (width < 700)
+      await expect(
+        pinned.getByRole("button", { name: "Bold", exact: true }),
+      ).toBeDisabled();
+    else
+      await expect(
+        pinned.getByRole("button", { name: "Bold", exact: true }),
+      ).toHaveCount(0);
     await page
       .getByRole("button", { name: "Review & send", exact: true })
       .first()
@@ -243,20 +255,29 @@ test("formatting rows stay above content and every button is reachable in all ed
       .nth(1)
       .locator(".block-open")
       .click();
-    await page
-      .locator(".studio-block-card")
-      .nth(1)
-      .getByRole("button", { name: "Block settings", exact: true })
-      .click();
-    const inspector =
-      width === 375
-        ? page.getByRole("dialog", { name: "Edit block", exact: true })
-        : page.locator(".studio-inspector");
-    await check(
-      inspector.locator(".tiptap"),
-      pinned,
-      `template inspector ${width}`,
-    );
+    if (width === 375) {
+      await page
+        .locator(".studio-block-card")
+        .nth(1)
+        .getByRole("button", { name: "Block settings", exact: true })
+        .click();
+      await check(
+        page
+          .getByRole("dialog", { name: "Edit block", exact: true })
+          .locator(".tiptap"),
+        pinned,
+        `template inspector ${width}`,
+      );
+    } else {
+      await page
+        .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+        .click();
+      await check(
+        page.locator(".studio-block-card").nth(1).locator(".tiptap"),
+        pinned,
+        `template inline ${width}`,
+      );
+    }
   }
   expect(errors).toEqual([]);
 });

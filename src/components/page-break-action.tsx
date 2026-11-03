@@ -47,7 +47,13 @@ export function PageBreakController({
   );
   return null;
 }
-export function PageBreakAction({ block }: { block?: string }) {
+export function PageBreakAction({
+  block,
+  menu = false,
+}: {
+  block?: string;
+  menu?: boolean;
+}) {
   const actions = useContext(PageActions)?.config.current,
     selection = useBlockSelection();
   if (!actions || !actions.content.length) return null;
@@ -62,6 +68,9 @@ export function PageBreakAction({ block }: { block?: string }) {
   return (
     <button
       type="button"
+      role={menu ? "menuitem" : undefined}
+      onMouseDown={menu ? (e) => e.preventDefault() : undefined}
+      data-editor-chrome
       className="formatting-button block-page-action"
       aria-label={label}
       title={label}
@@ -81,4 +90,11 @@ export function PageBreakAction({ block }: { block?: string }) {
       <span className="sr-only">{label}</span>
     </button>
   );
+}
+
+/** UI availability only; the existing command below remains the mutation owner. */
+export function usePageBreakAvailable(block: string) {
+  const actions = useContext(PageActions)?.config.current;
+  const id = block.replace(/^(block-|template-)/, "");
+  return !!actions?.content.some((b) => b.id === id && b.type !== "page_break");
 }

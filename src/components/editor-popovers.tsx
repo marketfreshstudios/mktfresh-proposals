@@ -35,3 +35,11 @@ export function useManagedPopover(open: boolean, close: () => void) {
     if (open) return manager.claim(id.current, () => latest.current());
   }, [manager, open]);
 }
+export function useDismissEditorPopover() {
+  const manager = useContext(Context);
+  return () => manager.active?.close();
+}
+export function useHasEditorPopover() {
+  const manager = useContext(Context);
+  return () => !!manager.active;
+}
