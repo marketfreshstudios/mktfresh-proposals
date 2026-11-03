@@ -19,7 +19,7 @@ it("renders Live and Locked header props without production state wiring or unpu
     published: "live" as const,
   };
   const live = renderToStaticMarkup(createElement(EditorHeader, base));
-  expect(live).toContain("Live · Saved");
+  expect(live).toContain("Sent · Not viewed · Saved");
   expect(live).not.toMatch(/Send update|Unpublished changes/);
   const locked = renderToStaticMarkup(
     createElement(EditorHeader, { ...base, locked: true }),

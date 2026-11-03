@@ -196,7 +196,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     .click();
   await page
     .getByRole("checkbox", {
-      name: /I have reviewed these AI-written sections/,
+      name: /I've reviewed these AI-written sections/,
     })
     .check();
   await expect(

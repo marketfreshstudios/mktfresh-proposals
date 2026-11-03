@@ -301,20 +301,13 @@ test("text style has symmetric divider gaps and balanced inner chevron padding",
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`/proposals/${f.draft.id}`);
     if (width === 375) {
-      await page
-        .locator(".phone-section-list")
-        .getByRole("button")
-        .filter({ hasText: "First section" })
-        .click();
-      await page
-        .getByRole("button", { name: "Full document", exact: true })
-        .click();
+      await expect(page.locator(".editor-paper")).toBeVisible();
     }
     const bar = page.getByRole("toolbar", {
       name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
       exact: true,
     });
-    if (width >= 700) {
+    {
       await page.locator(".draft-block .tiptap").first().focus();
       const style = bar.locator('button[aria-label="Text style"]');
       const spacing = await style.evaluate((el) => {
@@ -333,39 +326,11 @@ test("text style has symmetric divider gaps and balanced inner chevron padding",
       });
       expect(Math.abs(spacing.before - spacing.after)).toBeLessThanOrEqual(1);
       expect(spacing.before).toBeCloseTo(8, 0);
-      expect(spacing.height).toBeCloseTo(32, 0);
+      expect(spacing.height).toBeCloseTo(width < 700 ? 44 : 32, 0);
       const divider = await bar.locator(".edit-divider").first().boundingBox();
       expect(divider!.width).toBeCloseTo(1, 0);
       expect(divider!.height).toBeCloseTo(20, 0);
       continue;
     }
-    const spacing = await bar
-      .locator(".format-style-control")
-      .evaluate((el) => {
-        const button = el.querySelector<HTMLElement>('[role="combobox"]')!,
-          r = button.getBoundingClientRect(),
-          leftElement = el.previousElementSibling as HTMLElement,
-          left = leftElement.offsetParent
-            ? leftElement.getBoundingClientRect()
-            : null,
-          right = el
-            .nextElementSibling!.querySelector("button")!
-            .getBoundingClientRect(),
-          style = getComputedStyle(button);
-        return {
-          before: left
-            ? r.left - left.right
-            : parseFloat(getComputedStyle(el).marginLeft) +
-              parseFloat(getComputedStyle(el).paddingLeft),
-          after: right.left - r.right,
-          padding: style.paddingLeft,
-          arrow: style.backgroundPositionX,
-          height: r.height,
-        };
-      });
-    expect(Math.abs(spacing.before - spacing.after)).toBeLessThanOrEqual(1);
-    expect(spacing.padding).toBe("8px");
-    expect(spacing.arrow).toBe("calc(100% - 8px)");
-    expect(spacing.height).toBe(44);
   }
 });

@@ -35,7 +35,7 @@ export const StyleEntrySchema = z.object({
       .regex(/^#[\da-fA-F]{6}$/)
       .refine(
         (v) => whiteContrast(v) >= 4.5,
-        "Colour needs at least 4.5:1 contrast against white paper",
+        "Color needs at least 4.5:1 contrast against white paper",
       ),
   ]),
   letter_case: z.enum(["normal", "uppercase"]),
@@ -206,7 +206,7 @@ export function validateStyleContrast(styles: ResolvedStyles, accent?: string) {
     if (whiteContrast(styleColour(styles[level].colour, accent)) < 4.5)
       throw new AppError(
         400,
-        `${styleLabels[level]} colour needs 4.5:1 contrast against white paper`,
+        `${styleLabels[level]} color needs 4.5:1 contrast against white paper`,
       );
 }
 export function styleFonts(styles?: ResolvedStyles) {

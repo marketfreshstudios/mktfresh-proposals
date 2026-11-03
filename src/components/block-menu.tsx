@@ -30,13 +30,13 @@ export function BlockMenu({
   onClose: () => void;
   signatures?: boolean;
 }) {
-  const { desktop } = useControlLayout();
+  const { desktop, phone } = useControlLayout();
   useManagedPopover(true, onClose);
   const [host, setHost] = useState<Element | null>(null),
     [query, setQuery] = useState(""),
     [active, setActive] = useState(0),
     [error, setError] = useState("");
-  const ref = useRef<HTMLDivElement>(null),
+  const ref = useRef<HTMLElement>(null),
     input = useRef<HTMLInputElement>(null),
     file = useRef<HTMLInputElement>(null);
   const fallback = useRef<HTMLElement | null>(null);
@@ -166,6 +166,32 @@ export function BlockMenu({
   useLayoutEffect(() => {
     const popover = ref.current;
     if (!host || !popover) return;
+    if (phone) {
+      (popover as HTMLDialogElement).showModal();
+      input.current?.focus();
+      return () => {
+        const returnFocus = restoreTrigger.current;
+        restoreTrigger.current = false;
+        if (returnFocus)
+          popover.addEventListener(
+            "close",
+            () => {
+              requestAnimationFrame(() => {
+                const button = anchor?.matches("button")
+                  ? anchor
+                  : fallback.current;
+                if (
+                  button?.isConnected &&
+                  !document.querySelector("dialog:modal")
+                )
+                  button.focus({ preventScroll: true });
+              });
+            },
+            { once: true },
+          );
+        (popover as HTMLDialogElement).close();
+      };
+    }
     popover.showPopover();
     const place = () => {
       const a = (anchor ?? fallback.current)?.getBoundingClientRect();
@@ -232,7 +258,7 @@ export function BlockMenu({
         });
       }
     };
-  }, [host, anchor, desktop]);
+  }, [host, anchor, desktop, phone]);
   useEffect(() => {
     const outside = (e: PointerEvent) => {
       if (
@@ -308,14 +334,28 @@ export function BlockMenu({
       [n]?.focus();
   };
   if (!host) return null;
+  const Surface = phone ? "dialog" : "div";
   return createPortal(
-    <div
-      ref={ref}
+    <Surface
+      ref={(el: HTMLElement | null) => {
+        ref.current = el;
+      }}
       data-editor-chrome
-      popover="manual"
+      popover={phone ? undefined : "manual"}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClick={(e) => {
+        if (phone && e.target === e.currentTarget) {
+          const r = e.currentTarget.getBoundingClientRect();
+          if (e.clientY < r.top || e.clientX < r.left || e.clientX > r.right)
+            onClose();
+        }
+      }}
       role="dialog"
       aria-label="Add a block"
-      className="block-popover block-owned-dialog"
+      className={`block-popover block-owned-dialog ${phone ? "phone-block-menu" : ""}`}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.preventDefault();
@@ -341,13 +381,13 @@ export function BlockMenu({
         }
       }}
     >
-      {desktop && (
+      {(desktop || phone) && (
         <header className="editor-block-menu-heading">
           <strong>
             {anchor?.dataset.insertEdge === "above" ? "Add above" : "Add below"}
           </strong>
           <button type="button" aria-label="Close block menu" onClick={onClose}>
-            ×
+            {phone ? "Cancel" : "×"}
           </button>
         </header>
       )}
@@ -427,7 +467,7 @@ export function BlockMenu({
           reader.readAsDataURL(chosen);
         }}
       />
-    </div>,
+    </Surface>,
     host,
   );
 }

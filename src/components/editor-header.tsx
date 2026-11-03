@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
 import { useHistoryStatus } from "./editor-history";
+import { PhoneEditorHeader } from "./editor/phone-header";
 import { EditorIcon } from "./editor/editor-icon";
 /** Event handlers and pending requests must read current state before React paints. */
 export function useCurrentState<T>(initial: T) {
@@ -69,6 +70,13 @@ export function EditorHeader({
   onPreviewClient,
   onReviewSend,
   onDuplicate,
+  editingTitle,
+  onDone,
+  onSections,
+  liveLabel,
+  notLiveReason,
+  primaryLabel,
+  onPrimary,
 }: {
   title: string;
   backLabel: string;
@@ -97,6 +105,13 @@ export function EditorHeader({
   onPreviewClient?: () => void;
   onReviewSend?: () => void;
   onDuplicate?: () => void;
+  editingTitle?: string;
+  onDone?: () => void;
+  onSections?: () => void;
+  liveLabel?: string;
+  notLiveReason?: string;
+  primaryLabel?: string;
+  onPrimary?: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
   const pending = leaving || saving;
@@ -140,6 +155,43 @@ export function EditorHeader({
   const tooltip = lastSaved
     ? `Last saved ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(new Date(lastSaved))}`
     : "Not saved yet";
+  if (phone && onReviewSend)
+    return (
+      <PhoneEditorHeader
+        className={className}
+        title={title}
+        editingTitle={editingTitle}
+        status={
+          locked
+            ? "Signed · locked"
+            : stale
+              ? "Edited elsewhere · Reload"
+              : offline
+                ? "Offline · saved on this device"
+                : pending
+                  ? "Saving…"
+                  : error
+                    ? "Couldn't save · Retry"
+                    : dirty
+                      ? "Unsaved changes"
+                      : notLiveReason
+                        ? `Not live · ${notLiveReason}`
+                        : `${liveLabel ?? "Draft"} · Saved`
+        }
+        locked={locked || stale}
+        aiPending={aiPending}
+        onBack={goBack}
+        onDone={onDone}
+        onNextAi={onNextAi}
+        onPreviewPdf={onPreviewPdf}
+        onPreviewClient={onPreviewClient}
+        onSections={onSections}
+        primaryLabel={
+          primaryLabel !== "Review & send" ? primaryLabel : undefined
+        }
+        onPrimary={onPrimary}
+      />
+    );
   if (!phone && onReviewSend) {
     const state = stale
       ? "stale"
@@ -168,7 +220,9 @@ export function EditorHeader({
                 ? "Unsaved changes recovered"
                 : dirty
                   ? "Unsaved changes"
-                  : `${published === "live" ? "Live" : "Draft"} · Saved`;
+                  : notLiveReason
+                    ? `Not live · ${notLiveReason}`
+                    : `${liveLabel ?? (published === "live" ? "Sent · Not viewed" : "Draft")} · Saved`;
     const shortText = locked
       ? "Locked"
       : stale
@@ -183,7 +237,9 @@ export function EditorHeader({
                 ? "Recovered"
                 : dirty
                   ? "Unsaved"
-                  : "Saved";
+                  : notLiveReason
+                    ? "Not live"
+                    : "Saved";
     return (
       <header
         className={`editor-document-header editor-v2-header ${className}`}
@@ -264,11 +320,19 @@ export function EditorHeader({
         <button
           type="button"
           className="editor-header-pill editor-header-send"
-          disabled={stale || offline || (locked && !onDuplicate)}
+          disabled={
+            stale ||
+            (offline &&
+              !["Copy client link", "Duplicate as new draft"].includes(
+                primaryLabel ?? "",
+              )) ||
+            (locked && !onDuplicate && !onPrimary)
+          }
           title={offline ? "Reconnect to send" : undefined}
-          onClick={locked ? onDuplicate : onReviewSend}
+          onClick={onPrimary ?? (locked ? onDuplicate : onReviewSend)}
         >
-          {locked ? "Duplicate as new draft" : "Review & send"}
+          {primaryLabel ??
+            (locked ? "Duplicate as new draft" : "Review & send")}
         </button>
         {hadAi &&
           (aiPending ? (

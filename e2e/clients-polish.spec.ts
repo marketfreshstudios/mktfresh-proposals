@@ -417,10 +417,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await page.goto(`/proposals/${editing.id}`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
       if (width === 375)
-        await page
-          .locator(".phone-section-list")
-          .getByRole("button", { name: /Your contact details/ })
-          .click();
+        await expect(page.locator(".editor-paper")).toBeVisible();
       const chip = page
         .locator('.tiptap [data-field="client.address"]')
         .filter({ visible: true });

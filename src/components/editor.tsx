@@ -48,6 +48,7 @@ export function BlocksEditor({
               </label>
             ) : b.type === "paragraph" ? (
               <FieldEditor
+                inlineControls
                 autoFocus
                 map={map}
                 showNames={false}

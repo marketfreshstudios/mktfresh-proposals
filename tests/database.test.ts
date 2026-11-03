@@ -36,6 +36,15 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   );
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
+  p = await service.edit(
+    p.id,
+    {
+      revision: p.revision,
+      title: "Recoverable unpublished work",
+      content: p.content.filter((b) => b.type !== "pricing_table"),
+    },
+    staff,
+  );
   p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
     token: p.token!,
     password: "",
@@ -49,6 +58,14 @@ it("applies migration to fresh PostgreSQL, enforces RLS, CAS, append-only audit 
   await db.query("select save_proposal($1::jsonb,-1)", [
     JSON.stringify(document),
   ]);
+  expect(
+    (
+      await db.query<{ title: string }>(
+        "select state->'unpublished_work'->>'title' as title from proposals where id=$1",
+        [p.id],
+      )
+    ).rows[0].title,
+  ).toBe("Recoverable unpublished work");
   await expect(
     db.query("select save_proposal($1::jsonb,-1)", [JSON.stringify(document)]),
   ).rejects.toThrow("Revision conflict");

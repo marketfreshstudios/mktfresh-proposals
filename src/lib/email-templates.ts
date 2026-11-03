@@ -1,3 +1,4 @@
+import { publishedPresentation } from "./editor-publication";
 import {
   billingCompletionText,
   completedCheckouts,
@@ -211,6 +212,11 @@ export async function prepareEmail(
   p: Proposal,
   j: Job,
 ): Promise<EmailSnapshot> {
+  // Client correspondence must describe the last publication, never invalid staff work.
+  if (p.versions.length && !p.signers.length) {
+    const v = p.versions.at(-1)!;
+    p = { ...publishedPresentation(p), content: v.content, quote: v.quote };
+  }
   const key = emailKey(p, j),
     templates = await emailTemplates(repo);
   let t = templates.find((t) => t.key === key) ?? definition(key);

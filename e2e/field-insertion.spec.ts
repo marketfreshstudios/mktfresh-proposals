@@ -1,3 +1,4 @@
+import { openEditorPanel } from "./editor-ui";
 import { test, expect, type Locator } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { setup, staff } from "../tests/helpers";
@@ -62,8 +63,8 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   }
   async function choices(width: number): Promise<Locator> {
     if (width < 700) {
-      await page.getByRole("button", { name: "Fields", exact: true }).click();
-      return page.getByRole("dialog", { name: "Fields", exact: true });
+      await openEditorPanel(page, "Fields");
+      return page.getByRole("dialog", { name: "Proposal tools", exact: true });
     }
     if (
       !(await page
@@ -112,7 +113,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     await page.goto(`/proposals/${active.id}`);
     await expect(page.locator(".quote-workspace")).toBeVisible();
     if (width === 375)
-      await page.locator(".phone-section-list button").first().click();
+      await expect(page.locator(".editor-paper")).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
   }
 
@@ -132,7 +133,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
         await shot(state, width, theme);
         if (fieldPanel && width < 1100)
           await page
-            .getByRole("dialog", { name: "Fields", exact: true })
+            .getByRole("dialog", { name: "Proposal tools", exact: true })
             .getByRole("button", { name: "Done", exact: true })
             .click();
       }
@@ -168,13 +169,11 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "Click into the text where you want the field" }),
+      .filter({ hasText: "Click into a paragraph first, then choose a field" }),
   ).toBeVisible();
   expect(active.content).toHaveLength(content.length);
   await reset(375);
-  await page
-    .getByRole("button", { name: "Full document", exact: true })
-    .click();
+  await expect(page.locator(".editor-paper")).toBeVisible();
   const text = await setCursor(6);
   await captureState("fields-panel", true);
   panel = await choices(375);
@@ -193,9 +192,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .toBe("Hello {{client.first_name}}friend, welcome.");
   await captureState("field-at-cursor");
   await reset(375);
-  await page
-    .getByRole("button", { name: "Full document", exact: true })
-    .click();
+  await expect(page.locator(".editor-paper")).toBeVisible();
   const replacing = await setCursor(6, 12);
   panel = await choices(375);
   await panel
@@ -229,7 +226,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "Click into the text where you want the field" }),
+      .filter({ hasText: "Click into a paragraph first, then choose a field" }),
   ).toBeVisible();
   await captureState("field-no-cursor");
   // The never-focused selected text fallback also survives the phone sheet opening.
@@ -265,9 +262,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect.poll(savedText).toBe("Hello {{client.company}}, welcome.");
   await page.setViewportSize({ width: 375, height: 1000 });
   await reset(375);
-  await page
-    .getByRole("button", { name: "Full document", exact: true })
-    .click();
+  await expect(page.locator(".editor-paper")).toBeVisible();
   const menuText = await setCursor(6, 12);
   await page
     .getByRole("toolbar", {
@@ -276,9 +271,9 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     })
     .getByRole("button", { name: "Insert field", exact: true })
     .click();
-  const menu = page.locator(
-    ":is(.editor-edit-bar,.phone-formatting-bar) .field-picker",
-  );
+  const menu = page
+    .locator(".editor-v2-sheet .field-options, .field-picker .field-options")
+    .filter({ visible: true });
   await menu
     .getByRole("searchbox", { name: "Search fields" })
     .fill("first name");
@@ -308,8 +303,8 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await page.setViewportSize({ width: 375, height: 1000 });
   await reset(375);
   const hiddenText = await setCursor(6);
-  await page.getByRole("button", { name: "‹ Sections", exact: true }).click();
-  await expect(hiddenText).not.toBeVisible();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(hiddenText).not.toBeFocused();
   panel = await choices(375);
   await panel
     .getByRole("button", {
@@ -329,7 +324,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   // Closing the native sheet must restore its trigger BEFORE editor focus wins.
   await reset(375);
   const delayedText = await setCursor(6, 12);
-  await page.getByRole("button", { name: "‹ Sections", exact: true }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   panel = await choices(375);
   await page.locator(".editor-paper").evaluate((paper) => {
     (paper as HTMLElement).style.visibility = "hidden";
@@ -386,7 +381,8 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .locator(`[data-block-id="block-${paragraph}"]`)
     .evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
   await choices(375);
-  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape"); // Close the Fields sheet first.
+  await page.keyboard.press("Escape"); // Then deselect the block.
   panel = await choices(375);
   await panel
     .getByRole("button", {
@@ -397,7 +393,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: "Click into the text where you want the field" }),
+      .filter({ hasText: "Click into a paragraph first, then choose a field" }),
   ).toBeVisible();
   expect(savedText()).toBe("Hello friend, welcome.");
   // Removing the old bottom insertion row must not strand a completely empty draft.

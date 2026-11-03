@@ -17,7 +17,7 @@ export function legacyStaffRedirect(path: string[]) {
   if (section === "dashboard") return "/";
   if (section === "proposals" && id === "new") return "/proposals?new=1";
   if (section === "proposals" && id && action) {
-    if (action === "edit") return `/proposals/${id}`;
+    if (action === "edit") return `/proposals/${id}?action=edit`;
     if (action === "send") return `/proposals/${id}?view=send`;
     if (action === "countersign") return `/proposals/${id}?action=countersign`;
     if (action === "audit") return `/proposals/${id}?view=evidence`;
@@ -73,12 +73,14 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
   }
   if (section === "proposals" && id)
     action =
-      query.action === "countersign"
-        ? "countersign"
-        : query.view === "send"
-          ? "send"
-          : query.view === "evidence"
-            ? "audit"
-            : action;
+      query.action === "edit"
+        ? "edit"
+        : query.action === "countersign"
+          ? "countersign"
+          : query.view === "send"
+            ? "send"
+            : query.view === "evidence"
+              ? "audit"
+              : action;
   return { section, id, action };
 }

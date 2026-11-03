@@ -27,12 +27,12 @@ import { Icon, Button, post } from "./ui";
 import type { Block, RichText } from "../lib/model";
 import { createPortal } from "react-dom";
 import type { TextStyleControl } from "../lib/editor-document";
-import { FormattingControls } from "./formatting-controls";
 import { EditorHistoryProvider, useEditorHistory } from "./editor-history";
 const Formatting = createContext<
   | {
       target: HTMLElement | null;
       owner: string | null;
+      hasTextTarget: boolean;
       textStyle?: TextStyleControl;
       activate: (id: string | null) => void;
       setTarget: (el: HTMLElement | null) => void;
@@ -51,50 +51,6 @@ const Formatting = createContext<
   | undefined
 >(undefined);
 export const useBlockToolbar = () => useContext(Formatting);
-/** One bar per document, with a stable footprint even when selection isn't rich text. */
-export function PhoneFormattingBar() {
-  const state = useBlockToolbar();
-  const { desktop } = useControlLayout();
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const header =
-      ref.current?.closest("dialog")?.querySelector(":scope > header") ??
-      document.querySelector(".editor-document-header");
-    if (!header) {
-      ref.current?.style.setProperty("--formatting-top", "0px");
-      return;
-    }
-    const update = () => {
-      const height = Math.max(0, header.getBoundingClientRect().height);
-      ref.current?.style.setProperty("--formatting-top", `${height}px`);
-      header
-        .closest<HTMLElement>(".quote-workspace,.studio-template-layout")
-        ?.style.setProperty("--editor-header-height", `${height}px`);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(header);
-    return () => observer.disconnect();
-  }, [desktop]);
-  if (desktop) return null;
-  return (
-    <div
-      data-editor-chrome
-      className="phone-formatting-bar"
-      ref={ref}
-      role="toolbar"
-      aria-label="Document formatting"
-      onMouseDown={(e) => {
-        if ((e.target as Element).closest("button")) e.preventDefault();
-      }}
-    >
-      <div ref={state?.setTarget} className="document-formatting-target" />
-      {!state?.owner && (
-        <FormattingControls textStyle={state?.textStyle ?? null} />
-      )}
-    </div>
-  );
-}
 const Selection = createContext({
   active: null as string | null,
   selected: null as string | null,
@@ -182,6 +138,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     compact: boolean;
     map: Record<string, string>;
     onField?: () => void;
+    locked?: boolean;
   }>({ compact: false, map: {} });
   const [selected, setSelected] = useState<string | null>(null),
     [hovered, setHovered] = useState<string | null>(null);
@@ -244,7 +201,6 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (
-        desktop &&
         event.key === "Escape" &&
         !hasPopover() &&
         !document.querySelector("dialog:modal")
@@ -259,7 +215,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       const target = event.target as Element;
       if (
         target.closest(
-          ".phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover",
+          ".phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover,.phone-header-more,.phone-header-done,.phone-header-back,.template-history-phone,.phone-editor-menu,[aria-label='Done editing template section']",
         )
       )
         return;
@@ -293,7 +249,13 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
   return (
     <ControlConfig.Provider value={setConfig}>
       <ControlLayout.Provider
-        value={{ desktop, onField: undefined, ...config }}
+        value={{
+          ...config,
+          desktop: true,
+          phone: !desktop,
+          locked: !!config.locked,
+          onField: config.onField,
+        }}
       >
         <EditorHistoryProvider>
           <Formatting.Provider
@@ -301,6 +263,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
               target,
               setTarget,
               owner,
+              hasTextTarget: !!lastText.current || !!textStyle,
               textStyle,
               activate: (id) => {
                 activate(id);
@@ -388,7 +351,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                 typeof document !== "undefined" &&
                 createPortal(
                   <ToastSurface>
-                    Click into the text where you want the field
+                    Click into a paragraph first, then choose a field
                   </ToastSurface>,
                   document.body,
                 )}
@@ -404,6 +367,7 @@ const ControlConfig = createContext<
       compact: boolean;
       map: Record<string, string>;
       onField?: () => void;
+      locked?: boolean;
     }) => void)
   | null
 >(null);
@@ -411,7 +375,9 @@ export function EditorControlConfig({
   compact,
   map,
   onField,
+  locked = false,
 }: {
+  locked?: boolean;
   compact: boolean;
   map: Record<string, string>;
   onField?: () => void;
@@ -423,9 +389,10 @@ export function EditorControlConfig({
     configure?.({
       compact,
       map,
+      locked,
       onField: onField ? () => latest.current?.() : undefined,
     });
-  }, [compact, JSON.stringify(map), !!onField]);
+  }, [compact, JSON.stringify(map), !!onField, locked]);
   return null;
 }
 export function BlockAction({
@@ -575,7 +542,7 @@ export function BlockFrame({
         data-active={selection.active === id}
         data-selected={selection.selected === id}
         data-ai={ai}
-        data-controls={layout.desktop ? "v2" : "phone"}
+        data-controls="v2"
         tabIndex={0}
         role="group"
         aria-label={label}
@@ -623,60 +590,8 @@ export function BlockFrame({
             selection.select(id);
         }}
       >
-        {!layout.desktop && (
-          <div
-            data-editor-chrome
-            className="phone-block-actions"
-            role="toolbar"
-            aria-label={`${label} actions`}
-          >
-            {(ai || reviewPending) && (
-              <>
-                <span className="block-ai-marker">AI-written · review</span>
-                <button
-                  type="button"
-                  className="block-review-action"
-                  title="Mark reviewed"
-                  onClick={onReviewed}
-                >
-                  <span aria-hidden="true">✓</span> Mark reviewed
-                </button>
-              </>
-            )}
-            {reviewed && (
-              <>
-                <span className="block-reviewed">Reviewed ✓</span>
-                <button
-                  type="button"
-                  className="block-review-action"
-                  title="Undo review"
-                  onClick={onUndo}
-                >
-                  Undo review
-                </button>
-              </>
-            )}
-            <PageBreakAction block={id} />
-            {tools}
-          </div>
-        )}
-        {!layout.desktop &&
-          insert &&
-          (["above", "below"] as const).map((edge) => (
-            <button
-              key={edge}
-              type="button"
-              data-editor-chrome
-              className={`block-insert block-insert-${edge}`}
-              aria-label={`Add block ${edge}`}
-              title={`Add block ${edge}`}
-              onClick={(e) => insert(edge, e.currentTarget)}
-            >
-              +
-            </button>
-          ))}
         <div className="block-content">{children}</div>
-        {layout.desktop && selection.active === id && (
+        {layout.desktop && !layout.locked && selection.active === id && (
           <>
             <EditBar
               id={id}
@@ -685,11 +600,16 @@ export function BlockFrame({
               blockType={blockType}
               objectAction={objectAction}
             />
-            <GutterInsert onAdd={insert} dragHandle={dragHandle} />
+            <GutterInsert
+              onAdd={insert}
+              dragHandle={dragHandle}
+              layout={layout.phone ? "edges" : "gutter"}
+            />
           </>
         )}
-        {layout.desktop && onReviewed && (
+        {layout.desktop && !layout.locked && onReviewed && (
           <AiReviewCheck
+            layout={layout.phone ? "corner" : "side"}
             pending={ai}
             selected={selection.selected === id}
             busy={reviewBusy}

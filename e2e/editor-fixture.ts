@@ -1,9 +1,11 @@
+import { publicResult } from "../src/lib/service";
+import { proposalAction } from "../src/lib/proposal-actions";
 import type { Page } from "@playwright/test";
-import { setup, staff } from "../tests/helpers";
+import { setup, staff, clientActor } from "../tests/helpers";
 import { authoringPreview } from "../src/lib/authoring-preview";
 import { pdfPreview, type PdfPreview } from "../src/lib/pdf-preview";
 import { previewResult } from "../src/lib/preview";
-import type { Block, Quote } from "../src/lib/model";
+import type { Block, Proposal, Quote } from "../src/lib/model";
 export async function editorFixture(
   page: Page,
   long = false,
@@ -11,6 +13,7 @@ export async function editorFixture(
     content?: Block[];
     quote?: Quote | ((base: Quote) => Quote);
     beforeSave?: (input: any) => Promise<void>;
+    onReview?: (result: Proposal) => Promise<void>;
     onLayout?: (input: any, data: PdfPreview) => Promise<void>;
   } = {},
 ) {
@@ -83,12 +86,37 @@ export async function editorFixture(
           await options.beforeSave?.(input);
           active = await f.service.edit(active.id, input, staff);
         }
-        if (parts[2] === "review")
+        if (parts[2] === "send") {
+          const input = req.postDataJSON();
+          active = await f.service.send(
+            active.id,
+            staff,
+            input.confirm_ai_review,
+            input.sender_user_id,
+            { expected_revision: input.revision },
+          );
+        }
+        if (parts[2] === "actions") {
+          const input = req.postDataJSON();
+          active = await proposalAction(
+            f.repo,
+            active.id,
+            input.revision,
+            input.action,
+            staff,
+            "",
+            new Date(),
+            f.service,
+          );
+        }
+        if (parts[2] === "review") {
           active = await f.service.reviewSections(
             active.id,
             req.postDataJSON(),
             staff,
           );
+          await options.onReview?.(active);
+        }
         if (parts[2] === "preview-pdf") {
           calls.push(req.postDataJSON());
           value = await pdfPreview(
@@ -107,6 +135,8 @@ export async function editorFixture(
         } else if (parts[2] === "preview")
           value = previewResult(active, f.settings);
         else value = parts[1] ? active : { items: [active], total: 1 };
+      } else if (parts[0] === "public") {
+        value = publicResult(await f.service.byToken(parts[1]));
       } else if (parts[0] === "document-preview") {
         const p = authoringPreview(
           req.postDataJSON(),
@@ -143,6 +173,17 @@ export async function editorFixture(
     renders,
     calls,
     patches,
+    sendRemote: async () => {
+      active = await f.service.send(active.id, staff);
+      return active;
+    },
+    signRemote: async (input: unknown) => {
+      active = await f.service.sign(active.id, input, "client", clientActor, {
+        token: active.token!,
+        password: "",
+      });
+      return active;
+    },
     editRemote: async (input: Partial<import("../src/lib/model").Proposal>) => {
       active = await f.service.edit(
         active.id,

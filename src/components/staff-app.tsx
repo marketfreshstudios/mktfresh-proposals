@@ -292,9 +292,11 @@ export function StaffApp({
       headerAction = null;
       content = p.archived_at ? (
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
-      ) : (!action || action === "edit" || action === "send") &&
-        p.status === "draft" ? (
+      ) : (p.status === "draft" &&
+          (!action || action === "edit" || action === "send")) ||
+        (action === "edit" && p.source === "native" && !p.marked_won_by) ? (
         <ProposalEditor
+          appUrl={data.app_url}
           initial={p}
           initialTab={action === "send" ? "Review & send" : "Quote"}
           settings={data.settings}

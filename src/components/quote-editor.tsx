@@ -7,7 +7,6 @@ import { EditorNotice } from "./editor/editor-notice";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
-import { useManagedPopover } from "./editor-popovers";
 import { quoteTotalText } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
 import {
@@ -35,9 +34,9 @@ import {
 } from "../lib/editor-document";
 import {
   BlockScope,
-  PhoneFormattingBar,
   EditorControlConfig,
   useBlockFeedback,
+  ToastSurface,
   useBlockToolbar,
   BlockFrame,
   BlockAction,
@@ -86,6 +85,14 @@ import { FieldOptions, SubjectField, FieldTextArea } from "./field-options";
 import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
+function editorQuote(p: Proposal) {
+  return p.signers.length
+    ? p.quote.map((i) => ({
+        ...i,
+        default_selected: i.selected ?? i.default_selected,
+      }))
+    : draftItems(p.quote);
+}
 function Sheet({
   title,
   close,
@@ -135,6 +142,7 @@ function Sheet({
 }
 function QuoteEditorContent({
   initial,
+  appUrl,
   settings,
   catalog,
   families,
@@ -147,6 +155,7 @@ function QuoteEditorContent({
 }: {
   initialTab?: string;
   initial: Proposal;
+  appUrl: string;
   settings?: WorkspaceSettings | null;
   catalog: Item[];
   families: { id: string; name: string; active: boolean }[];
@@ -157,11 +166,17 @@ function QuoteEditorContent({
   documents?: ReferenceDocument[];
 }) {
   const blockFeedback = useBlockFeedback();
+  const [linkCopied, setLinkCopied] = useState(false);
+  useEffect(() => {
+    if (linkCopied) {
+      const timer = setTimeout(() => setLinkCopied(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [linkCopied]);
   const fields = useBlockToolbar();
-  const [fieldsOpen, setFieldsOpen] = useState(false);
-  useManagedPopover(fieldsOpen, () => setFieldsOpen(false));
   const pendingField = useRef<string | null>(null);
   const pendingOutline = useRef<string | null>(null);
+  const pendingReview = useRef(false);
   const [pdfOpen, setPdfOpen] = useState(false),
     [phoneOutlineOpen, setOutlineOpen] = useState(false);
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
@@ -171,7 +186,7 @@ function QuoteEditorContent({
     [p, setP] = useState<Proposal>({
       ...initial,
       content: initial.content,
-      quote: draftItems(initial.quote),
+      quote: editorQuote(initial),
     }),
     [customerErrors, setCustomerErrors] = useState<string[]>([]),
     [dirty, setDirty, dirtyRef] = useCurrentState(false),
@@ -182,7 +197,10 @@ function QuoteEditorContent({
       initialTab === "Review & send" ? "Send" : initialTab,
     ),
     [phoneDrawer, setDrawer] = useState(false),
-    [lineId, setLineId] = useState<string | null>(null),
+    [expandedItem, setExpandedItem] = useState<string | null>(
+      initial.quote[0]?.id ?? null,
+    ),
+    [itemDetails, setItemDetails] = useState<string | null>(null),
     [reference, setReference] = useState(false),
     [search, setSearch] = useState(""),
     [documentId, setDocumentId] = useState(documents[0]?.id ?? ""),
@@ -200,7 +218,6 @@ function QuoteEditorContent({
     [protectedLink, setProtected] = useState(!!initial.password_hash),
     [password, setPassword] = useState(""),
     [sending, setSending] = useState(false),
-    [reviewConfirm, setReviewConfirm] = useState(false),
     [reviewBusy, setReviewBusy] = useState(false),
     [insertAt, setInsertAt] = useState<number | null>(null),
     [replaceEmpty, setReplaceEmpty] = useState(false),
@@ -208,6 +225,9 @@ function QuoteEditorContent({
       block: number;
       clause: number;
     } | null>(null);
+  const locked = !!p.signers.length || p.versions.some((v) => v.frozen);
+  const closed = ["declined", "expired"].includes(p.status);
+  const live = !!p.token && p.versions.length > 0 && !closed && !locked;
   const paper = useRef<HTMLElement>(null),
     reviewCursor = useRef(-1);
   const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
@@ -223,12 +243,7 @@ function QuoteEditorContent({
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
     );
   };
-  const panels = useEditorPanels(
-    user?.actor ?? "local",
-    paper,
-    fullDocument,
-    true,
-  );
+  const panels = useEditorPanels(user?.actor ?? "local", paper, true, true);
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
   const outlineOpen =
@@ -283,7 +298,7 @@ function QuoteEditorContent({
     return () => window.removeEventListener("keydown", shortcut);
   }, [panels.canRight, panels.canLeft, panels.phone]);
   useEffect(() => {
-    if (!stale) return;
+    if (!stale && !locked) return;
     selection.clear();
     const guard = (event: KeyboardEvent) => {
       if (
@@ -296,47 +311,66 @@ function QuoteEditorContent({
     };
     window.addEventListener("keydown", guard, true);
     return () => window.removeEventListener("keydown", guard, true);
-  }, [stale]);
-  async function review(sectionIds: string[], reviewed: boolean) {
-    if (reviewBusy) return;
-    setReviewBusy(true);
-    try {
-      for (let attempts = 0; savingRef.current && attempts < 200; attempts++)
-        await new Promise((r) => setTimeout(r, 50));
-      if (!(await save())) return;
-      const captured = generation.current;
-      const result = await post<Proposal>(`/api/proposals/${p.id}/review`, {
-        revision: revision.current,
-        section_ids: sectionIds,
-        reviewed,
-      });
-      revision.current = result.revision;
-      if (captured === generation.current)
-        setP({ ...result, quote: draftItems(result.quote) });
-      else
-        setP((current) => ({
-          ...current,
-          revision: result.revision,
-          events: result.events,
-          ai_unreviewed: result.ai_unreviewed,
-          content: current.content.map((b) => {
-            const returned = result.content.find((v) => v.id === b.id);
-            return returned?.ai_review
-              ? { ...b, ai_review: returned.ai_review }
-              : b;
-          }),
-        }));
-      onSaved(result);
-      setReviewConfirm(false);
-      setError("");
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) setStale(true);
-      setError((e as Error).message);
-    } finally {
-      setReviewBusy(false);
-    }
+  }, [stale, locked]);
+  function review(sectionIds: string[], reviewed: boolean): Promise<boolean> {
+    if (sendFlight.current) return Promise.resolve(false);
+    if (reviewFlight.current) return reviewFlight.current;
+    const flight = (async () => {
+      setReviewBusy(true);
+      try {
+        // Review is a revision-changing write too. Drain the actual save promise,
+        // then keep other saves/Send behind this acknowledgment (not a timer).
+        if (!(await saveContent())) return false;
+        const captured = generation.current;
+        const result = await post<Proposal>(`/api/proposals/${p.id}/review`, {
+          revision: revision.current,
+          section_ids: sectionIds,
+          reviewed,
+        });
+        revision.current = result.revision;
+        latest.current =
+          captured === generation.current
+            ? { ...result, quote: editorQuote(result) }
+            : {
+                ...latest.current,
+                revision: result.revision,
+                events: result.events,
+                ai_unreviewed: result.ai_unreviewed,
+                content: latest.current.content.map((b) => {
+                  const returned = result.content.find((v) => v.id === b.id);
+                  return returned?.ai_review
+                    ? { ...b, ai_review: returned.ai_review }
+                    : b;
+                }),
+              };
+        setP(latest.current);
+        setLastSaved(result.updated_at ?? null);
+        onSaved(result);
+        setError("");
+        return true;
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409) setStale(true);
+        setError((e as Error).message);
+        return false;
+      } finally {
+        setReviewBusy(false);
+      }
+    })();
+    reviewFlight.current = flight;
+    void flight.finally(() => {
+      if (reviewFlight.current === flight) reviewFlight.current = null;
+    });
+    return flight;
   }
   function showReview() {
+    if (drawer) {
+      pendingReview.current = true;
+      document.querySelector<HTMLDialogElement>("dialog.tools-sheet")?.close();
+      return;
+    }
+    revealReview();
+  }
+  function revealReview() {
     const pending = contentSections(latest.current.content).filter(
       (s) => s.pending,
     );
@@ -365,31 +399,6 @@ function QuoteEditorContent({
     });
   }
   const reviewCount = pendingSections(p).length;
-  const reviewBanner = p.content.some((b) => b.ai_review) && (
-    <aside className="ai-review-banner" aria-label="AI review progress">
-      <strong>
-        {reviewCount
-          ? `${reviewCount} AI-written ${reviewCount === 1 ? "section needs" : "sections need"} review`
-          : "All AI-written sections reviewed ✓"}
-      </strong>
-      <div>
-        <Button
-          disabled={reviewBusy || !reviewCount}
-          onClick={() => setReviewConfirm(true)}
-        >
-          Mark all reviewed
-        </Button>
-        <button
-          type="button"
-          disabled={!reviewCount}
-          className="text-link"
-          onClick={showReview}
-        >
-          Show me
-        </button>
-      </div>
-    </aside>
-  );
   const subjectEdited = useRef(false),
     subjectTemplate = useRef("");
   useEffect(() => {
@@ -494,11 +503,12 @@ function QuoteEditorContent({
   const [lastSaved, setLastSaved] = useState<string | null>(
     initial.updated_at ?? null,
   );
-  const saveFlight = useRef<Promise<boolean> | null>(null);
+  const saveFlight = useRef<Promise<boolean> | null>(null),
+    reviewFlight = useRef<Promise<boolean> | null>(null),
+    sendFlight = useRef<Promise<boolean> | null>(null);
   const allowLeave = useRef(false);
   const generation = useRef(0),
     revision = useRef(initial.revision),
-    savingRef = useRef(false),
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
@@ -524,6 +534,7 @@ function QuoteEditorContent({
     setP(latest.current);
   }
   function change(update: Partial<Proposal>) {
+    if (locked) return;
     history.record(
       editable(latest.current),
       editable({ ...latest.current, ...update }),
@@ -559,7 +570,7 @@ function QuoteEditorContent({
       delete current.pagination;
       revision.current = current.revision;
       setLastSaved(current.updated_at ?? null);
-      latest.current = { ...current, quote: draftItems(current.quote) };
+      latest.current = { ...current, quote: editorQuote(current) };
       setP(latest.current);
       setDirty(false);
       setStale(false);
@@ -575,7 +586,15 @@ function QuoteEditorContent({
       return false;
     }
   }
+  async function settleEdits(): Promise<boolean> {
+    while (reviewFlight.current)
+      if (!(await reviewFlight.current)) return false;
+    return saveContent();
+  }
   function save(): Promise<boolean> {
+    return sendFlight.current ?? settleEdits();
+  }
+  function saveContent(): Promise<boolean> {
     // A derived plan never starts a write, changes the revision, or becomes a
     // recovered edit. Attach a fresh plan only to an actual content save.
     if (saveFlight.current) return saveFlight.current;
@@ -586,7 +605,6 @@ function QuoteEditorContent({
       return Promise.resolve(false);
     }
     const flight = (async () => {
-      savingRef.current = true;
       setSaving(true);
       try {
         while (dirtyRef.current) {
@@ -605,7 +623,7 @@ function QuoteEditorContent({
           revision.current = result.revision;
           setLastSaved(result.updated_at ?? new Date().toISOString());
           if (captured === generation.current) {
-            latest.current = { ...result, quote: draftItems(result.quote) };
+            latest.current = { ...result, quote: editorQuote(result) };
             setP(latest.current);
             setDirty(false);
             if (!recoveryRef.current) {
@@ -627,11 +645,31 @@ function QuoteEditorContent({
           setStale(true);
           dropPagePlan();
           setRecovery(edits);
+          // A signature is a permanent lock, not an editable revision conflict.
+          // Preserve the rejected local work while showing the accepted document.
+          try {
+            const current = await api<Proposal>(`/api/proposals/${p.id}`);
+            if (
+              current.signers.length ||
+              current.versions.some((v) => v.frozen)
+            ) {
+              revision.current = current.revision;
+              latest.current = { ...current, quote: editorQuote(current) };
+              setP(latest.current);
+              setDirty(false);
+              setStale(false);
+              setError("");
+              selection.clear();
+              onSaved(current);
+              return false;
+            }
+          } catch {
+            /* Keep the local suggestion when current state is unavailable. */
+          }
         }
         setError(e instanceof Error ? e.message : "Unable to save");
         return false;
       } finally {
-        savingRef.current = false;
         setSaving(false);
       }
     })();
@@ -642,10 +680,47 @@ function QuoteEditorContent({
     return flight;
   }
   useEffect(() => {
-    if (!dirty || saving || stale || error || offline || reviewBusy) return;
+    if (!dirty || saving || stale || error || offline || reviewBusy || sending)
+      return;
     const id = setTimeout(() => void save(), 900);
     return () => clearTimeout(id);
-  }, [p, dirty, saving, stale, error, offline, reviewBusy]);
+  }, [p, dirty, saving, stale, error, offline, reviewBusy, sending]);
+  function sendProposal(): Promise<boolean> {
+    if (sendFlight.current) return sendFlight.current;
+    const flight = (async () => {
+      setSending(true);
+      try {
+        if (!(await settleEdits())) return false;
+        paper.current?.dispatchEvent(new Event("pagination-flush"));
+        await post(`/api/proposals/${p.id}/send`, {
+          revision: revision.current,
+          pagination: pagePlan.current,
+          confirm_ai_review: confirmed,
+          sender_user_id: sender,
+          subject: emailSubject,
+          body: note,
+          ...(!protectedLink
+            ? { password: null }
+            : password
+              ? { password }
+              : {}),
+        });
+        location.href = `/proposals/${p.id}`;
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to send");
+        return false;
+      } finally {
+        setSending(false);
+      }
+    })();
+    // A second click/save cannot start another write while publication is pending.
+    sendFlight.current = flight;
+    void flight.finally(() => {
+      if (sendFlight.current === flight) sendFlight.current = null;
+    });
+    return flight;
+  }
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirtyRef.current && !allowLeave.current) {
@@ -786,7 +861,7 @@ function QuoteEditorContent({
             plan_terms: null,
           };
     setItems([...items, value]);
-    if (window.innerWidth < 700) setLineId(id);
+    setExpandedItem(id);
   }
   function move(operation: (content: Block[]) => Block[]) {
     return applyDocumentMove(
@@ -871,35 +946,66 @@ function QuoteEditorContent({
       )}
     </div>
   );
-  function itemCard(i: QuoteItem, full = true) {
+  function itemCard(i: QuoteItem) {
+    const expanded = expandedItem === i.id;
+    const tag = i.choice_group_id
+      ? `Choose one${i.default_selected ? " · default" : ""}`
+      : i.source === "custom" && !i.optional
+        ? "Required · custom line"
+        : i.optional
+          ? `Optional · ${i.default_selected ? "ticked for client" : "not ticked"}`
+          : "Required";
+    const amount = i.sublines
+      .map(
+        (s) =>
+          `${money(s.amount * s.qty, p.currency)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}`,
+      )
+      .join(" + ");
+    const aiPrice =
+      (i.ai_entered || p.ai_unreviewed) &&
+      i.sublines.some(
+        (s) =>
+          s.list_amount !== null &&
+          s.amount !== s.list_amount &&
+          !i.price_review?.[s.id],
+      );
     return (
-      <section className="quote-item" key={i.id}>
-        <header>
-          {full ? (
+      <section
+        className="quote-item quote-row"
+        data-expanded={expanded}
+        data-details={itemDetails === i.id}
+        key={i.id}
+      >
+        <button
+          type="button"
+          className="quote-row-toggle"
+          aria-expanded={expanded}
+          aria-controls={`quote-body-${i.id}`}
+          onClick={() => setExpandedItem(expanded ? null : i.id)}
+        >
+          <span className="quote-row-caption">
+            <strong>{i.name || "Untitled item"}</strong>
+            <small data-custom={i.source === "custom" && !i.optional}>
+              {tag}
+            </small>
+          </span>
+          {aiPrice && (
+            <span
+              className="quote-ai-dot"
+              title="AI price differs from product list"
+            />
+          )}
+          <strong className="quote-row-amount">{amount}</strong>
+          <span aria-hidden="true">{expanded ? "▴" : "▾"}</span>
+        </button>
+        {expanded && (
+          <div id={`quote-body-${i.id}`} className="quote-row-body">
             <input
               className="item-title"
               aria-label="Item name"
               value={i.name}
               onChange={(e) => updateItem(i.id, { name: e.target.value })}
             />
-          ) : (
-            <button className="item-title" onClick={() => setLineId(i.id)}>
-              {i.name}
-            </button>
-          )}
-          <Button
-            variant="ghost"
-            aria-label={`Remove ${i.name}`}
-            onClick={() => {
-              setItems(items.filter((v) => v.id !== i.id));
-              if (lineId === i.id) setLineId(null);
-            }}
-          >
-            × Remove
-          </Button>
-        </header>
-        {full ? (
-          <>
             <Field label="Description">
               <textarea
                 value={i.description}
@@ -910,34 +1016,34 @@ function QuoteEditorContent({
             </Field>
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
-                <div className="subline-label">
-                  <input
-                    aria-label={`Sub-line label for ${i.name}`}
-                    placeholder="Sub-line label (optional)"
-                    value={s.label ?? ""}
-                    onChange={(e) =>
-                      updateItem(i.id, {
-                        sublines: i.sublines.map((v) =>
-                          v.id === s.id ? { ...v, label: e.target.value } : v,
-                        ),
-                      })
-                    }
-                  />
-                  {i.sublines.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
-                      onClick={() =>
+                <div className="subline-grid">
+                  <div className="subline-label">
+                    <input
+                      aria-label={`Sub-line label for ${i.name}`}
+                      placeholder="Sub-line label (optional)"
+                      value={s.label ?? ""}
+                      onChange={(e) =>
                         updateItem(i.id, {
-                          sublines: i.sublines.filter((v) => v.id !== s.id),
+                          sublines: i.sublines.map((v) =>
+                            v.id === s.id ? { ...v, label: e.target.value } : v,
+                          ),
                         })
                       }
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-                <div className="subline-grid">
+                    />
+                    {i.sublines.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
+                        onClick={() =>
+                          updateItem(i.id, {
+                            sublines: i.sublines.filter((v) => v.id !== s.id),
+                          })
+                        }
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                   <Field label={`Amount · ${p.currency}`}>
                     <input
                       aria-label={`Amount ${s.label || i.name}`}
@@ -1012,7 +1118,11 @@ function QuoteEditorContent({
                   s.amount !== s.list_amount &&
                   !i.price_review?.[s.id] && (
                     <div className="price-review">
-                      <p>AI-entered price differs from list.</p>
+                      <p>
+                        Claude entered {money(s.amount, p.currency)}. The
+                        product list price is {money(s.list_amount, p.currency)}
+                        .
+                      </p>
                       <Button
                         onClick={() =>
                           updateItem(i.id, {
@@ -1038,7 +1148,10 @@ function QuoteEditorContent({
                       </Button>
                     </div>
                   )}
-                <details>
+                <details
+                  open={itemDetails === i.id}
+                  className="quote-mapping-details"
+                >
                   <summary>Billing mapping</summary>
                   <Field label="Stripe lookup key">
                     <input
@@ -1074,27 +1187,24 @@ function QuoteEditorContent({
                 </details>
               </div>
             ))}
-            <Button
-              variant="ghost"
-              onClick={() =>
-                updateItem(i.id, {
-                  sublines: [
-                    ...i.sublines,
-                    {
-                      id: uid(),
-                      amount: 0,
-                      list_amount: null,
-                      interval: "one_time",
-                      qty: 1,
-                      stripe_lookup_key: null,
-                      qbo_item_ref: null,
-                    },
-                  ],
-                })
-              }
-            >
-              + Sub-line
-            </Button>
+            {(i.schedule || i.min_term_months) && (
+              <p className="quote-plan-note">
+                {i.schedule && (
+                  <>
+                    {money(
+                      i.sublines.find((s) => s.interval !== "one_time")
+                        ?.amount ?? 0,
+                      p.currency,
+                    )}
+                    /mo for {i.schedule.after_paid_invoices} paid invoices, then{" "}
+                    {money(i.schedule.then.amount, p.currency)}/mo.{" "}
+                  </>
+                )}
+                {i.min_term_months && (
+                  <>{i.min_term_months}-month minimum commitment.</>
+                )}
+              </p>
+            )}
             <div className="item-options">
               <label className="check">
                 <input
@@ -1181,7 +1291,10 @@ function QuoteEditorContent({
                 </select>
               </Field>
             )}
-            <details>
+            <details
+              open={itemDetails === i.id}
+              className="quote-mapping-details"
+            >
               <summary>Plan terms</summary>
               {i.schedule && (
                 <p>
@@ -1198,25 +1311,52 @@ function QuoteEditorContent({
                 <p>{i.min_term_months}-month minimum commitment</p>
               )}
               <pre>{JSON.stringify(i.plan_terms, null, 2)}</pre>
-              <small>Terms and schedule come from the products.</small>
+              <small>Plan terms come from Products.</small>
             </details>
-          </>
-        ) : (
-          <div className="item-compact">
-            {i.sublines.map((s) => (
-              <p key={s.id}>
-                {s.label || intervalLabel(s.interval)}
-                <strong>{money(s.amount * s.qty, p.currency)}</strong>
-              </p>
-            ))}
-            <small>
-              {i.choice_group_id
-                ? "Choose one"
-                : i.optional
-                  ? "Optional"
-                  : "Required"}
-            </small>
-            <Button onClick={() => setLineId(i.id)}>Edit item</Button>
+
+            <footer className="quote-item-footer">
+              {" "}
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  updateItem(i.id, {
+                    sublines: [
+                      ...i.sublines,
+                      {
+                        id: uid(),
+                        amount: 0,
+                        list_amount: null,
+                        interval: "one_time",
+                        qty: 1,
+                        stripe_lookup_key: null,
+                        qbo_item_ref: null,
+                      },
+                    ],
+                  })
+                }
+              >
+                + Sub-line
+              </Button>
+              <button
+                type="button"
+                aria-expanded={itemDetails === i.id}
+                onClick={() =>
+                  setItemDetails(itemDetails === i.id ? null : i.id)
+                }
+              >
+                Details
+              </button>
+              <span />{" "}
+              <Button
+                variant="ghost"
+                aria-label={`Remove ${i.name}`}
+                onClick={() => {
+                  setItems(items.filter((v) => v.id !== i.id));
+                }}
+              >
+                Remove
+              </Button>
+            </footer>
           </div>
         )}
       </section>
@@ -1230,7 +1370,8 @@ function QuoteEditorContent({
   const quotePanel = (
     <div className="quote-panel stack">
       <p className="muted">
-        Enter agreed prices. Reference text never sets prices automatically.
+        Enter agreed prices. The app never sets prices. Drag ⋮⋮ to reorder; the
+        client sees this order.
       </p>
       <div className="quote-cards">
         <Reorder
@@ -1256,7 +1397,12 @@ function QuoteEditorContent({
             >
               {unitItems(id)[0].choice_group_id ? (
                 <div className="editor-choice-group">
-                  <h3>Choose one</h3>
+                  <header>
+                    <h3>Choose one</h3>
+                    <Button variant="ghost" onClick={() => unlink(id)}>
+                      Unlink
+                    </Button>
+                  </header>
                   <Reorder
                     ids={unitItems(id).map((i) => i.id)}
                     onMove={(from, to) => {
@@ -1273,26 +1419,18 @@ function QuoteEditorContent({
                   >
                     {unitItems(id).map((i) => (
                       <Sortable key={i.id} id={i.id} label={i.name}>
-                        <div className="desktop-item">{itemCard(i)}</div>
-                        <div className="phone-item">{itemCard(i, false)}</div>
+                        {itemCard(i)}
                       </Sortable>
                     ))}
                   </Reorder>
                 </div>
               ) : (
-                <>
-                  <div className="desktop-item">
-                    {itemCard(unitItems(id)[0])}
-                  </div>
-                  <div className="phone-item">
-                    {itemCard(unitItems(id)[0], false)}
-                  </div>
-                </>
+                itemCard(unitItems(id)[0])
               )}
             </Sortable>
           ))}
         </Reorder>
-        <Field label="Add from products">
+        <Field label="+ Add product">
           <select
             value=""
             onChange={(e) => {
@@ -1310,19 +1448,18 @@ function QuoteEditorContent({
               ))}
           </select>
         </Field>
-        <Button onClick={() => addItem()}>+ Custom item</Button>
+        <Button onClick={() => addItem()}>+ Custom</Button>
       </div>
       <footer>
         <p className="eyebrow">Client sees by default</p>
         <Totals lines={items} currency={p.currency} />
         <p className="muted">
-          Across all choices · One-time{" "}
-          {money(range.min.one_time_total, p.currency)}–
-          {money(range.max.one_time_total, p.currency)} · Monthly{" "}
+          Across all choices · {money(range.min.one_time_total, p.currency)}–
+          {money(range.max.one_time_total, p.currency)} one-time ·{" "}
           {money(range.min.monthly_total, p.currency)}–
-          {money(range.max.monthly_total, p.currency)}
+          {money(range.max.monthly_total, p.currency)}/mo
           {items.some((i) => i.sublines.some((s) => s.interval === "year")) &&
-            ` · Yearly ${money(range.min.yearly_total, p.currency)}–${money(range.max.yearly_total, p.currency)}`}
+            ` · ${money(range.min.yearly_total, p.currency)}–${money(range.max.yearly_total, p.currency)}/yr`}
         </p>
       </footer>
     </div>
@@ -1338,32 +1475,23 @@ function QuoteEditorContent({
         setInsertAt(0);
       }}
     >
-      {panels.phone ? (
-        "+"
-      ) : (
-        <>
-          <span className="empty-sheet-plus" aria-hidden="true">
-            +
-          </span>
-          <span>Add your first block</span>
-        </>
-      )}
+      <>
+        <span className="empty-sheet-plus" aria-hidden="true">
+          +
+        </span>
+        <span>Add your first block</span>
+      </>
     </button>
   ) : null;
   const sendPanel = (
-    <div className="stack">
+    <div className="send-panel stack">
       <h3>Ready to send?</h3>
-      <Field label="Valid until">
-        <ValidityField
-          timezone={settings?.timezone ?? "UTC"}
-          value={p.valid_until}
-          onChange={(valid_until) => change({ valid_until })}
-        />
-      </Field>
       <ul className="send-checklist">
         {ready.errors.map((e, n) => (
           <li className="readiness-row blocker" key={n}>
-            <Icon name="declined" />
+            <span className="readiness-badge" aria-hidden="true">
+              !
+            </span>
             <div>
               <strong>Blocker</strong>
               <p>{e}</p>
@@ -1387,7 +1515,9 @@ function QuoteEditorContent({
             : []),
         ].map((e, n) => (
           <li className="readiness-row warning" key={n}>
-            <Icon name="review" />
+            <span className="readiness-badge" aria-hidden="true">
+              ?
+            </span>
             <div>
               <strong>Review</strong>
               <p>{e}</p>
@@ -1396,21 +1526,45 @@ function QuoteEditorContent({
         ))}
         {ready.ready && (
           <li className="readiness-row success">
-            <Icon name="verified" />
+            <span className="readiness-badge" aria-hidden="true">
+              ✓
+            </span>
             <p>Content, quote and signature blocks are ready.</p>
           </li>
         )}
       </ul>
       {pending.length > 0 && (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={confirmed}
-            onChange={(e) => setConfirmed(e.target.checked)}
-          />
-          I have reviewed these AI-written sections: {pending.join(", ")}.
-        </label>
+        <div className="send-ai-review">
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => {
+                setConfirmed(e.target.checked);
+                if (e.target.checked)
+                  void review(
+                    contentSections(p.content)
+                      .filter((s) => s.pending)
+                      .map((s) => s.id),
+                    true,
+                  );
+              }}
+            />
+            I've reviewed these AI-written sections
+            <span>{pending.join(", ")}</span>
+          </label>
+          <button type="button" className="text-link" onClick={showReview}>
+            Show me
+          </button>
+        </div>
       )}
+      <Field label="Valid until">
+        <ValidityField
+          timezone={settings?.timezone ?? "UTC"}
+          value={p.valid_until}
+          onChange={(valid_until) => change({ valid_until })}
+        />
+      </Field>
       <Field label="From">
         <select value={sender} onChange={(e) => setSender(e.target.value)}>
           {staff.map((s) => (
@@ -1511,63 +1665,45 @@ function QuoteEditorContent({
         The client link is added automatically. From must match{" "}
         {settings?.sending_domain || "the workspace’s verified domain"}.
       </small>
-      <div className="actions">
-        <Button
-          onClick={async () => {
-            if (await save())
-              window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
-          }}
-        >
-          Preview
-        </Button>
-        <Button
-          variant="primary"
-          disabled={
-            !ready.ready ||
-            !emailLoaded ||
-            !!emailValidation ||
-            !!emailError ||
-            stale ||
-            offline ||
-            saving ||
-            sending ||
-            (protectedLink && !p.password_hash && password.length < 8)
-          }
-          note={
-            !ready.ready
-              ? "Resolve the checks above before sending."
-              : undefined
-          }
-          busy={sending}
-          onClick={async () => {
-            if (!(await save())) return;
-            setSending(true);
-            try {
-              paper.current?.dispatchEvent(new Event("pagination-flush"));
-              await post(`/api/proposals/${p.id}/send`, {
-                revision: revision.current,
-                pagination: pagePlan.current,
-                confirm_ai_review: confirmed,
-                sender_user_id: sender,
-                subject: emailSubject,
-                body: note,
-                ...(!protectedLink
-                  ? { password: null }
-                  : password
-                    ? { password }
-                    : {}),
-              });
-              location.href = `/proposals/${p.id}`;
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Unable to send");
-            } finally {
-              setSending(false);
+      <footer className="send-panel-footer">
+        <div className="actions">
+          <Button
+            onClick={async () => {
+              if (await save())
+                window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
+            }}
+          >
+            Preview as client
+          </Button>
+          <Button
+            variant="primary"
+            disabled={
+              !ready.ready ||
+              !emailLoaded ||
+              !!emailValidation ||
+              !!emailError ||
+              stale ||
+              offline ||
+              sending ||
+              (protectedLink && !p.password_hash && password.length < 8)
             }
-          }}
-        >
-          Send to {p.client.first_name || "client"}
-        </Button>
-      </div>
+            note={
+              !ready.ready
+                ? "Resolve the checks above before sending."
+                : undefined
+            }
+            busy={sending}
+            onClick={() => void sendProposal()}
+          >
+            Send to {p.client.first_name || "client"}
+          </Button>
+        </div>
+        <p className="send-blocked-reason" role="status">
+          {offline
+            ? "Reconnect to send"
+            : (ready.errors[0] ?? (emailError || emailValidation || ""))}
+        </p>
+      </footer>
     </div>
   );
   const focusBlock = (id: string) => {
@@ -1591,6 +1727,10 @@ function QuoteEditorContent({
       `block-${b.id}` === selection.selected ||
       b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
   );
+  useEffect(() => {
+    // Return from isolated phone editing to the complete existing sheet projection.
+    paper.current?.dispatchEvent(new Event("pagination-layout-change"));
+  }, [panels.phone, selection.selected]);
   const currentSectionId =
     selectedIndex < 0
       ? null
@@ -1660,9 +1800,29 @@ function QuoteEditorContent({
     </>
   );
   const panelBody = (
-    <ReadOnlyRegion locked={stale}>
+    <ReadOnlyRegion locked={stale || locked}>
       {tab === "Quote" ? (
-        quotePanel
+        locked ? (
+          <div className="quote-panel">
+            {p.quote.map((i) => (
+              <section className="locked-quote-row" key={i.id}>
+                <strong>{i.name}</strong>
+                <p>{i.description}</p>
+                <p>
+                  {i.sublines
+                    .map(
+                      (s) =>
+                        `${money(s.amount * s.qty, p.currency)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}`,
+                    )
+                    .join(" + ")}
+                </p>
+              </section>
+            ))}
+            <Totals lines={p.quote} currency={p.currency} />
+          </div>
+        ) : (
+          quotePanel
+        )
       ) : tab === "Fields" ? (
         <FieldOptions
           map={map}
@@ -1681,10 +1841,8 @@ function QuoteEditorContent({
           inherited={p.template_style_overrides}
           value={p.style_overrides}
           onChange={(style_overrides) => change({ style_overrides })}
-          resetLabel="Reset to workspace"
-          onReset={() =>
-            change({ style_overrides: {}, template_style_overrides: {} })
-          }
+          resetLabel="Reset to template"
+          onReset={() => change({ style_overrides: {} })}
         />
       ) : (
         sendPanel
@@ -2329,12 +2487,16 @@ function QuoteEditorContent({
       data-stale={stale}
       data-compact={panels.compact}
       data-shell-mode={panels.phone ? "phone" : "v2"}
+      data-phone-editing={panels.phone && !!selection.selected}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
       <EditorControlConfig
         compact={panels.compact}
+        locked={locked || stale}
         map={map}
-        onField={panels.right ? () => openTools("Fields") : undefined}
+        onField={
+          panels.phone || panels.right ? () => openTools("Fields") : undefined
+        }
       />
       <PageBreakController
         content={p.content}
@@ -2346,10 +2508,91 @@ function QuoteEditorContent({
         }}
         className="quote-editor-top"
         phone={panels.phone}
+        editingTitle={
+          selection.selected
+            ? (sections.find((s) => s.indices.includes(selectedIndex))?.title ??
+              "Block")
+            : undefined
+        }
+        onDone={() => {
+          selection.clear();
+          (document.activeElement as HTMLElement)?.blur();
+        }}
+        onSections={() => setOutlineOpen(true)}
         tablet={panels.viewportWidth >= 700 && panels.viewportWidth < 960}
         compact={panels.viewportWidth < 1180}
-        locked={false}
-        published="draft"
+        locked={locked}
+        published={live ? "live" : "draft"}
+        liveLabel={
+          live
+            ? `Sent · ${p.first_viewed_at ? `Viewed ${readableDate(p.first_viewed_at, p.workspace_settings?.timezone)}` : "Not viewed"}`
+            : closed
+              ? p.status === "expired"
+                ? "Expired"
+                : "Lost"
+              : undefined
+        }
+        notLiveReason={p.live_blockers?.[0]}
+        primaryLabel={
+          locked
+            ? "Duplicate as new draft"
+            : closed
+              ? "Reopen"
+              : live
+                ? "Copy client link"
+                : "Review & send"
+        }
+        onPrimary={async () => {
+          if (locked) {
+            try {
+              const next = await post<Proposal>(
+                `/api/proposals/${p.id}/actions`,
+                { revision: revision.current, action: "duplicate" },
+              );
+              if (recoveryRef.current) {
+                const edits = editable(recoveryRef.current as Proposal);
+                await api(`/api/proposals/${next.id}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({
+                    ...edits,
+                    valid_until: next.valid_until,
+                    revision: next.revision,
+                  }),
+                });
+              }
+              location.href = `/proposals/${next.id}`;
+            } catch (e) {
+              setError((e as Error).message);
+            }
+            return;
+          }
+          if (!(await save())) return;
+          if (closed) {
+            try {
+              const next = await post<Proposal>(
+                `/api/proposals/${p.id}/actions`,
+                { revision: revision.current, action: "mark_sent" },
+              );
+              revision.current = next.revision;
+              latest.current = next;
+              setP(next);
+              onSaved(next);
+              setError("");
+            } catch (e) {
+              setError((e as Error).message);
+              openTools("Send");
+            }
+          } else if (live) {
+            try {
+              await navigator.clipboard.writeText(
+                new URL(`/p/${p.token}`, appUrl).href,
+              );
+              setLinkCopied(true);
+            } catch {
+              blockFeedback.error("Unable to copy the client link");
+            }
+          } else openTools("Send");
+        }}
         stale={stale}
         recovered={!!recovery}
         aiPending={reviewCount}
@@ -2374,44 +2617,7 @@ function QuoteEditorContent({
         offline={offline}
         lastSaved={lastSaved}
         retry={() => void (stale ? reloadConflict() : save())}
-      >
-        <Button
-          variant="ghost"
-          disabled={saving || stale}
-          onClick={async () => {
-            if (await save())
-              window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
-          }}
-        >
-          Preview as client
-        </Button>
-        <Button
-          disabled={saving || stale}
-          onClick={() => {
-            paper.current?.dispatchEvent(new Event("pagination-flush"));
-            setPdfOpen(true);
-          }}
-        >
-          Preview PDF
-        </Button>
-        <Button variant="primary" onClick={() => openTools("Send")}>
-          Review & send
-        </Button>
-        <span className="tablet-tools">
-          <Button
-            data-field-insert
-            onClick={() => {
-              if (panels.phone) setFieldsOpen(true);
-              else {
-                setTab("Fields");
-                setDrawer(true);
-              }
-            }}
-          >
-            Fields
-          </Button>
-        </span>
-      </EditorHeader>
+      />
       {panels.phone && offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
           {deviceSaved
@@ -2419,6 +2625,12 @@ function QuoteEditorContent({
             : "Keep this page open to retain your changes."}{" "}
           We’ll save them when you’re back online.
         </Banner>
+      )}
+      {linkCopied && <ToastSurface>Client link copied</ToastSurface>}
+      {(p.unpublished_work || (locked && recovery)) && (
+        <p className="editor-retained-work" role="status">
+          Unpublished changes were not part of the signed version
+        </p>
       )}
       {stale && (
         <EditorNotice kind="stale">
@@ -2455,6 +2667,7 @@ function QuoteEditorContent({
             </div>
           </details>
           <Button
+            disabled={locked}
             onClick={async () => {
               const edits = editable(
                 staleRef.current ? latest.current : (recovery as Proposal),
@@ -2507,147 +2720,17 @@ function QuoteEditorContent({
               if (id) focusBlock(id);
             }}
           >
-            <ReadOnlyRegion locked={stale}>{outline}</ReadOnlyRegion>
+            <ReadOnlyRegion locked={stale || locked}>{outline}</ReadOnlyRegion>
           </SectionsPanel>
-        ) : (
-          <aside
-            className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
-          >
-            <div className="editor-sidebar-header">
-              <button
-                className="sidebar-arrow"
-                type="button"
-                aria-label={
-                  panels.left
-                    ? "Collapse Pages sidebar"
-                    : "Expand Pages sidebar"
-                }
-                title={
-                  panels.left
-                    ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                    : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                }
-                onClick={toggleLeft}
-              >
-                <PanelChevron direction={panels.left ? "left" : "right"} />
-              </button>
-            </div>
-            {panels.left ? (
-              <div className="editor-sidebar-scroll">{outline}</div>
-            ) : (
-              <button
-                type="button"
-                aria-label="Open Pages"
-                title="Pages"
-                onClick={toggleLeft}
-              >
-                <Icon name="file-lines" />
-              </button>
-            )}
-          </aside>
-        )}
+        ) : null}
         <main className="editor-document-region">
-          <ReadOnlyRegion locked={stale}>
-            {panels.phone && (
-              <div className="editor-panel-controls">
-                <div className="paper-zoom">
-                  <output aria-label="Editor zoom">
-                    {Math.round(panels.scale * 100)}%
-                  </output>
-                  <Button onClick={() => panels.setFit((v) => !v)}>
-                    {panels.fit ? "100%" : "Fit"}
-                  </Button>
-                </div>
-              </div>
-            )}
-            <PhoneFormattingBar />
+          <ReadOnlyRegion locked={stale || locked}>
             {blockFeedback.feedback}
-            <div className="phone-section-list">
-              <p className="eyebrow">Proposal for {p.client.company}</p>
-              <h1>{p.title}</h1>
-              <p>
-                {p.content.length
-                  ? "Choose a section to edit."
-                  : "Add your first section."}
-              </p>
-              {firstBlock}
-              {sections.flatMap((s, n) => [
-                <button key={s.id} onClick={() => setSection(n)}>
-                  <span>{String(n + 1).padStart(2, "0")}</span>
-                  <strong>{s.title}</strong>
-                  <small>{s.pending ? "Review" : "✓"} ›</small>
-                </button>,
-                ...s.indices
-                  .filter(
-                    (j) =>
-                      p.content[j].type === "heading" &&
-                      (p.content[j].level ?? 1) > 1,
-                  )
-                  .map((j) => (
-                    <button
-                      key={`sub-${p.content[j].id ?? j}`}
-                      className={`outline-subheading outline-level-${p.content[j].level}`}
-                      onClick={() => {
-                        setSection(n);
-                        requestAnimationFrame(() =>
-                          document
-                            .querySelector(
-                              `[data-block-id="block-${p.content[j].id ?? j}"]`,
-                            )
-                            ?.scrollIntoView({ block: "center" }),
-                        );
-                      }}
-                    >
-                      <strong>
-                        {p.content[j].text || "Untitled subheading"}
-                      </strong>
-                    </button>
-                  )),
-              ])}
-              <Button
-                onClick={() => {
-                  setTab("Quote");
-                  if (window.innerWidth < 1100) setDrawer(true);
-                }}
-              >
-                Edit quote
-              </Button>
-            </div>
-            <div className="phone-section-nav">
-              <Button
-                onClick={() => {
-                  setFullDocument(false);
-                  setSection(null);
-                }}
-              >
-                ‹ Sections
-              </Button>
-              <Button onClick={() => setFullDocument((v) => !v)}>
-                {fullDocument ? "One section" : "Full document"}
-              </Button>
-              <div>
-                <Button
-                  aria-label="Previous section"
-                  disabled={section === null || section === 0}
-                  onClick={() => setSection((section ?? 1) - 1)}
-                >
-                  ‹ Previous
-                </Button>
-                <Button
-                  aria-label="Next section"
-                  disabled={section === null || section >= sections.length - 1}
-                  onClick={() => setSection((section ?? 0) + 1)}
-                >
-                  Next ›
-                </Button>
-              </div>
-            </div>
-            {reviewBanner}
             <div className="pdf-paper-viewport">
               <div
                 className="pdf-paper-size"
                 style={
-                  panels.phone && panels.printMode
+                  false
                     ? {
                         width: 816 * panels.scale,
                         height: panels.height * panels.scale,
@@ -2657,7 +2740,7 @@ function QuoteEditorContent({
               >
                 <article
                   ref={paper}
-                  data-sheet-view={!panels.phone ? "true" : undefined}
+                  data-sheet-view="true"
                   data-editor-density={
                     resolveStyles(
                       p.workspace_settings,
@@ -2668,21 +2751,16 @@ function QuoteEditorContent({
                   style={
                     {
                       "--accent": current.workspace_settings?.accent_colour,
-                      "--editor-ui-scale":
-                        panels.phone && panels.printMode ? 1 / panels.scale : 1,
+                      "--editor-ui-scale": false ? 1 / panels.scale : 1,
                       "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
                       "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
                       "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
                       "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
-                      transform:
-                        panels.phone && panels.printMode
-                          ? `scale(${panels.scale})`
-                          : undefined,
+                      transform: false ? `scale(${panels.scale})` : undefined,
                       transformOrigin: "top left",
-                      minHeight:
-                        panels.phone && panels.printMode
-                          ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
-                          : undefined,
+                      minHeight: false
+                        ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
+                        : undefined,
                     } as CSSProperties
                   }
                   className="paper editor-paper proposal-typography document-reading"
@@ -2694,8 +2772,10 @@ function QuoteEditorContent({
                       p.template_style_overrides,
                       p.style_overrides,
                     )}
-                    enabled={panels.printMode}
-                    sheets={!panels.phone}
+                    enabled={
+                      panels.printMode && !(panels.phone && selection.selected)
+                    }
+                    sheets
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,
@@ -2724,7 +2804,7 @@ function QuoteEditorContent({
                       p.workspace_settings?.accent_colour,
                     )}
                   </style>
-                  {(panels.phone || p.content.length > 0) && (
+                  {p.content.length > 0 && (
                     <DocumentCover
                       title={p.title}
                       workspace={
@@ -2741,7 +2821,9 @@ function QuoteEditorContent({
                       sender={map["sender.name"]}
                       validUntil={p.valid_until}
                       timezone={p.workspace_settings?.timezone}
-                      onTitle={(title) => change({ title })}
+                      onTitle={
+                        locked ? undefined : (title) => change({ title })
+                      }
                     />
                   )}
                   {firstBlock}
@@ -2755,6 +2837,12 @@ function QuoteEditorContent({
                   >
                     {sections.map((s, n) => (
                       <div
+                        data-phone-section={n}
+                        data-phone-section-active={
+                          sections.findIndex((s) =>
+                            s.indices.includes(selectedIndex),
+                          ) === n
+                        }
                         className={section === n ? "phone-active-section" : ""}
                         key={s.id}
                       >
@@ -2779,14 +2867,13 @@ function QuoteEditorContent({
                 </article>
               </div>
             </div>
-            {reviewBanner}
           </ReadOnlyRegion>
         </main>
-        {!panels.phone ? (
+        {
           <ToolsPanel
             tab={tab as EditorTab}
-            open={panels.right}
-            mode={panels.mode}
+            open={panels.phone ? phoneDrawer : panels.right}
+            mode={panels.phone ? "sheet" : panels.mode}
             onTab={openTools}
             onToggle={toggleRight}
             totals={`${money(totals(items).one_time_total, p.currency)} · ${money(totals(items).monthly_total, p.currency)}/mo`}
@@ -2794,55 +2881,15 @@ function QuoteEditorContent({
               const path = pendingField.current;
               pendingField.current = null;
               if (path) fields?.insert(path);
+              if (pendingReview.current) {
+                pendingReview.current = false;
+                requestAnimationFrame(revealReview);
+              }
             }}
           >
             {panelBody}
           </ToolsPanel>
-        ) : (
-          <aside
-            className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
-          >
-            <div className="editor-sidebar-header">
-              <button
-                type="button"
-                className="sidebar-arrow"
-                aria-label={
-                  panels.right
-                    ? "Collapse tools sidebar"
-                    : "Expand tools sidebar"
-                }
-                title={
-                  panels.right
-                    ? "Collapse tools (⌘\\ / Ctrl+\\)"
-                    : "Expand tools (⌘\\ / Ctrl+\\)"
-                }
-                onClick={toggleRight}
-              >
-                <PanelChevron direction={panels.right ? "right" : "left"} />
-              </button>
-            </div>
-            {panels.right
-              ? panel
-              : (
-                  [
-                    ["Quote", "table"],
-                    ["Fields", "code"],
-                    ["Styles", "heading"],
-                    ["Send", "review"],
-                  ] as const
-                ).map(([name, icon]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    aria-label={`Open ${name}`}
-                    title={name}
-                    onClick={() => openTools(name)}
-                  >
-                    <Icon name={icon} />
-                  </button>
-                ))}
-          </aside>
-        )}
+        }
       </div>
       {pdfOpen && (
         <PdfPreviewViewer
@@ -2852,7 +2899,7 @@ function QuoteEditorContent({
       )}
       {phoneOutlineOpen && (
         <Sheet
-          title="Pages"
+          title="Sections"
           close={() => setOutlineOpen(false)}
           extra="sections-overlay"
           onCloseComplete={() => {
@@ -2864,54 +2911,6 @@ function QuoteEditorContent({
           <div className="editor-outline outline-overlay-content">
             {outline}
           </div>
-        </Sheet>
-      )}
-      {fieldsOpen && (
-        <Sheet
-          title="Fields"
-          close={() => setFieldsOpen(false)}
-          onCloseComplete={() => {
-            const path = pendingField.current;
-            pendingField.current = null;
-            if (path) fields?.insert(path);
-          }}
-        >
-          {(dismiss) => (
-            <FieldOptions
-              map={map}
-              onInsert={(path) => {
-                pendingField.current = path;
-                dismiss();
-              }}
-            />
-          )}
-        </Sheet>
-      )}
-      {reviewConfirm && (
-        <Sheet
-          title="Review all AI-written sections"
-          close={() => setReviewConfirm(false)}
-        >
-          <p>Confirm you have read these sections:</p>
-          <ul>
-            {sections
-              .filter((s) => s.pending)
-              .map((s) => (
-                <li key={s.id}>{s.title}</li>
-              ))}
-          </ul>
-          <p>Price holds still require Use list or Keep.</p>
-          <Button
-            disabled={reviewBusy}
-            onClick={() =>
-              void review(
-                sections.filter((s) => s.pending).map((s) => s.id),
-                true,
-              )
-            }
-          >
-            Confirm all reviewed
-          </Button>
         </Sheet>
       )}
       {insertAt !== null && (
@@ -3004,29 +3003,6 @@ function QuoteEditorContent({
             </Sheet>
           );
         })()}
-      {phoneDrawer && (
-        <Sheet
-          title={tab}
-          close={() => setDrawer(false)}
-          extra="tools-sheet"
-          onCloseComplete={() => {
-            const path = pendingField.current;
-            pendingField.current = null;
-            if (path) fields?.insert(path);
-          }}
-        >
-          {panel}
-        </Sheet>
-      )}
-      {lineId && items.find((i) => i.id === lineId) && (
-        <Sheet
-          title="Edit item"
-          close={() => setLineId(null)}
-          extra="line-sheet"
-        >
-          {itemCard(items.find((i) => i.id === lineId)!)}
-        </Sheet>
-      )}
       {reference && (
         <Sheet
           title="Pricing reference"

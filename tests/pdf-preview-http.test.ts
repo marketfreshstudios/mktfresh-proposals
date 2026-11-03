@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { setup, staff } from "./helpers";
+import { setup, staff, signature } from "./helpers";
 import { handle } from "../src/lib/http";
 const state = vi.hoisted(() => ({
   rt: null as any,
@@ -100,7 +100,7 @@ it("requires staff, rejects cross-workspace IDs and stale revisions, and never p
   expect(download.headers.get("cache-control")).toContain("no-store");
   expect(await download.text()).toBe("%PDF-preview");
 });
-it("a sent snapshot cannot accept edited preview input", async () => {
+it("a live proposal accepts staff preview input without changing its published snapshot", async () => {
   const f = await setup();
   state.rt = { repo: f.repo, storage: { put: vi.fn(), get: vi.fn() } };
   state.user = { ...staff, workspace_id: f.repo.workspaceId };
@@ -125,8 +125,8 @@ it("a sent snapshot cannot accept edited preview input", async () => {
   );
   expect(
     (await handle(req, ["proposals", sent.id, "preview-pdf"])).status,
-  ).toBe(409);
-  expect(state.render).not.toHaveBeenCalled();
+  ).toBe(200);
+  expect(state.render).toHaveBeenCalledOnce();
   expect(JSON.stringify(await f.repo.get(sent.id))).toBe(before);
 });
 it("template document previews are staff-only ephemeral specimens with no persistence", async () => {
@@ -171,4 +171,82 @@ it("template document previews are staff-only ephemeral specimens with no persis
   );
   expect(put).not.toHaveBeenCalled();
   expect(JSON.stringify(await f.repo.get(f.draft.id))).toBe(before);
+});
+
+it("staff PATCH publishes on the same public endpoint; invalid work and stale signatures cannot replace the client version", async () => {
+  const f = await setup();
+  const sent = await f.service.send(f.draft.id, staff);
+  state.rt = {
+    repo: f.repo,
+    service: f.service,
+    worker: { providers: { qbo: {} } },
+  };
+  state.user = { ...staff, workspace_id: f.repo.workspaceId };
+  const { publicRuntime } = await import("../src/lib/runtime");
+  vi.mocked(publicRuntime).mockResolvedValue(state.rt);
+  const update = async (content: unknown[], revision: number, title: string) =>
+    handle(
+      new Request(`http://localhost/api/proposals/${sent.id}`, {
+        method: "PATCH",
+        headers: {
+          authorization: "Bearer staff",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ revision, content, title }),
+      }),
+      ["proposals", sent.id],
+    );
+  const get = async () =>
+    handle(new Request(`http://localhost/api/public/${sent.token}`), [
+      "public",
+      sent.token!,
+    ]);
+  const changed = [
+    ...sent.content,
+    {
+      id: crypto.randomUUID(),
+      type: "paragraph",
+      text: "Published through PATCH",
+    },
+  ];
+  const response = await update(changed, sent.revision, "Live title");
+  expect(response.status).toBe(200);
+  let work = await response.json();
+  expect(work.token).toBe(sent.token);
+  let publicResponse = await get();
+  expect(publicResponse.status).toBe(200);
+  const published = await publicResponse.json();
+  expect(published.html).toContain("Published through PATCH");
+  expect(published.title).toBe("Live title");
+  // Public access records a view; get the current CAS revision before the next edit.
+  work = await f.repo.get(sent.id);
+  const beforeInvalidJobs = structuredClone(work.jobs);
+  const invalid = await update(
+    changed.filter((b) => b.type !== "pricing_table"),
+    work.revision,
+    "Not ready title",
+  );
+  expect(invalid.status).toBe(200);
+  expect((await invalid.json()).live_blockers).toContain("Add a pricing table");
+  publicResponse = await get();
+  expect((await publicResponse.json()).title).toBe("Live title");
+  work = await f.repo.get(sent.id);
+  const sign = async (hash: string) =>
+    handle(
+      new Request(`http://localhost/api/public/${sent.token}/sign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...signature(work.revision),
+          reviewed_hash: hash,
+        }),
+      }),
+      ["public", sent.token!, "sign"],
+    );
+  expect((await sign(sent.versions[0].content_hash)).status).toBe(409);
+  // Service assertions separately cover sealing; do not start real after()/job work here.
+  const saved = await f.repo.get(sent.id);
+  expect(saved!.signers).toHaveLength(0);
+  expect(saved!.versions).toHaveLength(2);
+  expect(saved!.jobs).toEqual(beforeInvalidJobs);
 });

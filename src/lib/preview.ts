@@ -11,7 +11,8 @@ export function previewProposal(
   const p = structuredClone(proposal);
   p.workspace_settings =
     p.status === "draft" ? settings : (p.workspace_settings ?? settings);
-  if (p.status === "draft" || !p.versions.length) {
+  if (!p.signers.length) {
+    delete p.published_state;
     p.quote = draftItems(p.quote);
 
     const version = {

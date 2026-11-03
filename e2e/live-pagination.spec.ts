@@ -1,3 +1,4 @@
+import { pageMetrics, resolveStyles } from "../src/lib/proposal-styles";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 test.beforeEach(({ page }) => page.setDefaultTimeout(10000));
@@ -58,15 +59,72 @@ test("Enter pushes a bottom heading to its next sheet within the next animation 
   const paper = page.locator(".editor-paper"),
     heading = paper.locator(`[data-block-id="block-${content[1].id}"]`);
   await expect(paper).toHaveAttribute("data-pagination", /starts/);
-  const gap = await heading.evaluate((el) => {
-    const root = el.closest<HTMLElement>(".editor-paper")!,
-      scale = root.getBoundingClientRect().width / root.offsetWidth;
-    return (
-      978 -
-      (el.getBoundingClientRect().bottom - root.getBoundingClientRect().top) /
-        scale
-    );
-  });
+  const metrics = pageMetrics(
+    resolveStyles(
+      f.settings,
+      f.active().template_style_overrides,
+      f.active().style_overrides,
+    ),
+  );
+  const gap = await heading.evaluate((el, metrics) => {
+    const root = el.closest<HTMLElement>(".editor-paper")!;
+    // Fixture calibration uses the canonical Letter measure, never the responsive sheet.
+    const clone = root.cloneNode(true) as HTMLElement;
+    clone.dataset.pageMeasurement = "true";
+    Object.assign(clone.style, {
+      position: "absolute",
+      left: "0px",
+      top: "0px",
+      visibility: "hidden",
+      pointerEvents: "none",
+      transform: "none",
+      display: "block",
+    });
+    for (const [key, value] of Object.entries({
+      width: `${metrics.width}px`,
+      minWidth: `${metrics.width}px`,
+      maxWidth: "none",
+      minHeight: "0px",
+      height: "auto",
+      padding: `${metrics.margins.top * 96}px ${metrics.margins.right * 96}px ${metrics.margins.bottom * 96}px ${metrics.margins.left * 96}px`,
+    }))
+      clone.style.setProperty(
+        key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`),
+        value,
+        "important",
+      );
+    clone
+      .querySelectorAll(
+        "style,[data-pagination-spacer],.editor-page-sheets,.document-page-count",
+      )
+      .forEach((n) => n.remove());
+    clone.querySelectorAll<HTMLElement>("[data-layout-space]").forEach((n) => {
+      n.style.removeProperty("margin-top");
+      delete n.dataset.layoutSpace;
+    });
+    clone
+      .querySelectorAll<HTMLElement>(
+        ".quote-sortable,.document-section,:scope > div",
+      )
+      .forEach((n) => {
+        n.style.transform = "none";
+        n.style.setProperty("display", "block", "important");
+      });
+    root.parentElement!.append(clone);
+    try {
+      return (
+        978 -
+        (clone
+          .querySelector(
+            `[data-block-id="${el.getAttribute("data-block-id")}"]`,
+          )!
+          .getBoundingClientRect().bottom -
+          clone.getBoundingClientRect().top)
+      );
+    } finally {
+      clone.remove();
+    }
+  }, metrics);
   // Put the real heading within one blank line of the margin, independent of host font metrics.
   await page.addStyleTag({
     content: `[data-block-id="block-${content[0].id}"] > .block-content{padding-bottom:${gap}px!important}`,
@@ -279,9 +337,7 @@ test("choice groups, signatures and a fitting pricing table stay on one sheet, a
   }
   const before = await paper.getAttribute("data-pagination");
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
-  await page
-    .getByRole("combobox", { name: "Density", exact: true })
-    .selectOption("comfortable");
+  await page.getByRole("button", { name: "Comfortable", exact: true }).click();
   await expect
     .poll(() => paper.getAttribute("data-pagination"))
     .not.toBe(before);

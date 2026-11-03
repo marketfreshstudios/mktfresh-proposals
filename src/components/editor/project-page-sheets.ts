@@ -56,6 +56,7 @@ export function projectPageSheets(
   const origin = clone.getBoundingClientRect().top;
   const topPadding = parseFloat(computed.paddingTop),
     bottomPadding = parseFloat(computed.paddingBottom);
+  const gap = parseFloat(computed.getPropertyValue("--sheet-gap")) || 52;
   const boxes: SheetBox[] = [];
   const spaces = new Map<HTMLElement, SourceSpacer[]>();
   let pageTop = 0,
@@ -76,8 +77,8 @@ export function projectPageSheets(
     );
   const finish = (bottom: number) => {
     const height = Math.max(320, bottom - pageTop + bottomPadding);
-    boxes.push({ top: pageTop, height });
-    pageTop += height + 52;
+    boxes.push({ top: pageTop, height, gap });
+    pageTop += height + gap;
   };
   try {
     for (const start of plan.starts) {

@@ -59,6 +59,10 @@ export function readiness(
           );
     }
   }
+  if (!p.content.some((b) => b.type === "pricing_table"))
+    errors.push("Add a pricing table");
+  if (p.content.filter((b) => b.type === "pricing_table").length > 1)
+    errors.push("Only one pricing table per proposal");
   if (!p.quote.length) errors.push("Quote required");
   if (new Set(p.quote.map((l) => l.id)).size !== p.quote.length)
     errors.push("Duplicate line IDs");

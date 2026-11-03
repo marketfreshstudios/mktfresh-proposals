@@ -515,8 +515,7 @@ test("requested PR 2 captures at 1440, 1024 and unchanged phone 375", async ({
       "true",
     );
     await page.evaluate(() => document.fonts.ready);
-    if (width < 700)
-      await page.locator(".phone-section-list button").first().click();
+    if (width < 700) await expect(page.locator(".editor-paper")).toBeVisible();
     const frame = await select(page, f.blocks[1]);
     await frame.locator(".tiptap").focus();
     await page.screenshot({

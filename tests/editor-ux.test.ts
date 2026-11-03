@@ -168,14 +168,14 @@ it("title and review changes never rewrite a sent/signed version or hash", async
       { revision: frozen.revision, title: "New title" },
       staff,
     ),
-  ).rejects.toThrow("Only drafts");
+  ).rejects.toThrow("Signed");
   await expect(
     service.reviewSections(
       p.id,
       { revision: frozen.revision, section_ids: ["a"], reviewed: true },
       staff,
     ),
-  ).rejects.toThrow("Only drafts");
+  ).rejects.toThrow("Signed");
   const read = await service.forRead(frozen);
   expect(JSON.stringify(read.versions)).toBe(before);
   expect(versionHash(read.versions.at(-1)!)).toBe(

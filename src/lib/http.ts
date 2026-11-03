@@ -1,3 +1,4 @@
+import { publishedExpiry } from "./editor-publication";
 import { PagePlanSchema } from "./page-plan";
 import { authoringPreview } from "./authoring-preview";
 import { pdfPreview } from "./pdf-preview";
@@ -187,8 +188,8 @@ export async function handle(req: Request, path: string[]) {
               ? "declined"
               : p.status === "expired" ||
                   (["sent", "viewed"].includes(p.status) &&
-                    !!p.valid_until &&
-                    Date.parse(p.valid_until) <= Date.now())
+                    !!publishedExpiry(p) &&
+                    Date.parse(publishedExpiry(p)!) <= Date.now())
                 ? "expired"
                 : null,
           email: settings?.email ?? "",
@@ -858,15 +859,17 @@ export async function handle(req: Request, path: string[]) {
             409,
           );
           check(
-            stored.status === "draft" && !stored.archived_at,
-            "Only drafts accept preview edits",
+            !stored.archived_at && stored.source === "native",
+            "Archived and imported proposals are read-only",
             409,
           );
-          p = {
-            ...stored,
-            ...input,
-            content: reviewBlocks(input.content as Block[], false),
-          };
+          p = stored.signers.length
+            ? stored
+            : {
+                ...stored,
+                ...input,
+                content: reviewBlocks(input.content as Block[], false),
+              };
         }
         const result = await pdfPreview(rt.repo, rt.storage, p, settings);
         if (method === "POST") return json(result);

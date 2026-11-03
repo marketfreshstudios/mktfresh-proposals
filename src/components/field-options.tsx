@@ -24,12 +24,25 @@ export function FieldOptions({
   search?: boolean;
   variant?: "panel" | "menu";
 }) {
+  const toolbar = useBlockToolbar();
   const [query, setQuery] = useState("");
   const keys = Object.keys(map).filter((path) =>
     `${fieldLabel(path)} ${path}`.toLowerCase().includes(query.toLowerCase()),
   );
   return (
     <div className={`field-options field-options-${variant}`}>
+      {variant === "panel" && (
+        <p className="fields-hint">
+          {toolbar?.hasTextTarget ? (
+            <>
+              Choose a field to insert it at the end of the selected text. Or
+              type {"{{"} in any paragraph.
+            </>
+          ) : (
+            "Click into a paragraph, then choose a field…"
+          )}
+        </p>
+      )}
       {search && (
         <label className="field">
           Search fields
@@ -56,15 +69,13 @@ export function FieldOptions({
                 aria-label={`${fieldLabel(path)} — {{${path}}}`}
               >
                 <span className="field-option-label">{fieldLabel(path)}</span>
-                {variant === "menu" && <code>{`{{${path}}}`}</code>}
+                <code>{`{{${path}}}`}</code>
                 <span
                   className="field-option-value"
                   title={map[path] || "Empty"}
                 >
                   {map[path] && map[path] !== `{{${path}}}` ? map[path] : "—"}
                 </span>
-
-                {variant === "panel" && <code>{`{{${path}}}`}</code>}
               </button>
             ))}
           </section>

@@ -1,6 +1,6 @@
 "use client";
 import type { CSSProperties, ReactNode } from "react";
-export type SheetBox = { top: number; height: number };
+export type SheetBox = { top: number; height: number; gap?: number };
 /** Display only. Page numbers and boundaries are supplied by the live PagePlan. */
 export function PageSheet({
   number,
@@ -24,7 +24,7 @@ export function PageSheet({
           className="editor-sheet-gap"
           data-editor-chrome
           data-page-label={number}
-          style={{ top: box.top - 52 }}
+          style={{ top: box.top - (box.gap ?? 52), height: box.gap ?? 52 }}
           onPointerDown={onBackgroundClick}
         >
           <span>PAGE {number}</span>

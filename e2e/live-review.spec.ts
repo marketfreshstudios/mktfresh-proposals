@@ -1,3 +1,4 @@
+import { openQuoteRow } from "./editor-ui";
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -629,7 +630,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
           .click();
       await expect(
         page
-          .getByRole("combobox", { name: "Add from products", exact: true })
+          .getByRole("combobox", { name: "+ Add product", exact: true })
           .filter({ visible: true }),
       ).toBeVisible();
       await capture(
@@ -638,19 +639,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         width,
         theme,
       );
-      if (width < 700) {
-        await page
-          .getByRole("button", { name: "Edit item", exact: true })
-          .filter({ visible: true })
-          .first()
-          .click();
-      } else {
-        await page
-          .getByRole("switch", { name: "Optional", exact: true })
-          .filter({ visible: true })
-          .first()
-          .scrollIntoViewIfNeeded();
-      }
+      await openQuoteRow(page, 0);
       await alignedControls();
       await capture(
         "editor-shared-switch",

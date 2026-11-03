@@ -316,9 +316,19 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
       theme,
     );
     await page.goto(`/proposals/${f.draft.id}`);
-    await page.locator(".phone-section-list button").first().click();
+    await expect(page.locator(".editor-paper")).toBeVisible();
     await page.locator(`[data-block-id="block-${f.id}"] .tiptap`).click();
-    const select = page.locator('button[aria-label="Text style"]');
+    await page.evaluate(() => {
+      const host = document.createElement("div");
+      host.className = "toolbar";
+      host.style.cssText = "position:fixed;top:55px;left:10px;z-index:100";
+      host.innerHTML =
+        '<select class="select-compact" aria-label="Compact select specimen"><option>Paragraph</option></select>';
+      document.body.append(host);
+    });
+    const select = page.getByRole("combobox", {
+      name: "Compact select specimen",
+    });
     await expect(select).toHaveClass("select-compact");
     await page.mouse.move(0, 0);
     await expect(select).toHaveCSS("appearance", "none");

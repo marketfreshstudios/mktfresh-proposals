@@ -46,11 +46,10 @@ it("fails invalid PNG, refuses public company signing, and blocks expired tokens
   ).rejects.toThrow("Staff authorization");
   const other = await setup();
   const sent = await other.service.send(other.draft.id, staff);
-  await mutate(
-    other.repo,
-    sent.id,
-    (p) => (p.valid_until = "2020-01-01T00:00:00.000Z"),
-  );
+  await mutate(other.repo, sent.id, (p) => {
+    p.valid_until = "2020-01-01T00:00:00.000Z";
+    p.published_state!.valid_until = p.valid_until;
+  });
   await expect(other.service.byToken(sent.token!)).rejects.toThrow("expired");
 });
 it("escapes rich text, rejects unknown nodes and compares nonempty secrets", () => {
@@ -100,7 +99,7 @@ it("unchanged reads and idle workers do not invalidate a reviewed revision", asy
   const unchanged = await mutate(repo, p.id, () => {});
   expect(unchanged.revision).toBe(p.revision);
 });
-it("draft edits cannot change a sent proposal", async () => {
+it("AI draft edits cannot change a sent proposal", async () => {
   const { service, draft } = await setup();
   let p = await service.edit(
     draft.id,
@@ -110,8 +109,12 @@ it("draft edits cannot change a sent proposal", async () => {
   expect(p.title).toBe("Revised");
   p = await service.send(p.id, staff);
   await expect(
-    service.edit(p.id, { revision: p.revision, title: "Tampered" }, staff),
-  ).rejects.toThrow("Only drafts");
+    service.edit(
+      p.id,
+      { revision: p.revision, title: "Tampered" },
+      { ...staff, actor: "ai:test" },
+    ),
+  ).rejects.toThrow("only edit drafts");
 });
 it("accepts same-origin posts that browsers send with a null or missing Origin, and nothing else", async () => {
   const { sameOrigin } = await import("../src/lib/auth");

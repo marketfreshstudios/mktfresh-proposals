@@ -1,3 +1,4 @@
+import { reviewEditorSections } from "./editor-ui";
 import { test, expect, type Page } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import type { Block } from "../src/lib/model";
@@ -211,13 +212,7 @@ test("AI pill counts sections, cycles in order and wraps, then distinguishes don
       page.locator(`[data-block-id="block-${b.id}"]`),
     ).toHaveAttribute("data-selected", "true");
   }
-  await page
-    .getByRole("button", { name: "Mark all reviewed", exact: true })
-    .first()
-    .click();
-  await page
-    .getByRole("button", { name: "Confirm all reviewed", exact: true })
-    .click();
+  await reviewEditorSections(page);
   await expect(
     page.getByText("✓ AI review done", { exact: true }),
   ).toBeVisible();
@@ -270,7 +265,7 @@ test("saving stays editable; a 409 locks controls until Reload and keeps the loc
   await expect(input).toBeEditable();
   expect(f.patches).toHaveLength(2);
 });
-test("375px retains the current phone header and keeps Review & send inside the viewport", async ({
+test("375px has the v2 phone header and keeps the Send dock inside the viewport", async ({
   page,
 }) => {
   const f = await editorFixture(page);
@@ -281,8 +276,11 @@ test("375px retains the current phone header and keeps Review & send inside the 
     "phone",
   );
   await expect(page.locator(".editor-v2-header")).toHaveCount(0);
-  await expect(page.locator(".phone-section-list")).toBeVisible();
-  const send = page.getByRole("button", { name: "Review & send", exact: true });
+  await expect(page.locator(".editor-phone-header")).toHaveCSS(
+    "height",
+    "52px",
+  );
+  const send = page.getByRole("button", { name: "Open Send", exact: true });
   await expect(send).toBeVisible();
   const box = (await send.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);

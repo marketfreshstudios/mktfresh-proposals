@@ -1,3 +1,9 @@
+import {
+  publishedExpiry,
+  editableProposal,
+  editorialVersion,
+  publicationState,
+} from "./editor-publication";
 import { freezeStyles } from "./proposal-styles";
 import { randomUUID } from "node:crypto";
 import { check, type Actor, type Proposal, type Version } from "./model";
@@ -12,7 +18,6 @@ import { versionHash, sha256, canonical } from "./content";
 import { proposalLink } from "./links";
 export const proposalActions = [
   "duplicate",
-  "edit_version",
   "mark_won",
   "mark_lost",
   "remind",
@@ -44,15 +49,46 @@ export async function proposalAction(
   );
   if (action === "mark_sent") {
     check(
-      original.status === "declined" &&
-        !original.signers.length &&
-        original.versions.length > 0,
-      "Only unsigned Lost proposals with a sent version can be reopened",
+      editableProposal(original) &&
+        ["declined", "expired"].includes(original.status) &&
+        original.versions.length &&
+        original.token,
+      "Only unsigned Lost or Expired proposals with a sent version can be reopened",
       409,
     );
-    return service.send(id, actor, false, undefined, {
-      reopen: true,
-      expected_revision: revision,
+    const settings = (
+      await repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0];
+    check(settings, "Workspace settings required");
+    const candidate = structuredClone(original);
+    candidate.valid_until = defaultValidUntil(settings, now);
+    candidate.status = candidate.first_viewed_at ? "viewed" : "sent";
+    const ready = await service.checkReady(candidate, false, true);
+    check(ready.ready, ready.errors.join("; "));
+    candidate.versions.push(editorialVersion(candidate, now.toISOString()));
+    candidate.published_state = publicationState(candidate);
+    delete candidate.live_blockers;
+    delete candidate.marked_lost_by;
+    event(
+      candidate,
+      "reopened",
+      actor,
+      {
+        previous_status: original.status,
+        version: candidate.versions.at(-1)!.version_no,
+      },
+      now.toISOString(),
+    );
+    return mutate(repo, id, (p) => {
+      check(
+        p.revision === revision && editableProposal(p),
+        "Proposal changed; reload",
+        409,
+      );
+      for (const key of Object.keys(p))
+        if (!(key in candidate))
+          delete (p as unknown as Record<string, unknown>)[key];
+      Object.assign(p, candidate);
     });
   }
   if (action === "duplicate") {
@@ -67,8 +103,9 @@ export async function proposalAction(
     check(settings, "Workspace settings required");
     const p: Proposal = {
       ...structuredClone(original),
+      ...structuredClone(original.unpublished_work ?? {}),
       id: randomUUID(),
-      title: original.title + " (copy)",
+      title: (original.unpublished_work?.title ?? original.title) + " (copy)",
       revision: 0,
       status: "draft",
       token: null,
@@ -81,7 +118,7 @@ export async function proposalAction(
       first_viewed_at: null,
       client_signed_at: null,
       completed_at: null,
-      quote: draftItems(original.quote),
+      quote: draftItems(original.unpublished_work?.quote ?? original.quote),
       versions: [],
       events: [],
       signers: [],
@@ -91,6 +128,9 @@ export async function proposalAction(
       search_text: "",
     };
     delete p.workspace_settings;
+    delete p.live_blockers;
+    delete p.published_state;
+    delete p.unpublished_work;
     delete p.sender;
     delete p.notification_emails;
     delete p.archived_at;
@@ -135,30 +175,6 @@ export async function proposalAction(
       return;
     }
     check(!p.archived_at, "Unarchive this proposal first", 409);
-    if (action === "edit_version") {
-      check(
-        ["sent", "viewed"].includes(p.status),
-        "Only an unsigned sent proposal can be edited as a new version",
-        409,
-      );
-      p.status = "draft";
-      p.token = null;
-      p.quote = draftItems(p.quote);
-      delete p.workspace_settings;
-      for (const job of p.jobs)
-        if (job.kind === "email" && job.status === "pending") {
-          job.status = "done";
-          job.payload.superseded = true;
-        }
-      event(
-        p,
-        "editing_new_version",
-        actor,
-        { previous_version: p.versions.length },
-        timestamp,
-      );
-      return;
-    }
     if (action === "mark_won" || action === "mark_lost") {
       check(
         (["draft", "sent", "viewed", "expired"].includes(p.status) ||
@@ -168,7 +184,6 @@ export async function proposalAction(
         409,
       );
       p.status = action === "mark_won" ? "completed" : "declined";
-      p.token = null;
       if (action === "mark_won") p.marked_won_by = actor.actor;
       else p.marked_lost_by = actor.actor;
       event(
@@ -208,7 +223,8 @@ export async function proposalAction(
     if (action === "remind") {
       check(
         p.token &&
-          (!p.valid_until || Date.parse(p.valid_until) > now.getTime()),
+          (!publishedExpiry(p) ||
+            Date.parse(publishedExpiry(p)!) > now.getTime()),
         "Proposal expired or unavailable",
         409,
       );

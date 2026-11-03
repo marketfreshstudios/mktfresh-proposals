@@ -1,3 +1,4 @@
+import { openQuoteRow } from "./editor-ui";
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { setup, staff, clientActor, signature } from "../tests/helpers";
@@ -185,14 +186,21 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       await expect(page.locator(".quote-workspace")).toBeVisible();
       if (width === 375) {
         await capture("sections", "2c", width, theme);
-        await page
-          .locator(".phone-section-list")
-          .getByRole("button", { name: /01 A website/ })
-          .click();
+        await expect(page.locator(".editor-paper")).toBeVisible();
+        await page.locator(".editor-paper .tiptap").first().click();
         await expect(
-          page.locator(".phone-active-section .tiptap"),
+          page.locator('.editor-phone-header[data-editing="true"]'),
+        ).toBeVisible();
+        await expect(
+          page
+            .locator('.editor-paper [data-phone-section-active="true"] .tiptap')
+            .first(),
         ).toBeVisible();
         await capture("section-edit", "2c", width, theme);
+        await page
+          .locator(".editor-phone-header")
+          .getByRole("button", { name: "Done", exact: true })
+          .click();
         await page
           .getByRole("button", { name: "Open Quote", exact: true })
           .click();
@@ -223,21 +231,8 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         page.getByRole("dialog", { name: "Pricing reference", exact: true }),
       ).toHaveCount(0);
       if (width === 375) {
-        await page
-          .getByRole("button", { name: "Edit item", exact: true })
-          .first()
-          .click();
-        await expect(page.getByRole("dialog", { name: "Edit item" }))
-          .toBeVisible()
-          .catch(() => {});
+        await openQuoteRow(page, 0);
         await capture("line-edit", "2e", width, theme);
-        await page
-          .locator(".line-sheet")
-          .getByRole("button", {
-            name: /^(Done|Collapse tools sidebar)$/,
-            exact: true,
-          })
-          .click();
       }
       await page
         .getByRole("tab", { name: "Send", exact: true })
@@ -318,7 +313,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await page.getByRole("tab", { name: "Send", exact: true }).click();
   await page
     .getByRole("checkbox", {
-      name: /I have reviewed these AI-written sections/,
+      name: /I've reviewed these AI-written sections/,
     })
     .check();
   await page

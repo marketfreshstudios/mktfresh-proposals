@@ -6,6 +6,7 @@ import {
   isValidElement,
   useContext,
   useLayoutEffect,
+  useEffect,
   useRef,
   useState,
   type ReactElement,
@@ -63,6 +64,24 @@ export function EditBar({
         ?.querySelector<HTMLButtonElement>("button:not(:disabled)")
         ?.focus();
   }, [more]);
+  useEffect(() => {
+    if (!layout.phone) return;
+    const viewport = window.visualViewport;
+    const update = () =>
+      root.current?.style.setProperty(
+        "--editor-keyboard-inset",
+        `${Math.max(0, innerHeight - (viewport?.height ?? innerHeight) - (viewport?.offsetTop ?? 0))}px`,
+      );
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [layout.phone]);
   const text = ["paragraph", "heading"].includes(blockType),
     all = actions(tools),
     up = all.find((n) => /move.*up/i.test(label(n))),
@@ -97,7 +116,9 @@ export function EditBar({
     const place = () => {
       const bounds = main.getBoundingClientRect(),
         block = owner.getBoundingClientRect(),
-        width = Math.max(32, bounds.right - 12 - block.left);
+        width = layout.phone
+          ? innerWidth
+          : Math.max(32, bounds.right - 12 - block.left);
       bar.style.setProperty("--edit-max-width", `${width}px`);
       bar.dataset.scrolling = String(bar.scrollWidth > bar.clientWidth + 1);
       const buttons = Array.from(
@@ -168,6 +189,7 @@ export function EditBar({
         role="toolbar"
         aria-label={text ? "Text tools" : `${objectLabel} tools`}
         data-compact={layout.compact}
+        data-dock={layout.phone ? "keyboard" : "float"}
         onMouseDown={(e) => {
           if ((e.target as Element).closest("button")) e.preventDefault();
         }}
