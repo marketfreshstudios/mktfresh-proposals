@@ -34,6 +34,8 @@ export function DocumentCover({
 }) {
   const history = useEditorHistory();
   const logoTrigger = useRef<HTMLButtonElement>(null);
+  const logoInput = useRef<HTMLInputElement>(null);
+  const titleElement = useRef<HTMLHeadingElement>(null);
   const [logoMenu, setLogoMenu] = useState(false),
     [logoError, setLogoError] = useState("");
   const value = cover ?? {
@@ -94,41 +96,52 @@ export function DocumentCover({
               <ToolbarPopover
                 className="cover-logo-menu"
                 trigger={logoTrigger.current}
+                avoid={titleElement.current}
                 close={() => setLogoMenu(false)}
               >
-                <label>
-                  Replace logo
-                  <input
-                    type="file"
-                    aria-label="Replace cover logo"
-                    accept="image/png,image/jpeg"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      if (f.size > 700000) {
-                        setLogoError("Choose a PNG or JPEG under 700 KB");
-                        return;
-                      }
-                      const data = await new Promise<string>((ok, bad) => {
-                        const r = new FileReader();
-                        r.onload = () => ok(String(r.result));
-                        r.onerror = () => bad(new Error("Image unavailable"));
-                        r.readAsDataURL(f);
-                      }).catch(() => "");
-                      const parsed = CoverSchema.safeParse({
-                        ...value,
-                        logo: data,
-                      });
-                      if (!parsed.success) {
-                        setLogoError("Choose a valid PNG or JPEG image");
-                        return;
-                      }
-                      onCover(parsed.data);
-                      setLogoError("");
-                      setLogoMenu(false);
-                    }}
-                  />
-                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (logoInput.current) {
+                      logoInput.current.value = "";
+                      logoInput.current.click();
+                    }
+                  }}
+                >
+                  Upload logo
+                </button>
+                <input
+                  ref={logoInput}
+                  hidden
+                  type="file"
+                  aria-label="Replace cover logo"
+                  accept="image/png,image/jpeg"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    if (f.size > 700000) {
+                      setLogoError("Choose a PNG or JPEG under 700 KB");
+                      return;
+                    }
+                    const data = await new Promise<string>((ok, bad) => {
+                      const r = new FileReader();
+                      r.onload = () => ok(String(r.result));
+                      r.onerror = () => bad(new Error("Image unavailable"));
+                      r.readAsDataURL(f);
+                    }).catch(() => "");
+                    const parsed = CoverSchema.safeParse({
+                      ...value,
+                      logo: data,
+                    });
+                    if (!parsed.success) {
+                      setLogoError("Choose a valid PNG or JPEG image");
+                      return;
+                    }
+                    onCover(parsed.data);
+                    setLogoError("");
+                    setLogoMenu(false);
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => {
@@ -167,7 +180,7 @@ export function DocumentCover({
         </>
       )}
       {onTitle ? (
-        <h1>
+        <h1 ref={titleElement}>
           <span aria-hidden="true" className="cover-title-measure">
             {title || "\u200b"}
           </span>
@@ -193,7 +206,7 @@ export function DocumentCover({
           />
         </h1>
       ) : (
-        <h1>{title}</h1>
+        <h1 ref={titleElement}>{title}</h1>
       )}
       {cover || onCover ? (
         line("byline", "Cover byline", "flow-byline")

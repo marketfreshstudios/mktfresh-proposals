@@ -1467,24 +1467,28 @@ function ClientItems({
         className={`flow-quote-line ${active ? "selected" : ""}`}
         key={i.id}
       >
-        <input
-          type={i.choice_group_id ? "radio" : "checkbox"}
-          name={i.choice_group_id ?? i.id}
-          aria-label={`${i.name} · ${active ? "included" : "not included"}`}
-          checked={active}
-          disabled={busy || frozen}
-          onChange={(e) => onToggle?.(i.id, e.target.checked)}
-        />
+        <span className="quote-control-slot">
+          <input
+            type={i.choice_group_id ? "radio" : "checkbox"}
+            name={i.choice_group_id ?? i.id}
+            aria-label={`${i.name} · ${active ? "included" : "not included"}`}
+            checked={active}
+            disabled={busy || frozen}
+            onChange={(e) => onToggle?.(i.id, e.target.checked)}
+          />
+        </span>
         {body}
       </label>
     ) : (
       <div className="flow-quote-line selected" key={i.id}>
-        <span
-          className="quote-required"
-          role="img"
-          aria-label="Required"
-          title="Required"
-        />
+        <span className="quote-control-slot">
+          <span
+            className="quote-required"
+            role="img"
+            aria-label="Required"
+            title="Required"
+          />
+        </span>
         {body}
       </div>
     );

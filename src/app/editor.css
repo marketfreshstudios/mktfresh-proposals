@@ -6294,8 +6294,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   min-height: 22px;
 }
 .cover-logo-controls > button,
-.cover-logo-menu button,
-.cover-logo-menu input::file-selector-button {
+.cover-logo-menu button {
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid var(--border);
@@ -6308,16 +6307,6 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .cover-logo-menu {
   width: 280px;
   min-width: 0;
-}
-.cover-logo-menu > label {
-  display: grid;
-  gap: 6px;
-  font: 500 13px/18px var(--font-ui);
-}
-.cover-logo-menu input {
-  min-width: 0;
-  width: 100%;
-  font: 400 12px/18px var(--font-ui);
 }
 .cover-logo-menu button {
   text-align: left;

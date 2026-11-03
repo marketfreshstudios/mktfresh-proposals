@@ -33,3 +33,5 @@ Single-price PDF projection after removing two sub-lines: ![Single-price PDF](sc
 ## Verification
 
 Full unfiltered browser suite: 139 passed, three optional capture tests skipped (11.2 minutes). All 311 unit/database tests (53 files), TypeScript, formatting, neutrality, production build and PDF runtime tracing (327 API files) passed. Frozen PagePlan, PDF page-start/text, hash, persistence and signing-conflict assertions remain intact.
+
+Owner-polish update: pricing and cover after-images include the shared 20px control slots and matching Upload / Remove / Use workspace logo buttons. The cover crop includes the complete popover beside the title so its non-overlapping placement is visible.

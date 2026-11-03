@@ -2521,32 +2521,34 @@ function QuoteEditorContent({
     const Row = i.optional ? "label" : "div";
     return (
       <Row className={`flow-quote-line ${active ? "selected" : ""}`}>
-        {i.optional ? (
-          <input
-            aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
-            type={i.choice_group_id ? "radio" : "checkbox"}
-            name={`document-${i.choice_group_id ?? i.id}`}
-            checked={active}
-            onChange={() =>
-              setItems(
-                items.map((v) =>
-                  v.choice_group_id && v.choice_group_id === i.choice_group_id
-                    ? { ...v, default_selected: v.id === i.id }
-                    : v.id === i.id
-                      ? { ...v, default_selected: !v.default_selected }
-                      : v,
-                ),
-              )
-            }
-          />
-        ) : (
-          <span
-            className="quote-required"
-            role="img"
-            aria-label="Required"
-            title="Required"
-          />
-        )}
+        <span className="quote-control-slot">
+          {i.optional ? (
+            <input
+              aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
+              type={i.choice_group_id ? "radio" : "checkbox"}
+              name={`document-${i.choice_group_id ?? i.id}`}
+              checked={active}
+              onChange={() =>
+                setItems(
+                  items.map((v) =>
+                    v.choice_group_id && v.choice_group_id === i.choice_group_id
+                      ? { ...v, default_selected: v.id === i.id }
+                      : v.id === i.id
+                        ? { ...v, default_selected: !v.default_selected }
+                        : v,
+                  ),
+                )
+              }
+            />
+          ) : (
+            <span
+              className="quote-required"
+              role="img"
+              aria-label="Required"
+              title="Required"
+            />
+          )}
+        </span>
         <QuoteItemBody
           item={i}
           active={active}

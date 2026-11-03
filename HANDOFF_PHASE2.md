@@ -907,3 +907,11 @@ Evidence: [neutral TEST 3 comparisons and PDF page images](docs/editor-v2-pr6-ev
 Shared totals, choice-group and signature labels keep their prototype tracking on screen, but use normal letter spacing in print. Per-glyph gaps had allowed Linux PDF text extraction to split uppercase words (for example, “CO MPANY”). This changes print label typography only; content, frozen PagePlans, version hashes and the completion certificate are unchanged.
 
 The existing exact “COMPANY Alex Morgan Owner Example Studio” assertion remains unchanged. Added whole-word checks for ONE-TIME, MONTHLY, CLIENT and COMPANY in PDF.js body/sealed output and Poppler body extraction. A separate browser regression fails before the fix and verifies screen tracking is retained while print tracking is removed. All 23 focused PDF/pagination/signing browser tests and 311 unit/database tests passed; TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed. The generated PDF was rendered and visually checked. No new screenshot gallery was captured.
+
+### PR #56 owner polish — product alignment and cover upload
+
+Required and optional product rows now have the same explicit 20px control slot and 12px gap in the editor, client reading view and print. Wrapping native selection controls in that slot isolates document rows from the general form rule that had forced an 18px control and 8px gap on optional labels. Whole-row selection remains available.
+
+The cover menu now uses a styled Upload logo button with a hidden file input, retaining the existing upload validation and keyboard activation. Only this menu requests title avoidance: placement tries clear space above or beside its trigger before falling back when space is limited. Other toolbar menus keep their placement. The pricing and cover after-images in the PR evidence are refreshed at the same 1440px viewport.
+
+Validation for this polish: 39 focused browser checks passed, with one optional capture skipped; all 311 unit/database tests, TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed. Alignment checks compare both row types at 1440/375px in editor/client views and compare PDF text x-coordinates. The upload test exercises Enter → file chooser → persisted logo and asserts matching button styling and a clear title.
