@@ -514,6 +514,7 @@ export class ProposalService {
       password?: string | null;
       reopen?: boolean;
       expected_revision?: number;
+      pagination?: PagePlan;
     } = {},
   ) {
     check(
@@ -566,6 +567,8 @@ export class ProposalService {
     const catalog = await this.repo.entities<Item>("pricing_items");
     const before = await this.repo.get(id);
     check(before, "Not found", 404);
+    if (options.pagination)
+      before.pagination = validatePagePlan(options.pagination, before.content);
     await validateStyles(
       this.repo,
       settings,
@@ -599,6 +602,7 @@ export class ProposalService {
           "Proposal changed; reload and try again",
           409,
         );
+      if (options.pagination) p.pagination = structuredClone(before.pagination);
       const reopening =
         options.reopen === true &&
         p.status === "declined" &&

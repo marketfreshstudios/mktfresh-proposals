@@ -264,8 +264,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .getByRole("textbox", { name: "Proposal title", exact: true })
       .fill("A clear next chapter");
     await expect.poll(() => active.title).toBe("A clear next chapter");
-    await page.locator(".editor-breadcrumb button").click();
-    await expect(page.locator("#cover-title")).toBeFocused();
+    await expect(page.locator(".editor-header-title")).toHaveText(
+      "A clear next chapter",
+    );
+    await expect(page.locator(".editor-header-title button")).toHaveCount(0);
     // Both drag surfaces reorder the same quote, including alternatives.
     async function keyboardMove(name: string, key: string, target: string) {
       const handle = page.getByRole("button", { name, exact: true });

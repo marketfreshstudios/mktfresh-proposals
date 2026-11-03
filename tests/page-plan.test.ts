@@ -151,3 +151,38 @@ it("queued draft previews reuse saved pagination and resolved styles without cre
   expect(version.content_hash).toBe(versionHash(version));
   expect(preview.versions).toEqual([]);
 });
+
+it("attaches an untouched draft's current plan atomically at send without a metadata revision", async () => {
+  const f = await setup();
+  const plan: PagePlan = {
+    format: 1,
+    pages: 2,
+    starts: [
+      { page: 2, block: f.draft.content[1].id!, offset: 0, explicit: false },
+    ],
+  };
+  const p = await f.service.send(f.draft.id, staff, true, undefined, {
+    pagination: plan,
+  });
+  expect(p.revision).toBe(f.draft.revision + 1);
+  expect(p.pagination).toEqual(plan);
+  expect(p.versions.at(-1)!.pagination).toEqual(plan);
+  expect(p.versions.at(-1)!.content_hash).toBe(versionHash(p.versions.at(-1)!));
+});
+
+it("refuses a stale send revision rather than freezing its old browser plan", async () => {
+  const f = await setup();
+  const current = await f.service.edit(
+    f.draft.id,
+    { revision: f.draft.revision, title: "Other session" },
+    staff,
+  );
+  await expect(
+    f.service.send(f.draft.id, staff, true, undefined, {
+      expected_revision: f.draft.revision,
+      pagination: { format: 1, pages: 1, starts: [] },
+    }),
+  ).rejects.toMatchObject({ status: 409 });
+  expect((await f.repo.get(f.draft.id))!.revision).toBe(current.revision);
+  expect((await f.repo.get(f.draft.id))!.versions).toEqual([]);
+});

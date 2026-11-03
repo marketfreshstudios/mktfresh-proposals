@@ -202,7 +202,14 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await expect(
     page.getByRole("combobox", { name: "From", exact: true }),
   ).toHaveValue("00000000-0000-4000-8000-000000000001");
+  const sentResponse = page.waitForResponse(
+    (r) =>
+      r.request().method() === "POST" &&
+      new URL(r.url()).pathname === `/api/proposals/${p.id}/send`,
+  );
   await page.getByRole("button", { name: "Send to Jane", exact: true }).click();
+  const sent = await sentResponse;
+  expect(sent.status()).toBe(200);
   await expect(page).toHaveURL(new RegExp(`/proposals/${p.id}$`));
   let r = await request.get(`/api/proposals/${p.id}`, { headers });
   p = await r.json();

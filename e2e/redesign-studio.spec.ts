@@ -487,7 +487,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await expect(page.locator(".quote-workspace")).toBeVisible();
       await context.setOffline(true);
       if (width === 375)
-        await page.locator(".editor-breadcrumb button").click();
+        await page.locator(".phone-section-list button").first().click();
       await page
         .getByLabel("Proposal title", { exact: true })
         .fill(`My offline title ${width} ${theme}`);

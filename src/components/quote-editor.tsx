@@ -1,4 +1,5 @@
 "use client";
+import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
@@ -22,7 +23,11 @@ import {
   documentStyleCss,
   styleFontFaces,
 } from "../lib/proposal-styles";
-import { convertTextStyle, type TextLevel } from "../lib/editor-document";
+import {
+  blockText,
+  convertTextStyle,
+  type TextLevel,
+} from "../lib/editor-document";
 import {
   BlockScope,
   DocumentFormattingBar,
@@ -163,10 +168,10 @@ function QuoteEditorContent({
       quote: draftItems(initial.quote),
     }),
     [customerErrors, setCustomerErrors] = useState<string[]>([]),
-    [dirty, setDirty] = useState(false),
+    [dirty, setDirty, dirtyRef] = useCurrentState(false),
     [saving, setSaving] = useState(false),
-    [error, setError] = useState(""),
-    [stale, setStale] = useState(false),
+    [error, setError, errorRef] = useCurrentState(""),
+    [stale, setStale, staleRef] = useCurrentState(false),
     [tab, setTab] = useState(initialTab),
     [drawer, setDrawer] = useState(false),
     [lineId, setLineId] = useState<string | null>(null),
@@ -204,6 +209,7 @@ function QuoteEditorContent({
     pagination: browserPages?.plan ?? p.pagination,
   });
   const receivePagination = (value: BrowserPages) => {
+    if (staleRef.current) return;
     pagePlan.current = value.plan;
     setBrowserPages((old) =>
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
@@ -407,8 +413,9 @@ function QuoteEditorContent({
       emailValidation = (e as Error).message;
     }
   const cacheKey = `proposal-unsaved:${initial.workspace_id ?? "workspace"}:${initial.id}`;
-  const [offline, setOffline] = useState(false),
-    [recovery, setRecovery] = useState<Partial<Proposal> | null>(null),
+  const [offline, setOffline, offlineRef] = useCurrentState(false),
+    [recovery, setRecovery, recoveryRef] =
+      useCurrentState<Partial<Proposal> | null>(null),
     [deviceSaved, setDeviceSaved] = useState(false);
   useEffect(() => {
     const online = () => {
@@ -420,7 +427,12 @@ function QuoteEditorContent({
     window.addEventListener("offline", online);
     try {
       const cached = JSON.parse(localStorage.getItem(cacheKey) ?? "null");
-      if (cached) setRecovery(cached);
+      if (
+        cached &&
+        JSON.stringify(editable(cached)) !== JSON.stringify(editable(initial))
+      )
+        setRecovery(cached);
+      else if (cached) localStorage.removeItem(cacheKey);
     } catch {}
     return () => {
       window.removeEventListener("online", online);
@@ -447,6 +459,11 @@ function QuoteEditorContent({
       setDeviceSaved(false);
     }
   }, [p, dirty, cacheKey]);
+  const [lastSaved, setLastSaved] = useState<string | null>(
+    initial.updated_at ?? null,
+  );
+  const saveFlight = useRef<Promise<boolean> | null>(null);
+  const allowLeave = useRef(false);
   const generation = useRef(0),
     revision = useRef(initial.revision),
     savingRef = useRef(false),
@@ -455,7 +472,7 @@ function QuoteEditorContent({
   const editable = (v: Proposal) => ({
     title: v.title,
     content: v.content,
-    quote: v.quote,
+    quote: draftItems(v.quote ?? []),
     valid_until: v.valid_until,
     style_overrides: v.style_overrides ?? {},
     template_style_overrides: v.template_style_overrides ?? {},
@@ -468,7 +485,7 @@ function QuoteEditorContent({
     () => editable(latest.current),
   );
   function applyChange(update: Partial<Proposal>) {
-    if (!stale) setError("");
+    if (!staleRef.current) setError("");
     generation.current++;
     setDirty(true);
     latest.current = { ...latest.current, ...update };
@@ -481,58 +498,116 @@ function QuoteEditorContent({
     );
     applyChange(update);
   }
-  async function save() {
-    if (savingRef.current || stale || offline) return false;
-    paper.current?.dispatchEvent(new Event("pagination-flush"));
-    if (
-      !dirty &&
-      JSON.stringify(pagePlan.current) ===
-        JSON.stringify(latest.current.pagination)
-    )
-      return true;
-    savingRef.current = true;
-    setSaving(true);
-    const captured = generation.current,
-      clearRecovery = dirty,
-      value = latest.current;
+  function keepLocalEdits(value = latest.current) {
+    const edits = structuredClone(editable(value));
     try {
-      const result = await api<Proposal>(`/api/proposals/${p.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          revision: revision.current,
-          pagination: pagePlan.current,
-          title: value.title,
-          content: value.content,
-          quote: value.quote,
-          valid_until: value.valid_until,
-          style_overrides: value.style_overrides ?? {},
-          template_style_overrides: value.template_style_overrides ?? {},
-        }),
-      });
-      revision.current = result.revision;
-      if (captured === generation.current) {
-        setP({ ...result, quote: draftItems(result.quote) });
-        setDirty(false);
-        // Recording derived page positions is not a decision about a pending
-        // recovered edit. Keep that suggestion until a content edit/explicit choice.
-        if (clearRecovery) {
-          try {
-            localStorage.removeItem(cacheKey);
-          } catch {}
-          setRecovery(null);
-        }
-        onSaved(result);
-      } else setP((v) => ({ ...v, revision: result.revision }));
-      setError("");
-      return captured === generation.current;
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 409) setStale(true);
-      setError(e instanceof Error ? e.message : "Unable to save");
-      return false;
-    } finally {
-      savingRef.current = false;
-      setSaving(false);
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({ revision: revision.current, ...edits }),
+      );
+      setDeviceSaved(true);
+    } catch {
+      setDeviceSaved(false);
     }
+    return edits;
+  }
+  function dropPagePlan() {
+    pagePlan.current = undefined;
+    setBrowserPages(null);
+    const { pagination: discarded, ...value } = latest.current;
+    latest.current = value;
+    setP(value);
+  }
+  async function reloadConflict() {
+    const edits = keepLocalEdits();
+    setRecovery(edits);
+    try {
+      const current = await api<Proposal>(`/api/proposals/${p.id}`);
+      dropPagePlan();
+      delete current.pagination;
+      revision.current = current.revision;
+      setLastSaved(current.updated_at ?? null);
+      latest.current = { ...current, quote: draftItems(current.quote) };
+      setP(latest.current);
+      setDirty(false);
+      setStale(false);
+      setError("");
+      requestAnimationFrame(() =>
+        paper.current?.dispatchEvent(new Event("pagination-layout-change")),
+      );
+      return true;
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Unable to load the current draft",
+      );
+      return false;
+    }
+  }
+  function save(): Promise<boolean> {
+    // A derived plan never starts a write, changes the revision, or becomes a
+    // recovered edit. Attach a fresh plan only to an actual content save.
+    if (saveFlight.current) return saveFlight.current;
+    if (!dirtyRef.current)
+      return Promise.resolve(!staleRef.current && !errorRef.current);
+    if (staleRef.current || offlineRef.current) {
+      keepLocalEdits();
+      return Promise.resolve(false);
+    }
+    const flight = (async () => {
+      savingRef.current = true;
+      setSaving(true);
+      try {
+        while (dirtyRef.current) {
+          if (staleRef.current || offlineRef.current) return false;
+          paper.current?.dispatchEvent(new Event("pagination-flush"));
+          const captured = generation.current,
+            value = latest.current;
+          const result = await api<Proposal>(`/api/proposals/${p.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              revision: revision.current,
+              ...editable(value),
+              pagination: pagePlan.current,
+            }),
+          });
+          revision.current = result.revision;
+          setLastSaved(result.updated_at ?? new Date().toISOString());
+          if (captured === generation.current) {
+            latest.current = { ...result, quote: draftItems(result.quote) };
+            setP(latest.current);
+            setDirty(false);
+            if (!recoveryRef.current) {
+              try {
+                localStorage.removeItem(cacheKey);
+              } catch {}
+            }
+            onSaved(result);
+          } else {
+            latest.current = { ...latest.current, revision: result.revision };
+            setP(latest.current);
+          }
+          setError("");
+        }
+        return true;
+      } catch (e) {
+        const edits = keepLocalEdits();
+        if (e instanceof ApiError && e.status === 409) {
+          setStale(true);
+          dropPagePlan();
+          setRecovery(edits);
+        }
+        setError(e instanceof Error ? e.message : "Unable to save");
+        return false;
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
+      }
+    })();
+    saveFlight.current = flight;
+    void flight.finally(() => {
+      if (saveFlight.current === flight) saveFlight.current = null;
+    });
+    return flight;
   }
   useEffect(() => {
     if (!dirty || saving || stale || error || offline || reviewBusy) return;
@@ -541,7 +616,7 @@ function QuoteEditorContent({
   }, [p, dirty, saving, stale, error, offline, reviewBusy]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (dirty) {
+      if (dirtyRef.current && !allowLeave.current) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -1430,7 +1505,10 @@ function QuoteEditorContent({
             if (!(await save())) return;
             setSending(true);
             try {
+              paper.current?.dispatchEvent(new Event("pagination-flush"));
               await post(`/api/proposals/${p.id}/send`, {
+                revision: revision.current,
+                pagination: pagePlan.current,
                 confirm_ai_review: confirmed,
                 sender_user_id: sender,
                 subject: emailSubject,
@@ -2192,40 +2270,22 @@ function QuoteEditorContent({
         content={p.content}
         onChange={(content) => change({ content })}
       />
-      <header className="quote-editor-top">
-        <div className="title-field">
-          <nav className="editor-breadcrumb" aria-label="Breadcrumb">
-            <a href="/proposals">Proposals</a>
-            <span>/</span>
-            <button
-              type="button"
-              title={p.title}
-              onClick={() => {
-                setSection(0);
-                requestAnimationFrame(() => {
-                  const el = document.getElementById("cover-title");
-                  el?.scrollIntoView({
-                    block: "center",
-                    behavior: matchMedia("(prefers-reduced-motion: reduce)")
-                      .matches
-                      ? "auto"
-                      : "smooth",
-                  });
-                  el?.focus({ preventScroll: true });
-                });
-              }}
-            >
-              {p.title}
-            </button>
-          </nav>
-          <small role="status">
-            {saving
-              ? "Saving…"
-              : dirty
-                ? "Unsaved changes"
-                : "All changes saved"}
-          </small>
-        </div>
+      <EditorHeader
+        beforeLeave={() => {
+          allowLeave.current = true;
+        }}
+        className="quote-editor-top"
+        title={p.title}
+        backLabel="Proposals"
+        backHref="/proposals"
+        save={save}
+        dirty={dirty}
+        saving={saving}
+        error={error}
+        offline={offline}
+        lastSaved={lastSaved}
+        retry={() => void (stale ? reloadConflict() : save())}
+      >
         <Button
           variant="ghost"
           disabled={saving || stale}
@@ -2262,7 +2322,7 @@ function QuoteEditorContent({
             Fields
           </Button>
         </span>
-      </header>
+      </EditorHeader>
       {offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
           {deviceSaved
@@ -2286,7 +2346,7 @@ function QuoteEditorContent({
               <h3>{recovery.title}</h3>
               {recovery.content?.map((b, n) => (
                 <p key={n}>
-                  {b.text ||
+                  {blockText(b) ||
                     (b.type === "contract" &&
                       b.clauses?.map((c) => c.heading).join(" · ")) ||
                     "Document section"}
@@ -2296,8 +2356,12 @@ function QuoteEditorContent({
             </div>
           </details>
           <Button
-            onClick={() => {
-              const { revision: ignored, ...edits } = recovery;
+            onClick={async () => {
+              const edits = editable(
+                staleRef.current ? latest.current : (recovery as Proposal),
+              );
+              if (staleRef.current && !(await reloadConflict())) return;
+              dropPagePlan();
               change(edits);
               setRecovery(null);
             }}
@@ -2305,7 +2369,8 @@ function QuoteEditorContent({
             Restore my edits
           </Button>
           <Button
-            onClick={() => {
+            onClick={async () => {
+              if (staleRef.current && !(await reloadConflict())) return;
               localStorage.removeItem(cacheKey);
               setRecovery(null);
             }}
@@ -2324,40 +2389,7 @@ function QuoteEditorContent({
           }
         >
           {error}
-          <Button
-            onClick={() =>
-              stale
-                ? void (async () => {
-                    try {
-                      const edits = {
-                        title: p.title,
-                        content: p.content,
-                        quote: p.quote,
-                        valid_until: p.valid_until,
-                        style_overrides: p.style_overrides ?? {},
-                        template_style_overrides:
-                          p.template_style_overrides ?? {},
-                      };
-                      const current = await api<Proposal>(
-                        `/api/proposals/${p.id}`,
-                      );
-                      setRecovery(edits);
-                      revision.current = current.revision;
-                      setP({ ...current, quote: draftItems(current.quote) });
-                      setDirty(false);
-                      setStale(false);
-                      setError("");
-                    } catch (e) {
-                      setError(
-                        e instanceof Error
-                          ? e.message
-                          : "Unable to load the current draft",
-                      );
-                    }
-                  })()
-                : void save()
-            }
-          >
+          <Button onClick={() => (stale ? void reloadConflict() : void save())}>
             {stale ? "Reload and keep mine" : "Try saving again"}
           </Button>
         </Banner>
@@ -2391,7 +2423,7 @@ function QuoteEditorContent({
               }
               onClick={toggleLeft}
             >
-              {panels.left ? "‹" : "›"}
+              <PanelChevron direction={panels.left ? "left" : "right"} />
             </button>
           </div>
           {panels.left ? (
@@ -2644,7 +2676,7 @@ function QuoteEditorContent({
               }
               onClick={toggleRight}
             >
-              {panels.right ? "›" : "‹"}
+              <PanelChevron direction={panels.right ? "right" : "left"} />
             </button>
           </div>
           {panels.right

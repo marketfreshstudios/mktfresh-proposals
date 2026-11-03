@@ -45,7 +45,7 @@ export function DocumentFormattingBar() {
   useEffect(() => {
     const header =
       ref.current?.closest("dialog")?.querySelector(":scope > header") ??
-      document.querySelector(".quote-editor-top");
+      document.querySelector(".editor-document-header");
     if (!ref.current) return;
     if (!header) {
       ref.current.style.setProperty("--formatting-top", "0px");
@@ -55,7 +55,7 @@ export function DocumentFormattingBar() {
       const height = Math.max(0, header.getBoundingClientRect().height);
       ref.current?.style.setProperty("--formatting-top", `${height}px`);
       header
-        .closest<HTMLElement>(".quote-workspace")
+        .closest<HTMLElement>(".quote-workspace,.studio-template-layout")
         ?.style.setProperty("--editor-header-height", `${height}px`);
     };
     update();

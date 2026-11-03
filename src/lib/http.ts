@@ -962,6 +962,13 @@ export async function handle(req: Request, path: string[]) {
               ? undefined
               : uuid.parse(input.sender_user_id),
             {
+              pagination: PagePlanSchema.optional().parse(input.pagination),
+              expected_revision: z
+                .number()
+                .int()
+                .min(0)
+                .optional()
+                .parse(input.revision),
               note: z.string().max(4000).optional().parse(input.note),
               subject: z.string().max(300).optional().parse(input.subject),
               body: input.body,
