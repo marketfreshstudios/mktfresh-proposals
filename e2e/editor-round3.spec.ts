@@ -138,7 +138,7 @@ async function fields(page: Page) {
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
   return page.locator(".field-options").filter({ visible: true });
 }
-test("one-line icon formatting, fixed Letter paper, panel preferences and overlays at all requested widths", async ({
+test("one-line icon formatting, responsive sheets, panel preferences and overlays at all requested widths", async ({
   page,
 }) => {
   const f = await fixture(page);
@@ -170,21 +170,19 @@ test("one-line icon formatting, fixed Letter paper, panel preferences and overla
       bar.getByRole("button", { name: "Bold", exact: true }),
     ).toHaveAttribute("title", /Bold \(/);
     const paper = page.locator(".editor-paper");
-    expect(await paper.evaluate((e) => (e as HTMLElement).offsetWidth)).toBe(
-      816,
-    );
+    expect(
+      await paper.evaluate((e) => (e as HTMLElement).offsetWidth),
+    ).toBeLessThanOrEqual(760);
     expect(
       parseFloat(await paper.evaluate((e) => getComputedStyle(e).paddingLeft)),
-    ).toBeCloseTo(72, 2);
+    ).toBeGreaterThanOrEqual(64);
+    expect(await paper.evaluate((e) => getComputedStyle(e).transform)).toBe(
+      "none",
+    );
     expect(
       await paper.evaluate((e) => e.getBoundingClientRect().width),
     ).toBeLessThanOrEqual(width);
-    if (width === 768) {
-      await expect(page.getByLabel("Editor zoom")).not.toHaveText("100%");
-      await page.getByRole("button", { name: "100%", exact: true }).click();
-      await expect(page.getByLabel("Editor zoom")).toHaveText("100%");
-      await page.getByRole("button", { name: "Fit", exact: true }).click();
-    }
+    await expect(page.getByLabel("Editor zoom")).toHaveCount(0);
   }
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page

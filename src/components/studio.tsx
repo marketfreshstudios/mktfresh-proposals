@@ -1769,16 +1769,18 @@ function TemplatesStudioContent({
                   }
                 />
               </Field>
-              {mode === "templates" && !content.length && (
-                <Button
-                  onClick={(e) => {
-                    setInsertAnchor(e.currentTarget);
-                    setInsertAt(0);
-                  }}
-                >
-                  Add first block
-                </Button>
-              )}
+              {mode === "templates" &&
+                !content.length &&
+                templatePanels.phone && (
+                  <Button
+                    onClick={(e) => {
+                      setInsertAnchor(e.currentTarget);
+                      setInsertAt(0);
+                    }}
+                  >
+                    Add first block
+                  </Button>
+                )}
               <Button data-field-insert onClick={() => setFields(true)}>
                 Fields
               </Button>
@@ -1812,8 +1814,12 @@ function TemplatesStudioContent({
             <div className="template-page-viewport">
               <div
                 style={{
-                  width: 816 * templatePanels.scale,
-                  height: templatePanels.height * templatePanels.scale,
+                  width: templatePanels.phone
+                    ? 816 * templatePanels.scale
+                    : undefined,
+                  height: templatePanels.phone
+                    ? templatePanels.height * templatePanels.scale
+                    : undefined,
                   marginInline: "auto",
                 }}
               >
@@ -1831,6 +1837,11 @@ function TemplatesStudioContent({
                 >
                   <div
                     ref={templatePaper}
+                    data-sheet-view={
+                      mode === "templates" && !templatePanels.phone
+                        ? "true"
+                        : undefined
+                    }
                     data-editor-density={
                       templateStyles.layout?.density ?? "comfortable"
                     }
@@ -1839,10 +1850,16 @@ function TemplatesStudioContent({
                       mode === "templates"
                         ? ({
                             position: "relative",
-                            "--editor-ui-scale": 1 / templatePanels.scale,
-                            transform: `scale(${templatePanels.scale})`,
+                            "--editor-ui-scale": templatePanels.phone
+                              ? 1 / templatePanels.scale
+                              : 1,
+                            transform: templatePanels.phone
+                              ? `scale(${templatePanels.scale})`
+                              : undefined,
                             transformOrigin: "top left",
-                            minHeight: `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`,
+                            minHeight: templatePanels.phone
+                              ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
+                              : undefined,
                             padding: `${templateMetrics.margins.top * 96}px ${templateMetrics.margins.right * 96}px ${templateMetrics.margins.bottom * 96}px ${templateMetrics.margins.left * 96}px`,
                           } as CSSProperties)
                         : undefined
@@ -1860,9 +1877,12 @@ function TemplatesStudioContent({
                           draft?.style_overrides,
                         ])}
                         onPagination={receivePagination}
+                        sheets={!templatePanels.phone}
                       />
                     )}
-                    <div className="proposal-typography document-reading template-cover">
+                    <div
+                      className={`proposal-typography document-reading template-cover ${!content.length && !templatePanels.phone ? "empty-sheet-cover" : ""}`}
+                    >
                       <style>
                         {fontCss(data.settings)}
                         {styleFontFaces(
@@ -1889,6 +1909,25 @@ function TemplatesStudioContent({
                         }
                       />
                     </div>
+                    {mode === "templates" &&
+                      !content.length &&
+                      !templatePanels.phone && (
+                        <button
+                          type="button"
+                          className="empty-document-insert"
+                          aria-label="Add first block"
+                          onClick={(e) => {
+                            setInsertAnchor(e.currentTarget);
+                            setReplaceEmpty(false);
+                            setInsertAt(0);
+                          }}
+                        >
+                          <span className="empty-sheet-plus" aria-hidden="true">
+                            +
+                          </span>
+                          <span>Add your first block</span>
+                        </button>
+                      )}
                     {content.map((b, n) => (
                       <Sortable
                         block
@@ -1932,7 +1971,7 @@ function TemplatesStudioContent({
                               ),
                             )
                           }
-                          className="studio-block-card"
+                          className={`studio-block-card ${b.type === "page_break" ? "sheet-break-marker" : ""}`}
                           insert={
                             mode === "templates"
                               ? (edge, anchor) => {

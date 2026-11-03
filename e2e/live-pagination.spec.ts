@@ -242,14 +242,33 @@ test("choice groups, signatures and a fitting pricing table stay on one sheet, a
   const paper = page.locator(".editor-paper");
   await expect(paper).toHaveAttribute("data-pagination", /starts/);
   const geometry = await paper.evaluate((root) => {
-    const scale =
-        root.getBoundingClientRect().width / (root as HTMLElement).offsetWidth,
-      top = root.getBoundingClientRect().top;
+    // Normalize display-only responsive sheet coordinates into the existing
+    // PDF page coordinate frame. The keep-together assertions below are unchanged.
+    const sheets = Array.from(
+      root.querySelectorAll<HTMLElement>(".page-sheet"),
+    );
+    const position = (value: number) => {
+      const n = sheets.findIndex((el) => {
+        const r = el.getBoundingClientRect();
+        return value >= r.top - 0.5 && value <= r.bottom + 0.5;
+      });
+      if (n < 0) return NaN;
+      const el = sheets[n],
+        r = el.getBoundingClientRect(),
+        s = getComputedStyle(el);
+      const top = parseFloat(s.paddingTop),
+        bottom = parseFloat(s.paddingBottom);
+      return (
+        n * 1080 +
+        72 +
+        ((value - r.top - top) * 912) / (r.height - top - bottom)
+      );
+    };
     return Array.from(
       root.querySelectorAll(".flow-choice-group,.editor-signature"),
     ).map((el) => {
       const r = el.getBoundingClientRect();
-      return { top: (r.top - top) / scale, bottom: (r.bottom - top) / scale };
+      return { top: position(r.top), bottom: position(r.bottom) };
     });
   });
   for (const box of geometry) {

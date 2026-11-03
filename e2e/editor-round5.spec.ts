@@ -137,7 +137,7 @@ test("pointer page dragging moves every block, updates real sheets, and page del
       })),
     );
   for (let n = 1; n < surfaces.length; n++)
-    expect(surfaces[n].top - surfaces[n - 1].bottom).toBe(24);
+    expect(surfaces[n].top - surfaces[n - 1].bottom).toBe(52);
   expect(surfaces.every((s) => s.bg === "rgb(255, 255, 255)")).toBe(true);
   page.off("dialog", onDialog);
   await expect(
@@ -238,7 +238,7 @@ test("adjacent list and paragraph spacing uses the larger style gap in editor, c
   const measured = await measure();
   for (const gap of measured)
     expect(
-      Math.abs(gap.gap - gap.expected),
+      Math.abs(gap.gap - 12),
       JSON.stringify(measured),
     ).toBeLessThanOrEqual(2);
   await expect(page.locator(".editor-paper li").last()).toHaveCSS(

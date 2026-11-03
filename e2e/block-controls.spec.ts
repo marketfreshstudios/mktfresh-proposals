@@ -559,7 +559,10 @@ test("block controls own one block and never move document content on hover, foc
                   y < Math.min(innerHeight - 5, box.bottom - 5);
                   y += 4
                 )
-                  if (document.elementFromPoint(x, y) === paper)
+                  if (
+                    document.elementFromPoint(x, y) === paper ||
+                    document.elementFromPoint(x, y)?.matches(".page-sheet")
+                  )
                     return { x, y };
                 throw new Error(
                   "No empty paper margin visible below formatting bar",
