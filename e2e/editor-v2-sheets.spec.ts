@@ -86,7 +86,7 @@ test("computed pages draw separate sheets and PDF-numbered 52px gaps; display wi
     await expect(page.getByLabel("Editor zoom")).toHaveCount(0);
     expect(
       await paper.evaluate((el) => el.getBoundingClientRect().width),
-    ).toBeLessThanOrEqual(760);
+    ).toBeLessThanOrEqual(848);
     expect(await paper.evaluate((el) => getComputedStyle(el).transform)).toBe(
       "none",
     );

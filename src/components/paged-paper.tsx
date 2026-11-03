@@ -65,7 +65,7 @@ export function PagedPaper({
     let assetRequest = 0,
       assetsWaitStarted: number | null = null,
       assetsTimer: ReturnType<typeof setTimeout> | undefined;
-    let width = root.clientWidth;
+    let width = root.parentElement?.clientWidth ?? root.clientWidth;
     const observer = new MutationObserver((records) => {
       if (
         records.some(
@@ -93,6 +93,25 @@ export function PagedPaper({
       observer.disconnect();
       try {
         const v = latest.current;
+        if (v.sheets) {
+          const available = root!.parentElement!.clientWidth;
+          const contentWidth = pageMetrics(v.styles).contentWidth;
+          const desktop = window.innerWidth >= 700;
+          const spare = Math.max(116, Math.min(176, available - contentWidth));
+          const left = Math.max(64, Math.min(88, spare / 2));
+          root!.style.setProperty(
+            "--editor-sheet-width",
+            `${desktop ? Math.min(available, contentWidth + 176) : available}px`,
+          );
+          root!.style.setProperty(
+            "--editor-sheet-left",
+            `${desktop ? left : 40}px`,
+          );
+          root!.style.setProperty(
+            "--editor-sheet-right",
+            `${desktop ? spare - left : 36}px`,
+          );
+        }
         // Give initial font/logo metrics a bounded grace period. After that,
         // measure what's available and refresh when the pending batch settles.
         const images = Array.from(
@@ -241,12 +260,13 @@ export function PagedPaper({
     window.addEventListener("resize", schedule);
     document.fonts.addEventListener("loadingdone", schedule);
     const resize = new ResizeObserver(() => {
-      if (latest.current.sheets && root.clientWidth !== width) {
-        width = root.clientWidth;
+      const available = root.parentElement?.clientWidth ?? root.clientWidth;
+      if (latest.current.sheets && available !== width) {
+        width = available;
         schedule();
       }
     });
-    resize.observe(root);
+    resize.observe(root.parentElement ?? root);
     observe();
     queueMicrotask(() => {
       if (!stopped) flushSync(update);

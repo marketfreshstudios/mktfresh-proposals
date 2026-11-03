@@ -3864,14 +3864,14 @@
   }
 }
 
-/* PR 3: responsive drawing only. The canonical PDF-width clone never uses these rules. */
+/* Display sheets preserve the PDF text column when space allows; never scale text. */
 @media (min-width: 0px) {
   :is(.pdf-paper-viewport, .template-page-viewport):has(
     [data-sheet-view="true"]
   ) {
     width: 100%;
     overflow: visible;
-    padding: 1px;
+    padding: 0;
   }
   .pdf-paper-size:has([data-sheet-view="true"]) {
     width: 100%;
@@ -3882,11 +3882,11 @@
     ) {
     width: 100% !important;
     min-width: 0 !important;
-    max-width: 760px !important;
+    max-width: var(--editor-sheet-width, 760px) !important;
     margin: 0 auto !important;
     box-sizing: border-box;
-    padding: clamp(40px, 6vw, 72px) clamp(52px, 6vw, 88px) 88px
-      clamp(64px, 7vw, 88px) !important;
+    padding: clamp(40px, 6vw, 72px) var(--editor-sheet-right, 52px) 88px
+      var(--editor-sheet-left, 64px) !important;
     min-height: var(--projected-sheets-height, 320px) !important;
     transform: none !important;
     border: 0;
@@ -3940,11 +3940,11 @@
   .editor-page-sheets[data-sheet-view="true"] > .page-sheet {
     position: absolute;
     width: 100%;
-    max-width: 760px;
+    max-width: var(--editor-sheet-width, 760px);
     min-height: 320px;
     margin: 0 auto;
-    padding: clamp(40px, 6vw, 72px) clamp(52px, 6vw, 88px) 88px
-      clamp(64px, 7vw, 88px);
+    padding: clamp(40px, 6vw, 72px) var(--editor-sheet-right, 52px) 88px
+      var(--editor-sheet-left, 64px);
     box-sizing: border-box;
     background: var(--paper);
     border: 0;

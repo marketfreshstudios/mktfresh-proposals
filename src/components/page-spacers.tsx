@@ -29,13 +29,18 @@ export function pageSpacers(values: () => Record<string, string>) {
                   let consumed = 0,
                     at = state.doc.content.size,
                     paragraph = 0;
+                  let whole: { from: number; to: number } | undefined;
                   state.doc.descendants((node, pos) => {
                     if (space.paragraph !== undefined) {
                       if (
                         node.type.name === "paragraph" ||
                         node.type.name === "listItem"
                       ) {
-                        if (paragraph++ === space.paragraph) at = pos + 1;
+                        if (paragraph++ === space.paragraph) {
+                          at = pos + 1;
+                          if (node.textContent.trim())
+                            whole = { from: pos, to: pos + node.nodeSize };
+                        }
                       }
                       return true;
                     }
@@ -61,6 +66,11 @@ export function pageSpacers(values: () => Record<string, string>) {
                     }
                     consumed += length;
                   });
+                  if (whole)
+                    return Decoration.node(whole.from, whole.to, {
+                      style: `margin-top:${Math.max(0, space.height)}px!important`,
+                      "data-layout-space": "true",
+                    });
                   return Decoration.widget(
                     at,
                     () => {

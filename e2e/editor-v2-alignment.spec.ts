@@ -75,7 +75,8 @@ test("TEST 3 assets settle before interaction; every block retains its pages, fr
   expect(JSON.parse(baseline.plan!).pages).toBeGreaterThan(1);
   expect(JSON.parse(baseline.plan!).starts[0]).toMatchObject({
     block: "regression-9",
-    offset: 312,
+    offset: 229,
+    paragraph: 6,
   });
   // Real pointer selection, text focus and Escape all exercise the shared chrome.
   for (const block of f.content) {

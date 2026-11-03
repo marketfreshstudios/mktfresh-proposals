@@ -254,7 +254,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
           ),
         ).toBeCloseTo(40, 2);
       } else {
-        expect(paperWidth).toBeLessThanOrEqual(760);
+        expect(paperWidth).toBeLessThanOrEqual(848);
         expect(
           parseFloat(
             await paper.evaluate((el) => getComputedStyle(el).paddingLeft),

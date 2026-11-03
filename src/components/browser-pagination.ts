@@ -1,14 +1,16 @@
 import type { Block } from "../lib/model";
 import type { PagePlan, PageStart } from "../lib/page-plan";
-import { sourceTextNodes, sourceOffset } from "../lib/pagination-dom";
+import {
+  sourceTextNodes,
+  sourceOffset,
+  sourceLines as lines,
+} from "../lib/pagination-dom";
 import { pageMetrics, type ResolvedStyles } from "../lib/proposal-styles";
 import type { SourceSpacer } from "./page-spacers";
 export type BrowserPages = {
   plan: PagePlan;
   assignments: { block: string; page: number }[];
 };
-const ignore =
-  "[data-editor-chrome],textarea,[data-pagination-spacer],.sr-only";
 /** Measures actual browser line boxes at Letter width. All inserted gaps are visual decorations. */
 export function paginateBrowser(
   root: HTMLElement,
@@ -24,6 +26,10 @@ export function paginateBrowser(
   const copies = [clone, ...clone.querySelectorAll<HTMLElement>("*")];
   const live = new WeakMap(copies.map((el, n) => [el, originals[n]]));
   clone.inert = true;
+  // A measurement clone must not join (and uncheck) the live radio groups.
+  clone
+    .querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    .forEach((input) => input.removeAttribute("name"));
   clone.setAttribute("aria-hidden", "true");
   clone.dataset.pageMeasurement = "true";
   Object.assign(clone.style, {
@@ -130,6 +136,30 @@ export function paginateBrowser(
     };
     starts.push(start);
     const desired = (page - 1) * stride + metrics.margins.top * 96;
+    if (
+      point?.node instanceof HTMLElement &&
+      point.node.matches("p,li") &&
+      point.node.textContent?.trim()
+    ) {
+      const element = point.node;
+      const previous = parseFloat(getComputedStyle(element).marginTop) || 0;
+      const height = previous + desired - local(element);
+      element.dataset.layoutSpace = "true";
+      element.style.setProperty("margin-top", `${height}px`, "important");
+      const host = element.closest<HTMLElement>(".field-editor");
+      if (host)
+        spacers.set(host, [
+          ...(spacers.get(host) ?? []),
+          {
+            offset: sourceOffset(host, element, 0),
+            paragraph: Array.from(host.querySelectorAll("p,li")).indexOf(
+              element,
+            ),
+            height,
+          },
+        ]);
+      return;
+    }
     if (point) {
       const host =
         point.node.nodeType === 1
@@ -167,9 +197,10 @@ export function paginateBrowser(
         return;
       }
     }
-    const frame = unit
-      ? target
-      : (target.closest<HTMLElement>(".quote-sortable") ?? target);
+    const frame =
+      unit || part
+        ? target
+        : (target.closest<HTMLElement>(".quote-sortable") ?? target);
     const previous = parseFloat(getComputedStyle(frame).marginTop) || 0;
     frame.dataset.layoutSpace = "true";
     frame.style.setProperty(
@@ -177,52 +208,6 @@ export function paginateBrowser(
       `${previous + desired - local(frame)}px`,
       "important",
     );
-  }
-  function lines(target: HTMLElement) {
-    const result: { node: Node; at: number; top: number; bottom: number }[] =
-      [];
-    for (const node of sourceTextNodes(target)) {
-      if (
-        !node.parentElement?.getClientRects().length ||
-        node.parentElement.closest(ignore)
-      )
-        continue;
-      let at = 0;
-      while (at < node.length) {
-        const range = document.createRange();
-        range.setStart(node, at);
-        range.setEnd(node, at + 1);
-        const rect = range.getBoundingClientRect();
-        if (rect.height < 1) {
-          at++;
-          continue;
-        }
-        const last = result.at(-1);
-        if (!last || Math.abs(last.top - rect.top) > 2)
-          result.push({ node, at, top: rect.top, bottom: rect.bottom });
-        else last.bottom = Math.max(last.bottom, rect.bottom);
-        // Find the end of this line without a Range call for every character.
-        let lo = at + 1,
-          hi = node.length;
-        while (lo < hi) {
-          const mid = Math.ceil((lo + hi) / 2);
-          range.setStart(node, mid - 1);
-          range.setEnd(node, mid);
-          const r = range.getBoundingClientRect();
-          if (Math.abs(r.top - rect.top) < 2) lo = mid;
-          else hi = mid - 1;
-        }
-        at = Math.max(at + 1, lo);
-      }
-    }
-    for (const empty of target.querySelectorAll<HTMLElement>("p")) {
-      if (!empty.textContent?.trim()) {
-        const r = empty.getBoundingClientRect();
-        if (r.height > 0)
-          result.push({ node: empty, at: 0, top: r.top, bottom: r.bottom });
-      }
-    }
-    return result.sort((a, b) => a.top - b.top);
   }
   function text(target: HTMLElement, block: Block, part?: string) {
     // Re-measure the remaining lines after each inserted spacer; line wrapping stays browser-native.
@@ -232,30 +217,78 @@ export function paginateBrowser(
     while (safety++ < 500) {
       const rows = lines(target);
       let broke = false;
-      for (const row of rows) {
-        const offset = sourceOffset(target, row.node, row.at);
+      for (const overflowing of rows) {
+        let row = overflowing;
+        let offset = sourceOffset(target, row.node, row.at);
         if (
           (row.node.nodeType === 3 && offset <= consumed) ||
           (row.node.nodeType === 1 && visited.has(row.node))
         )
           continue;
         if (row.bottom - top > end() + 0.5) {
+          const pageTop = (page - 1) * stride + metrics.margins.top * 96;
+          const unitFor = (node: Node) => {
+            const element =
+              node.nodeType === 1 ? (node as Element) : node.parentElement;
+            return element?.closest("li") ?? element?.closest("p") ?? target;
+          };
+          const unit = unitFor(row.node);
+          const remaining = rows.filter(
+            (r) =>
+              unitFor(r.node) === unit &&
+              sourceOffset(target, r.node, r.at) >= consumed,
+          );
+          const left = remaining.indexOf(row);
+          let candidate = left;
+          if (
+            (remaining.length <= 3 &&
+              remaining.at(-1)!.bottom - remaining[0].top <=
+                metrics.contentHeight) ||
+            left < 2
+          )
+            candidate = 0;
+          else if (remaining.length - left < 2)
+            candidate = remaining.length - 2;
+          const chosen = remaining[Math.max(0, candidate)] ?? row;
+          if (sourceOffset(target, chosen.node, chosen.at) > consumed)
+            row = chosen;
+          offset = sourceOffset(target, row.node, row.at);
           const host =
             row.node.nodeType === 1
               ? (row.node as Element).closest(
                   ".field-editor,[data-source-text]",
                 )
               : hostFor(row.node);
-          if (
-            host &&
-            row.top - top > (page - 1) * stride + metrics.margins.top * 96 + 2
-          ) {
+          if (host && overflowing.top - top > pageTop + 2) {
+            const wholeUnit =
+              row === remaining[0] && sourceOffset(target, unit, 0) === offset;
+            const before = rows.slice(0, rows.indexOf(row));
+            if (
+              part &&
+              wholeUnit &&
+              consumed < 0 &&
+              before.every(
+                (r) =>
+                  !(
+                    r.node.nodeType === 1
+                      ? (r.node as Element)
+                      : r.node.parentElement
+                  )?.closest("p,li"),
+              )
+            ) {
+              newPage(target, block, undefined, undefined, part);
+              consumed = 0;
+              broke = true;
+              break;
+            }
             const chip = row.node.parentElement?.closest("[data-field]");
             const first = chip ? sourceTextNodes(chip)[0] : null;
             newPage(
               target,
               block,
-              { node: first ?? row.node, at: first ? 0 : row.at },
+              wholeUnit && unit !== target
+                ? { node: unit, at: 0 }
+                : { node: first ?? row.node, at: first ? 0 : row.at },
               undefined,
               part,
             );
@@ -304,7 +337,8 @@ export function paginateBrowser(
         .find((v) => v.b.type !== "page_break")?.el;
       const orphan =
         b.type === "heading" && next
-          ? (lines(next)[0]?.bottom ?? next.getBoundingClientRect().top + 24) -
+          ? (lines(next)[Math.min(1, lines(next).length - 1)]?.bottom ??
+              next.getBoundingClientRect().top + 24) -
             el.getBoundingClientRect().bottom
           : 0;
       if (b.type === "pricing_table" && height > full) {
