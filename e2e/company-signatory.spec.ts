@@ -107,7 +107,7 @@ test("delegated company signing requires authorization in the UI and seals actua
   }
   const body = await extract(result.body),
     full = await extract(result.pdf);
-  expect(body).toContain("Alex Morgan · Owner · Example Studio");
+  expect(body).toContain("COMPANY Alex Morgan Owner Example Studio");
   expect(body).not.toContain("Franz");
   expect(full).toContain(
     "Signed on behalf of Alex Morgan by Franz [franz@example.test]",

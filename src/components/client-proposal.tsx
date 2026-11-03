@@ -1,4 +1,5 @@
 "use client";
+import { pairSignatureNodes } from "./signature-pair";
 import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
@@ -1320,72 +1321,79 @@ function FlowDocument({
         validUntil={p.valid_until}
         timezone={p.timezone}
       />
-      {content.map((block, index) =>
-        index === 0 &&
-        block.type === "heading" &&
-        block.text === "{{proposal.title}}" ? null : block.type ===
-          "pricing_table" ? (
-          <section
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-            id={`section-${index}`}
-          >
-            <h2>Your investment</h2>
-            {!frozen && (
-              <p>Optional items are your choice. Totals update as you go.</p>
-            )}
-            <div className="flow-quote">
-              <ClientItems
+      {pairSignatureNodes(
+        content,
+        content.map((block, index) =>
+          index === 0 &&
+          block.type === "heading" &&
+          block.text === "{{proposal.title}}" ? null : block.type ===
+            "pricing_table" ? (
+            <section
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+              id={`section-${index}`}
+            >
+              <h2>Your investment</h2>
+              {!frozen && (
+                <p>Optional items are your choice. Totals update as you go.</p>
+              )}
+              <div className="flow-quote">
+                <ClientItems
+                  proposal={p}
+                  frozen={frozen}
+                  busy={busy}
+                  onToggle={onToggle}
+                />
+              </div>
+            </section>
+          ) : block.type === "contract" ? (
+            <section
+              key={index}
+              id={`section-${index}`}
+              className="flow-contract"
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+            >
+              <h2>{block.text || "Statement of Work & Contract"}</h2>
+              {(block.clauses ?? []).map((c) => (
+                <details key={c.id}>
+                  <summary>{resolve(c.heading, p.variables)}</summary>
+                  <p style={{ whiteSpace: "pre-wrap" }}>
+                    {resolve(c.body, p.variables)}
+                  </p>
+                </details>
+              ))}
+            </section>
+          ) : block.type === "signature_block" ? (
+            <div
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+            >
+              <ClientSignatureBlock
                 proposal={p}
-                frozen={frozen}
-                busy={busy}
-                onToggle={onToggle}
+                role={block.role ?? "client"}
               />
             </div>
-          </section>
-        ) : block.type === "contract" ? (
-          <section
-            key={index}
-            id={`section-${index}`}
-            className="flow-contract"
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-          >
-            <h2>{block.text || "Statement of Work & Contract"}</h2>
-            {(block.clauses ?? []).map((c) => (
-              <details key={c.id}>
-                <summary>{resolve(c.heading, p.variables)}</summary>
-                <p style={{ whiteSpace: "pre-wrap" }}>
-                  {resolve(c.body, p.variables)}
-                </p>
-              </details>
-            ))}
-          </section>
-        ) : block.type === "signature_block" ? (
-          <div
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-          >
-            <ClientSignatureBlock proposal={p} role={block.role ?? "client"} />
-          </div>
-        ) : (
-          <div
-            id={`section-${index}`}
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-            dangerouslySetInnerHTML={{
-              __html: renderBlocks(
-                [block],
-                p.quote as QuoteItem[],
-                p.variables,
-                p.currency,
-              ),
-            }}
-          />
+          ) : (
+            <div
+              id={`section-${index}`}
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+              dangerouslySetInnerHTML={{
+                __html: renderBlocks(
+                  [block],
+                  p.quote as QuoteItem[],
+                  p.variables,
+                  p.currency,
+                ),
+              }}
+            />
+          ),
         ),
+        p.pagination,
       )}
       <p className="muted document-end">
         {p.valid_until && (

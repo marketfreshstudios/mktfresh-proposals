@@ -1,9 +1,8 @@
+import { readableDate } from "./validity";
+import { signatureHtml } from "./signature-presentation";
 import { applyPagePlan, plannedPrintCss } from "./planned-print";
 import { documentStyleCss, styleFonts } from "./proposal-styles";
-import {
-  completionCertificate,
-  certificateTime,
-} from "./completion-certificate";
+import { completionCertificate } from "./completion-certificate";
 import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
 import {
   printContent,
@@ -80,7 +79,19 @@ export async function sealedPdf(
     const page = await browser.newPage({ javaScriptEnabled: false });
     await page.route("**/*", (route) => route.abort());
     const signedBlock = (s: Signer) =>
-      `<section class="print-signature" style="break-inside:avoid"><h2>${s.role === "client" ? "Client" : "Company"} signature</h2><p>${escape(s.name)} · ${escape(s.title)}${s.company ? ` · ${escape(s.company)}` : ` · ${escape(s.email)}`}</p>${s.kind === "drawn" ? `<img alt="Signature" src="${s.image}" style="max-width:100%;max-height:160px;object-fit:contain" />` : `<p><em>${escape(s.typed_name!)}</em></p>`}<p>${escape(certificateTime(s.signed_at, brand?.settings?.timezone))}</p><p>${escape(s.consent_text)}</p></section>`;
+      signatureHtml({
+        role: s.role,
+        name: s.name,
+        company:
+          s.company ||
+          (s.role === "company"
+            ? brand?.settings?.company_name || ""
+            : version.variables_resolved["client.company"] || ""),
+        title: s.title,
+        date: readableDate(s.signed_at, brand?.settings?.timezone),
+        image: s.kind === "drawn" ? s.image : undefined,
+        typedName: s.kind === "typed" ? s.typed_name || s.name : undefined,
+      });
     const signatures = signers.map(signedBlock).join("");
     await page.setContent(
       htmlDocument(
@@ -110,6 +121,7 @@ export async function sealedPdf(
             signatory: brand?.settings?.company_signatory,
             currentLayout: !!version.resolved_styles?.layout,
             planned: !!version.pagination,
+            pagination: version.pagination,
             styles: version.resolved_styles,
             workspace:
               brand?.settings?.company_name ??

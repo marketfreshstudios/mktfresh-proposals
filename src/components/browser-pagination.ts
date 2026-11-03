@@ -198,7 +198,7 @@ export function paginateBrowser(
       }
     }
     const frame =
-      unit || part
+      unit || part || target.classList.contains("signature-pair")
         ? target
         : (target.closest<HTMLElement>(".quote-sortable") ?? target);
     const previous = parseFloat(getComputedStyle(frame).marginTop) || 0;
@@ -330,7 +330,13 @@ export function paginateBrowser(
           true,
           explicit.shift()!.id,
         );
-      const height = el.getBoundingClientRect().height;
+      const pair = frame.closest<HTMLElement>(".signature-pair");
+      const pairFirst =
+        pair?.querySelector(".block-sortable") ===
+        frame.closest(".block-sortable");
+      const height = pairFirst
+        ? pair!.getBoundingClientRect().height
+        : el.getBoundingClientRect().height;
       const full = metrics.contentHeight;
       const next = blocks
         .slice(i + 1)
@@ -355,11 +361,15 @@ export function paginateBrowser(
         (b.type === "pricing_table" && height <= full);
       if (
         whole &&
-        el.getBoundingClientRect().bottom - top + Math.max(0, orphan) >
+        (pairFirst
+          ? pair!.getBoundingClientRect().bottom
+          : el.getBoundingClientRect().bottom) -
+          top +
+          Math.max(0, orphan) >
           end() + 0.5 &&
         local(el) > (page - 1) * stride + metrics.margins.top * 96 + 2
       )
-        newPage(frame, b);
+        newPage(pairFirst ? pair! : frame, b);
       assignments.push({ block: b.id!, page });
       if (b.type === "paragraph") text(el, b);
       else if (b.type === "contract") {

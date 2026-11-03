@@ -260,3 +260,122 @@ test("1440px editor text matches the PDF page edge words; narrow projections kee
   }
   expect(f.patches).toHaveLength(0);
 });
+
+test("adjacent signatures share a row and a page; separated signatures stay authored", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    content: [
+      { id: "filler", type: "paragraph", text: "Calibration space." },
+      { id: "client", type: "signature_block", role: "client" },
+      { id: "company", type: "signature_block", role: "company" },
+      { id: "break", type: "page_break" },
+      { id: "separate", type: "signature_block", role: "client" },
+    ],
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  await expect(page.locator(".editor-paper .signature-pair")).toHaveCount(1);
+  const pair = page.locator(".signature-pair .signature-area");
+  const a = await pair.nth(0).boundingBox(),
+    b = await pair.nth(1).boundingBox();
+  expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(1);
+  expect(b!.x - a!.x).toBeGreaterThan(100);
+  await expect(pair.first()).toHaveCSS("height", "56px");
+  expect(
+    (await plan(page)).starts.some((s: any) => s.block === "company"),
+  ).toBe(false);
+});
+
+test("pagination measurement copies cannot uncheck the live choice group", async ({
+  page,
+}) => {
+  const group = crypto.randomUUID();
+  const f = await editorFixture(page, false, {
+    quote: (base) =>
+      [0, 1].map((n) => ({
+        ...base[0],
+        id: crypto.randomUUID(),
+        name: `Choice ${n + 1}`,
+        choice_group_id: group,
+        optional: true,
+        default_selected: n === 0,
+        selected: n === 0,
+        order: n,
+        sublines: base[0].sublines.map((s) => ({
+          ...s,
+          id: crypto.randomUUID(),
+        })),
+      })),
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const choice = page.getByRole("radio", {
+    name: /Default selection for Choice 1/,
+  });
+  await expect(choice).toBeChecked();
+  for (const width of [1180, 1440]) {
+    await page.setViewportSize({ width, height: 1100 });
+    await page
+      .locator(".editor-paper")
+      .evaluate((el) => el.dispatchEvent(new Event("pagination-flush")));
+    await expect(choice).toBeChecked();
+  }
+  expect(f.patches).toHaveLength(0);
+});
+
+test("client signing shows the signature pair live; the locked editor renders the accepted signature", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    content: [
+      { id: "quote", type: "pricing_table" },
+      { id: "client", type: "signature_block", role: "client" },
+      { id: "company", type: "signature_block", role: "company" },
+    ],
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/p/${f.draft.id}?preview=1`);
+  await page
+    .getByRole("button", { name: "Review and sign", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Your signature", exact: true })
+    .fill("Example Signature");
+  const preview = page.getByLabel("Signature preview", { exact: true });
+  await expect(preview.locator(".document-signature")).toHaveCount(2);
+  await expect(preview.locator(".typed-signature")).toHaveText(
+    "Example Signature",
+  );
+  const areas = preview.locator(".signature-area");
+  await expect(areas.first()).toHaveCSS("height", "56px");
+  const a = await areas.first().boundingBox(),
+    b = await areas.last().boundingBox();
+  expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(1);
+  await page.setViewportSize({ width: 375, height: 1000 });
+  await expect
+    .poll(() =>
+      preview
+        .locator(".signature-pair")
+        .evaluate(
+          (e) => getComputedStyle(e).gridTemplateColumns.split(" ").length,
+        ),
+    )
+    .toBe(1);
+  await f.sendRemote();
+  const { signature } = await import("../tests/helpers");
+  await f.signRemote(signature(f.active().revision));
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}?action=edit`);
+  await expect(
+    page.locator(
+      '[data-block-id="block-client"] .signature-area .typed-signature',
+    ),
+  ).toHaveText("Jane Doe");
+  await expect(
+    page.locator('[data-block-id="block-client"] .signature-date'),
+  ).not.toHaveText(/Date signed/);
+  await expect(page.locator(".editor-edit-bar")).toHaveCount(0);
+});

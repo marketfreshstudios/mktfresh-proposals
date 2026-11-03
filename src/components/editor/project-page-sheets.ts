@@ -214,10 +214,15 @@ export function projectPageSheets(
         ]);
         previousFrame = null;
       } else {
+        const sortable =
+          target.closest<HTMLElement>(".quote-sortable") ?? target;
+        const pair = sortable.closest<HTMLElement>(".signature-pair");
         const moved =
           start.unit || start.part
             ? target
-            : (target.closest<HTMLElement>(".quote-sortable") ?? target);
+            : pair?.querySelector(".block-sortable") === sortable
+              ? pair
+              : sortable;
         const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
         finish(
           previousFrame === moved ? pageTop + topPadding : y(moved) - margin,

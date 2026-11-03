@@ -1,4 +1,6 @@
 "use client";
+import { pairSignatureNodes } from "./signature-pair";
+import { signatureHtml } from "../lib/signature-presentation";
 import { DocumentTotals } from "./document-totals";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
 import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
@@ -1902,6 +1904,7 @@ function QuoteEditorContent({
   );
 
   function blockEditor(b: Block, n: number) {
+    const signer = p.signers.find((s) => s.role === (b.role ?? "client"));
     const HeadingTag = `h${(b.level ?? 1) + 1}` as "h2" | "h3" | "h4";
     const style = (level: TextLevel, text?: string) => {
       const next = p.content.map((v, j) =>
@@ -2395,24 +2398,43 @@ function QuoteEditorContent({
                   </Field>
                 </Sheet>
               )}
-              <h3>
-                {b.role === "client" ? "Client signature" : "Company signature"}
-              </h3>
-              <strong>
-                {b.role === "client"
-                  ? `${p.client.first_name} ${p.client.last_name}`
-                  : settings?.company_signatory?.name || settings?.owner}
-              </strong>
-              {(b.role === "client"
-                ? p.client.title
-                : settings?.company_signatory?.title) && (
-                <p>
-                  {b.role === "client"
-                    ? p.client.title
-                    : `${settings?.company_signatory?.title} · ${settings?.company_name}`}
-                </p>
-              )}
-              <p className="muted">Awaiting signature</p>
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: signatureHtml({
+                    role: b.role ?? "client",
+                    name:
+                      signer?.name ||
+                      (b.role === "company"
+                        ? settings?.company_signatory?.name ||
+                          settings?.owner ||
+                          "Company"
+                        : `${p.client.first_name} ${p.client.last_name}`),
+                    date: signer
+                      ? readableDate(
+                          signer.signed_at,
+                          p.workspace_settings?.timezone,
+                        )
+                      : undefined,
+                    image: signer?.kind === "drawn" ? signer.image : undefined,
+                    typedName:
+                      signer?.kind === "typed"
+                        ? signer.typed_name || signer.name
+                        : undefined,
+                    company:
+                      signer?.company ||
+                      (b.role === "company"
+                        ? p.workspace_settings?.company_name ||
+                          settings?.company_name ||
+                          ""
+                        : p.client.company),
+                    title:
+                      signer?.title ||
+                      (b.role === "company"
+                        ? settings?.company_signatory?.title
+                        : p.client.title),
+                  }),
+                }}
+              />
             </div>
           ) : b.type === "image" ? (
             <>
@@ -2452,7 +2474,11 @@ function QuoteEditorContent({
         id={`draft-section-${n}`}
         key={s.id}
       >
-        {s.indices.map((j) => blockEditor(p.content[j], j))}
+        {pairSignatureNodes(
+          s.indices.map((j) => p.content[j]),
+          s.indices.map((j) => blockEditor(p.content[j], j)),
+          locked ? p.pagination : undefined,
+        )}
       </section>
     );
   }

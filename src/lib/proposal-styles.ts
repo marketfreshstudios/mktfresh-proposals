@@ -1,3 +1,4 @@
+import { signatureCss } from "./signature-presentation";
 import { documentQuoteCss } from "./document-quote";
 import { documentFlowCss } from "./document-spacing";
 import { AppError } from "./model";
@@ -287,6 +288,6 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
       : styles.layout
         ? `${scope} .flow-quote-line{padding-block:20px}`
         : "") +
-    (styles.layout ? documentFlowCss(styles) : "")
+    (styles.layout ? documentFlowCss(styles) + signatureCss : "")
   );
 }

@@ -451,7 +451,7 @@ test("a PDF overflow remains visible, warns readiness and never drops the end of
     encoding: "utf8",
   });
   expect(text.replace(/\s/g, "")).toContain("Nextsteps.");
-  expect(text.replace(/\s/g, "")).toContain("Clientsignature");
+  expect(text.replace(/\s/g, "")).toContain("CLIENTJaneDoe");
   expect(text.split("\f").filter((s) => s.trim()).length).toBeGreaterThan(1);
 });
 

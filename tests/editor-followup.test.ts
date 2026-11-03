@@ -64,7 +64,7 @@ it("marks each pricing unit, choice group and signature as indivisible in print"
   expect(html).toContain('class="print-choice-group"');
   expect(html).toContain(`data-print-unit="${quote[0].id}"`);
   expect(html).toContain('class="print-pricing-card"');
-  expect(html).toContain('class="print-signature"');
+  expect(html).toContain('class="document-signature"');
   expect(printCss).toContain("break-inside:avoid;page-break-inside:avoid");
 });
 
