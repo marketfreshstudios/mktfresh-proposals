@@ -49,4 +49,6 @@ export const signatureCss = `
 .proposal-typography.proposal-typography .signature-name{display:block;font:600 14px/1.5 var(--font-ui,"Instrument Sans",sans-serif)}
 .proposal-typography.proposal-typography .signature-title,.proposal-typography.proposal-typography .signature-date{font:400 12px/1.5 var(--font-ui,"Instrument Sans",sans-serif);color:#5F5B53}
 @media screen and (max-width:559px){.client-flow .proposal-typography.proposal-typography .signature-pair{grid-template-columns:1fr}}
+/* Preserve searchable words in PDF text extraction without changing screen labels. */
+@media print{.proposal-typography.proposal-typography .signature-role{letter-spacing:normal}}
 `;

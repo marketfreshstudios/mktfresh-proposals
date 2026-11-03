@@ -10,6 +10,25 @@ import { certificateTime } from "../src/lib/completion-certificate";
 import { sealedPdf } from "../src/lib/pdf";
 import { onBehalfText } from "../src/lib/workspace";
 import { mkdir, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { documentQuote, documentQuoteCss } from "../src/lib/document-quote";
+import { signatureHtml, signatureCss } from "../src/lib/signature-presentation";
+
+test("document labels keep screen tracking but print whole words without glyph gaps", async ({
+  page,
+}) => {
+  const { draft } = await setup();
+  await page.setContent(
+    `<style>${documentQuoteCss}${signatureCss}</style><article class="proposal-typography">${documentQuote(draft.quote, "USD")}${(["client", "company"] as const).map((role) => signatureHtml({ role, name: "Test signer", company: "Example Studio" })).join("")}</article>`,
+  );
+  const labels = page.locator(".document-totals span,.signature-role");
+  await expect(labels).toHaveCount(4);
+  for (const label of await labels.all())
+    await expect(label).toHaveCSS("letter-spacing", "0.88px");
+  await page.emulateMedia({ media: "print" });
+  for (const label of await labels.all())
+    await expect(label).toHaveCSS("letter-spacing", "normal");
+});
 
 test("delegated company signing requires authorization in the UI and seals actual actor evidence in the PDF", async ({
   page,
@@ -108,6 +127,13 @@ test("delegated company signing requires authorization in the UI and seals actua
   const body = await extract(result.body),
     full = await extract(result.pdf);
   expect(body).toContain("COMPANY Alex Morgan Owner Example Studio");
+  const popplerBody = execFileSync("pdftotext", ["-layout", "-", "-"], {
+    input: Buffer.from(result.body),
+    encoding: "utf8",
+  });
+  for (const text of [body, full, popplerBody])
+    for (const label of ["ONE-TIME", "MONTHLY", "CLIENT", "COMPANY"])
+      expect(text).toContain(label);
   expect(body).not.toContain("Franz");
   expect(full).toContain(
     "Signed on behalf of Alex Morgan by Franz [franz@example.test]",
