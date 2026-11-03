@@ -2510,9 +2510,7 @@ function QuoteEditorContent({
             role="img"
             aria-label="Required"
             title="Required"
-          >
-            <Icon name="lock" />
-          </span>
+          />
         )}
         <QuoteItemBody
           item={i}

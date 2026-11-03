@@ -6157,3 +6157,29 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     line-height: 18px;
   }
 }
+/* Authoring-only drag chrome uses the title/price gap, leaving prototype rows intact. */
+.document-quote .document-sortable-card > .drag-handle {
+  left: auto;
+  right: calc(var(--document-price-width, 0px) + 16px);
+  top: 12px;
+  width: 20px;
+  min-width: 20px;
+  height: 22px;
+  min-height: 22px;
+}
+.document-quote
+  .document-sortable-card
+  > .flow-quote-line
+  .flow-line-title
+  > strong:first-child {
+  padding-right: 40px;
+}
+.document-quote .document-sortable-group > .drag-handle {
+  left: auto;
+  right: 12px;
+  top: 8px;
+  width: 20px;
+  min-width: 20px;
+  height: 22px;
+  min-height: 22px;
+}

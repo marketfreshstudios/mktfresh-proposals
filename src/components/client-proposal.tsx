@@ -1452,9 +1452,7 @@ function ClientItems({
           role="img"
           aria-label="Required"
           title="Required"
-        >
-          <Icon name="lock" />
-        </span>
+        />
         {body}
       </div>
     );

@@ -1,5 +1,11 @@
 "use client";
-import { type ReactNode, type CSSProperties } from "react";
+import {
+  type ReactNode,
+  type CSSProperties,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { BlockDragHandle, useControlLayout } from "./editor/control-layout";
 import { useBlockSelection } from "./block-controls";
 import {
@@ -41,6 +47,20 @@ export function Sortable({
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
+  const cardNode = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!documentKind || !cardNode.current) return;
+    const node = cardNode.current;
+    const measure = () =>
+      node.style.setProperty(
+        "--document-price-width",
+        `${node.querySelector<HTMLElement>(":scope > .flow-quote-line .flow-line-title > .amount")?.offsetWidth ?? 0}px`,
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  });
   const { desktop } = useControlLayout();
   const {
     attributes,
@@ -50,6 +70,13 @@ export function Sortable({
     transition,
     isDragging,
   } = useSortable({ id, disabled: { draggable: !draggable } });
+  const assignRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      cardNode.current = node;
+    },
+    [setNodeRef],
+  );
   const handle = draggable ? (
     <button
       type="button"
@@ -93,7 +120,7 @@ export function Sortable({
   ) : null;
   return (
     <div
-      ref={setNodeRef}
+      ref={assignRef}
       data-print-unit={printUnit}
       data-sortable-id={id}
       onPointerLeave={() => {
