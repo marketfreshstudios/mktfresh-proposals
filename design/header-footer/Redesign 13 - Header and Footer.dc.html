@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E5DD;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18}a{color:#365C4A}a:hover{color:#24402F}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.45 system-ui,sans-serif;color:rgba(0,0,0,.6)}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55)}</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Shared page header &amp; footer · extends <a href="Redesign 10 - Editor Prototype.dc.html">Redesign 10</a> and <a href="Redesign 11 - Editor v2 Tablet and Phone.dc.html">Redesign 11</a></span></div>
+
+  <div style="max-width:1100px;margin:0 0 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px 36px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div style="grid-column:1/-1;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Decisions the brief didn’t cover</div>
+    <div><b style="color:#1C1B18">1. File name.</b> Saved as Redesign 13, since Redesign 12 is already Studio v2.</div>
+    <div><b style="color:#1C1B18">2. Band position.</b> The band sits just inside the top or bottom margin, with a fixed 0.25 in gap before the content. Heights are 0.4, 0.5 (default) or 0.75 in.</div>
+    <div><b style="color:#1C1B18">3. Hiding keeps the space.</b> “Hide on this page” leaves an empty band of the same height, so hiding one header never moves page breaks. Turning Header off in Styles removes it from every page and gives the space back.</div>
+    <div><b style="color:#1C1B18">4. Cover default: agreed.</b> The cover starts without a header and footer. A “Use shared header” pill appears in the cover’s top margin on hover or focus, and Styles has a “Show on cover” switch.</div>
+    <div><b style="color:#1C1B18">5. When the anchor block is deleted.</b> A unique band moves to the block that now starts the page. If the page itself disappears, the band is dropped, and a toast offers Undo.</div>
+    <div><b style="color:#1C1B18">6. Reset to template</b> resets only the shared header and footer. Pages with their own keep them. “Use shared on every page” is a separate action.</div>
+    <div><b style="color:#1C1B18">7. Page fields</b> ({{ tokPN }}, {{ tokPC }}) only appear in the Fields list while a header or footer is being edited. In body text they would be ambiguous.</div>
+    <div><b style="color:#1C1B18">8. Controls live in the margin.</b> Labels, Edit, ⋯ and the edit bar sit in the page margin: above the header and below the footer. They never take space from content or touch the gutter + or the AI ✓.</div>
+  </div>
+
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel" style="max-width:1100px"><a class="dv-oid" href="#1a">1a</a><span><b style="color:#1C1B18">Resting · shared header and footer on two pages.</b> Nothing selected, so there’s no outline or label. The band is plain workspace text and its divider is the only line. 1:1 at 96 px/in, the same scale as the PDF.</span></div>
+      <div style="position:relative;width:1100px;height:752px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:40px;width:816px;height:300px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(transparent,#000 90px);mask-image:linear-gradient(transparent,#000 90px)">
+          <div style="position:absolute;left:88px;right:88px;top:40px;display:flex;flex-direction:column;gap:12px"><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll keep the site fast and secure every month, apply updates the week they ship, and send you a short report so you always know what changed.</p><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">You can pause or change the plan with 30 days’ notice.</p></div>
+          <div style="position:absolute;left:88px;right:88px;bottom:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-top:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span>Prepared for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Brightline Foods</span></span><span></span><span style="justify-self:end">Page <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">2</span> of <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">9</span></span>
+          </div>
+        </div>
+        <div style="position:absolute;left:48px;top:340px;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 3<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:392px;width:816px;height:320px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 220px,transparent);mask-image:linear-gradient(#000 220px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span></span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px;display:flex;flex-direction:column;gap:12px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p></div>
+        </div>
+        <div style="position:absolute;left:880px;top:196px;width:8px;height:24px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:200px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">gap 0.25 in · 24</span>
+        <div style="position:absolute;left:880px;top:220px;width:8px;height:48px;border:1px solid #365C4A;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:236px;font:500 11px/16px 'IBM Plex Mono';color:#24402F">footer band 0.5 in · 48</span>
+        <div style="position:absolute;left:880px;top:268px;width:8px;height:72px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:296px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">bottom margin 0.75 in · 72</span>
+        <div style="position:absolute;left:880px;top:392px;width:8px;height:72px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:420px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">top margin 0.75 in · 72</span>
+        <div style="position:absolute;left:880px;top:464px;width:8px;height:48px;border:1px solid #365C4A;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:480px;font:500 11px/16px 'IBM Plex Mono';color:#24402F">header band 0.5 in · 48</span>
+        <div style="position:absolute;left:880px;top:512px;width:8px;height:24px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:516px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">gap 0.25 in · 24</span>
+        <span style="position:absolute;left:880px;top:560px;width:200px;font:400 12px/18px 'Instrument Sans';color:#5F5B53">Band text 12/16 Instrument Sans (9 pt), #5F5B53. Divider 1px #E3DED4 on the edge facing the content. Side insets match the page margins (88).</span>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1b">1b</a><span><b style="color:#1C1B18">Hover a shared header.</b> A dashed outline (an outline with an offset, so nothing moves) and a label and buttons in the top margin. Keyboard focus shows the same thing.</span></div>
+      <div style="position:relative;width:912px;height:352px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 3<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:300px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 220px,transparent);mask-image:linear-gradient(#000 220px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1px dashed #9DB3A8;outline-offset:6px;border-radius:2px">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span></span>
+            <span style="position:absolute;left:-6px;top:-36px;height:22px;padding:0 8px;border-radius:6px;background:#EEF3F0;color:#24402F;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Header · Shared</span>
+            <span style="position:absolute;right:-6px;top:-40px;display:flex;gap:4px"><span style="height:28px;padding:0 12px;border-radius:8px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 12px 'Instrument Sans'">Edit</span><span style="width:28px;height:28px;border-radius:8px;border:1px solid #DDD8CE;background:#fff;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">⋯</span></span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px;display:flex;flex-direction:column;gap:12px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1c">1c</a><span><b style="color:#1C1B18">Editing the shared header.</b> Click Edit or double-click the band. The dark edit bar sits in the top margin. Layout opens a menu of 1, 2 and 3 column layouts, each with a small preview. “Shared on 7 pages” stays in the bar the whole time you edit. Done or Esc exits.</span></div>
+      <div style="position:relative;width:912px;height:480px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 3<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:428px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 380px,transparent);mask-image:linear-gradient(#000 380px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1.5px solid #9DB3A8;outline-offset:6px;border-radius:2px">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end;display:flex;align-items:center"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span><span style="width:1.5px;height:16px;background:#365C4A;margin-left:2px"></span></span>
+            <div role="toolbar" aria-label="Header tools" style="position:absolute;left:-6px;bottom:calc(100% + 14px);display:flex;align-items:center;height:40px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;box-shadow:0 10px 28px rgba(20,18,14,.28);font:500 13px 'Instrument Sans';white-space:nowrap">
+              <span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span aria-haspopup="menu" aria-expanded="true" title="Layout" style="height:30px;padding:0 10px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;gap:7px"><span style="display:flex;gap:2px"><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span></span>Layout <span style="opacity:.6;font-size:10px">▾</span></span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span title="Divider line" aria-pressed="true" style="height:30px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;gap:6px"><span style="width:14px;height:1.5px;background:#fff"></span>Line</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span style="padding:0 8px;font:500 12px 'IBM Plex Mono'">{ } Field</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span title="Image" aria-label="Insert image" style="width:32px;display:flex;justify-content:center"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 512 512"><path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" fill="#fff"></path></svg></span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span style="padding:0 10px;font:500 12px 'Instrument Sans';color:rgba(255,255,255,.72)">Shared on 7 pages</span>
+              <span style="height:30px;padding:0 12px;border-radius:8px;background:#fff;color:#1C1B18;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Done</span><div role="menu" aria-label="Layout" style="position:absolute;left:68px;top:calc(100% + 6px);width:268px;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:10px;display:flex;flex-direction:column;gap:6px;color:#1C1B18;white-space:normal;z-index:6;box-sizing:border-box">
+<div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:4px 4px 0">1 column</div><div style="display:flex;gap:8px"><span role="menuitemradio" aria-checked="false" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #DDD8CE;background:#fff;display:grid;grid-template-columns:1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:55%;border-radius:2px;background:#8A857B;justify-self:start"></span></span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">Left</span></span><span role="menuitemradio" aria-checked="false" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #DDD8CE;background:#fff;display:grid;grid-template-columns:1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:55%;border-radius:2px;background:#8A857B;justify-self:center"></span></span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">Center</span></span><span role="menuitemradio" aria-checked="false" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #DDD8CE;background:#fff;display:grid;grid-template-columns:1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:55%;border-radius:2px;background:#8A857B;justify-self:end"></span></span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">Right</span></span></div>
+<div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:4px 4px 0">2 columns</div><div style="display:flex;gap:8px"><span role="menuitemradio" aria-checked="false" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #DDD8CE;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span></span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">50 / 50</span></span><span role="menuitemradio" aria-checked="false" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #DDD8CE;background:#fff;display:grid;grid-template-columns:3fr 1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span></span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">75 / 25</span></span></div>
+<div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:4px 4px 0">3 columns</div><div style="display:flex;gap:8px"><span role="menuitemradio" aria-checked="true" style="display:flex;flex-direction:column;align-items:center;gap:4px"><span style="width:72px;height:36px;border-radius:7px;border:1.5px solid #1C1B18;background:#F3F0EA;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span><span style="height:6px;width:100%;border-radius:2px;background:#8A857B;justify-self:start"></span></span><span style="font:500 11px 'Instrument Sans';color:#1C1B18">Thirds</span></span></div>
+<div style="border-top:1px solid #ECE8E1;margin-top:4px;padding:8px 4px 2px;font:400 11px/16px 'Instrument Sans';color:#5F5B53">Switching to fewer columns moves the extra content into the last column, so nothing is lost.</div></div>
+            </div>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px;display:flex;flex-direction:column;gap:12px;opacity:.55"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p></div>
+        </div>
+        <span style="position:absolute;left:48px;bottom:10px;font:400 12px/16px 'Instrument Sans';color:#5F5B53;background:#ECE9E3;padding:2px 0">Page content dims to 55% while a band is being edited, so it reads as a different layer from the body.</span>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1d">1d</a><span><b style="color:#1C1B18">The header’s ⋯ menu on one page.</b> Three actions with a one-line consequence under each. Arrow keys move, Enter picks, Esc closes and returns focus to ⋯.</span></div>
+      <div style="position:relative;width:912px;height:352px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 3<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:300px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1px dashed #9DB3A8;outline-offset:6px;border-radius:2px">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span></span>
+            <span style="position:absolute;left:-6px;top:-36px;height:22px;padding:0 8px;border-radius:6px;background:#EEF3F0;color:#24402F;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Header · Shared</span>
+            <span style="position:absolute;right:-6px;top:-40px;display:flex;gap:4px"><span style="height:28px;padding:0 12px;border-radius:8px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 12px 'Instrument Sans'">Edit</span><span aria-expanded="true" style="width:28px;height:28px;border-radius:8px;border:1px solid #1C1B18;background:#ECE8E1;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';color:#1C1B18;box-sizing:border-box">⋯</span></span>
+            <div role="menu" aria-label="Header on page 3" style="position:absolute;right:-6px;top:-6px;width:288px;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:5">
+              <div role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:6px 10px;border-radius:8px;background:#F3F0EA;box-shadow:inset 0 0 0 1.5px #9DB3A8"><span style="font:600 14px/19px 'Instrument Sans';color:#1C1B18">Edit shared header</span><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Changes show on all 7 pages</span></div>
+              <div role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:6px 10px;border-radius:8px"><span style="font:600 14px/19px 'Instrument Sans';color:#1C1B18">Make unique to this page</span><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Starts as a copy you can change</span></div>
+              <div role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:6px 10px;border-radius:8px"><span style="font:600 14px/19px 'Instrument Sans';color:#1C1B18">Hide on this page</span><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Leaves an empty band. Page breaks stay put.</span></div>
+              <div style="border-top:1px solid #ECE8E1;margin-top:4px;padding:8px 10px 4px;font:400 11px 'IBM Plex Mono';color:#8A857B">↑ ↓ move · Enter pick · Esc close</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px;display:flex;flex-direction:column;gap:12px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18;max-width:330px">We’ll design and build a five-page site with online catering orders, then look after it every month.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1e">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1e">1e</a><span><b style="color:#1C1B18">Unique next to shared, at rest.</b> A shared band shows nothing extra. A unique band always has a small dark “Unique” tag in the margin, so you can scan the pages and see which ones differ.</span></div>
+      <div style="position:relative;width:912px;height:540px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 3<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:200px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 130px,transparent);mask-image:linear-gradient(#000 130px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span></span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2></div>
+        </div>
+        <div style="position:absolute;left:48px;top:252px;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 4<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:304px;width:816px;height:236px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 160px,transparent);mask-image:linear-gradient(#000 160px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span style="font-weight:600;color:#1C1B18">Your investment</span><span></span><span style="justify-self:end">Prices valid until <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">November 28, 2026</span></span>
+            <span style="position:absolute;left:-6px;top:-32px;height:20px;padding:0 7px;border-radius:6px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Unique</span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">Your investment</h2></div>
+        </div>
+        <span style="position:absolute;left:880px;top:300px;font:400 12px 'Instrument Sans';color:#5F5B53"></span>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1f">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1f">1f</a><span><b style="color:#1C1B18">“Use shared header” on a unique page.</b> The unique page’s ⋯ menu offers it. Choosing it turns the menu into a small confirm in the same spot. After confirming, a toast offers Undo for 8 seconds, and Cmd/Ctrl-Z also works.</span></div>
+      <div style="position:relative;width:912px;height:420px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 4<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:300px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1px dashed #1C1B18;outline-offset:6px;border-radius:2px">
+            <span style="font-weight:600;color:#1C1B18">Your investment</span><span></span><span style="justify-self:end">Prices valid until <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">November 28, 2026</span></span>
+            <span style="position:absolute;left:-6px;top:-36px;height:22px;padding:0 8px;border-radius:6px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Header · Unique to page 4</span>
+            <span style="position:absolute;right:-6px;top:-40px;display:flex;gap:4px"><span style="height:28px;padding:0 12px;border-radius:8px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 12px 'Instrument Sans'">Edit</span><span aria-expanded="true" style="width:28px;height:28px;border-radius:8px;border:1px solid #1C1B18;background:#ECE8E1;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';color:#1C1B18;box-sizing:border-box">⋯</span></span>
+            <div role="alertdialog" aria-label="Use the shared header on page 4?" style="position:absolute;right:-6px;top:-6px;width:304px;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:14px;display:flex;flex-direction:column;gap:8px;z-index:5;box-sizing:border-box">
+              <span style="font:600 14px/19px 'Instrument Sans';color:#1C1B18">Use the shared header on page 4?</span>
+              <span style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">This page’s own header will be replaced by the shared one. You can undo this.</span>
+              <span style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px"><span style="height:36px;padding:0 14px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';color:#1C1B18">Cancel</span><span style="height:36px;padding:0 14px;border-radius:999px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans';box-shadow:0 0 0 2px #fff,0 0 0 3.5px #9DB3A8">Use shared header</span></span>
+            </div>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">Your investment</h2></div>
+          <div style="position:absolute;left:88px;top:200px;width:300px;display:flex;flex-direction:column;gap:6px;font:400 12px/18px 'Instrument Sans';color:#5F5B53"><b style="color:#1C1B18;font-weight:600">Unique page menu</b><span>Edit this page’s header</span><span>Use shared header</span><span>Hide on this page</span></div>
+        </div>
+        <div role="status" style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:12px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';box-shadow:0 10px 28px rgba(20,18,14,.28);white-space:nowrap">Page 4 now uses the shared header<span style="height:30px;padding:0 12px;border-radius:8px;background:rgba(255,255,255,.14);display:flex;align-items:center;font-weight:600">Undo</span></div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1g">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1g">1g</a><span><b style="color:#1C1B18">Footer states.</b> These mirror the header with everything flipped into the bottom margin: label and buttons below the band, the edit bar below it, and the divider on top. The ⋯ menu wording is the same with “footer” in place of “header”.</span></div>
+      <div style="position:relative;width:912px;height:740px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:220px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(transparent,#000 60px);mask-image:linear-gradient(transparent,#000 60px)">
+          <div style="position:absolute;left:88px;right:88px;top:30px"><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">You can pause or change the plan with 30 days’ notice.</p></div>
+          <div style="position:absolute;left:88px;right:88px;bottom:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-top:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1px dashed #9DB3A8;outline-offset:6px;border-radius:2px">
+            <span>Prepared for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Brightline Foods</span></span><span></span><span style="justify-self:end">Page <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">3</span> of <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">9</span></span>
+            <span style="position:absolute;left:-6px;bottom:-36px;height:22px;padding:0 8px;border-radius:6px;background:#EEF3F0;color:#24402F;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Footer · Shared</span>
+            <span style="position:absolute;right:-6px;bottom:-40px;display:flex;gap:4px"><span style="height:28px;padding:0 12px;border-radius:8px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 12px 'Instrument Sans'">Edit</span><span style="width:28px;height:28px;border-radius:8px;border:1px solid #DDD8CE;background:#fff;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">⋯</span></span>
+          </div>
+        </div>
+        <span style="position:absolute;left:880px;top:120px;font:600 11px 'IBM Plex Mono';color:#5F5B53">hover</span>
+        <div style="position:absolute;left:48px;top:240px;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Editing<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:300px;width:816px;height:420px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(transparent,#000 24px);mask-image:linear-gradient(transparent,#000 24px)">
+          <div style="position:absolute;left:88px;right:88px;top:30px;opacity:.55"><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">You can pause or change the plan with 30 days’ notice.</p></div>
+          <div style="position:absolute;left:88px;right:88px;bottom:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-top:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1.5px solid #9DB3A8;outline-offset:6px;border-radius:2px">
+            <span>Prepared for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Brightline Foods</span></span><span></span><span style="justify-self:end;display:flex;align-items:center;gap:3px">Page <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">3</span> of <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">9</span><span style="width:1.5px;height:16px;background:#365C4A"></span></span>
+            <div role="toolbar" aria-label="Footer tools" style="position:absolute;left:-6px;top:calc(100% + 14px);display:flex;align-items:center;height:40px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;box-shadow:0 10px 28px rgba(20,18,14,.28);font:500 13px 'Instrument Sans';white-space:nowrap">
+              <span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span aria-haspopup="menu" aria-expanded="false" title="Layout" style="height:30px;padding:0 10px;border-radius:8px;background:transparent;display:flex;align-items:center;gap:7px"><span style="display:flex;gap:2px"><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span><span style="width:4px;height:8px;border-radius:1px;background:#fff"></span></span>Layout <span style="opacity:.6;font-size:10px">▾</span></span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="height:30px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;gap:6px"><span style="width:14px;height:1.5px;background:#fff"></span>Line</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span style="height:30px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;font:500 12px 'IBM Plex Mono'">{ } Field</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="width:32px;display:flex;justify-content:center"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 512 512"><path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" fill="#fff"></path></svg></span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span style="padding:0 10px;font:500 12px 'Instrument Sans';color:rgba(255,255,255,.72)">Shared on 8 pages</span>
+              <span style="height:30px;padding:0 12px;border-radius:8px;background:#fff;color:#1C1B18;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Done</span>
+            </div>
+            <div role="listbox" aria-label="Insert a field" style="position:absolute;left:238px;bottom:calc(100% + 10px);width:260px;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:6px;display:flex;flex-direction:column;gap:2px">
+              <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:6px 8px 2px">Page</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 8px;border-radius:8px;background:#F3F0EA"><span style="font:600 13px 'Instrument Sans'">Page number</span><span style="font:400 11px 'IBM Plex Mono';color:#8A857B">{{ tokPN }}</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 8px;border-radius:8px"><span style="font:600 13px 'Instrument Sans'">Page count</span><span style="font:400 11px 'IBM Plex Mono';color:#8A857B">{{ tokPC }}</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 8px;border-radius:8px"><span style="font:600 13px 'Instrument Sans'">“Page 3 of 9”</span><span style="font:400 11px 'IBM Plex Mono';color:#8A857B">both</span></div>
+              <div style="padding:6px 8px;font:400 12px/17px 'Instrument Sans';color:#5F5B53;border-top:1px solid #ECE8E1;margin-top:4px">Client, Proposal, Sender &amp; workspace and Totals follow in the full list. See it open in <a href="#1l">1l</a>.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1h">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1h">1h</a><span><b style="color:#1C1B18">Cover page.</b> No header or footer, so the cover’s content starts at the top margin. Hovering or focusing the margin shows a small pill there, so turning it on never overlaps the title block. In Styles the same choice is “Show on cover”.</span></div>
+      <div style="position:relative;width:912px;height:380px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:40px;width:816px;height:340px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 260px,transparent);mask-image:linear-gradient(#000 260px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:0;height:72px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:repeating-linear-gradient(135deg,rgba(157,179,168,.10) 0 6px,transparent 6px 12px)">
+            <span style="height:30px;padding:0 12px;border-radius:999px;border:1px dashed #9DB3A8;background:#fff;display:flex;align-items:center;gap:6px;font:600 12px 'Instrument Sans';color:#24402F">+ Use shared header</span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:72px;display:flex;flex-direction:column;gap:10px">
+            <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Proposal for <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;letter-spacing:0;text-transform:none">Brightline Foods</span></div>
+            <h1 style="margin:0;font:600 44px/50px 'Source Serif 4',Georgia,serif;letter-spacing:-.015em;color:#1C1B18;max-width:560px">A website that takes catering orders</h1>
+            <div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53">From <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">Jonathan Garces</span> · Valid until <span style="background:#F0ECE4;border-radius:4px;padding:0 4px">November 28, 2026</span></div>
+          </div>
+        </div>
+        <span style="position:absolute;left:880px;top:56px;width:24px;font:500 10px 'IBM Plex Mono';color:#5F5B53">72</span>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1i">
+      <div class="dv-olabel" style="max-width:360px"><a class="dv-oid" href="#1i">1i</a><span><b style="color:#1C1B18">Styles tab · new “Header &amp; footer” group.</b> Same panel, tabs and controls as Redesign 10.</span></div>
+      <div style="width:360px;background:#FBFAF7;border:1px solid #E3DED4;border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:14px 16px 10px;display:flex;gap:8px;align-items:center">
+          <div style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Quote</span><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Fields</span><span style="flex:1;height:30px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">Styles</span><span style="flex:1;height:30px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Send</span></div>
+          <span style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">»</span>
+        </div>
+        <div style="padding:0 16px 18px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;min-height:48px;border-bottom:1px solid #ECE8E1;font:600 14px 'Instrument Sans'"><span style="flex:1">Text styles</span><span style="color:#8A857B">›</span></div>
+          <div style="display:flex;align-items:center;min-height:48px;border-bottom:1px solid #ECE8E1;font:600 14px 'Instrument Sans'"><span style="flex:1">Page &amp; margins</span><span style="color:#8A857B">›</span></div>
+          <div style="display:flex;align-items:center;min-height:48px;font:600 14px 'Instrument Sans'"><span style="flex:1">Header &amp; footer</span><span style="color:#8A857B;font-size:11px">▾</span></div>
+          <div style="display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px"><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 13px 'Instrument Sans'">Header</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">Shared on 7 pages · 1 unique</span></span><span role="switch" aria-checked="true" style="width:40px;height:24px;border-radius:12px;background:#365C4A;position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 13px 'Instrument Sans'">Footer</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">Shared on 8 pages</span></span><span role="switch" aria-checked="true" style="width:40px;height:24px;border-radius:12px;background:#365C4A;position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 13px 'Instrument Sans'">Show on cover</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">Off, because the cover has its own logo and title</span></span><span role="switch" aria-checked="false" style="width:40px;height:24px;border-radius:12px;background:#D6D1C7;position:relative;flex:none"><span style="position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid #ECE8E1"><span style="font:600 13px 'Instrument Sans'">Band height</span><div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;color:#5F5B53">0.4 in</span><span style="flex:1;height:32px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">0.5 in</span><span style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;color:#5F5B53">0.75 in</span></div><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Each band plus its 0.25 in gap comes out of the page’s content area. Page breaks update to match.</span></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;font:600 13px 'Instrument Sans'">Divider line</span><span role="switch" aria-checked="true" style="width:40px;height:24px;border-radius:12px;background:#365C4A;position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0;border-top:1px solid #ECE8E1"><span style="height:40px;border:1px solid #DDD8CE;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans'">Edit shared header</span><span style="height:40px;border:1px solid #DDD8CE;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans'">Edit shared footer</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:#F3F0EA"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Pages with their own</span>
+              <div style="display:flex;align-items:center;min-height:36px;font:500 13px 'Instrument Sans'"><span style="flex:1">Page 4 · header</span><span style="font:600 13px 'Instrument Sans';color:#365C4A">Go to</span></div>
+              <div style="display:flex;align-items:center;min-height:36px;font:500 13px 'Instrument Sans'"><span style="flex:1">Page 9 · footer hidden</span><span style="font:600 13px 'Instrument Sans';color:#365C4A">Go to</span></div>
+              <span style="font:600 13px/32px 'Instrument Sans';color:#365C4A">Use shared on every page</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;padding-top:12px"><span style="font:600 13px 'Instrument Sans';color:#365C4A">Reset to template</span><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">Restores the template’s shared header and footer. Pages with their own keep them.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1j">
+      <div class="dv-olabel" style="max-width:248px"><a class="dv-oid" href="#1j">1j</a><span><b style="color:#1C1B18">Sections nav markers.</b> These help, so I kept them small. A tiny page icon after the page label: a filled top bar means a unique header, a filled bottom bar a unique footer, a dashed bar a hidden one. Shared pages show nothing.</span></div>
+      <div style="width:248px;background:#F3F0EA;border:1px solid #E3DED4;border-radius:12px;padding:16px 12px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box">
+        <div style="font:600 13px 'Instrument Sans';padding:0 10px 4px">Sections</div>
+        <sc-for list="{{ nav }}" as="o" hint-placeholder-count="12">
+          <sc-if value="{{ o.isPage }}"><div style="display:flex;align-items:center;gap:6px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:12px 10px 4px"><span>{{ o.label }}</span><sc-if value="{{ o.mark }}"><span title="{{ o.title }}" aria-label="{{ o.title }}" style="width:10px;height:13px;border:1.2px solid #5F5B53;border-radius:2px;box-sizing:border-box;position:relative;display:inline-block"><span style="position:absolute;left:1px;right:1px;top:1px;height:2.5px;border-radius:1px;background:{{ o.top }}"></span><span style="position:absolute;left:1px;right:1px;bottom:1px;height:2.5px;border-radius:1px;background:{{ o.bot }};border-top:{{ o.botDash }}"></span></span></sc-if></div></sc-if>
+          <sc-if value="{{ o.isSec }}"><div style="display:flex;align-items:center;min-height:32px;padding:0 10px;border-left:2px solid transparent;font:500 13px 'Instrument Sans';color:#3E3B35">{{ o.label }}</div></sc-if>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1k">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1k">1k</a><span><b style="color:#1C1B18">After a reflow.</b> Overview grew, so “Your investment” now starts page 5 and its unique header moved with it. The Unique tag gets a one-line note and OK. The note clears on OK or on your next edit, and it’s shown only once.</span></div>
+      <div style="position:relative;width:912px;height:300px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:0;width:816px;height:52px;display:flex;align-items:center;gap:10px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span style="flex:1;border-top:1px solid #D6D1C7"></span>Page 5<span style="flex:1;border-top:1px solid #D6D1C7"></span></div>
+        <div style="position:absolute;left:48px;top:52px;width:816px;height:248px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);-webkit-mask-image:linear-gradient(#000 170px,transparent);mask-image:linear-gradient(#000 170px,transparent)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span style="font-weight:600;color:#1C1B18">Your investment</span><span></span><span style="justify-self:end">Prices valid until <span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">November 28, 2026</span></span>
+            <span role="status" style="position:absolute;left:-6px;top:-38px;display:flex;align-items:center;gap:0;height:26px;border-radius:7px;background:#fff;border:1px solid #DDD8CE;box-shadow:0 2px 8px rgba(20,18,14,.08);overflow:hidden;font:500 12px 'Instrument Sans';white-space:nowrap">
+              <span style="height:100%;padding:0 8px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Unique</span>
+              <span style="padding:0 10px;color:#3E3B35">Moved here from page 4 with its section</span>
+              <span style="height:100%;padding:0 10px;border-left:1px solid #ECE8E1;display:flex;align-items:center;font:600 12px 'Instrument Sans';color:#365C4A">OK</span>
+            </span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">Your investment</h2></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1l">
+      <div class="dv-olabel" style="max-width:912px"><a class="dv-oid" href="#1l">1l</a><span><b style="color:#1C1B18">Layout and Field dropdowns · clickable.</b> Open either dropdown from the edit bar. Picking a layout reflows the header right away. Picking a field adds it to the last column, shown with this proposal’s value.</span></div>
+      <div onClick="{{ closeDd }}" style="position:relative;width:912px;height:640px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:48px;width:816px;height:592px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)">
+          <div style="position:absolute;left:88px;right:88px;top:96px;height:48px;display:grid;grid-template-columns:{{ dd.cols }};column-gap:24px;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1.5px solid #9DB3A8;outline-offset:6px;border-radius:2px">
+            <sc-for list="{{ dd.slots }}" as="s" hint-placeholder-count="3">
+              <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:{{ s.just }};min-width:0">
+                <sc-if value="{{ s.logo }}"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span></sc-if>
+                <sc-for list="{{ s.parts }}" as="p" hint-placeholder-count="1"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500;white-space:nowrap">{{ p }}</span></sc-for>
+              </span>
+            </sc-for>
+            <div role="toolbar" aria-label="Header tools" onClick="{{ stop }}" style="position:absolute;left:-6px;bottom:calc(100% + 14px);display:flex;align-items:center;height:40px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;box-shadow:0 10px 28px rgba(20,18,14,.28);font:500 13px 'Instrument Sans';white-space:nowrap">
+              <span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <button onClick="{{ toggleLayout }}" aria-haspopup="menu" aria-expanded="{{ dd.layoutOpen }}" style="height:30px;padding:0 10px;border:0;border-radius:8px;background:{{ dd.layoutBg }};color:#fff;display:flex;align-items:center;gap:7px;font:500 13px 'Instrument Sans';cursor:pointer"><span style="display:grid;grid-template-columns:{{ dd.cols }};gap:2px;width:16px"><sc-for list="{{ dd.slots }}" as="s" hint-placeholder-count="3"><span style="height:8px;border-radius:1px;background:#fff"></span></sc-for></span>Layout <span style="opacity:.6;font-size:10px">▾</span></button>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="height:30px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;gap:6px"><span style="width:14px;height:1.5px;background:#fff"></span>Line</span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <button onClick="{{ toggleField }}" aria-haspopup="listbox" aria-expanded="{{ dd.fieldOpen }}" style="height:30px;padding:0 8px;border:0;border-radius:8px;background:{{ dd.fieldBg }};color:#fff;display:flex;align-items:center;font:500 12px 'IBM Plex Mono';cursor:pointer">{ } Field</button>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span title="Image" aria-label="Insert image" style="width:32px;display:flex;justify-content:center"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 512 512"><path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" fill="#fff"></path></svg></span>
+              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span>
+              <span style="padding:0 10px;font:500 12px 'Instrument Sans';color:rgba(255,255,255,.72)">Shared on 7 pages</span>
+              <span style="height:30px;padding:0 12px;border-radius:8px;background:#fff;color:#1C1B18;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Done</span>
+              <sc-if value="{{ dd.layoutOpen }}">
+                <div role="menu" aria-label="Layout" style="position:absolute;left:68px;top:calc(100% + 6px);width:268px;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:10px;display:flex;flex-direction:column;gap:6px;color:#1C1B18;white-space:normal;z-index:6;box-sizing:border-box">
+                  <sc-for list="{{ dd.groups }}" as="g" hint-placeholder-count="3">
+                    <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:4px 4px 0">{{ g.name }}</div>
+                    <div style="display:flex;gap:8px">
+                      <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="3">
+                        <button role="menuitemradio" aria-checked="{{ o.sel }}" onClick="{{ o.pick }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:0;border:0;background:none;cursor:pointer">
+                          <span style="width:72px;height:36px;border-radius:7px;border:1.5px solid {{ o.line }};background:{{ o.bg }};display:grid;grid-template-columns:{{ o.cols }};gap:4px;padding:0 8px;box-sizing:border-box;align-items:center"><sc-for list="{{ o.bars }}" as="b" hint-placeholder-count="1"><span style="height:6px;width:{{ b.w }};border-radius:2px;background:#8A857B;justify-self:{{ b.js }}"></span></sc-for></span>
+                          <span style="font:500 11px 'Instrument Sans';color:{{ o.ink }}">{{ o.label }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <div style="border-top:1px solid #ECE8E1;margin-top:4px;padding:8px 4px 2px;font:400 11px/16px 'Instrument Sans';color:#5F5B53">Switching to fewer columns moves the extra content into the last column, so nothing is lost.</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dd.fieldOpen }}">
+                <div role="listbox" aria-label="Insert a field" style="position:absolute;left:300px;top:calc(100% + 6px);width:300px;max-height:420px;overflow:auto;background:#fff;border:1px solid #E3DED4;border-radius:12px;box-shadow:0 16px 40px rgba(20,18,14,.16);padding:8px;display:flex;flex-direction:column;gap:2px;color:#1C1B18;white-space:normal;z-index:6;box-sizing:border-box">
+                  <input value="{{ dd.q }}" onChange="{{ setQ }}" type="search" placeholder="Search fields" aria-label="Search fields" style="flex:none;height:40px;min-height:40px;width:100%;box-sizing:border-box;border:1px solid #DDD8CE;border-radius:10px;padding:0 12px;font:400 14px 'Instrument Sans';margin-bottom:4px;outline:none">
+                  <sc-for list="{{ dd.fields }}" as="g" hint-placeholder-count="5">
+                    <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:8px 8px 2px">{{ g.name }}</div>
+                    <sc-for list="{{ g.items }}" as="f" hint-placeholder-count="3">
+                      <button role="option" onClick="{{ f.pick }}" style="display:flex;flex-direction:column;align-items:stretch;gap:1px;min-height:44px;padding:5px 8px;border:0;border-radius:8px;background:none;text-align:left;cursor:pointer" style-hover="background:#F3F0EA">
+                        <span style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 13px 'Instrument Sans'">{{ f.label }}</span><span style="font:400 11px 'IBM Plex Mono';color:#8A857B">{{ f.token }}</span></span>
+                        <span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ f.val }}</span>
+                      </button>
+                    </sc-for>
+                  </sc-for>
+                  <sc-if value="{{ dd.none }}"><div style="padding:12px 8px;font:400 13px 'Instrument Sans';color:#5F5B53">No fields match.</div></sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:168px;display:flex;flex-direction:column;gap:12px;opacity:.55"><h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2><p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p></div>
+          <sc-if value="{{ dd.added }}"><button onClick="{{ resetDd }}" style="position:absolute;right:88px;bottom:24px;height:32px;padding:0 12px;border:1px solid #DDD8CE;border-radius:999px;background:#fff;font:600 12px 'Instrument Sans';color:#3E3B35;cursor:pointer">Reset demo</button></sc-if>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel" style="max-width:768px"><a class="dv-oid" href="#2a">2a</a><span><b style="color:#1C1B18">Tablet 768 · editing a header.</b> Tap the band once to select it and see the label and ⋯. Tap again, or tap Edit, to type. The edit bar floats in the margin as on desktop, with the four layout buttons folded into one “Layout” menu.</span></div>
+      <div style="width:768px;height:600px;border:1px solid #C9C3B7;border-radius:20px;background:#ECE9E3;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px;background:#FBFAF7;border-bottom:1px solid #E3DED4"><span style="height:44px;padding:0 8px;display:flex;align-items:center;font:500 14px 'Instrument Sans';color:#5F5B53">‹ Proposals</span><span style="flex:1;font:600 15px 'Instrument Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Website &amp; Care for Brightline Foods</span><span style="height:40px;padding:0 14px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Preview</span><span style="height:40px;padding:0 16px;border-radius:999px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Send</span></div>
+        <div style="flex:1;position:relative;overflow:hidden">
+          <div style="position:absolute;left:32px;top:28px;width:704px;height:560px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)">
+            <div style="position:absolute;left:76px;right:76px;top:62px;height:41px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 11px/14px 'Instrument Sans';color:#5F5B53;outline:1.5px solid #9DB3A8;outline-offset:6px;border-radius:2px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:4px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 9px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh Studios</span></span><span></span><span style="justify-self:end;display:flex;align-items:center"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline Foods</span><span style="width:1.5px;height:14px;background:#365C4A;margin-left:2px"></span></span>
+              <div role="toolbar" style="position:absolute;left:-6px;bottom:calc(100% + 12px);display:flex;align-items:center;height:44px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;box-shadow:0 10px 28px rgba(20,18,14,.28);font:500 13px 'Instrument Sans';white-space:nowrap">
+                <span style="width:44px;text-align:center;font-weight:700">B</span><span style="width:44px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+                <span style="width:1px;height:20px;background:rgba(255,255,255,.16)"></span>
+                <span style="height:44px;padding:0 12px;display:flex;align-items:center;gap:6px">Layout <span style="opacity:.6;font-size:10px">▾</span></span>
+                <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="height:44px;padding:0 10px;display:flex;align-items:center;gap:6px"><span style="width:14px;height:1.5px;background:#fff"></span>Line</span>
+                <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="padding:0 10px;font:500 12px 'IBM Plex Mono'">{ } Field</span>
+                <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="width:44px;display:flex;justify-content:center"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 512 512"><path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" fill="#fff"></path></svg></span>
+                <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="width:44px;text-align:center;font:700 16px 'Instrument Sans'">⋯</span>
+                <span style="height:34px;padding:0 14px;margin-left:4px;border-radius:8px;background:#fff;color:#1C1B18;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Done</span>
+              </div>
+            </div>
+            <span style="position:absolute;left:70px;top:118px;height:22px;padding:0 8px;border-radius:6px;background:#EEF3F0;color:#24402F;display:flex;align-items:center;font:600 11px 'Instrument Sans'">Shared on 7 pages</span>
+            <div style="position:absolute;left:76px;right:76px;top:150px;display:flex;flex-direction:column;gap:12px;opacity:.55"><h2 style="margin:0;font:600 24px/30px 'Source Serif 4',Georgia,serif">What we’ll do</h2><p style="margin:0;font:400 15px/24px 'Source Serif 4',Georgia,serif">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#2b">2b</a><span><b style="color:#1C1B18">Phone · editing a header.</b> The top bar says what you’re editing and how far it reaches. The edit bar docks above the keyboard, like block editing in Redesign 11.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#ECE9E3;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;padding:46px 10px 0 4px;height:98px;box-sizing:border-box;display:flex;align-items:center;gap:6px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font:500 20px 'Instrument Sans';color:#5F5B53">‹</span>
+          <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px/19px 'Instrument Sans'">Header · Shared</span><span style="font:500 12px 'Instrument Sans';color:#5F5B53">Changes show on 7 pages</span></span>
+          <span style="height:40px;padding:0 18px;border-radius:999px;background:#1C1B18;color:#fff;display:flex;align-items:center;font:600 14px 'Instrument Sans'">Done</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:14px 12px 0">
+          <div style="background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08);padding:28px 22px;display:flex;flex-direction:column;gap:20px;height:420px;box-sizing:border-box">
+            <div style="display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;min-height:40px;padding-bottom:6px;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53;outline:1.5px solid #9DB3A8;outline-offset:6px;border-radius:2px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:4px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 9px 'Instrument Sans'">M</span><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">MarketFresh</span></span>
+              <span style="justify-self:end;display:flex;align-items:center;text-align:right"><span style="background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font-weight:500">Website &amp; Care for Brightline…</span><span style="width:1.5px;height:15px;background:#365C4A;margin-left:2px"></span></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;opacity:.55"><h2 style="margin:0;font:600 22px/28px 'Source Serif 4',Georgia,serif">What we’ll do</h2><p style="margin:0;font:400 16px/25px 'Source Serif 4',Georgia,serif">We’ll design and build a five-page site with online catering orders.</p></div>
+          </div>
+        </div>
+        <div style="flex:none;height:48px;display:flex;align-items:center;padding:0 4px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap">
+          <span style="width:44px;text-align:center;font-weight:700">B</span><span style="width:44px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+          <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="height:44px;padding:0 10px;display:flex;align-items:center;gap:4px">Layout <span style="opacity:.6;font-size:10px">▾</span></span>
+          <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="padding:0 8px;font:500 12px 'IBM Plex Mono'">{ } Field</span>
+          <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px"></span><span style="width:44px;display:flex;justify-content:center"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 512 512"><path d="M0 96C0 60.7 28.7 32 64 32l384 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zM323.8 202.5c-4.5-6.6-11.9-10.5-19.8-10.5s-15.4 3.9-19.8 10.5l-87 127.6L170.7 297c-4.6-5.7-11.5-9-18.7-9s-14.2 3.3-18.7 9l-64 80c-5.8 7.2-6.9 17.1-2.9 25.4s12.4 13.6 21.6 13.6l96 0 32 0 208 0c8.9 0 17.1-4.9 21.2-12.8s3.6-17.4-1.4-24.7l-120-176zM112 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z" fill="#fff"></path></svg></span>
+          <span style="flex:1"></span>
+          <span style="width:44px;text-align:center;font:700 16px 'Instrument Sans'">⋯</span>
+        </div>
+        <div style="flex:none;height:210px;background:repeating-linear-gradient(135deg,#D9D5CD 0 10px,#D2CEC5 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">system keyboard</div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2c">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#2c">2c</a><span><b style="color:#1C1B18">Phone · the ⋯ menu as a bottom sheet.</b> Rows are 56px with the same wording as desktop. Choosing “Use shared header” on a unique page swaps the sheet’s content for the confirm.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#ECE9E3;overflow:hidden;position:relative;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="position:absolute;inset:0;padding:110px 12px 0;box-sizing:border-box"><div style="background:#fff;border-radius:4px;height:400px;padding:28px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px"><div style="height:40px;border-bottom:1px solid #E3DED4;outline:1px dashed #9DB3A8;outline-offset:6px"></div><div style="font:600 22px 'Source Serif 4',Georgia,serif">What we’ll do</div></div></div>
+        <div style="position:absolute;inset:0;background:rgba(20,18,14,.40)"></div>
+        <div role="dialog" aria-label="Header on page 3" style="position:absolute;left:0;right:0;bottom:0;background:#FBFAF7;border-radius:20px 20px 0 0;padding:8px 12px 30px;display:flex;flex-direction:column;box-shadow:0 -10px 30px rgba(20,18,14,.18)">
+          <span style="align-self:center;width:36px;height:5px;border-radius:3px;background:#C9C3B7;margin-bottom:12px"></span>
+          <div style="padding:0 8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font:600 17px 'Instrument Sans'">Header on page 3</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">Shared on 7 pages</span></div>
+          <div style="background:#fff;border:1px solid #E3DED4;border-radius:14px;overflow:hidden">
+            <div style="display:flex;flex-direction:column;justify-content:center;min-height:56px;padding:6px 16px"><span style="font:600 16px 'Instrument Sans'">Edit shared header</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">Changes show on all 7 pages</span></div>
+            <div style="display:flex;flex-direction:column;justify-content:center;min-height:56px;padding:6px 16px;border-top:1px solid #ECE8E1"><span style="font:600 16px 'Instrument Sans'">Make unique to this page</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">Starts as a copy you can change</span></div>
+            <div style="display:flex;flex-direction:column;justify-content:center;min-height:56px;padding:6px 16px;border-top:1px solid #ECE8E1"><span style="font:600 16px 'Instrument Sans'">Hide on this page</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">Leaves an empty band. Page breaks stay put.</span></div>
+          </div>
+          <div style="margin-top:10px;min-height:52px;border-radius:14px;background:#fff;border:1px solid #E3DED4;display:flex;align-items:center;justify-content:center;font:600 16px 'Instrument Sans'">Cancel</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="3a">
+      <div class="dv-olabel" style="max-width:1100px"><a class="dv-oid" href="#3a">3a</a><span><b style="color:#1C1B18">PDF and client view · page 3, 1:1.</b> Fields are filled in as plain text, with no chips, labels or outlines. The client page draws each sheet at this geometry, scaled to fit the screen, so it matches the PDF exactly.</span></div>
+      <div style="position:relative;width:1100px;height:1136px;background:#ECE9E3;border-radius:12px;overflow:hidden;border:1px solid #D6D1C7">
+        <div style="position:absolute;left:48px;top:40px;width:816px;height:1056px;background:#fff;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)">
+          <div style="position:absolute;left:88px;right:88px;top:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span style="display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:5px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span>MarketFresh Studios</span><span></span><span style="justify-self:end">Website &amp; Care for Brightline Foods</span>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;top:144px;height:768px;display:flex;flex-direction:column;gap:14px;outline:1px dashed rgba(54,92,74,.25)">
+            <h2 style="margin:0;font:600 26px/32px 'Source Serif 4',Georgia,serif;color:#1C1B18">What we’ll do</h2>
+            <p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">We’ll design and build a five-page site with online catering orders, then look after it every month so it stays fast and secure.</p>
+            <h3 style="margin:8px 0 0;font:600 19px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">Design and build</h3>
+            <ul style="margin:0;padding-left:22px;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18"><li>Home, Menu, Catering, About and Contact pages</li><li>Catering order form with date, headcount and dietary notes</li><li>Photography direction for the menu and space</li><li>Two rounds of revisions on each page</li></ul>
+            <h3 style="margin:8px 0 0;font:600 19px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">Care every month</h3>
+            <p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">Security and software updates applied the week they ship, daily backups kept for 30 days, uptime monitoring, and a short monthly report.</p>
+            <p style="margin:0;font:400 16px/26px 'Source Serif 4',Georgia,serif;color:#1C1B18">Small content changes, up to an hour a month, are included.</p>
+          </div>
+          <div style="position:absolute;left:88px;right:88px;bottom:72px;height:48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-top:1px solid #E3DED4;font:400 12px/16px 'Instrument Sans';color:#5F5B53">
+            <span>Prepared for Brightline Foods</span><span></span><span style="justify-self:end">Page 3 of 9</span>
+          </div>
+        </div>
+        <div style="position:absolute;left:880px;top:40px;width:8px;height:72px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:68px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">top margin 0.75 in · 72</span>
+        <div style="position:absolute;left:880px;top:112px;width:8px;height:48px;border:1px solid #365C4A;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:128px;font:500 11px/16px 'IBM Plex Mono';color:#24402F">header 0.5 in · 48</span>
+        <div style="position:absolute;left:880px;top:160px;width:8px;height:24px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:164px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">gap 0.25 in · 24</span>
+        <div style="position:absolute;left:880px;top:184px;width:8px;height:768px;border:1px solid #365C4A;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:552px;width:190px;font:500 11px/16px 'IBM Plex Mono';color:#24402F">content area 8 in · 768<br>(11 − 1.5 margins − 1.5 bands and gaps)</span>
+        <div style="position:absolute;left:880px;top:952px;width:8px;height:24px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:956px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">gap 0.25 in · 24</span>
+        <div style="position:absolute;left:880px;top:976px;width:8px;height:48px;border:1px solid #365C4A;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:992px;font:500 11px/16px 'IBM Plex Mono';color:#24402F">footer 0.5 in · 48</span>
+        <div style="position:absolute;left:880px;top:1024px;width:8px;height:72px;border:1px solid #8A857B;border-left:0;box-sizing:border-box"></div><span style="position:absolute;left:898px;top:1052px;font:500 11px/16px 'IBM Plex Mono';color:#5F5B53">bottom margin 0.75 in · 72</span>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="spec">
+      <div class="dv-olabel"><a class="dv-oid" href="#spec">spec</a><span><b style="color:#1C1B18">States, wording and sizes.</b> Build from these numbers. The editor uses 96 px per inch at 100%, and every value scales with the sheet.</span></div>
+      <div style="width:1100px;background:#FBFAF7;border:1px solid #E3DED4;border-radius:12px;padding:28px 32px;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px 40px;font:400 13px/19px 'Instrument Sans';color:#3E3B35">
+        <div style="grid-column:1/-1;display:flex;flex-direction:column">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53;padding-bottom:8px">States</div>
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr);gap:0 20px;font:600 12px 'Instrument Sans';color:#8A857B;padding:6px 0;border-bottom:1px solid #E3DED4"><span>State</span><span>What shows</span><span>How you get there / leave</span></div>
+          <sc-for list="{{ states }}" as="s" hint-placeholder-count="9"><div style="display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr);gap:0 20px;padding:9px 0;border-bottom:1px solid #ECE8E1"><span style="font-weight:600;color:#1C1B18">{{ s.n }}</span><span>{{ s.shows }}</span><span>{{ s.how }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53;padding-bottom:8px">Sizes</div>
+          <sc-for list="{{ sizes }}" as="z" hint-placeholder-count="14"><div style="display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid #ECE8E1"><span>{{ z.k }}</span><span style="font:500 12px/19px 'IBM Plex Mono';color:#1C1B18;text-align:right">{{ z.v }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;flex-direction:column">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53;padding-bottom:8px">Wording</div>
+            <sc-for list="{{ words }}" as="w" hint-placeholder-count="12"><div style="display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid #ECE8E1"><span style="color:#1C1B18;font-weight:500">{{ w.t }}</span><span style="color:#5F5B53;text-align:right">{{ w.where }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Keyboard and collisions</div>
+            <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6"><div>{{ r }}</div></sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “make <a class="dv-oid" href="#1c">1c</a> clickable inside the Redesign 10 prototype” · “show a header with a full-width logo image” · “add these states to specs/editor-v2.md”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { open: 'layout', layout: 'thirds', q: '', extra: [] };
+  renderVals() {
+    const D = this.dd();
+    const P = (label, top, bot, dash, title) => ({ isPage: true, isSec: false, label, mark: !!(top || bot || dash), top: top ? '#1C1B18' : 'transparent', bot: bot ? '#1C1B18' : 'transparent', botDash: dash ? '1.2px dashed #1C1B18' : '0', title });
+    const S = (label) => ({ isPage: false, isSec: true, label });
+    const nav = [P('Page 1'), S('Cover'), P('Page 2'), S('Overview'), P('Page 3'), S('What we’ll do'), P('Page 4', 1, 0, 0, 'Unique header'), S('Your investment'), P('Page 5'), S('Timeline'), P('Page 6'), S('Statement of Work'), P('Page 9', 0, 0, 1, 'Footer hidden'), S('Signatures')];
+    const states = [
+      ['Resting · shared', 'Band content and the divider only. No label.', 'Default.'],
+      ['Resting · unique', 'A dark 20px “Unique” tag in the margin, 6px outside the band edge.', 'After “Make unique to this page”.'],
+      ['Resting · hidden', 'An empty band of the same height. On hover the label reads “Header · Hidden”, and the tag says “Hidden”.', '“Hide on this page”.'],
+      ['Hover / focus', 'Dashed 1px #9DB3A8 outline, offset 6px. A label pill plus Edit and ⋯ in the margin.', 'Pointer over the band, or Tab to it. Leaving or Tab away clears it.'],
+      ['Editing', 'Solid 1.5px #9DB3A8 outline. The edit bar sits in the margin. Body content dims to 55%.', 'Edit, double-click, or Enter on a focused band. Done, Esc or a click outside exits.'],
+      ['Menu open', 'A 288px menu under ⋯ with three items.', '⋯, or Shift+F10 on a focused band. Esc closes and returns focus to ⋯.'],
+      ['Confirm', 'A 304px popover in the menu’s place.', '“Use shared header/footer”. Cancel or Esc returns to the menu.'],
+      ['Moved after reflow', 'The Unique tag widens into a note with OK.', 'The block that owns the band now starts a different page. Clears on OK or the next edit.'],
+      ['Cover · off', 'Nothing. A “+ Use shared header” pill shows in the margin on hover or focus.', 'Default for page 1. The pill, or “Show on cover” in Styles, turns it on.'],
+    ].map(([n, shows, how]) => ({ n, shows, how }));
+    const sizes = [
+      ['Page', 'Letter 8.5 × 11 in · 816 × 1056'], ['Top / bottom margin (sample)', '0.75 in · 72'], ['Side margin (sample)', '0.92 in · 88'], ['Band height', '0.4 / 0.5 / 0.75 in · 38 / 48 / 72'], ['Band to content gap', '0.25 in · 24 (fixed)'], ['Band text', '12/16 body font (9 pt) #5F5B53'], ['Logo image', 'max height 18 (≈0.19 in), 8 gap'], ['Divider', '1px #E3DED4, on the content side'], ['Layout · 1 column', 'left / center / right alignment'], ['Layout · 2 columns', 'grid 1fr 1fr (50/50) or 3fr 1fr (75/25) · 24 gap'], ['Layout · 3 columns', 'grid 1fr 1fr 1fr · start / center / end · 24 gap'], ['Layout menu', '268 wide · 72×36 previews · arrow keys move'], ['Hover outline', '1px dashed #9DB3A8 · offset 6'], ['Editing outline', '1.5px solid #9DB3A8 · offset 6'], ['Label pill', '22 high · 11/600 · radius 6 · 8 padding'], ['Edit / ⋯ buttons', '28 visual · 44 hit area'], ['Edit bar', '40 high (44 on touch) · radius 12 · 14 from band'], ['Menu', '288 wide · items 52 min · radius 12'], ['Phone sheet rows', '56 min · Cancel 52'],
+    ].map(([k, v]) => ({ k, v }));
+    const words = [
+      ['Header · Shared / Footer · Shared', 'hover label'], ['Header · Unique to page 4', 'hover label, unique'], ['Unique · Hidden', 'resting tag'], ['Shared on 7 pages', 'edit bar, panel'], ['Layout · 1 column · 2 columns · 3 columns · Left · Center · Right · 50 / 50 · 75 / 25 · Thirds', 'edit bar Layout menu'], ['Edit shared header', 'menu, Styles'], ['Make unique to this page', 'menu'], ['Hide on this page', 'menu'], ['Edit this page’s header', 'unique menu'], ['Use shared header', 'unique menu, confirm button'], ['Use the shared header on page 4?', 'confirm title'], ['This page’s own header will be replaced by the shared one. You can undo this.', 'confirm body'], ['Page 4 now uses the shared header · Undo', 'toast'], ['Moved here from page 4 with its section · OK', 'reflow note'], ['+ Use shared header', 'cover pill'], ['Show on cover · Use shared on every page · Reset to template', 'Styles'],
+    ].map(([t, where]) => ({ t, where }));
+    const rules = [
+      'Tab order on each page: header band, the page’s blocks, then the footer band. A focused band shows the hover state.',
+      'Enter edits. Shift+F10 or the ⋯ button opens the menu. In the menu ↑ ↓ move, Enter picks, Esc closes. Esc while editing exits to the focused band.',
+      'Labels, Edit, ⋯ and the edit bar stay in the page margin (above the header, below the footer), so they never overlap the gutter +, which sits beside blocks, or the AI ✓ to their right.',
+      'The PAGE N gap stays outside the sheet. Header controls fit within the 72px top margin. With a margin under 0.6 in, the edit bar flips inside, over the dimmed content.',
+      'Hover and focus use outlines, never borders or padding, so nothing on the page moves.',
+      'Pagination: content height = page − margins − (band + gap) for each band shown on that page. The editor and the PDF renderer share one function.',
+    ];
+    return { nav, states, sizes, words, rules, ...D, tokPN: '{{page.number}}', tokPC: '{{page.count}}' };
+  }
+  dd() {
+    const S = this.state, set = o => () => this.setState(o);
+    const L = { left: ['1fr', ['start']], center: ['1fr', ['center']], right: ['1fr', ['end']], half: ['1fr 1fr', ['start', 'end']], wide: ['3fr 1fr', ['start', 'end']], thirds: ['1fr 1fr 1fr', ['start', 'center', 'end']] };
+    const [cols, just] = L[S.layout];
+    const content = S.layout === 'thirds' ? [[1, ['MarketFresh Studios']], [0, ['October 29, 2026']], [0, ['Website & Care for Brightline Foods']]] : just.length === 2 ? [[1, ['MarketFresh Studios']], [0, ['Website & Care for Brightline Foods']]] : [[1, ['MarketFresh Studios', 'Website & Care for Brightline Foods']]];
+    const JM = { start: 'flex-start', center: 'center', end: 'flex-end' };
+    const slots = content.map(([logo, parts], i) => ({ logo: !!logo, parts: i === content.length - 1 ? parts.concat(S.extra) : parts, just: JM[just[i]] }));
+    const opt = (k, label) => { const [c, j] = L[k]; const sel = S.layout === k; return { label, sel, cols: c, line: sel ? '#1C1B18' : '#DDD8CE', bg: sel ? '#F3F0EA' : '#fff', ink: sel ? '#1C1B18' : '#5F5B53', bars: j.map(js => ({ w: j.length === 1 ? '55%' : '100%', js })), pick: (e) => { e && e.stopPropagation(); this.setState({ layout: k, open: null }); } }; };
+    const groups = [{ name: '1 column', opts: [opt('left', 'Left'), opt('center', 'Center'), opt('right', 'Right')] }, { name: '2 columns', opts: [opt('half', '50 / 50'), opt('wide', '75 / 25')] }, { name: '3 columns', opts: [opt('thirds', 'Thirds')] }];
+    const FG = [['Page', [['Page number', 'page.number', '3'], ['Page count', 'page.count', '9'], ['Page 3 of 9', 'both', 'Page 3 of 9']]], ['Client', [['First name', 'client.first_name', 'Rowan'], ['Last name', 'client.last_name', 'Vale'], ['Full name', 'client.full_name', 'Rowan Vale'], ['Company', 'client.company', 'Brightline Foods'], ['Email', 'client.email', 'rowan@brightlinefoods.com']]], ['Proposal', [['Title', 'proposal.title', 'A website that takes catering orders'], ['Date', 'proposal.date', 'October 29, 2026'], ['Valid until', 'proposal.valid_until', 'November 28, 2026']]], ['Sender & workspace', [['Sender name', 'sender.name', 'Jonathan Garces'], ['Sender email', 'sender.email', 'jonathan@mktfresh.com'], ['Workspace name', 'workspace.name', 'MarketFresh Studios']]], ['Totals', [['One-time total', 'quote.one_time_total', '$1,150 one-time'], ['Monthly total', 'quote.monthly_total', '$260/mo']]]];
+    const q = S.q.toLowerCase();
+    const fields = FG.map(([name, items]) => ({ name, items: items.filter(([l, k]) => (l + ' ' + k).toLowerCase().includes(q)).map(([label, k, val]) => ({ label, val, token: k === 'both' ? 'both' : '{{' + k + '}}', pick: (e) => { e && e.stopPropagation(); this.setState(s => ({ extra: s.extra.concat(val), open: null, q: '' })); } })) })).filter(g => g.items.length);
+    return { dd: { cols, slots, groups, fields, none: !fields.length, q: S.q, layoutOpen: S.open === 'layout', fieldOpen: S.open === 'field', layoutBg: S.open === 'layout' ? 'rgba(255,255,255,.16)' : 'transparent', fieldBg: S.open === 'field' ? 'rgba(255,255,255,.16)' : 'transparent', added: S.extra.length > 0 || S.layout !== 'thirds' },
+      toggleLayout: (e) => { e.stopPropagation(); this.setState(s => ({ open: s.open === 'layout' ? null : 'layout' })); },
+      toggleField: (e) => { e.stopPropagation(); this.setState(s => ({ open: s.open === 'field' ? null : 'field' })); },
+      closeDd: set({ open: null }), stop: e => e.stopPropagation(),
+      setQ: e => this.setState({ q: e.target.value }), resetDd: e => { e.stopPropagation(); this.setState({ layout: 'thirds', extra: [], open: 'layout' }); } };
+  }
+}
+</script>
+</body>
+</html>
