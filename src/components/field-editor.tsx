@@ -3,6 +3,7 @@ import { pageSpacers, pageSpacerKey } from "./page-spacers";
 import { createPortal } from "react-dom";
 import { FormattingControls } from "./formatting-controls";
 import { ToolbarPopover } from "./toolbar-popover";
+import { useControlLayout } from "./editor/control-layout";
 import { useBlockToolbar } from "./block-controls";
 import { FieldOptions } from "./field-options";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
@@ -70,6 +71,7 @@ export function FieldEditor({
   onTextStyle?: (level: TextLevel, text?: string) => void;
 }) {
   const scope = useBlockToolbar();
+  const layout = useControlLayout();
   const history = useEditorHistory();
   const afterVisible = useVisibleEditorAction();
   const toolbar = standalone ? undefined : scope;
@@ -264,6 +266,8 @@ export function FieldEditor({
   }, [editor]);
   const formatting = (
     <FormattingControls
+      edit={!!toolbar && layout.desktop}
+      compact={layout.compact}
       independent={standalone}
       textStyle={
         onTextStyle
@@ -279,6 +283,10 @@ export function FieldEditor({
         setLinkPicker(!linkPicker);
       }}
       onField={(trigger) => {
+        if (toolbar && layout.desktop && layout.onField) {
+          layout.onField();
+          return;
+        }
         setPopoverTrigger(trigger);
         setPicker(!picker);
       }}
@@ -351,6 +359,23 @@ export function FieldEditor({
       onFocusCapture={() => toolbar?.remember(editorId)}
       onPointerDownCapture={() => toolbar?.remember(editorId)}
       onKeyDown={(e) => {
+        if (
+          toolbar &&
+          layout.desktop &&
+          (e.metaKey || e.ctrlKey) &&
+          e.key.toLowerCase() === "k"
+        ) {
+          e.preventDefault();
+          setPopoverTrigger(
+            root.current
+              ?.closest(".block-frame")
+              ?.querySelector<HTMLElement>(
+                '.editor-edit-bar [aria-label="Link"]',
+              ) ?? null,
+          );
+          setLinkPicker(true);
+          return;
+        }
         const prefix = editor?.state.selection.$from.parent.textBetween(
           0,
           editor.state.selection.$from.parentOffset,
@@ -386,6 +411,7 @@ export function FieldEditor({
     >
       {toolbar === undefined ? (
         <div
+          data-editor-chrome
           className="inline-formatting-row"
           role="toolbar"
           aria-label="Text formatting"

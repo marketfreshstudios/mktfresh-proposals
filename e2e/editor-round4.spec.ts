@@ -126,10 +126,13 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
   const f = await fixture(page);
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
+  await page
+    .getByRole("button", { name: "Collapse tools sidebar", exact: true })
+    .click();
   const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`),
     text = block.locator(".tiptap"),
     bar = page.getByRole("toolbar", {
-      name: "Document formatting",
+      name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
       exact: true,
     });
   const visible = page.locator(
@@ -139,11 +142,10 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
     () => bar.getByRole("button", { name: "Link", exact: true }).click(),
     () =>
       bar.getByRole("button", { name: "Insert field", exact: true }).click(),
-    () =>
-      bar.getByRole("combobox", { name: "Text style", exact: true }).click(),
+    () => bar.locator('button[aria-label="Text style"]').click(),
     () =>
       block
-        .getByRole("button", { name: "Add block below", exact: true })
+        .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
         .click(),
   ];
   for (let a = 0; a < open.length; a++)
@@ -153,12 +155,17 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
         await text.click();
         await open[a]();
         await expect(visible, `first ${a}`).toHaveCount(1);
+        if (b === 0)
+          await expect(
+            bar.getByRole("button", { name: "Link", exact: true }),
+            `${a} -> ${b} retains the text editor`,
+          ).toBeEnabled();
         await open[b]();
         await expect(visible, `${a} -> ${b}`).toHaveCount(1);
         await page.keyboard.press("Escape");
-        await expect(visible).toHaveCount(0);
+        await expect(visible, `${a} -> ${b} closes on Escape`).toHaveCount(0);
         await expect(
-          bar.getByRole("combobox", { name: "Text style" }),
+          bar.locator('button[aria-label="Text style"]'),
         ).toHaveAttribute("aria-expanded", "false");
       }
   await text.click();
@@ -171,15 +178,13 @@ test("every popover pair replaces the previous surface; outside, Escape and inse
   await open[0]();
   await page.locator(".quote-editor-top").click({ position: { x: 5, y: 5 } });
   await expect(visible).toHaveCount(0);
-  const style = bar.getByRole("combobox", { name: "Text style", exact: true });
+  const style = bar.locator('button[aria-label="Text style"]');
   await text.click();
   await style.press("ArrowDown");
-  await expect(
-    page.getByRole("listbox", { name: "Text styles" }),
-  ).toBeFocused();
+  await expect(page.getByRole("menu", { name: "Text styles" })).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(style).toHaveText("Heading 1");
+  await expect(style.locator(".text-style-label")).toHaveText("Heading 1");
   await expect(visible).toHaveCount(0);
   await style.click();
   await page.keyboard.press("Escape");
@@ -318,7 +323,7 @@ test("page add/delete and undo use normal authoring history; templates use the s
     page.locator(`[data-block-id="block-${added.id}"] textarea`),
   ).toBeFocused();
   const bar = page.getByRole("toolbar", {
-    name: "Document formatting",
+    name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
     exact: true,
   });
   await page
@@ -410,7 +415,7 @@ test("whole pages and sections move through normal undo without moving the follo
   await page.keyboard.press("Space");
   await expect.poll(() => f.active().content[0]?.id).toBe(second);
   const bar = page.getByRole("toolbar", {
-    name: "Document formatting",
+    name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
     exact: true,
   });
   await page
@@ -524,7 +529,10 @@ test("review-only changes retain page geometry and page decorations never enter 
     );
   const before = await boxes();
   await frame
-    .getByRole("button", { name: "Mark reviewed", exact: true })
+    .getByRole("button", {
+      name: /^(Mark reviewed|Mark this AI-written block reviewed)$/,
+      exact: true,
+    })
     .click();
   await expect.poll(() => f.active().content[1].ai_review?.reviewed).toBe(true);
   expect(await boxes()).toEqual(before);

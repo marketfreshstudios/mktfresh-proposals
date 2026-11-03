@@ -193,7 +193,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       if (stage === "after") {
         await page
           .locator('.draft-block[data-selected="true"]')
-          .getByRole("button", { name: "Add block below", exact: true })
+          .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
           .click();
         await expect(
           page.getByRole("dialog", { name: "Add a block" }),
@@ -379,7 +379,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .first();
     await paragraph.locator(".tiptap").click();
     await paragraph
-      .getByRole("button", { name: "Add block below", exact: true })
+      .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
       .click();
     await page
       .getByRole("dialog", { name: "Add a block" })

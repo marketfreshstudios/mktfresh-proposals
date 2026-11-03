@@ -1,27 +1,23 @@
-# Editor v2 block controls — owner decisions before implementation
+# Editor v2 block controls — resolved owner decisions
 
-PR 2 starts from merged PR 1 on main `66139aa`. Redesign 10 was served locally and opened in the browser, including selected paragraph and cover controls. No application code or behavior has changed.
+PR 2 starts from merged PR 1 (`66139aa`). Redesign 10 was served locally and opened in a browser, including paragraph and cover states. The following owner answers govern differences from the prototype/spec.
 
-The request says both “RE-LAYOUT only. Keep every existing command and handler” and “If the spec is silent, or it contradicts the prototype or this prompt, stop and ask in the PR. Don't guess.” These concrete gaps need owner decisions:
+- Cover/title editing stays fixed outside the content array, with no edit bar, insertion controls or drag handle. Add above on the first real block inserts at index 0, after the cover.
+- A More block actions menu immediately before Delete retains Start on next page / Remove page break and contract Add clause, using their existing handlers. It is omitted when no extra command applies.
+- Duplicate remains disabled for pricing tables and signatures, with the owner's explanatory titles. Existing duplicate/readiness rules remain unchanged.
+- All editor chrome carries `data-editor-chrome`. The owner approved changing only the selector lists in `pagination-dom.ts`, `browser-pagination.ts` and `paged-paper.tsx` to exclude that shared attribute. Measurement, PagePlan, page-break algorithms and version hashing remain unchanged.
+- Keep the exact floating prototype placement, even where the bar overlaps preceding text. Only the floating edit bar is exempted from the old overlap assertion; movement and gutter/AI overlap checks remain.
 
-## 1. Cover actions have no existing handlers
+Below 700px, the existing phone controls remain. The desktop replacement uses PR 1's compact flag and existing command callbacks. No Send update action is introduced.
 
-Redesign 10 shows a Cover toolbar with Move down, Duplicate, Save and Delete, plus gutter insertion controls. The application renders DocumentCover separately from the content block array (proposal.title and client/workspace metadata). It is not a BlockFrame/Sortable block, and has no existing move/duplicate/remove/reuse handler. Making the cover behave like a content block would require new model/command semantics outside this re-layout.
+## Template history placement — resolved
 
-Should PR 2 keep the fixed cover/title editing as it is with no new cover toolbar, or show a cover toolbar with unsupported actions visibly disabled? Adding a movable/deletable cover model would need separately specified behavior rather than mapping its actions onto the first content block.
+The existing Studio template header had no Undo/Redo controls; they lived in the desktop formatting bar being removed. The owner explicitly approved adding only Undo/Redo to the template header at ≥700px, using the existing history handlers and supplied icons. The proposal shell and phone history controls remain unchanged.
 
-## 2. Retain commands missing from the exact new toolbar
+Question: https://github.com/marketfreshstudios/mktfresh-proposals/pull/52#issuecomment-6596599369
 
-The existing desktop formatting bar/action rail exposes Start on next page / Remove page break and, on contracts, Add clause. Nested clauses also have settings, move, save and delete commands. The new exact toolbar list has no slot for Start on next page or Add clause, while removing the old desktop controls would remove those command entry points.
+## 924px modal-drawer acceptance — resolved
 
-Where should these existing commands remain accessible? A compact More block actions menu in the new bar could retain their unchanged handlers; alternatively, specify a Settings-sheet location. Contract settings currently edits a selected existing clause and is absent for an empty contract, so that route alone would not preserve Add clause on empty contracts.
+The owner confirmed preserving PR 1's modal tools drawer below 960px. Panel-open toolbar/Delete checks run at 1440/1180/1024px. At 924px, toolbar reachability is checked after closing the drawer; a separate test checks the modal scrim, focus trap, scrim close and Escape. No shell behavior or breakpoint changed.
 
-## 3. Duplicate on pricing and signature blocks
-
-Both proposal and template editors currently omit Duplicate for pricing_table and signature_block. The request/prototype puts Duplicate on every block. Showing an enabled Duplicate for these two types expands current command availability and can create drafts with duplicate required structures, which readiness may then reject.
-
-Should their Duplicate control remain disabled to preserve the current restrictions, or should PR 2 explicitly enable the existing duplicateBlock helper for them too?
-
-## Work after clarification
-
-Implement the agreed layout under components/editor with the supplied icons, reuse PR 1 compact, retain the current phone presentation under renamed legacy components/selectors, preserve save/review/history/pagination/API handlers, and add the requested conversion, toolbar geometry, selection, keyboard, insertion, AI review and Studio tests. Run the full local browser suite and other local checks, add only the requested 1440/1024/375 captures, update the handoff, and hand back the one PR without waiting for CI.
+Question: https://github.com/marketfreshstudios/mktfresh-proposals/pull/52#issuecomment-6596748174

@@ -121,7 +121,7 @@ for (const width of [1440, 375]) {
           ? page.locator(`[data-block-id="block-${f.text}"]`)
           : page.locator(".studio-block-card").nth(1);
       const trigger = block.getByRole("button", {
-        name: "Add block below",
+        name: /^Add (a )?block below$/,
         exact: true,
       });
       const open = async () => {
@@ -162,9 +162,13 @@ for (const width of [1440, 375]) {
           .poll(() => f.current().content.some((b) => b.level === 3))
           .toBe(true);
       else
-        await expect(page.locator(".studio-block-card h4")).toHaveText(
-          "Subheading",
-        );
+        await expect(
+          page.locator(
+            width >= 700
+              ? ".studio-block-card h4 .heading-measure"
+              : ".studio-block-card h4",
+          ),
+        ).toHaveText("Subheading");
     }
   });
   test(`heading conversion, styles and pricing handles stay usable (${width})`, async ({
@@ -174,30 +178,27 @@ for (const width of [1440, 375]) {
     await openDocument(page, width, f.draft.id);
     const frame = page.locator(`[data-block-id="block-${f.text}"]`),
       bar = page.getByRole("toolbar", {
-        name: "Document formatting",
+        name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
         exact: true,
       });
+    await frame.locator(".tiptap").focus();
     const barHeight = (await bar.boundingBox())!.height;
     for (const level of [1, 2, 3] as const) {
       await expect
         .poll(async () => (await bar.boundingBox())!.height)
-        .toBe(barHeight);
+        .toBeCloseTo(barHeight, 2);
       await frame.locator(".tiptap").fill("#".repeat(level));
       await frame.locator(".tiptap").press("Space");
       await expect(frame.locator(`h${level + 1} textarea`)).toBeFocused();
-      await expect(
-        bar.getByRole("combobox", { name: "Text style", exact: true }),
-      ).toHaveText(`Heading ${level}`);
+      await expect(bar.locator(".text-style-label")).toHaveText(
+        `Heading ${level}`,
+      );
       await frame.locator("textarea").fill(`Level ${level}`);
       await expect
         .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
         .toBe(level);
-      await bar
-        .getByRole("combobox", { name: "Text style", exact: true })
-        .click();
-      await page
-        .getByRole("option", { name: "Paragraph", exact: true })
-        .click();
+      await bar.locator('button[aria-label="Text style"]').click();
+      await page.getByLabel("Paragraph", { exact: true }).click();
       await expect(frame.locator(".tiptap")).toBeFocused();
     }
     await frame.locator(".tiptap").fill("A retained sentence");
@@ -242,7 +243,7 @@ for (const width of [1440, 375]) {
     await pricing.click();
     await expect
       .poll(async () => (await bar.boundingBox())!.height)
-      .toBe(barHeight);
+      .toBeCloseTo(barHeight, 2);
     const handles = pricing.locator(".document-quote .drag-handle");
     expect(await handles.count()).toBeGreaterThan(0);
     for (const handle of await handles.all()) {
@@ -552,18 +553,17 @@ test("Workspace and templates save style overrides and show responsive live samp
     .toBe(23);
   const paragraph = page.locator(".studio-block-card").nth(1);
   await paragraph.click();
-  await paragraph
-    .getByRole("button", { name: "Block settings", exact: true })
-    .click();
-  const inspector = page.locator(".studio-inspector");
-  await inspector.locator(".tiptap").fill("###");
-  await inspector.locator(".tiptap").press("Space");
-  await expect(inspector.locator("textarea")).toBeFocused();
-  await inspector.locator("textarea").fill("Template detail");
+  await paragraph.locator(".tiptap").fill("###");
+  await paragraph.locator(".tiptap").press("Space");
+  await expect(paragraph.locator("textarea")).toBeFocused();
+  await paragraph.locator("textarea").fill("Template detail");
   await expect(
     page
-      .getByRole("toolbar", { name: "Document formatting", exact: true })
-      .getByRole("combobox", { name: "Text style", exact: true }),
+      .getByRole("toolbar", {
+        name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
+        exact: true,
+      })
+      .locator(".text-style-label"),
   ).toHaveText("Heading 3");
   await page
     .getByRole("button", { name: "Save template", exact: true })

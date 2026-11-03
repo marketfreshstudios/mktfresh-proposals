@@ -20,7 +20,7 @@ export function ToolbarPopover({
     el.showPopover();
     const place = () => {
       const anchor =
-        trigger ?? el.closest(".document-formatting-bar") ?? el.parentElement;
+        trigger ?? el.closest(".phone-formatting-bar") ?? el.parentElement;
       const bounds = anchor!.getBoundingClientRect(),
         box = el.getBoundingClientRect();
       const paper = anchor
@@ -60,7 +60,11 @@ export function ToolbarPopover({
     // Escape still belongs to the open menu, before the document deselects and
     // removes its portal/trigger. Never steal focus from a subsequent click.
     const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || !trigger?.contains(event.target as Node))
+      if (
+        event.key !== "Escape" ||
+        (!trigger?.closest(".editor-edit-bar") &&
+          !trigger?.contains(event.target as Node))
+      )
         return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -89,6 +93,7 @@ export function ToolbarPopover({
   return (
     <div
       ref={ref}
+      data-editor-chrome
       popover="manual"
       className={`toolbar-popover ${className}`}
       onKeyDown={(e) => {

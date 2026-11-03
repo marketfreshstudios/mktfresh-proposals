@@ -1,4 +1,5 @@
 "use client";
+import { useControlLayout } from "./editor/control-layout";
 import { useManagedPopover } from "./editor-popovers";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ type Option = {
   group: string;
   block?: Block;
   image?: boolean;
+  disabled?: boolean;
 };
 export function BlockMenu({
   anchor,
@@ -28,6 +30,7 @@ export function BlockMenu({
   onClose: () => void;
   signatures?: boolean;
 }) {
+  const { desktop } = useControlLayout();
   useManagedPopover(true, onClose);
   const [host, setHost] = useState<Element | null>(null),
     [query, setQuery] = useState(""),
@@ -95,12 +98,15 @@ export function BlockMenu({
       icon: "image",
       image: true,
     },
-    ...(!hasPricing
+    ...(!hasPricing || desktop
       ? [
           {
             group: "Proposal",
             name: "Pricing table",
-            description: "The quote with totals",
+            description: hasPricing
+              ? "Already in this proposal"
+              : "The quote with totals",
+            disabled: hasPricing,
             icon: "table" as const,
             block: { type: "pricing_table" as const },
           },
@@ -165,6 +171,18 @@ export function BlockMenu({
       const a = (anchor ?? fallback.current)?.getBoundingClientRect();
       popover.style.maxHeight = "";
       const preferred = popover.getBoundingClientRect();
+      const edge = anchor?.dataset.insertEdge;
+      const frame = anchor
+        ?.closest<HTMLElement>(".block-frame")
+        ?.getBoundingClientRect();
+      if (desktop && edge && frame && a) {
+        const y = (edge === "above" ? frame.top : frame.bottom) + 18;
+        popover.style.maxHeight = `${Math.max(0, Math.min(420, innerHeight - y - 8))}px`;
+        popover.style.left = `${Math.max(8, Math.min(a.left, innerWidth - preferred.width - 8))}px`;
+        popover.style.top = `${Math.max(8, y)}px`;
+        popover.dataset.placement = edge;
+        return;
+      }
       const top = a?.bottom ?? 80,
         below = innerHeight - top - 14,
         above = (a?.top ?? top) - 14,
@@ -214,7 +232,7 @@ export function BlockMenu({
         });
       }
     };
-  }, [host, anchor]);
+  }, [host, anchor, desktop]);
   useEffect(() => {
     const outside = (e: PointerEvent) => {
       if (
@@ -268,6 +286,7 @@ export function BlockMenu({
     };
   }, [anchor]);
   const choose = (option: Option) => {
+    if (option.disabled) return;
     if (option.image) file.current?.click();
     else if (option.block) {
       onChoose(structuredClone(option.block));
@@ -275,7 +294,14 @@ export function BlockMenu({
     }
   };
   const focusRow = (at: number) => {
-    const n = (at + options.length) % options.length;
+    if (!options.some((option) => !option.disabled)) {
+      input.current?.focus();
+      return;
+    }
+    let n = (at + options.length) % options.length;
+    const step = at < active ? -1 : 1;
+    while (options[n]?.disabled)
+      n = (n + step + options.length) % options.length;
     setActive(n);
     ref.current
       ?.querySelectorAll<HTMLButtonElement>("[role=menuitem]")
@@ -285,6 +311,7 @@ export function BlockMenu({
   return createPortal(
     <div
       ref={ref}
+      data-editor-chrome
       popover="manual"
       role="dialog"
       aria-label="Add a block"
@@ -309,10 +336,21 @@ export function BlockMenu({
           options.length
         ) {
           e.preventDefault();
-          choose(options[0]);
+          const first = options.find((o) => !o.disabled);
+          if (first) choose(first);
         }
       }}
     >
+      {desktop && (
+        <header className="editor-block-menu-heading">
+          <strong>
+            {anchor?.dataset.insertEdge === "above" ? "Add above" : "Add below"}
+          </strong>
+          <button type="button" aria-label="Close block menu" onClick={onClose}>
+            ×
+          </button>
+        </header>
+      )}
       <input
         ref={input}
         type="search"
@@ -337,6 +375,8 @@ export function BlockMenu({
                         key={`${i}-${option.name}`}
                         type="button"
                         role="menuitem"
+                        disabled={option.disabled}
+                        aria-disabled={option.disabled || undefined}
                         tabIndex={i === active ? 0 : -1}
                         aria-label={option.name}
                         className={i === active ? "active" : ""}

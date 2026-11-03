@@ -1,6 +1,6 @@
 /** Shared source stream for the editable DOM and the print DOM. UI never counts as content. */
 export const paginationIgnored =
-  ".block-tools,.drag-handle,textarea,.rich-toolbar,.document-edit-item,.sr-only,[data-pagination-spacer],.block-insert,style";
+  "[data-editor-chrome],textarea,.sr-only,[data-pagination-spacer],style";
 export function sourceTextNodes(root: Node): Text[] {
   const walk = root.ownerDocument!.createTreeWalker(root, 4, {
     acceptNode: (n) => (n.parentElement?.closest(paginationIgnored) ? 2 : 1),

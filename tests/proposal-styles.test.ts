@@ -332,3 +332,42 @@ it("rejects fonts outside this workspace at every style level and rejects low co
     ),
   ).rejects.toThrow("Only staff");
 });
+it("keeps client.name as an exact token through Heading 2 and paragraph conversion", () => {
+  const paragraph: Block = {
+    id: "token-block",
+    type: "paragraph",
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "Hello " },
+            { type: "variable", attrs: { path: "client.name" } },
+            { type: "text", text: ", a useful proposal." },
+          ],
+        },
+      ],
+    },
+    ai_review: { source: "assistant", reviewed: false },
+  };
+  const heading = convertTextStyle(paragraph, 2);
+  expect(heading).toMatchObject({
+    id: paragraph.id,
+    type: "heading",
+    level: 2,
+    text: "Hello {{client.name}}, a useful proposal.",
+    ai_review: paragraph.ai_review,
+  });
+  const restored = convertTextStyle(heading, 0);
+  expect(restored).toMatchObject({
+    id: paragraph.id,
+    type: "paragraph",
+    text: "Hello {{client.name}}, a useful proposal.",
+    ai_review: paragraph.ai_review,
+  });
+  expect(paragraph.content?.content?.[0].content?.[1]).toEqual({
+    type: "variable",
+    attrs: { path: "client.name" },
+  });
+});

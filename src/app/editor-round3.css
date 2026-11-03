@@ -2,27 +2,6 @@
 .formatting-controls .formatting-label {
   display: none;
 }
-.rich-toolbar.formatting-controls,
-.inline-formatting-row > .formatting-controls,
-.document-formatting-bar .formatting-controls {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 0;
-  min-height: 44px;
-  height: 44px;
-  width: max-content;
-  max-width: none;
-}
-.document-formatting-target,
-.inline-formatting-row,
-.document-formatting-bar {
-  min-width: 0;
-}
-.document-formatting-bar,
-.inline-formatting-row {
-  overflow-x: auto;
-  overflow-y: visible;
-}
 .formatting-group {
   flex: none;
 }
@@ -105,10 +84,6 @@
 .editor-round3 .editor-tabs button {
   font-size: 12px;
   padding-inline: 4px;
-}
-.editor-round3 .document-formatting-bar {
-  max-width: 100%;
-  margin-inline: 0;
 }
 .pdf-paper-viewport {
   max-width: 100%;

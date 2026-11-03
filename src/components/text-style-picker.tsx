@@ -4,7 +4,17 @@ import type { TextStyleControl } from "../lib/editor-document";
 import { ToolbarPopover } from "./toolbar-popover";
 const styles = ["Paragraph", "Heading 1", "Heading 2", "Heading 3"];
 /** Select-only combobox using the same managed, dismissible surface as other tools. */
-export function TextStylePicker({ value }: { value: TextStyleControl | null }) {
+export function TextStylePicker({
+  value,
+  edit = false,
+  compact = false,
+  listKind,
+}: {
+  value: TextStyleControl | null;
+  edit?: boolean;
+  compact?: boolean;
+  listKind?: "bullet" | "numbered";
+}) {
   const [open, setOpen] = useState(false),
     [active, setActive] = useState(0),
     trigger = useRef<HTMLButtonElement>(null),
@@ -22,19 +32,24 @@ export function TextStylePicker({ value }: { value: TextStyleControl | null }) {
     if (open) list.current?.focus({ preventScroll: true });
   }, [open]);
   return (
-    <div className="formatting-group format-style-control">
+    <div
+      className={
+        edit ? "edit-style-control" : "formatting-group format-style-control"
+      }
+    >
       <button
         ref={trigger}
         id="document-text-style"
         type="button"
-        role="combobox"
+        role={edit ? undefined : "combobox"}
         className="select-compact"
         aria-label="Text style"
-        aria-haspopup="listbox"
+        aria-haspopup={edit ? "menu" : "listbox"}
         aria-controls={open ? id : undefined}
         aria-expanded={open}
         title={`Text style · ${styles[value?.value ?? 0]}`}
         disabled={!value}
+        onMouseDown={edit ? (e) => e.preventDefault() : undefined}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={(e) => {
           if (["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
@@ -45,17 +60,38 @@ export function TextStylePicker({ value }: { value: TextStyleControl | null }) {
           }
         }}
       >
-        {styles[value?.value ?? 0]}
+        <span className="text-style-label">
+          {edit && listKind
+            ? compact
+              ? listKind === "bullet"
+                ? "•"
+                : "1."
+              : listKind === "bullet"
+                ? "Bulleted list"
+                : "Numbered list"
+            : edit && compact
+              ? value?.value
+                ? `H${value.value}`
+                : "¶"
+              : styles[value?.value ?? 0]}
+        </span>
+        {edit && (
+          <span className="text-style-caret" aria-hidden="true">
+            ▾
+          </span>
+        )}
       </button>
       {open && (
         <ToolbarPopover
-          className="text-style-popover"
+          className={
+            edit ? "text-style-popover edit-dark-menu" : "text-style-popover"
+          }
           trigger={trigger.current}
           close={() => setOpen(false)}
         >
           <div
             ref={list}
-            role="listbox"
+            role={edit ? "menu" : "listbox"}
             aria-label="Text styles"
             id={id}
             tabIndex={-1}
@@ -80,14 +116,18 @@ export function TextStylePicker({ value }: { value: TextStyleControl | null }) {
                 key={name}
                 id={`${id}-${n}`}
                 type="button"
-                role="option"
+                role={edit ? "menuitemradio" : "option"}
+                aria-label={name}
                 tabIndex={-1}
-                aria-selected={value?.value === n}
+                aria-selected={edit ? undefined : value?.value === n}
+                aria-checked={edit ? value?.value === n : undefined}
+                data-level={n}
                 data-active={active === n}
                 onPointerMove={() => setActive(n)}
                 onClick={() => choose(n)}
               >
-                {name}
+                <span>{name}</span>
+                {edit && <kbd>⌥{n}</kbd>}
               </button>
             ))}
           </div>

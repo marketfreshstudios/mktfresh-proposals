@@ -15,21 +15,24 @@ test("browser pages appear without PDF requests and explicit break action is und
   );
   await paragraph.click();
   await page
-    .locator(".document-formatting-bar")
-    .getByRole("button", { name: "Start on next page", exact: true })
+    .getByRole("button", { name: "More block actions", exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Start on next page", exact: true })
     .click();
   await expect
     .poll(
       () => f.active().content.filter((b) => b.type === "page_break").length,
     )
     .toBe(2);
+  await page
+    .getByRole("button", { name: "More block actions", exact: true })
+    .click();
   await expect(
-    page
-      .locator(".document-formatting-bar")
-      .getByRole("button", { name: "Remove page break", exact: true }),
+    page.getByRole("menuitem", { name: "Remove page break", exact: true }),
   ).toBeEnabled();
   await page
-    .locator(".editor-v2-header, .document-formatting-bar")
+    .locator(".editor-v2-header, :is(.editor-edit-bar,.phone-formatting-bar)")
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect
@@ -112,7 +115,7 @@ test("PDF page starts are the browser source positions (pdftotext), and print us
         const walk = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
           acceptNode: (n) =>
             n.parentElement?.closest(
-              ".block-tools,.drag-handle,textarea,.rich-toolbar,.document-edit-item,.sr-only,[data-pagination-spacer],.block-insert,style",
+              ":is(.editor-edit-bar,.phone-block-actions),.drag-handle,textarea,.rich-toolbar,.document-edit-item,.sr-only,[data-pagination-spacer],.block-insert,style",
             )
               ? NodeFilter.FILTER_REJECT
               : NodeFilter.FILTER_ACCEPT,

@@ -1,5 +1,6 @@
 "use client";
 import { EditorHeader, PanelChevron } from "./editor-header";
+import { TemplateHistoryControls } from "./editor/template-history-controls";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
@@ -37,7 +38,8 @@ import {
 import { BlockMenu } from "./block-menu";
 import {
   BlockScope,
-  DocumentFormattingBar,
+  PhoneFormattingBar,
+  EditorControlConfig,
   useBlockFeedback,
   useBlockToolbar,
   BlockFrame,
@@ -51,7 +53,9 @@ import type { Data } from "./staff-app";
 import { renderBlocks, escape } from "../lib/presentation";
 import { DocumentCover } from "./document-cover";
 import { FieldEditor } from "./field-editor";
-import { FieldOptions } from "./field-options";
+import { useInsertedBlockFocus } from "./editor/use-inserted-block-focus";
+import { HeadingTokens, HeadingElement } from "./editor/heading-tokens";
+import { FieldTextArea, FieldOptions } from "./field-options";
 import { appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
@@ -1176,6 +1180,7 @@ function TemplatesStudioContent({
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const fieldInsertion = useBlockToolbar();
   const selection = useBlockSelection();
+  const focusInserted = useInsertedBlockFocus(selection.select);
   const original = data.templates.find((t) => t.id === selected);
   const [mode, setMode] = useState(blocksOnly ? "blocks" : "templates"),
     [draft, setDraft] = useState<Template | null>(
@@ -1456,7 +1461,13 @@ function TemplatesStudioContent({
     });
     patch(next);
     setInsertAt(null);
-    setIndex(at);
+    setIndex(templatePanels.phone ? at : null);
+    if (!templatePanels.phone) {
+      focusInserted(
+        `template-${next[at].id}`,
+        ["paragraph", "heading"].includes(block.type),
+      );
+    }
   }
   const specimen =
     draft && data.settings
@@ -1628,6 +1639,11 @@ function TemplatesStudioContent({
       className="studio-template-layout"
       style={{ gridTemplateColumns: templatePanels.columns }}
     >
+      <EditorControlConfig
+        compact={templatePanels.compact}
+        map={map}
+        onField={templatePanels.right ? () => setFields(true) : undefined}
+      />
       <PageBreakController
         content={mode === "templates" ? content : []}
         onChange={patch}
@@ -1683,6 +1699,7 @@ function TemplatesStudioContent({
             allowLeave.current = true;
           }}
         >
+          <TemplateHistoryControls />
           <Button
             onClick={() => {
               setIndex(null);
@@ -1791,7 +1808,7 @@ function TemplatesStudioContent({
                 Active template
               </label>
             )}
-            {!(mobile && inspector) && <DocumentFormattingBar />}
+            {!(mobile && inspector) && <PhoneFormattingBar />}
             <div className="template-page-viewport">
               <div
                 style={{
@@ -1814,6 +1831,9 @@ function TemplatesStudioContent({
                 >
                   <div
                     ref={templatePaper}
+                    data-editor-density={
+                      templateStyles.layout?.density ?? "comfortable"
+                    }
                     className={`studio-blocks proposal-typography document-reading ${mode === "templates" ? "template-paged-paper" : ""}`}
                     style={
                       mode === "templates"
@@ -1880,6 +1900,38 @@ function TemplatesStudioContent({
                         <BlockFrame
                           id={`template-${b.id ?? n}`}
                           label={`Template block ${n + 1}`}
+                          blockType={b.type}
+                          objectAction={
+                            b.type === "pricing_table" ? (
+                              <button
+                                type="button"
+                                title="Edit quote"
+                                onClick={() =>
+                                  document
+                                    .getElementById("template-default-quote")
+                                    ?.scrollIntoView({ block: "center" })
+                                }
+                              >
+                                Edit quote
+                              </button>
+                            ) : undefined
+                          }
+                          onUndo={() =>
+                            patch(
+                              content.map((v, j) =>
+                                j === n
+                                  ? {
+                                      ...v,
+                                      ai_review: {
+                                        source:
+                                          v.ai_review?.source ?? "assistant",
+                                        reviewed: false,
+                                      },
+                                    }
+                                  : v,
+                              ),
+                            )
+                          }
                           className="studio-block-card"
                           insert={
                             mode === "templates"
@@ -2085,21 +2137,74 @@ function TemplatesStudioContent({
                                     ),
                                   )
                                 }
-                                onTextStyle={(level, text) =>
+                                onTextStyle={(level, text) => {
                                   patch(
                                     content.map((v, j) =>
                                       j === n
                                         ? convertTextStyle(b, level, text)
                                         : v,
                                     ),
-                                  )
-                                }
+                                  );
+                                  if (!templatePanels.phone)
+                                    focusInserted(`template-${b.id}`, true);
+                                }}
                                 onSlash={(anchor) => {
                                   setInsertAnchor(anchor ?? null);
                                   setReplaceEmpty(true);
                                   setInsertAt(n);
                                 }}
                               />
+                            ) : b.type === "heading" &&
+                              !templatePanels.phone ? (
+                              <HeadingElement
+                                level={b.level ?? 1}
+                                className="document-heading-edit"
+                                data-heading-level={b.level ?? 1}
+                              >
+                                <span
+                                  className="heading-measure"
+                                  aria-hidden="true"
+                                >
+                                  <HeadingTokens
+                                    text={b.text || "\u200b"}
+                                    map={map}
+                                  />
+                                </span>
+                                <FieldTextArea
+                                  aria-label={`Heading ${n + 1}`}
+                                  className="document-heading"
+                                  rows={1}
+                                  value={b.text ?? ""}
+                                  textStyle={{
+                                    value: b.level ?? 1,
+                                    change: (level) => {
+                                      patch(
+                                        content.map((v, j) =>
+                                          j === n
+                                            ? convertTextStyle(b, level)
+                                            : v,
+                                        ),
+                                      );
+                                      focusInserted(`template-${b.id}`, true);
+                                    },
+                                  }}
+                                  onValue={(text) =>
+                                    patch(
+                                      content.map((v, j) =>
+                                        j === n
+                                          ? {
+                                              ...b,
+                                              text: text.replace(
+                                                /[\r\n]+/g,
+                                                " ",
+                                              ),
+                                            }
+                                          : v,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </HeadingElement>
                             ) : b.type === "image" ? (
                               <img src={b.src} alt={b.alt ?? ""} />
                             ) : b.type === "signature_block" ? (
@@ -2345,7 +2450,7 @@ function TemplatesStudioContent({
             </div>
             {mode === "templates" && (
               <>
-                <section className="studio-section">
+                <section className="studio-section" id="template-default-quote">
                   <h2>Default quote</h2>
                   <TemplateWarnings
                     templates={[draft!]}
@@ -2435,7 +2540,7 @@ function TemplatesStudioContent({
             setTemplateToolsOpen(false);
           }}
         >
-          <DocumentFormattingBar />
+          <PhoneFormattingBar />
           {templateTools}
         </Sheet>
       )}

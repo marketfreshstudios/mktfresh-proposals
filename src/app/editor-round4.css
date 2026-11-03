@@ -425,13 +425,6 @@
   overflow: visible;
 }
 @media (max-width: 699px) {
-  :is(.pdf-width-editor .editor-paper, .template-paged-paper) .block-tools {
-    left: -48px;
-    width: var(--editor-touch-target);
-    padding-top: var(--editor-touch-target);
-    transform: scale(var(--editor-ui-scale, 1));
-    transform-origin: top right;
-  }
   :is(.pdf-width-editor .editor-paper, .template-paged-paper)
     .block-sortable
     > .drag-handle {
@@ -441,13 +434,6 @@
     min-height: var(--editor-touch-target);
     transform: scale(var(--editor-ui-scale, 1));
     transform-origin: top right;
-  }
-  :is(.pdf-width-editor .editor-paper, .template-paged-paper)
-    .block-tools
-    button {
-    width: var(--editor-touch-target);
-    height: var(--editor-touch-target);
-    min-height: var(--editor-touch-target);
   }
   :is(.pdf-width-editor .editor-paper, .template-paged-paper) .block-insert {
     width: var(--editor-touch-target);

@@ -8,7 +8,7 @@ export type BrowserPages = {
   assignments: { block: string; page: number }[];
 };
 const ignore =
-  ".block-tools,.drag-handle,.rich-toolbar,textarea,[data-pagination-spacer],.sr-only,.document-edit-item";
+  "[data-editor-chrome],textarea,[data-pagination-spacer],.sr-only";
 /** Measures actual browser line boxes at Letter width. All inserted gaps are visual decorations. */
 export function paginateBrowser(
   root: HTMLElement,

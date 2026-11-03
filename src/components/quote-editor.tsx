@@ -4,6 +4,7 @@ import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
 import { ReadOnlyRegion } from "./editor/read-only-region";
 import { EditorNotice } from "./editor/editor-notice";
+import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
@@ -34,7 +35,8 @@ import {
 } from "../lib/editor-document";
 import {
   BlockScope,
-  DocumentFormattingBar,
+  PhoneFormattingBar,
+  EditorControlConfig,
   useBlockFeedback,
   useBlockToolbar,
   BlockFrame,
@@ -1718,6 +1720,19 @@ function QuoteEditorContent({
         <BlockFrame
           id={`block-${b.id ?? n}`}
           label={`Proposal block ${n + 1}`}
+          blockType={b.type}
+          reviewBusy={reviewBusy}
+          objectAction={
+            b.type === "pricing_table" ? (
+              <button
+                type="button"
+                title="Edit quote"
+                onClick={() => openTools("Quote")}
+              >
+                Edit quote
+              </button>
+            ) : undefined
+          }
           className="draft-block"
           ai={!!b.ai_review && !b.ai_review.reviewed}
           reviewPending={sections.find((s) => s.indices.includes(n))?.pending}
@@ -1841,7 +1856,11 @@ function QuoteEditorContent({
               data-heading-level={b.level ?? 1}
             >
               <span className="heading-measure" aria-hidden="true">
-                {b.text || "\u200b"}
+                {panels.phone ? (
+                  b.text || "\u200b"
+                ) : (
+                  <HeadingTokens text={b.text || "\u200b"} map={map} />
+                )}
               </span>
               <FieldTextArea
                 onBeforeInsert={() =>
@@ -2303,6 +2322,11 @@ function QuoteEditorContent({
       data-shell-mode={panels.phone ? "phone" : "v2"}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
+      <EditorControlConfig
+        compact={panels.compact}
+        map={map}
+        onField={panels.right ? () => openTools("Fields") : undefined}
+      />
       <PageBreakController
         content={p.content}
         onChange={(content) => change({ content })}
@@ -2525,7 +2549,7 @@ function QuoteEditorContent({
                 </Button>
               </div>
             </div>
-            <DocumentFormattingBar />
+            <PhoneFormattingBar />
             {blockFeedback.feedback}
             <div className="phone-section-list">
               <p className="eyebrow">Proposal for {p.client.company}</p>
@@ -2622,6 +2646,13 @@ function QuoteEditorContent({
               >
                 <article
                   ref={paper}
+                  data-editor-density={
+                    resolveStyles(
+                      p.workspace_settings,
+                      p.template_style_overrides,
+                      p.style_overrides,
+                    ).layout?.density ?? "comfortable"
+                  }
                   style={
                     {
                       "--accent": current.workspace_settings?.accent_colour,

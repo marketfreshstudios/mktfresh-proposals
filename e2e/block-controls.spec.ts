@@ -127,7 +127,9 @@ test("block controls own one block and never move document content on hover, foc
     }
     await block.evaluate((el) => {
       el.scrollIntoView({ block: "start" });
-      const bar = document.querySelector(".document-formatting-bar");
+      const bar = document.querySelector(
+        ":is(.editor-edit-bar,.phone-formatting-bar)",
+      );
       const canvas =
         innerWidth >= 700
           ? el.closest<HTMLElement>(".editor-document-region")
@@ -136,7 +138,7 @@ test("block controls own one block and never move document content on hover, foc
         0,
         -(
           (bar
-            ? parseFloat(getComputedStyle(bar).top) +
+            ? (parseFloat(getComputedStyle(bar).top) || 0) +
               bar.getBoundingClientRect().height
             : 160) + 30
         ),
@@ -179,14 +181,30 @@ test("block controls own one block and never move document content on hover, foc
           `${before.blocks[n].id} ${key}`,
         ).toBeLessThanOrEqual(1);
   }
+  async function clickText(text: Locator) {
+    // The owner retained the prototype bar above its block. Click an exposed
+    // text point rather than the preceding block's covered centre.
+    const point = await text.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      for (const y of [1, r.height - 1, r.height / 2])
+        for (let x = r.width - 1; x > 0; x -= 4) {
+          const hit = document.elementFromPoint(r.left + x, r.top + y);
+          if (hit && el.contains(hit)) return { x, y };
+        }
+      throw new Error("No exposed text point outside floating controls");
+    });
+    await text.click({ position: point });
+  }
   async function noTextOverlap(block: Locator) {
     const intersections = await block.evaluate((selected) => {
+      // The prototype intentionally floats the edit bar above the selected block.
+      // Only that bar is exempt; gutter and AI controls must still avoid other text.
       const controls = [
         ...selected.querySelectorAll<HTMLElement>(
-          ":scope > .block-tools button,:scope > .block-insert",
+          ":scope > .phone-block-actions button,:scope > .block-insert,:scope > .editor-gutter button,:scope > .editor-ai-check",
         ),
         ...selected.parentElement!.querySelectorAll<HTMLElement>(
-          ":scope > .drag-handle",
+          ":scope > .drag-handle,:scope > .block-frame > .editor-gutter > .drag-handle",
         ),
       ];
       const texts: DOMRect[] = [];
@@ -204,7 +222,7 @@ test("block controls own one block and never move document content on hover, foc
             if (
               !node.textContent?.trim() ||
               node.parentElement?.closest(
-                ".block-tools,.block-insert,.drag-handle,.heading-measure",
+                ":is(.editor-edit-bar,.phone-block-actions),.block-insert,.drag-handle,.heading-measure",
               )
             )
               continue;
@@ -317,7 +335,9 @@ test("block controls own one block and never move document content on hover, foc
               if (
                 !node.textContent?.trim() ||
                 node.parentElement?.closest(".block-frame") !== el ||
-                node.parentElement?.closest(".block-tools,.drag-handle,small")
+                node.parentElement?.closest(
+                  ":is(.editor-edit-bar,.phone-block-actions),.drag-handle,small",
+                )
               )
                 continue;
               const range = document.createRange();
@@ -339,13 +359,19 @@ test("block controls own one block and never move document content on hover, foc
           await expect(
             page.locator('.block-frame[data-active="true"]'),
           ).toHaveCount(1);
-          await expect(page.locator(".block-tools:visible")).toHaveCount(1);
           await expect(
-            page.locator(".block-sortable > .drag-handle:visible"),
+            page.locator(":is(.editor-edit-bar,.phone-block-actions):visible"),
+          ).toHaveCount(1);
+          await expect(
+            page.locator(
+              ":is(.block-sortable > .drag-handle,.editor-gutter > .drag-handle):visible",
+            ),
           ).toHaveCount(1);
           const dragHandle = block
             .locator("..")
-            .locator(":scope > .drag-handle");
+            .locator(
+              ":scope > .drag-handle,:scope > .block-frame > .editor-gutter > .drag-handle",
+            );
           await dragHandle.hover();
           if (width === 375) {
             const rect = (await dragHandle.boundingBox())!;
@@ -363,7 +389,9 @@ test("block controls own one block and never move document content on hover, foc
           await noTextOverlap(block);
           expect(
             await block
-              .locator(":scope > .block-tools button")
+              .locator(
+                ":scope > :is(.editor-edit-bar,.phone-block-actions) button",
+              )
               .evaluateAll((buttons) =>
                 buttons.every(
                   (button) => !!button.getAttribute("title")?.trim(),
@@ -389,7 +417,11 @@ test("block controls own one block and never move document content on hover, foc
         });
         await expect(paragraph).toHaveAttribute("data-selected", "true");
         await page.mouse.move(1, 1);
-        await expect(paragraph.locator(":scope > .block-tools")).toBeVisible();
+        await expect(
+          paragraph.locator(
+            ":scope > :is(.editor-edit-bar,.phone-block-actions)",
+          ),
+        ).toBeVisible();
         if (editor === "proposal") {
           await expect(paragraph.locator(".tiptap")).toContainText(
             "We’ll plan a clear scope together",
@@ -471,20 +503,22 @@ test("block controls own one block and never move document content on hover, foc
             page.locator('.block-frame[data-selected="true"]'),
           ).toHaveCount(0);
           await expect(
-            page.locator(".block-tools:visible,.block-insert:visible"),
+            page.locator(
+              ":is(.editor-edit-bar,.phone-block-actions):visible,.block-insert:visible",
+            ),
           ).toHaveCount(0);
           await paragraph.evaluate((el) =>
             (el as HTMLElement).focus({ preventScroll: true }),
           );
           await showBlock(blocks.nth(2), width, editor);
-          await blocks.nth(2).locator(".tiptap").click();
+          await clickText(blocks.nth(2).locator(".tiptap"));
           await expect(blocks.nth(2)).toHaveAttribute("data-selected", "true");
           await expect(paragraph).toHaveAttribute("data-selected", "false");
           if (editor === "proposal") {
             await showBlock(paragraph, width, editor);
-            await paragraph.locator(".tiptap").click();
+            await clickText(paragraph.locator(".tiptap"));
             const format = page.getByRole("toolbar", {
-              name: "Document formatting",
+              name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,
               exact: true,
             });
             await expect(
@@ -495,7 +529,10 @@ test("block controls own one block and never move document content on hover, foc
               .click();
             await expect(paragraph).toHaveAttribute("data-selected", "true");
             await paragraph
-              .getByRole("button", { name: "Add block below", exact: true })
+              .getByRole("button", {
+                name: /^Add (a )?block below$/,
+                exact: true,
+              })
               .click();
             await expect(
               page.getByRole("dialog", { name: "Add a block", exact: true }),
@@ -512,7 +549,9 @@ test("block controls own one block and never move document content on hover, foc
               .evaluate((paper) => {
                 const box = paper.getBoundingClientRect(),
                   bar = document
-                    .querySelector(".document-formatting-bar")!
+                    .querySelector(
+                      ":is(.editor-edit-bar,.phone-formatting-bar)",
+                    )!
                     .getBoundingClientRect(),
                   x = Math.min(innerWidth - 5, box.right - 5);
                 for (
@@ -605,12 +644,14 @@ test("block controls own one block and never move document content on hover, foc
           (el as HTMLElement).focus({ preventScroll: true }),
         );
         await expect(clause).toHaveAttribute("data-active", "true");
-        await expect(page.locator(".block-tools:visible")).toHaveCount(1);
+        await expect(
+          page.locator(":is(.editor-edit-bar,.phone-block-actions):visible"),
+        ).toHaveCount(1);
         await shot(`${editor}-clause-after`, width, theme);
         // Actual content editing keeps the selected toolbar visible after the pointer leaves.
         if (editor === "proposal") {
           await showBlock(paragraph, width, editor);
-          await paragraph.locator(".tiptap").click();
+          await clickText(paragraph.locator(".tiptap"));
           await page.mouse.move(1, 1);
           await expect(paragraph).toHaveAttribute("data-selected", "true");
         } else {
@@ -634,14 +675,14 @@ test("block controls own one block and never move document content on hover, foc
     .evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
   await templateBlocks
     .first()
-    .getByRole("button", { name: "Add block below", exact: true })
+    .getByRole("button", { name: /^Add (a )?block below$/, exact: true })
     .click();
   await page
     .getByRole("dialog", { name: "Add a block", exact: true })
     .getByRole("menuitem", { name: "Text", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
-  const inspectorText = page.locator(".studio-inspector .tiptap");
+  const inspectorText = templateBlocks.nth(1).locator(".tiptap");
   await expect(inspectorText).toBeFocused();
   await inspectorText.press("/");
   await page
@@ -649,11 +690,7 @@ test("block controls own one block and never move document content on hover, foc
     .getByRole("menuitem", { name: "Heading 1", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
-  await expect(
-    page
-      .locator(".studio-inspector")
-      .getByRole("textbox", { name: "Heading 1", exact: true }),
-  ).toBeVisible();
+  await expect(templateBlocks.nth(1).locator("textarea")).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: "Add block", exact: true }),
   ).toHaveCount(0);
@@ -681,7 +718,12 @@ test("block controls own one block and never move document content on hover, foc
   await expect(recovery).toBeVisible();
   await ai.focus();
   const before = await positions(page);
-  await ai.getByRole("button", { name: "Mark reviewed", exact: true }).click();
+  await ai
+    .getByRole("button", {
+      name: /^(Mark reviewed|Mark this AI-written block reviewed)$/,
+      exact: true,
+    })
+    .click();
   await expect(page.locator('.block-frame[data-ai="true"]')).toHaveCount(0);
   await unchanged(before);
   await expect(recovery).toBeVisible();
@@ -691,7 +733,12 @@ test("block controls own one block and never move document content on hover, foc
   );
   const secondId = await roots.nth(2).getAttribute("data-block-id");
   await roots.nth(1).evaluate((el) => (el as HTMLElement).focus());
-  const handle = roots.nth(1).locator("..").locator(":scope > .drag-handle");
+  const handle = roots
+    .nth(1)
+    .locator("..")
+    .locator(
+      ":scope > .drag-handle,:scope > .block-frame > .editor-gutter > .drag-handle",
+    );
   await handle.focus();
   await page.keyboard.press("Space");
   await expect(handle).toHaveAttribute("aria-pressed", "true");

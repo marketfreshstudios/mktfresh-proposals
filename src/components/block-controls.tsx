@@ -1,6 +1,19 @@
 "use client";
 import { PageBreakAction, PageBreakProvider } from "./page-break-action";
-import { EditorPopoverProvider } from "./editor-popovers";
+import {
+  EditorPopoverProvider,
+  useDismissEditorPopover,
+  useHasEditorPopover,
+} from "./editor-popovers";
+import {
+  ControlLayout,
+  useControlLayout,
+  useDesktopControls,
+  BlockDragHandle,
+} from "./editor/control-layout";
+import { EditBar, BlockActionPresentation } from "./editor/edit-bar";
+import { GutterInsert, AiReviewCheck } from "./editor/gutter-insert";
+import { EditorIcon } from "./editor/editor-icon";
 import {
   createContext,
   useContext,
@@ -39,16 +52,16 @@ const Formatting = createContext<
 >(undefined);
 export const useBlockToolbar = () => useContext(Formatting);
 /** One bar per document, with a stable footprint even when selection isn't rich text. */
-export function DocumentFormattingBar() {
+export function PhoneFormattingBar() {
   const state = useBlockToolbar();
+  const { desktop } = useControlLayout();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const header =
       ref.current?.closest("dialog")?.querySelector(":scope > header") ??
       document.querySelector(".editor-document-header");
-    if (!ref.current) return;
     if (!header) {
-      ref.current.style.setProperty("--formatting-top", "0px");
+      ref.current?.style.setProperty("--formatting-top", "0px");
       return;
     }
     const update = () => {
@@ -62,10 +75,12 @@ export function DocumentFormattingBar() {
     const observer = new ResizeObserver(update);
     observer.observe(header);
     return () => observer.disconnect();
-  }, []);
+  }, [desktop]);
+  if (desktop) return null;
   return (
     <div
-      className="document-formatting-bar"
+      data-editor-chrome
+      className="phone-formatting-bar"
       ref={ref}
       role="toolbar"
       aria-label="Document formatting"
@@ -90,7 +105,7 @@ const Selection = createContext({
 export function useBlockSelection() {
   return useContext(Selection);
 }
-function ToastSurface({
+export function ToastSurface({
   children,
   role = "status",
   className = "",
@@ -140,6 +155,7 @@ function ToastSurface({
         <div
           ref={ref}
           popover="manual"
+          data-editor-chrome
           className={`block-feedback-toast ${className}`}
           role={role}
         >
@@ -159,6 +175,14 @@ export function BlockScope({ children }: { children: ReactNode }) {
   );
 }
 function BlockScopeContent({ children }: { children: ReactNode }) {
+  const desktop = useDesktopControls(),
+    dismiss = useDismissEditorPopover(),
+    hasPopover = useHasEditorPopover();
+  const [config, setConfig] = useState<{
+    compact: boolean;
+    map: Record<string, string>;
+    onField?: () => void;
+  }>({ compact: false, map: {} });
   const [selected, setSelected] = useState<string | null>(null),
     [hovered, setHovered] = useState<string | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null),
@@ -185,6 +209,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [guidance]);
   const select = (id: string) => {
+    if (selectedRef.current !== id) dismiss();
     selectedRef.current = id;
     if (![...targets.current.values()].some((target) => target.block === id))
       lastText.current = null;
@@ -217,11 +242,24 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     setHovered(null);
   };
   useEffect(() => {
+    const escape = (event: KeyboardEvent) => {
+      if (
+        desktop &&
+        event.key === "Escape" &&
+        !hasPopover() &&
+        !document.querySelector("dialog:modal")
+      )
+        clear();
+    };
+    window.addEventListener("keydown", escape, true);
+    return () => window.removeEventListener("keydown", escape, true);
+  }, [desktop]);
+  useEffect(() => {
     const outside = (event: PointerEvent) => {
       const target = event.target as Element;
       if (
         target.closest(
-          ".document-formatting-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover",
+          ".phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover",
         )
       )
         return;
@@ -253,98 +291,149 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("pointerdown", outside, true);
   }, []);
   return (
-    <EditorHistoryProvider>
-      <Formatting.Provider
-        value={{
-          target,
-          setTarget,
-          owner,
-          textStyle,
-          activate: (id) => {
-            activate(id);
-            if (!id) setTextStyle(undefined);
-          },
-          insert,
-          register: (id, target) => {
-            targets.current.set(id, target);
-            return () => {
-              targets.current.delete(id);
-              activate((current) => (current === id ? null : current));
-              if (lastText.current === id) lastText.current = null;
-            };
-          },
-          remember: (id) => {
-            lastText.current = id;
-            setTextStyle(targets.current.get(id)?.textStyle?.());
-            activate(targets.current.get(id)?.rich ? id : null);
-          },
-        }}
+    <ControlConfig.Provider value={setConfig}>
+      <ControlLayout.Provider
+        value={{ desktop, onField: undefined, ...config }}
       >
-        <Selection.Provider
-          value={{
-            active: selected ?? hovered,
-            selected,
-            hover: setHovered,
-            select,
-            clear,
-          }}
-        >
-          <div
-            className="block-scope"
-            onPointerDownCapture={(e) => {
-              if (
-                !(e.target as Element).closest(
-                  ".field-editor,.document-formatting-bar,.block-tools,.block-insert,.block-popover,[role=dialog]",
-                )
-              )
-                activate(null);
-            }}
-            onFocusCapture={(e) => {
-              if (
-                !(e.target as Element).closest(
-                  ".field-editor,.document-formatting-bar,.block-tools,.block-insert,.block-popover,[role=dialog]",
-                )
-              )
-                activate(null);
-            }}
-            onPointerLeave={() => setHovered(null)}
-            onKeyDownCapture={(e) => {
-              if (e.key === "Escape") {
-                // The first Escape belongs to the open tool, which restores its
-                // trigger. A subsequent Escape in the document deselects it.
-                if (
-                  (e.target as Element).closest(
-                    ".toolbar-popover,.block-popover",
-                  )
-                )
-                  return;
-                clear();
-                if ((e.target as Element).closest(".block-frame")) {
-                  (e.target as HTMLElement).blur();
-                }
-              }
+        <EditorHistoryProvider>
+          <Formatting.Provider
+            value={{
+              target,
+              setTarget,
+              owner,
+              textStyle,
+              activate: (id) => {
+                activate(id);
+                if (!id) setTextStyle(undefined);
+              },
+              insert,
+              register: (id, target) => {
+                targets.current.set(id, target);
+                return () => {
+                  targets.current.delete(id);
+                  activate((current) => (current === id ? null : current));
+                  if (lastText.current === id) lastText.current = null;
+                };
+              },
+              remember: (id) => {
+                lastText.current = id;
+                setTextStyle(targets.current.get(id)?.textStyle?.());
+                activate(targets.current.get(id)?.rich ? id : null);
+              },
             }}
           >
-            {children}
-          </div>
-          {guidance &&
-            typeof document !== "undefined" &&
-            createPortal(
-              <ToastSurface>
-                Click into the text where you want the field
-              </ToastSurface>,
-              document.body,
-            )}
-        </Selection.Provider>
-      </Formatting.Provider>
-    </EditorHistoryProvider>
+            <Selection.Provider
+              value={{
+                active: selected ?? hovered,
+                selected,
+                hover: setHovered,
+                select,
+                clear,
+              }}
+            >
+              <div
+                className="block-scope"
+                onPointerDownCapture={(e) => {
+                  if (
+                    !(e.target as Element).closest(
+                      ".field-editor,[data-editor-chrome],[role=dialog]",
+                    )
+                  )
+                    activate(null);
+                }}
+                onFocusCapture={(e) => {
+                  if (
+                    !(e.target as Element).closest(
+                      ".field-editor,[data-editor-chrome],[role=dialog]",
+                    )
+                  )
+                    activate(null);
+                }}
+                onPointerLeave={() => setHovered(null)}
+                onKeyDownCapture={(e) => {
+                  if (
+                    desktop &&
+                    e.altKey &&
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    /^Digit[0-3]$/.test(e.code) &&
+                    (e.target as Element).closest(
+                      ".block-content .tiptap,.block-content [data-document-text]",
+                    ) &&
+                    textStyle
+                  ) {
+                    e.preventDefault();
+                    textStyle.change(Number(e.code.slice(-1)) as 0 | 1 | 2 | 3);
+                    return;
+                  }
+                  if (e.key === "Escape") {
+                    // The first Escape belongs to the open tool, which restores its
+                    // trigger. A subsequent Escape in the document deselects it.
+                    if (
+                      (e.target as Element).closest(
+                        ".toolbar-popover,.block-popover",
+                      )
+                    )
+                      return;
+                    clear();
+                    if ((e.target as Element).closest(".block-frame")) {
+                      (e.target as HTMLElement).blur();
+                    }
+                  }
+                }}
+              >
+                {children}
+              </div>
+              {guidance &&
+                typeof document !== "undefined" &&
+                createPortal(
+                  <ToastSurface>
+                    Click into the text where you want the field
+                  </ToastSurface>,
+                  document.body,
+                )}
+            </Selection.Provider>
+          </Formatting.Provider>
+        </EditorHistoryProvider>
+      </ControlLayout.Provider>
+    </ControlConfig.Provider>
   );
+}
+const ControlConfig = createContext<
+  | ((v: {
+      compact: boolean;
+      map: Record<string, string>;
+      onField?: () => void;
+    }) => void)
+  | null
+>(null);
+export function EditorControlConfig({
+  compact,
+  map,
+  onField,
+}: {
+  compact: boolean;
+  map: Record<string, string>;
+  onField?: () => void;
+}) {
+  const configure = useContext(ControlConfig),
+    latest = useRef(onField);
+  latest.current = onField;
+  useEffect(() => {
+    configure?.({
+      compact,
+      map,
+      onField: onField ? () => latest.current?.() : undefined,
+    });
+  }, [compact, JSON.stringify(map), !!onField]);
+  return null;
 }
 export function BlockAction({
   children,
   variant: _variant,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string }) {
+  const presentation = useContext(BlockActionPresentation);
   const rawLabel =
     props["aria-label"] ??
     (typeof children === "string" ? children.trim() : "Block action");
@@ -370,14 +459,23 @@ export function BlockAction({
     <button
       {...props}
       type="button"
-      className="block-action"
+      data-editor-chrome
+      className={`block-action ${/delete/i.test(label) ? "edit-delete" : ""} ${presentation === "bar" && /settings/i.test(label) ? "edit-settings" : ""}`}
+      role={presentation === "menu" ? "menuitem" : undefined}
+      onMouseDown={presentation ? (e) => e.preventDefault() : props.onMouseDown}
       aria-label={label}
       title={props.title ?? label}
       onClick={(e) => {
         props.onClick?.(e);
       }}
     >
-      {icon === "trash-can" || icon === "floppy-disk" || icon === "clone" ? (
+      {presentation === "bar" && /settings/i.test(label) ? (
+        <span className="edit-settings-label">Settings</span>
+      ) : presentation && icon === "floppy-disk" ? (
+        "Save"
+      ) : presentation && (icon === "trash-can" || icon === "clone") ? (
+        <EditorIcon name={icon === "trash-can" ? "trash" : "duplicate"} />
+      ) : icon === "trash-can" || icon === "floppy-disk" || icon === "clone" ? (
         <Icon name={icon} />
       ) : (
         <span aria-hidden="true">{icon}</span>
@@ -399,6 +497,9 @@ export function BlockFrame({
   onUndo,
   insert,
   onInsertField,
+  blockType = "contract",
+  objectAction,
+  reviewBusy = false,
 }: {
   id: string;
   label: string;
@@ -412,7 +513,12 @@ export function BlockFrame({
   onUndo?: () => void;
   insert?: (edge: "above" | "below", anchor: HTMLElement) => void;
   onInsertField?: (path: string) => void;
+  blockType?: Block["type"];
+  objectAction?: ReactNode;
+  reviewBusy?: boolean;
 }) {
+  const layout = useControlLayout(),
+    dragHandle = useContext(BlockDragHandle);
   const frame = useRef<HTMLDivElement>(null);
   const selection = useBlockSelection();
   const fields = useBlockToolbar(),
@@ -469,9 +575,41 @@ export function BlockFrame({
         data-active={selection.active === id}
         data-selected={selection.selected === id}
         data-ai={ai}
+        data-controls={layout.desktop ? "v2" : "phone"}
         tabIndex={0}
         role="group"
         aria-label={label}
+        onKeyDown={(e) => {
+          if (
+            layout.desktop &&
+            e.key === "Enter" &&
+            e.target === e.currentTarget
+          ) {
+            e.preventDefault();
+            selection.select(id);
+            frame.current
+              ?.querySelector<HTMLElement>(
+                ".block-content textarea,.block-content .tiptap",
+              )
+              ?.focus();
+          }
+          if (
+            layout.desktop &&
+            e.key === "Tab" &&
+            !e.shiftKey &&
+            (e.target as Element).closest(
+              ".block-content .tiptap,.block-content [data-document-text]",
+            )
+          ) {
+            const first = frame.current?.querySelector<HTMLElement>(
+              ".editor-edit-bar button:not(:disabled)",
+            );
+            if (first) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }}
         onPointerOver={(e) => {
           if ((e.target as Element).closest(".block-frame") === e.currentTarget)
             selection.hover(id);
@@ -485,45 +623,50 @@ export function BlockFrame({
             selection.select(id);
         }}
       >
-        <div
-          className="block-tools"
-          role="toolbar"
-          aria-label={`${label} actions`}
-        >
-          {(ai || reviewPending) && (
-            <>
-              <span className="block-ai-marker">AI-written · review</span>
-              <button
-                type="button"
-                className="block-review-action"
-                title="Mark reviewed"
-                onClick={onReviewed}
-              >
-                <span aria-hidden="true">✓</span> Mark reviewed
-              </button>
-            </>
-          )}
-          {reviewed && (
-            <>
-              <span className="block-reviewed">Reviewed ✓</span>
-              <button
-                type="button"
-                className="block-review-action"
-                title="Undo review"
-                onClick={onUndo}
-              >
-                Undo review
-              </button>
-            </>
-          )}
-          <PageBreakAction block={id} />
-          {tools}
-        </div>
-        {insert &&
+        {!layout.desktop && (
+          <div
+            data-editor-chrome
+            className="phone-block-actions"
+            role="toolbar"
+            aria-label={`${label} actions`}
+          >
+            {(ai || reviewPending) && (
+              <>
+                <span className="block-ai-marker">AI-written · review</span>
+                <button
+                  type="button"
+                  className="block-review-action"
+                  title="Mark reviewed"
+                  onClick={onReviewed}
+                >
+                  <span aria-hidden="true">✓</span> Mark reviewed
+                </button>
+              </>
+            )}
+            {reviewed && (
+              <>
+                <span className="block-reviewed">Reviewed ✓</span>
+                <button
+                  type="button"
+                  className="block-review-action"
+                  title="Undo review"
+                  onClick={onUndo}
+                >
+                  Undo review
+                </button>
+              </>
+            )}
+            <PageBreakAction block={id} />
+            {tools}
+          </div>
+        )}
+        {!layout.desktop &&
+          insert &&
           (["above", "below"] as const).map((edge) => (
             <button
               key={edge}
               type="button"
+              data-editor-chrome
               className={`block-insert block-insert-${edge}`}
               aria-label={`Add block ${edge}`}
               title={`Add block ${edge}`}
@@ -533,6 +676,27 @@ export function BlockFrame({
             </button>
           ))}
         <div className="block-content">{children}</div>
+        {layout.desktop && selection.active === id && (
+          <>
+            <EditBar
+              id={id}
+              frame={frame}
+              tools={tools}
+              blockType={blockType}
+              objectAction={objectAction}
+            />
+            <GutterInsert onAdd={insert} dragHandle={dragHandle} />
+          </>
+        )}
+        {layout.desktop && onReviewed && (
+          <AiReviewCheck
+            pending={ai}
+            selected={selection.selected === id}
+            busy={reviewBusy}
+            onReviewed={onReviewed}
+            onUndo={onUndo}
+          />
+        )}
       </div>
     </>
   );
