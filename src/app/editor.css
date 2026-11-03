@@ -5797,6 +5797,9 @@
 .send-panel .send-ai-review {
   order: -1;
 }
+.send-panel .send-ai-review[hidden] {
+  display: none;
+}
 .send-ai-review-body {
   display: flex;
   flex-direction: column;

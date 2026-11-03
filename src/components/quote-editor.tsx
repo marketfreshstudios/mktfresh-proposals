@@ -573,6 +573,8 @@ function QuoteEditorContent({
       setLastSaved(current.updated_at ?? null);
       latest.current = { ...current, quote: editorQuote(current) };
       setP(latest.current);
+      // A rejected acknowledgement belongs to the old revision, not this reload.
+      setConfirmed(false);
       setDirty(false);
       setStale(false);
       setError("");
@@ -1565,42 +1567,44 @@ function QuoteEditorContent({
           </li>
         )}
       </ul>
-      {pending.length > 0 && (
-        <div className="send-ai-review readiness-row blocker">
-          <span className="readiness-badge" aria-hidden="true">
-            !
-          </span>
-          <div className="send-ai-review-body">
-            <p>
-              <strong>
-                {pending.length} AI-written{" "}
-                {pending.length === 1 ? "section" : "sections"}.
-              </strong>{" "}
-              {pending.join(", ")}
-            </p>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={(e) => {
-                  setConfirmed(e.target.checked);
-                  if (e.target.checked)
-                    void review(
-                      contentSections(p.content)
-                        .filter((s) => s.pending)
-                        .map((s) => s.id),
-                      true,
-                    );
-                }}
-              />
-              I've reviewed these AI-written sections
-            </label>
-            <button type="button" className="text-link" onClick={showReview}>
-              Show me
-            </button>
-          </div>
+      {/* A fast review response must not detach the native control mid-activation. */}
+      <div
+        className="send-ai-review readiness-row blocker"
+        hidden={pending.length === 0}
+      >
+        <span className="readiness-badge" aria-hidden="true">
+          !
+        </span>
+        <div className="send-ai-review-body">
+          <p>
+            <strong>
+              {pending.length} AI-written{" "}
+              {pending.length === 1 ? "section" : "sections"}.
+            </strong>{" "}
+            {pending.join(", ")}
+          </p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => {
+                setConfirmed(e.target.checked);
+                if (e.target.checked)
+                  void review(
+                    contentSections(p.content)
+                      .filter((s) => s.pending)
+                      .map((s) => s.id),
+                    true,
+                  );
+              }}
+            />
+            I've reviewed these AI-written sections
+          </label>
+          <button type="button" className="text-link" onClick={showReview}>
+            Show me
+          </button>
         </div>
-      )}
+      </div>
       <Field label="Valid until">
         <ValidityField
           timezone={settings?.timezone ?? "UTC"}
