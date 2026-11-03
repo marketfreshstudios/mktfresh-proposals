@@ -65,7 +65,7 @@ test("From lists the workspace team, defaults to the current user and submits a 
     await page.goto(`/proposals/${p.id}/send`);
     await expect(
       page
-        .getByRole("tab", { name: "Review & send", exact: true })
+        .getByRole("tab", { name: "Send", exact: true })
         .filter({ visible: true }),
     ).toHaveAttribute("aria-selected", "true");
     await expect(from).toHaveValue(staff.actor.slice(6));

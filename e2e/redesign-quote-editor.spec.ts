@@ -216,37 +216,12 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         width,
         theme,
       );
-      await page
-        .getByRole("button", { name: "Look up", exact: true })
-        .filter({ visible: true })
-        .first()
-        .click();
       await expect(
-        page
-          .getByText(`Version ${reference.version}`, { exact: false })
-          .filter({ visible: true }),
-      ).toBeVisible();
-      await page
-        .getByRole("searchbox", { name: "Search reference" })
-        .filter({ visible: true })
-        .fill("Hosting");
+        page.getByRole("button", { name: "Look up", exact: true }),
+      ).toHaveCount(0);
       await expect(
-        page.locator(".pricing-reference").filter({ visible: true }),
-      ).toContainText("Hosting and support");
-      await capture(
-        "reference",
-        width === 1440 ? "2b" : width === 768 ? "5h" : "2e",
-        width,
-        theme,
-      );
-      await page
-        .getByRole("dialog", { name: "Pricing reference", exact: true })
-        .getByRole("button", { name: "Done", exact: true })
-        .click();
-      await page
-        .getByRole("tab", { name: "Quote", exact: true })
-        .filter({ visible: true })
-        .click();
+        page.getByRole("dialog", { name: "Pricing reference", exact: true }),
+      ).toHaveCount(0);
       if (width === 375) {
         await page
           .getByRole("button", { name: "Edit item", exact: true })
@@ -258,11 +233,14 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         await capture("line-edit", "2e", width, theme);
         await page
           .locator(".line-sheet")
-          .getByRole("button", { name: "Done", exact: true })
+          .getByRole("button", {
+            name: /^(Done|Collapse tools sidebar)$/,
+            exact: true,
+          })
           .click();
       }
       await page
-        .getByRole("tab", { name: "Review & send", exact: true })
+        .getByRole("tab", { name: "Send", exact: true })
         .filter({ visible: true })
         .click();
       await expect(
@@ -279,7 +257,10 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       if (width < 1100)
         await page
           .locator(".tools-sheet")
-          .getByRole("button", { name: "Done", exact: true })
+          .getByRole("button", {
+            name: /^(Done|Collapse tools sidebar)$/,
+            exact: true,
+          })
           .click();
     }
   }
@@ -321,7 +302,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await page.getByRole("button", { name: "Keep $2,600", exact: true }).click();
   await expect.poll(() => patches).toBeGreaterThan(0);
   await expect(
-    page.getByText("All changes saved", { exact: true }),
+    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   const drag = page.getByRole("button", {
     name: "Drag " + quote[0].name,
@@ -334,7 +315,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await expect(
     page.getByRole("button", { name: "Drag choice group", exact: true }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Review & send", exact: true }).click();
+  await page.getByRole("tab", { name: "Send", exact: true }).click();
   await page
     .getByRole("checkbox", {
       name: /I have reviewed these AI-written sections/,

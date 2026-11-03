@@ -94,6 +94,12 @@ test("formatting rows stay above content and every button is reachable in all ed
       `Formatting in ${name}: text that wraps over several lines on a phone.`,
     );
     await body.press("ControlOrMeta+a");
+    // A saved fixture can retain marks from the previous viewport. Start unmarked.
+    for (const label of ["Bold", "Italic"]) {
+      const toggle = bar.getByRole("button", { name: label, exact: true });
+      if ((await toggle.getAttribute("aria-pressed")) === "true")
+        await toggle.click();
+    }
     for (const label of ["Bold", "Italic"])
       await bar.getByRole("button", { name: label, exact: true }).click();
     await expect(body.locator("em strong, strong em")).toHaveCount(1);
@@ -120,8 +126,18 @@ test("formatting rows stay above content and every button is reachable in all ed
         geometry.gap,
         `${name}: content must start below formatting`,
       ).toBeGreaterThanOrEqual(0);
-    await bar.getByRole("button", { name: "Undo", exact: true }).click();
-    await bar.getByRole("button", { name: "Redo", exact: true }).click();
+    for (const action of ["Undo", "Redo"]) {
+      const local = bar.getByRole("button", { name: action, exact: true });
+      await (
+        (await local.isVisible())
+          ? local
+          : page
+              .locator(".editor-v2-header")
+              .getByRole("button", { name: action, exact: true })
+      ).click();
+    }
+    // Header history is outside the text block; return to the editor before formatting.
+    await body.click();
     for (const label of [
       "Bold",
       "Italic",
@@ -219,7 +235,7 @@ test("formatting rows stay above content and every button is reachable in all ed
       `send note ${width}`,
     );
     await expect(
-      page.getByText("All changes saved", { exact: true }),
+      page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
     ).toBeVisible();
     await page.goto(`/studio/templates/${template.id}`);
     await page

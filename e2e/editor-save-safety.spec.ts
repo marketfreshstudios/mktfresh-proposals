@@ -47,13 +47,9 @@ test("pagination alone is clean; text and its computed plan use one content revi
   );
   await page.reload();
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
-  await expect(
-    page.getByText("Your unsaved edits were kept as a suggestion.", {
-      exact: true,
-    }),
-  ).toHaveCount(0);
+  await expect(page.locator(".editor-notice-recovered")).toHaveCount(0);
   await page.locator(".editor-paper").evaluate((el) => {
     el.querySelectorAll<HTMLElement>(".tiptap").forEach(
       (p) => (p.style.lineHeight = "64px"),
@@ -68,13 +64,9 @@ test("pagination alone is clean; text and its computed plan use one content revi
   expect(f.patches).toHaveLength(0);
   expect(f.active().revision).toBe(revision);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
-  await expect(
-    page.getByText("Your unsaved edits were kept as a suggestion.", {
-      exact: true,
-    }),
-  ).toHaveCount(0);
+  await expect(page.locator(".editor-notice-recovered")).toHaveCount(0);
   expect(
     await page.evaluate(() =>
       Object.keys(localStorage).filter((k) =>
@@ -88,7 +80,7 @@ test("pagination alone is clean; text and its computed plan use one content revi
   await paragraph.fill("This content change also changes the page breaks.");
   await expect.poll(() => f.patches.length).toBe(1);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
   expect(f.patches[0].pagination).toEqual(await plan(page));
   expect(f.active().revision).toBe(revision + 1);
@@ -129,31 +121,21 @@ test("a real concurrent edit preserves local rich text as a suggestion and recom
   });
   hold = false;
   release();
-  const banner = page.getByText(
-    "Your unsaved edits were kept as a suggestion.",
-    { exact: true },
-  );
-  await expect(banner).toBeVisible();
-  await expect(
-    page.getByText("This draft changed elsewhere", { exact: true }),
-  ).toBeVisible();
+  const banner = page.locator(".editor-notice-recovered");
+  await expect(page.locator(".editor-notice-stale")).toBeVisible();
   await expect(paragraph).toHaveText(localText.trim());
   expect(blockText(f.active().content[1])).toBe("Other session text");
-  await page
-    .getByRole("button", { name: "Reload and keep mine", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(paragraph).toHaveText("Other session text");
   await expect(banner).toBeVisible();
   await page.getByText("See my saved changes", { exact: true }).click();
   await expect(page.locator(".recovery-copy")).toContainText(localText.trim());
   await idle(page);
   expect(f.patches).toHaveLength(1);
-  await page
-    .getByRole("button", { name: "Restore my edits", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Keep", exact: true }).click();
   await expect(paragraph).toHaveText(localText.trim());
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
   await expect.poll(() => f.patches.length).toBe(2);
   expect(f.patches[1].revision).toBe(remote.revision);
@@ -170,7 +152,7 @@ test("a real concurrent edit preserves local rich text as a suggestion and recom
   await expect(banner).toHaveCount(0);
 });
 
-test("typing after a conflict survives direct restore, including the latest local text", async ({
+test("a conflict keeps the newest pre-conflict text read-only until Reload then Keep", async ({
   page,
 }) => {
   let release!: () => void;
@@ -185,28 +167,23 @@ test("typing after a conflict survives direct restore, including the latest loca
   const paragraph = page.locator(
     `[data-block-id="block-${f.content[1].id}"] .tiptap`,
   );
-  await paragraph.fill("Local text before the conflict");
+  const newest =
+    "The newest local text before the 409 must survive Reload and Keep.";
+  await paragraph.fill(newest);
   await expect.poll(() => f.patches.length).toBe(1);
   const remote = await f.editRemote({
     title: "Other session changed the title",
   });
   hold = false;
   release();
-  await expect(
-    page.getByText("Your unsaved edits were kept as a suggestion.", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  const newest = "Latest local text typed after the conflict must survive too.";
-  await paragraph.fill(newest);
-  await page
-    .getByRole("button", { name: "Restore my edits", exact: true })
-    .click();
-  await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
-  );
+  await expect(page.locator(".editor-notice-stale")).toBeVisible();
+  await expect(paragraph).toHaveAttribute("contenteditable", "false");
   await expect(paragraph).toHaveText(newest);
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(page.locator(".editor-notice-recovered")).toBeVisible();
+  await page.getByRole("button", { name: "Keep", exact: true }).click();
   await expect.poll(() => blockText(f.active().content[1])).toBe(newest);
+  await expect(paragraph).toBeEditable();
   expect(f.active().revision).toBe(remote.revision + 1);
   expect(f.patches).toHaveLength(2);
   expect(f.patches[1].pagination).toEqual(await plan(page));
@@ -254,7 +231,10 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
     .locator(`[data-block-id="block-${f.content[1].id}"] .tiptap`)
     .fill("Keep this during the outage.");
   await expect(
-    page.getByRole("button", { name: "Couldn't save — Retry", exact: true }),
+    page.getByRole("button", {
+      name: /Couldn.t save (—|·) Retry/,
+      exact: true,
+    }),
   ).toBeVisible();
   const dialog = page.waitForEvent("dialog");
   const leaving = page
@@ -267,10 +247,10 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
   await expect(page).toHaveURL(new RegExp(`/proposals/${f.draft.id}$`));
   fail = false;
   await page
-    .getByRole("button", { name: "Couldn't save — Retry", exact: true })
+    .getByRole("button", { name: /Couldn.t save (—|·) Retry/, exact: true })
     .click();
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
   await expect(page.locator(".editor-save-status")).toHaveAttribute(
     "title",
@@ -278,7 +258,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
   );
   await context.setOffline(true);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "Offline — changes kept on this device",
+    /^(Offline — changes kept on this device|Offline · saved on this device)$/,
   );
   await page
     .locator(`[data-block-id="block-${f.content[1].id}"] .tiptap`)
@@ -294,7 +274,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
     .toBe(true);
   await context.setOffline(false);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "All changes saved",
+    /^(All changes saved|Draft · Saved)$/,
   );
   expect(blockText(f.active().content[1])).toBe("Kept offline on this device.");
 });
@@ -359,7 +339,7 @@ test("proposal and template headers share save states and centred fixed-size pan
         .getByRole("button", { name: "Save template", exact: true })
         .click();
       await expect(page.locator(".editor-save-status")).toHaveText(
-        "All changes saved",
+        /^(All changes saved|Draft · Saved)$/,
       );
       await expect(page.locator(".editor-save-status")).toHaveAttribute(
         "title",

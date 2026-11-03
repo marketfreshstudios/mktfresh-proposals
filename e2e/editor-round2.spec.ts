@@ -142,7 +142,16 @@ for (const width of [1440, 375]) {
       await expect(menu).toHaveCount(0);
       await page.setViewportSize({ width, height: 600 });
       await open();
-      await page.evaluate(() => window.scrollBy(0, scrollY > 0 ? -64 : 64));
+      await page.evaluate(() => {
+        const canvas =
+          innerWidth >= 700
+            ? document.querySelector<HTMLElement>(".editor-document-region")
+            : null;
+        (canvas ?? window).scrollBy(
+          0,
+          (canvas?.scrollTop ?? scrollY) > 0 ? -64 : 64,
+        );
+      });
       await expect(menu).toHaveCount(0);
       await open();
       await menu.getByRole("searchbox").fill("Heading 3");
@@ -211,7 +220,10 @@ for (const width of [1440, 375]) {
         !(await page.locator(".editor-outline .outline-subheading").isVisible())
       )
         await page
-          .getByRole("button", { name: "Expand Pages sidebar", exact: true })
+          .getByRole("button", {
+            name: /^Expand (Pages|Sections) sidebar$/,
+            exact: true,
+          })
           .click();
       await expect(
         page.locator(".editor-outline .outline-subheading"),
@@ -219,7 +231,10 @@ for (const width of [1440, 375]) {
       await expect(
         page.locator('.editor-outline [aria-label^="Drag section"]'),
       ).toHaveCount(1);
-      const pages = page.getByRole("dialog", { name: "Pages", exact: true });
+      const pages = page.getByRole("dialog", {
+        name: /^(Pages|Sections)$/,
+        exact: true,
+      });
       if (await pages.isVisible())
         await pages.getByRole("button", { name: "Done", exact: true }).click();
     }

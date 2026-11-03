@@ -29,7 +29,7 @@ test("browser pages appear without PDF requests and explicit break action is und
       .getByRole("button", { name: "Remove page break", exact: true }),
   ).toBeEnabled();
   await page
-    .locator(".document-formatting-bar")
+    .locator(".editor-v2-header, .document-formatting-bar")
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect
@@ -167,7 +167,7 @@ test("computed sidebar lists overflow sections and a pointer drop to page 3 move
   const f = await editorFixture(page, false, { content });
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
-  const nav = page.getByRole("navigation", { name: "Pages", exact: true });
+  const nav = page.getByRole("navigation", { name: "Sections", exact: true });
   await expect(
     nav
       .locator('[data-outline-page="3"]')
@@ -396,13 +396,13 @@ test("overflow page 3 is a real section drop target, preserving original blocks 
   const f = await editorFixture(page, false, { content });
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
-  const nav = page.getByRole("navigation", { name: "Pages", exact: true }),
+  const nav = page.getByRole("navigation", { name: "Sections", exact: true }),
     paper = page.locator(".editor-paper");
   await expect(
     nav
       .locator('[data-outline-page="3"]')
       .getByRole("button", { name: "Scope (continued)", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   const from = nav.getByRole("button", {
       name: "Drag section Overview",
       exact: true,
