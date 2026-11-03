@@ -1,3 +1,4 @@
+import { documentSpacing } from "./document-spacing";
 import { documentQuote } from "./document-quote";
 import { escape, renderBlocks } from "./presentation";
 import type { Block, Quote } from "./model";
@@ -5,7 +6,7 @@ import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
 export function printPageCss(styles?: ResolvedStyles) {
   const m = pageMetrics(styles),
     p = m.margins;
-  return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px}.print-sheet{height:${m.contentHeight}px}`;
+  return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
 }
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
 export const printCss = `
@@ -28,16 +29,24 @@ export function printContent(input: {
   workspace?: string;
   signatory?: { name: string; title: string } | null;
   currentLayout?: boolean;
+  styles?: ResolvedStyles;
+  planned?: boolean;
 }) {
   const cover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const spaces = input.styles
+    ? documentSpacing(input.content, input.styles)
+    : {};
   const blocks = input.content.map((b, n) => {
     // Presentation only: older frozen content remains byte-for-byte unchanged.
     if (
-      (n === 0 && b.type === "heading" && b.text === "{{proposal.title}}") ||
+      (!input.planned &&
+        n === 0 &&
+        b.type === "heading" &&
+        b.text === "{{proposal.title}}") ||
       (b.type === "signature_block" && input.signatures && !input.currentLayout)
     )
       return "";
-    const body =
+    let body =
       b.type === "page_break"
         ? ""
         : b.type === "pricing_table" && input.currentLayout
@@ -55,7 +64,9 @@ export function printContent(input: {
                   input.currency,
                   input.cents,
                 );
-    return `<section class="print-source" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
+    if (input.planned && b.type === "contract")
+      body = body.replaceAll("<br>", "<br>\n");
+    return `<section class="print-source print-atom" style="--block-space-before:${spaces[b.id ?? String(n)] ?? 0}px" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
   });
   return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${blocks.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
 }
@@ -76,6 +87,7 @@ export type PrintLayout = {
   boundaries: PageBoundary[];
   sheets?: { html: string; fragments: PageFragment[] }[];
   pricing_pages?: number;
+  overflow_pages?: number[];
 };
 export type PageBoundary = {
   page: number;
@@ -295,7 +307,7 @@ export function paginatePrintDocument(root: HTMLElement): {
           const table = node.cloneNode(false) as HTMLElement;
           const head = node.querySelector("thead");
           if (head) table.append(head.cloneNode(true));
-          const body = doc.createElement("tbody");
+          let body = doc.createElement("tbody");
           body.append(row);
           table.append(body);
           add(table);

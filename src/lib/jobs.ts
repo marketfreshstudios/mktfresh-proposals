@@ -464,6 +464,7 @@ export class Worker {
         quote: v.quote,
         variables_resolved: v.variables_resolved,
         resolved_styles: v.resolved_styles,
+        pagination: v.pagination,
       }) === file.version_hash;
     return {
       valid: actual === file.sha256 && bodyValid && versionValid,

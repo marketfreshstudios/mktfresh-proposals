@@ -41,6 +41,7 @@ export async function pdfPreview(
       view: printView(v.content, v.quote),
       variables: v.variables_resolved,
       styles: v.resolved_styles,
+      pagination: v.pagination,
       settings: renderSettings,
       currency: p.currency,
       proposal: p.id,

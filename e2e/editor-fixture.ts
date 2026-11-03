@@ -9,7 +9,8 @@ export async function editorFixture(
   long = false,
   options: {
     content?: Block[];
-    quote?: Quote;
+    quote?: Quote | ((base: Quote) => Quote);
+    beforeSave?: (input: any) => Promise<void>;
     onLayout?: (input: any, data: PdfPreview) => Promise<void>;
   } = {},
 ) {
@@ -48,12 +49,20 @@ export async function editorFixture(
     {
       revision: f.draft.revision,
       content,
-      ...(options.quote ? { quote: options.quote } : {}),
+      ...(options.quote
+        ? {
+            quote:
+              typeof options.quote === "function"
+                ? options.quote(f.draft.quote)
+                : options.quote,
+          }
+        : {}),
     },
     staff,
   );
   const renders: PdfPreview[] = [];
   const calls: any[] = [];
+  const patches: any[] = [];
   await page.route("**/api/**", async (route) => {
     const req = route.request(),
       parts = new URL(req.url()).pathname.split("/").filter(Boolean).slice(1);
@@ -68,8 +77,12 @@ export async function editorFixture(
           signatory_version: "fixture",
         };
       else if (parts[0] === "proposals") {
-        if (req.method() === "PATCH")
-          active = await f.service.edit(active.id, req.postDataJSON(), staff);
+        if (req.method() === "PATCH") {
+          const input = req.postDataJSON();
+          patches.push(input);
+          await options.beforeSave?.(input);
+          active = await f.service.edit(active.id, input, staff);
+        }
         if (parts[2] === "review")
           active = await f.service.reviewSections(
             active.id,
@@ -117,8 +130,26 @@ export async function editorFixture(
     } catch (e) {
       if (page.isClosed() || req.failure()?.errorText.includes("ERR_ABORTED"))
         return;
-      await route.fulfill({ status: 400, json: { error: String(e) } });
+      await route.fulfill({
+        status: (e as any).status ?? 400,
+        json: { error: String(e) },
+      });
     }
   });
-  return { ...f, content, active: () => active, renders, calls };
+  return {
+    ...f,
+    content,
+    active: () => active,
+    renders,
+    calls,
+    patches,
+    editRemote: async (input: Partial<import("../src/lib/model").Proposal>) => {
+      active = await f.service.edit(
+        active.id,
+        { ...input, revision: active.revision },
+        staff,
+      );
+      return active;
+    },
+  };
 }

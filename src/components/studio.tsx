@@ -1,7 +1,11 @@
 "use client";
+import { EditorHeader, PanelChevron } from "./editor-header";
+import { printView } from "../lib/print-view";
+import { PageBreakController } from "./page-break-action";
 import { useManagedPopover } from "./editor-popovers";
-import { PagedPaper } from "./paged-paper";
-import { PageAccuracyNote } from "./document-pagination";
+import { paginateBrowser } from "./browser-pagination";
+import { type BrowserPages, PagedPaper } from "./paged-paper";
+import { DocumentPagination } from "./document-pagination";
 import { SourceParagraph } from "./page-spacers";
 import { PagesOutline } from "./pages-outline";
 import { useEditorPanels } from "./use-editor-panels";
@@ -1192,7 +1196,23 @@ function TemplatesStudioContent({
     [insertAt, setInsertAt] = useState<number | null>(null),
     [replaceEmpty, setReplaceEmpty] = useState(false);
   useManagedPopover(fields, () => setFields(false));
-  const save = useSave(run);
+  const [templateBusy, setTemplateBusy] = useState(false),
+    [templateError, setTemplateError] = useState(""),
+    [templateLastSaved, setTemplateLastSaved] = useState<string | null>(null),
+    [templateOffline, setTemplateOffline] = useState(false);
+  const templateFlight = useRef<Promise<boolean> | null>(null),
+    allowLeave = useRef(false);
+  const serialise = (value: unknown) =>
+    JSON.stringify(value, (key, v) => (key === "pagination" ? undefined : v));
+  const savedModels = useRef(
+    new Map<string, string>([
+      ...data.templates.map(
+        (t) => [`templates:${t.id}`, serialise(t)] as const,
+      ),
+      ...data.library.map((t) => [`blocks:${t.id}`, serialise(t)] as const),
+    ]),
+  );
+  const [templateRecovery, setTemplateRecovery] = useState<any>(null);
   useEffect(() => {
     const q = matchMedia("(max-width:1099px)");
     const update = () => setMobile(q.matches);
@@ -1225,6 +1245,16 @@ function TemplatesStudioContent({
     applyModel(value);
   };
   const templatePaper = useRef<HTMLDivElement>(null);
+  const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
+  const pagePlan = useRef<import("../lib/page-plan").PagePlan | undefined>(
+    undefined,
+  );
+  const receivePagination = (value: BrowserPages) => {
+    pagePlan.current = value.plan;
+    setBrowserPages((old) =>
+      JSON.stringify(old) === JSON.stringify(value) ? old : value,
+    );
+  };
   const templatePanels = useEditorPanels(data.user.actor, templatePaper, true);
   const [templateListOpen, setTemplateListOpen] = useState(false),
     [templateToolsOpen, setTemplateToolsOpen] = useState(false);
@@ -1262,6 +1292,141 @@ function TemplatesStudioContent({
   const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
   currentContent.current = content;
+  const resource = () => {
+    const value =
+      mode === "templates" ? model.current.draft : model.current.saved;
+    const id = value?.id ?? (value as any)?.block?.id ?? "new";
+    return {
+      value,
+      key: `${mode}:${id}`,
+      path: mode === "templates" ? "/api/templates" : "/api/content_library",
+    };
+  };
+  const resourceRef = useRef(resource());
+  resourceRef.current = resource();
+  const currentResource = resourceRef.current,
+    templateDirty =
+      !!currentResource.value &&
+      savedModels.current.get(currentResource.key) !==
+        serialise(currentResource.value);
+  const templateCache = (key: string) =>
+    `studio-unsaved:${data.user.workspace_id ?? "workspace"}:${key}`;
+  useEffect(() => {
+    const online = () => setTemplateOffline(!navigator.onLine);
+    online();
+    window.addEventListener("online", online);
+    window.addEventListener("offline", online);
+    return () => {
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", online);
+    };
+  }, []);
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem(templateCache(currentResource.key)) ?? "null",
+      );
+      setTemplateRecovery(
+        cached && serialise(cached) !== serialise(currentResource.value)
+          ? cached
+          : null,
+      );
+    } catch {}
+  }, [currentResource.key]);
+  useEffect(() => {
+    if (templateDirty)
+      try {
+        localStorage.setItem(
+          templateCache(currentResource.key),
+          serialise(currentResource.value),
+        );
+      } catch {}
+  }, [currentResource.key, templateDirty, serialise(currentResource.value)]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      const r = resource();
+      if (
+        !allowLeave.current &&
+        r.value &&
+        savedModels.current.get(r.key) !== serialise(r.value)
+      ) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [mode]);
+  function saveTemplate(): Promise<boolean> {
+    if (templateFlight.current) return templateFlight.current;
+    const flight = (async () => {
+      setTemplateError("");
+      setTemplateBusy(true);
+      try {
+        while (true) {
+          const captured = resourceRef.current;
+          if (
+            !captured.value ||
+            savedModels.current.get(captured.key) === serialise(captured.value)
+          )
+            return true;
+          if (!navigator.onLine)
+            throw new Error("Offline — changes kept on this device");
+          templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
+          const result = await post(captured.path, {
+            ...captured.value,
+            id: captured.value.id ?? crypto.randomUUID(),
+            ...(captured.path === "/api/templates"
+              ? { pagination: pagePlan.current }
+              : {}),
+          });
+          savedModels.current.set(captured.key, serialise(captured.value));
+          setTemplateLastSaved(new Date().toISOString());
+          if (!templateRecovery)
+            try {
+              localStorage.removeItem(templateCache(captured.key));
+            } catch {}
+          if (resourceRef.current.key !== captured.key) continue;
+          if (
+            captured.path === "/api/content_library" &&
+            !model.current.saved?.id
+          ) {
+            const next = { ...model.current.saved!, id: result.id };
+            savedModels.current.set(
+              `blocks:${result.id}`,
+              serialise({ ...captured.value, id: result.id }),
+            );
+            applyModel({ ...model.current, saved: next });
+            resourceRef.current = {
+              ...captured,
+              key: `blocks:${result.id}`,
+              value: next,
+            };
+          }
+          if (
+            savedModels.current.get(resourceRef.current.key) ===
+            serialise(resourceRef.current.value)
+          )
+            break;
+        }
+        await run(
+          async () => {},
+          mode === "templates" ? "Template saved" : "Block saved",
+        );
+        return true;
+      } catch (e) {
+        setTemplateError(e instanceof Error ? e.message : "Unable to save");
+        return false;
+      } finally {
+        setTemplateBusy(false);
+      }
+    })();
+    templateFlight.current = flight;
+    void flight.finally(() => {
+      if (templateFlight.current === flight) templateFlight.current = null;
+    });
+    return flight;
+  }
   const patch = (next: Block[]) => {
     if (mode === "blocks" && saved) editSaved({ ...saved, block: next[0] });
     else if (draft) editDraft({ ...draft, content: next });
@@ -1399,7 +1564,16 @@ function TemplatesStudioContent({
           <PagesOutline
             content={content}
             onMove={move}
-            layout={templatePreview.data?.layout}
+            pagination={browserPages}
+            measure={(content) =>
+              paginateBrowser(
+                templatePaper.current!,
+                content,
+                templateStyles,
+                false,
+                true,
+              )
+            }
             onChange={(content) => {
               selection.clear();
               setIndex(null);
@@ -1440,6 +1614,10 @@ function TemplatesStudioContent({
       className="studio-template-layout"
       style={{ gridTemplateColumns: templatePanels.columns }}
     >
+      <PageBreakController
+        content={mode === "templates" ? content : []}
+        onChange={patch}
+      />
       {blockFeedback.feedback}
       <aside
         className={`studio-template-list ${templatePanels.left ? "" : "sidebar-rail"}`}
@@ -1455,7 +1633,7 @@ function TemplatesStudioContent({
             title="Pages sidebar"
             onClick={toggleTemplateLeft}
           >
-            {templatePanels.left ? "‹" : "›"}
+            <PanelChevron direction={templatePanels.left ? "left" : "right"} />
           </button>
         </div>
         {templatePanels.left ? (
@@ -1471,19 +1649,26 @@ function TemplatesStudioContent({
         )}
       </aside>
       <main className="studio-template-main stack">
-        {mode === "templates" && (
-          <small
-            className="pages-updating-indicator"
-            role="status"
-            data-updating={templatePreview.approximate}
-          >
-            Updating pages…
-          </small>
-        )}
-        <div className="actions">
-          <nav className="editor-breadcrumb" aria-label="Breadcrumb">
-            <a href="/studio">Studio</a> / Templates &amp; blocks
-          </nav>
+        <EditorHeader
+          className="template-editor-header"
+          title={
+            mode === "templates"
+              ? (draft?.name ?? "Templates & blocks")
+              : (saved?.name ?? "Saved blocks")
+          }
+          backLabel="Studio"
+          backHref="/studio"
+          save={saveTemplate}
+          dirty={templateDirty}
+          saving={templateBusy}
+          error={templateError}
+          offline={templateOffline}
+          lastSaved={templateLastSaved}
+          retry={() => void saveTemplate()}
+          beforeLeave={() => {
+            allowLeave.current = true;
+          }}
+        >
           <Button
             onClick={() => {
               setIndex(null);
@@ -1511,7 +1696,32 @@ function TemplatesStudioContent({
           >
             + New {mode === "templates" ? "template" : "block"}
           </Button>
-        </div>
+        </EditorHeader>
+        {templateRecovery && (
+          <Banner
+            tone="warning"
+            title="Your unsaved edits were kept as a suggestion."
+          >
+            <p>{templateRecovery.name}</p>
+            <Button
+              onClick={() => {
+                if (mode === "templates") editDraft(templateRecovery);
+                else editSaved(templateRecovery);
+                setTemplateRecovery(null);
+              }}
+            >
+              Restore my edits
+            </Button>
+            <Button
+              onClick={() => {
+                localStorage.removeItem(templateCache(currentResource.key));
+                setTemplateRecovery(null);
+              }}
+            >
+              Keep current draft
+            </Button>
+          </Banner>
+        )}
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
             <header className="actions">
@@ -1543,19 +1753,8 @@ function TemplatesStudioContent({
               </Button>
               <Button
                 variant="primary"
-                busy={save.busy}
-                onClick={() =>
-                  save.save(
-                    () =>
-                      mode === "templates"
-                        ? post("/api/templates", draft)
-                        : post("/api/content_library", {
-                            ...saved,
-                            id: saved!.id ?? crypto.randomUUID(),
-                          }),
-                    mode === "templates" ? "Template saved" : "Block saved",
-                  )
-                }
+                busy={templateBusy}
+                onClick={() => void saveTemplate()}
               >
                 Save {mode === "templates" ? "template" : "block"}
               </Button>
@@ -1564,7 +1763,7 @@ function TemplatesStudioContent({
               Edits apply to new proposals only. Existing agreements keep their
               saved copy.
             </p>
-            <SaveError error={save.error} />
+            <SaveError error={templateError} />
             {mode === "templates" && (
               <label className="check">
                 <input
@@ -1609,7 +1808,7 @@ function TemplatesStudioContent({
                             "--editor-ui-scale": 1 / templatePanels.scale,
                             transform: `scale(${templatePanels.scale})`,
                             transformOrigin: "top left",
-                            minHeight: `max(var(--page-sheets-height, 0px), ${(templatePreview.data?.layout.pages ?? 1) * 1080 - 24}px)`,
+                            minHeight: `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`,
                             padding: `${templateMetrics.margins.top * 96}px ${templateMetrics.margins.right * 96}px ${templateMetrics.margins.bottom * 96}px ${templateMetrics.margins.left * 96}px`,
                           } as CSSProperties)
                         : undefined
@@ -1618,11 +1817,15 @@ function TemplatesStudioContent({
                     {mode === "templates" && (
                       <PagedPaper
                         paper={templatePaper}
-                        layout={templatePreview.data?.layout}
                         styles={templateStyles}
-                        approximate={templatePreview.approximate}
-                        contentKey={templatePreview.visualKey}
-                        fingerprint={templatePreview.data?.fingerprint}
+                        content={content}
+                        contentKey={JSON.stringify([
+                          printView(content, templatePreview.quote),
+                          draft?.default_quote,
+                          draft?.default_items,
+                          draft?.style_overrides,
+                        ])}
+                        onPagination={receivePagination}
                       />
                     )}
                     <div className="proposal-typography document-reading template-cover">
@@ -2120,9 +2323,7 @@ function TemplatesStudioContent({
                       </Sortable>
                     ))}
                     {mode === "templates" && (
-                      <output className="document-page-count template-page-accuracy">
-                        <PageAccuracyNote />
-                      </output>
+                      <DocumentPagination pagination={browserPages?.plan} />
                     )}
                   </div>
                 </Reorder>
@@ -2140,7 +2341,11 @@ function TemplatesStudioContent({
                     template={draft!}
                     data={data}
                     onChange={(default_items) =>
-                      editDraft({ ...draft!, default_items, default_quote: [] })
+                      editDraft({
+                        ...draft!,
+                        default_items,
+                        default_quote: [],
+                      })
                     }
                   />
                 </section>
@@ -2173,7 +2378,7 @@ function TemplatesStudioContent({
             title="Tools sidebar"
             onClick={toggleTemplateRight}
           >
-            {templatePanels.right ? "›" : "‹"}
+            <PanelChevron direction={templatePanels.right ? "right" : "left"} />
           </button>
         </div>
         {templatePanels.right ? (

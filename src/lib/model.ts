@@ -141,6 +141,7 @@ export type RichText = {
   attrs?: { path?: string };
 };
 export type Template = {
+  pagination?: import("./page-plan").PagePlan;
   style_overrides?: StyleOverrides;
   id: string;
   name: string;
@@ -220,6 +221,7 @@ export type Audit = Actor & {
   metadata: Record<string, unknown>;
 };
 export type Version = {
+  pagination?: import("./page-plan").PagePlan;
   resolved_styles?: ResolvedStyles;
   id: string;
   version_no: number;
@@ -261,6 +263,7 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  pagination?: import("./page-plan").PagePlan;
   style_overrides?: StyleOverrides;
   template_style_overrides?: StyleOverrides;
   archived_at?: string | null;

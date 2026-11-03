@@ -10,6 +10,14 @@ import { LocalStorage } from "../src/lib/storage";
 import { setup, staff, clientActor, signature } from "./helpers";
 it("recovers failed provider jobs, continues other providers, seals and verifies evidence", async () => {
   const { repo, service, draft } = await setup();
+  await service.edit(
+    draft.id,
+    {
+      revision: draft.revision,
+      pagination: { format: 1, pages: 1, starts: [] },
+    },
+    staff,
+  );
   const p = await service.send(draft.id, staff);
   await service.sign(p.id, signature(p.revision), "client", clientActor, {
     token: p.token!,
@@ -51,6 +59,15 @@ it("recovers failed provider jobs, continues other providers, seals and verifies
   expect(stripe.objects.size).toBe(1);
   const file = state.files.find((f) => f.kind === "sealed")!;
   expect((await worker.verify(state, file.id)).valid).toBe(true);
+  const tampered = structuredClone(state);
+  tampered.versions.at(-1)!.pagination = {
+    format: 1,
+    pages: 2,
+    starts: [
+      { page: 2, block: draft.content[0].id!, offset: 0, explicit: false },
+    ],
+  };
+  expect((await worker.verify(tampered, file.id)).version_valid).toBe(false);
   const bytes = await readFile(join(dir, file.storage_path));
   await writeFile(
     join(dir, file.storage_path),

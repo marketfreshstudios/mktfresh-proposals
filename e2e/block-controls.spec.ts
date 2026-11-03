@@ -88,7 +88,10 @@ test("block controls own one block and never move document content on hover, foc
       } else value = await repo.entities(parts[0] as any);
       await route.fulfill({ json: value });
     } catch (e) {
-      await route.fulfill({ status: 400, json: { error: String(e) } });
+      await route.fulfill({
+        status: (e as any).status ?? 400,
+        json: { error: String(e) },
+      });
     }
   });
   const dir = ".data/evidence/editor-followup";
@@ -137,6 +140,10 @@ test("block controls own one block and never move document content on hover, foc
     });
   }
   async function positions(p: Page) {
+    await p.evaluate(() => document.fonts.ready);
+    const sheets = p.locator(".editor-page-sheets:visible");
+    if (await sheets.count())
+      await expect(sheets).toHaveAttribute("data-layout-settled", "true");
     return p.locator(".block-frame").evaluateAll((els) => ({
       scroll: scrollY,
       blocks: els.map((el) => {
@@ -641,10 +648,34 @@ test("block controls own one block and never move document content on hover, foc
   await expect(ai).toHaveCount(1);
   await ai.scrollIntoViewIfNeeded();
   await ai.evaluate((el) => (el as HTMLElement).focus({ preventScroll: true }));
+  const localText = "Local review text survives a concurrent editor conflict.";
+  await ai.locator(".tiptap").fill(localText);
+  active = await service.edit(
+    active.id,
+    {
+      revision: active.revision,
+      title: "A different session updated this draft",
+    },
+    staff,
+  );
+  await expect(
+    page.getByText("This draft changed elsewhere", { exact: true }),
+  ).toBeVisible();
+  await expect(ai.locator(".tiptap")).toHaveText(localText);
+  await page
+    .getByRole("button", { name: "Reload and keep mine", exact: true })
+    .click();
+  const recovery = page.getByText(
+    "Your unsaved edits were kept as a suggestion.",
+    { exact: true },
+  );
+  await expect(recovery).toBeVisible();
+  await ai.focus();
   const before = await positions(page);
   await ai.getByRole("button", { name: "Mark reviewed", exact: true }).click();
   await expect(page.locator('.block-frame[data-ai="true"]')).toHaveCount(0);
   await unchanged(before);
+  await expect(recovery).toBeVisible();
   // The gutter remains an operational keyboard drag handle, not a decorative icon.
   const roots = page.locator(
     ".document-section > .block-sortable > .block-frame",

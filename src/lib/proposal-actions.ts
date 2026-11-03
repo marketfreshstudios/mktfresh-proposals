@@ -1,3 +1,4 @@
+import { freezeStyles } from "./proposal-styles";
 import { randomUUID } from "node:crypto";
 import { check, type Actor, type Proposal, type Version } from "./model";
 import { mutate, type Repository } from "./repository";
@@ -269,6 +270,14 @@ export async function proposalAction(
           ? {
               id: randomUUID(),
               version_no: p.versions.length + 1,
+              ...(p.pagination
+                ? { pagination: structuredClone(p.pagination) }
+                : {}),
+              resolved_styles: freezeStyles(
+                settings,
+                p.template_style_overrides,
+                p.style_overrides,
+              ),
               content: structuredClone(p.content),
               quote: draftItems(p.quote),
               variables_resolved: variables({

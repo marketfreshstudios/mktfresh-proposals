@@ -7,89 +7,7 @@ import { freezeStyles } from "../src/lib/proposal-styles";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import type { Block } from "../src/lib/model";
 import { editorFixture as fixture } from "./editor-fixture";
-test("real page sheets align server PDF line starts without changing stored text", async ({
-  page,
-}) => {
-  test.setTimeout(120000);
-  const f = await fixture(page, true);
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
-    "data-layout-settled",
-    "true",
-  );
-  expect(
-    Number(
-      await page
-        .locator(".editor-page-sheets")
-        .getAttribute("data-layout-max-error"),
-    ),
-  ).toBeLessThanOrEqual(1);
-  const layout = f.renders.at(-1)!.layout;
-  expect(layout.pages).toBeGreaterThan(3);
-  await expect(page.locator(".editor-page-sheet")).toHaveCount(layout.pages);
-  const source = await page.locator(".editor-page-sheet").evaluateAll((els) =>
-    els.map((el) => ({
-      top: (el as HTMLElement).offsetTop,
-      height: (el as HTMLElement).offsetHeight,
-    })),
-  );
-  for (let n = 0; n < source.length; n++)
-    expect(source[n]).toEqual({ top: n * 1080, height: 1056 });
-  const deltas = await page
-    .locator(".editor-paper")
-    .evaluate((root, sheets) => {
-      const top = root.getBoundingClientRect().top,
-        scale =
-          root.getBoundingClientRect().width /
-          (root as HTMLElement).offsetWidth;
-      return sheets!.flatMap((sheet, page) =>
-        sheet.fragments
-          .filter((f) => f.offset > 0 && !f.part && !f.unit)
-          .map((f) => {
-            const block = root.querySelector(
-              `[data-block-id="block-${f.block}"] .block-content`,
-            )!;
-            const walker = document.createTreeWalker(
-              block,
-              NodeFilter.SHOW_TEXT,
-              {
-                acceptNode: (n) =>
-                  n.parentElement?.closest(
-                    "[data-pagination-spacer],.block-tools",
-                  )
-                    ? NodeFilter.FILTER_REJECT
-                    : NodeFilter.FILTER_ACCEPT,
-              },
-            );
-            let node,
-              offset = f.offset;
-            while ((node = walker.nextNode())) {
-              const len = node.textContent?.length ?? 0;
-              if (offset < len) {
-                const r = document.createRange();
-                r.setStart(node, offset);
-                r.setEnd(node, offset + 1);
-                return {
-                  page: page + 1,
-                  offset: f.offset,
-                  actual: (r.getBoundingClientRect().top - top) / scale,
-                  expected: page * 1080 + 72 + f.y,
-                };
-              }
-              offset -= len;
-            }
-            throw new Error("Missing page anchor");
-          }),
-      );
-    }, layout.sheets);
-  for (const d of deltas)
-    expect(
-      Math.abs(d.actual - d.expected),
-      JSON.stringify(d),
-    ).toBeLessThanOrEqual(1);
-  expect(JSON.stringify(f.active().content)).toBe(JSON.stringify(f.content));
-});
+// Live browser / PDF source positions are covered in live-pagination.spec.ts.
 test("sidebar rails open every tab, remember collapse and support both shortcuts", async ({
   page,
 }) => {
@@ -428,11 +346,9 @@ test("page add/delete and undo use normal authoring history; templates use the s
       .locator(".template-paged-paper")
       .getAttribute("data-layout-errors")) ?? "template layout",
   ).toBeLessThanOrEqual(1);
-  const layout = f.renders.at(-1)!.layout;
-  await expect(
-    page.locator(".template-paged-paper .editor-page-sheet"),
-  ).toHaveCount(layout.pages);
-  expect(layout.pages).toBeGreaterThan(3);
+  await expect
+    .poll(() => page.locator(".template-paged-paper .page-sheet").count())
+    .toBeGreaterThan(3);
 });
 
 test("whole pages and sections move through normal undo without moving the following explicit page", async ({

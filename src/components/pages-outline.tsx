@@ -1,14 +1,14 @@
 "use client";
-import { useRef } from "react";
 import type { Block } from "../lib/model";
-import type { PrintLayout } from "../lib/document-print";
+import type { BrowserPages } from "./browser-pagination";
 import {
   authoringPages,
   addPage,
   deletePage,
   movePage,
-  movePageSection,
 } from "../lib/editor-pages";
+import { assertBlockMove, documentSectionRanges } from "../lib/editor-moves";
+import { computedPages, moveComputedSection } from "../lib/computed-pages";
 import { Reorder, Sortable } from "./sortable";
 import { Button } from "./ui";
 import {
@@ -18,26 +18,28 @@ import {
 import { useBlockFeedback } from "./block-controls";
 export function PagesOutline({
   content,
-  layout,
+  pagination,
   onChange,
   onMove,
   onFocus,
+  measure,
+  onPage,
 }: {
   content: Block[];
-  layout?: PrintLayout | null;
+  pagination?: BrowserPages | null;
   onChange: (v: Block[]) => void;
-  onMove: (operation: (content: Block[]) => Block[]) => void;
+  onMove: (op: (v: Block[]) => Block[]) => void;
   onFocus: (id: string) => void;
+  measure?: (content: Block[]) => BrowserPages;
+  onPage?: (page: number) => void;
 }) {
-  const pages = authoringPages(content),
-    focus = useRef(onFocus);
-  const feedback = useBlockFeedback();
-  focus.current = onFocus;
+  const pages = computedPages(content, pagination),
+    feedback = useBlockFeedback();
   const add = (after?: string) => {
     const next = addPage(content, after);
     onChange(next.content);
     requestAnimationFrame(() =>
-      requestAnimationFrame(() => focus.current(next.heading)),
+      requestAnimationFrame(() => onFocus(next.heading)),
     );
   };
   const ids = pages.flatMap((p) => [
@@ -50,152 +52,181 @@ export function PagesOutline({
       <Reorder
         ids={ids}
         pages
-        onMove={(from, to) => {
-          onMove((content) => {
-            const pages = authoringPages(content),
-              ids = pages.flatMap((p) => [
-                `page:${p.id}`,
-                ...p.sections.map((s) => `section:${s.id}`),
-              ]);
-            if (from.startsWith("page:")) {
-              const target = pages.find(
-                (p) =>
-                  `page:${p.id}` === to ||
-                  p.sections.some((s) => `section:${s.id}` === to),
+        onMove={(from, to, edge) => {
+          const target = pages.find(
+            (p) =>
+              `page:${p.id}` === to ||
+              p.sections.some((s) => `section:${s.id}` === to),
+          );
+          if (!target) return;
+          if (from.startsWith("page:")) {
+            const source = pages.find((p) => `page:${p.id}` === from);
+            if (source?.explicit && target.explicit)
+              onMove((blocks) => movePage(blocks, source.id, target.id));
+          } else {
+            try {
+              const fromId = from.slice(8),
+                targetSection = to.startsWith("section:")
+                  ? to.slice(8)
+                  : undefined;
+              const following = pages[target.number];
+              const after =
+                edge === "after" ||
+                (edge === undefined &&
+                  !!targetSection &&
+                  ids.indexOf(from) < ids.indexOf(to));
+              const before = targetSection
+                ? after
+                  ? content[
+                      documentSectionRanges(content).find(
+                        (s) => s.id === targetSection,
+                      )!.end
+                    ]?.id
+                  : targetSection
+                : after
+                  ? following?.first
+                  : target.first;
+              let next = moveComputedSection(
+                content,
+                fromId,
+                before,
+                target.explicit,
               );
-              if (target) return movePage(content, from.slice(5), target.id);
-            } else {
-              const target = pages.find(
-                (p) =>
-                  `page:${p.id}` === to ||
-                  p.sections.some((s) => `section:${s.id}` === to),
+              const inserted = new Set(
+                next
+                  .filter((b) => !content.some((old) => old.id === b.id))
+                  .map((b) => b.id),
               );
-              if (target)
-                return movePageSection(
-                  content,
-                  from.slice(8),
-                  target.id,
-                  to.startsWith("section:")
-                    ? ids.indexOf(from) < ids.indexOf(to)
-                      ? target.sections[
-                          target.sections.findIndex(
-                            (s) => s.id === to.slice(8),
-                          ) + 1
-                        ]?.id
-                      : to.slice(8)
-                    : undefined,
-                );
+              if (measure) {
+                const actual =
+                  measure(next).assignments.find((v) => v.block === fromId)
+                    ?.page ?? target.number;
+                const deficit = target.number - actual;
+                if (deficit > 0) {
+                  const at = next.findIndex((b) => b.id === fromId);
+                  const breaks = Array.from({ length: deficit }, () => ({
+                    id: crypto.randomUUID(),
+                    type: "page_break" as const,
+                  }));
+                  breaks.forEach((b) => inserted.add(b.id));
+                  next = [...next.slice(0, at), ...breaks, ...next.slice(at)];
+                }
+              }
+              assertBlockMove(
+                content,
+                next.filter((b) => !inserted.has(b.id)),
+              );
+              onChange(next);
+            } catch (e) {
+              feedback.error(e instanceof Error ? e.message : "Move cancelled");
             }
-            return content;
-          });
+          }
         }}
       >
-        {pages.map((p, n) => {
-          const number =
-            n === 0
-              ? 1
-              : (layout?.boundaries.find(
-                  (b) =>
-                    b.explicit &&
-                    p.blocks.some((block) => block.id === b.block),
-                )?.page ?? n + 1);
-          return (
-            <Sortable key={p.id} id={`page:${p.id}`} label={`page ${number}`}>
-              <div className="outline-page">
-                <div className="outline-page-title">
-                  <button
-                    type="button"
-                    onClick={() => onFocus(p.blocks[0]?.id ?? "cover")}
-                  >
-                    Page {number}
-                    {n === 0 ? " · Cover" : ""}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Add page after page ${number}`}
-                    title="Add page after this page"
-                    onClick={() => add(p.id)}
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Delete page ${number}`}
-                    title="Delete page"
-                    onClick={() => {
-                      feedback.removePage(() =>
-                        onChange(deletePage(content, p.id)),
-                      );
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-                <SortableContext
-                  items={p.sections.map((s) => `section:${s.id}`)}
-                  strategy={verticalListSortingStrategy}
+        {pages.map((p) => (
+          <Sortable
+            key={p.id}
+            id={`page:${p.id}`}
+            label={`page ${p.number}`}
+            draggable={p.explicit}
+          >
+            <div className="outline-page" data-outline-page={p.number}>
+              <div className="outline-page-title">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onPage) onPage(p.number);
+                    else
+                      document
+                        .querySelector(`[data-editor-page="${p.number}"]`)
+                        ?.scrollIntoView({ block: "start" });
+                  }}
                 >
-                  {p.sections.map((s) => (
-                    <Sortable
-                      key={s.id}
-                      id={`section:${s.id}`}
-                      label={`section ${s.title}`}
-                    >
-                      <button
-                        type="button"
-                        className="outline-section"
-                        onClick={() => onFocus(s.id)}
-                      >
-                        {s.title}
-                        {s.pending && (
-                          <small
-                            className="review-dot"
-                            aria-label="Needs AI review"
-                          />
-                        )}
-                      </button>
-                      {s.indices
-                        .filter(
-                          (i) =>
-                            p.blocks[i].type === "heading" &&
-                            (p.blocks[i].level ?? 1) > 1,
-                        )
-                        .map((i) => (
-                          <button
-                            key={p.blocks[i].id}
-                            className="outline-subheading"
-                            onClick={() => onFocus(p.blocks[i].id!)}
-                          >
-                            {p.blocks[i].text || "Untitled subheading"}
-                          </button>
-                        ))}
-                    </Sortable>
-                  ))}
-                </SortableContext>
-                {(layout?.boundaries ?? [])
-                  .filter(
-                    (b) =>
-                      !b.explicit &&
-                      p.blocks.some((block) => block.id === b.block),
-                  )
-                  .map((b) => (
+                  Page {p.number}
+                  {p.number === 1 ? " · Cover" : ""}
+                </button>
+                {p.explicit && (
+                  <>
                     <button
-                      key={b.page}
                       type="button"
-                      className="outline-continued"
+                      aria-label={`Add page after page ${p.number}`}
+                      onClick={() => add(p.id)}
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete page ${p.number}`}
                       onClick={() =>
-                        document
-                          .querySelector(`[data-editor-page="${b.page}"]`)
-                          ?.scrollIntoView({ block: "start" })
+                        feedback.removePage(() =>
+                          onChange(deletePage(content, p.id)),
+                        )
                       }
                     >
-                      Page {b.page} (continued)
+                      ×
                     </button>
-                  ))}
+                  </>
+                )}
               </div>
-            </Sortable>
-          );
-        })}
+              {p.continuing && (
+                <button
+                  type="button"
+                  className="outline-continued"
+                  onClick={() => onFocus(p.continuing!.id)}
+                >
+                  {p.continuing.title} (continued)
+                </button>
+              )}
+              <SortableContext
+                items={p.sections.map((s) => `section:${s.id}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                {p.sections.map((s) => (
+                  <Sortable
+                    key={s.id}
+                    id={`section:${s.id}`}
+                    label={`section ${s.title}`}
+                  >
+                    <button
+                      type="button"
+                      className="outline-section"
+                      onClick={() => onFocus(s.id)}
+                    >
+                      {s.title}
+                      {s.pending && (
+                        <small
+                          className="review-dot"
+                          aria-label="Needs AI review"
+                        />
+                      )}
+                    </button>
+                    {s.blocks
+                      .filter((b) => b.type === "heading" && (b.level ?? 1) > 1)
+                      .map((b) => (
+                        <button
+                          key={b.id}
+                          className="outline-subheading"
+                          onClick={() => onFocus(b.id!)}
+                        >
+                          {b.text || "Untitled subheading"}
+                        </button>
+                      ))}
+                  </Sortable>
+                ))}
+              </SortableContext>
+              <button
+                type="button"
+                className="outline-page-end"
+                aria-label={`End of page ${p.number}`}
+                onClick={() =>
+                  onFocus(p.sections.at(-1)?.id ?? p.first ?? "cover")
+                }
+              >
+                End of page {p.number}
+              </button>
+            </div>
+          </Sortable>
+        ))}
       </Reorder>
       <Button onClick={() => add()}>+ Add page</Button>
     </nav>

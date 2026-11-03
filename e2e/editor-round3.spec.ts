@@ -413,7 +413,7 @@ test("Fields tab remembers cursor across tabs and closes tablet drawer before re
         .click();
   }
 });
-test("actual preview PDF and every editor marker use the server's page starts, with no sealing or file writes", async ({
+test("actual preview PDF follows the browser page starts, with no sealing or file writes", async ({
   page,
 }) => {
   test.setTimeout(120000);
@@ -424,26 +424,20 @@ test("actual preview PDF and every editor marker use the server's page starts, w
     "data-document-pages",
     /\d+/,
   );
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.results.length).toBeGreaterThan(0);
   const result = f.results.at(-1)!;
   expect(result.layout.pages).toBeGreaterThan(3);
   await expect(page.locator(".editor-page-sheet")).toHaveCount(
     result.layout.pages,
   );
-  expect(
-    await page
-      .locator(".editor-page-sheet")
-      .evaluateAll((els) =>
-        els.map((el) =>
-          JSON.parse((el as HTMLElement).dataset.sourceFragments!),
-        ),
-      ),
-  ).toEqual(result.layout.sheets!.map((s) => s.fragments));
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loading = getDocument({
     data: new Uint8Array(Buffer.from(result.pdf_base64, "base64")),
     useSystemFonts: true,
   });
   const pdf = await loading.promise;
+
   expect(pdf.numPages).toBe(result.layout.pages);
   for (const b of result.layout.boundaries) {
     const content = await (await pdf.getPage(b.page)).getTextContent();
@@ -479,7 +473,7 @@ test("actual preview PDF and every editor marker use the server's page starts, w
   expect(firstText).toContain("Preview—notsigned");
   expect(firstText).not.toContain("Certificateofcompletion");
   const before = JSON.stringify(await f.repo.get(f.draft.id));
-  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+
   const viewer = page.getByRole("dialog", { name: "Preview PDF", exact: true });
   await expect(
     viewer.getByRole("navigation", { name: "Page thumbnails" }),

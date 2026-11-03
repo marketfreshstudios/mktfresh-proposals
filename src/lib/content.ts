@@ -33,7 +33,11 @@ export function canonical(value: unknown): string {
 export const versionHash = (
   v: Pick<
     Version,
-    "content" | "quote" | "variables_resolved" | "resolved_styles"
+    | "content"
+    | "quote"
+    | "variables_resolved"
+    | "resolved_styles"
+    | "pagination"
   >,
 ) =>
   sha256(
@@ -42,6 +46,7 @@ export const versionHash = (
       quote: v.quote,
       variables_resolved: v.variables_resolved,
       ...(v.resolved_styles ? { resolved_styles: v.resolved_styles } : {}),
+      ...(v.pagination ? { pagination: v.pagination } : {}),
     }),
   );
 export function hashPassword(password: string) {

@@ -1,0 +1,142 @@
+/* Document headers have one stable identity/status row and an action group. */
+.staff-foundation:has(.studio-template-layout) .page-header {
+  display: none;
+}
+.editor-document-header.editor-document-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-editor-header);
+  padding: var(--space-3) var(--space-4);
+  margin: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.editor-header-identity,
+.editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.editor-header-identity > .button-wrap {
+  flex: none;
+}
+.editor-header-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-weight: 600;
+}
+.editor-header-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.editor-save-status {
+  justify-self: center;
+  max-width: 100%;
+  font: 500 12px/1.4 var(--font-sans);
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill, 999px);
+}
+.editor-save-status > :is(span, button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+.editor-save-status[data-state="error"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+.editor-save-status button {
+  cursor: pointer;
+  min-height: var(--control-lg);
+}
+.editor-save-status button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.panel-chevron {
+  display: block;
+  flex: none;
+  vertical-align: middle;
+}
+:is(
+    .editor-outline,
+    .editor-sidepanel,
+    .studio-template-list,
+    .studio-inspector
+  )
+  .sidebar-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--control-sm);
+  width: var(--control-sm);
+  min-width: var(--control-sm);
+  max-width: var(--control-sm);
+  height: var(--control-sm);
+  min-height: var(--control-sm);
+  max-height: var(--control-sm);
+  line-height: 0;
+  padding: 0;
+}
+.sidebar-arrow > svg {
+  display: block;
+  margin: 0;
+  transform: none;
+}
+@media (max-width: 1399px) {
+  .editor-header-actions {
+    grid-column: 1/-1;
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 699px) {
+  .editor-document-header.editor-document-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+  .editor-header-identity {
+    gap: var(--space-1);
+  }
+  .editor-header-identity .btn {
+    padding-inline: var(--space-2);
+    font-size: 12px;
+  }
+  .editor-header-title {
+    font-size: 12px;
+  }
+  .editor-save-status {
+    font-size: 11px;
+  }
+  .editor-save-status > :is(span, button) {
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
+  }
+  .editor-header-actions {
+    justify-content: center;
+    gap: var(--space-1);
+  }
+  .editor-header-actions .btn {
+    font-size: 12px;
+    padding-inline: var(--space-2);
+  }
+}

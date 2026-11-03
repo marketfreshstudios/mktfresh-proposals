@@ -376,6 +376,9 @@ test("resolved styles reach the PDF and editor pagination, without changing old 
     quote: p.quote,
     variables_resolved: variables(p),
     content_hash: "",
+    pagination: JSON.parse(
+      (await page.locator(".editor-paper").getAttribute("data-pagination"))!,
+    ),
     resolved_styles: freezeStyles(
       f.settings,
       p.template_style_overrides,
@@ -405,7 +408,11 @@ test("resolved styles reach the PDF and editor pagination, without changing old 
     ) as any;
   expect(title.height).toBeCloseTo(46 * 0.75, 1);
   expect(body.height).toBeCloseTo(21 * 0.75, 1);
-  const normal = { ...version, resolved_styles: freezeStyles(f.settings) };
+  const normal = {
+    ...version,
+    pagination: undefined,
+    resolved_styles: freezeStyles(f.settings),
+  };
   normal.content_hash = versionHash(normal);
   const smaller = await sealedPdf(normal, [], [], p.currency, {
     settings: f.settings,

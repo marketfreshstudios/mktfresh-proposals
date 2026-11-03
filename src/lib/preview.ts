@@ -23,6 +23,7 @@ export function previewProposal(
         p.template_style_overrides,
         p.style_overrides,
       ),
+      ...(p.pagination ? { pagination: structuredClone(p.pagination) } : {}),
       content: p.content,
       quote: p.quote,
       variables_resolved: variables(p, p.quote),
@@ -35,6 +36,7 @@ export function previewProposal(
       quote: version.quote,
       variables_resolved: version.variables_resolved,
       resolved_styles: version.resolved_styles,
+      pagination: version.pagination,
     });
     p.versions = [version];
   }
