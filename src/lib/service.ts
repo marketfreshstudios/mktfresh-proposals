@@ -1,3 +1,12 @@
+import {
+  reminderCycle,
+  editableProposal,
+  editorialVersion,
+  publicationState,
+  publishedExpiry,
+  publishedPresentation,
+  restorePublishedForSigning,
+} from "./editor-publication";
 import { validatePagePlan, type PagePlan } from "./page-plan";
 import { validateStyles } from "./studio";
 import {
@@ -115,8 +124,9 @@ export function publicAccess(p: Proposal, password = "", now = new Date()) {
     "Proposal unavailable",
     410,
   );
-  if (p.valid_until && ["sent", "viewed"].includes(p.status))
-    check(new Date(p.valid_until) > now, "Proposal expired", 410);
+  const expiry = publishedExpiry(p);
+  if (expiry && ["sent", "viewed"].includes(p.status))
+    check(new Date(expiry) > now, "Proposal expired", 410);
   if (p.password_hash)
     check(
       passwordMatches(password, p.password_hash),
@@ -134,7 +144,11 @@ export class ProposalService {
       p: Proposal,
     ) => Promise<{ pricing_pages?: number; overflow_pages?: number[] }>,
   ) {}
-  async checkReady(proposal: Proposal, confirmAiReview = false) {
+  async checkReady(
+    proposal: Proposal,
+    confirmAiReview = false,
+    skipPrint = false,
+  ) {
     const p = await this.forRead(proposal);
     const ready = readiness(
       p,
@@ -143,6 +157,7 @@ export class ProposalService {
       confirmAiReview,
     );
     if (
+      !skipPrint &&
       this.printLayout &&
       (p.pagination || p.content.some((b) => b.type === "pricing_table"))
     ) {
@@ -321,6 +336,52 @@ export class ProposalService {
     check(current, "Workspace settings required");
     return withDraftSettings(p, current);
   }
+  private async saveEditorial(
+    candidate: Proposal,
+    expected: number,
+    actor: Actor,
+  ) {
+    if (
+      candidate.versions.length &&
+      ["sent", "viewed"].includes(candidate.status)
+    ) {
+      const ready = await this.checkReady(candidate, false, true);
+      if (ready.ready) {
+        try {
+          const previous = candidate.versions.at(-1)!.version_no;
+          const version = editorialVersion(
+            candidate,
+            this.clock().toISOString(),
+          );
+          candidate.versions.push(version);
+          candidate.published_state = publicationState(candidate);
+          delete candidate.live_blockers;
+          event(
+            candidate,
+            "updated_after_send",
+            actor,
+            { previous_version: previous, new_version: version.version_no },
+            version.created_at,
+          );
+        } catch (e) {
+          ready.errors.push((e as Error).message);
+        }
+      }
+      if (ready.errors.length) candidate.live_blockers = [...ready.errors];
+    }
+    return mutate(this.repo, candidate.id, (p) => {
+      check(p.revision === expected, "Proposal changed; reload", 409);
+      check(
+        editableProposal(p),
+        "Signed, archived and imported proposals are read-only",
+        409,
+      );
+      for (const key of Object.keys(p))
+        if (!(key in candidate))
+          delete (p as unknown as Record<string, unknown>)[key];
+      Object.assign(p, candidate);
+    });
+  }
   async edit(
     id: string,
     input: {
@@ -358,14 +419,23 @@ export class ProposalService {
           : StyleOverridesSchema.parse(input.style_overrides),
       );
     }
-    const result = await mutate(this.repo, id, (p) => {
+    check(current, "Proposal not found", 404);
+    const candidate = structuredClone(current);
+    if (candidate.versions.length)
+      candidate.published_state ??= publicationState(candidate);
+    const apply = (p: Proposal) => {
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       check(
-        p.source === "native" && p.status === "draft" && !p.archived_at,
-        "Only drafts can be edited; archived and imported proposals are read-only",
+        editableProposal(p),
+        "Signed, archived and imported proposals are read-only",
         409,
       );
-      delete p.workspace_settings;
+      check(
+        !actor.actor.startsWith("ai:") || p.status === "draft",
+        "AI assistants may only edit drafts",
+        403,
+      );
+      if (p.status === "draft") delete p.workspace_settings;
       if (input.pagination) {
         check(
           actor.actor.startsWith("staff:"),
@@ -447,6 +517,7 @@ export class ProposalService {
       if (input.valid_until !== undefined) {
         check(
           input.valid_until === null ||
+            input.valid_until === current.valid_until ||
             Date.parse(input.valid_until) > this.clock().getTime(),
           "Future expiry required",
         );
@@ -460,7 +531,9 @@ export class ProposalService {
           .filter((i) => i.price_review && Object.keys(i.price_review).length)
           .map((i) => ({ item_id: i.id, decisions: i.price_review })),
       });
-    });
+    };
+    apply(candidate);
+    const result = await this.saveEditorial(candidate, current.revision, actor);
     return this.forRead(result);
   }
   async reviewSections(
@@ -473,12 +546,13 @@ export class ProposalService {
       "Only staff may review assistant content",
       403,
     );
-    const result = await mutate(this.repo, id, (p) => {
-      check(
-        p.status === "draft" && p.source === "native" && !p.archived_at,
-        "Only drafts can be reviewed",
-        409,
-      );
+    const current = await this.repo.get(id);
+    check(current, "Proposal not found", 404);
+    const candidate = structuredClone(current);
+    if (candidate.versions.length)
+      candidate.published_state ??= publicationState(candidate);
+    const apply = (p: Proposal) => {
+      check(editableProposal(p), "Signed proposals cannot be reviewed", 409);
       check(p.revision === input.revision, "Proposal changed; reload", 409);
       const sections = contentSections(p.content),
         chosen = sections.filter((s) => input.section_ids.includes(s.id));
@@ -499,7 +573,9 @@ export class ProposalService {
         actor,
         { sections: chosen.map((s) => ({ id: s.id, title: s.title })) },
       );
-    });
+    };
+    apply(candidate);
+    const result = await this.saveEditorial(candidate, current.revision, actor);
     return this.forRead(result);
   }
   async send(
@@ -657,36 +733,12 @@ export class ProposalService {
         p.password_hash =
           options.password === null ? null : hashPassword(options.password);
       p.sent_at = now;
-      p.token = randomBytes(32).toString("base64url");
-      p.status = "sent";
-      p.first_viewed_at = null;
-      const map = variables(p, p.quote);
-      renderBlocks(p.content, p.quote, map, p.currency);
-      const version = {
-        id: randomUUID(),
-        version_no: p.versions.length + 1,
-
-        resolved_styles: freezeStyles(
-          p.workspace_settings,
-          p.template_style_overrides,
-          p.style_overrides,
-        ),
-        ...(p.pagination ? { pagination: structuredClone(p.pagination) } : {}),
-        content: structuredClone(p.content),
-        quote: structuredClone(p.quote),
-        variables_resolved: map,
-        content_hash: "",
-        created_at: now,
-        frozen: false,
-      };
-      version.content_hash = versionHash({
-        content: version.content,
-        quote: version.quote,
-        variables_resolved: map,
-        resolved_styles: version.resolved_styles,
-        pagination: version.pagination,
-      });
+      p.token ??= randomBytes(32).toString("base64url");
+      p.status = p.first_viewed_at ? "viewed" : "sent";
+      const version = editorialVersion(p, now);
       p.versions.push(version);
+      p.published_state = publicationState(p);
+      delete p.live_blockers;
       event(
         p,
         "sent",
@@ -760,10 +812,10 @@ export class ProposalService {
         "Quote changed; reload",
         409,
       );
-      p.quote = chooseItem(p.quote, input.item_id, input.selected);
       const v = p.versions.at(-1)!;
-      v.quote = structuredClone(p.quote);
-      v.variables_resolved = variables(p, p.quote);
+      v.quote = chooseItem(v.quote, input.item_id, input.selected);
+      if (!p.live_blockers?.length) p.quote = structuredClone(v.quote);
+      v.variables_resolved = variables(publishedPresentation(p), v.quote);
       renderBlocks(
         v.content,
         v.quote,
@@ -781,7 +833,7 @@ export class ProposalService {
       event(p, "quote_changed", actor, {
         item_id: input.item_id,
         selected: input.selected,
-        totals: totals(p.quote),
+        totals: totals(v.quote),
       });
     });
   }
@@ -849,6 +901,7 @@ export class ProposalService {
           input.email.toLowerCase() === p.client.email.toLowerCase(),
           "Signer email must match recipient",
         );
+      if (role === "client") restorePublishedForSigning(p);
       const now = this.clock().toISOString(),
         v = p.versions.at(-1)!;
       if (role === "client") {
@@ -978,12 +1031,13 @@ export class ProposalService {
       await mutate(this.repo, item.id, (p) => {
         if (!["sent", "viewed"].includes(p.status)) return;
         const now = this.clock();
-        if (p.valid_until && new Date(p.valid_until) <= now) {
+        if (publishedExpiry(p) && new Date(publishedExpiry(p)!) <= now) {
           p.status = "expired";
           event(p, "expired", system, {}, now.toISOString());
           return;
         }
-        const age = (now.getTime() - Date.parse(p.sent_at!)) / 86400000;
+        const cycle = reminderCycle(p);
+        const age = (now.getTime() - Date.parse(cycle.at)) / 86400000;
         for (const day of p.workspace_settings?.reminder_days ?? [3, 7])
           if (
             age >= day &&
@@ -991,13 +1045,13 @@ export class ProposalService {
               (e) =>
                 e.type === "reminder_sent" &&
                 e.metadata.day === day &&
-                e.metadata.version === p.versions.length,
+                e.metadata.version === cycle.version,
             )
           ) {
             queue(
               p,
               "email",
-              `reminder:${p.versions.length}:${day}`,
+              `reminder:${cycle.version}:${day}`,
               {
                 to: p.client.email,
                 subject: `Reminder: ${p.title}`,
@@ -1007,7 +1061,7 @@ export class ProposalService {
                   ? "reminder_viewed"
                   : "reminder_unopened",
                 reminder_day: day,
-                version: p.versions.length,
+                version: cycle.version,
               },
               now.toISOString(),
             );
@@ -1017,6 +1071,7 @@ export class ProposalService {
   }
 }
 export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
+  p = publishedPresentation(p);
   const v = p.versions.at(-1)!;
   return {
     id: p.id,

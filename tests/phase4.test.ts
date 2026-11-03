@@ -228,7 +228,7 @@ it("manual outcomes create no signature or billing, archive is reversible, and s
       settings,
     ),
   ).toBe(false);
-  for (const action of ["mark_won", "mark_lost", "edit_version"] as const)
+  for (const action of ["mark_won", "mark_lost"] as const)
     await expect(
       proposalAction(repo, signed.id, signed.revision, action, staff),
     ).rejects.toThrow();
@@ -248,7 +248,7 @@ it("manual outcomes create no signature or billing, archive is reversible, and s
     }),
   ).rejects.toThrow("Staff authorization");
 });
-it("editing sent proposals rotates access, manual lost closes links, resend uses current link, and stale actions fail", async () => {
+it("editing sent proposals preserves access, manual lost closes signing, resend uses the same link, and stale actions fail", async () => {
   const { repo, service, draft } = await setup();
   const sent = await service.send(draft.id, staff);
   const oldToken = sent.token;
@@ -265,19 +265,18 @@ it("editing sent proposals rotates access, manual lost closes links, resend uses
   await expect(
     proposalAction(repo, sent.id, sent.revision, "mark_lost", staff),
   ).rejects.toThrow("Proposal changed");
-  const editing = await proposalAction(
-    repo,
+  const editing = await service.edit(
     sent.id,
-    reminded.revision,
-    "edit_version",
+    { revision: reminded.revision, title: "Updated proposal" },
     staff,
   );
-  expect(editing.status).toBe("draft");
-  expect(editing.token).toBeNull();
-  expect(editing.versions).toEqual(sent.versions);
-  expect(await repo.byToken(oldToken!)).toBeNull();
+  expect(editing.status).toBe("sent");
+  expect(editing.token).toBe(oldToken);
+  expect(editing.versions[0]).toEqual(sent.versions[0]);
+  expect(editing.versions).toHaveLength(sent.versions.length + 1);
+  expect((await repo.byToken(oldToken!))?.id).toBe(sent.id);
   const resent = await service.send(editing.id, staff);
-  expect(resent.token).not.toBe(oldToken);
+  expect(resent.token).toBe(oldToken);
   const lost = await proposalAction(
     repo,
     resent.id,
@@ -286,7 +285,7 @@ it("editing sent proposals rotates access, manual lost closes links, resend uses
     staff,
     "Paused",
   );
-  expect(lost.token).toBeNull();
+  expect(lost.token).toBe(oldToken);
   expect(lost.marked_lost_by).toBe(staff.actor);
   expect(lost.events.at(-1)?.metadata.reason).toBe("Paused");
 });
@@ -591,7 +590,7 @@ it("manual invoice recording changes billing evidence without changing signed sn
     ),
   ).rejects.toThrow("forbidden");
 });
-it("mark as sent again reopens an unsigned lost proposal with a rotated link, current settings and real sender; stale and signed requests are refused", async () => {
+it("Reopen retains an unsigned lost proposal link and sender without email; stale and signed requests are refused", async () => {
   const { repo, service, draft, settings } = await setup();
   const sent = await service.send(draft.id, staff);
   const lost = await proposalAction(
@@ -616,8 +615,8 @@ it("mark as sent again reopens an unsigned lost proposal with a rotated link, cu
     service,
   );
   expect(reopened.status).toBe("sent");
-  expect(reopened.token).not.toBe(sent.token);
-  expect(reopened.workspace_settings?.company_name).toBe("Current Company");
+  expect(reopened.token).toBe(sent.token);
+  expect(reopened.workspace_settings?.company_name).toBe(settings.company_name);
   expect(reopened.sender?.user_id).toBe(staff.actor.slice(6));
   expect(reopened.marked_lost_by).toBeUndefined();
   expect(reopened.events.some((e) => e.type === "marked_lost")).toBe(true);
@@ -654,7 +653,7 @@ it("mark as sent again reopens an unsigned lost proposal with a rotated link, cu
       new Date(),
       service,
     ),
-  ).rejects.toThrow("Only unsigned Lost proposals");
+  ).rejects.toThrow("Only unsigned Lost or Expired proposals");
   const archived = await proposalAction(
     repo,
     signed.id,

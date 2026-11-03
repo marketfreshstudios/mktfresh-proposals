@@ -1,3 +1,4 @@
+import { openEditorPanel } from "./editor-ui";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import { test, expect, type Page } from "@playwright/test";
 import { setup, staff } from "../tests/helpers";
@@ -100,10 +101,8 @@ async function openDocument(page: Page, width: number, id: string) {
   await page.setViewportSize({ width, height: 1000 });
   await page.goto(`/proposals/${id}`);
   if (width === 375) {
-    await page.locator(".phone-section-list button").first().click();
-    await page
-      .getByRole("button", { name: "Full document", exact: true })
-      .click();
+    await expect(page.locator(".editor-paper")).toBeVisible();
+    await expect(page.locator(".editor-paper")).toBeVisible();
   }
 }
 for (const width of [1440, 375]) {
@@ -142,11 +141,16 @@ for (const width of [1440, 375]) {
       await expect(menu).toHaveCount(0);
       await page.setViewportSize({ width, height: 600 });
       await open();
-      await page.evaluate(() => {
-        const canvas =
-          innerWidth >= 700
-            ? document.querySelector<HTMLElement>(".editor-document-region")
-            : null;
+      await block.evaluate((el) => {
+        let canvas: HTMLElement | null = el.parentElement;
+        while (
+          canvas &&
+          !(
+            canvas.scrollHeight > canvas.clientHeight + 1 &&
+            /auto|scroll/.test(getComputedStyle(canvas).overflowY)
+          )
+        )
+          canvas = canvas.parentElement;
         (canvas ?? window).scrollBy(
           0,
           (canvas?.scrollTop ?? scrollY) > 0 ? -64 : 64,
@@ -191,7 +195,7 @@ for (const width of [1440, 375]) {
       await frame.locator(".tiptap").press("Space");
       await expect(frame.locator(`h${level + 1} textarea`)).toBeFocused();
       await expect(bar.locator(".text-style-label")).toHaveText(
-        `Heading ${level}`,
+        width < 700 ? `H${level}` : `Heading ${level}`,
       );
       await frame.locator("textarea").fill(`Level ${level}`);
       await expect
@@ -318,11 +322,7 @@ for (const width of [1440, 375]) {
     await page.keyboard.press("Space");
     await expect(groupHandle).not.toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => f.current().quote[0].id).not.toBe(beforeOrder);
-    if (width === 375)
-      await page
-        .getByRole("button", { name: "Open Quote", exact: true })
-        .click();
-    await page.getByRole("tab", { name: "Styles", exact: true }).click();
+    await openEditorPanel(page, "Styles");
     const styles = page.getByRole("region", {
       name: "Proposal styles",
       exact: true,
@@ -465,10 +465,9 @@ test("Workspace and templates save style overrides and show responsive live samp
   await styles
     .getByRole("spinbutton", { name: "Heading 2 weight", exact: true })
     .fill("700");
-  await styles
-    .getByRole("combobox", { name: "Colour", exact: true })
-    .selectOption("custom");
-  await styles.getByLabel("Custom colour", { exact: true }).fill("#123456");
+  await styles.getByRole("button", { name: "Custom", exact: true }).click();
+  await styles.getByLabel("Custom color", { exact: true }).fill("#123456");
+  await styles.getByText("Typography details", { exact: true }).click();
   await styles
     .getByRole("combobox", { name: "Letter case", exact: true })
     .selectOption("uppercase");

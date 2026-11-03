@@ -1,3 +1,4 @@
+import { openEditorPanel } from "./editor-ui";
 import { test, expect, type Locator } from "@playwright/test";
 import { setup, staff } from "../tests/helpers";
 import { emailTemplates, saveEmailTemplate } from "../src/lib/email-templates";
@@ -89,6 +90,7 @@ test("formatting rows stay above content and every button is reachable in all ed
       await route.fulfill({ status: 400, json: { error: String(error) } });
     }
   });
+  const widthIsPhone = () => (page.viewportSize()?.width ?? 1440) < 700;
   async function check(body: Locator, bar: Locator, name: string) {
     await body.fill(
       `Formatting in ${name}: text that wraps over several lines on a phone.`,
@@ -106,8 +108,8 @@ test("formatting rows stay above content and every button is reachable in all ed
     // This fails on the old 44px row even when a later z-index happens to hide its overflow.
     const geometry = await bar.evaluate((el, selector) => {
       const toolbar = el.getBoundingClientRect(),
-        buttons = Array.from(el.querySelectorAll(".formatting-button")).map(
-          (b) => b.getBoundingClientRect(),
+        buttons = Array.from(el.querySelectorAll("button")).map((b) =>
+          b.getBoundingClientRect(),
         );
       const editor = el.closest(".field-editor");
       const text = editor?.querySelector(selector)?.getBoundingClientRect();
@@ -128,6 +130,20 @@ test("formatting rows stay above content and every button is reachable in all ed
       ).toBeGreaterThanOrEqual(0);
     for (const action of ["Undo", "Redo"]) {
       const local = bar.getByRole("button", { name: action, exact: true });
+      if (
+        (page.viewportSize()?.width ?? 1440) < 700 &&
+        !(await local.isVisible())
+      ) {
+        const more = page.getByRole("button", {
+          name: name.startsWith("proposal")
+            ? "More editor actions"
+            : "More template actions",
+          exact: true,
+        });
+        await more.click();
+        await page.getByRole("menuitem", { name: action, exact: true }).click();
+        continue;
+      }
       await (
         (await local.isVisible())
           ? local
@@ -160,11 +176,28 @@ test("formatting rows stay above content and every button is reachable in all ed
         return {
           own: target === el || el.contains(target),
           target: target?.tagName,
+          targetClass: target?.className,
+          rect: { x: r.x, y: r.y, width: r.width, height: r.height },
           button: target?.closest("button")?.getAttribute("aria-label"),
         };
       });
       expect(hit.own, `${name} ${label}: ${JSON.stringify(hit)}`).toBe(true);
       await button.click();
+      if (
+        label === "Insert field" &&
+        (name.startsWith("proposal") || name.startsWith("template")) &&
+        widthIsPhone()
+      ) {
+        const sheet = page.getByRole("dialog", {
+          name: name.startsWith("proposal") ? "Proposal tools" : "Fields",
+          exact: true,
+        });
+        await expect(sheet).toBeVisible();
+        await sheet.locator(".field-option").first().click();
+        await expect(sheet).toHaveCount(0);
+        await body.click();
+        continue;
+      }
       if (label === "Link" || label === "Insert field") {
         await expect(
           page.locator(
@@ -203,7 +236,7 @@ test("formatting rows stay above content and every button is reachable in all ed
     );
     await page.goto(`/proposals/${current.id}`);
     if (width === 375)
-      await page.locator(".phone-section-list button").first().click();
+      await expect(page.locator(".editor-paper")).toBeVisible();
     if (width === 1440)
       await page
         .getByRole("button", { name: "Collapse tools sidebar", exact: true })
@@ -219,27 +252,17 @@ test("formatting rows stay above content and every button is reachable in all ed
     );
     if (width === 375) {
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page
-        .getByRole("button", { name: "Full document", exact: true })
-        .click();
+      await expect(page.locator(".editor-paper")).toBeVisible();
     }
     const clause = page.locator(".contract-editor details").first();
     if ((await clause.getAttribute("open")) === null)
       await clause.locator("summary").click();
     await expect(clause.locator("p")).toBeVisible();
     await clause.locator("p").click();
-    if (width < 700)
-      await expect(
-        pinned.getByRole("button", { name: "Bold", exact: true }),
-      ).toBeDisabled();
-    else
-      await expect(
-        pinned.getByRole("button", { name: "Bold", exact: true }),
-      ).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "Review & send", exact: true })
-      .first()
-      .click();
+    await expect(
+      pinned.getByRole("button", { name: "Bold", exact: true }),
+    ).toHaveCount(0);
+    await openEditorPanel(page, "Send");
     const note = page.locator(".send-email-note .tiptap:visible");
     await check(
       note,
@@ -250,34 +273,15 @@ test("formatting rows stay above content and every button is reachable in all ed
       page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
     ).toBeVisible();
     await page.goto(`/studio/templates/${template.id}`);
-    await page
-      .locator(".studio-block-card")
-      .nth(1)
-      .locator(".block-open")
-      .click();
-    if (width === 375) {
-      await page
-        .locator(".studio-block-card")
-        .nth(1)
-        .getByRole("button", { name: "Block settings", exact: true })
-        .click();
-      await check(
-        page
-          .getByRole("dialog", { name: "Edit block", exact: true })
-          .locator(".tiptap"),
-        pinned,
-        `template inspector ${width}`,
-      );
-    } else {
+    if (width === 1440)
       await page
         .getByRole("button", { name: "Collapse tools sidebar", exact: true })
         .click();
-      await check(
-        page.locator(".studio-block-card").nth(1).locator(".tiptap"),
-        pinned,
-        `template inline ${width}`,
-      );
-    }
+    await check(
+      page.locator(".studio-block-card").nth(1).locator(".tiptap"),
+      pinned,
+      `template inline ${width}`,
+    );
   }
   expect(errors).toEqual([]);
 });

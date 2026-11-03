@@ -7,7 +7,6 @@ import { EditorNotice } from "./editor/editor-notice";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
-import { useManagedPopover } from "./editor-popovers";
 import { quoteTotalText } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
 import {
@@ -37,6 +36,7 @@ import {
   BlockScope,
   EditorControlConfig,
   useBlockFeedback,
+  ToastSurface,
   useBlockToolbar,
   BlockFrame,
   BlockAction,
@@ -85,6 +85,14 @@ import { FieldOptions, SubjectField, FieldTextArea } from "./field-options";
 import { api, post, ApiError, Button, Field, Banner, Totals, Icon } from "./ui";
 import { useMoney } from "./money-context";
 const uid = () => crypto.randomUUID();
+function editorQuote(p: Proposal) {
+  return p.signers.length
+    ? p.quote.map((i) => ({
+        ...i,
+        default_selected: i.selected ?? i.default_selected,
+      }))
+    : draftItems(p.quote);
+}
 function Sheet({
   title,
   close,
@@ -134,6 +142,7 @@ function Sheet({
 }
 function QuoteEditorContent({
   initial,
+  appUrl,
   settings,
   catalog,
   families,
@@ -146,6 +155,7 @@ function QuoteEditorContent({
 }: {
   initialTab?: string;
   initial: Proposal;
+  appUrl: string;
   settings?: WorkspaceSettings | null;
   catalog: Item[];
   families: { id: string; name: string; active: boolean }[];
@@ -156,11 +166,17 @@ function QuoteEditorContent({
   documents?: ReferenceDocument[];
 }) {
   const blockFeedback = useBlockFeedback();
+  const [linkCopied, setLinkCopied] = useState(false);
+  useEffect(() => {
+    if (linkCopied) {
+      const timer = setTimeout(() => setLinkCopied(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [linkCopied]);
   const fields = useBlockToolbar();
-  const [fieldsOpen, setFieldsOpen] = useState(false);
-  useManagedPopover(fieldsOpen, () => setFieldsOpen(false));
   const pendingField = useRef<string | null>(null);
   const pendingOutline = useRef<string | null>(null);
+  const pendingReview = useRef(false);
   const [pdfOpen, setPdfOpen] = useState(false),
     [phoneOutlineOpen, setOutlineOpen] = useState(false);
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
@@ -170,7 +186,7 @@ function QuoteEditorContent({
     [p, setP] = useState<Proposal>({
       ...initial,
       content: initial.content,
-      quote: draftItems(initial.quote),
+      quote: editorQuote(initial),
     }),
     [customerErrors, setCustomerErrors] = useState<string[]>([]),
     [dirty, setDirty, dirtyRef] = useCurrentState(false),
@@ -181,7 +197,6 @@ function QuoteEditorContent({
       initialTab === "Review & send" ? "Send" : initialTab,
     ),
     [phoneDrawer, setDrawer] = useState(false),
-    [lineId, setLineId] = useState<string | null>(null),
     [expandedItem, setExpandedItem] = useState<string | null>(
       initial.quote[0]?.id ?? null,
     ),
@@ -210,6 +225,9 @@ function QuoteEditorContent({
       block: number;
       clause: number;
     } | null>(null);
+  const locked = !!p.signers.length || p.versions.some((v) => v.frozen);
+  const closed = ["declined", "expired"].includes(p.status);
+  const live = !!p.token && p.versions.length > 0 && !closed && !locked;
   const paper = useRef<HTMLElement>(null),
     reviewCursor = useRef(-1);
   const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
@@ -280,7 +298,7 @@ function QuoteEditorContent({
     return () => window.removeEventListener("keydown", shortcut);
   }, [panels.canRight, panels.canLeft, panels.phone]);
   useEffect(() => {
-    if (!stale) return;
+    if (!stale && !locked) return;
     selection.clear();
     const guard = (event: KeyboardEvent) => {
       if (
@@ -293,7 +311,7 @@ function QuoteEditorContent({
     };
     window.addEventListener("keydown", guard, true);
     return () => window.removeEventListener("keydown", guard, true);
-  }, [stale]);
+  }, [stale, locked]);
   async function review(sectionIds: string[], reviewed: boolean) {
     if (reviewBusy) return;
     setReviewBusy(true);
@@ -309,7 +327,7 @@ function QuoteEditorContent({
       });
       revision.current = result.revision;
       if (captured === generation.current)
-        setP({ ...result, quote: draftItems(result.quote) });
+        setP({ ...result, quote: editorQuote(result) });
       else
         setP((current) => ({
           ...current,
@@ -333,6 +351,14 @@ function QuoteEditorContent({
     }
   }
   function showReview() {
+    if (drawer) {
+      pendingReview.current = true;
+      document.querySelector<HTMLDialogElement>("dialog.tools-sheet")?.close();
+      return;
+    }
+    revealReview();
+  }
+  function revealReview() {
     const pending = contentSections(latest.current.content).filter(
       (s) => s.pending,
     );
@@ -495,6 +521,7 @@ function QuoteEditorContent({
     setP(latest.current);
   }
   function change(update: Partial<Proposal>) {
+    if (locked) return;
     history.record(
       editable(latest.current),
       editable({ ...latest.current, ...update }),
@@ -530,7 +557,7 @@ function QuoteEditorContent({
       delete current.pagination;
       revision.current = current.revision;
       setLastSaved(current.updated_at ?? null);
-      latest.current = { ...current, quote: draftItems(current.quote) };
+      latest.current = { ...current, quote: editorQuote(current) };
       setP(latest.current);
       setDirty(false);
       setStale(false);
@@ -576,7 +603,7 @@ function QuoteEditorContent({
           revision.current = result.revision;
           setLastSaved(result.updated_at ?? new Date().toISOString());
           if (captured === generation.current) {
-            latest.current = { ...result, quote: draftItems(result.quote) };
+            latest.current = { ...result, quote: editorQuote(result) };
             setP(latest.current);
             setDirty(false);
             if (!recoveryRef.current) {
@@ -598,6 +625,27 @@ function QuoteEditorContent({
           setStale(true);
           dropPagePlan();
           setRecovery(edits);
+          // A signature is a permanent lock, not an editable revision conflict.
+          // Preserve the rejected local work while showing the accepted document.
+          try {
+            const current = await api<Proposal>(`/api/proposals/${p.id}`);
+            if (
+              current.signers.length ||
+              current.versions.some((v) => v.frozen)
+            ) {
+              revision.current = current.revision;
+              latest.current = { ...current, quote: editorQuote(current) };
+              setP(latest.current);
+              setDirty(false);
+              setStale(false);
+              setError("");
+              selection.clear();
+              onSaved(current);
+              return false;
+            }
+          } catch {
+            /* Keep the local suggestion when current state is unavailable. */
+          }
         }
         setError(e instanceof Error ? e.message : "Unable to save");
         return false;
@@ -1248,10 +1296,9 @@ function QuoteEditorContent({
                 aria-label={`Remove ${i.name}`}
                 onClick={() => {
                   setItems(items.filter((v) => v.id !== i.id));
-                  if (lineId === i.id) setLineId(null);
                 }}
               >
-                × Remove
+                Remove
               </Button>
             </footer>
           </div>
@@ -1356,7 +1403,7 @@ function QuoteEditorContent({
           {money(range.min.monthly_total, p.currency)}–
           {money(range.max.monthly_total, p.currency)}/mo
           {items.some((i) => i.sublines.some((s) => s.interval === "year")) &&
-            ` · Yearly ${money(range.min.yearly_total, p.currency)}–${money(range.max.yearly_total, p.currency)}`}
+            ` · ${money(range.min.yearly_total, p.currency)}–${money(range.max.yearly_total, p.currency)}/yr`}
         </p>
       </footer>
     </div>
@@ -1649,6 +1696,10 @@ function QuoteEditorContent({
       `block-${b.id}` === selection.selected ||
       b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
   );
+  useEffect(() => {
+    // Return from isolated phone editing to the complete existing sheet projection.
+    paper.current?.dispatchEvent(new Event("pagination-layout-change"));
+  }, [panels.phone, selection.selected]);
   const currentSectionId =
     selectedIndex < 0
       ? null
@@ -1718,9 +1769,29 @@ function QuoteEditorContent({
     </>
   );
   const panelBody = (
-    <ReadOnlyRegion locked={stale}>
+    <ReadOnlyRegion locked={stale || locked}>
       {tab === "Quote" ? (
-        quotePanel
+        locked ? (
+          <div className="quote-panel">
+            {p.quote.map((i) => (
+              <section className="locked-quote-row" key={i.id}>
+                <strong>{i.name}</strong>
+                <p>{i.description}</p>
+                <p>
+                  {i.sublines
+                    .map(
+                      (s) =>
+                        `${money(s.amount * s.qty, p.currency)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}`,
+                    )
+                    .join(" + ")}
+                </p>
+              </section>
+            ))}
+            <Totals lines={p.quote} currency={p.currency} />
+          </div>
+        ) : (
+          quotePanel
+        )
       ) : tab === "Fields" ? (
         <FieldOptions
           map={map}
@@ -2029,12 +2100,7 @@ function QuoteEditorContent({
                           role="radiogroup"
                           aria-label="Choose one"
                         >
-                          <header>
-                            <h3>Choose one</h3>
-                            <Button variant="ghost" onClick={() => unlink(id)}>
-                              Unlink
-                            </Button>
-                          </header>
+                          <h3>Choose one</h3>
                           <Reorder
                             ids={unitItems(id).map((i) => i.id)}
                             onMove={(from, to) => {
@@ -2395,6 +2461,7 @@ function QuoteEditorContent({
     >
       <EditorControlConfig
         compact={panels.compact}
+        locked={locked || stale}
         map={map}
         onField={
           panels.phone || panels.right ? () => openTools("Fields") : undefined
@@ -2423,8 +2490,78 @@ function QuoteEditorContent({
         onSections={() => setOutlineOpen(true)}
         tablet={panels.viewportWidth >= 700 && panels.viewportWidth < 960}
         compact={panels.viewportWidth < 1180}
-        locked={false}
-        published="draft"
+        locked={locked}
+        published={live ? "live" : "draft"}
+        liveLabel={
+          live
+            ? `Sent · ${p.first_viewed_at ? `Viewed ${readableDate(p.first_viewed_at, p.workspace_settings?.timezone)}` : "Not viewed"}`
+            : closed
+              ? p.status === "expired"
+                ? "Expired"
+                : "Lost"
+              : undefined
+        }
+        notLiveReason={p.live_blockers?.[0]}
+        primaryLabel={
+          locked
+            ? "Duplicate as new draft"
+            : closed
+              ? "Reopen"
+              : live
+                ? "Copy client link"
+                : "Review & send"
+        }
+        onPrimary={async () => {
+          if (locked) {
+            try {
+              const next = await post<Proposal>(
+                `/api/proposals/${p.id}/actions`,
+                { revision: revision.current, action: "duplicate" },
+              );
+              if (recoveryRef.current) {
+                const edits = editable(recoveryRef.current as Proposal);
+                await api(`/api/proposals/${next.id}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({
+                    ...edits,
+                    valid_until: next.valid_until,
+                    revision: next.revision,
+                  }),
+                });
+              }
+              location.href = `/proposals/${next.id}`;
+            } catch (e) {
+              setError((e as Error).message);
+            }
+            return;
+          }
+          if (!(await save())) return;
+          if (closed) {
+            try {
+              const next = await post<Proposal>(
+                `/api/proposals/${p.id}/actions`,
+                { revision: revision.current, action: "mark_sent" },
+              );
+              revision.current = next.revision;
+              latest.current = next;
+              setP(next);
+              onSaved(next);
+              setError("");
+            } catch (e) {
+              setError((e as Error).message);
+              openTools("Send");
+            }
+          } else if (live) {
+            try {
+              await navigator.clipboard.writeText(
+                new URL(`/p/${p.token}`, appUrl).href,
+              );
+              setLinkCopied(true);
+            } catch {
+              blockFeedback.error("Unable to copy the client link");
+            }
+          } else openTools("Send");
+        }}
         stale={stale}
         recovered={!!recovery}
         aiPending={reviewCount}
@@ -2449,44 +2586,7 @@ function QuoteEditorContent({
         offline={offline}
         lastSaved={lastSaved}
         retry={() => void (stale ? reloadConflict() : save())}
-      >
-        <Button
-          variant="ghost"
-          disabled={saving || stale}
-          onClick={async () => {
-            if (await save())
-              window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
-          }}
-        >
-          Preview as client
-        </Button>
-        <Button
-          disabled={saving || stale}
-          onClick={() => {
-            paper.current?.dispatchEvent(new Event("pagination-flush"));
-            setPdfOpen(true);
-          }}
-        >
-          Preview PDF
-        </Button>
-        <Button variant="primary" onClick={() => openTools("Send")}>
-          Review & send
-        </Button>
-        <span className="tablet-tools">
-          <Button
-            data-field-insert
-            onClick={() => {
-              if (panels.phone) setFieldsOpen(true);
-              else {
-                setTab("Fields");
-                setDrawer(true);
-              }
-            }}
-          >
-            Fields
-          </Button>
-        </span>
-      </EditorHeader>
+      />
       {panels.phone && offline && (
         <Banner tone="warning" title="You’re offline. Sending is paused.">
           {deviceSaved
@@ -2494,6 +2594,12 @@ function QuoteEditorContent({
             : "Keep this page open to retain your changes."}{" "}
           We’ll save them when you’re back online.
         </Banner>
+      )}
+      {linkCopied && <ToastSurface>Client link copied</ToastSurface>}
+      {(p.unpublished_work || (locked && recovery)) && (
+        <p className="editor-retained-work" role="status">
+          Unpublished changes were not part of the signed version
+        </p>
       )}
       {stale && (
         <EditorNotice kind="stale">
@@ -2530,6 +2636,7 @@ function QuoteEditorContent({
             </div>
           </details>
           <Button
+            disabled={locked}
             onClick={async () => {
               const edits = editable(
                 staleRef.current ? latest.current : (recovery as Proposal),
@@ -2582,11 +2689,11 @@ function QuoteEditorContent({
               if (id) focusBlock(id);
             }}
           >
-            <ReadOnlyRegion locked={stale}>{outline}</ReadOnlyRegion>
+            <ReadOnlyRegion locked={stale || locked}>{outline}</ReadOnlyRegion>
           </SectionsPanel>
         ) : null}
         <main className="editor-document-region">
-          <ReadOnlyRegion locked={stale}>
+          <ReadOnlyRegion locked={stale || locked}>
             {blockFeedback.feedback}
             <div className="pdf-paper-viewport">
               <div
@@ -2634,7 +2741,9 @@ function QuoteEditorContent({
                       p.template_style_overrides,
                       p.style_overrides,
                     )}
-                    enabled={panels.printMode}
+                    enabled={
+                      panels.printMode && !(panels.phone && selection.selected)
+                    }
                     sheets
                     content={p.content}
                     contentKey={JSON.stringify([
@@ -2681,7 +2790,9 @@ function QuoteEditorContent({
                       sender={map["sender.name"]}
                       validUntil={p.valid_until}
                       timezone={p.workspace_settings?.timezone}
-                      onTitle={(title) => change({ title })}
+                      onTitle={
+                        locked ? undefined : (title) => change({ title })
+                      }
                     />
                   )}
                   {firstBlock}
@@ -2695,6 +2806,12 @@ function QuoteEditorContent({
                   >
                     {sections.map((s, n) => (
                       <div
+                        data-phone-section={n}
+                        data-phone-section-active={
+                          sections.findIndex((s) =>
+                            s.indices.includes(selectedIndex),
+                          ) === n
+                        }
                         className={section === n ? "phone-active-section" : ""}
                         key={s.id}
                       >
@@ -2733,6 +2850,10 @@ function QuoteEditorContent({
               const path = pendingField.current;
               pendingField.current = null;
               if (path) fields?.insert(path);
+              if (pendingReview.current) {
+                pendingReview.current = false;
+                requestAnimationFrame(revealReview);
+              }
             }}
           >
             {panelBody}
@@ -2747,7 +2868,7 @@ function QuoteEditorContent({
       )}
       {phoneOutlineOpen && (
         <Sheet
-          title="Pages"
+          title="Sections"
           close={() => setOutlineOpen(false)}
           extra="sections-overlay"
           onCloseComplete={() => {
@@ -2761,28 +2882,6 @@ function QuoteEditorContent({
           </div>
         </Sheet>
       )}
-      {fieldsOpen && (
-        <Sheet
-          title="Fields"
-          close={() => setFieldsOpen(false)}
-          onCloseComplete={() => {
-            const path = pendingField.current;
-            pendingField.current = null;
-            if (path) fields?.insert(path);
-          }}
-        >
-          {(dismiss) => (
-            <FieldOptions
-              map={map}
-              onInsert={(path) => {
-                pendingField.current = path;
-                dismiss();
-              }}
-            />
-          )}
-        </Sheet>
-      )}
-
       {insertAt !== null && (
         <BlockMenu
           anchor={insertAnchor}

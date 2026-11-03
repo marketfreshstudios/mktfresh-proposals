@@ -169,7 +169,28 @@ export function BlockMenu({
     if (phone) {
       (popover as HTMLDialogElement).showModal();
       input.current?.focus();
-      return () => (popover as HTMLDialogElement).close();
+      return () => {
+        const returnFocus = restoreTrigger.current;
+        restoreTrigger.current = false;
+        if (returnFocus)
+          popover.addEventListener(
+            "close",
+            () => {
+              requestAnimationFrame(() => {
+                const button = anchor?.matches("button")
+                  ? anchor
+                  : fallback.current;
+                if (
+                  button?.isConnected &&
+                  !document.querySelector("dialog:modal")
+                )
+                  button.focus({ preventScroll: true });
+              });
+            },
+            { once: true },
+          );
+        (popover as HTMLDialogElement).close();
+      };
     }
     popover.showPopover();
     const place = () => {

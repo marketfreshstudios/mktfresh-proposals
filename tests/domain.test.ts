@@ -154,13 +154,13 @@ describe("proposal lifecycle", () => {
     });
     await expect(service.send(draft.id, staff)).rejects.toThrow("Unresolved");
   });
-  it("resending rotates link and retains prior version", async () => {
+  it("resending retains the one client link and prior version", async () => {
     const { service, draft, settings } = await setup();
     const p = await service.send(draft.id, staff),
       next = await service.send(draft.id, staff);
     expect(next.versions).toHaveLength(2);
-    expect(next.token).not.toBe(p.token);
-    await expect(service.byToken(p.token!)).rejects.toThrow("Not found");
+    expect(next.token).toBe(p.token);
+    expect((await service.byToken(p.token!)).id).toBe(p.id);
   });
   it("schedules reminders once and expires only unsigned proposals", async () => {
     const { repo, service, draft, settings } = await setup();

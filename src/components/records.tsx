@@ -133,7 +133,7 @@ export function ProposalMenu({
         action,
         note,
       });
-      if (action === "duplicate" || action === "edit_version") {
+      if (action === "duplicate") {
         location.href = `/proposals/${next.id}`;
         return;
       }
@@ -152,7 +152,8 @@ export function ProposalMenu({
     editable =
       !imported &&
       !p.archived_at &&
-      ["draft", "sent", "viewed"].includes(p.status),
+      !p.signers.length &&
+      ["draft", "sent", "viewed", "declined", "expired"].includes(p.status),
     outcome =
       !imported &&
       !p.archived_at &&
@@ -261,17 +262,7 @@ export function ProposalMenu({
                 </a>
               )}
               {editable ? (
-                p.status === "draft" ? (
-                  <a href={`/proposals/${p.id}`}>Edit draft</a>
-                ) : (
-                  <button
-                    disabled={busy}
-                    onClick={() => void act("edit_version")}
-                  >
-                    Edit as new version{" "}
-                    <small>Closes the old client link.</small>
-                  </button>
-                )
+                <a href={`/proposals/${p.id}?action=edit`}>Edit</a>
               ) : (
                 <button disabled>
                   Edit{" "}
@@ -280,7 +271,7 @@ export function ProposalMenu({
                       ? "Imported proposals are read-only."
                       : p.archived_at
                         ? "Unarchive to edit."
-                        : "Won and Lost proposals cannot be edited."}
+                        : "Signed proposals are locked."}
                   </small>
                 </button>
               )}
@@ -317,16 +308,16 @@ export function ProposalMenu({
                   busy ||
                   imported ||
                   !!p.archived_at ||
-                  p.status !== "declined" ||
+                  !["declined", "expired"].includes(p.status) ||
                   !!p.signers.length ||
                   !(p.version_count ?? p.versions.length)
                 }
                 onClick={() => void act("mark_sent")}
               >
-                Mark as sent again{" "}
+                Reopen{" "}
                 <small>
                   {(p.version_count ?? p.versions.length)
-                    ? "Reopen with a new link and send from your staff account."
+                    ? "Reopen the same client link. No email is sent."
                     : "No sent version. Duplicate to prepare a new proposal."}
                 </small>
               </button>

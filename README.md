@@ -232,3 +232,11 @@ Page, section and document-block moves preserve every original block, including 
 Document block gaps use the larger of the previous block’s space below and the next block’s space above. Editor, client and print share this rule; paragraph/list trailing margins do not stack. Pricing items use compact name/price rows, smaller optional descriptions and indented sub-lines. Optional/choice controls and required locks convey inclusion without extra status rows. Only page sheets are white; the gaps show the canvas background.
 
 Proposal styles now include Standard/Comfortable density and per-side margins in inches (default 0.75in). New sends freeze these with the existing styles; earlier frozen documents keep their prior metrics. The editor and templates show Letter sheets with PDF-derived page starts. Their spacers are display-only, and source content keeps its normal undo/autosave behaviour. A pricing table stays whole when it fits a page; larger ones split between cards and produce a measured readiness warning.
+
+### Editor v2 live proposals
+
+Staff open a sent proposal's **Edit** action on the same record and client link. Until a signature, readiness-passing saves publish a new version immediately without sending email; invalid work stays staff-only and the client keeps the last good version. The header shows **Not live** with the first blocker until the next passing save. AI connectors remain drafts-only. A client must reload a newly published version before signing it.
+
+A signature locks the accepted content. If unpublished work existed, the editor identifies it and **Duplicate as new draft** recovers it without changing signed evidence. **Reopen** handles unsigned Lost/client-declined/Expired proposals using the workspace validity default, the same token, a readiness check and no email.
+
+Tablet tools use an overlay drawer. Phone reading uses full sheets, and selecting a block opens its section-editing view; Done returns to reading. Quote/Fields/Styles/Send open focus-trapping bottom sheets, and formatting follows the keyboard viewport. Real iOS Safari/Android Chrome docking remains a manual device check.

@@ -1,3 +1,4 @@
+import { staff } from "../tests/helpers";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 
@@ -121,7 +122,24 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
   await sheet.getByRole("button", { name: "Done", exact: true }).click();
   await expect(sheet).toHaveCount(0);
   const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
+  const plan = await page
+    .locator(".editor-paper")
+    .getAttribute("data-pagination");
   await block.locator(".tiptap").click();
+  await expect(block.locator(".tiptap")).toBeFocused();
+  await expect(
+    page
+      .locator(".editor-phone-header")
+      .getByRole("button", { name: "Done", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".document-cover").first()).not.toBeVisible();
+  await expect(
+    page.locator(".editor-paper > [data-phone-section]:visible"),
+  ).toHaveCount(1);
+  await expect(page.locator(".editor-paper")).toHaveAttribute(
+    "data-pagination",
+    plan!,
+  );
   const bar = block.getByRole("toolbar", { name: "Text tools", exact: true });
   await expect(bar).toBeVisible();
   await expect(bar).toHaveCSS("position", "fixed");
@@ -161,6 +179,12 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
   await menu.getByRole("menuitem", { name: "Text", exact: true }).click();
   await expect(menu).toHaveCount(0);
   await expect.poll(() => f.active().content.length).toBe(f.content.length + 1);
+  await page
+    .locator(".editor-phone-header")
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
+  await expect(page.locator(".document-cover").first()).toBeVisible();
+  await expect(page.locator(".editor-phone-dock")).toBeVisible();
 });
 
 test("template phone uses the shared unscaled sheets and keyboard edit bar", async ({
@@ -175,7 +199,151 @@ test("template phone uses the shared unscaled sheets and keyboard edit bar", asy
   await expect(paper).toHaveCSS("transform", "none");
   await paper.locator(".tiptap").first().click();
   await expect(page.locator(".editor-edit-bar")).toHaveCSS("position", "fixed");
+  await expect(page.locator(".template-cover").first()).not.toBeVisible();
+  const remove = page
+    .locator(".editor-edit-bar")
+    .getByRole("button", { name: "Delete block", exact: true });
+  await remove.scrollIntoViewIfNeeded();
+  await remove.click({ trial: true });
+  await page
+    .getByRole("button", { name: "Done editing template section", exact: true })
+    .click();
+  await expect(page.locator(".template-cover").first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "More template actions", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Undo", exact: true }),
-  ).toHaveCount(1);
+    page.getByRole("menuitem", { name: "Undo", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+});
+
+test("sent editor publishes on its existing link, keeps invalid work off the client page and locks to the accepted version", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await f.editRemote({
+    content: [
+      ...f.active().content,
+      { id: crypto.randomUUID(), type: "signature_block", role: "company" },
+    ],
+  });
+  const sent = await f.sendRemote();
+  await page.route("**/api/auth/session", (route) =>
+    route.fulfill({
+      json: {
+        user: staff,
+        settings: f.settings,
+        staff: f.members,
+        app_url: "https://canonical.example.test",
+      },
+    }),
+  );
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: async (value: string) => {
+          (window as any).__copied = value;
+        },
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${sent.id}?action=edit`);
+  await expect(
+    page.getByRole("button", { name: "Copy client link", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Copy client link", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__copied))
+    .toBe(`https://canonical.example.test/p/${sent.token}`);
+  const text = page.locator(
+    `[data-block-id="block-${f.content[1].id}"] .tiptap`,
+  );
+  await text.fill("This saved text is live on the same link.");
+  await expect.poll(() => f.active().versions.length).toBe(2);
+  expect(f.active().token).toBe(sent.token);
+  expect(f.active().jobs).toEqual(sent.jobs);
+  const live = await page.evaluate(
+    async (token) => (await fetch(`/api/public/${token}`)).json(),
+    sent.token,
+  );
+  expect(live.html).toContain("This saved text is live on the same link.");
+  const price = page.locator(
+    `[data-block-id="block-${f.content.find((b) => b.type === "pricing_table")!.id}"]`,
+  );
+  await price.focus();
+  await price
+    .getByRole("button", { name: "Delete block", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Delete required block?", exact: true })
+    .getByRole("button", { name: "Delete block", exact: true })
+    .click();
+  await expect(page.locator(".editor-save-status")).toContainText(
+    "Not live · Add a pricing table",
+  );
+  expect(f.active().versions).toHaveLength(2);
+  const previous = await page.evaluate(
+    async (token) => (await fetch(`/api/public/${token}`)).json(),
+    sent.token,
+  );
+  expect(previous.content.some((b: any) => b.type === "pricing_table")).toBe(
+    true,
+  );
+  const { signature } = await import("../tests/helpers");
+  await f.signRemote({
+    ...signature(f.active().revision),
+    reviewed_hash: f.active().versions.at(-1)!.content_hash,
+  });
+  await text.fill("Local edits made just after the client signed");
+  await expect(page.locator(".editor-save-status")).toHaveText(
+    "Signed · locked",
+  );
+  await expect(
+    page.getByRole("button", { name: "Duplicate as new draft", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByText("Unpublished changes were not part of the signed version", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".editor-edit-bar,.editor-gutter,.editor-ai-check"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".editor-paper [contenteditable=true]"),
+  ).toHaveCount(0);
+});
+
+test("phone Send Show me closes the sheet before selecting an unreviewed section", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await f.editRemote({
+    content: f.content.map((b, n) =>
+      n === 1
+        ? { ...b, ai_review: { source: "assistant", reviewed: false } }
+        : b,
+    ),
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.getByRole("button", { name: "Open Send", exact: true }).click();
+  const sheet = page.getByRole("dialog", {
+    name: "Proposal tools",
+    exact: true,
+  });
+  await sheet.getByRole("button", { name: "Show me", exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(
+    page.locator(`[data-block-id="block-${f.content[1].id}"]`),
+  ).toHaveAttribute("data-selected", "true");
+  await expect(
+    page
+      .locator(".editor-phone-header")
+      .getByRole("button", { name: "Done", exact: true }),
+  ).toBeVisible();
 });

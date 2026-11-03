@@ -4,6 +4,7 @@ import { ToolbarPopover } from "../toolbar-popover";
 import { useHistoryStatus } from "../editor-history";
 export function PhoneEditorHeader({
   title,
+  className = "",
   status,
   editingTitle,
   aiPending,
@@ -14,8 +15,11 @@ export function PhoneEditorHeader({
   onPreviewPdf,
   onPreviewClient,
   onSections,
+  primaryLabel,
+  onPrimary,
 }: {
   title: string;
+  className?: string;
   status: string;
   editingTitle?: string;
   aiPending: number;
@@ -26,13 +30,16 @@ export function PhoneEditorHeader({
   onPreviewPdf?(): void;
   onPreviewClient?(): void;
   onSections?(): void;
+  primaryLabel?: string;
+  onPrimary?(): void;
 }) {
   const [open, setOpen] = useState(false),
     trigger = useRef<HTMLButtonElement>(null);
   const history = useHistoryStatus();
   return (
     <header
-      className="editor-phone-header editor-document-header"
+      data-editor-chrome
+      className={`editor-phone-header editor-document-header ${className}`}
       data-editing={!!editingTitle}
     >
       <button
@@ -87,6 +94,11 @@ export function PhoneEditorHeader({
             aria-label="Editor actions"
             onClick={() => setOpen(false)}
           >
+            {primaryLabel && (
+              <button type="button" role="menuitem" onClick={onPrimary}>
+                {primaryLabel}
+              </button>
+            )}
             <button type="button" role="menuitem" onClick={onPreviewPdf}>
               Preview PDF
             </button>

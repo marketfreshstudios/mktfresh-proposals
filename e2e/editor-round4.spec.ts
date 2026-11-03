@@ -467,6 +467,7 @@ test("real signatures retain their authored page positions in new PDFs", async (
         { id: crypto.randomUUID(), type: "page_break" },
         { id: after, type: "paragraph", text: "After the client signature." },
         { id: crypto.randomUUID(), type: "signature_block", role: "company" },
+        { id: crypto.randomUUID(), type: "pricing_table" },
       ],
     },
     staff,

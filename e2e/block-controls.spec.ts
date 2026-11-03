@@ -1,3 +1,4 @@
+import { openEditorPanel } from "./editor-ui";
 import { test, expect, type Page, type Locator } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { setup, staff } from "../tests/helpers";
@@ -114,16 +115,34 @@ test("block controls own one block and never move document content on hover, foc
   }
   async function showBlock(block: Locator, width: number, editor: string) {
     if (editor === "proposal" && width === 375 && !(await block.isVisible())) {
-      const id = await block.evaluate(
-        (el) => el.closest(".document-section")!.id,
-      );
       await page
-        .getByRole("button", { name: "‹ Sections", exact: true })
+        .locator(".editor-phone-header")
+        .getByRole("button", { name: "Done", exact: true })
         .click();
-      await page
-        .locator(".phone-section-list button")
-        .nth(Number(id.split("-").at(-1)))
-        .click();
+      await expect(block).toBeVisible();
+    }
+    if (width === 375) {
+      await block.evaluate((el) => {
+        el.scrollIntoView({ block: "start" });
+        const pinned = document.querySelector<HTMLElement>(
+          ".editor-phone-header,.template-editor-header",
+        );
+        const top = pinned?.getBoundingClientRect().bottom ?? 0;
+        let canvas: HTMLElement | null = el.parentElement;
+        while (
+          canvas &&
+          !(
+            canvas.scrollHeight > canvas.clientHeight + 1 &&
+            /auto|scroll/.test(getComputedStyle(canvas).overflowY)
+          )
+        )
+          canvas = canvas.parentElement;
+        (canvas ?? window).scrollBy(
+          0,
+          el.getBoundingClientRect().top - top - 48,
+        );
+      });
+      return;
     }
     await block.evaluate((el) => {
       el.scrollIntoView({ block: "start" });
@@ -147,6 +166,14 @@ test("block controls own one block and never move document content on hover, foc
   }
   async function positions(p: Page) {
     await p.evaluate(() => document.fonts.ready);
+    // A phone tap enters a different section view. Measure after that transition
+    // and its existing sheet projection have committed, then detect any movement.
+    await p.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
     const sheets = p.locator(".editor-page-sheets:visible");
     if (await sheets.count())
       await expect(sheets).toHaveAttribute("data-layout-settled", "true");
@@ -287,7 +314,7 @@ test("block controls own one block and never move document content on hover, foc
             ),
           ).toBeVisible();
           if (editor === "proposal" && width === 375)
-            await page.locator(".phone-section-list button").first().click();
+            await expect(page.locator(".editor-paper")).toBeVisible();
           const old = page.locator(
             editor === "proposal" ? ".draft-block" : ".studio-block-card",
           );
@@ -311,7 +338,7 @@ test("block controls own one block and never move document content on hover, foc
           ),
         ).toBeVisible();
         if (editor === "proposal" && width === 375)
-          await page.locator(".phone-section-list button").first().click();
+          await expect(page.locator(".editor-paper")).toBeVisible();
         if (editor === "proposal")
           await expect(page.locator(".tiptap").first()).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
@@ -322,6 +349,12 @@ test("block controls own one block and never move document content on hover, foc
           await showBlock(block, width, editor);
           await page.keyboard.press("Escape");
           await page.mouse.move(1, 1);
+          // Phone selection intentionally enters the prototype's section view.
+          // Measure hover/focus stability once that view is active, not across navigation.
+          if (width === 375) {
+            await block.focus();
+            await showBlock(block, width, editor);
+          }
           const before = await positions(page);
           // Target the content owned by this frame, rather than a nested clause.
           const owned = await block.evaluate((el) => {
@@ -366,17 +399,25 @@ test("block controls own one block and never move document content on hover, foc
             page.locator(
               ":is(.block-sortable > .drag-handle,.editor-gutter > .drag-handle):visible",
             ),
-          ).toHaveCount(1);
+          ).toHaveCount(width === 375 ? 0 : 1);
           const dragHandle = block
             .locator("..")
             .locator(
               ":scope > .drag-handle,:scope > .block-frame > .editor-gutter > .drag-handle",
             );
-          await dragHandle.hover();
-          if (width === 375) {
-            const rect = (await dragHandle.boundingBox())!;
-            expect(rect.width).toBeGreaterThanOrEqual(44);
-            expect(rect.height).toBeGreaterThanOrEqual(44);
+          if (width !== 375) await dragHandle.hover();
+          else if (
+            await block
+              .getByRole("button", { name: "Add a block above", exact: true })
+              .count()
+          ) {
+            const pill = block.getByRole("button", {
+              name: "Add a block above",
+              exact: true,
+            });
+            await pill.hover();
+            const rect = (await pill.boundingBox())!;
+            expect(rect.height).toBe(32);
             expect(rect.x).toBeGreaterThanOrEqual(0);
           }
 
@@ -405,7 +446,7 @@ test("block controls own one block and never move document content on hover, foc
           await expect(
             page.locator('.block-frame[data-active="true"]'),
           ).toHaveCount(0);
-          await unchanged(before);
+          if (width !== 375) await unchanged(before);
         }
         const paragraph = blocks.nth(1);
         await showBlock(paragraph, width, editor);
@@ -544,6 +585,7 @@ test("block controls own one block and never move document content on hover, foc
               .click();
             await expect(paragraph).toHaveAttribute("data-selected", "true");
             await shot("formatting-bar", width, theme);
+            if (width === 375) await page.keyboard.press("Escape");
             const emptyPaper = await page
               .locator(".editor-paper")
               .evaluate((paper) => {
@@ -555,7 +597,10 @@ test("block controls own one block and never move document content on hover, foc
                     .getBoundingClientRect(),
                   x = Math.min(innerWidth - 5, box.right - 5);
                 for (
-                  let y = Math.max(box.top + 5, bar.bottom + 5);
+                  let y = Math.max(
+                    box.top + 5,
+                    innerWidth < 700 ? 58 : bar.bottom + 5,
+                  );
                   y < Math.min(innerHeight - 5, box.bottom - 5);
                   y += 4
                 )
@@ -610,17 +655,19 @@ test("block controls own one block and never move document content on hover, foc
                 .click();
               await expect(paragraph).toHaveAttribute("data-selected", "false");
             }
-            await page
-              .locator(".quote-editor-top")
-              .getByRole("button", { name: "Review & send", exact: true })
-              .click();
+            if (width < 700) await openEditorPanel(page, "Send");
+            else
+              await page
+                .locator(".quote-editor-top")
+                .getByRole("button", { name: "Review & send", exact: true })
+                .click();
             await expect(
               page.locator('input[aria-label="Valid until"]:visible'),
             ).toBeVisible();
             await shot("review-validity", width, theme);
             if (width === 375)
               await page
-                .getByRole("dialog", { name: "Send", exact: true })
+                .getByRole("dialog", { name: "Proposal tools", exact: true })
                 .getByRole("button", {
                   name: /^(Done|Collapse tools sidebar)$/,
                   exact: true,

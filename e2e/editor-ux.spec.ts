@@ -1,3 +1,4 @@
+import { openEditorPanel, reviewEditorSections } from "./editor-ui";
 import { readiness } from "../src/lib/quote";
 import { authoringPages } from "../src/lib/editor-pages";
 import { pdfPreview } from "../src/lib/pdf-preview";
@@ -179,7 +180,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       await page.goto(`/proposals/${active.id}`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
       if (width === 375)
-        await page.locator(".phone-section-list button").first().click();
+        await expect(page.locator(".editor-paper")).toBeVisible();
       if (stage === "after") {
         await expect(page.locator(".document-page-count")).toHaveAttribute(
           "data-page-count",
@@ -200,21 +201,19 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         ).toBeVisible();
         await shot("block-menu", width, theme);
         await page.keyboard.press("Escape");
-        await page
-          .getByRole("button", { name: "Mark all reviewed", exact: true })
-          .first()
-          .click();
+        await openEditorPanel(page, "Send");
         await expect(
-          page.getByRole("dialog", { name: "Review all AI-written sections" }),
+          page.getByRole("checkbox", {
+            name: /I've reviewed these AI-written sections/,
+          }),
         ).toBeVisible();
         await shot("review-confirm", width, theme);
-        await page.keyboard.press("Escape");
+        if (await page.locator("dialog.tools-sheet[open]").count())
+          await page.keyboard.press("Escape");
         const pricing = page.locator(".editor-investment");
         if (width === 375 && !(await pricing.isVisible())) {
-          await page
-            .getByRole("button", { name: "‹ Sections", exact: true })
-            .click();
-          await page.locator(".phone-section-list button").nth(1).click();
+          await page.getByRole("button", { name: "Done", exact: true }).click();
+          await expect(page.locator(".editor-paper")).toBeVisible();
         }
         await pricing.scrollIntoViewIfNeeded();
         await pricing.locator(".drag-handle").first().focus();
@@ -236,10 +235,8 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(`/proposals/${active.id}`);
       if (width === 375) {
-        await page.locator(".phone-section-list button").first().click();
-        await page
-          .getByRole("button", { name: "Full document", exact: true })
-          .click();
+        await expect(page.locator(".editor-paper")).toBeVisible();
+        await expect(page.locator(".editor-paper")).toBeVisible();
       }
       await expect(page.locator(".quote-workspace")).toHaveAttribute(
         "data-panels-ready",
@@ -250,12 +247,12 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         (el) => (el as HTMLElement).offsetWidth,
       );
       if (width < 700) {
-        expect(paperWidth).toBe(816);
+        expect(paperWidth).toBeLessThanOrEqual(375);
         expect(
           parseFloat(
             await paper.evaluate((el) => getComputedStyle(el).paddingLeft),
           ),
-        ).toBeCloseTo(72, 2);
+        ).toBeCloseTo(40, 2);
       } else {
         expect(paperWidth).toBeLessThanOrEqual(760);
         expect(
@@ -407,17 +404,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       "New section",
     );
     // Bulk review only clears content review. It writes one event with the listed sections.
-    await page
-      .getByRole("button", { name: "Mark all reviewed", exact: true })
-      .first()
-      .click();
     const prior = active.events.filter(
       (e) => e.type === "ai_sections_reviewed",
     ).length;
-    await page
-      .getByRole("button", { name: "Confirm all reviewed", exact: true })
-      .click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await reviewEditorSections(page);
     await expect
       .poll(
         () =>
@@ -597,15 +587,9 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
             (t) => (document.documentElement.dataset.theme = t),
             theme,
           );
-          await page.locator(".phone-section-list button").first().click();
-          await page
-            .getByRole("button", { name: "Full document", exact: true })
-            .click();
+          await expect(page.locator(".editor-paper")).toBeVisible();
         }
-        const last =
-          width < 700
-            ? page.locator(".editor-page-break")
-            : page.locator(".editor-paper .page-sheet").last();
+        const last = page.locator(".editor-paper .page-sheet").last();
         await last.scrollIntoViewIfNeeded();
         await expect(page.locator(".document-page-count")).toHaveAttribute(
           "data-page-count",
@@ -643,10 +627,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
         await page.setViewportSize({ width, height: 1000 });
         if (width === 375) {
           await page.goto(`/proposals/${active.id}`);
-          await page.locator(".phone-section-list button").first().click();
-          await page
-            .getByRole("button", { name: "Full document", exact: true })
-            .click();
+          await expect(page.locator(".editor-paper")).toBeVisible();
         }
         await page
           .locator(".draft-block")

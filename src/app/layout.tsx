@@ -6,14 +6,6 @@ import "./studio.css";
 import "./review-polish.css";
 import "./block-controls.css";
 import "./emails.css";
-import "./editor-ux.css";
-import "./editor-followup.css";
-import "./editor-polish.css";
-import "./editor-round3.css";
-import "./editor-round4.css";
-import "./editor-round5.css";
-import "./editor-round6.css";
-import "./browser-pages.css";
 import "./editor.css";
 export default function RootLayout({
   children,

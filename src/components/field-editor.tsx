@@ -54,6 +54,7 @@ export function FieldEditor({
   label,
   onSlash,
   standalone = false,
+  inlineControls = false,
   autoFocus = false,
   onBeforeInsert,
   onTextStyle,
@@ -66,6 +67,7 @@ export function FieldEditor({
   label?: string;
   onSlash?: (anchor?: HTMLElement) => void;
   standalone?: boolean;
+  inlineControls?: boolean;
   autoFocus?: boolean;
   onBeforeInsert?: () => void;
   onTextStyle?: (level: TextLevel, text?: string) => void;
@@ -266,7 +268,7 @@ export function FieldEditor({
   }, [editor]);
   const formatting = (
     <FormattingControls
-      edit={!!toolbar && layout.desktop}
+      edit={!!toolbar && layout.desktop && !inlineControls}
       compact={layout.compact}
       independent={standalone}
       textStyle={
@@ -283,7 +285,7 @@ export function FieldEditor({
         setLinkPicker(!linkPicker);
       }}
       onField={(trigger) => {
-        if (toolbar && layout.desktop && layout.onField) {
+        if (toolbar && layout.desktop && !inlineControls && layout.onField) {
           layout.onField();
           return;
         }
@@ -409,7 +411,7 @@ export function FieldEditor({
         }
       }}
     >
-      {toolbar === undefined ? (
+      {toolbar === undefined || inlineControls ? (
         <div
           data-editor-chrome
           className="inline-formatting-row"

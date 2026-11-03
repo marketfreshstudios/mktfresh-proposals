@@ -46,7 +46,7 @@ it("formats cents per amount with auto/always, including zero, negative amounts 
 it.each([
   [["dashboard"], "/"],
   [["proposals", "new"], "/proposals?new=1"],
-  [["proposals", "id", "edit"], "/proposals/id"],
+  [["proposals", "id", "edit"], "/proposals/id?action=edit"],
   [["proposals", "id", "send"], "/proposals/id?view=send"],
   [["proposals", "id", "countersign"], "/proposals/id?action=countersign"],
   [["proposals", "id", "audit"], "/proposals/id?view=evidence"],

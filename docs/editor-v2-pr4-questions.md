@@ -10,7 +10,7 @@ Part A requires keeping every input and handler. `src/components/proposal-styles
 
 Proposed resolution: keep Ink / Accent / Custom, retain the custom color input, and put Letter case and Letter spacing in a collapsed “Typography details” group after Weight / Space above / Space below, before Sample. Every existing input/handler remains; existing desktop/phone sample-width controls remain beside Sample.
 
-Please confirm this placement and the Custom label, or specify the intended alternative.
+Resolved by the owner: keep this placement and the Custom label.
 
 ## 2. Reopen: notification and client-declined scope
 
@@ -18,7 +18,7 @@ Please confirm this placement and the Custom label, or specify the intended alte
 
 Proposed resolution: Reopen covers unsigned Lost, Expired and client-declined native proposals with a sent version; it uses the workspace link-validity default for the new date, retains the token, and sends no email. Readiness must pass before making the proposal signable again. First send remains the explicit email action.
 
-Please confirm or specify the notification/scope differences.
+Resolved by the owner: use this scope and send no email.
 
 ## 3. Signing while staff work is not live
 
@@ -26,14 +26,22 @@ Part C explicitly keeps the last good version available when staff work fails re
 
 Proposed resolution: the client may sign the exact last published version; the locked editor always shows that signed version. Retain the unpublished staff work as a recoverable copy, clearly identify it to staff, and have “Duplicate as new draft” use that retained work when present, otherwise the signed version. Never discard the staff work silently or let it replace the content being signed.
 
-Please confirm or specify that duplication should instead start from the signed version (and how the retained work should be offered).
+Resolved by the owner: keep the unpublished work and use it when duplicating.
 
 ## Boundaries and delivery
 
 The existing aggregate JSON storage and append-only event/version tables appear sufficient; no migration is currently planned. If implementation proves a migration necessary, stop and ask as instructed. Hosted resources and credentials are not involved.
 
-The final PR will contain exactly three commits: A (panel tabs), B (tablet/phone), C (live editing and cleanup). This preflight record is staged in A and will be amended into the completed A commit after the answers. Pagination/break math, PagePlan, document-print.ts, PDF generation/output, Stripe and billing logic stay unchanged. Full local automated checks, the requested 1440/1024/375 screenshots, HANDOFF_PHASE2.md/DECISIONS.md updates and iOS Safari/Android Chrome keyboard-docking manual checks remain to be completed before marking ready. Do not wait for GitHub CI.
+The PR contains three commits: A (panel tabs), B (tablet/phone), C (live editing and cleanup). This preflight record is included in A, with the resolved answers and final validation recorded in C and HANDOFF_PHASE2.md. Pagination/break math, PagePlan, document-print.ts, PDF generation/output, Stripe and billing logic stay unchanged. The requested screenshots are limited to 1440/1024/375. Real iOS Safari/Android Chrome keyboard docking remains a manual check. Do not wait for GitHub CI.
 
 ## Owner answers
 
 All three proposals above were approved. Keep Custom and Typography details. Reopen covers unsigned Lost (including client-declined) and Expired, uses the workspace validity default, retains the same token, requires readiness, sends no email and logs `reopened`. A signed editor shows exactly the signed version; retain unpublished work, show “Unpublished changes were not part of the signed version”, and Duplicate starts from that work. The signed version/PDF/hash never change.
+
+## Phone section editing — resolved
+
+Jonathan chose Redesign 11 frame 1d: tapping a block opens its existing single-section editing view, with “‹ {section} … Done”, a keyboard-docked edit bar and edge insert pills. Done returns to full-sheet reading. Extra control space is confined to editing; full sheets keep their normal gaps. This avoids pills covering adjacent reading text without changing pagination, print content or the saved PagePlan.
+
+## Existing Enter fixture calibration — resolved
+
+The owner approved changing only the Enter-at-page-bottom test's fixture calibration to use the canonical Letter-width document, rather than the responsive sheet. Its assertions remain unchanged: one page before Enter, two pages on the next frame, the same heading page-start ID and no PDF call. The failure was reproduced with main's original stylesheet too. No pagination algorithm, PagePlan, PDF renderer or frozen hash was changed.

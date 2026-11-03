@@ -1,3 +1,4 @@
+import { publishedExpiry, reminderCycle } from "./editor-publication";
 import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
@@ -170,8 +171,8 @@ export class Worker {
         payload.reminder_day &&
         (!!p.archived_at ||
           !["sent", "viewed"].includes(p.status) ||
-          payload.version !== p.versions.length ||
-          (p.valid_until && Date.parse(p.valid_until) <= Date.now()))
+          payload.version !== reminderCycle(p).version ||
+          (publishedExpiry(p) && Date.parse(publishedExpiry(p)!) <= Date.now()))
       )
         return;
       const attachments = payload.file_id

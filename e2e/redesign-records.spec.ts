@@ -612,13 +612,13 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await page
     .getByRole("button", { name: `More actions for ${draft.client.company}` })
     .click();
-  const reopen = page.getByRole("button", { name: /^Mark as sent again/ });
+  const reopen = page.getByRole("button", { name: /^Reopen/ });
   await expect(reopen).toBeEnabled();
   await reopen.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect
     .poll(async () => (await repo.get(waiting.id))!.status)
-    .toBe("sent");
+    .toBe("viewed");
   if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;
   const refs = await context.newPage();
   for (const [file, frames] of [

@@ -49,7 +49,7 @@ export function usePdfPreview(proposal: Proposal) {
         const response = await fetch(`/api/proposals/${p.id}`, { signal });
         if (response.ok) {
           const saved = await response.json();
-          if (saved.status === "draft" && saved.revision > input.revision) {
+          if (!saved.signers.length && saved.revision > input.revision) {
             input.revision = saved.revision;
             res = await send();
           }

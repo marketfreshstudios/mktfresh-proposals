@@ -263,6 +263,9 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  published_state?: import("./editor-publication").PublishedState;
+  live_blockers?: string[];
+  unpublished_work?: import("./editor-publication").EditorialWork;
   pagination?: import("./page-plan").PagePlan;
   style_overrides?: StyleOverrides;
   template_style_overrides?: StyleOverrides;

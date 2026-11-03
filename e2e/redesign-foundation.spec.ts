@@ -272,7 +272,9 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   await page.goto("/settings/ai");
   await expect(page).toHaveURL(/\/studio\/connections\?view=assistants$/);
   await page.goto(`/proposals/${draft.id}/edit`);
-  await expect(page).toHaveURL(new RegExp(`/proposals/${draft.id}$`));
+  await expect(page).toHaveURL(
+    new RegExp(`/proposals/${draft.id}\\?action=edit$`),
+  );
   // Loading is shaped content and announces itself once; no spinner or external font request.
   delayAuth = true;
   await page.goto("/");

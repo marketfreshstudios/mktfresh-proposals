@@ -7,13 +7,7 @@ for (const width of [1440, 375])
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`/proposals/${f.draft.id}`);
     if (width === 375) {
-      await page
-        .locator(".phone-section-list")
-        .getByRole("button", { name: /First section/ })
-        .click();
-      await page
-        .getByRole("button", { name: "Full document", exact: true })
-        .click();
+      await expect(page.locator(".editor-paper")).toBeVisible();
     }
     const paper = page.locator(".editor-paper"),
       sheets = paper.locator(".page-sheet");

@@ -487,25 +487,33 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await expect(page.locator(".quote-workspace")).toBeVisible();
       await context.setOffline(true);
       if (width === 375)
-        await page.locator(".phone-section-list button").first().click();
+        await expect(page.locator(".editor-paper")).toBeVisible();
       await page
         .getByLabel("Proposal title", { exact: true })
         .fill(`My offline title ${width} ${theme}`);
-      await expect(page.locator(".editor-save-status")).toHaveText(
+      await expect(
+        page.locator(
+          width < 700
+            ? ".phone-header-title [role=status]"
+            : ".editor-save-status",
+        ),
+      ).toHaveText(
         width < 700
-          ? "Offline — changes kept on this device"
+          ? "Offline · saved on this device"
           : width < 960
             ? "Offline"
             : "Offline · saved on this device",
       );
       await capture("editor-offline", "8e", width, theme);
       await context.setOffline(false);
-      await expect(page.locator(".editor-save-status")).toHaveText(
-        width < 700
-          ? "All changes saved"
-          : width < 960
-            ? "Saved"
-            : "Draft · Saved",
+      await expect(
+        page.locator(
+          width < 700
+            ? ".phone-header-title [role=status]"
+            : ".editor-save-status",
+        ),
+      ).toHaveText(
+        width < 700 ? "Draft · Saved" : width < 960 ? "Saved" : "Draft · Saved",
       );
       rejectSave = true;
       await page
@@ -527,12 +535,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await repo.save(aiDraft, aiDraft.revision);
       await page.goto(`/proposals/${editing.id}`);
       await expect(
-        page
-          .getByRole("complementary", {
-            name: "AI review progress",
-            exact: true,
-          })
-          .first(),
+        page.getByRole("button", { name: /\d+ to review/, exact: true }),
       ).toBeVisible();
       await capture("ai-draft-review", "8d", width, theme);
       scenario = "catalog-error";

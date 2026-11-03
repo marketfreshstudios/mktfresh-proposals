@@ -315,9 +315,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await expect.poll(() => active.title).toBe(title);
   // Tokens and actual hit testing both enforce scrolling controls under pinned chrome.
   await page.setViewportSize({ width: 375, height: 800 });
-  await page
-    .getByRole("button", { name: "Full document", exact: true })
-    .click();
+  await expect(page.locator(".editor-paper")).toBeVisible();
   await text.click();
   expect(await bar.locator(".formatting-label").first().isVisible()).toBe(
     false,
@@ -328,7 +326,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
         ":is(.editor-edit-bar,.phone-formatting-bar)",
       )!,
       control = document.querySelector<HTMLElement>(
-        ".draft-block :is(.editor-edit-bar,.phone-block-actions)",
+        ".draft-block .editor-gutter",
       )!;
     return [control, bar, header].map((el) =>
       Number(getComputedStyle(el).zIndex),
@@ -350,36 +348,40 @@ test("editor history, layered chrome and searchable anchored insertion", async (
       );
     }),
   ).toBe(true);
+  await page
+    .locator(".editor-phone-header")
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
+  await page.setViewportSize({ width: 1440, height: 800 });
   const last = page.locator(".draft-block").last();
-  await last.evaluate((el) =>
-    (el as HTMLElement).focus({ preventScroll: true }),
-  );
+  await last.evaluate((el) => {
+    el.scrollIntoView({ block: "center" });
+    (el as HTMLElement).focus({ preventScroll: true });
+  });
   const plus = last.getByRole("button", {
     name: /^Add (a )?block below$/,
     exact: true,
   });
-  await plus.evaluate((el) => {
-    el.scrollIntoView({ block: "end" });
-    (
-      document.querySelector<HTMLElement>(".editor-document-region") ?? window
-    ).scrollBy(0, 80);
-  });
   await plus.click();
-  await expect(menu).toHaveAttribute("data-placement", "above");
-  expect(
-    (await menu.boundingBox())!.y + (await menu.boundingBox())!.height,
-  ).toBeLessThanOrEqual((await plus.boundingBox())!.y);
-  // A server page update can move the anchor without a scroll/resize event.
-  // The menu follows it and constrains its own scroll area on the chosen side.
-  await plus.evaluate((el) => (el.style.translate = "0 -40px"));
+  // The prototype anchors an edge menu below its block, rather than flipping.
+  await expect(menu).toHaveAttribute("data-placement", "below");
   await expect
     .poll(async () => {
       const m = (await menu.boundingBox())!,
-        a = (await plus.boundingBox())!;
-      return a.y - (m.y + m.height);
+        b = (await last.boundingBox())!;
+      return m.y - (b.y + b.height);
     })
-    .toBeCloseTo(6, 0);
-  await plus.evaluate((el) => (el.style.translate = ""));
+    .toBeCloseTo(18, 0);
+  // Layout changes move the block, and the anchored menu follows it.
+  await last.evaluate((el) => (el.style.translate = "0 -40px"));
+  await expect
+    .poll(async () => {
+      const m = (await menu.boundingBox())!,
+        b = (await last.boundingBox())!;
+      return m.y - (b.y + b.height);
+    })
+    .toBeCloseTo(18, 0);
+  await last.evaluate((el) => (el.style.translate = ""));
   await page.keyboard.press("Escape");
   await expect(menu).not.toBeVisible();
   // Toggles/radios have no native text undo; they must still reach document history.

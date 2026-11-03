@@ -1,4 +1,5 @@
 "use client";
+import { contentSections } from "../lib/ai-review";
 import { EditorHeader, PanelChevron } from "./editor-header";
 import { TemplateHistoryControls } from "./editor/template-history-controls";
 import { printView } from "../lib/print-view";
@@ -38,7 +39,6 @@ import {
 import { BlockMenu } from "./block-menu";
 import {
   BlockScope,
-  PhoneFormattingBar,
   EditorControlConfig,
   useBlockFeedback,
   useBlockToolbar,
@@ -1261,6 +1261,20 @@ function TemplatesStudioContent({
     );
   };
   const templatePanels = useEditorPanels(data.user.actor, templatePaper, true);
+  const phoneSection = templatePanels.phone
+    ? contentSections(content).find((s) =>
+        s.indices.some(
+          (n) =>
+            `template-${content[n].id ?? n}` === selection.selected ||
+            content[n].clauses?.some(
+              (c) => `template-clause-${c.id}` === selection.selected,
+            ),
+        ),
+      )
+    : undefined;
+  useEffect(() => {
+    templatePaper.current?.dispatchEvent(new Event("pagination-layout-change"));
+  }, [templatePanels.phone, selection.selected]);
   const [templateListOpen, setTemplateListOpen] = useState(false),
     [templateToolsOpen, setTemplateToolsOpen] = useState(false);
   const toggleTemplateLeft = () => {
@@ -1461,13 +1475,11 @@ function TemplatesStudioContent({
     });
     patch(next);
     setInsertAt(null);
-    setIndex(templatePanels.phone ? at : null);
-    if (!templatePanels.phone) {
-      focusInserted(
-        `template-${next[at].id}`,
-        ["paragraph", "heading"].includes(block.type),
-      );
-    }
+    setIndex(null);
+    focusInserted(
+      `template-${next[at].id}`,
+      ["paragraph", "heading"].includes(block.type),
+    );
   }
   const specimen =
     draft && data.settings
@@ -1637,6 +1649,7 @@ function TemplatesStudioContent({
     <div
       ref={templatePanels.container}
       className="studio-template-layout"
+      data-template-phone-editing={!!phoneSection}
       style={{ gridTemplateColumns: templatePanels.columns }}
     >
       <EditorControlConfig
@@ -1704,6 +1717,17 @@ function TemplatesStudioContent({
           }}
         >
           <TemplateHistoryControls />
+          {phoneSection && (
+            <Button
+              aria-label="Done editing template section"
+              onClick={() => {
+                selection.clear();
+                (document.activeElement as HTMLElement)?.blur();
+              }}
+            >
+              Done
+            </Button>
+          )}
           <Button
             onClick={() => {
               setIndex(null);
@@ -1814,7 +1838,6 @@ function TemplatesStudioContent({
                 Active template
               </label>
             )}
-            {!(mobile && inspector) && <PhoneFormattingBar />}
             <div className="template-page-viewport">
               <div
                 style={{
@@ -1857,6 +1880,7 @@ function TemplatesStudioContent({
                   >
                     {mode === "templates" && (
                       <PagedPaper
+                        enabled={!phoneSection}
                         paper={templatePaper}
                         styles={templateStyles}
                         content={content}
@@ -1959,7 +1983,7 @@ function TemplatesStudioContent({
                               ),
                             )
                           }
-                          className={`studio-block-card ${b.type === "page_break" ? "sheet-break-marker" : ""}`}
+                          className={`studio-block-card ${phoneSection && !phoneSection.indices.includes(n) ? "phone-section-hidden" : ""} ${b.type === "page_break" ? "sheet-break-marker" : ""}`}
                           insert={
                             mode === "templates"
                               ? (edge, anchor) => {
@@ -2567,7 +2591,6 @@ function TemplatesStudioContent({
             setTemplateToolsOpen(false);
           }}
         >
-          <PhoneFormattingBar />
           {templateTools}
         </Sheet>
       )}
