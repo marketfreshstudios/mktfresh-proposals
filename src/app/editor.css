@@ -6139,3 +6139,21 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     font-size: 12px;
   }
 }
+
+/* A section handle occupies its own gutter and centres on the first title line. */
+@media (min-width: 700px) {
+  nav.sections-nav .outline-page > .quote-sortable > .drag-handle {
+    top: 0;
+    height: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+  nav.sections-nav .outline-page > .quote-sortable > .drag-handle > span {
+    display: block;
+    line-height: 18px;
+  }
+}

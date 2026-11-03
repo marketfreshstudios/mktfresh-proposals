@@ -140,7 +140,9 @@ export function Reorder({
         ? ids.filter(
             (id) => id.startsWith("page:") && !id.startsWith("page:computed-"),
           )
-        : ids;
+        : pages && String(active.id).startsWith("section:")
+          ? ids.filter((id) => !id.startsWith("page:computed-"))
+          : ids;
     const index = targets.indexOf(String(over?.id ?? active.id));
     const target = targets[index + (event.code === "ArrowDown" ? 1 : -1)];
     const rect = target && droppableRects.get(target);

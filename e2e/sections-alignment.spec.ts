@@ -22,7 +22,12 @@ for (const width of [1440, 1024, 768]) {
         },
         { id: "detail", type: "heading", level: 2, text: "Details" },
         { id: "subdetail", type: "heading", level: 3, text: "More details" },
-        { id: "scope", type: "heading", level: 1, text: "What we’ll do" },
+        {
+          id: "scope",
+          type: "heading",
+          level: 1,
+          text: "Our recommendation: Shop design and launch strategy",
+        },
         {
           id: "scope-text",
           type: "paragraph",
@@ -81,7 +86,7 @@ for (const width of [1440, 1024, 768]) {
     for (const name of [
       "Cover",
       "Overview",
-      "What we’ll do",
+      "Our recommendation: Shop design and launch strategy",
       "Timeline",
       "Your investment",
       "Statement of Work & Contract",
@@ -139,9 +144,23 @@ for (const width of [1440, 1024, 768]) {
             right: button.getBoundingClientRect().right,
             text: el.querySelector(".section-label")!.getBoundingClientRect()
               .left,
+            delta: (() => {
+              const label = el
+                .querySelector(".section-label")!
+                .getBoundingClientRect();
+              const glyph = button
+                .querySelector("span")!
+                .getBoundingClientRect();
+              return Math.abs(
+                (glyph.top + glyph.bottom - label.top - label.bottom) / 2,
+              );
+            })(),
           };
         });
-        if (handle) expect(handle.right).toBeLessThanOrEqual(handle.text - 4);
+        if (handle) {
+          expect(handle.right).toBeLessThanOrEqual(handle.text - 4);
+          expect(handle.delta).toBeLessThanOrEqual(1);
+        }
       }
     }
   });
