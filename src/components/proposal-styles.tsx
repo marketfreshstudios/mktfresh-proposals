@@ -85,22 +85,26 @@ export function ProposalStyles({
   );
   return (
     <section className="proposal-styles stack" aria-label="Proposal styles">
-      <label className="field">
-        Density
-        <select
-          value={styles.layout!.density}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              density: e.target.value as "standard" | "comfortable",
-            })
-          }
-        >
-          <option value="standard">Standard</option>
-          <option value="comfortable">Comfortable</option>
-        </select>
-      </label>
-      <fieldset className="style-fields">
+      <p className="muted style-scope-note">
+        Changes apply to this proposal only. Workspace defaults live in Studio →
+        Workspace.
+      </p>
+      <fieldset className="style-density">
+        <legend>Density</legend>
+        <div role="group" aria-label="Density choices">
+          {(["standard", "comfortable"] as const).map((density) => (
+            <button
+              key={density}
+              type="button"
+              aria-pressed={styles.layout!.density === density}
+              onClick={() => onChange({ ...value, density })}
+            >
+              {density === "standard" ? "Standard" : "Comfortable"}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="style-fields style-margin-grid">
         <legend>Page margins (inches)</legend>
         {(["top", "right", "bottom", "left"] as const).map((side) => (
           <StyleNumber
@@ -117,6 +121,7 @@ export function ProposalStyles({
           />
         ))}
       </fieldset>
+      <hr />
       <label className="field">
         Text level
         <select
@@ -130,7 +135,7 @@ export function ProposalStyles({
           ))}
         </select>
       </label>
-      <div className="style-fields">
+      <div className="style-font-grid">
         <label className="field">
           Font
           <select
@@ -171,44 +176,78 @@ export function ProposalStyles({
           </select>
         </label>
         {field("Size (px)", "size", 8, 96)}
-        {field("Weight", "weight", 100, 900)}
+      </div>
+      <fieldset className="style-colors">
+        <legend>Color</legend>
+        <div role="group" aria-label="Color choices">
+          {(["ink", "accent", "custom"] as const).map((colour) => (
+            <button
+              key={colour}
+              type="button"
+              aria-pressed={
+                colour === "custom"
+                  ? selected.colour.startsWith("#")
+                  : selected.colour === colour
+              }
+              onClick={() =>
+                patch({
+                  colour:
+                    colour === "custom"
+                      ? selected.colour.startsWith("#")
+                        ? selected.colour
+                        : "#25241f"
+                      : colour,
+                })
+              }
+            >
+              <span
+                className="style-swatch"
+                style={{
+                  background: styleColour(
+                    colour === "custom"
+                      ? selected.colour.startsWith("#")
+                        ? selected.colour
+                        : "#25241f"
+                      : colour,
+                    settings?.accent_colour,
+                  ),
+                }}
+              />
+              {colour === "ink"
+                ? "Ink"
+                : colour === "accent"
+                  ? "Accent"
+                  : "Custom"}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      {selected.colour.startsWith("#") && (
         <label className="field">
-          Colour
-          <select
-            value={selected.colour.startsWith("#") ? "custom" : selected.colour}
-            onChange={(e) =>
-              patch({
-                colour:
-                  e.target.value === "custom"
-                    ? "#25241f"
-                    : (e.target.value as "ink" | "accent"),
-              })
-            }
-          >
-            <option value="ink">Ink</option>
-            <option value="accent">Accent</option>
-            <option value="custom">Custom</option>
-          </select>
+          Custom color
+          <input
+            type="color"
+            value={selected.colour}
+            onChange={(e) => patch({ colour: e.target.value })}
+          />
         </label>
-        {selected.colour.startsWith("#") && (
-          <label className="field">
-            Custom colour
-            <input
-              type="color"
-              value={selected.colour}
-              onChange={(e) => patch({ colour: e.target.value })}
-            />
-          </label>
-        )}
-        <p
-          className={contrast < 4.5 ? "warning" : "muted"}
-          role={contrast < 4.5 ? "alert" : undefined}
-        >
-          {contrast.toFixed(2)}:1 against white paper
-          {contrast < 4.5
-            ? " — choose at least 4.5:1 to save"
-            : " · Passes contrast"}
-        </p>
+      )}
+      <p
+        className={contrast < 4.5 ? "warning" : "muted"}
+        role={contrast < 4.5 ? "alert" : undefined}
+      >
+        {contrast.toFixed(2)}:1 against white paper
+        {contrast < 4.5
+          ? " — choose at least 4.5:1 to save"
+          : " · Passes contrast"}
+      </p>
+      <div className="style-spacing-grid">
+        {field("Weight", "weight", 100, 900)}
+        {field("Space above (px)", "space_above", 0, 160)}
+        {field("Space below (px)", "space_below", 0, 160)}
+      </div>
+      <details className="style-typography-details">
+        <summary>Typography details</summary>
         <label className="field">
           Letter case
           <select
@@ -222,19 +261,18 @@ export function ProposalStyles({
           </select>
         </label>
         {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
-        {field("Space above (px)", "space_above", 0, 160)}
-        {field("Space below (px)", "space_below", 0, 160)}
-      </div>
-      <Button
-        type="button"
-        onClick={() => {
-          if (confirm(`${resetLabel}?`)) (onReset ?? (() => onChange({})))();
-        }}
-      >
-        {resetLabel}
-      </Button>
+      </details>
+      <hr />
       <div className="style-preview-heading">
-        <strong>Sample page</strong>
+        <strong>Sample</strong>
+        <Button
+          type="button"
+          onClick={() => {
+            if (confirm(`${resetLabel}?`)) (onReset ?? (() => onChange({})))();
+          }}
+        >
+          {resetLabel}
+        </Button>
         <div role="group" aria-label="Sample page width">
           <button
             type="button"

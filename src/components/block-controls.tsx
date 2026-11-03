@@ -33,6 +33,7 @@ const Formatting = createContext<
   | {
       target: HTMLElement | null;
       owner: string | null;
+      hasTextTarget: boolean;
       textStyle?: TextStyleControl;
       activate: (id: string | null) => void;
       setTarget: (el: HTMLElement | null) => void;
@@ -301,6 +302,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
               target,
               setTarget,
               owner,
+              hasTextTarget: !!lastText.current || !!textStyle,
               textStyle,
               activate: (id) => {
                 activate(id);
@@ -388,7 +390,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                 typeof document !== "undefined" &&
                 createPortal(
                   <ToastSurface>
-                    Click into the text where you want the field
+                    Click into a paragraph first, then choose a field
                   </ToastSurface>,
                   document.body,
                 )}
