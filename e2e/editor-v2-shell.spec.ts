@@ -39,7 +39,7 @@ async function ready(page: Page, proposal: string, width: number) {
   );
 }
 test.beforeEach(({ page }) => page.setDefaultTimeout(10000));
-for (const width of [1440, 1180, 1024, 924, 768])
+for (const width of [1440, 1180, 1024, 960, 959, 924, 768, 700])
   test(`v2 shell fits header and selected document with tools open at ${width}`, async ({
     page,
   }) => {
@@ -82,7 +82,62 @@ for (const width of [1440, 1180, 1024, 924, 768])
     expect(bounds.title).toHaveLength(200);
     expect(bounds.label).toBe(bounds.title);
     expect(bounds.sibling).toBe("editor-save-status");
+    const header = page.locator(".editor-v2-header");
+    await expect(
+      header.getByRole("button", { name: "Undo", exact: true }),
+    ).toHaveCount(width < 960 ? 0 : 1);
+    await expect(
+      header.getByRole("button", { name: "Redo", exact: true }),
+    ).toHaveCount(width < 960 ? 0 : 1);
+    await expect(header.locator(".editor-save-status")).toHaveText(
+      width < 960 ? "Saved" : "Draft · Saved",
+    );
     await expect(page.locator(".sidebar")).toBeHidden();
+  });
+for (const width of [768, 924])
+  test(`tablet header keeps keyboard undo/redo and AI navigation at ${width}`, async ({
+    page,
+  }) => {
+    const content = aiContent(),
+      f = await editorFixture(page, false, { content });
+    await ready(page, f.draft.id, width);
+    const header = page.locator(".editor-v2-header"),
+      input = page.locator(`[data-block-id="block-${content[1].id}"] .tiptap`),
+      original = content[1].text!,
+      changed = "A tablet edit retained by the existing document history.";
+    await input.fill(changed);
+    await expect(input).toHaveText(changed);
+    // Header focus verifies document shortcuts, independently of a text block's
+    // selection/history or any visible Undo/Redo control.
+    await header
+      .getByRole("button", { name: "Back to proposals", exact: true })
+      .focus();
+    for (const modifier of ["Control", "Meta"]) {
+      await page.keyboard.press(`${modifier}+z`);
+      await expect(input).toHaveText(original);
+      await page.keyboard.press(`${modifier}+Shift+z`);
+      await expect(input).toHaveText(changed);
+    }
+    await expect(
+      header.getByRole("button", { name: "Undo", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      header.getByRole("button", { name: "Redo", exact: true }),
+    ).toHaveCount(0);
+    const pill = header.getByRole("button", {
+      name: "3 to review",
+      exact: true,
+    });
+    await expect(pill).toHaveText("3 to review");
+    await expect(pill.locator("svg")).toHaveCount(0);
+    await pill.click();
+    await expect(
+      page.locator(`[data-block-id="block-${content[1].id}"]`),
+    ).toHaveAttribute("data-selected", "true");
+    await pill.click();
+    await expect(
+      page.locator(`[data-block-id="block-${content[5].id}"]`),
+    ).toHaveAttribute("data-selected", "true");
   });
 test("exact breakpoint defaults, mutually exclusive narrow panels, shortcuts and stored choices", async ({
   page,

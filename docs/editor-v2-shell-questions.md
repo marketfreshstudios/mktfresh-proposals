@@ -10,14 +10,12 @@ Jonathan confirmed that PR 1 keeps the current phone header and editor layout be
 
 Jonathan confirmed that a revision conflict is an exception to “Never block typing”. The stale bar offers Reload; document text, block actions and quote fields are read-only until reload. The existing reloadConflict/recovery callbacks remain unchanged. Reload retains the local version as a suggestion; Keep reapplies it through normal revision-checked saving. Saving itself never disables typing.
 
-## Pending: new header between 700px and approximately 840px
+## Confirmed: Redesign 11 tablet header at 700–959px
 
-With a 200-character title (minimum 120px), the AI pill and the exact requested controls/gaps, the new 56px header needs approximately 840px even with the compact PDF/Preview labels. At 768px the header scroll width is 840px and Review & send extends outside the viewport. The requested 924/1024/1180/1440px cases fit.
+Jonathan selected Redesign 11 frame 1a (`design/editor-v2/Redesign 11 - Editor v2 Tablet and Phone.dc.html`), inspected in the browser. At 700–959px, keep the 56px single row with its 8px gaps and 10px outer padding: Proposals, divider, ellipsized title (minimum 120px), dot and short status, spacer, text-only AI pill, PDF, Preview, Review & send.
 
-The prompt requires the new header at 700px and above and Review & send visible at every width. These cannot both be met with the fixed control sizes and single-row order. Per “If the spec is silent, or it contradicts the prototype or this prompt, stop and ask in the PR. Don't guess”, a decision is pending on [PR #51](https://github.com/marketfreshstudios/mktfresh-proposals/pull/51#issuecomment-6594692239):
+The visible status drops the Draft prefix: Saved, Saving…, Offline, Unsaved, Recovered, Reload or Retry (Locked for the header's locked prop). The full status and last-saved time remain in its tooltip, with the full action label on Reload/Retry. Undo/Redo buttons are absent at these widths; the unchanged history controller and keyboard shortcuts remain available. Clicking the AI pill still calls showReview().
 
-1. Keep the current header until 924px.
-2. Put secondary actions in an overflow menu at narrow tablet widths.
-3. Permit a two-row header at those widths.
+At 960px and above, retain PR 1's existing desktop header with Undo/Redo. Below 700px, retain the existing phone header and editor layout until PR 4. No overflow menu or two-row fallback is introduced.
 
-No exception has been selected without the owner's answer. The extra 768px geometry regression remains active to expose the unresolved fit. The PR stays a draft until this decision and its test are resolved.
+Playwright verifies fit at 700/768/924/959px and the desktop boundary at 960px, using a 200-character title and AI sections. At 768 and 924px it also verifies absent history buttons, Control and Command undo/redo, and AI navigation. All owner questions are resolved; mark PR #51 ready after local validation passes, without waiting for CI or merging.

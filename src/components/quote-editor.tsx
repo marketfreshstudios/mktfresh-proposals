@@ -2313,6 +2313,7 @@ function QuoteEditorContent({
         }}
         className="quote-editor-top"
         phone={panels.phone}
+        tablet={panels.viewportWidth >= 700 && panels.viewportWidth < 960}
         compact={panels.viewportWidth < 1180}
         locked={false}
         published="draft"

@@ -491,19 +491,22 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await page
         .getByLabel("Proposal title", { exact: true })
         .fill(`My offline title ${width} ${theme}`);
-      await expect(
-        page.getByText(
-          /Your changes are kept on this device\.|Offline · saved on this device/,
-          {
-            exact: false,
-          },
-        ),
-      ).toBeVisible();
+      await expect(page.locator(".editor-save-status")).toHaveText(
+        width < 700
+          ? "Offline — changes kept on this device"
+          : width < 960
+            ? "Offline"
+            : "Offline · saved on this device",
+      );
       await capture("editor-offline", "8e", width, theme);
       await context.setOffline(false);
-      await expect(
-        page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
-      ).toBeVisible();
+      await expect(page.locator(".editor-save-status")).toHaveText(
+        width < 700
+          ? "All changes saved"
+          : width < 960
+            ? "Saved"
+            : "Draft · Saved",
+      );
       rejectSave = true;
       await page
         .getByLabel("Proposal title", { exact: true })

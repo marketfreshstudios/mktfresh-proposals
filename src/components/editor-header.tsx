@@ -56,6 +56,7 @@ export function EditorHeader({
   className = "",
   beforeLeave,
   phone = false,
+  tablet = false,
   compact = false,
   locked = false,
   published = "draft",
@@ -83,6 +84,7 @@ export function EditorHeader({
   className?: string;
   beforeLeave?: () => void;
   phone?: boolean;
+  tablet?: boolean;
   compact?: boolean;
   locked?: boolean;
   published?: "draft" | "live";
@@ -167,9 +169,25 @@ export function EditorHeader({
                 : dirty
                   ? "Unsaved changes"
                   : `${published === "live" ? "Live" : "Draft"} · Saved`;
+    const shortText = locked
+      ? "Locked"
+      : stale
+        ? "Reload"
+        : offline
+          ? "Offline"
+          : pending
+            ? "Saving…"
+            : error
+              ? "Retry"
+              : recovered
+                ? "Recovered"
+                : dirty
+                  ? "Unsaved"
+                  : "Saved";
     return (
       <header
         className={`editor-document-header editor-v2-header ${className}`}
+        data-tablet={tablet || undefined}
       >
         <button
           type="button"
@@ -188,39 +206,41 @@ export function EditorHeader({
         <div
           className="editor-save-status"
           data-state={state}
-          title={tooltip}
+          title={tablet ? `${text} · ${tooltip}` : tooltip}
           role="status"
         >
           <span className="editor-status-dot" aria-hidden="true" />
           {stale || (error && !offline && !pending) ? (
-            <button type="button" onClick={retry}>
-              {text}
+            <button type="button" onClick={retry} aria-label={text}>
+              {tablet ? shortText : text}
             </button>
           ) : (
-            <span>{text}</span>
+            <span>{tablet ? shortText : text}</span>
           )}
         </div>
         <span className="editor-header-spacer" />
-        <div className="editor-header-history">
-          <button
-            type="button"
-            aria-label="Undo"
-            title="Undo (⌘Z / Ctrl+Z)"
-            disabled={locked || stale || !history.canUndo}
-            onClick={() => history.controller?.undo()}
-          >
-            <EditorIcon name="undo" />
-          </button>
-          <button
-            type="button"
-            aria-label="Redo"
-            title="Redo (⇧⌘Z / Ctrl+Shift+Z)"
-            disabled={locked || stale || !history.canRedo}
-            onClick={() => history.controller?.redo()}
-          >
-            <EditorIcon name="redo" />
-          </button>
-        </div>
+        {!tablet && (
+          <div className="editor-header-history">
+            <button
+              type="button"
+              aria-label="Undo"
+              title="Undo (⌘Z / Ctrl+Z)"
+              disabled={locked || stale || !history.canUndo}
+              onClick={() => history.controller?.undo()}
+            >
+              <EditorIcon name="undo" />
+            </button>
+            <button
+              type="button"
+              aria-label="Redo"
+              title="Redo (⇧⌘Z / Ctrl+Shift+Z)"
+              disabled={locked || stale || !history.canRedo}
+              onClick={() => history.controller?.redo()}
+            >
+              <EditorIcon name="redo" />
+            </button>
+          </div>
+        )}
         <button
           type="button"
           className="editor-header-pill editor-header-pdf"
@@ -229,7 +249,7 @@ export function EditorHeader({
           disabled={saving || stale}
           onClick={onPreviewPdf}
         >
-          {compact ? "PDF" : "Preview PDF"}
+          {tablet || compact ? "PDF" : "Preview PDF"}
         </button>
         <button
           type="button"
@@ -239,7 +259,7 @@ export function EditorHeader({
           disabled={saving || stale}
           onClick={onPreviewClient}
         >
-          {compact ? "Preview" : "Preview as client"}
+          {tablet || compact ? "Preview" : "Preview as client"}
         </button>
         <button
           type="button"
@@ -255,13 +275,13 @@ export function EditorHeader({
             <button
               type="button"
               className="editor-ai-pill"
-              aria-label={`${aiPending} to review · Next`}
+              aria-label={`${aiPending} to review${tablet ? "" : " · Next"}`}
               title="Go to the next unreviewed AI section"
               disabled={locked || stale}
               onClick={onNextAi}
             >
-              <Icon name="ai" />
-              {aiPending} to review{!compact && " · Next ›"}
+              {!tablet && <Icon name="ai" />}
+              {aiPending} to review{!tablet && !compact && " · Next ›"}
             </button>
           ) : (
             <span className="editor-ai-pill editor-ai-done">
