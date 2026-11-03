@@ -69,3 +69,38 @@ it("totals always include zero one-time/monthly and only include yearly when pre
     ),
   ).toContain("<span>Yearly</span>");
 });
+it("subline fallback labels and single-price projection agree, and removing never reaches zero", async () => {
+  const { sublineLabel, ambiguousSublines, removeSubline } =
+    await import("../src/lib/subline-label");
+  for (const [interval, label] of [
+    ["one_time", "Setup fee"],
+    ["month", "Subscription"],
+    ["year", "Annual subscription"],
+  ] as const) {
+    expect(sublineLabel({ interval, label: "" })).toBe(label);
+    const q = {
+      ...item,
+      sublines: [
+        { ...item.sublines[0], interval },
+        { ...item.sublines[0], id: crypto.randomUUID(), interval },
+      ],
+    };
+    expect(documentQuote([q], "USD")).toContain(`<span>${label}</span>`);
+    expect(ambiguousSublines(q)).toBe(true);
+    expect(
+      ambiguousSublines({
+        ...q,
+        sublines: [{ ...q.sublines[0], label: "A" }, q.sublines[1]],
+      }),
+    ).toBe(false);
+  }
+  const single = {
+    ...item,
+    sublines: [{ ...item.sublines[0], label: "Stored setup label" }],
+  };
+  expect(documentQuote([single], "USD")).not.toContain("Stored setup label");
+  expect(documentQuote([single], "USD")).toContain(
+    '<strong class="amount">$100</strong>',
+  );
+  expect(removeSubline(single, single.sublines[0].id)).toHaveLength(1);
+});

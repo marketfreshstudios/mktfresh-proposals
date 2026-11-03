@@ -6157,33 +6157,6 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     line-height: 18px;
   }
 }
-/* Authoring-only drag chrome uses the title/price gap, leaving prototype rows intact. */
-.document-quote .document-sortable-card > .drag-handle {
-  left: auto;
-  right: calc(var(--document-price-width, 0px) + 16px);
-  top: 12px;
-  width: 20px;
-  min-width: 20px;
-  height: 22px;
-  min-height: 22px;
-}
-.document-quote
-  .document-sortable-card
-  > .flow-quote-line
-  .flow-line-title
-  > strong:first-child {
-  padding-right: 40px;
-}
-.document-quote .document-sortable-group > .drag-handle {
-  left: auto;
-  right: 12px;
-  top: 8px;
-  width: 20px;
-  min-width: 20px;
-  height: 22px;
-  min-height: 22px;
-}
-
 .cover-logo {
   position: relative;
 }
@@ -6263,6 +6236,62 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   right: auto;
   bottom: auto;
   margin: 0;
+}
+.quote-row-body .subline {
+  position: relative;
+}
+.quote-row-body .subline:has(.subline-remove) {
+  padding-right: 36px;
+}
+.quote-row-body .subline-remove {
+  position: absolute;
+  right: 0;
+  top: 10px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  border-radius: 8px;
+  font: 500 20px/1 var(--font-ui);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.quote-row-body .subline-remove:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.quote-panel .subline-warning {
+  margin: 4px 0 10px;
+  color: var(--warning);
+  font: 400 12px/1.5 var(--font-ui);
+}
+.quote-panel .subline-label > span {
+  font-size: 11px;
+  line-height: 1.3;
+}
+/* Authoring-only drag chrome uses the title/price gap, leaving prototype rows intact. */
+.document-quote .document-sortable-card > .drag-handle {
+  left: auto;
+  right: calc(var(--document-price-width, 0px) + 16px);
+  top: 12px;
+  width: 20px;
+  min-width: 20px;
+  height: 22px;
+  min-height: 22px;
+}
+
+.document-quote .document-sortable-group > .drag-handle {
+  left: auto;
+  right: 12px;
+  top: 8px;
+  width: 20px;
+  min-width: 20px;
+  height: 22px;
+  min-height: 22px;
 }
 .cover-logo-controls > button,
 .cover-logo-menu button,

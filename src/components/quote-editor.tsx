@@ -1,4 +1,9 @@
 "use client";
+import {
+  sublineLabel,
+  ambiguousSublines,
+  removeSubline,
+} from "../lib/subline-label";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
 import { DocumentTotals } from "./document-totals";
@@ -1027,14 +1032,27 @@ function QuoteEditorContent({
             />
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
+                {i.sublines.length > 1 && (
+                  <button
+                    type="button"
+                    className="subline-remove"
+                    title={`Remove sub-line ${sublineLabel(s)}`}
+                    aria-label={`Remove sub-line ${sublineLabel(s)}`}
+                    onClick={() =>
+                      updateItem(i.id, { sublines: removeSubline(i, s.id) })
+                    }
+                  >
+                    ×
+                  </button>
+                )}
                 <div className="subline-grid">
                   <div className="subline-label">
                     {i.sublines.length === 1 ? (
-                      <span>Amount</span>
+                      <span>Shown as the item price</span>
                     ) : (
                       <input
                         aria-label={`Sub-line label for ${i.name}`}
-                        placeholder="Label"
+                        placeholder={sublineLabel({ ...s, label: "" })}
                         value={s.label ?? ""}
                         onChange={(e) =>
                           updateItem(i.id, {
@@ -1168,19 +1186,6 @@ function QuoteEditorContent({
                   className="quote-mapping-details"
                 >
                   <summary>Billing mapping</summary>
-                  {i.sublines.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
-                      onClick={() =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.filter((v) => v.id !== s.id),
-                        })
-                      }
-                    >
-                      Remove sub-line
-                    </Button>
-                  )}
                   <Field label="Stripe lookup key">
                     <input
                       value={s.stripe_lookup_key ?? ""}
@@ -1231,6 +1236,11 @@ function QuoteEditorContent({
                 {i.min_term_months && (
                   <>{i.min_term_months}-month minimum commitment.</>
                 )}
+              </p>
+            )}
+            {ambiguousSublines(i) && (
+              <p className="subline-warning">
+                Name these sub-lines so the client can tell them apart.
               </p>
             )}
             <div className="item-options">

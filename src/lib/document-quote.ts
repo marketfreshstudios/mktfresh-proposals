@@ -1,3 +1,4 @@
+import { sublineLabel } from "./subline-label";
 import type { Quote } from "./model";
 import { orderedItems, selected, quoteSublines } from "./quote-model";
 import { formatMoney, intervalSuffix } from "./money";
@@ -26,7 +27,7 @@ export function documentQuote(
       : `<span class="quote-required" role="img" aria-label="Required" title="Required"></span>`;
     const price = (s: (typeof i.sublines)[number]) =>
       `${fmt(s.amount * s.qty)}${intervalSuffix(s.interval)}`;
-    return `<div class="flow-quote-line print-pricing-card${active ? " selected" : ""}">${control}<div class="quote-item-body"><div class="flow-line-title"><strong>${esc(i.name)}</strong>${i.sublines.length === 1 ? `<strong class="amount">${price(i.sublines[0])}</strong>` : ""}</div>${i.description ? `<p class="quote-description">${esc(i.description)}</p>` : ""}${i.sublines.length > 1 ? i.sublines.map((s) => `<div class="flow-subline"><span>${esc(s.label || (s.interval === "one_time" ? "Setup fee" : s.interval === "month" ? "Subscription" : "Annual subscription"))}${s.qty !== 1 ? ` × ${s.qty}` : ""}</span><strong>${price(s)}</strong></div>`).join("") : ""}${i.schedule ? `<p class="flow-terms">${fmt(i.sublines.find((s) => s.interval !== "one_time")?.amount ?? 0)}/${i.sublines.some((s) => s.interval === "year") ? "year" : "month"} for ${i.schedule.after_paid_invoices} paid invoices, then ${fmt(i.schedule.then.amount)}/${i.sublines.some((s) => s.interval === "year") ? "year" : "month"}.</p>` : ""}${typeof i.plan_terms?.client_copy === "string" && i.plan_terms.client_copy ? `<p class="flow-terms">${esc(i.plan_terms.client_copy)}</p>` : ""}${i.min_term_months ? `<p class="flow-terms">${i.min_term_months}-month minimum commitment.</p>` : ""}</div></div>`;
+    return `<div class="flow-quote-line print-pricing-card${active ? " selected" : ""}">${control}<div class="quote-item-body"><div class="flow-line-title"><strong>${esc(i.name)}</strong>${i.sublines.length === 1 ? `<strong class="amount">${price(i.sublines[0])}</strong>` : ""}</div>${i.description ? `<p class="quote-description">${esc(i.description)}</p>` : ""}${i.sublines.length > 1 ? i.sublines.map((s) => `<div class="flow-subline"><span>${esc(sublineLabel(s))}${s.qty !== 1 ? ` × ${s.qty}` : ""}</span><strong>${price(s)}</strong></div>`).join("") : ""}${i.schedule ? `<p class="flow-terms">${fmt(i.sublines.find((s) => s.interval !== "one_time")?.amount ?? 0)}/${i.sublines.some((s) => s.interval === "year") ? "year" : "month"} for ${i.schedule.after_paid_invoices} paid invoices, then ${fmt(i.schedule.then.amount)}/${i.sublines.some((s) => s.interval === "year") ? "year" : "month"}.</p>` : ""}${typeof i.plan_terms?.client_copy === "string" && i.plan_terms.client_copy ? `<p class="flow-terms">${esc(i.plan_terms.client_copy)}</p>` : ""}${i.min_term_months ? `<p class="flow-terms">${i.min_term_months}-month minimum commitment.</p>` : ""}</div></div>`;
   };
   const rendered = units.map((id) => {
     const group = items.filter((i) => (i.choice_group_id ?? i.id) === id);
@@ -72,13 +73,15 @@ export function quoteTotalText(
   return `One-time: ${fmt(sum("one_time"))} · Monthly: ${fmt(sum("month"))}/mo${lines.some((l) => l.interval === "year") ? ` · Yearly: ${fmt(sum("year"))}/yr` : ""}`;
 }
 export const documentQuoteCss = `
-.proposal-typography.proposal-typography .flow-quote-line{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:12px;padding:12px 4px;margin:0;border:0;border-bottom:1px solid #ECE8E1;border-radius:0;min-height:48px;font:inherit;box-sizing:border-box;background:transparent}
+.proposal-typography.proposal-typography .flow-quote-line{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:12px;padding:12px 4px;margin:0;border:0;border-bottom:1px solid #ECE8E1;border-radius:0;min-height:48px;font:400 14px/1.5 var(--font-ui,"Instrument Sans",sans-serif);box-sizing:border-box;background:transparent}
 .proposal-typography.proposal-typography .flow-quote-line.selected{border-color:#ECE8E1;background:transparent}
-.proposal-typography.proposal-typography .flow-line-title{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:12px;font:600 15px/1.5 var(--font-ui,"Instrument Sans",sans-serif)}
+.proposal-typography.proposal-typography .flow-line-title{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:12px;font:600 15px/21px var(--font-ui,"Instrument Sans",sans-serif)}
 .proposal-typography.proposal-typography .flow-line-title strong{font-weight:600}
+.proposal-typography.proposal-typography .flow-line-title>strong:first-child{padding-right:40px}
 .proposal-typography.proposal-typography .flow-line-title .amount{white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
-.proposal-typography.proposal-typography .flow-subline{display:flex;justify-content:space-between;gap:24px;margin:4px 0 0;padding-left:12px;font:inherit}
-.proposal-typography.proposal-typography .flow-quote-line .quote-description,.proposal-typography.proposal-typography .flow-quote-line .flow-terms{font-size:13px;font-weight:400;line-height:1.5;color:#5F5B53;margin:4px 0 0}
+.proposal-typography.proposal-typography .flow-subline{display:flex;justify-content:space-between;gap:24px;margin:4px 0 0;padding-left:12px;font:400 13px/1.5 var(--font-ui,"Instrument Sans",sans-serif);align-items:baseline}
+.proposal-typography.proposal-typography .flow-subline strong{font:600 15px/21px var(--font-ui,"Instrument Sans",sans-serif);font-variant-numeric:tabular-nums}
+.proposal-typography.proposal-typography .flow-quote-line .quote-description,.proposal-typography.proposal-typography .flow-quote-line .flow-terms{font-size:13px;font-weight:400;line-height:19px;color:#5F5B53;margin:4px 0 0}
 .proposal-typography.proposal-typography .flow-choice-group{padding:10px;border:2px solid #9DB3A8;background:#F2F6F3;border-radius:14px;margin:0}
 .proposal-typography.proposal-typography .flow-choice-group>h3{padding:0;margin:0 0 8px;font:600 11px/1.5 var(--font-ui,"Instrument Sans",sans-serif);text-transform:uppercase;letter-spacing:.08em;color:#365c4a}
 .proposal-typography.proposal-typography .flow-choice-group .flow-quote-line{border:0;border-radius:10px;padding:12px 14px;background:white;box-shadow:inset 0 0 0 1px #DDD8CE}
@@ -96,11 +99,11 @@ export const documentQuoteCss = `
 .print-radio[data-checked=true]{background:white;color:#365c4a}.print-radio[data-checked=true] svg{display:none}.print-radio[data-checked=true]::after{content:"";display:block;width:10px;height:10px;border-radius:50%;background:#365c4a}
 .print-selection svg{width:16px;height:16px}
 .quote-required{display:block;width:20px;height:20px;margin-top:2px}
-.proposal-typography.proposal-typography .document-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:#F6F4EF;border:0;border-radius:12px;padding:14px 16px;margin:4px 0 0;break-inside:avoid}
-.proposal-typography.proposal-typography .document-totals:has(>div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
-.proposal-typography.proposal-typography .document-totals>div{display:flex;flex-direction:column;gap:4px;padding:0}
-.proposal-typography.proposal-typography .document-totals span{font:600 11px/1.5 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.08em;text-transform:uppercase;color:#6b6963}
-.proposal-typography.proposal-typography .document-totals strong{font:650 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);font-variant-numeric:tabular-nums;color:#25241f}
-.proposal-typography.proposal-typography .document-totals small{font:400 14px/1.3 var(--font-ui,"Instrument Sans",sans-serif);color:#6b6963;margin-left:2px}
+.proposal-typography.proposal-typography .document-totals,.client-flow.client-flow .document-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:#F6F4EF;border:0;border-radius:12px;padding:14px 16px;margin:4px 0 0;break-inside:avoid}
+.proposal-typography.proposal-typography .document-totals:has(>div:nth-child(3)),.client-flow.client-flow .document-totals:has(>div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
+.proposal-typography.proposal-typography .document-totals>div,.client-flow.client-flow .document-totals>div{display:flex;flex-direction:column;gap:4px;padding:0}
+.proposal-typography.proposal-typography .document-totals span,.client-flow.client-flow .document-totals span{font:600 11px/1.5 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.08em;text-transform:uppercase;color:#5F5B53}
+.proposal-typography.proposal-typography .document-totals strong,.client-flow.client-flow .document-totals strong{font:650 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);font-variant-numeric:tabular-nums;color:#1C1B18}
+.proposal-typography.proposal-typography .document-totals small,.client-flow.client-flow .document-totals small{font:400 14px/1.3 var(--font-ui,"Instrument Sans",sans-serif);color:#5F5B53;margin-left:2px}
 .print-pricing-card,.print-choice-group{break-inside:avoid}
 `;

@@ -45,6 +45,7 @@ export const signatureCss = `
 .proposal-typography.proposal-typography .signature-role{font:600 11px/1.5 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.08em;color:#5F5B53}
 .proposal-typography.proposal-typography .signature-area{height:56px;border-bottom:1.5px solid #1C1B18;display:flex;align-items:flex-end;margin-bottom:10px}
 .proposal-typography.proposal-typography .signature-area img{display:block;max-height:54px;max-width:100%;object-fit:contain;object-position:left bottom}
+.proposal-typography.proposal-typography .signature-area .typed-signature{font:italic 28px/1.5 "Source Serif 4",serif;margin:0;max-width:100%}
 .proposal-typography.proposal-typography .signature-name{display:block;font:600 14px/1.5 var(--font-ui,"Instrument Sans",sans-serif)}
 .proposal-typography.proposal-typography .signature-title,.proposal-typography.proposal-typography .signature-date{font:400 12px/1.5 var(--font-ui,"Instrument Sans",sans-serif);color:#5F5B53}
 @media screen and (max-width:559px){.client-flow .proposal-typography.proposal-typography .signature-pair{grid-template-columns:1fr}}

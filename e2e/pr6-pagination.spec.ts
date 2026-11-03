@@ -288,6 +288,164 @@ test("adjacent signatures share a row and a page; separated signatures stay auth
   ).toBe(false);
 });
 
+test("cover fields keep tokens, persist per proposal, remove logo, and inherit in template preview", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  await expect(
+    page.locator('.cover-field .field-chip[data-field="workspace.name"]'),
+  ).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .fill("Prepared especially for {{client.first_name}}");
+  await expect
+    .poll(() => f.active().cover?.eyebrow)
+    .toBe("Prepared especially for {{client.first_name}}");
+  await page
+    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .blur();
+  await expect(
+    page.locator('.cover-field .field-chip[data-field="client.first_name"]'),
+  ).toContainText("Jane");
+  await page
+    .getByRole("button", { name: "Edit cover logo", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Remove logo", exact: true }).click();
+  await expect.poll(() => f.active().cover?.logo).toBeNull();
+  await page
+    .getByRole("button", { name: "Edit cover logo", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Use workspace logo", exact: true })
+    .click();
+  await expect.poll(() => f.active().cover?.logo).toBeUndefined();
+});
+
+test("sub-line placeholders, duplicate hint, 3→2→1 removal and undo stay in sync with document and PDF", async ({
+  page,
+}, info) => {
+  const f = await editorFixture(page, false, {
+    quote: (base) => [
+      {
+        ...base[0],
+        name: "Sub-line service",
+        source: "custom",
+        pricing_item_id: null,
+        ai_entered: false,
+        price_review: {},
+        sublines: ["one_time", "month", "year"].map((interval, n) => ({
+          ...base[0].sublines[0],
+          id: crypto.randomUUID(),
+          label: "",
+          interval: interval as any,
+          amount: (n + 1) * 10000,
+          qty: 1,
+          list_amount: null,
+          stripe_lookup_key: null,
+          qbo_item_ref: null,
+        })),
+      },
+    ],
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const row = page.getByRole("button", { name: /^Sub-line service Required/ });
+  if ((await row.getAttribute("aria-expanded")) !== "true") await row.click();
+  const labels = page.getByRole("textbox", {
+    name: "Sub-line label for Sub-line service",
+  });
+  for (const [n, label] of [
+    "Setup fee",
+    "Subscription",
+    "Annual subscription",
+  ].entries())
+    await expect(labels.nth(n)).toHaveAttribute("placeholder", label);
+  await page
+    .getByRole("combobox", { name: "Interval Sub-line service" })
+    .nth(2)
+    .selectOption("month");
+  await expect(
+    page.getByText("Name these sub-lines so the client can tell them apart."),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Remove sub-line Subscription", exact: true })
+    .last()
+    .click();
+  await expect(labels).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Remove sub-line Subscription", exact: true })
+    .click();
+  await expect(labels).toHaveCount(0);
+  await expect(
+    page.getByText("Shown as the item price", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Remove sub-line/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".document-quote .flow-line-title .amount"),
+  ).toHaveText("$100");
+  await expect(page.locator(".document-quote .flow-subline")).toHaveCount(0);
+  await expect.poll(() => f.active().quote[0].sublines.length).toBe(1);
+  const pdf = await pdfPreview(
+    f.repo,
+    {
+      get: async () => new Uint8Array(),
+      put: async () => {
+        throw new Error("No writes");
+      },
+    },
+    f.active(),
+    f.settings,
+  );
+  const path = info.outputPath("one-price.pdf");
+  await writeFile(path, Buffer.from(pdf.pdf_base64, "base64"));
+  const text = execFileSync("pdftotext", [path, "-"], { encoding: "utf8" });
+  expect(text).toContain("Sub-line service");
+  expect(text).toContain("$100");
+  expect(text).not.toContain("Setup fee");
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(labels).toHaveCount(2);
+});
+
+test("a short contract clause moves with its heading rather than leaving an orphan", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    content: [
+      { id: "filler", type: "paragraph", text: "Calibration space." },
+      {
+        id: "target",
+        type: "contract",
+        text: "Terms",
+        clauses: [
+          {
+            id: "clause",
+            heading: "Agreement",
+            body: [line, line, line].join("\n"),
+            show_when: null,
+          },
+        ],
+      },
+    ],
+  });
+  await page.setViewportSize({ width: 1920, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  // Terms, Agreement and one body line fit. The remaining two lines must not strand the heading.
+  await positionAtBottom(page, "target", 3);
+  await expect
+    .poll(async () =>
+      (await plan(page)).starts.find((s: any) => s.part === "clause"),
+    )
+    .toMatchObject({ block: "target", part: "clause", offset: 0 });
+});
+
 test("pagination measurement copies cannot uncheck the live choice group", async ({
   page,
 }) => {
@@ -349,6 +507,15 @@ test("client signing shows the signature pair live; the locked editor renders th
   await expect(preview.locator(".typed-signature")).toHaveText(
     "Example Signature",
   );
+  await expect(preview.locator(".typed-signature")).toHaveCSS(
+    "font-size",
+    "28px",
+  );
+  await expect(preview.locator(".typed-signature")).toHaveCSS(
+    "font-style",
+    "italic",
+  );
+  await expect(preview.locator(".typed-signature")).toHaveCSS("margin", "0px");
   const areas = preview.locator(".signature-area");
   await expect(areas.first()).toHaveCSS("height", "56px");
   const a = await areas.first().boundingBox(),
@@ -378,43 +545,4 @@ test("client signing shows the signature pair live; the locked editor renders th
     page.locator('[data-block-id="block-client"] .signature-date'),
   ).not.toHaveText(/Date signed/);
   await expect(page.locator(".editor-edit-bar")).toHaveCount(0);
-});
-
-test("cover fields keep tokens, persist per proposal, remove logo, and inherit in template preview", async ({
-  page,
-}) => {
-  const f = await editorFixture(page);
-  await page.setViewportSize({ width: 1440, height: 1100 });
-  await page.goto(`/proposals/${f.draft.id}`);
-  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
-    "data-layout-settled",
-    "true",
-  );
-  await expect(
-    page.locator('.cover-field .field-chip[data-field="workspace.name"]'),
-  ).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
-    .fill("Prepared especially for {{client.first_name}}");
-  await expect
-    .poll(() => f.active().cover?.eyebrow)
-    .toBe("Prepared especially for {{client.first_name}}");
-  await page
-    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
-    .blur();
-  await expect(
-    page.locator('.cover-field .field-chip[data-field="client.first_name"]'),
-  ).toContainText("Jane");
-  await page
-    .getByRole("button", { name: "Edit cover logo", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Remove logo", exact: true }).click();
-  await expect.poll(() => f.active().cover?.logo).toBeNull();
-  await page
-    .getByRole("button", { name: "Edit cover logo", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Use workspace logo", exact: true })
-    .click();
-  await expect.poll(() => f.active().cover?.logo).toBeUndefined();
 });
