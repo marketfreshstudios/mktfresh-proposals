@@ -1602,7 +1602,7 @@
 @media (min-width: 700px) {
   .template-history-controls {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     align-items: center;
   }
   .template-history-controls button {
@@ -1611,18 +1611,20 @@
     justify-content: center;
     width: 36px;
     height: 36px;
+    min-height: 36px;
     padding: 0;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: 8px;
-    background: var(--surface);
-    color: var(--ink);
+    background: none;
+    color: var(--ink-muted);
+    font: 500 13px/18px var(--font-ui);
     cursor: pointer;
   }
   .template-history-controls button:hover:not(:disabled) {
-    background: var(--surface-sunken);
+    background: var(--neutral-soft);
   }
   .template-history-controls button:disabled {
-    opacity: 0.3;
+    opacity: 0.4;
     cursor: default;
   }
 }

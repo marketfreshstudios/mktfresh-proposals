@@ -447,6 +447,57 @@ for (const width of [1440, 924])
     ).toBeDisabled();
   });
 
+for (const theme of ["light", "dark"]) {
+  test(`template history matches the proposal header buttons in ${theme}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (t) => localStorage.setItem("proposal-theme", t),
+      theme,
+    );
+    const f = await open(page, 1440);
+    const proposalUndo = page
+      .locator(".editor-header-history")
+      .getByRole("button", { name: "Undo", exact: true });
+    await expect(proposalUndo).toBeDisabled();
+    const appearance = (el: Element) => {
+      const s = getComputedStyle(el),
+        r = el.getBoundingClientRect();
+      return {
+        width: r.width,
+        height: r.height,
+        color: s.color,
+        opacity: s.opacity,
+        background: s.backgroundColor,
+        border: s.borderTopWidth,
+        radius: s.borderRadius,
+        font: s.font,
+      };
+    };
+    const expected = await proposalUndo.evaluate(appearance);
+    expect(expected.width).toBe(36);
+    expect(expected.height).toBe(36);
+    expect(expected.opacity).toBe("0.4");
+    const template = (await f.repo.entities<any>("templates"))[0];
+    await page.goto(`/studio/templates/${template.id}`);
+    const controls = page.getByRole("toolbar", {
+      name: "Template history",
+      exact: true,
+    });
+    for (const width of [1440, 924, 700]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await expect(controls).toBeVisible();
+      for (const name of ["Undo", "Redo"]) {
+        const button = controls.getByRole("button", { name, exact: true });
+        await expect(button).toBeDisabled();
+        expect(await button.evaluate(appearance)).toEqual(expected);
+      }
+    }
+    await page.setViewportSize({ width: 375, height: 1000 });
+    await expect(controls).toBeHidden();
+  });
+}
+
 test("requested PR 2 captures at 1440, 1024 and unchanged phone 375", async ({
   page,
 }) => {
