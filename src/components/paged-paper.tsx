@@ -9,6 +9,8 @@ import { pageMetrics, type ResolvedStyles } from "../lib/proposal-styles";
 import { paginateBrowser, type BrowserPages } from "./browser-pagination";
 import { fontFamily } from "../lib/proposal-fonts";
 export type { BrowserPages } from "./browser-pagination";
+// Prefer settled metrics initially, but a failed or stalled asset cannot block editing.
+const ASSET_WAIT_MS = 1000;
 /** Browser pagination owns both the sheets and the saved print break points. */
 export function PagedPaper({
   paper,
@@ -57,7 +59,12 @@ export function PagedPaper({
       stopped = false,
       running = false;
     let readyAssets = "",
-      waitingAssets = "";
+      waitingAssets = "",
+      fallbackAssets = "",
+      completedAssets = "";
+    let assetRequest = 0,
+      assetsWaitStarted: number | null = null,
+      assetsTimer: ReturnType<typeof setTimeout> | undefined;
     let width = root.clientWidth;
     const observer = new MutationObserver((records) => {
       if (
@@ -86,8 +93,8 @@ export function PagedPaper({
       observer.disconnect();
       try {
         const v = latest.current;
-        // A settled sheet must use the real font and logo metrics, rather than
-        // publishing a fallback layout that changes during the first click.
+        // Give initial font/logo metrics a bounded grace period. After that,
+        // measure what's available and refresh when the pending batch settles.
         const images = Array.from(
           root!.querySelectorAll<HTMLImageElement>("img"),
         );
@@ -105,28 +112,78 @@ export function PagedPaper({
           }),
           images.map((image) => image.src),
         ]);
+        // Accept completion only against this render's current asset signature.
+        // Returning to a cached signature invalidates an obsolete pending batch.
+        if (
+          readyAssets === assets &&
+          waitingAssets &&
+          waitingAssets !== assets
+        ) {
+          ++assetRequest;
+          clearTimeout(assetsTimer);
+          waitingAssets = "";
+          completedAssets = "";
+          assetsWaitStarted = null;
+        }
+        if (completedAssets === assets) {
+          readyAssets = assets;
+          completedAssets = "";
+          waitingAssets = "";
+          assetsWaitStarted = null;
+        }
         if (v.enabled && readyAssets !== assets) {
-          root!.dataset.layoutAssetsReady = "false";
-          setMeasuredKey("");
           if (waitingAssets !== assets) {
             waitingAssets = assets;
+            fallbackAssets = "";
+            completedAssets = "";
+            const request = ++assetRequest;
+            assetsWaitStarted ??= performance.now();
+            clearTimeout(assetsTimer);
+            assetsTimer = setTimeout(
+              () => {
+                if (
+                  stopped ||
+                  assetRequest !== request ||
+                  readyAssets === assets
+                )
+                  return;
+                fallbackAssets = assets;
+                schedule();
+              },
+              Math.max(
+                0,
+                ASSET_WAIT_MS - (performance.now() - assetsWaitStarted),
+              ),
+            );
             Promise.allSettled([
-              ...fonts.map((level) => {
-                const style = v.styles[level];
-                return document.fonts.load(
-                  `${style.weight} ${style.size}px ${fontFamily(style.font)}`,
-                );
-              }),
-              ...images.map((image) => image.decode()),
+              ...fonts.map((level) =>
+                Promise.resolve().then(() => {
+                  const style = v.styles[level];
+                  return document.fonts.load(
+                    `${style.weight} ${style.size}px ${fontFamily(style.font)}`,
+                  );
+                }),
+              ),
+              ...images.map((image) =>
+                Promise.resolve().then(() => image.decode()),
+              ),
             ]).then(() => {
-              if (stopped || waitingAssets !== assets) return;
-              readyAssets = assets;
+              if (stopped || assetRequest !== request) return;
+              clearTimeout(assetsTimer);
+              completedAssets = assets;
               schedule();
             });
           }
-          return;
+          if (fallbackAssets !== assets) {
+            root!.dataset.layoutAssetsReady = "false";
+            root!.dataset.layoutAssetsState = "pending";
+            setMeasuredKey("");
+            return;
+          }
         }
         root!.dataset.layoutAssetsReady = "true";
+        root!.dataset.layoutAssetsState =
+          v.enabled && readyAssets !== assets ? "fallback" : "settled";
         if (
           Array.from(root!.querySelectorAll(".field-editor")).some(
             (el) => !el.querySelector(".tiptap"),
@@ -197,6 +254,7 @@ export function PagedPaper({
     return () => {
       stopped = true;
       cancelAnimationFrame(frame);
+      clearTimeout(assetsTimer);
       observer.disconnect();
       resize.disconnect();
       root.removeEventListener("pagination-flush", flush);
@@ -218,8 +276,8 @@ export function PagedPaper({
       className="editor-page-sheets"
       aria-label="Document pages"
       data-sheet-view={sheets}
-      data-layout-settled={measuredKey === contentKey}
-      data-approximate="false"
+      data-layout-settled={!!sources && measuredKey === contentKey}
+      data-approximate={!sources || measuredKey !== contentKey}
       data-layout-mode="browser"
       data-layout-max-error="0"
       style={{
