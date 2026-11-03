@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
 import { useHistoryStatus } from "./editor-history";
+import { PhoneEditorHeader } from "./editor/phone-header";
 import { EditorIcon } from "./editor/editor-icon";
 /** Event handlers and pending requests must read current state before React paints. */
 export function useCurrentState<T>(initial: T) {
@@ -69,6 +70,9 @@ export function EditorHeader({
   onPreviewClient,
   onReviewSend,
   onDuplicate,
+  editingTitle,
+  onDone,
+  onSections,
 }: {
   title: string;
   backLabel: string;
@@ -97,6 +101,9 @@ export function EditorHeader({
   onPreviewClient?: () => void;
   onReviewSend?: () => void;
   onDuplicate?: () => void;
+  editingTitle?: string;
+  onDone?: () => void;
+  onSections?: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
   const pending = leaving || saving;
@@ -140,6 +147,36 @@ export function EditorHeader({
   const tooltip = lastSaved
     ? `Last saved ${new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" }).format(new Date(lastSaved))}`
     : "Not saved yet";
+  if (phone && onReviewSend)
+    return (
+      <PhoneEditorHeader
+        title={title}
+        editingTitle={editingTitle}
+        status={
+          locked
+            ? "Signed · locked"
+            : stale
+              ? "Edited elsewhere · Reload"
+              : offline
+                ? "Offline · saved on this device"
+                : pending
+                  ? "Saving…"
+                  : error
+                    ? "Couldn't save · Retry"
+                    : dirty
+                      ? "Unsaved changes"
+                      : "Draft · Saved"
+        }
+        locked={locked || stale}
+        aiPending={aiPending}
+        onBack={goBack}
+        onDone={onDone}
+        onNextAi={onNextAi}
+        onPreviewPdf={onPreviewPdf}
+        onPreviewClient={onPreviewClient}
+        onSections={onSections}
+      />
+    );
   if (!phone && onReviewSend) {
     const state = stale
       ? "stale"

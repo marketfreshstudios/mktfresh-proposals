@@ -5,12 +5,17 @@ import { ToastSurface } from "../block-controls";
 export function GutterInsert({
   onAdd,
   dragHandle,
+  layout = "gutter",
 }: {
   onAdd?: (edge: "above" | "below", anchor: HTMLElement) => void;
   dragHandle: ReactNode;
+  layout?: "gutter" | "edges";
 }) {
   return (
-    <div data-editor-chrome className="editor-gutter rich-toolbar">
+    <div
+      data-editor-chrome
+      className={`editor-gutter rich-toolbar editor-insert-${layout}`}
+    >
       {onAdd && (
         <button
           type="button"
@@ -21,10 +26,10 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("above", e.currentTarget)}
         >
-          <Icon name="plus" />
+          {layout === "edges" ? "+ Add above" : <Icon name="plus" />}
         </button>
       )}
-      {dragHandle}
+      {layout === "gutter" && dragHandle}
       {onAdd && (
         <button
           type="button"
@@ -35,7 +40,7 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("below", e.currentTarget)}
         >
-          <Icon name="plus" />
+          {layout === "edges" ? "+ Add below" : <Icon name="plus" />}
         </button>
       )}
     </div>
@@ -47,12 +52,14 @@ export function AiReviewCheck({
   selected,
   onReviewed,
   onUndo,
+  layout = "side",
 }: {
   busy: boolean;
   pending: boolean;
   selected: boolean;
   onReviewed: () => void;
   onUndo?: () => void;
+  layout?: "side" | "corner";
 }) {
   const [toast, setToast] = useState(false),
     [requested, setRequested] = useState(false);
@@ -74,7 +81,7 @@ export function AiReviewCheck({
         <button
           type="button"
           data-editor-chrome
-          className="editor-ai-check rich-toolbar"
+          className={`editor-ai-check rich-toolbar editor-ai-${layout}`}
           title="Mark reviewed"
           aria-label="Mark this AI-written block reviewed"
           disabled={busy}

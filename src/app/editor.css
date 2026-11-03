@@ -1630,7 +1630,7 @@
 }
 
 /* PR 3: responsive drawing only. The canonical PDF-width clone never uses these rules. */
-@media (min-width: 700px) {
+@media (min-width: 0px) {
   :is(.pdf-paper-viewport, .template-page-viewport):has(
     [data-sheet-view="true"]
   ) {
@@ -2218,4 +2218,490 @@
   margin: 6px 0 0;
   font-size: 12px;
   color: var(--danger-ink);
+}
+
+/* Tablet overlays and phone docking share the same commands and tab bodies. */
+@media (min-width: 700px) and (max-width: 959px) {
+  .editor-v2-drawer {
+    width: 440px;
+    max-width: calc(100vw - 40px);
+  }
+  .editor-v2-drawer::backdrop {
+    background: rgba(20, 18, 14, 0.28);
+  }
+}
+.editor-v2-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  max-height: 88dvh;
+  height: 88dvh;
+  padding: 8px 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  overflow: hidden;
+}
+.editor-v2-sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.editor-v2-sheet::backdrop,
+.phone-block-menu::backdrop {
+  background: rgba(20, 18, 14, 0.28);
+}
+.editor-sheet-grabber {
+  width: 36px;
+  height: 5px;
+  border-radius: 4px;
+  background: var(--border-strong);
+  flex: none;
+  margin: 0 auto 10px;
+}
+.editor-v2-sheet .editor-tools-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.editor-v2-sheet .editor-tools-header > button {
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.editor-v2-sheet .editor-tabs {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--neutral-soft);
+}
+.editor-v2-sheet .editor-tabs button {
+  min-width: 0;
+  flex: 1;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-muted);
+  font: 600 12px/16px var(--font-ui);
+}
+.editor-v2-sheet .editor-tabs button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.editor-v2-sheet .editor-tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 0 24px;
+}
+.editor-v2-sheet .panel-collapse {
+  display: none;
+}
+.editor-v2-sheet
+  :is(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  min-height: 44px;
+}
+@media (max-width: 699px) {
+  .quote-workspace.editor-v2[data-shell-mode="phone"] {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .quote-workspace.editor-v2[data-shell-mode="phone"] > .editor-layout {
+    display: block;
+    min-height: 0;
+    flex: 1;
+    height: auto;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  .quote-workspace.editor-v2[data-shell-mode="phone"] .editor-document-region {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    min-width: 0;
+    padding: 12px 0 100px;
+    background: var(--surface-page);
+  }
+  .editor-phone-header {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 6px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0 6px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+    z-index: var(--z-editor-header);
+  }
+  .editor-phone-header > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--ink);
+  }
+  .editor-phone-header .phone-header-back {
+    font-size: 26px;
+  }
+  .phone-header-title {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .phone-header-title strong {
+    font: 600 13px/18px var(--font-ui);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .phone-header-title small {
+    font: 500 10px/14px var(--font-ui);
+    color: var(--ink-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .editor-phone-header > .editor-ai-pill {
+    min-width: 0;
+    min-height: 30px;
+    font: 600 10px/14px var(--font-ui);
+    border-radius: 20px;
+    padding: 0 10px;
+    color: var(--ai-ink);
+    background: var(--ai-soft);
+  }
+  .phone-editor-menu button {
+    display: block;
+    min-height: 44px;
+    width: 100%;
+    border: 0;
+    padding: 8px 14px;
+    text-align: left;
+    background: none;
+    color: var(--ink);
+  }
+  .editor-phone-dock {
+    position: fixed;
+    inset: auto 0 0;
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    z-index: var(--z-formatting-bar);
+  }
+  .editor-phone-dock button {
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--ink);
+  }
+  .editor-phone-dock button:first-child {
+    flex: 2.1;
+  }
+  .editor-phone-dock button:last-child {
+    background: #1c1b18;
+    color: white;
+  }
+  .editor-phone-dock span {
+    font: 600 12px/16px var(--font-ui);
+    white-space: nowrap;
+  }
+  .editor-phone-dock small {
+    font: 500 10px/14px var(--font-ui);
+  }
+  [data-phone-editing="true"] .editor-phone-dock {
+    display: none;
+  }
+  .quote-workspace.editor-v2 .pdf-paper-viewport {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow: visible;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
+      [data-page-measurement]
+    ) {
+    padding: 24px 36px 28px 40px !important;
+    max-width: 100% !important;
+    --sheet-gap: 12px;
+    --sheet-block-gap: 12px;
+  }
+  .editor-page-sheets[data-sheet-view="true"] > .page-sheet {
+    padding: 24px 36px 28px 40px;
+  }
+  .editor-page-sheets[data-sheet-view="true"] .editor-sheet-gap {
+    height: 12px;
+    font-size: 9px;
+    line-height: 12px;
+  }
+  .quote-workspace.editor-v2 .pdf-paper-size {
+    width: 100% !important;
+    height: auto !important;
+  }
+  .quote-workspace.editor-v2 .editor-paper > .quote-sortable,
+  .quote-workspace.editor-v2 .editor-paper .document-section,
+  .quote-workspace.editor-v2 .editor-paper .document-section > .quote-sortable,
+  .quote-workspace.editor-v2 .editor-paper .document-section > .block-sortable {
+    display: block;
+  }
+  .quote-workspace.editor-v2 .editor-paper > .quote-sortable > div {
+    display: block;
+  }
+  .quote-workspace.editor-v2 .editor-paper .document-section {
+    margin: 0;
+    padding: 0;
+  }
+  .block-frame[data-controls="v2"] {
+    position: relative;
+    padding: 6px 10px;
+    margin: 0 -10px;
+    border-radius: 8px;
+  }
+  .block-frame[data-controls="v2"][data-selected="true"] {
+    box-shadow: 0 0 0 1.5px #9db3a8;
+  }
+  .block-frame[data-controls="v2"][data-ai="true"]::before {
+    content: "";
+    position: absolute;
+    left: -14px;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 3px;
+    background: #9f88e0;
+  }
+  .block-frame[data-controls="v2"] > .block-content {
+    margin-block: -6px;
+  }
+  .editor-edit-bar[data-dock="keyboard"] {
+    position: fixed;
+    inset: auto 0
+      max(env(keyboard-inset-height, 0px), var(--editor-keyboard-inset, 0px));
+    transform: none !important;
+    margin: 0;
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
+    height: 48px;
+    padding: 2px 4px;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #1c1b18;
+    color: white;
+    box-shadow: 0 -2px 12px rgba(20, 18, 14, 0.15);
+    z-index: var(--z-formatting-bar);
+    scrollbar-width: none;
+  }
+  .editor-edit-bar[data-dock="keyboard"] button {
+    flex: none;
+    min-height: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 8px;
+    border-radius: 8px;
+    border: 0;
+    background: none;
+    color: white;
+  }
+  .editor-edit-bar[data-dock="keyboard"] .edit-format-target:empty {
+    display: none;
+  }
+  .editor-edit-bar[data-dock="keyboard"] .edit-format-target,
+  .editor-edit-bar[data-dock="keyboard"] .formatting-controls {
+    display: flex;
+    flex: none;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: max-content;
+  }
+  .editor-edit-bar[data-dock="keyboard"] .edit-divider {
+    width: 1px;
+    height: 20px;
+    flex: none;
+    margin: 0 4px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .editor-edit-bar[data-dock="keyboard"] button:last-child {
+    color: #ff9a90;
+  }
+  .editor-edit-bar[data-dock="keyboard"]::after {
+    content: "";
+    position: sticky;
+    right: -4px;
+    width: 36px;
+    height: 44px;
+    flex: none;
+    pointer-events: none;
+    margin-left: -36px;
+    background: linear-gradient(to right, transparent, #1c1b18);
+  }
+  .editor-gutter.editor-insert-edges {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+  .editor-insert-edges .editor-gutter-add {
+    position: absolute;
+    left: 50%;
+    width: max-content;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--accent);
+    border-radius: 18px;
+    background: var(--paper);
+    color: var(--accent);
+    box-shadow: 0 2px 6px rgba(20, 18, 14, 0.12);
+    pointer-events: auto;
+    font: 500 12px/18px var(--font-ui);
+  }
+  .editor-insert-edges [data-insert-edge="above"] {
+    top: 0;
+    transform: translate(-50%, -100%);
+  }
+  .editor-insert-edges [data-insert-edge="below"] {
+    top: auto;
+    bottom: 0;
+    transform: translate(-50%, 100%);
+  }
+  .editor-ai-check.editor-ai-corner {
+    position: absolute;
+    left: auto;
+    right: -16px;
+    top: -16px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    border: 1.5px solid #9f88e0;
+    border-radius: 50%;
+    color: #6b4fbb;
+    background: white;
+    z-index: 16;
+  }
+  .phone-block-menu {
+    position: fixed;
+    inset: auto 0 0 !important;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 85dvh !important;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    background: var(--surface);
+    color: var(--ink);
+    overflow: auto;
+  }
+  .phone-block-menu .editor-block-menu-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .phone-block-menu .editor-block-menu-heading button {
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--accent-text);
+  }
+  .phone-block-menu input[type="search"] {
+    min-height: 44px;
+    width: 100%;
+  }
+  .phone-block-menu [role="menuitem"] {
+    min-height: 52px;
+    width: 100%;
+  }
+  .phone-block-menu [role="menuitem"] > span:first-child {
+    flex: none;
+    width: 30px;
+  }
+  .editor-v2-sheet .quote-panel > footer {
+    bottom: -24px;
+  }
+}
+@media (max-width: 699px) {
+  .quote-workspace.editor-v2 .editor-paper[data-sheet-view="true"] {
+    display: block;
+  }
+  .quote-workspace.editor-v2 .editor-paper[data-sheet-view="true"] > div {
+    display: block;
+  }
+  .quote-workspace.editor-v2
+    .editor-paper[data-sheet-view="true"]
+    > .editor-page-sheets {
+    display: contents;
+  }
+}
+.phone-block-menu[open] {
+  display: block;
+}
+@media (max-width: 699px) {
+  .template-history-controls {
+    display: flex;
+    gap: 2px;
+  }
+  .template-history-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--ink-muted);
+  }
+  .template-history-controls button:disabled {
+    opacity: 0.4;
+  }
+  .template-page-viewport {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
 }

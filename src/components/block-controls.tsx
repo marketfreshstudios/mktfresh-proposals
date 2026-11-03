@@ -294,7 +294,12 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
   return (
     <ControlConfig.Provider value={setConfig}>
       <ControlLayout.Provider
-        value={{ desktop, onField: undefined, ...config }}
+        value={{
+          desktop: true,
+          phone: !desktop,
+          onField: undefined,
+          ...config,
+        }}
       >
         <EditorHistoryProvider>
           <Formatting.Provider
@@ -687,11 +692,16 @@ export function BlockFrame({
               blockType={blockType}
               objectAction={objectAction}
             />
-            <GutterInsert onAdd={insert} dragHandle={dragHandle} />
+            <GutterInsert
+              onAdd={insert}
+              dragHandle={dragHandle}
+              layout={layout.phone ? "edges" : "gutter"}
+            />
           </>
         )}
         {layout.desktop && onReviewed && (
           <AiReviewCheck
+            layout={layout.phone ? "corner" : "side"}
             pending={ai}
             selected={selection.selected === id}
             busy={reviewBusy}

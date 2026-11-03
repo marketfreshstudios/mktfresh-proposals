@@ -70,3 +70,112 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
   await expect(panel.getByRole("button", { name: /^Send to / })).toBeVisible();
   await expect(page.locator(".ai-review-banner")).toHaveCount(0);
 });
+
+test("tablet tools overlay the page with a trapped focus and close on Escape", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 768, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const before = await page.locator(".editor-paper").boundingBox();
+  await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+  const drawer = page.getByRole("dialog", {
+    name: "Proposal tools",
+    exact: true,
+  });
+  await expect(drawer).toBeVisible();
+  expect((await drawer.boundingBox())!.width).toBe(440);
+  expect(await page.locator(".editor-paper").boundingBox()).toEqual(before);
+  for (let i = 0; i < 18; i++) await page.keyboard.press("Tab");
+  expect(
+    await drawer.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+});
+test("phone sheets trap focus; selected text docks above the visual viewport and insertion pills open a modal block menu", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-phone-header")).toHaveCSS(
+    "height",
+    "52px",
+  );
+  await expect(page.locator(".editor-phone-dock")).toBeVisible();
+  await expect(page.locator(".editor-sheet-gap").first()).toHaveCSS(
+    "height",
+    "12px",
+  );
+  await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+  const sheet = page.getByRole("dialog", {
+    name: "Proposal tools",
+    exact: true,
+  });
+  await expect(sheet).toBeVisible();
+  for (let i = 0; i < 18; i++) await page.keyboard.press("Tab");
+  expect(
+    await sheet.evaluate((el) => el.contains(document.activeElement)),
+  ).toBe(true);
+  await sheet.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
+  await block.locator(".tiptap").click();
+  const bar = block.getByRole("toolbar", { name: "Text tools", exact: true });
+  await expect(bar).toBeVisible();
+  await expect(bar).toHaveCSS("position", "fixed");
+  await expect(bar).toHaveCSS("height", "48px");
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, "height", {
+      configurable: true,
+      value: 550,
+    });
+    window.visualViewport!.dispatchEvent(new Event("resize"));
+  });
+  await expect
+    .poll(async () =>
+      Math.round(
+        (await bar.boundingBox())!.y + (await bar.boundingBox())!.height,
+      ),
+    )
+    .toBe(550);
+  const remove = bar.getByRole("button", { name: "Delete block", exact: true });
+  await remove.scrollIntoViewIfNeeded();
+  await expect(remove).toBeInViewport();
+  expect((await remove.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  const above = block.getByRole("button", {
+    name: "Add a block above",
+    exact: true,
+  });
+  const below = block.getByRole("button", {
+    name: "Add a block below",
+    exact: true,
+  });
+  await expect(above).toHaveCSS("height", "32px");
+  await expect(below).toHaveCSS("height", "32px");
+  await above.click();
+  const menu = page.getByRole("dialog", { name: "Add a block", exact: true });
+  await expect(menu).toBeVisible();
+  expect(await menu.evaluate((el) => el.matches(":modal"))).toBe(true);
+  await menu.getByRole("menuitem", { name: "Text", exact: true }).click();
+  await expect(menu).toHaveCount(0);
+  await expect.poll(() => f.active().content.length).toBe(f.content.length + 1);
+});
+
+test("template phone uses the shared unscaled sheets and keyboard edit bar", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  const template = (await f.repo.entities<any>("templates"))[0];
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(`/studio/templates/${template.id}`);
+  const paper = page.locator(".template-paged-paper");
+  await expect(paper).toHaveAttribute("data-sheet-view", "true");
+  await expect(paper).toHaveCSS("transform", "none");
+  await paper.locator(".tiptap").first().click();
+  await expect(page.locator(".editor-edit-bar")).toHaveCSS("position", "fixed");
+  await expect(
+    page.getByRole("button", { name: "Undo", exact: true }),
+  ).toHaveCount(1);
+});

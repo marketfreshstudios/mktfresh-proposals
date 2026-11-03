@@ -8,6 +8,7 @@ import {
 } from "react";
 export const ControlLayout = createContext({
   desktop: false,
+  phone: false,
   compact: false,
   map: {} as Record<string, string>,
   onField: undefined as undefined | (() => void),

@@ -35,7 +35,6 @@ import {
 } from "../lib/editor-document";
 import {
   BlockScope,
-  PhoneFormattingBar,
   EditorControlConfig,
   useBlockFeedback,
   useBlockToolbar,
@@ -226,12 +225,7 @@ function QuoteEditorContent({
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
     );
   };
-  const panels = useEditorPanels(
-    user?.actor ?? "local",
-    paper,
-    fullDocument,
-    true,
-  );
+  const panels = useEditorPanels(user?.actor ?? "local", paper, true, true);
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
   const outlineOpen =
@@ -1378,16 +1372,12 @@ function QuoteEditorContent({
         setInsertAt(0);
       }}
     >
-      {panels.phone ? (
-        "+"
-      ) : (
-        <>
-          <span className="empty-sheet-plus" aria-hidden="true">
-            +
-          </span>
-          <span>Add your first block</span>
-        </>
-      )}
+      <>
+        <span className="empty-sheet-plus" aria-hidden="true">
+          +
+        </span>
+        <span>Add your first block</span>
+      </>
     </button>
   ) : null;
   const sendPanel = (
@@ -2400,12 +2390,15 @@ function QuoteEditorContent({
       data-stale={stale}
       data-compact={panels.compact}
       data-shell-mode={panels.phone ? "phone" : "v2"}
+      data-phone-editing={panels.phone && !!selection.selected}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
       <EditorControlConfig
         compact={panels.compact}
         map={map}
-        onField={panels.right ? () => openTools("Fields") : undefined}
+        onField={
+          panels.phone || panels.right ? () => openTools("Fields") : undefined
+        }
       />
       <PageBreakController
         content={p.content}
@@ -2417,6 +2410,17 @@ function QuoteEditorContent({
         }}
         className="quote-editor-top"
         phone={panels.phone}
+        editingTitle={
+          selection.selected
+            ? (sections.find((s) => s.indices.includes(selectedIndex))?.title ??
+              "Block")
+            : undefined
+        }
+        onDone={() => {
+          selection.clear();
+          (document.activeElement as HTMLElement)?.blur();
+        }}
+        onSections={() => setOutlineOpen(true)}
         tablet={panels.viewportWidth >= 700 && panels.viewportWidth < 960}
         compact={panels.viewportWidth < 1180}
         locked={false}
@@ -2580,144 +2584,15 @@ function QuoteEditorContent({
           >
             <ReadOnlyRegion locked={stale}>{outline}</ReadOnlyRegion>
           </SectionsPanel>
-        ) : (
-          <aside
-            className={`editor-outline ${panels.left ? "" : "sidebar-rail"}`}
-          >
-            <div className="editor-sidebar-header">
-              <button
-                className="sidebar-arrow"
-                type="button"
-                aria-label={
-                  panels.left
-                    ? "Collapse Pages sidebar"
-                    : "Expand Pages sidebar"
-                }
-                title={
-                  panels.left
-                    ? "Collapse Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                    : "Expand Pages (⌘⇧\\ / Ctrl+Shift+\\)"
-                }
-                onClick={toggleLeft}
-              >
-                <PanelChevron direction={panels.left ? "left" : "right"} />
-              </button>
-            </div>
-            {panels.left ? (
-              <div className="editor-sidebar-scroll">{outline}</div>
-            ) : (
-              <button
-                type="button"
-                aria-label="Open Pages"
-                title="Pages"
-                onClick={toggleLeft}
-              >
-                <Icon name="file-lines" />
-              </button>
-            )}
-          </aside>
-        )}
+        ) : null}
         <main className="editor-document-region">
           <ReadOnlyRegion locked={stale}>
-            {panels.phone && (
-              <div className="editor-panel-controls">
-                <div className="paper-zoom">
-                  <output aria-label="Editor zoom">
-                    {Math.round(panels.scale * 100)}%
-                  </output>
-                  <Button onClick={() => panels.setFit((v) => !v)}>
-                    {panels.fit ? "100%" : "Fit"}
-                  </Button>
-                </div>
-              </div>
-            )}
-            <PhoneFormattingBar />
             {blockFeedback.feedback}
-            <div className="phone-section-list">
-              <p className="eyebrow">Proposal for {p.client.company}</p>
-              <h1>{p.title}</h1>
-              <p>
-                {p.content.length
-                  ? "Choose a section to edit."
-                  : "Add your first section."}
-              </p>
-              {firstBlock}
-              {sections.flatMap((s, n) => [
-                <button key={s.id} onClick={() => setSection(n)}>
-                  <span>{String(n + 1).padStart(2, "0")}</span>
-                  <strong>{s.title}</strong>
-                  <small>{s.pending ? "Review" : "✓"} ›</small>
-                </button>,
-                ...s.indices
-                  .filter(
-                    (j) =>
-                      p.content[j].type === "heading" &&
-                      (p.content[j].level ?? 1) > 1,
-                  )
-                  .map((j) => (
-                    <button
-                      key={`sub-${p.content[j].id ?? j}`}
-                      className={`outline-subheading outline-level-${p.content[j].level}`}
-                      onClick={() => {
-                        setSection(n);
-                        requestAnimationFrame(() =>
-                          document
-                            .querySelector(
-                              `[data-block-id="block-${p.content[j].id ?? j}"]`,
-                            )
-                            ?.scrollIntoView({ block: "center" }),
-                        );
-                      }}
-                    >
-                      <strong>
-                        {p.content[j].text || "Untitled subheading"}
-                      </strong>
-                    </button>
-                  )),
-              ])}
-              <Button
-                onClick={() => {
-                  setTab("Quote");
-                  if (window.innerWidth < 1100) setDrawer(true);
-                }}
-              >
-                Edit quote
-              </Button>
-            </div>
-            <div className="phone-section-nav">
-              <Button
-                onClick={() => {
-                  setFullDocument(false);
-                  setSection(null);
-                }}
-              >
-                ‹ Sections
-              </Button>
-              <Button onClick={() => setFullDocument((v) => !v)}>
-                {fullDocument ? "One section" : "Full document"}
-              </Button>
-              <div>
-                <Button
-                  aria-label="Previous section"
-                  disabled={section === null || section === 0}
-                  onClick={() => setSection((section ?? 1) - 1)}
-                >
-                  ‹ Previous
-                </Button>
-                <Button
-                  aria-label="Next section"
-                  disabled={section === null || section >= sections.length - 1}
-                  onClick={() => setSection((section ?? 0) + 1)}
-                >
-                  Next ›
-                </Button>
-              </div>
-            </div>
             <div className="pdf-paper-viewport">
               <div
                 className="pdf-paper-size"
                 style={
-                  panels.phone && panels.printMode
+                  false
                     ? {
                         width: 816 * panels.scale,
                         height: panels.height * panels.scale,
@@ -2727,7 +2602,7 @@ function QuoteEditorContent({
               >
                 <article
                   ref={paper}
-                  data-sheet-view={!panels.phone ? "true" : undefined}
+                  data-sheet-view="true"
                   data-editor-density={
                     resolveStyles(
                       p.workspace_settings,
@@ -2738,21 +2613,16 @@ function QuoteEditorContent({
                   style={
                     {
                       "--accent": current.workspace_settings?.accent_colour,
-                      "--editor-ui-scale":
-                        panels.phone && panels.printMode ? 1 / panels.scale : 1,
+                      "--editor-ui-scale": false ? 1 / panels.scale : 1,
                       "--page-margin-top": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.top * 96}px`,
                       "--page-margin-right": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.right * 96}px`,
                       "--page-margin-bottom": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.bottom * 96}px`,
                       "--page-margin-left": `${pageMetrics(resolveStyles(p.workspace_settings, p.template_style_overrides, p.style_overrides)).margins.left * 96}px`,
-                      transform:
-                        panels.phone && panels.printMode
-                          ? `scale(${panels.scale})`
-                          : undefined,
+                      transform: false ? `scale(${panels.scale})` : undefined,
                       transformOrigin: "top left",
-                      minHeight:
-                        panels.phone && panels.printMode
-                          ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
-                          : undefined,
+                      minHeight: false
+                        ? `max(var(--page-sheets-height, 0px), ${(browserPages?.plan.pages ?? 1) * 1080 - 24}px)`
+                        : undefined,
                     } as CSSProperties
                   }
                   className="paper editor-paper proposal-typography document-reading"
@@ -2765,7 +2635,7 @@ function QuoteEditorContent({
                       p.style_overrides,
                     )}
                     enabled={panels.printMode}
-                    sheets={!panels.phone}
+                    sheets
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,
@@ -2794,7 +2664,7 @@ function QuoteEditorContent({
                       p.workspace_settings?.accent_colour,
                     )}
                   </style>
-                  {(panels.phone || p.content.length > 0) && (
+                  {p.content.length > 0 && (
                     <DocumentCover
                       title={p.title}
                       workspace={
@@ -2851,11 +2721,11 @@ function QuoteEditorContent({
             </div>
           </ReadOnlyRegion>
         </main>
-        {!panels.phone ? (
+        {
           <ToolsPanel
             tab={tab as EditorTab}
-            open={panels.right}
-            mode={panels.mode}
+            open={panels.phone ? phoneDrawer : panels.right}
+            mode={panels.phone ? "sheet" : panels.mode}
             onTab={openTools}
             onToggle={toggleRight}
             totals={`${money(totals(items).one_time_total, p.currency)} · ${money(totals(items).monthly_total, p.currency)}/mo`}
@@ -2867,51 +2737,7 @@ function QuoteEditorContent({
           >
             {panelBody}
           </ToolsPanel>
-        ) : (
-          <aside
-            className={`editor-sidepanel ${panels.right ? "" : "sidebar-rail"}`}
-          >
-            <div className="editor-sidebar-header">
-              <button
-                type="button"
-                className="sidebar-arrow"
-                aria-label={
-                  panels.right
-                    ? "Collapse tools sidebar"
-                    : "Expand tools sidebar"
-                }
-                title={
-                  panels.right
-                    ? "Collapse tools (⌘\\ / Ctrl+\\)"
-                    : "Expand tools (⌘\\ / Ctrl+\\)"
-                }
-                onClick={toggleRight}
-              >
-                <PanelChevron direction={panels.right ? "right" : "left"} />
-              </button>
-            </div>
-            {panels.right
-              ? panel
-              : (
-                  [
-                    ["Quote", "table"],
-                    ["Fields", "code"],
-                    ["Styles", "heading"],
-                    ["Send", "review"],
-                  ] as const
-                ).map(([name, icon]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    aria-label={`Open ${name}`}
-                    title={name}
-                    onClick={() => openTools(name)}
-                  >
-                    <Icon name={icon} />
-                  </button>
-                ))}
-          </aside>
-        )}
+        }
       </div>
       {pdfOpen && (
         <PdfPreviewViewer
@@ -3047,29 +2873,6 @@ function QuoteEditorContent({
             </Sheet>
           );
         })()}
-      {phoneDrawer && (
-        <Sheet
-          title={tab}
-          close={() => setDrawer(false)}
-          extra="tools-sheet"
-          onCloseComplete={() => {
-            const path = pendingField.current;
-            pendingField.current = null;
-            if (path) fields?.insert(path);
-          }}
-        >
-          {panel}
-        </Sheet>
-      )}
-      {lineId && items.find((i) => i.id === lineId) && (
-        <Sheet
-          title="Edit item"
-          close={() => setLineId(null)}
-          extra="line-sheet"
-        >
-          {itemCard(items.find((i) => i.id === lineId)!)}
-        </Sheet>
-      )}
       {reference && (
         <Sheet
           title="Pricing reference"

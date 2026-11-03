@@ -104,7 +104,7 @@ export function ToolsPanel({
 }: {
   tab: EditorTab;
   open: boolean;
-  mode: "docked" | "drawer";
+  mode: "docked" | "drawer" | "sheet";
   totals: string;
   onTab: (tab: EditorTab) => void;
   onToggle: () => void;
@@ -113,17 +113,25 @@ export function ToolsPanel({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    if (mode !== "drawer" || !open) return;
+    if (mode === "docked" || !open) return;
     const el = dialog.current;
     el?.showModal();
     return () => el?.close();
   }, [mode, open]);
   const close = () =>
-    mode === "drawer" ? dialog.current?.close() : onToggle();
+    mode !== "docked" ? dialog.current?.close() : onToggle();
   const content = (
     <>
+      {mode === "sheet" && (
+        <div className="editor-sheet-grabber" aria-hidden="true" />
+      )}
       <div className="editor-tools-header">
         <PanelTabs tab={tab} onTab={onTab} />
+        {mode === "sheet" && (
+          <button type="button" onClick={close}>
+            Done
+          </button>
+        )}
       </div>
       <div
         role="tabpanel"
@@ -146,21 +154,39 @@ export function ToolsPanel({
   );
   return (
     <>
-      <aside
-        className={`editor-sidepanel editor-v2-panel ${mode === "docked" && open ? "" : "sidebar-rail"}`}
-        aria-label="Proposal tools"
-      >
-        {mode === "docked" && open ? (
-          content
-        ) : (
-          <PanelRail totals={totals} onTab={onTab} onToggle={onToggle} />
-        )}
-      </aside>
-      {mode === "drawer" && open && (
+      {mode === "sheet" ? (
+        <nav className="editor-phone-dock" aria-label="Proposal tools">
+          {editorTabs.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onTab(value)}
+              aria-label={`Open ${value}`}
+            >
+              <span aria-hidden="true">
+                {value === "Quote" ? totals : glyphs[value]}
+              </span>
+              <small>{value}</small>
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <aside
+          className={`editor-sidepanel editor-v2-panel ${mode === "docked" && open ? "" : "sidebar-rail"}`}
+          aria-label="Proposal tools"
+        >
+          {mode === "docked" && open ? (
+            content
+          ) : (
+            <PanelRail totals={totals} onTab={onTab} onToggle={onToggle} />
+          )}
+        </aside>
+      )}
+      {mode !== "docked" && open && (
         <dialog
           ref={dialog}
           aria-label="Proposal tools"
-          className="editor-v2-drawer tools-sheet"
+          className={`${mode === "sheet" ? "editor-v2-sheet" : "editor-v2-drawer"} tools-sheet`}
           onCancel={(event) => {
             event.preventDefault();
             dialog.current?.close();
