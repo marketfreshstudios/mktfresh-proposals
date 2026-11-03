@@ -267,9 +267,15 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
     page.getByRole("switch", { name: "Show names", exact: true }),
   ).toHaveCount(0);
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
-  await expect(page.locator(".editor-sidepanel .field-options")).toContainText(
-    "Client first name",
-  );
+  await expect(
+    page
+      .locator(".editor-sidepanel .field-options")
+      .getByRole("button", {
+        name: "Client first name — {{client.first_name}}",
+        exact: true,
+      })
+      .locator(".field-option-label"),
+  ).toHaveText("First name");
   await expect(page.locator(".editor-sidepanel .field-options")).toContainText(
     "{{client.first_name}}",
   );

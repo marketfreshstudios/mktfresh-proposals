@@ -5293,13 +5293,15 @@
   background-color: var(--paper);
   color: var(--paper-ink);
   font: 500 14px/20px var(--font-ui);
-  padding: 0 10px;
+  padding-block: 0;
+  padding-left: 10px;
   min-width: 0;
   height: 38px;
   min-height: 38px;
 }
-:is(.editor-v2-panel, .editor-v2-sheet) select {
-  padding-right: 36px;
+:is(.editor-v2-panel, .editor-v2-sheet)
+  :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), textarea) {
+  padding-right: 10px;
 }
 :is(.editor-v2-panel, .editor-v2-sheet) textarea {
   height: auto;
