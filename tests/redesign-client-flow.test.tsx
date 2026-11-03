@@ -35,19 +35,28 @@ it("previews are read-only and future signed versions keep their frozen hash", a
   publicResult(signed);
   expect(JSON.stringify(v)).toBe(before);
 });
-it("requires a real staff session even when the removed preview flag is set", async () => {
-  vi.stubEnv("DESIGN_PREVIEW_OPEN", "1");
+it("design preview stays locked unless enabled, and is read-only when enabled", async () => {
   vi.stubEnv("SUPABASE_URL", "https://unused.example.test");
   vi.stubEnv("APP_MODE", "supabase");
-  for (const method of ["GET", "HEAD", "POST"])
-    await expect(
-      staff(
-        new Request("https://app.example.test/api/proposals", {
-          method,
-          headers: { "sec-fetch-site": "same-origin" },
-        }),
-      ),
-    ).rejects.toMatchObject({ status: 401 });
+  const request = (method: string) =>
+    new Request("https://app.example.test/api/proposals", {
+      method,
+      headers: { "sec-fetch-site": "same-origin" },
+    });
+  // Off (any value other than "1"): every unauthenticated request needs a session.
+  for (const flag of ["", "0", "true"]) {
+    vi.stubEnv("DESIGN_PREVIEW_OPEN", flag);
+    for (const method of ["GET", "HEAD", "POST"])
+      await expect(staff(request(method))).rejects.toMatchObject({
+        status: 401,
+      });
+  }
+  // On: writes are always refused before any lookup happens.
+  vi.stubEnv("DESIGN_PREVIEW_OPEN", "1");
+  for (const method of ["POST", "PUT", "PATCH", "DELETE"])
+    await expect(staff(request(method))).rejects.toMatchObject({
+      status: 403,
+    });
 });
 it("client totals always separate one-time/monthly and show yearly only when a yearly line exists", async () => {
   const { service, draft } = await setup();
