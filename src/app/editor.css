@@ -7815,3 +7815,50 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     overflow-x: auto;
   }
 }
+.spacing-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.spacing-stepper > input {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  appearance: textfield;
+}
+.spacing-stepper > input::-webkit-inner-spin-button {
+  appearance: none;
+}
+.spacing-stepper > button {
+  flex: none;
+  width: 28px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.band-spacing-settings {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+.band-spacing-settings > legend {
+  font-weight: 600;
+  color: var(--ink);
+}
+.band-spacing-settings .band-height small {
+  display: block;
+  font-size: 10px;
+}
+@media (max-width: 699px) {
+  .spacing-stepper > button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

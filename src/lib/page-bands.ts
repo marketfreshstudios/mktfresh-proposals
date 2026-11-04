@@ -146,7 +146,34 @@ export const BandSchema = z
   });
 export type Band = z.infer<typeof BandSchema>;
 const shared = z.object({ header: BandSchema, footer: BandSchema }).strict();
+export const BandSpacingSchema = z
+  .object({
+    distanceIn: z
+      .union([z.literal(0.25), z.literal(0.3), z.literal(0.4), z.literal(0.5)])
+      .default(0.3),
+    heightIn: z
+      .union([z.literal(0.25), z.literal(0.4), z.literal(0.6), z.literal(0.8)])
+      .default(0.25),
+    spaceByLine: z.number().min(0).max(24).default(6),
+    spaceToContent: z.number().min(0).max(48).default(8),
+  })
+  .strict();
+export type BandSpacing = z.infer<typeof BandSpacingSchema>;
+export const bandSpacing = (
+  settings:
+    | {
+        distanceIn?: number;
+        headerSpacing?: BandSpacing;
+        footerSpacing?: BandSpacing;
+      }
+    | undefined,
+  kind: "header" | "footer",
+): BandSpacing =>
+  settings?.[kind === "header" ? "headerSpacing" : "footerSpacing"] ??
+  BandSpacingSchema.parse({ distanceIn: settings?.distanceIn ?? 0.3 });
 const switches = {
+  headerSpacing: BandSpacingSchema.optional(),
+  footerSpacing: BandSpacingSchema.optional(),
   showHeader: z.boolean().default(true),
   showFooter: z.boolean().default(true),
   showOnCover: z.boolean().default(false),
@@ -162,7 +189,12 @@ const switches = {
 export const TemplateBandsSchema = z
   .object(switches)
   .strict()
-  .transform((value) => ({ ...value, bandHeightIn: undefined }));
+  .transform((value) => ({
+    ...value,
+    bandHeightIn: undefined,
+    headerSpacing: bandSpacing(value, "header"),
+    footerSpacing: bandSpacing(value, "footer"),
+  }));
 export const HeaderFooterSettingsSchema = z
   .object({
     ...switches,
@@ -179,7 +211,12 @@ export const HeaderFooterSettingsSchema = z
       .default({}),
   })
   .strict()
-  .transform((value) => ({ ...value, bandHeightIn: undefined }));
+  .transform((value) => ({
+    ...value,
+    bandHeightIn: undefined,
+    headerSpacing: bandSpacing(value, "header"),
+    footerSpacing: bandSpacing(value, "footer"),
+  }));
 export type HeaderFooterSettings = z.infer<typeof HeaderFooterSettingsSchema>;
 export type TemplateBands = z.infer<typeof TemplateBandsSchema>;
 const slot = (text: string): Band["slots"][number] => ({

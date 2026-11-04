@@ -15,6 +15,8 @@ export function resetBandSettings(
       shared: template.shared,
       divider: template.divider,
       distanceIn: template.distanceIn,
+      headerSpacing: template.headerSpacing,
+      footerSpacing: template.footerSpacing,
       bandHeightIn: undefined,
       showOnCover: template.showOnCover,
     }),
