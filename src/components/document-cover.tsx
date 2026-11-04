@@ -12,6 +12,7 @@ import {
 } from "../lib/cover";
 import { coverInlineHtml, coverLineClass } from "../lib/cover-render";
 import { SelectableImage } from "./editor/selectable-image";
+import { CoverAlignMenu } from "./editor/cover-align-menu";
 import { EditBar } from "./editor/edit-bar";
 import { SpacingInput } from "./editor/spacing-input";
 import { FieldEditor } from "./field-editor";
@@ -259,6 +260,7 @@ export function DocumentCover({
               }
               update={(patch) => change(e.id, patch)}
               onCover={onCover}
+              alignAll={alignAll}
             >
               {editable && (
                 <div className="cover-logo-controls" data-editor-chrome>
@@ -561,19 +563,17 @@ function CoverText({
               }}
             />
           ) : menu === "align" ? (
-            (["left", "center", "right"] as const).map((align) => (
-              <button
-                type="button"
-                key={align}
-                aria-pressed={e.align === align}
-                onClick={() => {
-                  update({ align });
-                  setMenu(null);
-                }}
-              >
-                Align {align}
-              </button>
-            ))
+            <CoverAlignMenu
+              align={e.align}
+              onAlign={(align) => {
+                update({ align });
+                setMenu(null);
+              }}
+              onAll={(align) => {
+                alignAll(align);
+                setMenu(null);
+              }}
+            />
           ) : (
             <>
               <button
@@ -594,18 +594,6 @@ function CoverText({
               >
                 Add line below
               </button>
-              {(["left", "center", "right"] as const).map((align) => (
-                <button
-                  type="button"
-                  key={align}
-                  onClick={() => {
-                    alignAll(align);
-                    setMenu(null);
-                  }}
-                >
-                  Align all cover items {align}
-                </button>
-              ))}
             </>
           )}
         </ToolbarPopover>
@@ -623,6 +611,7 @@ function CoverLogo({
   deselect,
   update,
   onCover,
+  alignAll,
   children,
 }: {
   element: CoverElement;
@@ -634,6 +623,7 @@ function CoverLogo({
   deselect: () => void;
   update: (patch: Partial<CoverElement>) => void;
   onCover?: Props["onCover"];
+  alignAll: (align: "left" | "center" | "right") => void;
   children: React.ReactNode;
 }) {
   const root = useRef<HTMLDivElement>(null),
@@ -716,6 +706,7 @@ function CoverLogo({
           source={src}
           placementStyle={style}
           onSelectionChange={(active) => (active ? select() : deselect())}
+          onAlignAll={editable ? alignAll : undefined}
           onAlign={
             editable ? (align) => update({ align, x: undefined }) : undefined
           }

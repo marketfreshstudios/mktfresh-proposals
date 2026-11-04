@@ -8044,3 +8044,24 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     min-height: 44px;
   }
 }
+.cover-controls-popover > button,
+.image-controls-popover > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cover-controls-popover .icon,
+.image-controls-popover .icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.menu-check {
+  margin-left: auto;
+}
+.menu-group-label {
+  display: block;
+  padding: 8px;
+  font: 600 11px/1.5 var(--font-ui);
+  color: var(--ink-muted);
+}
