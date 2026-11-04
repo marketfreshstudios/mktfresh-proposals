@@ -1,3 +1,5 @@
+import { shortPrintDiagnostics, type PrintDiagnostic } from "./pdf-diagnostics";
+import { jobFailure } from "./job-presentation";
 import { publishedExpiry, reminderCycle } from "./editor-publication";
 import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
@@ -14,7 +16,7 @@ import { randomUUID } from "node:crypto";
 import { sha256, versionHash, money } from "./content";
 import { bill, type BillingProvider } from "./billing";
 import { mutate, type Repository } from "./repository";
-import { event, notify, queue, system } from "./service";
+import { event, queue, system } from "./service";
 import {
   AppError,
   type Audit,
@@ -81,7 +83,12 @@ export class Worker {
     public providers: Record<"qbo" | "stripe", BillingProvider>,
     private render?: (
       ...args: Parameters<typeof import("./pdf").sealedPdf>
-    ) => Promise<{ body: Uint8Array; pdf: Uint8Array; bodyHash: string }>,
+    ) => Promise<{
+      body: Uint8Array;
+      pdf: Uint8Array;
+      bodyHash: string;
+      print_failures?: PrintDiagnostic[];
+    }>,
   ) {}
   async drain(id?: string, kind?: Job["kind"]) {
     const results = [];
@@ -138,9 +145,27 @@ export class Worker {
               Date.now() + Math.min(3600000, 30000 * 2 ** j.attempts),
             ).toISOString();
             delete j.lease_until;
-            event(p, "sync_failed", system, { job: j.id, error: j.last_error });
-            if (j.kind !== "email" && !j.payload.preview)
-              notify(p, "sync_failed");
+            const diagnostics = (e as { pdf_diagnostics?: PrintDiagnostic[] })
+              ?.pdf_diagnostics;
+            const providers =
+              j.kind === "billing"
+                ? p.billing_links
+                    .filter((l) => l.status === "failed")
+                    .map((l) => l.provider)
+                : [];
+            event(p, "sync_failed", system, {
+              job: j.id,
+              job_kind: j.kind,
+              stage: j.payload.stage,
+              providers,
+              error: j.last_error,
+              terminal: j.status === "failed",
+              ...(diagnostics?.length
+                ? { pdf_diagnostics: shortPrintDiagnostics(diagnostics) }
+                : {}),
+            });
+            if (j.status === "failed")
+              this.alert(p, j, j.last_error, providers);
           });
           results.push({ job: job.id, status: "failed" });
         }
@@ -157,6 +182,59 @@ export class Worker {
     }
     if (j.kind === "email") {
       const payload = j.payload;
+      const failure = payload.job_failure as { job_id: string } | undefined;
+      if (failure) {
+        const source = p.jobs.find((job) => job.id === failure.job_id);
+        if (
+          source?.status === "done" &&
+          !(
+            source.kind === "billing" &&
+            p.billing_links.some((link) => link.status === "needs_review")
+          )
+        )
+          return;
+      }
+      // Replace old per-attempt notices with one current, correctly named alert.
+      if (j.id.includes(":notify:sync_failed:")) {
+        const count = Number(
+          j.id.split(":notify:sync_failed:")[1]?.split(":")[0],
+        );
+        await mutate(this.repo, p.id, (row) => {
+          const oldEvent = row.events[count - 1];
+          const source =
+            row.jobs.find((job) => job.id === oldEvent?.metadata.job) ??
+            (oldEvent?.metadata.provider
+              ? row.jobs.find((job) => job.kind === "billing")
+              : undefined);
+          if (!source) return;
+          const review =
+            source.kind === "billing"
+              ? row.billing_links.filter(
+                  (link) => link.status === "needs_review",
+                )
+              : [];
+          if (review.length)
+            this.alert(
+              row,
+              source,
+              review
+                .map((link) => link.last_error || "A staff decision is needed")
+                .join("; "),
+              review.map((link) => link.provider),
+            );
+          else if (source.status === "failed")
+            this.alert(
+              row,
+              source,
+              source.last_error ||
+                String(oldEvent?.metadata.error || "Job failed"),
+              row.billing_links
+                .filter((link) => link.status === "failed")
+                .map((link) => link.provider),
+            );
+        });
+        return;
+      }
       if (
         payload.send_version &&
         (payload.send_version !== p.versions.length ||
@@ -284,9 +362,26 @@ export class Worker {
             );
         });
         if (link.status === "failed") failures.push(provider);
-        if (link.status === "needs_review")
-          await mutate(this.repo, p.id, (p) => notify(p, "sync_failed"));
       }
+      if (
+        (await this.repo.get(p.id))!.billing_links.some(
+          (link) => link.status === "needs_review",
+        )
+      )
+        await mutate(this.repo, p.id, (row) => {
+          const review = row.billing_links.filter(
+            (l) => l.status === "needs_review",
+          );
+          if (review.length)
+            this.alert(
+              row,
+              j,
+              review
+                .map((l) => l.last_error || "A staff decision is needed")
+                .join("; "),
+              review.map((l) => l.provider),
+            );
+        });
       if (failures.length)
         throw new Error("Billing failed: " + failures.join(", "));
       return;
@@ -386,6 +481,12 @@ export class Worker {
           stage,
         };
         p.files.push(body, file);
+        if (rendered.print_failures?.length)
+          event(p, "pdf_print_recovered", system, {
+            job: j.id,
+            stage,
+            pdf_diagnostics: shortPrintDiagnostics(rendered.print_failures),
+          });
         for (const signer of signatures) {
           if (
             p.files.some((f) => f.storage_path === signer.signature_image_path)
@@ -412,6 +513,23 @@ export class Worker {
             });
       });
     }
+  }
+  private alert(
+    p: Proposal,
+    job: Job,
+    error: string,
+    providers: string[] = [],
+  ) {
+    if (job.payload.preview || job.payload.job_failure) return;
+    const failure = jobFailure(job, error, providers);
+    // Queue identity persists across manual retries, process restarts and email retries.
+    const fingerprint = sha256(job.id + "\n" + error);
+    for (const to of staffRecipients(p))
+      queue(p, "email", `job-alert:${fingerprint}:${to}`, {
+        to,
+        email_template_key: "staff_billing_failed",
+        job_failure: failure,
+      });
   }
   private async attachment(p: Proposal, id: string) {
     const f = p.files.find((x) => x.id === id);

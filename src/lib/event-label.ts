@@ -1,3 +1,4 @@
+import { jobName } from "./job-presentation";
 import type { Audit } from "./model";
 /** Presentation only: stored event names and the immutable evidence are unchanged. */
 export function eventLabel(
@@ -27,6 +28,7 @@ export function eventLabel(
     counter_signed: "Company signature applied",
     company_signed: "Company signature applied",
     completed: "Agreement completed",
+    pdf_print_recovered: "PDF printer recovered on retry",
     declined: "Client declined",
     expired: "Proposal expired",
     downloaded: "Signed copy downloaded",
@@ -41,7 +43,31 @@ export function eventLabel(
     manual_invoice_recorded: "Manual invoice recorded",
     invoice_created: "Invoice created",
     subscription_created: "Subscription created",
-    sync_failed: "Background work needs attention",
+    sync_failed: (() => {
+      const id = String(e.metadata.job ?? "");
+      const pdf = e.metadata.job_kind === "pdf" || id.includes(":pdf:");
+      const name = pdf
+        ? e.metadata.stage === "company" || id.endsWith(":company")
+          ? "Signed PDF"
+          : "Client-signed PDF"
+        : jobName(
+            {
+              kind:
+                e.metadata.job_kind === "email"
+                  ? "email"
+                  : e.metadata.job_kind === "stripe_webhook"
+                    ? "stripe_webhook"
+                    : "billing",
+              payload: {},
+            },
+            Array.isArray(e.metadata.providers)
+              ? (e.metadata.providers as string[])
+              : e.metadata.provider
+                ? [String(e.metadata.provider)]
+                : [],
+          );
+      return `${name}${e.metadata.status === "needs_review" ? " needs a decision" : e.metadata.terminal === false ? " retry scheduled" : " failed · Retry available"}`;
+    })(),
     editing_new_version: "Started a new version",
     document_version: "Pricing reference saved",
     webhook_received: "Billing update received",

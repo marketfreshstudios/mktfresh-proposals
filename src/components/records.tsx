@@ -1,4 +1,9 @@
 "use client";
+import {
+  jobName,
+  jobRecordAnchor,
+  friendlyJobError,
+} from "../lib/job-presentation";
 import { Disclosure } from "./ui";
 import { stripeBillingStatus } from "../lib/billing-confirmation";
 import { StripeBillingDetails } from "./billing-breakdown";
@@ -1130,6 +1135,17 @@ export function RecordV4({
   countersign?: boolean;
 }) {
   const applying = useRef(false);
+  const [highlightedJob, setHighlightedJob] = useState<string | null>(null);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("job");
+    setHighlightedJob(id);
+    if (id)
+      requestAnimationFrame(() => {
+        const row = window.document.getElementById(jobRecordAnchor(id));
+        row?.scrollIntoView({ block: "center" });
+        row?.focus({ preventScroll: true });
+      });
+  }, [p.id]);
   const router = useRouter(),
     [document, setDocument] = useState(false),
     [already, setAlready] = useState(""),
@@ -1164,25 +1180,33 @@ export function RecordV4({
     applying.current = false;
     router.replace(`/proposals/${p.id}`, { scroll: false });
   }
+  const failedJob = p.jobs.find((j) => j.status === "failed");
   const nextTitle = p.archived_at
     ? "Archived proposal"
     : p.marked_won_by
       ? `Marked as won by ${person(p.marked_won_by, data)}, no client signature`
       : signature
         ? `${data.settings?.company_signatory?.name ?? "Your company signatory"} countersigns next`
-        : issues
-          ? "Billing needs your attention"
-          : p.status === "sent"
-            ? "Waiting for the client to open the proposal"
-            : p.status === "viewed"
-              ? "The client is reviewing your proposal"
-              : p.status === "declined"
-                ? "This proposal is closed"
-                : p.status === "expired"
-                  ? "The client link expired"
-                  : p.source === "proposify_import"
-                    ? "Imported from Proposify"
-                    : "Everything is complete";
+        : failedJob
+          ? `${jobName(
+              failedJob,
+              p.billing_links
+                .filter((l) => l.status !== "succeeded")
+                .map((l) => l.provider),
+            )} needs attention`
+          : issues
+            ? "Billing needs your attention"
+            : p.status === "sent"
+              ? "Waiting for the client to open the proposal"
+              : p.status === "viewed"
+                ? "The client is reviewing your proposal"
+                : p.status === "declined"
+                  ? "This proposal is closed"
+                  : p.status === "expired"
+                    ? "The client link expired"
+                    : p.source === "proposify_import"
+                      ? "Imported from Proposify"
+                      : "Everything is complete";
   return (
     <div className="record-v4 stack">
       <div className="record-toolbar">
@@ -1461,37 +1485,49 @@ export function RecordV4({
                     !!j.last_error,
                 )
                 .map((j) => (
-                  <JobState
+                  <div
                     key={j.id}
-                    state={
-                      j.status === "running"
-                        ? "running"
-                        : j.status === "failed" || j.last_error
-                          ? "failed"
-                          : "queued"
-                    }
-                    label={
-                      j.kind === "pdf"
-                        ? "Sealed PDF"
-                        : j.kind === "billing"
-                          ? "Billing"
-                          : j.payload.to === p.client.email
-                            ? "Email to client"
-                            : "Staff notification"
-                    }
-                    error={j.last_error}
-                    attempts={j.attempts}
-                    onRetry={
-                      j.status !== "running" &&
-                      (j.status === "failed" || j.last_error)
-                        ? () => {
-                            void post(`/api/proposals/${p.id}/retry`)
-                              .then(onRefresh)
-                              .catch((e) => setError(e.message));
-                          }
+                    id={jobRecordAnchor(j.id)}
+                    tabIndex={-1}
+                    className={
+                      highlightedJob === j.id
+                        ? "record-job-highlight"
                         : undefined
                     }
-                  />
+                    data-job-id={j.id}
+                  >
+                    <JobState
+                      state={
+                        j.status === "running"
+                          ? "running"
+                          : j.status === "failed" || j.last_error
+                            ? "failed"
+                            : "queued"
+                      }
+                      label={jobName(
+                        j,
+                        p.billing_links
+                          .filter((l) => l.status !== "succeeded")
+                          .map((l) => l.provider),
+                      )}
+                      error={
+                        j.last_error
+                          ? friendlyJobError(j.last_error).message
+                          : undefined
+                      }
+                      attempts={j.attempts}
+                      onRetry={
+                        j.status !== "running" &&
+                        (j.status === "failed" || j.last_error)
+                          ? () => {
+                              void post(`/api/proposals/${p.id}/retry`)
+                                .then(onRefresh)
+                                .catch((e) => setError(e.message));
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
                 ))}
             </div>
             {issues && (

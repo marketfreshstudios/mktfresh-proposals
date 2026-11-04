@@ -2,6 +2,8 @@ import { z } from "zod";
 import { check, type Proposal, type RichText } from "./model";
 import { escape, variables } from "./presentation";
 export const emailFields = {
+  "job.name": "Job name",
+  "job.summary": "Job failure summary",
   "client.first_name": "Client first name",
   "client.full_name": "Client full name",
   "client.company": "Client company",
@@ -139,10 +141,10 @@ export const emailDefaults = [
   ),
   def(
     "staff_billing_failed",
-    "Billing needs attention",
-    "Billing needs attention: {{proposal.title}}",
-    "Background work needs attention. Open the proposal record to review the billing or document job and retry when ready.",
-    "Review proposal",
+    "Job needs attention",
+    "{{job.name}} needs attention: {{proposal.title}}",
+    "{{job.summary}}",
+    "Open proposal",
     true,
   ),
   def(
@@ -154,6 +156,16 @@ export const emailDefaults = [
     true,
   ),
 ];
+export function editableEmail(t: { staff: boolean; key: string }) {
+  return !t.staff || t.key === "staff_billing_failed";
+}
+export const oldJobEmailDefault = {
+  subject: "Billing needs attention: {{proposal.title}}",
+  body: plainBody(
+    "Background work needs attention. Open the proposal record to review the billing or document job and retry when ready.",
+  ),
+  button_label: "Review proposal",
+};
 export type EmailTemplate = (typeof emailDefaults)[number];
 export function definition(key: string) {
   const t = emailDefaults.find((t) => t.key === key);
@@ -163,7 +175,18 @@ export function definition(key: string) {
 export function emailValues(p: Proposal) {
   const all = variables(p);
   return Object.fromEntries(
-    Object.keys(emailFields).map((k) => [k, all[k] ?? ""]),
+    Object.keys(emailFields).map((k) => [
+      k,
+      all[k] ??
+        (
+          {
+            "job.name": "Signed PDF and certificate",
+            "job.summary":
+              "Signed PDF and certificate could not finish. Retry the PDF job from the proposal record.",
+          } as Record<string, string>
+        )[k] ??
+        "",
+    ]),
   );
 }
 export function resolveEmailText(text: string, map?: Record<string, string>) {
