@@ -37,7 +37,9 @@ export function CoverBandPill({
               showOnCover: true,
             },
           });
-          editing?.announce("Header and footer shown on cover");
+          editing?.announce(
+            `${kind === "header" ? "Header" : "Footer"} shown on cover`,
+          );
         }}
       >
         + Use shared {kind}
