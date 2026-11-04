@@ -63,6 +63,13 @@ export class EditorHistory<T> {
   past: { id: number; before: T; after: T; scope: string; time: number }[] = [];
   future: typeof this.past = [];
   private serial = 0;
+  private group: { key: string; step?: number } | null = null;
+  beginGroup(key: string) {
+    this.group = { key };
+  }
+  endGroup(key: string) {
+    if (this.group?.key === key) this.group = null;
+  }
   private version = 0;
   private listeners = new Set<() => void>();
   subscribe = (listener: () => void) => {
@@ -83,9 +90,11 @@ export class EditorHistory<T> {
     if (equal(before, after)) return;
     const last = this.past.at(-1);
     if (
-      scope.startsWith("text:") &&
-      last?.scope === scope &&
-      now - last.time < 500 &&
+      last &&
+      ((this.group?.step === last?.id && this.group?.step !== undefined) ||
+        (scope.startsWith("text:") &&
+          last?.scope === scope &&
+          now - last.time < 500)) &&
       !this.future.length
     ) {
       last.after = structuredClone(after);
@@ -98,6 +107,7 @@ export class EditorHistory<T> {
         scope,
         time: now,
       });
+    if (this.group) this.group.step = this.past.at(-1)?.id;
     this.past = this.past.slice(-100);
     this.future = [];
     this.emit();

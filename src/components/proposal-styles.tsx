@@ -240,7 +240,12 @@ export function ProposalStyles({
               label="Space above (px)"
               ariaLabel={`${styleLabels[level]} space above (px)`}
               value={selected.space_above}
-              max={160}
+              max={Math.max(
+                0,
+                pageGeometry(styles, headerFooter, 1).content.height -
+                  selected.size * 1.5 -
+                  selected.space_below,
+              )}
               inputStep="any"
               onChange={(space_above) => patch({ space_above })}
             />
@@ -248,7 +253,12 @@ export function ProposalStyles({
               label="Space below (px)"
               ariaLabel={`${styleLabels[level]} space below (px)`}
               value={selected.space_below}
-              max={160}
+              max={Math.max(
+                0,
+                pageGeometry(styles, headerFooter, 1).content.height -
+                  selected.size * 1.5 -
+                  selected.space_above,
+              )}
               inputStep="any"
               onChange={(space_below) => patch({ space_below })}
             />

@@ -24,6 +24,7 @@ import { bandRichText } from "./editor/band-rich-text";
 import { Icon } from "./ui";
 import type { RichText } from "../lib/model";
 type Props = {
+  contentHeight?: number;
   title: string;
   company: string;
   sender: string;
@@ -46,9 +47,28 @@ function Spacing({
   update: (patch: Partial<CoverElement>) => void;
 }) {
   const computed = node ? getComputedStyle(node) : undefined;
+  const cover = node?.closest<HTMLElement>(".document-cover"),
+    available = Number(cover?.dataset.contentHeight ?? 912),
+    used = cover
+      ? Array.from(cover.children).reduce((sum, child) => {
+          const c = child as HTMLElement,
+            s = getComputedStyle(c);
+          return (
+            sum +
+            c.getBoundingClientRect().height +
+            (parseFloat(s.marginTop) || 0) +
+            (parseFloat(s.marginBottom) || 0)
+          );
+        }, 0)
+      : 0,
+    room = Math.max(0, available - used);
   return (
     <>
       <SpacingInput
+        max={
+          room +
+          (element.space_above ?? (parseFloat(computed?.marginTop ?? "0") || 0))
+        }
         label="Space above"
         value={
           element.space_above ??
@@ -63,6 +83,11 @@ function Spacing({
         onChange={(space_above) => update({ space_above })}
       />
       <SpacingInput
+        max={
+          room +
+          (element.space_below ??
+            (parseFloat(computed?.marginBottom ?? "0") || 0))
+        }
         label="Space below"
         value={
           element.space_below ??
@@ -89,6 +114,7 @@ function elementStyle(e: CoverElement): CSSProperties {
   };
 }
 export function DocumentCover({
+  contentHeight = 912,
   title,
   company,
   sender,
@@ -207,6 +233,7 @@ export function DocumentCover({
     <header
       ref={root}
       className="document-cover"
+      data-content-height={contentHeight}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !e.defaultPrevented) {
           e.preventDefault();

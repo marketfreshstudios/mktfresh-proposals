@@ -8010,3 +8010,37 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .document-cover > .cover-element {
   flex: none;
 }
+.spacing-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.spacing-slider-row > input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  height: 36px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.spacing-number {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 12px var(--font-ui);
+  color: var(--ink-muted);
+}
+.spacing-number > input {
+  width: 70px;
+  min-width: 0;
+  height: 36px;
+  padding: 4px 6px;
+}
+@media (max-width: 959px) {
+  .spacing-slider-row > input[type="range"],
+  .spacing-number > input {
+    min-height: 44px;
+  }
+}

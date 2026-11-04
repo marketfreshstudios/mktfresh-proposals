@@ -41,8 +41,8 @@ export const StyleEntrySchema = z.object({
   ]),
   letter_case: z.enum(["normal", "uppercase"]),
   letter_spacing: z.number().min(-0.1).max(0.5),
-  space_above: z.number().min(0).max(160),
-  space_below: z.number().min(0).max(160),
+  space_above: z.number().min(0).max(1056),
+  space_below: z.number().min(0).max(1056),
 });
 export type TextStyle = z.infer<typeof StyleEntrySchema>;
 export const StyleOverridesSchema = z

@@ -1,4 +1,5 @@
 "use client";
+import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { resetBandSettings } from "./editor/reset-band-settings";
@@ -1967,6 +1968,18 @@ function TemplatesStudioContent({
                         )}
                       </style>
                       <DocumentCover
+                        contentHeight={
+                          pageGeometry(
+                            resolveStyles(
+                              data.settings,
+                              draft?.style_overrides,
+                            ),
+                            draft?.header_footer
+                              ? proposalBands(draft.header_footer)
+                              : undefined,
+                            1,
+                          ).content.height
+                        }
                         title="Proposal title"
                         cover={draft?.cover}
                         map={map}

@@ -1,4 +1,5 @@
 "use client";
+import { pageGeometry } from "../lib/page-bands";
 import { Disclosure } from "./ui";
 import { DisclosureChevron } from "./disclosure-chevron";
 import { SelectableImage } from "./editor/selectable-image";
@@ -2986,6 +2987,17 @@ function QuoteEditorContent({
                   </style>
                   {p.content.length > 0 && (
                     <DocumentCover
+                      contentHeight={
+                        pageGeometry(
+                          resolveStyles(
+                            p.workspace_settings,
+                            p.template_style_overrides,
+                            p.style_overrides,
+                          ),
+                          p.header_footer,
+                          1,
+                        ).content.height
+                      }
                       title={p.title}
                       cover={p.cover}
                       map={map}

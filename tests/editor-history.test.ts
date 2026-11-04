@@ -84,3 +84,17 @@ it("groups typing only in the same block, caps history at 100 and clears redo af
   expect(h.past).toHaveLength(100);
   expect(new EditorHistory().past).toHaveLength(0);
 });
+it("groups a complete slider drag even when its duration exceeds typing debounce", () => {
+  const h = new EditorHistory<{ space: number }>();
+  h.beginGroup("slider");
+  h.record({ space: 0 }, { space: 10 }, "cover:a", 0);
+  h.record({ space: 10 }, { space: 280 }, "cover:a", 2000);
+  h.endGroup("slider");
+  expect(h.past).toHaveLength(1);
+  expect(h.undo({ space: 280 })).toEqual({ space: 0 });
+  expect(h.redo({ space: 0 })).toEqual({ space: 280 });
+  h.beginGroup("slider");
+  h.record({ space: 280 }, { space: 300 }, "cover:a", 3000);
+  h.endGroup("slider");
+  expect(h.past).toHaveLength(2);
+});
