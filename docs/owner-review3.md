@@ -2,7 +2,7 @@
 
 Started from main `bbd46a8`. Owner decisions are recorded in [header/footer decisions §10](../design/header-footer/DECISIONS.md). Changes are split into separate cover/menu, spacing, Header/Footer, staff-page and phone-client commits.
 
-Cover menus reset document typography at the shared popover root. Cover rich text now uses the same canonical comparison as bands, avoiding selection-destroying content replacements during autosave. Real middle-word Bold/Italic tests retain the selection; dynamic fields stay highlighted in the editor and render plain in client/PDF output.
+Cover menus reset document typography at the shared popover root, matching the body block menu’s 13px app font. Cover rich text now uses the same canonical comparison as bands, avoiding selection-destroying content replacements during autosave. Real middle-word Bold/Italic tests retain the selection; dynamic fields stay highlighted in the editor and render plain in client/PDF output.
 
 Cover lines keep their own vertical space instead of collapsing neighbouring margins. Added empty lines have an editable/print line box, insert directly below, focus correctly and retain content, marks and spacing through Undo/Redo and reload. Removing the title preserves proposal metadata. Item and whole-cover alignment share the Align menu, including the logo, using the existing Font Awesome family.
 
@@ -26,6 +26,10 @@ Before phone captures were taken from a separate `bbd46a8` checkout with the sam
 - [375px spacing slider](screenshots/owner-review3/phone-spacing-after.png)
 - Client intro: [before](screenshots/owner-review3/client-intro-before.png) / [after](screenshots/owner-review3/client-intro-after.png)
 - Client pricing: [before](screenshots/owner-review3/client-pricing-before.png) / [after](screenshots/owner-review3/client-pricing-after.png)
+
+## Responsive toolbar regression found by the full suite
+
+A desktop-to-phone resize could briefly remove image-toolbar actions: changing between an inline render and a portal remounted every button. The shared image/cover toolbar now keeps one portal container and moves that same container across the breakpoint, preserving DOM identity and focus. The original tiny-logo visibility/bounds assertions are unchanged. Both that test and a new 4× CPU-throttled identity/visibility check passed ten consecutive runs each (20 total); each throttled run switches widths twelve times.
 
 ## Validation
 

@@ -1053,3 +1053,5 @@ Starts from merged main `bbd46a8`. Cover text selection survives formatting/auto
 Staff pages now authenticate/refresh before rendering, redirecting signed-out visitors without the Dashboard flash. The owner approved root-path refresh cookies and expiration of the old `/api` copy; an old session may need one sign-in. Public client/login/OAuth discovery/MCP/assets and mid-session local-edit recovery remain intact. Phone client text insets are **33→16px on each side at 375 and 390px**, with full-width quote descriptions and unwrapped prices; tablet/desktop layouts are unchanged.
 
 [Implementation details, neutral before/after screenshots and validation](docs/owner-review3.md). No hosted mutations. Do not wait for GitHub CI or merge automatically.
+
+The full run also exposed a desktop/phone toolbar remount gap. Image/cover actions now keep the same live DOM controls across docking changes. The unchanged tiny-logo check and a 4× CPU-throttled resize/identity regression passed ten consecutive runs each. The production build and 328-file PDF/API trace pass; the final complete browser rerun includes this fix.
