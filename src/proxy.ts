@@ -4,7 +4,9 @@ import { AppError } from "./lib/model";
 import { staff } from "./lib/auth";
 export function staffPagePath(path: string) {
   return (
-    !/^\/(?:api|login|p|oauth|mcp|_next|fonts|schemas)(?:\/|$)/.test(path) &&
+    !/^\/(?:api|login|p|oauth|mcp|_next|fonts|schemas|\.well-known)(?:\/|$)/.test(
+      path,
+    ) &&
     !["/favicon.ico", "/pdf.worker.min.mjs", "/pdfjs-LICENSE.txt"].includes(
       path,
     )
@@ -52,7 +54,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
-    "/((?!api(?:/|$)|login(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
+    "/((?!api(?:/|$)|login(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
     "/api/proposals/:path*",
     "/api/clients/:path*",
     "/api/pricing_items/:path*",

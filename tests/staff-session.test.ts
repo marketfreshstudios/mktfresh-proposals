@@ -320,6 +320,7 @@ it("staff pages redirect before rendering, preserve query, and refresh without a
     "/oauth/authorize",
     "/mcp",
     "/fonts/curated.css",
+    "/.well-known/oauth-authorization-server",
   ]) {
     const response = await proxy(
       new NextRequest("https://app.example.test" + path),
