@@ -7797,3 +7797,21 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   > :is(.editor-gutter, .editor-ai-check) {
   visibility: hidden;
 }
+
+/* Image actions retain intrinsic width, including on a tiny selected logo. */
+.editor-edit-bar.image-edit-bar.image-edit-bar {
+  width: max-content;
+  max-width: none;
+  flex-wrap: nowrap;
+  overflow: visible;
+  white-space: nowrap;
+}
+.editor-edit-bar.image-edit-bar > * {
+  flex: none;
+}
+@media (max-width: 699px) {
+  .editor-edit-bar.image-edit-bar.image-edit-bar {
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+  }
+}

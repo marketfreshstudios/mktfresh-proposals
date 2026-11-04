@@ -14,6 +14,7 @@ import {
   imagePercent,
   type ImageValue,
 } from "../../lib/image-size";
+import { useImageToolbar } from "./use-image-toolbar";
 import { useEditorHistory } from "../editor-history";
 import { ToolbarPopover } from "../toolbar-popover";
 export function SelectableImage({
@@ -47,6 +48,7 @@ export function SelectableImage({
 }) {
   const root = useRef<HTMLSpanElement>(null),
     image = useRef<HTMLImageElement>(null),
+    bar = useRef<HTMLSpanElement>(null),
     input = useRef<HTMLInputElement>(null),
     trigger = useRef<HTMLElement | null>(null);
   const [selected, setSelected] = useState(false),
@@ -58,6 +60,7 @@ export function SelectableImage({
   const history = useEditorHistory(),
     id = useId(),
     editable = !!onChange;
+  useImageToolbar(root, bar, selected);
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
   useEffect(() => {
@@ -329,6 +332,7 @@ export function SelectableImage({
           </span>
           <span
             data-editor-chrome
+            ref={bar}
             className="editor-edit-bar image-edit-bar"
             role="toolbar"
             aria-label="Image actions"
