@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { useBandEditing } from "./editor/band-editing";
 import { bandPages, resolvedBandPages } from "../lib/band-overrides";
@@ -2492,7 +2493,28 @@ function QuoteEditorContent({
             </div>
           ) : b.type === "image" ? (
             <>
-              <img src={b.src} alt={b.alt ?? ""} />
+              <SelectableImage
+                value={{ ...b, src: b.src ?? "" }}
+                onChange={
+                  locked ? undefined : (image) => patchBlock({ ...b, ...image })
+                }
+                onDelete={() =>
+                  blockFeedback.remove(
+                    b,
+                    () =>
+                      change({
+                        content: latest.current.content.filter(
+                          (v) => v.id !== b.id,
+                        ),
+                      }),
+                    () => {
+                      const next = [...latest.current.content];
+                      next.splice(Math.min(n, next.length), 0, b);
+                      change({ content: next });
+                    },
+                  )
+                }
+              />
               {blockSettings === b.id && (
                 <Sheet
                   title="Image settings"

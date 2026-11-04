@@ -241,6 +241,7 @@ export function pageGeometry(
   styles: import("./proposal-styles").ResolvedStyles | undefined,
   hf: HeaderFooterSettings | undefined,
   page: number,
+  resolved?: Partial<Record<"header" | "footer", Band | "hidden">>,
 ) {
   const m = pageMetrics(styles),
     margin = {
@@ -271,7 +272,14 @@ export function pageGeometry(
   const height = (kind: "header" | "footer") =>
     Math.min(
       limits[kind].height,
-      hf ? bandDataHeight(hf.shared[kind], hf.divider) : 0,
+      hf
+        ? bandDataHeight(
+            resolved?.[kind] && resolved[kind] !== "hidden"
+              ? (resolved[kind] as Band)
+              : hf.shared[kind],
+            hf.divider,
+          )
+        : 0,
     );
   const head = headerShown(hf, page),
     foot = footerShown(hf, page);

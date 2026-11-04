@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./editor/selectable-image";
 import { convertTextStyle, type TextLevel } from "../lib/editor-document";
 import { FieldEditor } from "./field-editor";
 import { FieldTextArea, FieldOptions } from "./field-options";
@@ -73,7 +74,11 @@ export function BlocksEditor({
               />
             ) : b.type === "image" ? (
               <>
-                <img src={b.src} alt={b.alt ?? ""} />
+                <SelectableImage
+                  value={{ ...b, src: b.src ?? "" }}
+                  onChange={(image) => patch({ ...b, ...image })}
+                  onDelete={() => onChange(content.filter((_, i) => i !== n))}
+                />
                 <label className="field">
                   Image description
                   <input

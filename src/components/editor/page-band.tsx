@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./selectable-image";
 import { sharedPagesLabel, sharedChangesLabel } from "../../lib/page-count";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
@@ -62,12 +63,18 @@ export function PageBand(props: Props) {
   const root = useRef<HTMLDivElement>(null),
     editors = useRef<(Editor | null)[]>([]),
     column = useRef<number | null>(null),
-    clickPoint = useRef<{ x: number; y: number; slot: number } | null>(null);
+    clickPoint = useRef<{
+      x: number;
+      y: number;
+      slot: number;
+      image?: boolean;
+    } | null>(null);
   const [menu, setMenu] = useState<
       "more" | "confirm" | "layout" | "fields" | "image" | null
     >(null),
     [trigger, setTrigger] = useState<HTMLElement | null>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [imageSelected, setImageSelected] = useState(false);
   const device = control?.device,
     phone = device === "phone",
     tablet = device === "tablet";
@@ -79,7 +86,12 @@ export function PageBand(props: Props) {
   const shown =
     !!hf && (kind === "header" ? headerShown(hf, page) : footerShown(hf, page));
   const editable = !!device && !!onChange;
-  const begin = (point?: { x: number; y: number; slot: number }) => {
+  const begin = (point?: {
+    x: number;
+    y: number;
+    slot: number;
+    image?: boolean;
+  }) => {
     if (!editable) return;
     if (resolved === "hidden" && hf && anchor)
       onChange?.(setBandOverride(hf, anchor, kind, emptyBand(hf.shared[kind])));
@@ -153,7 +165,7 @@ export function PageBand(props: Props) {
   if (!hf || !shown) return null;
   const band =
       resolved === "hidden" ? hf.shared[kind] : (resolved ?? hf.shared[kind]),
-    geometry = pageGeometry(styles, hf, page),
+    geometry = pageGeometry(styles, hf, page, { [kind]: resolved }),
     rect = geometry[kind]!;
   const patch = (next: Band) => {
     onDismissMove?.();
@@ -268,6 +280,7 @@ export function PageBand(props: Props) {
           x: event.clientX,
           y: event.clientY,
           slot: Number(slot?.dataset.bandSlot ?? 0),
+          image: (event.target as Element).tagName === "IMG",
         });
       }}
       onKeyDown={(e) => {
@@ -318,14 +331,31 @@ export function PageBand(props: Props) {
             >
               {band.image?.slot === n &&
                 (band.image.src !== "workspace-logo" || logo) && (
-                  <img
-                    src={
+                  <SelectableImage
+                    kind="band"
+                    value={band.image}
+                    source={
                       band.image.src === "workspace-logo"
                         ? logo
                         : band.image.src
                     }
-                    alt={band.image.alt}
-                    style={{ height: band.image.height ?? 18 }}
+                    maxHeight={geometry.bandLimits[kind].imageHeight}
+                    onChange={(image) =>
+                      patch({
+                        ...band,
+                        image: {
+                          ...band.image!,
+                          src: image.src,
+                          alt: image.alt ?? "",
+                          height: image.height,
+                        },
+                      })
+                    }
+                    onDelete={() => {
+                      const { image: _, ...next } = band;
+                      patch(next);
+                    }}
+                    onSelectionChange={setImageSelected}
                   />
                 )}
               <div
@@ -351,6 +381,15 @@ export function PageBand(props: Props) {
                       if (point?.slot === n)
                         requestAnimationFrame(() => {
                           if (e.isDestroyed) return;
+                          if (point.image) {
+                            root.current
+                              ?.querySelector<HTMLImageElement>(
+                                `[data-band-slot="${n}"] img`,
+                              )
+                              ?.click();
+                            clickPoint.current = null;
+                            return;
+                          }
                           const position = e.view.posAtCoords({
                             left: point.x,
                             top: point.y,
@@ -432,7 +471,7 @@ export function PageBand(props: Props) {
           </span>
         </div>
       )}
-      {editing && (
+      {editing && !imageSelected && (
         <EditBar
           variant="band"
           portal={root.current?.closest<HTMLElement>(

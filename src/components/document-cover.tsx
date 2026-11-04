@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./editor/selectable-image";
 import { useState, useRef } from "react";
 import { ToolbarPopover } from "./toolbar-popover";
 import { CoverSchema, defaultCover, type Cover } from "../lib/cover";
@@ -75,11 +76,29 @@ export function DocumentCover({
     <header className="document-cover">
       <div className="cover-logo">
         {src && (
-          <img
-            src={src}
-            alt="Company logo"
-            style={{ maxHeight: 60, maxWidth: 180 }}
-            onClick={onCover ? () => setLogoMenu(!logoMenu) : undefined}
+          <SelectableImage
+            kind="cover"
+            value={{
+              src: cover?.logo || "workspace-logo",
+              alt: cover?.logo_alt ?? "Company logo",
+              height: cover?.logo_height ?? 60,
+            }}
+            source={src}
+            onChange={
+              onCover
+                ? (image) =>
+                    onCover({
+                      ...value,
+                      logo:
+                        image.src === "workspace-logo" ? undefined : image.src,
+                      logo_height: image.height,
+                      logo_alt: image.alt,
+                    })
+                : undefined
+            }
+            onDelete={
+              onCover ? () => onCover({ ...value, logo: null }) : undefined
+            }
           />
         )}
         {onCover && (

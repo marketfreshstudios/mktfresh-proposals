@@ -122,6 +122,8 @@ export type Block = {
   content?: RichText;
   src?: string;
   alt?: string;
+  width_percent?: number;
+  align?: "left" | "center" | "right";
   role?: "client" | "company";
   path?: string;
   id?: string;

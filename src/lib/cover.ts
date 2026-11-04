@@ -5,6 +5,8 @@ export const CoverSchema = z
     workspace: z.string().max(2000),
     eyebrow: z.string().max(2000),
     byline: z.string().max(4000),
+    logo_height: z.number().min(16).max(1056).optional(),
+    logo_alt: z.string().max(300).optional(),
     logo: z
       .string()
       .max(1000000)

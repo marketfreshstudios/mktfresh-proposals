@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
@@ -2328,7 +2329,38 @@ function TemplatesStudioContent({
                                   />
                                 </HeadingElement>
                               ) : b.type === "image" ? (
-                                <img src={b.src} alt={b.alt ?? ""} />
+                                <SelectableImage
+                                  value={{ ...b, src: b.src ?? "" }}
+                                  onChange={(image) =>
+                                    patch(
+                                      currentContent.current.map((v) =>
+                                        v.id === b.id ? { ...v, ...image } : v,
+                                      ),
+                                    )
+                                  }
+                                  onDelete={() =>
+                                    blockFeedback.remove(
+                                      b,
+                                      () =>
+                                        patch(
+                                          currentContent.current.filter(
+                                            (v) => v.id !== b.id,
+                                          ),
+                                        ),
+                                      () => {
+                                        const next = [
+                                          ...currentContent.current,
+                                        ];
+                                        next.splice(
+                                          Math.min(n, next.length),
+                                          0,
+                                          b,
+                                        );
+                                        patch(next);
+                                      },
+                                    )
+                                  }
+                                />
                               ) : b.type === "signature_block" ? (
                                 <div
                                   dangerouslySetInnerHTML={{

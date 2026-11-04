@@ -7549,3 +7549,140 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   gap: 0;
   justify-content: flex-start;
 }
+/* Selected image chrome is excluded from pagination and never changes image bounds. */
+.document-image {
+  position: relative;
+  max-width: 100%;
+  vertical-align: middle;
+  line-height: 0;
+}
+.document-image > img {
+  margin: 0;
+}
+.document-image[data-image-selected="true"] {
+  outline: 1.5px solid #9db3a8;
+  outline-offset: 0;
+}
+.image-selection-controls {
+  display: contents;
+}
+.image-resize-handle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  z-index: 18;
+  touch-action: none;
+}
+.image-resize-handle::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 1.5px solid #9db3a8;
+  left: 17px;
+  top: 17px;
+}
+.image-resize-handle.top-left {
+  top: -22px;
+  left: -22px;
+  cursor: nwse-resize;
+}
+.image-resize-handle.top-right {
+  top: -22px;
+  right: -22px;
+  cursor: nesw-resize;
+}
+.image-resize-handle.bottom-left {
+  bottom: -22px;
+  left: -22px;
+  cursor: nesw-resize;
+}
+.image-resize-handle.bottom-right {
+  bottom: -22px;
+  right: -22px;
+  cursor: nwse-resize;
+}
+.image-edit-bar {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 14px);
+  display: flex;
+  width: max-content;
+  max-width: min(600px, calc(100vw - 16px));
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 20;
+  white-space: nowrap;
+}
+.image-edit-bar > button {
+  flex: none;
+}
+.image-edit-bar .image-delete {
+  color: #ff9a90;
+}
+.image-live-size {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  transform: translateX(-50%);
+  background: #1c1b18;
+  color: white;
+  font: 500 12px/24px var(--font-ui);
+  border-radius: 5px;
+  padding: 0 6px;
+  z-index: 21;
+  white-space: nowrap;
+}
+.image-controls-popover {
+  padding: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+.image-controls-popover input {
+  display: block;
+  min-height: 44px;
+}
+.block-frame:has([data-image-selected="true"]) > .editor-edit-bar {
+  visibility: hidden;
+}
+@media (max-width: 699px) {
+  .image-edit-bar {
+    position: fixed;
+    top: auto;
+    bottom: var(--image-keyboard-inset, 0px);
+    left: 8px;
+    max-width: calc(100vw - 16px);
+    min-height: 48px;
+    z-index: 60;
+  }
+  .image-edit-bar button {
+    min-height: 44px;
+  }
+}
+.cover-logo {
+  width: 100%;
+  max-width: none;
+}
+.page-band .document-image {
+  flex-shrink: 0;
+}
+.page-band-frame:has([data-image-selected="true"]) {
+  z-index: 22;
+}
+.proposal-typography.proposal-typography
+  .page-band-frame
+  > .page-band[data-band-mode="editing"] {
+  overflow: visible;
+}
+.page-band-frame .band-slot:has([data-image-selected="true"]) {
+  position: relative;
+  z-index: 24;
+}

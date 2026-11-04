@@ -58,7 +58,7 @@ export function pageBandHtml({
     return "";
   if (override === "hidden") return "";
   const band = override ?? hf.shared[kind],
-    g = pageGeometry(styles, hf, page),
+    g = pageGeometry(styles, hf, page, { [kind]: override }),
     rect = g[kind]!;
   // Page fields are local to this rendering operation, never general proposal variables.
   const map: Record<string, string> = {
