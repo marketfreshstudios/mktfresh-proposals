@@ -455,3 +455,10 @@ Overrides follow explicit page-break IDs or live page-start block IDs, with `cov
 Editing a hidden band turns it into an empty unique band with the shared layout. Its menu offers Edit and Use shared; Use shared retains the confirmation and Undo. Templates continue to store shared bands only. Client web-page bands remain a separate PR.
 
 The owner clarified that “Shared on N pages” counts only actual visible shared bands, excluding unique and hidden pages. Styles lists the exclusions (`· 1 unique · 1 hidden` when applicable); edit bars, menus and the phone header use the same N. Redesign 13 frame 1i's footer “8” was a design slip, not a rule to include hidden pages.
+
+## Header/footer PR 4 — desktop client sheets (3–4 November 2026)
+
+- At ≥1100px the client reads a scaled Letter projection of the published document, including shared/unique/hidden bands. Below 1100px the existing flowing screen and controls remain in place. Scaling changes the sheet transform and scroll footprint, not font sizes; interactive choice hit regions remain at least 44 CSS pixels on screen.
+- Owner clarification supersedes the initial live-repagination requirement: client choices keep the published PagePlan. Conditional clauses and totals update inside those pages through the same trusted print-source/plan projection used by the sealed PDF. No client-computed plan is accepted, and signing, version hashing and the PDF renderer remain unchanged.
+- Public document data includes the published bands and only `plan_terms.client_copy` as a separate client-visible string map. Internal plan/billing metadata stays private.
+- Shared page counts use one helper: `1 page` / `N pages`; one-page change descriptions say `Changes show on this page only`.
