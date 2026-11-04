@@ -25,6 +25,7 @@ export function previewProposal(
         p.style_overrides,
       ),
       ...(p.pagination ? { pagination: structuredClone(p.pagination) } : {}),
+      ...(p.cover ? { cover: p.cover } : {}),
       content: p.content,
       quote: p.quote,
       variables_resolved: variables(p, p.quote),
@@ -33,6 +34,7 @@ export function previewProposal(
       frozen: false,
     };
     version.content_hash = versionHash({
+      ...(version.cover ? { cover: version.cover } : {}),
       content: version.content,
       quote: version.quote,
       variables_resolved: version.variables_resolved,

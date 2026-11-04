@@ -1,8 +1,15 @@
 "use client";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  signatureHtml,
+  signatureCss,
+  type SignaturePresentation,
+} from "../lib/signature-presentation";
 import { Field, Banner } from "./ui";
 import type { SignatureInput } from "../lib/model";
 export function SignatureForm({
+  companySignatory,
+  clientCompany = "",
   preview = false,
   consentText,
   name = "",
@@ -18,6 +25,8 @@ export function SignatureForm({
   blockedReason,
   onSign,
 }: {
+  companySignatory?: SignaturePresentation;
+  clientCompany?: string;
   preview?: boolean;
   consentText: string;
   name?: string;
@@ -39,6 +48,7 @@ export function SignatureForm({
     [typed, setTyped] = useState(name),
     [consent, setConsent] = useState(false),
     [drawn, setDrawn] = useState(false),
+    [drawnImage, setDrawnImage] = useState<string>(),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const canvas = useRef<HTMLCanvasElement>(null),
@@ -76,6 +86,7 @@ export function SignatureForm({
                 : "");
   function clear() {
     setDrawn(false);
+    setDrawnImage(undefined);
     setTyped("");
     canvas.current?.getContext("2d")?.clearRect(0, 0, 720, 220);
   }
@@ -223,6 +234,7 @@ export function SignatureForm({
             }}
             onPointerUp={() => {
               drawing.current = false;
+              setDrawnImage(canvas.current?.toDataURL("image/png"));
             }}
             onPointerCancel={() => {
               drawing.current = false;
@@ -237,6 +249,33 @@ export function SignatureForm({
           />
         </div>
       </fieldset>
+      {companySignatory && (
+        <div
+          className="proposal-typography signing-preview"
+          aria-label="Signature preview"
+        >
+          <style>{signatureCss}</style>
+          <div className="signature-pair">
+            <div
+              dangerouslySetInnerHTML={{
+                __html: signatureHtml({
+                  role: "client",
+                  name: fullName || "Client",
+                  title,
+                  company: clientCompany,
+                  typedName: mode === "typed" ? typed : undefined,
+                  image: mode === "drawn" ? drawnImage : undefined,
+                }),
+              }}
+            />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: signatureHtml(companySignatory),
+              }}
+            />
+          </div>
+        </div>
+      )}
       <div className="flow-consent">
         <p>{consentText}</p>
         <label className="check">

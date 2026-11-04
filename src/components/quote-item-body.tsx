@@ -1,4 +1,5 @@
 "use client";
+import { sublineLabel } from "../lib/subline-label";
 import type { QuoteItem } from "../lib/model";
 import { formatMoney, intervalSuffix, type CentsMode } from "../lib/money";
 /** Shared row content keeps authoring and client reading geometry identical. */
@@ -35,12 +36,7 @@ export function QuoteItemBody({
         item.sublines.map((s) => (
           <div className="flow-subline" key={s.id}>
             <span>
-              {s.label ||
-                (s.interval === "one_time"
-                  ? "Setup fee"
-                  : s.interval === "month"
-                    ? "Subscription"
-                    : "Annual subscription")}
+              {sublineLabel(s)}
               {s.qty !== 1 && ` × ${s.qty}`}
             </span>
             <strong>

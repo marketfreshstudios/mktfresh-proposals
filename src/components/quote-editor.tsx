@@ -1,4 +1,12 @@
 "use client";
+import {
+  sublineLabel,
+  ambiguousSublines,
+  removeSubline,
+} from "../lib/subline-label";
+import { pairSignatureNodes } from "./signature-pair";
+import { signatureHtml } from "../lib/signature-presentation";
+import { DocumentTotals } from "./document-totals";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
 import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
@@ -8,7 +16,7 @@ import { EditorButton } from "./editor/editor-button";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
-import { quoteTotalText } from "../lib/document-quote";
+import { quoteTotalValues } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
 import {
   applyDocumentMove,
@@ -488,6 +496,7 @@ function QuoteEditorContent({
         cacheKey,
         JSON.stringify({
           revision: p.revision,
+          cover: p.cover,
           title: p.title,
           content: p.content,
           quote: p.quote,
@@ -513,6 +522,7 @@ function QuoteEditorContent({
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
+    cover: v.cover,
     title: v.title,
     content: v.content,
     quote: draftItems(v.quote ?? []),
@@ -1022,14 +1032,27 @@ function QuoteEditorContent({
             />
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
+                {i.sublines.length > 1 && (
+                  <button
+                    type="button"
+                    className="subline-remove"
+                    title={`Remove sub-line ${sublineLabel(s)}`}
+                    aria-label={`Remove sub-line ${sublineLabel(s)}`}
+                    onClick={() =>
+                      updateItem(i.id, { sublines: removeSubline(i, s.id) })
+                    }
+                  >
+                    ×
+                  </button>
+                )}
                 <div className="subline-grid">
                   <div className="subline-label">
                     {i.sublines.length === 1 ? (
-                      <span>Amount</span>
+                      <span>Shown as the item price</span>
                     ) : (
                       <input
                         aria-label={`Sub-line label for ${i.name}`}
-                        placeholder="Label"
+                        placeholder={sublineLabel({ ...s, label: "" })}
                         value={s.label ?? ""}
                         onChange={(e) =>
                           updateItem(i.id, {
@@ -1163,19 +1186,6 @@ function QuoteEditorContent({
                   className="quote-mapping-details"
                 >
                   <summary>Billing mapping</summary>
-                  {i.sublines.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      aria-label={`Remove sub-line ${s.label || intervalLabel(s.interval)}`}
-                      onClick={() =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.filter((v) => v.id !== s.id),
-                        })
-                      }
-                    >
-                      Remove sub-line
-                    </Button>
-                  )}
                   <Field label="Stripe lookup key">
                     <input
                       value={s.stripe_lookup_key ?? ""}
@@ -1226,6 +1236,11 @@ function QuoteEditorContent({
                 {i.min_term_months && (
                   <>{i.min_term_months}-month minimum commitment.</>
                 )}
+              </p>
+            )}
+            {ambiguousSublines(i) && (
+              <p className="subline-warning">
+                Name these sub-lines so the client can tell them apart.
               </p>
             )}
             <div className="item-options">
@@ -1901,6 +1916,7 @@ function QuoteEditorContent({
   );
 
   function blockEditor(b: Block, n: number) {
+    const signer = p.signers.find((s) => s.role === (b.role ?? "client"));
     const HeadingTag = `h${(b.level ?? 1) + 1}` as "h2" | "h3" | "h4";
     const style = (level: TextLevel, text?: string) => {
       const next = p.content.map((v, j) =>
@@ -2208,16 +2224,12 @@ function QuoteEditorContent({
                     </Sortable>
                   ))}
                 </Reorder>
-                <p
+                <DocumentTotals
+                  {...quoteTotalValues(items)}
+                  currency={p.currency}
+                  cents={p.workspace_settings?.money?.cents}
                   className="print-quote-totals"
-                  data-print-unit="quote-totals"
-                >
-                  {quoteTotalText(
-                    items,
-                    p.currency,
-                    p.workspace_settings?.money?.cents,
-                  )}
-                </p>
+                />
               </div>
             </div>
           ) : b.type === "contract" ? (
@@ -2398,24 +2410,43 @@ function QuoteEditorContent({
                   </Field>
                 </Sheet>
               )}
-              <h3>
-                {b.role === "client" ? "Client signature" : "Company signature"}
-              </h3>
-              <strong>
-                {b.role === "client"
-                  ? `${p.client.first_name} ${p.client.last_name}`
-                  : settings?.company_signatory?.name || settings?.owner}
-              </strong>
-              {(b.role === "client"
-                ? p.client.title
-                : settings?.company_signatory?.title) && (
-                <p>
-                  {b.role === "client"
-                    ? p.client.title
-                    : `${settings?.company_signatory?.title} · ${settings?.company_name}`}
-                </p>
-              )}
-              <p className="muted">Awaiting signature</p>
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: signatureHtml({
+                    role: b.role ?? "client",
+                    name:
+                      signer?.name ||
+                      (b.role === "company"
+                        ? settings?.company_signatory?.name ||
+                          settings?.owner ||
+                          "Company"
+                        : `${p.client.first_name} ${p.client.last_name}`),
+                    date: signer
+                      ? readableDate(
+                          signer.signed_at,
+                          p.workspace_settings?.timezone,
+                        )
+                      : undefined,
+                    image: signer?.kind === "drawn" ? signer.image : undefined,
+                    typedName:
+                      signer?.kind === "typed"
+                        ? signer.typed_name || signer.name
+                        : undefined,
+                    company:
+                      signer?.company ||
+                      (b.role === "company"
+                        ? p.workspace_settings?.company_name ||
+                          settings?.company_name ||
+                          ""
+                        : p.client.company),
+                    title:
+                      signer?.title ||
+                      (b.role === "company"
+                        ? settings?.company_signatory?.title
+                        : p.client.title),
+                  }),
+                }}
+              />
             </div>
           ) : b.type === "image" ? (
             <>
@@ -2455,7 +2486,11 @@ function QuoteEditorContent({
         id={`draft-section-${n}`}
         key={s.id}
       >
-        {s.indices.map((j) => blockEditor(p.content[j], j))}
+        {pairSignatureNodes(
+          s.indices.map((j) => p.content[j]),
+          s.indices.map((j) => blockEditor(p.content[j], j)),
+          locked ? p.pagination : undefined,
+        )}
       </section>
     );
   }
@@ -2486,34 +2521,34 @@ function QuoteEditorContent({
     const Row = i.optional ? "label" : "div";
     return (
       <Row className={`flow-quote-line ${active ? "selected" : ""}`}>
-        {i.optional ? (
-          <input
-            aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
-            type={i.choice_group_id ? "radio" : "checkbox"}
-            name={`document-${i.choice_group_id ?? i.id}`}
-            checked={active}
-            onChange={() =>
-              setItems(
-                items.map((v) =>
-                  v.choice_group_id && v.choice_group_id === i.choice_group_id
-                    ? { ...v, default_selected: v.id === i.id }
-                    : v.id === i.id
-                      ? { ...v, default_selected: !v.default_selected }
-                      : v,
-                ),
-              )
-            }
-          />
-        ) : (
-          <span
-            className="quote-required"
-            role="img"
-            aria-label="Required"
-            title="Required"
-          >
-            <Icon name="lock" />
-          </span>
-        )}
+        <span className="quote-control-slot">
+          {i.optional ? (
+            <input
+              aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
+              type={i.choice_group_id ? "radio" : "checkbox"}
+              name={`document-${i.choice_group_id ?? i.id}`}
+              checked={active}
+              onChange={() =>
+                setItems(
+                  items.map((v) =>
+                    v.choice_group_id && v.choice_group_id === i.choice_group_id
+                      ? { ...v, default_selected: v.id === i.id }
+                      : v.id === i.id
+                        ? { ...v, default_selected: !v.default_selected }
+                        : v,
+                  ),
+                )
+              }
+            />
+          ) : (
+            <span
+              className="quote-required"
+              role="img"
+              aria-label="Required"
+              title="Required"
+            />
+          )}
+        </span>
         <QuoteItemBody
           item={i}
           active={active}
@@ -2828,6 +2863,7 @@ function QuoteEditorContent({
                       p.valid_until,
                       p.style_overrides,
                       p.template_style_overrides,
+                      p.cover,
                     ])}
                     onPagination={receivePagination}
                   />
@@ -2852,6 +2888,11 @@ function QuoteEditorContent({
                   {p.content.length > 0 && (
                     <DocumentCover
                       title={p.title}
+                      cover={p.cover}
+                      map={map}
+                      onCover={
+                        locked ? undefined : (cover) => change({ cover })
+                      }
                       workspace={
                         panels.printMode
                           ? p.workspace_settings?.company_name

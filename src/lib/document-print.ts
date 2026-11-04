@@ -1,6 +1,11 @@
+import {
+  signatureHtml,
+  signaturePairStarts,
+  signatureCss,
+} from "./signature-presentation";
 import { documentSpacing } from "./document-spacing";
 import { documentQuote } from "./document-quote";
-import { escape, renderBlocks } from "./presentation";
+import { escape, renderBlocks, resolve } from "./presentation";
 import type { Block, Quote } from "./model";
 import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
 export function printPageCss(styles?: ResolvedStyles) {
@@ -12,8 +17,10 @@ export function printPageCss(styles?: ResolvedStyles) {
 export const printCss = `
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f;overflow-wrap:anywhere}
 @page{size:Letter;margin:18mm}h1{font:600 40px/1.15 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 20px;letter-spacing:-.025em}h2{font:600 25px/1.25 var(--proposal-heading,"Source Serif 4",serif);margin:28px 0 12px;letter-spacing:-.015em}h4{font:600 15px/1.35 var(--proposal-heading,"Source Serif 4",serif);margin:12px 0 8px}h3{font:600 17px/1.35 var(--proposal-heading,"Source Serif 4",serif);margin:16px 0}p{margin:10px 0}ul,ol{margin:10px 0;padding-left:24px}img{max-width:100%;max-height:320px;object-fit:contain}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:8px;border:1px solid #ddd}tr{break-inside:avoid}.field-chip{padding:0;border:0;background:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}.print-cover p{font:500 12px/1.5 "Instrument Sans",sans-serif}.print-cover .byline{padding-bottom:20px;color:#6b6963}.print-cover .eyebrow{text-transform:uppercase;letter-spacing:.07em}.print-sheet{width:100%;height:calc(1056px - 36mm);overflow:hidden;break-after:page;display:flow-root}.print-sheet:last-child{break-after:auto}.print-root{width:calc(816px - 36mm)}.print-source{display:contents}.print-atom{display:flow-root}.print-atom>*:first-child{margin-top:0}.print-atom{padding-top:10px;padding-bottom:0}.print-atom h2{margin-top:18px}.print-atom img{display:block}.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature{break-inside:avoid;page-break-inside:avoid}.print-signature{break-inside:avoid;padding-top:24px}.print-signature img{max-height:100px}.print-sheet> :first-child{padding-top:0}
+${signatureCss}
 `;
 export function printContent(input: {
+  cover?: import("./cover").Cover;
   title: string;
   company: string;
   sender: string;
@@ -31,8 +38,11 @@ export function printContent(input: {
   currentLayout?: boolean;
   styles?: ResolvedStyles;
   planned?: boolean;
+  pagination?: import("./page-plan").PagePlan;
 }) {
-  const cover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const cover = input.cover
+    ? `<header class="print-cover" data-print-block="cover">${(input.cover.logo === null ? undefined : input.cover.logo || input.logo) ? `<img src="${escape(input.cover.logo || input.logo || "")}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}<p class="print-workspace">${escape(resolve(input.cover.workspace, input.variables))}</p><p class="eyebrow">${escape(resolve(input.cover.eyebrow, input.variables))}</p><h1>${escape(input.title)}</h1><p class="byline">${escape(resolve(input.cover.byline, input.variables))}</p></header>`
+    : `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
     : {};
@@ -56,7 +66,23 @@ export function printContent(input: {
               input.signatureBlocks?.[b.role!]
             ? input.signatureBlocks[b.role!]!
             : b.type === "signature_block"
-              ? `<section class="print-signature"><h3>${b.role === "client" ? "Client" : "Company"} signature</h3><strong>${escape(b.role === "client" ? (input.variables["client.full_name"] ?? "Client") : (input.signatory?.name ?? input.variables["company.owner"] ?? input.company))}</strong>${b.role === "company" && input.signatory?.title ? `<p>${escape(input.signatory.title)}</p>` : ""}<p>Awaiting signature</p></section>`
+              ? signatureHtml({
+                  role: b.role ?? "client",
+                  name:
+                    b.role === "company"
+                      ? (input.signatory?.name ??
+                        input.variables["company.owner"] ??
+                        input.company)
+                      : (input.variables["client.full_name"] ?? "Client"),
+                  company:
+                    b.role === "company"
+                      ? input.workspace || ""
+                      : input.company,
+                  title:
+                    b.role === "company"
+                      ? input.signatory?.title
+                      : input.variables["client.title"],
+                })
               : renderBlocks(
                   [b],
                   input.quote,
@@ -68,7 +94,15 @@ export function printContent(input: {
       body = body.replaceAll("<br>", "<br>\n");
     return `<section class="print-source print-atom" style="--block-space-before:${spaces[b.id ?? String(n)] ?? 0}px" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
   });
-  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${blocks.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
+  const pairs = signaturePairStarts(input.content, input.pagination);
+  const rendered: string[] = [];
+  for (let n = 0; n < blocks.length; n++)
+    if (pairs.has(n))
+      rendered.push(
+        `<div class="signature-pair" style="--block-space-before:${spaces[input.content[n].id ?? String(n)] ?? 16}px">${blocks[n]}${blocks[++n]}</div>`,
+      );
+    else rendered.push(blocks[n]);
+  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${rendered.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
 }
 export type PageFragment = {
   block: string;
@@ -274,7 +308,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
     const indivisible = node.matches(
-      ".print-pricing-intro,.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature",
+      ".print-pricing-intro,.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature,.signature-pair,.document-signature",
     );
     if (indivisible && unbrokenHeight > height)
       throw new Error(
@@ -282,7 +316,9 @@ export function paginatePrintDocument(root: HTMLElement): {
       );
     const atomic =
       indivisible ||
-      node.matches("img,table,.print-signature") ||
+      node.matches(
+        "img,table,.print-signature,.signature-pair,.document-signature",
+      ) ||
       node.matches(".print-pricing-table") ||
       !!node.querySelector("img,table");
     if (atomic) {
@@ -392,7 +428,7 @@ export function paginatePrintDocument(root: HTMLElement): {
     if (
       el.matches("div,section") &&
       !el.matches(
-        ".print-signature,.print-pricing-table,.print-pricing-unit,.print-pricing-card,.print-choice-group",
+        ".print-signature,.document-signature,.signature-pair,.print-pricing-table,.print-pricing-unit,.print-pricing-card,.print-choice-group",
       ) &&
       el.children.length &&
       !el.querySelector("table,img")

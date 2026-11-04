@@ -7,11 +7,13 @@ export function ToolbarPopover({
   className,
   close,
   trigger,
+  avoid,
 }: {
   children: ReactNode;
   className: string;
   close: () => void;
   trigger?: HTMLElement | null;
+  avoid?: HTMLElement | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useManagedPopover(true, close);
@@ -41,8 +43,38 @@ export function ToolbarPopover({
           right = Math.min(right, end);
         }
       }
-      el.style.left = `${Math.max(left, Math.min(bounds.left, right - box.width))}px`;
-      el.style.top = `${Math.max(8, Math.min(bounds.bottom + 4, innerHeight - box.height - 8))}px`;
+      let x = Math.max(left, Math.min(bounds.left, right - box.width)),
+        y = Math.max(
+          8,
+          Math.min(bounds.bottom + 4, innerHeight - box.height - 8),
+        );
+      if (avoid) {
+        const text = avoid.getBoundingClientRect();
+        const clear = (x: number, y: number) =>
+          x + box.width <= text.left ||
+          x >= text.right ||
+          y + box.height <= text.top ||
+          y >= text.bottom;
+        if (!clear(x, y)) {
+          // Cover actions can use space above or beside the logo instead of
+          // covering its title. Other toolbar menus retain their placement.
+          const spot = [
+            { x, y: bounds.top - box.height - 4 },
+            { x: bounds.right + 8, y: bounds.top },
+            { x: bounds.left - box.width - 8, y: bounds.top },
+          ].find(
+            (p) =>
+              p.x >= 8 &&
+              p.y >= 8 &&
+              p.x + box.width <= innerWidth - 8 &&
+              p.y + box.height <= innerHeight - 8 &&
+              clear(p.x, p.y),
+          );
+          if (spot) ({ x, y } = spot);
+        }
+      }
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
     };
     place();
     const resize = new ResizeObserver(place);

@@ -75,7 +75,8 @@ test("TEST 3 assets settle before interaction; every block retains its pages, fr
   expect(JSON.parse(baseline.plan!).pages).toBeGreaterThan(1);
   expect(JSON.parse(baseline.plan!).starts[0]).toMatchObject({
     block: "regression-9",
-    offset: 312,
+    offset: 229,
+    paragraph: 6,
   });
   // Real pointer selection, text focus and Escape all exercise the shared chrome.
   for (const block of f.content) {
@@ -170,8 +171,12 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
     body.getByPlaceholder("Description", { exact: true }),
   ).toBeVisible();
   await expect(body.getByText("Description", { exact: true })).toHaveCount(0);
-  await expect(body.getByText("Amount", { exact: true })).toBeVisible();
-  await expect(body.getByPlaceholder("Label", { exact: true })).toHaveCount(0);
+  await expect(
+    body.getByText("Shown as the item price", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    body.getByRole("textbox", { name: /^Sub-line label for/ }),
+  ).toHaveCount(0);
   const optional = body.getByRole("switch", { name: "Optional", exact: true });
   if (await optional.isChecked()) await optional.uncheck();
   await expect(
@@ -182,7 +187,9 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
     body.getByRole("combobox", { name: "Link as alternative", exact: true }),
   ).toBeVisible();
   await body.getByRole("button", { name: "+ Sub-line", exact: true }).click();
-  await expect(body.getByPlaceholder("Label", { exact: true })).toHaveCount(2);
+  await expect(
+    body.getByRole("textbox", { name: /^Sub-line label for/ }),
+  ).toHaveCount(2);
   await body.getByRole("button", { name: "Details", exact: true }).click();
   await expect(
     body.getByRole("combobox", { name: "Custom family", exact: true }),

@@ -1,4 +1,6 @@
 "use client";
+import { pairSignatureNodes } from "./signature-pair";
+import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
 import { documentSpacing } from "../lib/document-spacing";
@@ -959,7 +961,19 @@ function NewClientFlow({
                     </Button>
                   </div>
                 </div>
-                {showCopy && <FlowDocument proposal={p} frozen />}
+                {showCopy && (
+                  <FlowDocument
+                    proposal={p}
+                    frozen
+                    logo={
+                      p.cover && p.company.logo
+                        ? preview
+                          ? `/api/proposals/${token}/preview-logo`
+                          : `/api/public/${token}/logo`
+                        : undefined
+                    }
+                  />
+                )}
               </section>
             ) : step === "sign" ? (
               <section className="flow-sign">
@@ -1001,6 +1015,16 @@ function NewClientFlow({
                   )}
                 </section>
                 <SignatureForm
+                  clientCompany={p.recipient.company}
+                  companySignatory={{
+                    role: "company",
+                    name:
+                      p.company.signatory_name ||
+                      p.variables["company.owner"] ||
+                      p.company.name,
+                    title: p.company.signatory_title,
+                    company: p.company.name,
+                  }}
                   preview={preview}
                   consentText={p.consent_text}
                   name={p.recipient.name}
@@ -1048,6 +1072,13 @@ function NewClientFlow({
             ) : (
               <>
                 <FlowDocument
+                  logo={
+                    p.cover && p.company.logo
+                      ? preview
+                        ? `/api/proposals/${token}/preview-logo`
+                        : `/api/public/${token}/logo`
+                      : undefined
+                  }
                   proposal={p}
                   frozen={stale}
                   busy={busy}
@@ -1162,32 +1193,21 @@ function NewClientFlow({
 }
 export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
   return (
-    <div className="totals flow-totals" aria-label="Proposal totals">
-      <div>
-        <span>One-time</span>
-        <strong>
-          {formatMoney(p.totals.one_time_total, p.currency, p.money_cents)}
-        </strong>
-      </div>
-      <div>
-        <span>Monthly</span>
-        <strong>
-          {formatMoney(p.totals.monthly_total, p.currency, p.money_cents)}
-          <small>/mo</small>
-        </strong>
-      </div>
-      {p.quote.some((i) => i.sublines.some((s) => s.interval === "year")) && (
-        <div>
-          <span>Yearly</span>
-          <strong>
-            {formatMoney(p.totals.yearly_total, p.currency, p.money_cents)}
-            <small>/yr</small>
-          </strong>
-        </div>
-      )}
-    </div>
+    <DocumentTotals
+      oneTime={p.totals.one_time_total}
+      monthly={p.totals.monthly_total}
+      yearly={
+        p.quote.some((i) => i.sublines.some((s) => s.interval === "year"))
+          ? p.totals.yearly_total
+          : undefined
+      }
+      currency={p.currency}
+      cents={p.money_cents}
+      className="totals flow-totals"
+    />
   );
 }
+
 function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
   return (
     <>
@@ -1299,11 +1319,13 @@ function SeparateInvoice({
   ) : null;
 }
 function FlowDocument({
+  logo,
   proposal: p,
   frozen = false,
   busy = false,
   onToggle,
 }: {
+  logo?: string;
   proposal: PublicProposal;
   frozen?: boolean;
   busy?: boolean;
@@ -1322,80 +1344,90 @@ function FlowDocument({
       className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >
-      <ClientPrint proposal={p} />
+      <ClientPrint proposal={p} logo={logo} />
       <DocumentCover
+        logo={logo}
+        cover={p.cover}
+        map={p.variables}
         title={p.title}
         company={p.recipient.company}
         sender={p.contact.name || p.company.name}
         validUntil={p.valid_until}
         timezone={p.timezone}
       />
-      {content.map((block, index) =>
-        index === 0 &&
-        block.type === "heading" &&
-        block.text === "{{proposal.title}}" ? null : block.type ===
-          "pricing_table" ? (
-          <section
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-            id={`section-${index}`}
-          >
-            <h2>Your investment</h2>
-            {!frozen && (
-              <p>Optional items are your choice. Totals update as you go.</p>
-            )}
-            <div className="flow-quote">
-              <ClientItems
+      {pairSignatureNodes(
+        content,
+        content.map((block, index) =>
+          index === 0 &&
+          block.type === "heading" &&
+          block.text === "{{proposal.title}}" ? null : block.type ===
+            "pricing_table" ? (
+            <section
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+              id={`section-${index}`}
+            >
+              <h2>Your investment</h2>
+              {!frozen && (
+                <p>Optional items are your choice. Totals update as you go.</p>
+              )}
+              <div className="flow-quote">
+                <ClientItems
+                  proposal={p}
+                  frozen={frozen}
+                  busy={busy}
+                  onToggle={onToggle}
+                />
+              </div>
+            </section>
+          ) : block.type === "contract" ? (
+            <section
+              key={index}
+              id={`section-${index}`}
+              className="flow-contract"
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+            >
+              <h2>{block.text || "Statement of Work & Contract"}</h2>
+              {(block.clauses ?? []).map((c) => (
+                <details key={c.id}>
+                  <summary>{resolve(c.heading, p.variables)}</summary>
+                  <p style={{ whiteSpace: "pre-wrap" }}>
+                    {resolve(c.body, p.variables)}
+                  </p>
+                </details>
+              ))}
+            </section>
+          ) : block.type === "signature_block" ? (
+            <div
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+            >
+              <ClientSignatureBlock
                 proposal={p}
-                frozen={frozen}
-                busy={busy}
-                onToggle={onToggle}
+                role={block.role ?? "client"}
               />
             </div>
-          </section>
-        ) : block.type === "contract" ? (
-          <section
-            key={index}
-            id={`section-${index}`}
-            className="flow-contract"
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-          >
-            <h2>{block.text || "Statement of Work & Contract"}</h2>
-            {(block.clauses ?? []).map((c) => (
-              <details key={c.id}>
-                <summary>{resolve(c.heading, p.variables)}</summary>
-                <p style={{ whiteSpace: "pre-wrap" }}>
-                  {resolve(c.body, p.variables)}
-                </p>
-              </details>
-            ))}
-          </section>
-        ) : block.type === "signature_block" ? (
-          <div
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-          >
-            <ClientSignatureBlock proposal={p} role={block.role ?? "client"} />
-          </div>
-        ) : (
-          <div
-            id={`section-${index}`}
-            data-document-block={block.id ?? index}
-            style={spacing(block, index)}
-            key={index}
-            dangerouslySetInnerHTML={{
-              __html: renderBlocks(
-                [block],
-                p.quote as QuoteItem[],
-                p.variables,
-                p.currency,
-              ),
-            }}
-          />
+          ) : (
+            <div
+              id={`section-${index}`}
+              data-document-block={block.id ?? index}
+              style={spacing(block, index)}
+              key={index}
+              dangerouslySetInnerHTML={{
+                __html: renderBlocks(
+                  [block],
+                  p.quote as QuoteItem[],
+                  p.variables,
+                  p.currency,
+                ),
+              }}
+            />
+          ),
         ),
+        p.pagination,
       )}
       <p className="muted document-end">
         {p.valid_until && (
@@ -1435,25 +1467,27 @@ function ClientItems({
         className={`flow-quote-line ${active ? "selected" : ""}`}
         key={i.id}
       >
-        <input
-          type={i.choice_group_id ? "radio" : "checkbox"}
-          name={i.choice_group_id ?? i.id}
-          aria-label={`${i.name} · ${active ? "included" : "not included"}`}
-          checked={active}
-          disabled={busy || frozen}
-          onChange={(e) => onToggle?.(i.id, e.target.checked)}
-        />
+        <span className="quote-control-slot">
+          <input
+            type={i.choice_group_id ? "radio" : "checkbox"}
+            name={i.choice_group_id ?? i.id}
+            aria-label={`${i.name} · ${active ? "included" : "not included"}`}
+            checked={active}
+            disabled={busy || frozen}
+            onChange={(e) => onToggle?.(i.id, e.target.checked)}
+          />
+        </span>
         {body}
       </label>
     ) : (
       <div className="flow-quote-line selected" key={i.id}>
-        <span
-          className="quote-required"
-          role="img"
-          aria-label="Required"
-          title="Required"
-        >
-          <Icon name="lock" />
+        <span className="quote-control-slot">
+          <span
+            className="quote-required"
+            role="img"
+            aria-label="Required"
+            title="Required"
+          />
         </span>
         {body}
       </div>

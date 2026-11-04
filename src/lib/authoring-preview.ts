@@ -4,6 +4,7 @@ import type { WorkspaceSettings } from "./workspace";
 /** A staff-only template specimen; never stored, sent or used for billing. */
 export function authoringPreview(
   input: {
+    cover?: import("./cover").Cover;
     id: string;
     content: Block[];
     quote: Quote;
@@ -48,6 +49,7 @@ export function authoringPreview(
     client_signed_at: null,
     completed_at: null,
     pagination: input.pagination,
+    cover: input.cover,
     content: input.content,
     quote: input.quote,
     style_overrides: input.style_overrides,

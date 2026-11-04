@@ -1,3 +1,4 @@
+import { CoverSchema, type Cover } from "./cover";
 import {
   reminderCycle,
   editableProposal,
@@ -282,6 +283,7 @@ export class ProposalService {
       ),
 
       template_style_overrides: structuredClone(template.style_overrides ?? {}),
+      ...(template.cover ? { cover: structuredClone(template.cover) } : {}),
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -386,6 +388,7 @@ export class ProposalService {
     id: string,
     input: {
       revision: number;
+      cover?: Cover;
       pagination?: PagePlan;
       style_overrides?: StyleOverrides;
       template_style_overrides?: StyleOverrides;
@@ -448,6 +451,7 @@ export class ProposalService {
         );
       } else if (
         [
+          "cover",
           "content",
           "quote",
           "title",
@@ -457,6 +461,14 @@ export class ProposalService {
         ].some((key) => key in input)
       )
         delete p.pagination;
+      if (input.cover !== undefined) {
+        check(
+          actor.actor.startsWith("staff:"),
+          "Only staff can edit the cover",
+          403,
+        );
+        p.cover = CoverSchema.parse(input.cover);
+      }
       if (input.style_overrides !== undefined)
         p.style_overrides = StyleOverridesSchema.parse(input.style_overrides);
       if (input.template_style_overrides !== undefined)
@@ -827,6 +839,7 @@ export class ProposalService {
         content: v.content,
         quote: v.quote,
         variables_resolved: v.variables_resolved,
+        ...(v.cover ? { cover: v.cover } : {}),
         resolved_styles: v.resolved_styles,
         pagination: v.pagination,
       });
@@ -912,6 +925,7 @@ export class ProposalService {
           content: v.content,
           quote: v.quote,
           variables_resolved: v.variables_resolved,
+          ...(v.cover ? { cover: v.cover } : {}),
           resolved_styles: v.resolved_styles,
           pagination: v.pagination,
         });
@@ -1092,6 +1106,7 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
     money_cents: p.workspace_settings?.money?.cents ?? "auto",
     timezone: p.workspace_settings?.timezone ?? "UTC",
     proposal_fonts: p.workspace_settings?.proposal_fonts,
+    ...(v.cover ? { cover: v.cover } : {}),
     resolved_styles: v.resolved_styles,
     pagination: v.pagination,
     contact: {

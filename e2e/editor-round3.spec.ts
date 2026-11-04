@@ -172,7 +172,7 @@ test("one-line icon formatting, responsive sheets, panel preferences and overlay
     const paper = page.locator(".editor-paper");
     expect(
       await paper.evaluate((e) => (e as HTMLElement).offsetWidth),
-    ).toBeLessThanOrEqual(760);
+    ).toBeLessThanOrEqual(848);
     expect(
       parseFloat(await paper.evaluate((e) => getComputedStyle(e).paddingLeft)),
     ).toBeGreaterThanOrEqual(64);

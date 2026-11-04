@@ -885,3 +885,41 @@ The `dfd07f6` CI failure counted one template sheet, but its error snapshot alre
 PagedPaper also had an unbounded font/image wait. It now gives the current asset batch a one-second grace period, then paginates with loaded metrics and restores interaction. Pending key changes share that deadline rather than extending it forever. Settled promises (including failures) schedule a coalesced refresh; late assets can update the existing layout. Request generations discard stale completions and timers are cleared on completion/unmount. Completed batches are accepted only in the measurement pass against its current asset signature; returning to an already loaded asset invalidates the obsolete wait. `data-layout-assets-state` distinguishes pending, fallback and settled. Browser break computation, page projection, PagePlan, frozen hashes and PDF rendering are unchanged.
 
 Six new browser regressions cover failed fonts/images, a stalled image and a stalled font in both editors: 14 sheets, 13 explicit breaks, all text retained, content focusable after fallback, a fresh pagination pass after late completion, no re-blocking after an obsolete completion, and no proposal/template writes. Existing editor-round6 and TEST 3 assertions remain unchanged and pass. All 304 unit tests, TypeScript, formatting and neutrality checks passed. The final unfiltered browser suite passed: 128 tests, with three optional capture tests skipped (10.7 minutes). Production build and PDF runtime tracing (327 API files) passed. No new screenshots were requested or taken.
+
+## PR 6 — owner-review fixes (preflight)
+
+Started from main `30297b8`. The neutral TEST 3 fixture confirms the reported mid-line break: its display column is 585.6px versus the PDF's 672px, and source offset 312 falls inside a display line. Baseline measurements and the resolved adjacent-only signature decision are in `docs/editor-v2-pr6-preflight.md`. Each numbered fix has its own implementation commit; cover data uses existing JSON without a database migration.
+
+## Editor v2 owner review — PR 6 / PR #56
+
+Seven implementation commits cover the seven requested fixes. TEST 3 confirmed that the old 585.6px visible text column disagreed with the 672px PDF column. The editor now uses the PDF column whenever it fits; narrow displays snap the painted continuation to a line start without changing canonical offsets. New pagination keeps short paragraphs/list items whole and enforces two lines on each side of paragraph/list/clause splits. Existing frozen PagePlans, hash inputs for versions without a cover, and signing conflict guards are retained.
+
+Sections handles align with the title's first line. Pricing rows, choices, the totals grid and signatures share their screen/print presentation. Adjacent client/company signatures pair; authored separations and frozen breaks remain intact. The same signature pair previews the client's entry while signing and displays accepted signatures in the locked editor. Pricing drag controls remain usable without covering names, prices or selection controls. Hidden measurement clones cannot uncheck visible radio groups.
+
+Covers are optional proposal/template/version JSON: logo override/removal/default, workspace line, eyebrow and byline with fields. New templates start with the requested default fields; drafts inherit the template cover. Existing records without a stored cover retain their previous reading/print content. Cover edits use the existing autosave, publication, recovery and version-freezing paths; the cover participates in hashes only when present. No migration or hosted setup is needed.
+
+Sub-line inputs use the exact shared fallback seen in the document and PDF. Duplicate blank labels receive a local warning. Visible 32px remove controls stop at one line, retain labels in storage and use the existing undo/autosave path; the remaining single line is the item's main price.
+
+Evidence: [neutral TEST 3 comparisons and PDF page images](docs/editor-v2-pr6-evidence.md). No owner export, provider credentials or real customer data is included. Final verification: the full unfiltered browser suite passed — 139 tests, with three optional capture tests skipped (11.2 minutes). All 311 unit/database tests (53 files), TypeScript, formatting, neutrality, production build and PDF runtime tracing (327 API files) passed. The unchanged keep-together boundary test also passed three consecutive targeted runs after outward sheet-height rounding fixed fractional display clipping. GitHub CI is not awaited.
+
+### PR #56 CI review — PDF label word integrity
+
+Shared totals, choice-group and signature labels keep their prototype tracking on screen, but use normal letter spacing in print. Per-glyph gaps had allowed Linux PDF text extraction to split uppercase words (for example, “CO MPANY”). This changes print label typography only; content, frozen PagePlans, version hashes and the completion certificate are unchanged.
+
+The existing exact “COMPANY Alex Morgan Owner Example Studio” assertion remains unchanged. Added whole-word checks for ONE-TIME, MONTHLY, CLIENT and COMPANY in PDF.js body/sealed output and Poppler body extraction. A separate browser regression fails before the fix and verifies screen tracking is retained while print tracking is removed. All 23 focused PDF/pagination/signing browser tests and 311 unit/database tests passed; TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed. The generated PDF was rendered and visually checked. No new screenshot gallery was captured.
+
+### PR #56 owner polish — product alignment and cover upload
+
+Required and optional product rows now have the same explicit 20px control slot and 12px gap in the editor, client reading view and print. Wrapping native selection controls in that slot isolates document rows from the general form rule that had forced an 18px control and 8px gap on optional labels. Whole-row selection remains available.
+
+The cover menu now uses a styled Upload logo button with a hidden file input, retaining the existing upload validation and keyboard activation. Only this menu requests title avoidance: placement tries clear space above or beside its trigger before falling back when space is limited. Other toolbar menus keep their placement. The pricing and cover after-images in the PR evidence are refreshed at the same 1440px viewport.
+
+Validation for this polish: 39 focused browser checks passed, with one optional capture skipped; all 311 unit/database tests, TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed. Alignment checks compare both row types at 1440/375px in editor/client views and compare PDF text x-coordinates. The upload test exercises Enter → file chooser → persisted logo and asserts matching button styling and a clear title.
+
+### PR #56 CI review — Linux kerning and PDF text runs
+
+Reproduced the unchanged signing assertion in an isolated Ubuntu 24.04.4 Playwright 1.63.0 container, using Node 24.20.0 and poppler-utils 24.02.0-1ubuntu9.11 (`pdftotext` 24.02.0). No local environment files or credentials were copied. The original CI PDF keeps both labels whole in Poppler 24.02, but PDF.js (the first extraction checked by the test) returns separate ONE-/TIME and MONTHL/Y runs. Linux Instrument Sans kerning causes these run boundaries; changing the source text to uppercase does not fix them.
+
+Printed totals/choice labels now disable font kerning as well as tracking. A Linux renderer comparison confirms each complete label is extracted intact by both PDF.js and Poppler 24.02; screen typography is unchanged. The existing name and four-label PDF assertions are unchanged. Added a computed-print-style assertion for disabled totals kerning. The original signing test failed before the fix in that container.
+
+Verification: all 37 tests in browser shard 1/4 passed in the Ubuntu/Poppler 24.02 container (4.7 minutes), including the unchanged signing extraction assertions. Poppler 24.02 rendered the resulting PDF for visual inspection. All 311 unit/database tests, TypeScript, formatting, production build and PDF runtime tracing (327 API files) passed locally. No screenshot gallery was added; CI is not awaited.

@@ -54,7 +54,7 @@ test("PDF measurement keeps cards, complete choice groups and signatures on one 
       ...result,
       units: Array.from(
         document.querySelectorAll<HTMLElement>(
-          ".print-choice-group,.print-pricing-unit,.print-signature",
+          ".print-choice-group,.print-pricing-unit,.document-signature",
         ),
       ).map((el) => {
         const page = el.closest<HTMLElement>(".print-sheet")!,
@@ -71,6 +71,16 @@ test("PDF measurement keeps cards, complete choice groups and signatures on one 
   }, paginatePrintDocument.toString());
   expect(result.pages).toBeGreaterThan(1);
   expect(result.units).toHaveLength(4);
+  const signaturePages = await page
+    .locator(".document-signature")
+    .evaluateAll((es) =>
+      es.map((el) =>
+        Array.from(document.querySelectorAll(".print-sheet")).indexOf(
+          el.closest(".print-sheet")!,
+        ),
+      ),
+    );
+  expect(signaturePages[0]).toBe(signaturePages[1]);
   for (const unit of result.units) {
     expect(unit.top).toBeGreaterThanOrEqual(0);
     expect(unit.bottom).toBeLessThanOrEqual(unit.height + 1);
@@ -86,7 +96,8 @@ test("PDF measurement keeps cards, complete choice groups and signatures on one 
   for (const selector of [
     ".print-choice-group",
     ".print-pricing-unit",
-    ".print-signature",
+    ".document-signature",
+    ".signature-pair",
   ]) {
     await page.setContent(
       `<style>${printCss}</style><main class="print-root"><section class="${selector.slice(1)}"><p>${"Long scope. ".repeat(3000)}</p></section></main>`,

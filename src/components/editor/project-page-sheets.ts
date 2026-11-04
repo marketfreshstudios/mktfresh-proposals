@@ -1,6 +1,10 @@
 import type { Block } from "../../lib/model";
 import type { PagePlan, PageStart } from "../../lib/page-plan";
-import { sourceOffset, sourceTextNodes } from "../../lib/pagination-dom";
+import {
+  sourceOffset,
+  sourceTextNodes,
+  sourceLines,
+} from "../../lib/pagination-dom";
 import type { SourceSpacer } from "../page-spacers";
 import type { SheetBox } from "./page-sheet";
 /** Projects existing source boundaries into the responsive display. Never chooses a break. */
@@ -14,6 +18,9 @@ export function projectPageSheets(
   const copies = [clone, ...clone.querySelectorAll<HTMLElement>("*")];
   const live = new WeakMap(copies.map((el, n) => [el, originals[n]]));
   clone.inert = true;
+  clone
+    .querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    .forEach((input) => input.removeAttribute("name"));
   clone.setAttribute("aria-hidden", "true");
   clone.dataset.sheetProjection = "true";
   const computed = getComputedStyle(root);
@@ -76,7 +83,10 @@ export function projectPageSheets(
         .map((el) => el.getBoundingClientRect().bottom - origin),
     );
   const finish = (bottom: number) => {
-    const height = Math.max(320, bottom - pageTop + bottomPadding);
+    // Round the painted sheet outward. CSS quantizes each fractional top/margin
+    // independently, so a rounded-down sheet can cut into its last unit by a
+    // fraction of a pixel even when the source boundary is exact.
+    const height = Math.ceil(Math.max(320, bottom - pageTop + bottomPadding));
     boxes.push({ top: pageTop, height, gap });
     pageTop += height + gap;
   };
@@ -132,6 +142,40 @@ export function projectPageSheets(
           consumed += length;
         }
       }
+      // Projection uses the visible browser line, never a different saved source break.
+      if (point?.node.nodeType === Node.TEXT_NODE) {
+        const source = sourceOffset(target, point.node, point.at);
+        const row = sourceLines(target)
+          .filter((r) => sourceOffset(target, r.node, r.at) <= source)
+          .at(-1);
+        if (row) point = { node: row.node, at: row.at };
+      }
+      if (
+        point?.node instanceof HTMLElement &&
+        point.node.matches("p,li") &&
+        point.node.textContent?.trim()
+      ) {
+        const moved = point.node;
+        const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
+        finish(y(moved) - margin);
+        const height = margin + pageTop + topPadding - y(moved);
+        moved.dataset.layoutSpace = "true";
+        moved.style.setProperty("margin-top", `${height}px`, "important");
+        const host = moved.closest<HTMLElement>(".field-editor");
+        if (host)
+          spaces.set(host, [
+            ...(spaces.get(host) ?? []),
+            {
+              offset: sourceOffset(host, moved, 0),
+              paragraph: Array.from(host.querySelectorAll("p,li")).indexOf(
+                moved,
+              ),
+              height,
+            },
+          ]);
+        previousFrame = moved;
+        continue;
+      }
       const host =
         point &&
         (point.node.nodeType === 1
@@ -170,9 +214,15 @@ export function projectPageSheets(
         ]);
         previousFrame = null;
       } else {
-        const moved = start.unit
-          ? target
-          : (target.closest<HTMLElement>(".quote-sortable") ?? target);
+        const sortable =
+          target.closest<HTMLElement>(".quote-sortable") ?? target;
+        const pair = sortable.closest<HTMLElement>(".signature-pair");
+        const moved =
+          start.unit || start.part
+            ? target
+            : pair?.querySelector(".block-sortable") === sortable
+              ? pair
+              : sortable;
         const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
         finish(
           previousFrame === moved ? pageTop + topPadding : y(moved) - margin,

@@ -1,5 +1,6 @@
 "use client";
-import { date } from "./ui";
+import { signatureHtml } from "../lib/signature-presentation";
+import { readableDate } from "../lib/validity";
 import type { PublicProposal } from "./client-proposal";
 export function ClientSignatureBlock({
   proposal: p,
@@ -17,36 +18,26 @@ export function ClientSignatureBlock({
           p.variables["company.owner"] ||
           p.company.name);
   return (
-    <section
-      className="client-signature"
-      aria-label={`${role === "client" ? "Client" : "Company"} signature`}
-    >
-      <h3>{role === "client" ? "Client" : "Company"} signature</h3>
-      <strong>{name}</strong>
-      {(signer?.title ||
-        (role === "client"
-          ? p.recipient.title
-          : p.company.signatory_title)) && (
-        <p>
-          {signer?.title ||
-            (role === "client" ? p.recipient.title : p.company.signatory_title)}
-          {role === "company" ? ` · ${signer?.company || p.company.name}` : ""}
-        </p>
-      )}
-      {signer ? (
-        <>
-          {signer.kind === "drawn" && signer.image ? (
-            <img src={signer.image} alt={`${name}’s signature`} />
-          ) : (
-            <p className="typed-signature">
-              {signer.typed_name ?? signer.name}
-            </p>
-          )}
-          <small>Signed {date(signer.signed_at)}</small>
-        </>
-      ) : (
-        <p className="muted">Awaiting signature</p>
-      )}
-    </section>
+    <div
+      dangerouslySetInnerHTML={{
+        __html: signatureHtml({
+          role,
+          name,
+          company:
+            role === "client"
+              ? p.variables["client.company"] || ""
+              : signer?.company || p.company.name,
+          title:
+            signer?.title ||
+            (role === "client" ? p.recipient.title : p.company.signatory_title),
+          date: signer ? readableDate(signer.signed_at, p.timezone) : undefined,
+          image: signer?.kind === "drawn" ? signer.image : undefined,
+          typedName:
+            signer?.kind === "typed"
+              ? signer.typed_name || signer.name
+              : undefined,
+        }),
+      }}
+    />
   );
 }
