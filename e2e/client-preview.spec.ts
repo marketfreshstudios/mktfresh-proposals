@@ -52,11 +52,14 @@ test("draft client preview has live local totals, branded steps and no client wr
       await expect(page.locator(".client-header")).toContainText(
         settings.company_name,
       );
-      await expect(page.locator(".flow-document")).toHaveCSS(
-        "font-family",
-        /Instrument Sans/,
-      );
-      await expect(page.locator(".flow-document h1")).toHaveCSS(
+      await expect(
+        page.locator(
+          width >= 1100
+            ? ".client-document-sheets .print-root"
+            : ".flow-document",
+        ),
+      ).toHaveCSS("font-family", /Instrument Sans/);
+      await expect(page.locator("#proposal-document h1")).toHaveCSS(
         "font-family",
         /IBM Plex Mono/,
       );

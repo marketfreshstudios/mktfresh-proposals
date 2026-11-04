@@ -31,17 +31,23 @@ for (const width of [1440, 375])
         els.map((el) => {
           const slot = el.querySelector<HTMLElement>(".quote-control-slot")!,
             name = el.querySelector(".flow-line-title strong")!,
-            control = slot.firstElementChild!,
+            control =
+              slot.querySelector(".print-selection") ?? slot.firstElementChild!,
             r = el.getBoundingClientRect(),
             s = slot.getBoundingClientRect(),
             c = control.getBoundingClientRect(),
             n = name.getBoundingClientRect();
+          const root = el.getRootNode();
+          const scale =
+            root instanceof ShadowRoot
+              ? Number((root.host as HTMLElement).dataset.scale ?? 1)
+              : 1;
           return {
-            name: n.left - r.left,
-            slot: s.width,
-            gap: n.left - s.right,
-            controlWidth: c.width,
-            controlLeft: c.left - s.left,
+            name: (n.left - r.left) / scale,
+            slot: s.width / scale,
+            gap: (n.left - s.right) / scale,
+            controlWidth: c.width / scale,
+            controlLeft: (c.left - s.left) / scale,
           };
         }),
       );
@@ -49,10 +55,10 @@ for (const width of [1440, 375])
         1,
       );
       for (const g of geometry) {
-        expect(g.slot).toBe(20);
-        expect(g.gap).toBe(12);
-        expect(g.controlWidth).toBe(20);
-        expect(g.controlLeft).toBe(0);
+        expect(g.slot).toBeCloseTo(20, 3);
+        expect(g.gap).toBeCloseTo(12, 3);
+        expect(g.controlWidth).toBeCloseTo(20, 3);
+        expect(g.controlLeft).toBeCloseTo(0, 3);
       }
     };
     await page

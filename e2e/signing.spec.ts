@@ -10,6 +10,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   page,
   request,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const headers = { Authorization: "Bearer e2e-staff-secret-only" };
   expect((await request.get("/api/proposals")).status()).toBe(401);
   const existingClients = await (

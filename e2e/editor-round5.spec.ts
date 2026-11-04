@@ -211,15 +211,15 @@ test("adjacent list and paragraph spacing uses the larger style gap in editor, c
     [4, 5, 9.6],
   ];
   const measure = async (client = false) =>
-    page.locator(client ? ".flow-document" : ".editor-paper").evaluate(
+    page.locator(client ? "#proposal-document" : ".editor-paper").evaluate(
       (root, { content, pairs, client }) => {
         const scale = client
-          ? 1
+          ? Number((root as HTMLElement).dataset.scale ?? 1)
           : root.getBoundingClientRect().width /
             (root as HTMLElement).offsetWidth;
         return pairs.map(([a, b, expected]) => {
           const el = (n: number) =>
-            root.querySelector(
+            (root.shadowRoot ?? root).querySelector(
               client
                 ? `[data-document-block="${content[n].id}"]`
                 : `[data-block-id="block-${content[n].id}"] .block-content`,
@@ -266,7 +266,7 @@ test("adjacent list and paragraph spacing uses the larger style gap in editor, c
     ).toBeLessThanOrEqual(2);
   }
   await page.goto(`/p/${f.draft.id}?preview=1`);
-  await expect(page.locator(".flow-document")).toBeVisible();
+  await expect(page.locator("#proposal-document")).toBeVisible();
   for (const gap of await measure(true))
     expect(Math.abs(gap.gap - gap.expected)).toBeLessThanOrEqual(2);
 });
@@ -335,8 +335,8 @@ test("compact products share name/price rows and accessible selections across ed
     .getByRole("dialog", { name: "Preview PDF", exact: true })
     .getByRole("button", { name: "Close PDF preview", exact: true })
     .click();
-  for (const target of [".editor-paper", ".flow-document"]) {
-    if (target === ".flow-document")
+  for (const target of [".editor-paper", "#proposal-document"]) {
+    if (target === "#proposal-document")
       await page.goto(`/p/${f.draft.id}?preview=1`);
     const rows = page.locator(`${target} .flow-quote-line`);
     await expect(rows).toHaveCount(5);
