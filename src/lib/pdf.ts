@@ -1,3 +1,4 @@
+import { bandPages, resolvedBandPages } from "./band-overrides";
 import { pageBandHtml, pageBandCss } from "./page-band-render";
 import { pageGeometry } from "./page-bands";
 import { readableDate } from "./validity";
@@ -203,11 +204,38 @@ export async function sealedPdf(
     for (const boundary of layout.boundaries)
       boundary.start_text = starts[boundary.page - 1];
     if (version.header_footer) {
+      const plan = version.pagination ?? {
+        format: 1 as const,
+        pages: layout.pages,
+        starts: layout.boundaries.map((b) => ({
+          page: b.page,
+          block: b.block,
+          offset: b.offset,
+          explicit: b.explicit,
+          ...(b.unit ? { unit: b.unit } : {}),
+          ...(b.part ? { part: b.part } : {}),
+          ...(b.explicit
+            ? {
+                marker: version.content
+                  .slice(
+                    0,
+                    version.content.findIndex((block) => block.id === b.block),
+                  )
+                  .findLast((block) => block.type === "page_break")?.id,
+              }
+            : {}),
+        })),
+      };
+      const resolved = resolvedBandPages(
+        version.header_footer,
+        bandPages(version.content, plan),
+      );
       const bands = Array.from({ length: layout.pages }, (_, n) =>
         (["header", "footer"] as const)
           .map((kind) =>
             pageBandHtml({
               hf: version.header_footer,
+              band: resolved[n]?.[kind].value,
               kind,
               page: n + 1,
               pageCount: layout.pages,
