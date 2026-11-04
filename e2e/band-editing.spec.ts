@@ -512,7 +512,7 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
         ],
       },
     },
-    bandHeightIn: 0.75,
+    distanceIn: 0.4,
     showOnCover: true,
   };
   await f.repo.put("templates", template);
@@ -536,7 +536,7 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
     .getByRole("button", { name: "Reset to template", exact: true })
     .click();
   await expect(bands(page).first()).toContainText("Current template header");
-  await expect.poll(() => f.active().header_footer?.bandHeightIn).toBe(0.75);
+  await expect.poll(() => f.active().header_footer?.distanceIn).toBe(0.4);
   expect(f.active().header_footer?.showFooter).toBe(false);
   expect(f.active().header_footer?.overrides).toEqual(hf.overrides);
   await page
@@ -544,7 +544,7 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
     .filter({ hasText: "Shared header and footer reset" })
     .getByRole("button", { name: "Undo", exact: true })
     .click();
-  await expect.poll(() => f.active().header_footer?.bandHeightIn).toBe(0.5);
+  await expect.poll(() => f.active().header_footer?.distanceIn).toBe(0.3);
   await expect(bands(page).first()).not.toContainText(
     "Current template header",
   );

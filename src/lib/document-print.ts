@@ -12,15 +12,16 @@ import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
 export function printPageCss(
   styles?: ResolvedStyles,
   hf?: HeaderFooterSettings,
+  fullPage = true,
 ) {
   const m = pageMetrics(styles),
     p = m.margins;
   if (hf) {
     const css = (page: number) => {
       const g = pageGeometry(styles, hf, page);
-      return `--print-content-height:${g.content.height}px;--print-sheet-height:${g.frameHeight}px;height:${g.frameHeight}px;padding:${g.before}px 0 ${g.after}px;position:relative;`;
+      return `--print-content-height:${g.content.height}px;--print-sheet-height:${fullPage ? g.height : g.frameHeight}px;height:${fullPage ? g.height : g.frameHeight}px;padding:${fullPage ? g.margins.top : 0}px 0 ${fullPage ? g.margins.bottom : 0}px;position:relative;overflow:visible;`;
     };
-    return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-sheet-height:${m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
+    return `@page{size:Letter;margin:${fullPage ? "0" : `${p.top}in ${p.right}in ${p.bottom}in ${p.left}in`}}.print-root{width:${m.contentWidth}px;margin-left:${fullPage ? p.left * 96 : 0}px;--print-sheet-height:${fullPage ? m.height : m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
   }
   return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
 }

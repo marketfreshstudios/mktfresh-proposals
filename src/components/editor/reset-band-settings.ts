@@ -14,7 +14,8 @@ export function resetBandSettings(
     ...structuredClone({
       shared: template.shared,
       divider: template.divider,
-      bandHeightIn: template.bandHeightIn,
+      distanceIn: template.distanceIn,
+      bandHeightIn: undefined,
       showOnCover: template.showOnCover,
     }),
   };

@@ -519,22 +519,28 @@ function BandSettings({
           : undefined,
       )}
       <fieldset className="band-height">
-        <legend>Band height</legend>
-        <div role="group" aria-label="Band height">
-          {([0.4, 0.5, 0.75] as const).map((height) => (
+        <legend>Distance from edge</legend>
+        <div role="group" aria-label="Distance from edge">
+          {([0.25, 0.3, 0.4] as const).map((height) => (
             <button
               key={height}
               type="button"
-              aria-pressed={value.bandHeightIn === height}
-              onClick={() => onChange({ ...value, bandHeightIn: height })}
+              aria-pressed={value.distanceIn === height}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  bandHeightIn: undefined,
+                  distanceIn: height,
+                })
+              }
             >
               {height} in
             </button>
           ))}
         </div>
         <p>
-          Each band plus its 0.25 in gap comes out of the page's content area.
-          Page breaks update to match.
+          Headers and footers sit in the page margins. Page content keeps its
+          space. Headers, footers and images are sized to fit their margins.
         </p>
       </fieldset>
       {toggle("divider", "Divider line")}

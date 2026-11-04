@@ -19,7 +19,7 @@ it("resets shared template presentation while retaining switches and per-page ov
     },
   ];
   template.divider = false;
-  template.bandHeightIn = 0.75;
+  template.distanceIn = 0.4;
   template.showOnCover = true;
   const reset = resetBandSettings(current, template);
   expect(reset.shared).toEqual(template.shared);
@@ -27,7 +27,7 @@ it("resets shared template presentation while retaining switches and per-page ov
     showHeader: false,
     showFooter: false,
     divider: false,
-    bandHeightIn: 0.75,
+    distanceIn: 0.4,
     showOnCover: true,
     overrides: current.overrides,
   });

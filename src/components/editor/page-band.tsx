@@ -246,10 +246,11 @@ export function PageBand(props: Props) {
           left: `var(--editor-sheet-left,${geometry.margins.left}px)`,
           right: `var(--editor-sheet-right,${geometry.margins.right}px)`,
           height: rect.height,
+          "--band-image-max": `${geometry.bandLimits[kind].imageHeight}px`,
           ...(kind === "header"
             ? { top: rect.y }
-            : { bottom: geometry.margins.bottom }),
-        } as CSSProperties
+            : { bottom: geometry.distance }),
+        } as CSSProperties & Record<string, string | number>
       }
       onDoubleClick={() => {
         if (!editing && device === "desktop") begin();
@@ -324,6 +325,7 @@ export function PageBand(props: Props) {
                         : band.image.src
                     }
                     alt={band.image.alt}
+                    style={{ height: band.image.height ?? 18 }}
                   />
                 )}
               <div
