@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import type { PublicProposal } from "./client-proposal";
 import { orderedItems, selected } from "../lib/quote-model";
 import { QuoteSchema } from "../lib/model";
@@ -68,8 +68,43 @@ export function ClientPageSheets({
   onError?: () => void;
 }) {
   const host = useRef<HTMLElement>(null);
-  const latest = useRef({ p, logo, busy, frozen, onToggle, onReady, onError });
-  latest.current = { p, logo, busy, frozen, onToggle, onReady, onError };
+  const projection = useMemo(() => {
+    const html = clientDocumentHtml(p, logo),
+      css = clientDocumentCss(p);
+    // Response revisions/status and busy changes do not change the document.
+    return {
+      html,
+      css,
+      key: JSON.stringify([
+        html,
+        css,
+        p.header_footer,
+        p.pagination,
+        p.variables,
+        logo,
+      ]),
+    };
+  }, [p, logo]);
+  const latest = useRef({
+    p,
+    logo,
+    projection,
+    busy,
+    frozen,
+    onToggle,
+    onReady,
+    onError,
+  });
+  latest.current = {
+    p,
+    logo,
+    projection,
+    busy,
+    frozen,
+    onToggle,
+    onReady,
+    onError,
+  };
   useLayoutEffect(() => {
     const el = host.current!,
       shadow = el.shadowRoot ?? el.attachShadow({ mode: "open" });
@@ -78,13 +113,16 @@ export function ClientPageSheets({
     let view: HTMLElement | undefined,
       frame = 0,
       serial = 0,
+      committed = 0,
+      readyFrame = 0,
+      scrollFrame = 0,
       stopped = false,
       lastWidth = 0,
       focusItem: string | undefined;
     const frames: HTMLElement[] = [];
     function scale(preserve = true) {
       const width = el.clientWidth;
-      if (width === lastWidth) return;
+      if (width <= 0 || width === lastWidth) return false;
       lastWidth = width;
       const position = preserve && view && captureClientPosition(view);
       const metrics = pageGeometry(
@@ -100,12 +138,33 @@ export function ClientPageSheets({
         const sheet = page.firstElementChild as HTMLElement;
         sheet.style.transform = `scale(${value})`;
       }
-      if (position)
-        requestAnimationFrame(
+      if (position) {
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = requestAnimationFrame(
           () => !stopped && view && restoreClientPosition(view, position),
         );
+      }
+      return true;
     }
-    const resize = new ResizeObserver(() => scale());
+    function ready(request: number) {
+      cancelAnimationFrame(readyFrame);
+      readyFrame = requestAnimationFrame(() => {
+        if (stopped || request !== serial || committed !== request) return;
+        // Account for the scrollbar/column width before reporting a stable layout.
+        if (scale(false)) {
+          ready(request);
+          return;
+        }
+        el.dataset.layoutReady = "true";
+        latest.current.onReady?.();
+      });
+    }
+    const resize = new ResizeObserver(() => {
+      if (scale()) {
+        el.dataset.layoutReady = "false";
+        if (committed === serial) ready(committed);
+      }
+    });
     resize.observe(el);
     const change = (event: Event) => {
       const input = event.target as HTMLInputElement;
@@ -138,6 +197,13 @@ export function ClientPageSheets({
         unit.setAttribute("role", "radiogroup");
         unit.setAttribute("aria-label", "Choose one");
       }
+      const retained = new Map(
+        [
+          ...(view?.querySelectorAll<HTMLInputElement>(
+            "input[data-client-item]",
+          ) ?? []),
+        ].map((input) => [input.dataset.clientItem!, input]),
+      );
       cards.forEach((card) => {
         const item = items.get(card.dataset.clientItemId ?? "");
         if (!item?.optional || current.frozen || !current.onToggle) return;
@@ -147,7 +213,9 @@ export function ClientPageSheets({
         label.classList.add("client-interactive-card");
         label.append(...card.childNodes);
         card.replaceWith(label);
-        const input = document.createElement("input");
+        // Keep the native node through optimistic/server responses. Replacing it
+        // during a click detaches the active control before its action completes.
+        const input = retained.get(item.id) ?? document.createElement("input");
         input.type = item.choice_group_id ? "radio" : "checkbox";
         input.name = item.choice_group_id ?? item.id;
         input.dataset.clientItem = item.id;
@@ -166,10 +234,30 @@ export function ClientPageSheets({
         slot.prepend(input);
       });
     }
+    function focusControl() {
+      if (
+        focusItem &&
+        (document.activeElement === el ||
+          document.activeElement === document.body)
+      )
+        view
+          ?.querySelector<HTMLInputElement>(
+            `input[data-client-item="${CSS.escape(focusItem)}"]`,
+          )
+          ?.focus({ preventScroll: true });
+    }
+    function syncControls() {
+      view
+        ?.querySelectorAll<HTMLInputElement>("input[data-client-item]")
+        .forEach((input) => {
+          input.disabled = latest.current.busy || latest.current.frozen;
+        });
+      if (!latest.current.busy) focusControl();
+    }
     async function paint() {
       const request = ++serial,
         current = latest.current;
-      style.textContent = clientDocumentCss(current.p) + sheetCss;
+      style.textContent = current.projection.css + sheetCss;
       const stage = document.createElement("div");
       stage.className = "client-canonical";
       Object.assign(stage.style, {
@@ -182,7 +270,7 @@ export function ClientPageSheets({
       });
       stage.setAttribute("aria-hidden", "true");
       stage.inert = true;
-      stage.innerHTML = clientDocumentHtml(current.p, current.logo);
+      stage.innerHTML = current.projection.html;
       shadow.append(stage);
       stage.getBoundingClientRect();
       const assets = Promise.all([
@@ -210,6 +298,17 @@ export function ClientPageSheets({
       try {
         const output = paginateClientDocument(stage, current.p, current.logo);
         const position = view && captureClientPosition(view);
+        // A pricing block may span several sheets. Keep the active control's
+        // position rather than scrolling to that block's first fragment.
+        const readingControl =
+          focusItem &&
+          (document.activeElement === el ||
+            document.activeElement === document.body)
+            ? view?.querySelector<HTMLInputElement>(
+                `input[data-client-item="${CSS.escape(focusItem)}"]`,
+              )
+            : undefined;
+        const controlTop = readingControl?.getBoundingClientRect().top;
         const focused =
           shadow.activeElement instanceof HTMLElement &&
           shadow.activeElement.dataset.clientItem;
@@ -261,29 +360,27 @@ export function ClientPageSheets({
           );
           if (node) node.id = `section-${index}`;
         }
+        // Prepare every new frame before exposing it, avoiding a zero-height
+        // intermediate document and scrollbar-driven width oscillation.
+        lastWidth = 0;
+        scale(false);
         stage.style.cssText = "";
         stage.removeAttribute("aria-hidden");
         stage.inert = false;
         view?.remove();
         view = stage;
-        lastWidth = 0;
-        scale(false);
-        if (position) restoreClientPosition(stage, position);
-        if (
-          focusItem &&
-          (document.activeElement === el ||
-            document.activeElement === document.body)
-        )
-          stage
-            .querySelector<HTMLInputElement>(
-              `input[data-client-item="${CSS.escape(focusItem)}"]`,
-            )
-            ?.focus({ preventScroll: true });
+        if (readingControl?.isConnected && controlTop !== undefined)
+          window.scrollBy(
+            0,
+            readingControl.getBoundingClientRect().top - controlTop,
+          );
+        else if (position) restoreClientPosition(stage, position);
+        focusControl();
         if (output.plan) el.dataset.pagePlan = JSON.stringify(output.plan);
         el.dataset.pages = String(output.sheets.length);
-        el.dataset.layoutReady = "true";
-        current.onReady?.();
-        if (!loaded)
+        committed = request;
+        ready(request);
+        if (!loaded && !current.p.pagination)
           assets.then(() => {
             if (!stopped && request === serial) schedule();
           });
@@ -295,23 +392,35 @@ export function ClientPageSheets({
       }
     }
     function schedule() {
-      if (!frame && !stopped)
+      if (!frame && !stopped) {
+        el.dataset.layoutReady = "false";
+        cancelAnimationFrame(readyFrame);
         frame = requestAnimationFrame(() => {
           frame = 0;
           void paint();
         });
+      }
     }
     const refresh = () => schedule();
     el.addEventListener("client-layout-change", refresh);
-    document.fonts.addEventListener("loadingdone", refresh);
+    // Frozen plans do not depend on loaded browser font metrics. Their text
+    // reflows naturally; only unplanned documents need the print paginator again.
+    const fontsLoaded = () => {
+      if (!latest.current.p.pagination) schedule();
+    };
+    document.fonts.addEventListener("loadingdone", fontsLoaded);
+    el.addEventListener("client-controls-change", syncControls);
     schedule();
     return () => {
       stopped = true;
       serial++;
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(readyFrame);
+      cancelAnimationFrame(scrollFrame);
       resize.disconnect();
       el.removeEventListener("client-layout-change", refresh);
-      document.fonts.removeEventListener("loadingdone", refresh);
+      document.fonts.removeEventListener("loadingdone", fontsLoaded);
+      el.removeEventListener("client-controls-change", syncControls);
       shadow.removeEventListener("change", change);
       shadow.removeEventListener("focusin", focus);
       document.removeEventListener("pointerdown", outside, true);
@@ -319,7 +428,10 @@ export function ClientPageSheets({
   }, []);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-layout-change"));
-  }, [p, logo, busy, frozen]);
+  }, [projection.key, frozen]);
+  useLayoutEffect(() => {
+    host.current?.dispatchEvent(new Event("client-controls-change"));
+  }, [busy, frozen]);
   return (
     <article
       ref={host}

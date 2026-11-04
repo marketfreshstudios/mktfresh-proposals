@@ -10,6 +10,13 @@ import type { Block, Quote } from "../src/lib/model";
 import { mkdir, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 
+test.beforeEach(async ({ page }) => {
+  if (process.env.CLIENT_SHEETS_CPU_RATE === "4") {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  }
+});
+
 const content: Block[] = [
   { id: "overview", type: "heading", text: "Overview", level: 1 },
   {
@@ -41,6 +48,7 @@ const content: Block[] = [
 async function fixture(
   page: import("@playwright/test").Page,
   quote?: (base: Quote) => Quote,
+  beforeToggle?: () => Promise<void>,
 ) {
   const f = await editorFixture(page, false, {
     content,
@@ -105,6 +113,7 @@ async function fixture(
   await page.route("**/api/public/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/quote")) {
+      await beforeToggle?.();
       const next = await f.service.toggle(
         sent.token!,
         "",
@@ -367,11 +376,9 @@ test("choices keep published breaks and selected PDF content; resizing preserves
   }
 });
 
-test("pricing controls keep their item identities across page splits and choice radios remain exclusive", async ({
-  page,
-}) => {
+function manyOptions(base: Quote): Quote {
   const group = crypto.randomUUID();
-  const f = await fixture(page, (base) => [
+  return [
     base[0],
     ...Array.from({ length: 20 }, (_, n) => ({
       ...structuredClone(base[1]),
@@ -388,7 +395,14 @@ test("pricing controls keep their item identities across page splits and choice 
         id: crypto.randomUUID(),
       })),
     })),
-  ]);
+  ];
+}
+
+test("pricing controls keep their item identities across page splits and choice radios remain exclusive", async ({
+  page,
+}) => {
+  const f = await fixture(page, manyOptions);
+  const group = f.sent.quote.find((i) => i.choice_group_id)!.choice_group_id!;
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/p/${f.sent.token}`);
   const host = page.locator(
@@ -442,4 +456,114 @@ test("pricing controls keep their item identities across page splits and choice 
         (el) => el.closest<HTMLElement>(".client-page-frame")!.dataset.page,
       ),
   ).not.toBe("1");
+});
+
+test("ready client sheets retain their native controls and stay stable through a slow choice save", async ({
+  page,
+}) => {
+  const cpu = await page.context().newCDPSession(page);
+  await cpu.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const f = await fixture(page, manyOptions, () => pending);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/p/${f.sent.token}`);
+  const host = page.locator(
+    '.client-document-sheets[data-layout-ready="true"]',
+  );
+  await host.waitFor();
+  const option = host.getByRole("checkbox", { name: /Service option 20/ });
+  const native = await option.elementHandle();
+  expect(native).not.toBeNull();
+  async function stable() {
+    const result = await host.evaluate(async (el) => {
+      const root = el.shadowRoot!;
+      const pages = [
+        ...root.querySelectorAll<HTMLElement>(".client-page-frame"),
+      ];
+      const papers = [
+        ...root.querySelectorAll<HTMLElement>(".client-letter-sheet"),
+      ];
+      const originals = [...pages, ...papers];
+      const geometry = () =>
+        originals.map((node) => {
+          const r = node.getBoundingClientRect();
+          return [
+            r.x + scrollX,
+            r.y + scrollY,
+            r.width,
+            r.height,
+            node.getAttribute("style"),
+          ];
+        });
+      const before = JSON.stringify(geometry());
+      let writes = 0,
+        moved = false;
+      const observer = new MutationObserver((records) => {
+        writes += records.filter((r) =>
+          originals.includes(r.target as HTMLElement),
+        ).length;
+      });
+      observer.observe(root, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style"],
+        childList: true,
+      });
+      // A late font signal must not rebuild a published PagePlan projection.
+      document.fonts.dispatchEvent(new Event("loadingdone"));
+      for (let n = 0; n < 20; n++) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        if (
+          JSON.stringify(geometry()) !== before ||
+          originals.some((node) => !node.isConnected)
+        )
+          moved = true;
+      }
+      observer.disconnect();
+      return { writes, moved, ready: (el as HTMLElement).dataset.layoutReady };
+    });
+    expect(result).toEqual({ writes: 0, moved: false, ready: "true" });
+  }
+  await stable();
+  const response = page.waitForResponse(
+    (r) => r.url().endsWith("/quote") && r.request().method() === "POST",
+  );
+  try {
+    await option.check();
+    await expect(option).toBeDisabled();
+    expect(
+      await native!.evaluate((el) => ({
+        connected: el.isConnected,
+        checked: (el as HTMLInputElement).checked,
+      })),
+    ).toEqual({ connected: true, checked: true });
+    await host.waitFor();
+    await expect(option).toBeInViewport();
+    await stable();
+  } finally {
+    release();
+  }
+  expect((await response).status()).toBe(200);
+  await expect(option).toBeEnabled();
+  await host.waitFor();
+  expect(
+    await native!.evaluate((el) => ({
+      connected: el.isConnected,
+      checked: (el as HTMLInputElement).checked,
+    })),
+  ).toEqual({ connected: true, checked: true });
+  await expect(option).toBeInViewport();
+  await stable();
+  await page.setViewportSize({ width: 1100, height: 1000 });
+  await host.waitFor();
+  await stable();
+  expect(await native!.evaluate((el) => el.isConnected)).toBe(true);
+  expect(JSON.parse((await host.getAttribute("data-page-plan"))!)).toEqual(
+    f.plan,
+  );
 });
