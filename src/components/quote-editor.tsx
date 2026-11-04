@@ -1,4 +1,5 @@
 "use client";
+import { defaultHeaderFooter } from "../lib/page-bands";
 import {
   sublineLabel,
   ambiguousSublines,
@@ -235,6 +236,9 @@ function QuoteEditorContent({
       clause: number;
     } | null>(null);
   const locked = !!p.signers.length || p.versions.some((v) => v.frozen);
+  const bands = locked
+    ? p.versions.at(-1)?.header_footer
+    : (p.header_footer ?? defaultHeaderFooter());
   const closed = ["declined", "expired"].includes(p.status);
   const live = !!p.token && p.versions.length > 0 && !closed && !locked;
   const paper = useRef<HTMLElement>(null),
@@ -496,6 +500,7 @@ function QuoteEditorContent({
         cacheKey,
         JSON.stringify({
           revision: p.revision,
+          header_footer: p.header_footer,
           cover: p.cover,
           title: p.title,
           content: p.content,
@@ -522,6 +527,7 @@ function QuoteEditorContent({
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
+    header_footer: v.header_footer,
     cover: v.cover,
     title: v.title,
     content: v.content,
@@ -1813,6 +1819,7 @@ function QuoteEditorContent({
             ),
             false,
             true,
+            bands,
           )
         }
         onPage={(page) => {
@@ -1895,6 +1902,9 @@ function QuoteEditorContent({
       ) : tab === "Styles" ? (
         <ProposalStyles
           settings={p.workspace_settings}
+          headerFooter={bands}
+          onHeaderFooter={(header_footer) => change({ header_footer })}
+          pageCount={browserPages?.plan.pages ?? 1}
           inherited={p.template_style_overrides}
           value={p.style_overrides}
           onChange={(style_overrides) => change({ style_overrides })}
@@ -2856,6 +2866,13 @@ function QuoteEditorContent({
                       panels.printMode && !(panels.phone && selection.selected)
                     }
                     sheets
+                    headerFooter={bands}
+                    values={map}
+                    logo={
+                      p.workspace_settings?.logo
+                        ? `/api/proposals/${p.id}/preview-logo`
+                        : undefined
+                    }
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,
@@ -2864,6 +2881,7 @@ function QuoteEditorContent({
                       p.style_overrides,
                       p.template_style_overrides,
                       p.cover,
+                      bands,
                     ])}
                     onPagination={receivePagination}
                   />

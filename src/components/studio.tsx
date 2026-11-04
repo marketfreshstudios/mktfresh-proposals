@@ -1,4 +1,5 @@
 "use client";
+import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
 import { defaultCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
@@ -1493,6 +1494,7 @@ function TemplatesStudioContent({
             id: draft.id,
             content,
             quote: templatePreview.quote,
+            header_footer: draft.header_footer,
             cover: draft.cover,
             style_overrides: draft.style_overrides,
           },
@@ -1609,6 +1611,7 @@ function TemplatesStudioContent({
                 templateStyles,
                 false,
                 true,
+                proposalBands(draft?.header_footer),
               )
             }
             onChange={(content) => {
@@ -1646,6 +1649,11 @@ function TemplatesStudioContent({
     (draft && (
       <ProposalStyles
         settings={data.settings}
+        headerFooter={proposalBands(draft.header_footer)}
+        onHeaderFooter={({ overrides: _overrides, ...header_footer }) =>
+          editDraft({ ...draft, header_footer })
+        }
+        pageCount={browserPages?.plan.pages ?? 1}
         value={draft.style_overrides}
         onChange={(style_overrides) => editDraft({ ...draft, style_overrides })}
         resetLabel="Reset to workspace"
@@ -1742,6 +1750,7 @@ function TemplatesStudioContent({
                 setDraft({
                   id: crypto.randomUUID(),
                   name: "Untitled template",
+                  header_footer: defaultTemplateBands(),
                   cover: defaultCover(),
                   active: true,
                   default_quote: [],
@@ -1901,12 +1910,20 @@ function TemplatesStudioContent({
                         paper={templatePaper}
                         styles={templateStyles}
                         content={content}
+                        headerFooter={proposalBands(draft?.header_footer)}
+                        values={map}
+                        logo={
+                          data.settings?.logo
+                            ? "/api/workspace-logo"
+                            : undefined
+                        }
                         contentKey={JSON.stringify([
                           printView(content, templatePreview.quote),
                           draft?.default_quote,
                           draft?.default_items,
                           draft?.style_overrides,
                           draft?.cover,
+                          draft?.header_footer,
                         ])}
                         onPagination={receivePagination}
                         sheets

@@ -1,3 +1,4 @@
+import { proposalBands } from "./page-bands";
 import { randomUUID } from "node:crypto";
 import type { Proposal, Version } from "./model";
 import { variables, renderBlocks, versionHash } from "./content";
@@ -6,6 +7,7 @@ import { freezeStyles } from "./proposal-styles";
 /** Staff work and client publication are distinct until a readiness-checked commit. */
 export type EditorialWork = Pick<
   Proposal,
+  | "header_footer"
   | "cover"
   | "title"
   | "brief"
@@ -18,6 +20,7 @@ export type EditorialWork = Pick<
 >;
 export type PublishedState = Pick<
   Proposal,
+  | "header_footer"
   | "cover"
   | "title"
   | "valid_until"
@@ -35,6 +38,7 @@ export function editableProposal(p: Proposal) {
 }
 export function editorialWork(p: Proposal): EditorialWork {
   return structuredClone({
+    header_footer: p.header_footer,
     cover: p.cover,
     title: p.title,
     brief: p.brief,
@@ -48,6 +52,7 @@ export function editorialWork(p: Proposal): EditorialWork {
 }
 export function publicationState(p: Proposal): PublishedState {
   return structuredClone({
+    header_footer: p.header_footer,
     cover: p.cover,
     title: p.title,
     valid_until: p.valid_until,
@@ -66,6 +71,7 @@ export function editorialVersion(p: Proposal, now: string): Version {
   const map = variables(p, p.quote);
   renderBlocks(p.content, p.quote, map, p.currency);
   const version: Version = {
+    header_footer: proposalBands(p.header_footer),
     id: randomUUID(),
     version_no: p.versions.length + 1,
     resolved_styles: freezeStyles(
@@ -90,6 +96,7 @@ export function restorePublishedForSigning(p: Proposal) {
   const v = p.versions.at(-1)!;
   if (p.live_blockers?.length) p.unpublished_work = editorialWork(p);
   if (p.published_state) Object.assign(p, p.published_state);
+  p.header_footer = structuredClone(v.header_footer);
   p.cover = structuredClone(v.cover);
   p.content = structuredClone(v.content);
   p.quote = structuredClone(v.quote);

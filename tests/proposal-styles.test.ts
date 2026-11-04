@@ -175,6 +175,7 @@ it("old stored versions retain their exact hash input and never gain styles on r
   let p = await service.send(draft.id, staff);
   const v = p.versions[0];
   delete v.resolved_styles;
+  delete v.header_footer;
   const oldInput = {
     content: v.content,
     quote: v.quote,

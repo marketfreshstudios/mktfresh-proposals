@@ -1,3 +1,8 @@
+import {
+  pageGeometry,
+  pageContentHeight,
+  type HeaderFooterSettings,
+} from "../lib/page-bands";
 import type { Block } from "../lib/model";
 import type { PagePlan, PageStart } from "../lib/page-plan";
 import {
@@ -18,7 +23,9 @@ export function paginateBrowser(
   styles: ResolvedStyles,
   decorate: boolean,
   reorder = false,
+  hf?: HeaderFooterSettings,
 ): BrowserPages {
+  const geometry = (page: number) => pageGeometry(styles, hf, page);
   const metrics = pageMetrics(styles),
     stride = metrics.height + 24;
   const originals = [root, ...root.querySelectorAll<HTMLElement>("*")];
@@ -49,7 +56,7 @@ export function paginateBrowser(
   clone.style.setProperty("min-width", `${metrics.width}px`, "important");
   clone.style.setProperty(
     "padding",
-    `${metrics.margins.top * 96}px ${metrics.margins.right * 96}px ${metrics.margins.bottom * 96}px ${metrics.margins.left * 96}px`,
+    `${geometry(1).content.y}px ${metrics.margins.right * 96}px ${geometry(1).margins.bottom + geometry(1).after}px ${metrics.margins.left * 96}px`,
     "important",
   );
   clone
@@ -102,7 +109,9 @@ export function paginateBrowser(
   const spacers = new Map<HTMLElement, SourceSpacer[]>();
   let page = 1;
   const end = () =>
-    (page - 1) * stride + metrics.height - metrics.margins.bottom * 96;
+    (page - 1) * stride +
+    geometry(page).content.y +
+    pageContentHeight(styles, hf, page);
   const local = (el: Element) => el.getBoundingClientRect().top - top;
   const hostFor = (node: Node) =>
     node.parentElement?.closest<HTMLElement>(
@@ -135,7 +144,7 @@ export function paginateBrowser(
       ...(part ? { part } : {}),
     };
     starts.push(start);
-    const desired = (page - 1) * stride + metrics.margins.top * 96;
+    const desired = (page - 1) * stride + geometry(page).content.y;
     if (
       point?.node instanceof HTMLElement &&
       point.node.matches("p,li") &&
@@ -226,7 +235,7 @@ export function paginateBrowser(
         )
           continue;
         if (row.bottom - top > end() + 0.5) {
-          const pageTop = (page - 1) * stride + metrics.margins.top * 96;
+          const pageTop = (page - 1) * stride + geometry(page).content.y;
           const unitFor = (node: Node) => {
             const element =
               node.nodeType === 1 ? (node as Element) : node.parentElement;
@@ -243,7 +252,7 @@ export function paginateBrowser(
           if (
             (remaining.length <= 3 &&
               remaining.at(-1)!.bottom - remaining[0].top <=
-                metrics.contentHeight) ||
+                pageContentHeight(styles, hf, page)) ||
             left < 2
           )
             candidate = 0;
@@ -337,7 +346,7 @@ export function paginateBrowser(
       const height = pairFirst
         ? pair!.getBoundingClientRect().height
         : el.getBoundingClientRect().height;
-      const full = metrics.contentHeight;
+      const full = pageContentHeight(styles, hf, page);
       const next = blocks
         .slice(i + 1)
         .find((v) => v.b.type !== "page_break")?.el;
@@ -352,7 +361,7 @@ export function paginateBrowser(
         if (
           first &&
           first.getBoundingClientRect().bottom - top > end() + 0.5 &&
-          local(frame) > (page - 1) * stride + metrics.margins.top * 96 + 2
+          local(frame) > (page - 1) * stride + geometry(page).content.y + 2
         )
           newPage(frame, b);
       }
@@ -367,7 +376,7 @@ export function paginateBrowser(
           top +
           Math.max(0, orphan) >
           end() + 0.5 &&
-        local(el) > (page - 1) * stride + metrics.margins.top * 96 + 2
+        local(el) > (page - 1) * stride + geometry(page).content.y + 2
       )
         newPage(pairFirst ? pair! : frame, b);
       assignments.push({ block: b.id!, page });

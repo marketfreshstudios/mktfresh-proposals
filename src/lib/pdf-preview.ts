@@ -38,6 +38,7 @@ export async function pdfPreview(
     );
   const fingerprint = sha256(
     canonical({
+      header_footer: v.header_footer,
       cover: v.cover,
       view: printView(v.content, v.quote),
       variables: v.variables_resolved,

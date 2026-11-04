@@ -223,10 +223,14 @@ test("1440px editor text matches the PDF page edge words; narrow projections kee
   expect(screen).toEqual(printed);
   for (const width of [768, 375]) {
     await page.setViewportSize({ width, height: 1100 });
-    await expect
-      .poll(async () => (await plan(page)).pages)
-      .toBe(original.pages);
-    await expect.poll(() => plan(page)).toEqual(original);
+    await page
+      .locator(".editor-paper")
+      .evaluate((el) => el.dispatchEvent(new Event("pagination-flush")));
+    await page
+      .locator(".editor-page-sheets[data-layout-settled=true]")
+      .waitFor();
+    expect((await plan(page)).pages).toBe(original.pages);
+    expect(await plan(page)).toEqual(original);
     await expect(
       page.locator('[data-block-id="block-long"] .tiptap'),
     ).toHaveCSS("font-size", "16px");

@@ -51,6 +51,7 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
     }),
   ).toBeVisible();
   await panel.getByRole("tab", { name: "Styles", exact: true }).click();
+  await panel.getByText("Text styles", { exact: true }).click();
   await expect(
     panel.getByRole("group", { name: "Color", exact: true }),
   ).toBeVisible();

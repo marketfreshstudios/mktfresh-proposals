@@ -1,3 +1,4 @@
+import type { HeaderFooterSettings, TemplateBands } from "./page-bands";
 import type { Cover } from "./cover";
 import type { StyleOverrides, ResolvedStyles } from "./proposal-styles";
 import type { WorkspaceSettings } from "./workspace";
@@ -142,6 +143,7 @@ export type RichText = {
   attrs?: { path?: string };
 };
 export type Template = {
+  header_footer?: TemplateBands;
   cover?: Cover;
   pagination?: import("./page-plan").PagePlan;
   style_overrides?: StyleOverrides;
@@ -223,6 +225,7 @@ export type Audit = Actor & {
   metadata: Record<string, unknown>;
 };
 export type Version = {
+  header_footer?: HeaderFooterSettings;
   cover?: Cover;
   pagination?: import("./page-plan").PagePlan;
   resolved_styles?: ResolvedStyles;
@@ -266,6 +269,7 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  header_footer?: HeaderFooterSettings;
   cover?: Cover;
   published_state?: import("./editor-publication").PublishedState;
   live_blockers?: string[];

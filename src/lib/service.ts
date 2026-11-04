@@ -1,3 +1,8 @@
+import {
+  proposalBands,
+  HeaderFooterSettingsSchema,
+  type HeaderFooterSettings,
+} from "./page-bands";
 import { CoverSchema, type Cover } from "./cover";
 import {
   reminderCycle,
@@ -282,6 +287,7 @@ export class ProposalService {
         actor.actor.startsWith("ai:"),
       ),
 
+      header_footer: proposalBands(template.header_footer),
       template_style_overrides: structuredClone(template.style_overrides ?? {}),
       ...(template.cover ? { cover: structuredClone(template.cover) } : {}),
       creation_warnings: defaults.warnings,
@@ -330,6 +336,7 @@ export class ProposalService {
     return withDraftSettings(p, settings);
   }
   async forRead(p: Proposal) {
+    p = { ...p, header_footer: proposalBands(p.header_footer) };
     if (p.status !== "draft") return p;
     p = { ...p, quote: draftItems(p.quote) };
     const current = (
@@ -388,6 +395,7 @@ export class ProposalService {
     id: string,
     input: {
       revision: number;
+      header_footer?: HeaderFooterSettings;
       cover?: Cover;
       pagination?: PagePlan;
       style_overrides?: StyleOverrides;
@@ -451,6 +459,7 @@ export class ProposalService {
         );
       } else if (
         [
+          "header_footer",
           "cover",
           "content",
           "quote",
@@ -461,6 +470,14 @@ export class ProposalService {
         ].some((key) => key in input)
       )
         delete p.pagination;
+      if (input.header_footer !== undefined) {
+        check(
+          actor.actor.startsWith("staff:"),
+          "Only staff can edit headers and footers",
+          403,
+        );
+        p.header_footer = HeaderFooterSettingsSchema.parse(input.header_footer);
+      }
       if (input.cover !== undefined) {
         check(
           actor.actor.startsWith("staff:"),
@@ -839,6 +856,7 @@ export class ProposalService {
         content: v.content,
         quote: v.quote,
         variables_resolved: v.variables_resolved,
+        ...(v.header_footer ? { header_footer: v.header_footer } : {}),
         ...(v.cover ? { cover: v.cover } : {}),
         resolved_styles: v.resolved_styles,
         pagination: v.pagination,
@@ -925,6 +943,7 @@ export class ProposalService {
           content: v.content,
           quote: v.quote,
           variables_resolved: v.variables_resolved,
+          ...(v.header_footer ? { header_footer: v.header_footer } : {}),
           ...(v.cover ? { cover: v.cover } : {}),
           resolved_styles: v.resolved_styles,
           pagination: v.pagination,

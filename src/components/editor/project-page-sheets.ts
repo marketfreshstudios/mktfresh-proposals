@@ -1,3 +1,5 @@
+import { pageGeometry, type HeaderFooterSettings } from "../../lib/page-bands";
+import type { ResolvedStyles } from "../../lib/proposal-styles";
 import type { Block } from "../../lib/model";
 import type { PagePlan, PageStart } from "../../lib/page-plan";
 import {
@@ -12,6 +14,8 @@ export function projectPageSheets(
   root: HTMLElement,
   content: Block[],
   plan: PagePlan,
+  styles?: ResolvedStyles,
+  hf?: HeaderFooterSettings,
 ): SheetBox[] {
   const originals = [root, ...root.querySelectorAll<HTMLElement>("*")];
   const clone = root.cloneNode(true) as HTMLElement;
@@ -86,7 +90,11 @@ export function projectPageSheets(
     // Round the painted sheet outward. CSS quantizes each fractional top/margin
     // independently, so a rounded-down sheet can cut into its last unit by a
     // fraction of a pixel even when the source boundary is exact.
-    const height = Math.ceil(Math.max(320, bottom - pageTop + bottomPadding));
+    const g = pageGeometry(styles, hf, boxes.length + 1);
+    const reserve = hf ? g.margins.bottom + g.after : bottomPadding;
+    const height = Math.ceil(
+      Math.max(hf ? g.height : 320, bottom - pageTop + reserve),
+    );
     boxes.push({ top: pageTop, height, gap });
     pageTop += height + gap;
   };
@@ -158,7 +166,13 @@ export function projectPageSheets(
         const moved = point.node;
         const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
         finish(y(moved) - margin);
-        const height = margin + pageTop + topPadding - y(moved);
+        const height =
+          margin +
+          pageTop +
+          (hf
+            ? pageGeometry(styles, hf, boxes.length + 1).content.y
+            : topPadding) -
+          y(moved);
         moved.dataset.layoutSpace = "true";
         moved.style.setProperty("margin-top", `${height}px`, "important");
         const host = moved.closest<HTMLElement>(".field-editor");
@@ -200,7 +214,14 @@ export function projectPageSheets(
           ? rect.top - origin
           : span.getBoundingClientRect().bottom - origin;
         finish(y(span));
-        const height = Math.max(0, pageTop + topPadding - nextTop);
+        const height = Math.max(
+          0,
+          pageTop +
+            (hf
+              ? pageGeometry(styles, hf, boxes.length + 1).content.y
+              : topPadding) -
+            nextTop,
+        );
         span.style.height = `${height}px`;
         spaces.set(host, [
           ...(spaces.get(host) ?? []),
@@ -225,9 +246,20 @@ export function projectPageSheets(
               : sortable;
         const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
         finish(
-          previousFrame === moved ? pageTop + topPadding : y(moved) - margin,
+          previousFrame === moved
+            ? pageTop +
+                (hf
+                  ? pageGeometry(styles, hf, boxes.length + 1).content.y
+                  : topPadding)
+            : y(moved) - margin,
         );
-        const value = margin + pageTop + topPadding - y(moved);
+        const value =
+          margin +
+          pageTop +
+          (hf
+            ? pageGeometry(styles, hf, boxes.length + 1).content.y
+            : topPadding) -
+          y(moved);
         moved.dataset.layoutSpace = "true";
         moved.style.setProperty("margin-top", `${value}px`, "important");
         previousFrame = moved;

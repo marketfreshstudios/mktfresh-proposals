@@ -1,3 +1,5 @@
+import { pageBandHtml, pageBandCss } from "./page-band-render";
+import { pageGeometry } from "./page-bands";
 import { readableDate } from "./validity";
 import { signatureHtml } from "./signature-presentation";
 import { applyPagePlan, plannedPrintCss } from "./planned-print";
@@ -96,7 +98,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${printPageCss(version.resolved_styles)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             cover: version.cover,
             title:
@@ -177,6 +179,9 @@ export async function sealedPdf(
         );
       layout.sheets!.forEach((sheet, n) => (sheet.fragments = fragments[n]));
     }
+    layout.geometry = Array.from({ length: layout.pages }, (_, n) =>
+      pageGeometry(version.resolved_styles, version.header_footer, n + 1),
+    );
     const pricingIds = new Set(
       version.content
         .filter((b) => b.type === "pricing_table")
@@ -197,6 +202,46 @@ export async function sealedPdf(
       );
     for (const boundary of layout.boundaries)
       boundary.start_text = starts[boundary.page - 1];
+    if (version.header_footer) {
+      const bands = Array.from({ length: layout.pages }, (_, n) =>
+        (["header", "footer"] as const)
+          .map((kind) =>
+            pageBandHtml({
+              hf: version.header_footer,
+              kind,
+              page: n + 1,
+              pageCount: layout.pages,
+              values: version.variables_resolved,
+              styles: version.resolved_styles,
+              logo: brand?.logo,
+              print: true,
+            }),
+          )
+          .join(""),
+      );
+      await page
+        .locator(".print-sheet")
+        .evaluateAll(
+          (sheets, html) =>
+            sheets.forEach((sheet, n) =>
+              sheet.insertAdjacentHTML("beforeend", html[n]),
+            ),
+          bands,
+        );
+      await page
+        .locator(".page-band img")
+        .evaluateAll(async (images) =>
+          Promise.all(
+            images.map((img) =>
+              (img as HTMLImageElement).decode().catch(() => {}),
+            ),
+          ),
+        );
+      const html = await page
+        .locator(".print-sheet")
+        .evaluateAll((sheets) => sheets.map((el) => el.innerHTML));
+      layout.sheets!.forEach((sheet, n) => (sheet.html = html[n]));
+    }
     if (options?.preview)
       await page.evaluate(() => {
         const mark = document.createElement("div");
