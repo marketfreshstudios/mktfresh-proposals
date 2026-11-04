@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import icons from "../src/components/icons.json";
 import { Disclosure } from "../src/components/ui";
+import { DisclosureChevron } from "../src/components/disclosure-chevron";
 it("UI components have no text disclosure glyphs and all chevrons use the licensed icon paths", () => {
   const visit = (dir: string) => {
     for (const file of readdirSync(dir, { withFileTypes: true })) {
@@ -28,4 +29,14 @@ it("UI components have no text disclosure glyphs and all chevrons use the licens
       </details>,
     ),
   ).toContain('class="disclosure-marker"');
+});
+it("disclosures use a dedicated smaller solid glyph, independent of dropdowns", () => {
+  const html = renderToStaticMarkup(<DisclosureChevron open />);
+  expect(html).toContain('width="10" height="10"');
+  expect(html).toContain('data-open="true"');
+  expect(html).toContain(icons["chevron-right"].path);
+  const css = readFileSync("src/app/globals.css", "utf8");
+  expect(css).toContain("transition: transform 120ms ease");
+  expect(css).toContain("transform: rotate(90deg)");
+  expect(readFileSync("src/app/tokens.css", "utf8")).toContain("chevron");
 });

@@ -1,4 +1,5 @@
 "use client";
+import { DisclosureChevron } from "./disclosure-chevron";
 import {
   STAFF_SIGNED_OUT,
   staffErrorMessage,
@@ -374,11 +375,7 @@ export function Disclosure({
   return (
     <summary {...props}>
       <span className="disclosure-marker" aria-hidden="true">
-        <Icon
-          className="disclosure-icon disclosure-closed"
-          name="chevron-right"
-        />
-        <Icon className="disclosure-icon disclosure-open" name="chevron-down" />
+        <DisclosureChevron />
       </span>
       {children}
     </summary>

@@ -1,5 +1,6 @@
 "use client";
 import { Disclosure } from "./ui";
+import { DisclosureChevron } from "./disclosure-chevron";
 import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { useBandEditing } from "./editor/band-editing";
@@ -1025,10 +1026,7 @@ function QuoteEditorContent({
             />
           )}
           <strong className="quote-row-amount">{amount}</strong>
-          <Icon
-            name={expanded ? "chevron-up" : "chevron-down"}
-            className="disclosure-icon"
-          />
+          <DisclosureChevron open={expanded} />
         </button>
         {expanded && (
           <div id={`quote-body-${i.id}`} className="quote-row-body">
