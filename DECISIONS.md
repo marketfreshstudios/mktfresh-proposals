@@ -439,3 +439,9 @@ At 924px the owner chose PR 1’s existing modal drawer behavior: verify its scr
 - `page-bands.ts` owns geometry, with a fixed 24px gap per shown band. Cover switches can change page 1's height. Hidden per-page overrides still reserve space; override editing/behavior remains PR 3's scope.
 - Page number/count are local band-render values, never general proposal variables or AI tool fields. Count proposal pages only; append the existing unbanded certificate separately. Band text uses the resolved proposal body font at 12px/16px.
 - Styles uses Text styles / Page & margins / Header & footer accordions. Template controls use the existing explicit Save template flow; proposal controls use existing autosave/history/live publication.
+
+### Header/footer PR 2 — shared authoring and reset source
+
+Shared bands use the document editor's cursor, history, popover and publication paths. Editing is desktop-only (the existing 960px editor breakpoint); tablet/phone and per-page editing remain for PR 3. Page fields stay local to band editing/rendering. Band chrome is excluded from measurements with `data-editor-chrome`; geometry and frozen PagePlans are unchanged.
+
+Owner clarification for PR #59: proposal “Reset to template” uses the template's current saved shared bands, divider, height and Show on cover, falling back to built-in defaults if the template no longer exists. Studio labels its built-in reset “Reset to default,” with helper “Restores the built-in header and footer.” Header/Footer switches and per-page overrides are retained; both resets are undoable. No creation-time snapshot storage is added.
