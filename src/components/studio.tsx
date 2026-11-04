@@ -1906,6 +1906,12 @@ function TemplatesStudioContent({
                         styles={templateStyles}
                         content={content}
                         headerFooter={proposalBands(draft?.header_footer)}
+                        values={map}
+                        logo={
+                          data.settings?.logo
+                            ? "/api/workspace-logo"
+                            : undefined
+                        }
                         contentKey={JSON.stringify([
                           printView(content, templatePreview.quote),
                           draft?.default_quote,

@@ -1,3 +1,4 @@
+import { signature, clientActor } from "../tests/helpers";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import { defaultHeaderFooter, pageContentHeight } from "../src/lib/page-bands";
@@ -68,4 +69,99 @@ test("canonical editor and PDF content areas match every band height and switch 
           ).toBeLessThanOrEqual(1);
         }
       }
+});
+
+test("shared rest bands resolve page fields after pagination; cover and certificate are band-free", async ({
+  page,
+}) => {
+  const pages: Block[] = Array.from({ length: 9 }, (_, n) => [
+    ...(n ? [{ id: `separator-${n}`, type: "page_break" as const }] : []),
+    { id: `section-${n}`, type: "heading" as const, text: `Section ${n + 1}` },
+    {
+      id: `paragraph-${n}`,
+      type: "paragraph" as const,
+      text: "Thoughtful work with clear outcomes.",
+    },
+  ]).flat();
+  const f = await editorFixture(page, false, { content: pages });
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  expect(await page.locator(".page-sheet").count()).toBe(9);
+  await expect(
+    page.locator(".page-sheet").first().locator(".page-band"),
+  ).toHaveCount(0);
+  const third = page.locator(".page-sheet").nth(2);
+  await expect(third.locator("[data-page-band=footer]")).toContainText(
+    "Page 3 of 9",
+  );
+  await expect(third.locator('[data-field="page.number"]')).toHaveText("3");
+  await expect(third.locator(".page-band p").first()).toHaveCSS(
+    "font-size",
+    "12px",
+  );
+  await expect(third.locator(".page-band p").first()).toHaveCSS(
+    "line-height",
+    "16px",
+  );
+  await expect(third.locator(".page-band p").first()).toHaveCSS(
+    "margin-top",
+    "0px",
+  );
+  const { previewProposal } = await import("../src/lib/preview");
+  const { sealedPdf } = await import("../src/lib/pdf");
+  const p = previewProposal(f.active(), f.settings),
+    v = p.versions[0];
+  v.pagination = JSON.parse(
+    (await page.locator(".editor-paper").getAttribute("data-pagination"))!,
+  );
+  const { versionHash } = await import("../src/lib/content");
+  v.content_hash = versionHash(v);
+  expect(v.variables_resolved).not.toHaveProperty("page.number");
+  expect(v.variables_resolved).not.toHaveProperty("page.count");
+  const signed = {
+    ...signature(0),
+    ...clientActor,
+    role: "client" as const,
+    signed_at: p.created_at,
+    consent_at: p.created_at,
+    consent_text: "Fixture consent",
+  };
+  const rendered = await sealedPdf(v, [signed], [], p.currency, {
+    settings: f.settings,
+    document: { id: p.id, title: p.title },
+  });
+  const { writeFile } = await import("node:fs/promises");
+  const { execFileSync } = await import("node:child_process");
+  const path = test.info().outputPath("bands-sealed.pdf");
+  await writeFile(path, rendered.pdf);
+  const text = execFileSync("pdftotext", ["-layout", path, "-"], {
+    encoding: "utf8",
+  })
+    .split("\f")
+    .filter((s) => s.trim());
+  expect(text).toHaveLength(10);
+  expect(text[2]).toMatch(/Page\s+3\s+of\s+9/);
+  expect(text[0]).not.toContain("Prepared for");
+  expect(text[9]).toContain("Certificate of completion");
+  expect(text[9]).not.toContain("Prepared for");
+  expect(text[9]).not.toMatch(/Page\s+\d+\s+of\s+9/);
+  expect(rendered.layout.sheets![2].html).not.toContain("field-chip");
+  // Historical snapshots still have their original no-band geometry and stored breaks.
+  const old = { ...v, header_footer: undefined, frozen: true };
+  old.content_hash = versionHash(old);
+  const stored = JSON.stringify(old);
+  const historical = await sealedPdf(
+    old,
+    [],
+    [],
+    p.currency,
+    { settings: f.settings },
+    { preview: true },
+  );
+  expect(historical.layout.pages).toBe(9);
+  expect(JSON.stringify(old)).toBe(stored);
+  expect(
+    historical.layout.sheets!.every((s) => !s.html.includes("data-page-band=")),
+  ).toBe(true);
 });

@@ -2864,6 +2864,12 @@ function QuoteEditorContent({
                     }
                     sheets
                     headerFooter={bands}
+                    values={map}
+                    logo={
+                      p.workspace_settings?.logo
+                        ? `/api/proposals/${p.id}/preview-logo`
+                        : undefined
+                    }
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,

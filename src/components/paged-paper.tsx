@@ -2,6 +2,8 @@
 import { pageGeometry, type HeaderFooterSettings } from "../lib/page-bands";
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
+import { PageBand } from "./editor/page-band";
+import { pageBandCss } from "../lib/page-band-render";
 import { PageSheet, type SheetBox } from "./editor/page-sheet";
 import { projectPageSheets } from "./editor/project-page-sheets";
 import { useBlockSelection } from "./block-controls";
@@ -22,8 +24,12 @@ export function PagedPaper({
   contentKey,
   onPagination,
   headerFooter,
+  values = {},
+  logo,
 }: {
   headerFooter?: HeaderFooterSettings;
+  values?: Record<string, string>;
+  logo?: string;
   paper: RefObject<HTMLElement | null>;
   content: Block[];
   styles: ResolvedStyles;
@@ -337,6 +343,7 @@ export function PagedPaper({
           : pages * (metrics.height + 24) - 24,
       }}
     >
+      <style>{pageBandCss}</style>
       {sheets
         ? boxes.map((box, n) => (
             <PageSheet
@@ -350,7 +357,20 @@ export function PagedPaper({
               ]}
               showLabel={n > 0}
               onBackgroundClick={selection.clear}
-            />
+            >
+              {(["header", "footer"] as const).map((kind) => (
+                <PageBand
+                  key={kind}
+                  hf={headerFooter}
+                  kind={kind}
+                  page={n + 1}
+                  pageCount={pages}
+                  values={values}
+                  styles={styles}
+                  logo={logo}
+                />
+              ))}
+            </PageSheet>
           ))
         : Array.from({ length: pages }, (_, n) => (
             <section

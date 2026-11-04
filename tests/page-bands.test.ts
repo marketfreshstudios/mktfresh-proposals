@@ -109,6 +109,25 @@ it("load defaults, template inheritance, same-link publication, hash and signing
   expect(p.token).toBe(token);
   expect(p.versions.at(-1)!.content_hash).not.toBe(hash);
   expect(versionHash(p.versions.at(-1)!)).toBe(p.versions.at(-1)!.content_hash);
+  const changedContent = structuredClone(p.header_footer!);
+  changedContent.shared.footer.slots[0] = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: "Updated footer" }],
+      },
+    ],
+  };
+  const priorHash = p.versions.at(-1)!.content_hash;
+  p = await f.service.edit(
+    p.id,
+    { revision: p.revision, header_footer: changedContent },
+    staff,
+  );
+  expect(p.token).toBe(token);
+  expect(p.versions.at(-1)!.content_hash).not.toBe(priorHash);
+
   await expect(
     f.service.edit(
       p.id,
@@ -170,4 +189,81 @@ it("shares exact per-page geometry for every band height and switch state, inclu
   expect(g.header).toEqual({ x: 72, y: 72, width: 672, height: 48 });
   expect(g.footer).toEqual({ x: 72, y: 936, width: 672, height: 48 });
   expect(pageContentHeight(styles, undefined, 3)).toBe(912);
+});
+
+it("band text is inert, resolves page values locally and reuses the current workspace logo", async () => {
+  const { pageBandHtml } = await import("../src/lib/page-band-render");
+  const hf = defaultHeaderFooter(),
+    values = {
+      "workspace.name": "A & B",
+      "proposal.title": "A <script>",
+      "client.company": "Client",
+    };
+  const footer = pageBandHtml({
+    hf,
+    kind: "footer",
+    page: 3,
+    pageCount: 9,
+    values,
+    print: true,
+  });
+  expect(footer).toContain("Page 3 of 9");
+  expect(footer).not.toContain("field-chip");
+  expect(values).not.toHaveProperty("page.number");
+  expect(
+    pageBandHtml({ hf, kind: "header", page: 1, pageCount: 9, values }),
+  ).toBe("");
+  const first = pageBandHtml({
+    hf,
+    kind: "header",
+    page: 2,
+    pageCount: 9,
+    values,
+    logo: "data:image/png;base64,AA==",
+  });
+  const next = pageBandHtml({
+    hf,
+    kind: "header",
+    page: 2,
+    pageCount: 9,
+    values,
+    logo: "data:image/png;base64,BB==",
+  });
+  expect(first).toContain("AA==");
+  expect(next).toContain("BB==");
+  expect(next).toContain("A &lt;script&gt;");
+  expect(next).not.toContain("<script>");
+  expect(next).toContain("field-chip");
+  expect(hf.shared.header.image?.src).toBe("workspace-logo");
+});
+
+it("renders bold and italic marks on both literal text and field nodes", async () => {
+  const { pageBandHtml } = await import("../src/lib/page-band-render");
+  const hf = defaultHeaderFooter();
+  hf.shared.header.slots[0] = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          {
+            type: "variable",
+            attrs: { path: "workspace.name" },
+            marks: [{ type: "bold" }, { type: "italic" }],
+          },
+          { type: "text", text: " prepared", marks: [{ type: "italic" }] },
+        ],
+      },
+    ],
+  };
+  const html = pageBandHtml({
+    hf,
+    kind: "header",
+    page: 2,
+    pageCount: 3,
+    values: { "workspace.name": "Studio" },
+    print: true,
+  });
+  expect(html).toContain("<em><strong>Studio</strong></em>");
+  expect(html).toContain("<em> prepared</em>");
 });
