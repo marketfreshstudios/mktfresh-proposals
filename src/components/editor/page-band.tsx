@@ -324,7 +324,7 @@ export function PageBand(props: Props) {
       data-band-state={editing ? "editing" : "rest"}
       data-band-source={source}
       data-band-selected={selected}
-      data-small-margin={geometry.distance < 57.6}
+      data-small-margin={geometry.distances[kind] < 57.6}
       data-band-anchor={anchor}
       className="page-band-frame"
       role="group"
@@ -336,9 +336,10 @@ export function PageBand(props: Props) {
           right: `var(--editor-sheet-right,${geometry.margins.right}px)`,
           height: rect.height,
           "--band-image-max": `${geometry.bandLimits[kind].imageHeight}px`,
+          "--band-space-by-line": `${geometry.spacing[kind].spaceByLine}px`,
           ...(kind === "header"
             ? { top: rect.y }
-            : { bottom: geometry.distance }),
+            : { bottom: geometry.distances[kind] }),
         } as CSSProperties & Record<string, string | number>
       }
       onClick={(event) => {
@@ -543,7 +544,7 @@ export function PageBand(props: Props) {
           kind={kind}
           device={device ?? "desktop"}
           sourceLabel={source === "shared" ? "Shared" : "Unique"}
-          inside={geometry.distance < 57.6}
+          inside={geometry.distances[kind] < 57.6}
         >
           <button
             aria-label="Bold"

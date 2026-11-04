@@ -97,7 +97,9 @@ test("TEST 3 assets settle before interaction; every block retains its pages, fr
     const rows: { left: number; right: number; top: number; bottom: number }[] =
       [];
     const extents: number[] = [];
-    for (const editor of root.querySelectorAll<HTMLElement>(".tiptap")) {
+    for (const editor of root.querySelectorAll<HTMLElement>(
+      ".block-frame .tiptap",
+    )) {
       const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
       let node;
       let last = editor.getBoundingClientRect().top;

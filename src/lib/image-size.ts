@@ -44,5 +44,9 @@ export function fitStoredImages(root: ParentNode) {
       );
       image.style.height = `${height}px`;
       image.style.width = "auto";
+      const holder = image.closest<HTMLElement>(".document-image") ?? image;
+      const offset = holder.dataset.imageX ?? image.dataset.imageX;
+      if (offset !== undefined)
+        holder.style.marginLeft = `${Math.min(Number(offset) || 0, Math.max(0, column.clientWidth - height * ratio))}px`;
     });
 }

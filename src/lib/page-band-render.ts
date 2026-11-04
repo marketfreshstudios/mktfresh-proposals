@@ -14,8 +14,10 @@ import { fontFamily } from "./proposal-fonts";
 import type { ResolvedStyles } from "./proposal-styles";
 export const pageBandCss = `
 .page-band{position:absolute;display:grid;gap:24px;align-items:center;box-sizing:border-box;color:#5F5B53;font-size:12px;line-height:16px;font-weight:400;text-transform:none;letter-spacing:normal;overflow:hidden}
-.page-band[data-page-band=header][data-divider=true]{border-bottom:1px solid #E3DED4;padding-bottom:6px}
-.page-band[data-page-band=footer][data-divider=true]{border-top:1px solid #E3DED4;padding-top:6px}
+.page-band[data-page-band=header]{padding-bottom:var(--band-space-by-line,6px)}
+.page-band[data-page-band=header][data-divider=true]{border-bottom:1px solid #E3DED4}
+.page-band[data-page-band=footer]{padding-top:var(--band-space-by-line,6px)}
+.page-band[data-page-band=footer][data-divider=true]{border-top:1px solid #E3DED4}
 .page-band .band-slot{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;height:100%}
 .page-band .band-slot-content{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .page-band .band-slot img{display:inline-block;vertical-align:middle;max-height:var(--band-image-max,18px);max-width:100%;width:auto;object-fit:contain;flex-shrink:0;margin:0}
@@ -131,6 +133,6 @@ export function pageBandHtml({
   const edge =
     kind === "header"
       ? `top:${inContent ? rect.y - g.margins.top : rect.y}px`
-      : `bottom:${inContent ? g.distance - g.margins.bottom : g.distance}px`;
-  return `<div class="page-band" data-page-band="${kind}" data-band-page="${page}" data-divider="${hf.divider}" data-band-mode="${print ? "print" : "rest"}" style="${insets};${edge};height:${rect.height}px;--band-image-max:${g.bandLimits[kind].imageHeight}px;grid-template-columns:${bandColumns(band.layout)};font-family:${escape(fontFamily(styles?.body.font ?? "serif"))}">${slots}</div>`;
+      : `bottom:${inContent ? g.distances.footer - g.margins.bottom : g.distances.footer}px`;
+  return `<div class="page-band" data-page-band="${kind}" data-band-page="${page}" data-divider="${hf.divider}" data-band-mode="${print ? "print" : "rest"}" style="${insets};${edge};height:${rect.height}px;--band-image-max:${g.bandLimits[kind].imageHeight}px;--band-space-by-line:${g.spacing[kind].spaceByLine}px;grid-template-columns:${bandColumns(band.layout)};font-family:${escape(fontFamily(styles?.body.font ?? "serif"))}">${slots}</div>`;
 }

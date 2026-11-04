@@ -7797,3 +7797,184 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   > :is(.editor-gutter, .editor-ai-check) {
   visibility: hidden;
 }
+
+/* Image actions retain intrinsic width, including on a tiny selected logo. */
+.editor-edit-bar.image-edit-bar.image-edit-bar {
+  width: max-content;
+  max-width: none;
+  flex-wrap: nowrap;
+  overflow: visible;
+  white-space: nowrap;
+}
+.editor-edit-bar.image-edit-bar > * {
+  flex: none;
+}
+@media (max-width: 699px) {
+  .editor-edit-bar.image-edit-bar.image-edit-bar {
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+  }
+}
+.spacing-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.spacing-stepper > input {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  appearance: textfield;
+}
+.spacing-stepper > input::-webkit-inner-spin-button {
+  appearance: none;
+}
+.spacing-stepper > button {
+  flex: none;
+  width: 28px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.band-spacing-settings {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+.band-spacing-settings > legend {
+  font-weight: 600;
+  color: var(--ink);
+}
+.band-spacing-settings .band-height small {
+  display: block;
+  font-size: 10px;
+}
+@media (max-width: 699px) {
+  .spacing-stepper > button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+/* Cover text uses the same fixed font geometry while rich controls float. */
+.cover-text-line {
+  font: 500 12px/1.5 var(--font-ui);
+  margin: 10px 0;
+}
+.cover-element {
+  position: relative;
+}
+.cover-element[data-cover-selected="true"]:not(.cover-logo) {
+  outline: 1.5px solid #9db3a8;
+  outline-offset: 4px;
+}
+.cover-element :is(.field-editor, .field-editor-content, .tiptap) {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+.proposal-typography .document-cover .cover-element .tiptap > p {
+  margin: 0 !important;
+  padding: 0;
+  font: inherit;
+  line-height: inherit;
+}
+.cover-element .field-chip {
+  font: inherit;
+}
+.cover-controls-popover {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 16px));
+}
+.cover-controls-popover > button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.cover-controls-popover .field {
+  margin: 0 0 8px;
+}
+.cover-controls-popover .spacing-stepper input {
+  height: 36px;
+  max-width: 100px;
+}
+.cover-snap-guide {
+  position: absolute;
+  top: -12px;
+  bottom: -12px;
+  width: 1px;
+  background: #9db3a8;
+  pointer-events: none;
+}
+.cover-logo:has([data-image-selected="true"]) img {
+  touch-action: none;
+  cursor: grab;
+}
+@media (max-width: 699px) {
+  .cover-edit-bar {
+    position: fixed !important;
+    left: 8px !important;
+    top: auto !important;
+    bottom: var(--editor-keyboard-inset, 0px) !important;
+    min-height: 48px;
+    z-index: 60;
+  }
+  .cover-edit-bar > button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+.proposal-typography.proposal-typography
+  .document-cover
+  .cover-element
+  :is(.field-editor, .field-editor-content, .tiptap, .tiptap > p) {
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+.document-cover .cover-logo {
+  line-height: 0;
+}
+
+@media (max-width: 699px) {
+  .quote-workspace.editor-v2:has(.document-cover [data-cover-selected="true"])
+    .editor-phone-dock {
+    display: none;
+  }
+}
+.cover-logo .document-image[tabindex] > img {
+  touch-action: pan-y;
+  cursor: grab;
+}
+@media (max-width: 699px) {
+  .image-edit-bar > button {
+    min-width: 44px;
+    padding-inline: 5px;
+  }
+}
+/* Phone portals retain the editor's font even outside the app theme scope. */
+.image-edit-bar {
+  --font-ui: "Instrument Sans", system-ui, sans-serif;
+}

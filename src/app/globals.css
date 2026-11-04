@@ -1879,15 +1879,21 @@ summary::-webkit-details-marker {
   color: var(--ink-muted);
   vertical-align: middle;
 }
-.disclosure-marker .disclosure-open {
-  display: none;
-}
-details[open] > summary > .disclosure-marker .disclosure-closed {
-  display: none;
-}
-details[open] > summary > .disclosure-marker .disclosure-open {
-  display: block;
-}
 .panel-chevron.disclosure-icon {
   display: block;
+}
+
+/* Distinct from select/dropdown arrows and panel collapse controls. */
+.disclosure-chevron {
+  display: block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  color: var(--ink-muted);
+  transition: transform 120ms ease;
+  transform: rotate(0deg);
+}
+.disclosure-chevron[data-open="true"],
+details[open] > summary > .disclosure-marker > .disclosure-chevron {
+  transform: rotate(90deg);
 }

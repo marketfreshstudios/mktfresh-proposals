@@ -198,7 +198,7 @@ test("template phone uses the shared unscaled sheets and keyboard edit bar", asy
   const paper = page.locator(".template-paged-paper");
   await expect(paper).toHaveAttribute("data-sheet-view", "true");
   await expect(paper).toHaveCSS("transform", "none");
-  await paper.locator(".tiptap").first().click();
+  await paper.locator(".block-frame .tiptap").first().click();
   await expect(page.locator(".editor-edit-bar")).toHaveCSS("position", "fixed");
   await expect(page.locator(".template-cover").first()).not.toBeVisible();
   const remove = page

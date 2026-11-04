@@ -71,7 +71,7 @@ test("computed pages draw separate sheets and PDF-numbered 52px gaps; display wi
   });
   expect(outside).toEqual([]);
   const size = await paper
-    .locator(".tiptap")
+    .locator(".block-frame .tiptap")
     .first()
     .evaluate((el) => getComputedStyle(el).fontSize);
   for (const width of [1440, 1180, 1024, 924]) {
@@ -82,7 +82,10 @@ test("computed pages draw separate sheets and PDF-numbered 52px gaps; display wi
         JSON.parse((await paper.getAttribute("data-pagination"))!),
       )
       .toEqual(plan);
-    await expect(paper.locator(".tiptap").first()).toHaveCSS("font-size", size);
+    await expect(paper.locator(".block-frame .tiptap").first()).toHaveCSS(
+      "font-size",
+      size,
+    );
     await expect(page.getByLabel("Editor zoom")).toHaveCount(0);
     expect(
       await paper.evaluate((el) => el.getBoundingClientRect().width),
@@ -205,7 +208,7 @@ test("white sheets in dark mode and an empty sheet inserts through the existing 
     );
     await insert.click();
     await page.getByRole("menuitem", { name: "Text", exact: true }).click();
-    await expect(root.locator(".tiptap")).toBeVisible();
+    await expect(root.locator(".block-frame .tiptap")).toBeVisible();
   }
 });
 test("template sheets share PDF numbering and responsive typography; density changes display gaps", async ({
@@ -219,7 +222,7 @@ test("template sheets share PDF numbering and responsive typography; density cha
   const paper = page.locator(".template-paged-paper");
   const plan = JSON.parse((await paper.getAttribute("data-pagination"))!);
   const font = await paper
-    .locator(".tiptap")
+    .locator(".block-frame .tiptap")
     .first()
     .evaluate((el) => getComputedStyle(el).fontSize);
   expect(plan.pages).toBeGreaterThanOrEqual(3);
@@ -232,7 +235,10 @@ test("template sheets share PDF numbering and responsive typography; density cha
       )
       .toEqual(plan);
     await expect(paper.locator(".page-sheet")).toHaveCount(plan.pages);
-    await expect(paper.locator(".tiptap").first()).toHaveCSS("font-size", font);
+    await expect(paper.locator(".block-frame .tiptap").first()).toHaveCSS(
+      "font-size",
+      font,
+    );
     expect(await paper.evaluate((el) => getComputedStyle(el).transform)).toBe(
       "none",
     );

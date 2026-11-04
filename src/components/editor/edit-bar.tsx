@@ -22,6 +22,7 @@ import { ToolbarPopover } from "../toolbar-popover";
 import { FieldOptions } from "../field-options";
 import { EditorIcon } from "./editor-icon";
 import { useControlLayout } from "./control-layout";
+import { useImageToolbar, PhoneToolbar } from "./use-image-toolbar";
 export const BlockActionPresentation = createContext<"bar" | "menu" | null>(
   null,
 );
@@ -41,6 +42,11 @@ function label(node: ReactElement<any>) {
 export function EditBar(
   props:
     | {
+        variant: "cover";
+        children: ReactNode;
+        frame: RefObject<HTMLElement | null>;
+      }
+    | {
         variant: "band";
         children: ReactNode;
         kind: "header" | "footer";
@@ -58,8 +64,47 @@ export function EditBar(
         variant?: "block";
       },
 ) {
+  if (props.variant === "cover") return <CoverEditBar {...props} />;
   if (props.variant === "band") return <BandEditBar {...props} />;
   return <BlockEditBar {...props} />;
+}
+function CoverEditBar({
+  children,
+  frame,
+}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" }>) {
+  const bar = useRef<HTMLSpanElement>(null);
+  useImageToolbar(frame, bar, true);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const place = () =>
+      bar.current?.style.setProperty(
+        "--editor-keyboard-inset",
+        `${Math.max(0, innerHeight - (viewport?.height ?? innerHeight) - (viewport?.offsetTop ?? 0))}px`,
+      );
+    place();
+    viewport?.addEventListener("resize", place);
+    viewport?.addEventListener("scroll", place);
+    return () => {
+      viewport?.removeEventListener("resize", place);
+      viewport?.removeEventListener("scroll", place);
+    };
+  }, []);
+  return (
+    <PhoneToolbar>
+      <span
+        ref={bar}
+        data-editor-chrome
+        className="editor-edit-bar image-edit-bar cover-edit-bar"
+        role="toolbar"
+        aria-label="Cover text formatting"
+        onMouseDown={(e) => {
+          if ((e.target as Element).closest("button")) e.preventDefault();
+        }}
+      >
+        {children}
+      </span>
+    </PhoneToolbar>
+  );
 }
 function BandEditBar(
   props: Extract<Parameters<typeof EditBar>[0], { variant: "band" }>,
