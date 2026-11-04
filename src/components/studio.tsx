@@ -1,4 +1,5 @@
 "use client";
+import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
 import { defaultCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
@@ -1653,6 +1654,13 @@ function TemplatesStudioContent({
         onHeaderFooter={({ overrides: _overrides, ...header_footer }) =>
           editDraft({ ...draft, header_footer })
         }
+        onResetBands={() => {
+          const { overrides: _, ...header_footer } = resetBandSettings(
+            proposalBands(model.current.draft?.header_footer),
+          );
+          editDraft({ ...model.current.draft!, header_footer });
+        }}
+        bandsResetLabel="Reset to default"
         pageCount={browserPages?.plan.pages ?? 1}
         value={draft.style_overrides}
         onChange={(style_overrides) => editDraft({ ...draft, style_overrides })}
@@ -1911,6 +1919,12 @@ function TemplatesStudioContent({
                         styles={templateStyles}
                         content={content}
                         headerFooter={proposalBands(draft?.header_footer)}
+                        onHeaderFooter={
+                          draft
+                            ? ({ overrides: _, ...header_footer }) =>
+                                editDraft({ ...draft, header_footer })
+                            : undefined
+                        }
                         values={map}
                         logo={
                           data.settings?.logo

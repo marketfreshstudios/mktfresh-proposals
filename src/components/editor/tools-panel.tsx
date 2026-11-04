@@ -112,14 +112,30 @@ export function ToolsPanel({
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const handledClose = useRef(false);
+  const openedCallbacks = useRef({ onToggle, onCloseComplete });
   useEffect(() => {
     if (mode === "docked" || !open) return;
     const el = dialog.current;
+    handledClose.current = false;
+    openedCallbacks.current = { onToggle, onCloseComplete };
     el?.showModal();
     return () => el?.close();
   }, [mode, open]);
-  const close = () =>
-    mode !== "docked" ? dialog.current?.close() : onToggle();
+  const close = () => {
+    if (mode === "docked") {
+      onToggle();
+      return;
+    }
+    const el = dialog.current;
+    if (!el?.open) return;
+    handledClose.current = true;
+    el.close();
+    // Commit the originating panel state now. A queued native close event can
+    // arrive after a resize and must not toggle a different breakpoint's panel.
+    onToggle();
+    requestAnimationFrame(() => onCloseComplete?.());
+  };
   const content = (
     <>
       {mode === "sheet" && (
@@ -174,6 +190,7 @@ export function ToolsPanel({
         <aside
           className={`editor-sidepanel editor-v2-panel ${mode === "docked" && open ? "" : "sidebar-rail"}`}
           aria-label="Proposal tools"
+          aria-hidden={mode !== "docked" && open ? true : undefined}
         >
           {mode === "docked" && open ? (
             content
@@ -187,9 +204,18 @@ export function ToolsPanel({
           ref={dialog}
           aria-label="Proposal tools"
           className={`${mode === "sheet" ? "editor-v2-sheet" : "editor-v2-drawer"} tools-sheet`}
+          onClose={(event) => {
+            if (event.currentTarget.open) return;
+            if (handledClose.current) {
+              handledClose.current = false;
+              return;
+            }
+            openedCallbacks.current.onToggle();
+            openedCallbacks.current.onCloseComplete?.();
+          }}
           onCancel={(event) => {
             event.preventDefault();
-            dialog.current?.close();
+            close();
           }}
           onClick={(event) => {
             if (event.target === event.currentTarget) {
@@ -200,13 +226,8 @@ export function ToolsPanel({
                 event.clientY < box.top ||
                 event.clientY > box.bottom
               )
-                dialog.current?.close();
+                close();
             }
-          }}
-          onClose={(event) => {
-            if (event.currentTarget.open) return;
-            onToggle();
-            onCloseComplete?.();
           }}
         >
           {content}

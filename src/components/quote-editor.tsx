@@ -1,4 +1,5 @@
 "use client";
+import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultHeaderFooter } from "../lib/page-bands";
 import {
   sublineLabel,
@@ -1904,6 +1905,19 @@ function QuoteEditorContent({
           settings={p.workspace_settings}
           headerFooter={bands}
           onHeaderFooter={(header_footer) => change({ header_footer })}
+          onResetBands={async () => {
+            const templates =
+              await api<import("../lib/model").Template[]>("/api/templates");
+            const saved = templates.find(
+              (t) => t.id === latest.current.template_id,
+            )?.header_footer;
+            change({
+              header_footer: resetBandSettings(
+                latest.current.header_footer ?? defaultHeaderFooter(),
+                saved,
+              ),
+            });
+          }}
           pageCount={browserPages?.plan.pages ?? 1}
           inherited={p.template_style_overrides}
           value={p.style_overrides}
@@ -2867,6 +2881,11 @@ function QuoteEditorContent({
                     }
                     sheets
                     headerFooter={bands}
+                    onHeaderFooter={
+                      !locked && !stale
+                        ? (header_footer) => change({ header_footer })
+                        : undefined
+                    }
                     values={map}
                     logo={
                       p.workspace_settings?.logo

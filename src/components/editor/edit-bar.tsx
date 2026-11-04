@@ -37,7 +37,68 @@ function actions(nodes: ReactNode): ReactElement<any>[] {
 function label(node: ReactElement<any>) {
   return String(node.props["aria-label"] ?? node.props.children ?? "");
 }
-export function EditBar({
+export function EditBar(
+  props:
+    | {
+        variant: "band";
+        children: ReactNode;
+        kind: "header" | "footer";
+        inside: boolean;
+      }
+    | {
+        id: string;
+        frame: RefObject<HTMLDivElement | null>;
+        tools: ReactNode;
+        blockType: Block["type"];
+        objectAction?: ReactNode;
+        variant?: "block";
+      },
+) {
+  if (props.variant === "band")
+    return (
+      <div
+        data-editor-chrome
+        className="editor-edit-bar band-edit-bar"
+        data-band-kind={props.kind}
+        data-inside={props.inside}
+        role="toolbar"
+        aria-label={`Shared ${props.kind} formatting`}
+        onMouseDown={(e) => {
+          if ((e.target as Element).closest("button")) e.preventDefault();
+        }}
+        onKeyDown={(e) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key))
+            return;
+          const buttons = Array.from(
+            e.currentTarget.querySelectorAll<HTMLButtonElement>(
+              "button:not(:disabled)",
+            ),
+          );
+          const index = buttons.indexOf(
+            document.activeElement as HTMLButtonElement,
+          );
+          if (index < 0) return;
+          e.preventDefault();
+          buttons[
+            e.key === "Home"
+              ? 0
+              : e.key === "End"
+                ? buttons.length - 1
+                : (index + (e.key === "ArrowRight" ? 1 : -1) + buttons.length) %
+                  buttons.length
+          ]?.focus();
+          (document.activeElement as HTMLElement)?.scrollIntoView({
+            block: "nearest",
+            inline: "nearest",
+          });
+        }}
+      >
+        <div className="band-edit-scroll">{props.children}</div>
+      </div>
+    );
+  return <BlockEditBar {...props} />;
+}
+function BlockEditBar({
   id,
   frame,
   tools,
