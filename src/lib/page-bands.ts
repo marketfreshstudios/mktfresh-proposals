@@ -463,3 +463,26 @@ export function bandSpacingLimit(
     (key === "spaceToContent" ? 0 : s.spaceToContent);
   return Math.max(0, Math.floor(1056 - 192 - other - fixed));
 }
+/** UI setting changes cannot reserve more than the page can hold. Frozen data
+ * never passes through this helper. Reduce the edited stack, not the other band. */
+export function boundedBandSettings(
+  styles: import("./proposal-styles").ResolvedStyles,
+  hf: HeaderFooterSettings,
+  kind: "header" | "footer",
+): HeaderFooterSettings {
+  if (pageGeometry(styles, hf, 1).content.height >= 192) return hf;
+  const next = structuredClone(hf),
+    key = kind === "header" ? "headerSpacing" : "footerSpacing";
+  const spacing = { ...bandSpacing(next, kind) };
+  next[key] = spacing;
+  spacing.spaceToContent = Math.min(
+    spacing.spaceToContent,
+    bandSpacingLimit(styles, next, kind, "spaceToContent"),
+  );
+  if (bandDivider(next, kind))
+    spacing.spaceByLine = Math.min(
+      spacing.spaceByLine,
+      bandSpacingLimit(styles, next, kind, "spaceByLine"),
+    );
+  return next;
+}

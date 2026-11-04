@@ -1,5 +1,6 @@
 import { it, expect } from "vitest";
 import {
+  boundedBandSettings,
   defaultHeaderFooter,
   HeaderFooterSettingsSchema,
   bandSpacingLimit,
@@ -87,4 +88,32 @@ it("spacing exceeds old caps while page-bounded controls retain two inches", () 
       hf[field]![key] = limit + 1;
       expect(pageGeometry(styles, hf, 1).content.height).toBeLessThan(193);
     }
+});
+
+it("re-enabling a divider or band after increasing other spacing still retains two inches", () => {
+  const hf = defaultHeaderFooter();
+  hf.headerSpacing!.divider = false;
+  hf.headerSpacing!.spaceByLine = 600;
+  hf.headerSpacing!.spaceToContent = 600;
+  const line = boundedBandSettings(
+    styles,
+    { ...hf, headerSpacing: { ...hf.headerSpacing!, divider: true } },
+    "header",
+  );
+  expect(pageGeometry(styles, line, 1).content.height).toBeGreaterThanOrEqual(
+    192,
+  );
+  expect(line.headerSpacing!.spaceToContent).toBeLessThan(600);
+  const switched = boundedBandSettings(
+    styles,
+    {
+      ...line,
+      showFooter: true,
+      footerSpacing: { ...line.footerSpacing!, spaceToContent: 700 },
+    },
+    "footer",
+  );
+  expect(
+    pageGeometry(styles, switched, 1).content.height,
+  ).toBeGreaterThanOrEqual(192);
 });

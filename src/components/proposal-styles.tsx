@@ -1,6 +1,7 @@
 "use client";
 import { SpacingInput } from "./editor/spacing-input";
 import {
+  boundedBandSettings,
   bandOnCover,
   bandDivider,
   bandSpacing,
@@ -509,7 +510,15 @@ function BandSettings({
           aria-label={label}
           aria-describedby={subtitle ? `${id}-${key}` : undefined}
           checked={value[key]}
-          onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+          onChange={(e) =>
+            onChange(
+              boundedBandSettings(
+                styles,
+                { ...value, [key]: e.target.checked },
+                key === "showHeader" ? "header" : "footer",
+              ),
+            )
+          }
         />
       </span>
     </label>
@@ -548,13 +557,19 @@ function BandSettings({
         const spacing = bandSpacing(value, kind),
           title = kind === "header" ? "Header" : "Footer";
         const update = (patch: Partial<typeof spacing>) =>
-          onChange({
-            ...value,
-            [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
-              ...spacing,
-              ...patch,
-            },
-          });
+          onChange(
+            boundedBandSettings(
+              styles,
+              {
+                ...value,
+                [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
+                  ...spacing,
+                  ...patch,
+                },
+              },
+              kind,
+            ),
+          );
         return (
           <details className="style-accordion band-section" key={kind} open>
             <Disclosure>{title}</Disclosure>

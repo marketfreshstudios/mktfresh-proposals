@@ -165,6 +165,11 @@ test("phone client content has a single inset, full-width details and unwrapped 
     expect(inset.left).toBeLessThanOrEqual(16);
     expect(inset.right).toBeLessThanOrEqual(16);
     expect(inset.scroll).toBe(inset.width);
+    const totalsInset = await page
+      .locator(".flow-choices .flow-totals > div > span")
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().left);
+    expect(totalsInset).toBeLessThanOrEqual(16);
     const row = page.locator(".flow-quote-line").first(),
       name = row.locator(".flow-line-title > strong").first(),
       price = row.locator(".amount");
@@ -405,4 +410,41 @@ test("independent line settings match editor and PDF geometry and hide only thei
       .getByRole("button", { name: "Close PDF preview", exact: true })
       .click();
   }
+});
+test("a continuous spacing drag is one document undo step", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const client = page.getByRole("textbox", {
+    name: "Cover client name",
+    exact: true,
+  });
+  await client.click();
+  await page.getByRole("button", { name: "Spacing", exact: true }).click();
+  const original = await page
+      .getByRole("spinbutton", { name: "Space below", exact: true })
+      .inputValue(),
+    slider = page.getByRole("slider", {
+      name: "Space below slider",
+      exact: true,
+    }),
+    box = (await slider.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await expect(
+    page.getByRole("spinbutton", { name: "Space below", exact: true }),
+  ).not.toHaveValue(original);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Undo", exact: true }).first().click();
+  await client.click();
+  await page.getByRole("button", { name: "Spacing", exact: true }).click();
+  await expect(
+    page.getByRole("spinbutton", { name: "Space below", exact: true }),
+  ).toHaveValue(original);
 });

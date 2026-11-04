@@ -8082,3 +8082,17 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .document-cover .cover-text-line {
   min-height: 18px;
 }
+/* Sliders get the flexible width; their numeric value stays compact. */
+.spacing-slider-row .spacing-number {
+  flex: none;
+  width: 88px;
+}
+.spacing-slider-row .spacing-number > input {
+  width: 64px;
+  min-width: 0;
+}
+.proposal-styles .band-spacing-settings .band-height {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}

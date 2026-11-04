@@ -13,6 +13,7 @@ import { BandPopover } from "./band-popover";
 import type { Editor } from "@tiptap/core";
 import { pageBandHtml } from "../../lib/page-band-render";
 import {
+  boundedBandSettings,
   BandSchema,
   bandDivider,
   bandOnCover,
@@ -580,15 +581,18 @@ export function PageBand(props: Props) {
             <button
               aria-label="Line"
               aria-pressed={bandDivider(hf, kind)}
-              onClick={() =>
-                onChange?.({
+              onClick={() => {
+                const next = {
                   ...hf,
                   [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
                     ...bandSpacing(hf, kind),
                     divider: !bandDivider(hf, kind),
                   },
-                })
-              }
+                };
+                onChange?.(
+                  styles ? boundedBandSettings(styles, next, kind) : next,
+                );
+              }}
             >
               — Line
             </button>
