@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import { sharedPagesLabel } from "../lib/page-count";
 import { ToolbarPopover } from "./toolbar-popover";
 import { UseSharedConfirm } from "./editor/band-menu";
@@ -110,7 +111,7 @@ export function ProposalStyles({
         Workspace.
       </p>
       <details className="style-accordion" open={!headerFooter}>
-        <summary>Text styles</summary>
+        <Disclosure>Text styles</Disclosure>
         <div className="style-accordion-body">
           <label className="field">
             Text level
@@ -237,7 +238,7 @@ export function ProposalStyles({
             {field("Space below (px)", "space_below", 0, 160)}
           </div>
           <details className="style-typography-details">
-            <summary>Typography details</summary>
+            <Disclosure>Typography details</Disclosure>
             <label className="field">
               Letter case
               <select
@@ -319,7 +320,7 @@ export function ProposalStyles({
         </div>
       </details>
       <details className="style-accordion" open={!headerFooter}>
-        <summary>Page &amp; margins</summary>
+        <Disclosure>Page &amp; margins</Disclosure>
         <div className="style-accordion-body">
           <fieldset className="style-density">
             <legend>Density</legend>
@@ -360,7 +361,7 @@ export function ProposalStyles({
       </details>
       {headerFooter && onHeaderFooter && (
         <details className="style-accordion" open>
-          <summary>Header &amp; footer</summary>
+          <Disclosure>Header &amp; footer</Disclosure>
           <BandSettings
             value={headerFooter}
             onChange={onHeaderFooter}
@@ -519,22 +520,28 @@ function BandSettings({
           : undefined,
       )}
       <fieldset className="band-height">
-        <legend>Band height</legend>
-        <div role="group" aria-label="Band height">
-          {([0.4, 0.5, 0.75] as const).map((height) => (
+        <legend>Distance from edge</legend>
+        <div role="group" aria-label="Distance from edge">
+          {([0.25, 0.3, 0.4] as const).map((height) => (
             <button
               key={height}
               type="button"
-              aria-pressed={value.bandHeightIn === height}
-              onClick={() => onChange({ ...value, bandHeightIn: height })}
+              aria-pressed={value.distanceIn === height}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  bandHeightIn: undefined,
+                  distanceIn: height,
+                })
+              }
             >
               {height} in
             </button>
           ))}
         </div>
         <p>
-          Each band plus its 0.25 in gap comes out of the page's content area.
-          Page breaks update to match.
+          Headers and footers sit in the page margins. Page content keeps its
+          space. Headers, footers and images are sized to fit their margins.
         </p>
       </fieldset>
       {toggle("divider", "Divider line")}

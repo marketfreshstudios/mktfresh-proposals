@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import {
   connectionStatus,
   type ConnectionStatus,
@@ -548,7 +549,7 @@ function Login({ local }: { local: boolean }) {
         </form>
         {local && (
           <details>
-            <summary>Local development sign-in</summary>
+            <Disclosure>Local development sign-in</Disclosure>
             <form
               className="form"
               onSubmit={async (e) => {
@@ -960,7 +961,7 @@ function Audit({ p }: { p: Proposal }) {
                 <td>{e.ip || "Not available"}</td>
                 <td>
                   <details>
-                    <summary>Details</summary>
+                    <Disclosure>Details</Disclosure>
                     <pre className="hash">
                       {JSON.stringify(e.metadata, null, 2)}
                     </pre>

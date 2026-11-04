@@ -1,4 +1,6 @@
 "use client";
+import { Disclosure } from "./ui";
+import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { useBandEditing } from "./editor/band-editing";
 import { bandPages, resolvedBandPages } from "../lib/band-overrides";
@@ -1023,7 +1025,10 @@ function QuoteEditorContent({
             />
           )}
           <strong className="quote-row-amount">{amount}</strong>
-          <span aria-hidden="true">{expanded ? "▴" : "▾"}</span>
+          <Icon
+            name={expanded ? "chevron-up" : "chevron-down"}
+            className="disclosure-icon"
+          />
         </button>
         {expanded && (
           <div id={`quote-body-${i.id}`} className="quote-row-body">
@@ -1197,7 +1202,7 @@ function QuoteEditorContent({
                   open={itemDetails === i.id}
                   className="quote-mapping-details"
                 >
-                  <summary>Billing mapping</summary>
+                  <Disclosure>Billing mapping</Disclosure>
                   <Field label="Stripe lookup key">
                     <input
                       value={s.stripe_lookup_key ?? ""}
@@ -1340,7 +1345,7 @@ function QuoteEditorContent({
               open={itemDetails === i.id}
               className="quote-mapping-details"
             >
-              <summary>Plan terms</summary>
+              <Disclosure>Plan terms</Disclosure>
               {i.schedule && (
                 <p>
                   {money(
@@ -2408,14 +2413,14 @@ function QuoteEditorContent({
                         }
                       >
                         <details open={panels.printMode || undefined}>
-                          <summary>
+                          <Disclosure>
                             <h3>
                               {c.heading.replace(
                                 /{{\s*([\w.-]+)\s*}}/g,
                                 (_, key) => map[key] ?? key,
                               )}
                             </h3>
-                          </summary>
+                          </Disclosure>
                           <SourceParagraph
                             text={c.body.replace(
                               /{{\s*([\w.-]+)\s*}}/g,
@@ -2492,7 +2497,28 @@ function QuoteEditorContent({
             </div>
           ) : b.type === "image" ? (
             <>
-              <img src={b.src} alt={b.alt ?? ""} />
+              <SelectableImage
+                value={{ ...b, src: b.src ?? "" }}
+                onChange={
+                  locked ? undefined : (image) => patchBlock({ ...b, ...image })
+                }
+                onDelete={() =>
+                  blockFeedback.remove(
+                    b,
+                    () =>
+                      change({
+                        content: latest.current.content.filter(
+                          (v) => v.id !== b.id,
+                        ),
+                      }),
+                    () => {
+                      const next = [...latest.current.content];
+                      next.splice(Math.min(n, next.length), 0, b);
+                      change({ content: next });
+                    },
+                  )
+                }
+              />
               {blockSettings === b.id && (
                 <Sheet
                   title="Image settings"
@@ -2771,7 +2797,7 @@ function QuoteEditorContent({
             .
           </span>
           <details>
-            <summary>See my saved changes</summary>
+            <Disclosure>See my saved changes</Disclosure>
             <div className="recovery-copy">
               <h3>{recovery.title}</h3>
               {recovery.content?.map((b, n) => (

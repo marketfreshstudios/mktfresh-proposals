@@ -1,3 +1,4 @@
+import { defaultCover } from "./cover";
 import { pageGeometry, type HeaderFooterSettings } from "./page-bands";
 import {
   signatureHtml,
@@ -12,15 +13,16 @@ import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
 export function printPageCss(
   styles?: ResolvedStyles,
   hf?: HeaderFooterSettings,
+  fullPage = true,
 ) {
   const m = pageMetrics(styles),
     p = m.margins;
   if (hf) {
     const css = (page: number) => {
       const g = pageGeometry(styles, hf, page);
-      return `--print-content-height:${g.content.height}px;--print-sheet-height:${g.frameHeight}px;height:${g.frameHeight}px;padding:${g.before}px 0 ${g.after}px;position:relative;`;
+      return `--print-content-height:${g.content.height}px;--print-sheet-height:${fullPage ? g.height : g.frameHeight}px;height:${fullPage ? g.height : g.frameHeight}px;padding:${fullPage ? g.margins.top : 0}px 0 ${fullPage ? g.margins.bottom : 0}px;position:relative;overflow:visible;`;
     };
-    return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-sheet-height:${m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
+    return `@page{size:Letter;margin:${fullPage ? "0" : `${p.top}in ${p.right}in ${p.bottom}in ${p.left}in`}}.print-root{width:${m.contentWidth}px;margin-left:${fullPage ? p.left * 96 : 0}px;--print-sheet-height:${fullPage ? m.height : m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
   }
   return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
 }
@@ -51,9 +53,30 @@ export function printContent(input: {
   planned?: boolean;
   pagination?: import("./page-plan").PagePlan;
 }) {
-  const cover = input.cover
-    ? `<header class="print-cover" data-print-block="cover">${(input.cover.logo === null ? undefined : input.cover.logo || input.logo) ? `<img src="${escape(input.cover.logo || input.logo || "")}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}<p class="print-workspace">${escape(resolve(input.cover.workspace, input.variables))}</p><p class="eyebrow">${escape(resolve(input.cover.eyebrow, input.variables))}</p><h1>${escape(input.title)}</h1><p class="byline">${escape(resolve(input.cover.byline, input.variables))}</p></header>`
-    : `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const presentation = input.cover ?? defaultCover();
+  const map = {
+    "workspace.name": input.workspace ?? "",
+    "client.company": input.company,
+    "sender.name": input.sender,
+    "proposal.validity": input.validity ? `Valid until ${input.validity}` : "",
+    ...input.variables,
+  };
+  const line = (
+    key: "workspace" | "eyebrow" | "prepared_for" | "byline",
+    className: string,
+  ) => {
+    if (
+      key === "workspace" &&
+      presentation[key] === "{{workspace.name}}" &&
+      !map["workspace.name"]
+    )
+      return "";
+    const text = resolve(presentation[key] ?? "", map);
+    return text.trim() ? `<p class="${className}">${escape(text)}</p>` : "";
+  };
+  const src =
+    presentation.logo === null ? undefined : presentation.logo || input.logo;
+  const cover = `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" data-image-height="${presentation.logo_height ?? 60}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
     : {};

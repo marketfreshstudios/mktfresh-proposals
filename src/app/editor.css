@@ -1402,7 +1402,9 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
-.pdf-width-editor .editor-paper :is(.flow-byline, .print-workspace) {
+.pdf-width-editor
+  .editor-paper
+  :is(.flow-byline, .print-workspace, .flow-prepared-for) {
   font:
     500 12px/1.5 "Instrument Sans",
     sans-serif;
@@ -6337,13 +6339,9 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .proposal-styles .style-accordion > summary::-webkit-details-marker {
   display: none;
 }
-.proposal-styles .style-accordion > summary::after {
-  content: "›";
-  color: var(--ink-muted);
-}
-.proposal-styles .style-accordion[open] > summary::after {
-  content: "▾";
-  font-size: 11px;
+.proposal-styles .style-accordion > summary {
+  justify-content: flex-start;
+  gap: 8px;
 }
 .style-accordion-body {
   display: flex;
@@ -6836,6 +6834,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .proposal-typography .page-band-frame .tiptap {
   outline: none;
   min-height: 16px;
+  padding: 0;
   color: inherit;
   font: inherit;
   line-height: 16px;
@@ -7548,4 +7547,253 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .sections-nav .outline-page-title > button:has(.band-page-marker) {
   gap: 0;
   justify-content: flex-start;
+}
+/* Selected image chrome is excluded from pagination and never changes image bounds. */
+.document-image {
+  position: relative;
+  max-width: 100%;
+  vertical-align: middle;
+  line-height: 0;
+}
+.document-image > img {
+  margin: 0;
+}
+.document-image[data-image-selected="true"] {
+  outline: 1.5px solid #9db3a8;
+  outline-offset: 0;
+}
+.image-selection-controls {
+  display: contents;
+}
+.image-resize-handle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  z-index: 18;
+  touch-action: none;
+}
+.image-resize-handle::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 1.5px solid #9db3a8;
+  left: 17px;
+  top: 17px;
+}
+.image-resize-handle.top-left {
+  top: -22px;
+  left: -22px;
+  cursor: nwse-resize;
+}
+.image-resize-handle.top-right {
+  top: -22px;
+  right: -22px;
+  cursor: nesw-resize;
+}
+.image-resize-handle.bottom-left {
+  bottom: -22px;
+  left: -22px;
+  cursor: nesw-resize;
+}
+.image-resize-handle.bottom-right {
+  bottom: -22px;
+  right: -22px;
+  cursor: nwse-resize;
+}
+.image-edit-bar {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 14px);
+  display: flex;
+  width: max-content;
+  max-width: min(600px, calc(100vw - 16px));
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 20;
+  white-space: nowrap;
+}
+.image-edit-bar > button {
+  flex: none;
+}
+.image-edit-bar .image-delete {
+  color: #ff9a90;
+}
+.image-live-size {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  transform: translateX(-50%);
+  background: #1c1b18;
+  color: white;
+  font: 500 12px/24px var(--font-ui);
+  border-radius: 5px;
+  padding: 0 6px;
+  z-index: 21;
+  white-space: nowrap;
+}
+.image-controls-popover {
+  padding: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+.image-controls-popover input {
+  display: block;
+  min-height: 44px;
+}
+.block-frame:has([data-image-selected="true"]) > .editor-edit-bar {
+  visibility: hidden;
+}
+@media (max-width: 699px) {
+  .image-edit-bar {
+    position: fixed;
+    top: auto;
+    bottom: var(--image-keyboard-inset, 0px);
+    left: 8px;
+    max-width: calc(100vw - 16px);
+    min-height: 48px;
+    z-index: 60;
+  }
+  .image-edit-bar button {
+    min-height: 44px;
+  }
+}
+.cover-logo {
+  width: 100%;
+  max-width: none;
+}
+.page-band .document-image {
+  flex-shrink: 0;
+}
+.page-band-frame:has([data-image-selected="true"]) {
+  z-index: 22;
+}
+.proposal-typography.proposal-typography
+  .page-band-frame
+  > .page-band[data-band-mode="editing"] {
+  overflow: visible;
+}
+.page-band-frame .band-slot:has([data-image-selected="true"]) {
+  position: relative;
+  z-index: 24;
+}
+.band-inline-image {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+}
+.page-band-frame .band-slot-content {
+  overflow: visible;
+}
+.page-band-frame .tiptap > p {
+  display: inline;
+  white-space: nowrap;
+}
+.band-image-insertion-caret {
+  position: fixed;
+  width: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 100;
+}
+[data-image-kind="band"] .image-resize-handle.top-left {
+  top: -44px;
+  left: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.top-right {
+  top: -44px;
+  right: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-left {
+  bottom: -44px;
+  left: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-right {
+  bottom: -44px;
+  right: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.top-left::after {
+  top: 39px;
+  left: 39px;
+}
+[data-image-kind="band"] .image-resize-handle.top-right::after {
+  top: 39px;
+  left: -5px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-left::after {
+  top: -5px;
+  left: 39px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-right::after {
+  top: -5px;
+  left: -5px;
+}
+.proposal-typography.proposal-typography
+  .page-band-frame
+  .page-band[data-page-band][data-band-mode="editing"]
+  .band-slot-content {
+  overflow: visible;
+}
+.proposal-styles .style-accordion > summary > .disclosure-marker {
+  margin-right: 0;
+}
+@media (min-width: 700px) {
+  [data-band-frame="header"] .image-edit-bar {
+    bottom: auto;
+    top: calc(100% + 14px);
+  }
+}
+.image-edit-bar {
+  min-height: 40px;
+  padding: 0 4px;
+  gap: 0;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #1c1b18;
+  color: white;
+  box-shadow: 0 10px 28px rgba(20, 18, 14, 0.28);
+  font: 500 12px/1 var(--font-ui);
+}
+.image-edit-bar > button {
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.image-edit-bar > button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.image-edit-bar > .image-delete {
+  color: #ff9a90;
+}
+.image-edit-bar > .image-delete:hover {
+  background: rgba(255, 120, 110, 0.18);
+}
+.block-frame:has([data-image-selected="true"]) {
+  box-shadow: none !important;
+  outline: none !important;
+}
+@media (max-width: 699px) {
+  .image-edit-bar {
+    min-height: 48px;
+  }
+  .image-edit-bar > button {
+    min-height: 44px;
+  }
+}
+.block-frame:has([data-image-selected="true"])
+  > :is(.editor-gutter, .editor-ai-check) {
+  visibility: hidden;
 }

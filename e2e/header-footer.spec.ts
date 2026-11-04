@@ -1,7 +1,11 @@
 import { signature, clientActor } from "../tests/helpers";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
-import { defaultHeaderFooter, pageContentHeight } from "../src/lib/page-bands";
+import {
+  defaultHeaderFooter,
+  pageContentHeight,
+  bandImages,
+} from "../src/lib/page-bands";
 import { resolveStyles } from "../src/lib/proposal-styles";
 import type { Block } from "../src/lib/model";
 const content: Block[] = Array.from({ length: 3 }, (_, n) => [
@@ -13,19 +17,24 @@ const content: Block[] = Array.from({ length: 3 }, (_, n) => [
     text: "A clear proposal with the same page geometry in editing and print.",
   },
 ]).flat();
-test("canonical editor and PDF content areas match every band height and switch state", async ({
+test("canonical editor and PDF content areas match every edge distance and switch state", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, { content });
   await page.setViewportSize({ width: 1920, height: 1200 });
-  for (const bandHeightIn of [0.4, 0.5, 0.75] as const)
+  for (const distanceIn of [0.25, 0.3, 0.4] as const)
     for (const showHeader of [false, true])
       for (const showFooter of [false, true]) {
         const hf = {
           ...defaultHeaderFooter(),
-          bandHeightIn,
+          distanceIn,
           showHeader,
           showFooter,
+        };
+        bandImages(hf.shared.header)[0].node.attrs = {
+          src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=",
+          alt: "Tall logo",
+          height: 500,
         };
         await f.editRemote({ header_footer: hf });
         await page.goto(`/proposals/${f.draft.id}`);
@@ -60,7 +69,8 @@ test("canonical editor and PDF content areas match every band height and switch 
             hf,
             n + 1,
           );
-          expect(areas[n].canonical).toBeCloseTo(expected, 1);
+          expect(expected).toBe(912);
+          expect(areas[n].canonical).toBe(expected);
           expect(Math.abs(areas[n].height - expected)).toBeLessThanOrEqual(1);
           expect(
             Math.abs(
@@ -142,7 +152,10 @@ test("shared rest bands resolve page fields after pagination; cover and certific
     .filter((s) => s.trim());
   expect(text).toHaveLength(10);
   expect(text[2]).toMatch(/Page\s+3\s+of\s+9/);
-  expect(text[0]).not.toContain("Prepared for");
+  expect(rendered.layout.sheets![0].html).not.toContain(
+    'data-page-band="footer"',
+  );
+  expect(text[0]).not.toMatch(/Page\s+1\s+of\s+9/);
   expect(text[9]).toContain("Certificate of completion");
   expect(text[9]).not.toContain("Prepared for");
   expect(text[9]).not.toMatch(/Page\s+\d+\s+of\s+9/);
@@ -166,7 +179,7 @@ test("shared rest bands resolve page fields after pagination; cover and certific
   ).toBe(true);
 });
 
-test("Styles switches autosave, retain overrides, free space and repaginate the cover", async ({
+test("Styles switches retain content space and breaks, keep overrides and show cover bands", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, {
@@ -208,7 +221,7 @@ test("Styles switches autosave, retain overrides, free space and repaginate the 
   await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
   await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
     "data-content-height",
-    "840",
+    "912",
   );
   expect(f.active().header_footer?.overrides).toEqual(hf.overrides);
   await footer.uncheck();
@@ -237,16 +250,14 @@ test("Styles switches autosave, retain overrides, free space and repaginate the 
   ).toHaveCount(2);
   await expect(page.locator(".page-sheet").first()).toHaveAttribute(
     "data-content-height",
-    "768",
+    "912",
   );
-  expect((await plan()).starts[0].offset).toBeLessThan(
-    original.starts[0].offset,
-  );
-  await panel.getByRole("button", { name: "0.75 in", exact: true }).click();
-  await expect.poll(() => f.active().header_footer?.bandHeightIn).toBe(0.75);
+  expect(await plan()).toEqual(original);
+  await panel.getByRole("button", { name: "0.4 in", exact: true }).click();
+  await expect.poll(() => f.active().header_footer?.distanceIn).toBe(0.4);
   await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
     "data-content-height",
-    "720",
+    "912",
   );
   await panel
     .getByRole("switch", { name: "Divider line", exact: true })
@@ -301,5 +312,8 @@ test("new Studio templates start with shared bands and save template switches wi
   await expect.poll(() => saved?.header_footer?.showOnCover).toBe(true);
   expect(saved.header_footer.shared.header.layout).toBe("half");
   expect(saved.header_footer).not.toHaveProperty("overrides");
-  await expect(page.locator(".template-paged-paper .page-band")).toHaveCount(2);
+  await expect(page.locator(".template-paged-paper .page-sheet")).toHaveCount(
+    2,
+  );
+  await expect(page.locator(".template-paged-paper .page-band")).toHaveCount(4);
 });

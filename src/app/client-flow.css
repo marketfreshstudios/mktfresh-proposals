@@ -147,6 +147,7 @@
 }
 .flow-eyebrow,
 .client-flow .flow-byline,
+.client-flow .flow-prepared-for,
 .flow-outline {
   font: 500 12px/1.5 var(--font-ui);
 }

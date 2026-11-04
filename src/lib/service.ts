@@ -3,7 +3,12 @@ import {
   HeaderFooterSettingsSchema,
   type HeaderFooterSettings,
 } from "./page-bands";
-import { CoverSchema, type Cover } from "./cover";
+import {
+  CoverSchema,
+  loadedCover,
+  contentAfterCover,
+  type Cover,
+} from "./cover";
 import {
   reminderCycle,
   editableProposal,
@@ -289,7 +294,7 @@ export class ProposalService {
 
       header_footer: proposalBands(template.header_footer),
       template_style_overrides: structuredClone(template.style_overrides ?? {}),
-      ...(template.cover ? { cover: structuredClone(template.cover) } : {}),
+      cover: loadedCover(template.cover),
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
@@ -332,11 +337,16 @@ export class ProposalService {
           : { warnings: defaults.warnings },
         now,
       );
+    p.content = contentAfterCover(p.content);
     await this.repo.save(p, -1);
     return withDraftSettings(p, settings);
   }
   async forRead(p: Proposal) {
-    p = { ...p, header_footer: proposalBands(p.header_footer) };
+    p = {
+      ...p,
+      header_footer: proposalBands(p.header_footer),
+      ...(!p.signers.length ? { cover: loadedCover(p.cover) } : {}),
+    };
     if (p.status !== "draft") return p;
     p = { ...p, quote: draftItems(p.quote) };
     const current = (
@@ -447,6 +457,7 @@ export class ProposalService {
         403,
       );
       if (p.status === "draft") delete p.workspace_settings;
+      p.cover = loadedCover(p.cover);
       if (input.pagination) {
         check(
           actor.actor.startsWith("staff:"),
@@ -502,7 +513,12 @@ export class ProposalService {
       if (input.brief !== undefined) p.brief = input.brief;
       if (actor.actor.startsWith("ai:")) p.ai_connector = actor.actor.slice(3);
       if (input.content)
-        p.content = reviewBlocks(input.content, actor.actor.startsWith("ai:"));
+        p.content = reviewBlocks(
+          actor.actor.startsWith("ai:")
+            ? contentAfterCover(input.content)
+            : input.content,
+          actor.actor.startsWith("ai:"),
+        );
       p.ai_unreviewed =
         actor.actor.startsWith("ai:") || pendingSections(p).length > 0;
       if (input.quote)
@@ -723,6 +739,7 @@ export class ProposalService {
         "Confirm review of AI changes before sending",
       );
       p.quote = draftItems(p.quote);
+      p.cover = loadedCover(p.cover);
 
       p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);

@@ -114,8 +114,14 @@ it("current money preferences parse while current signed rendering and content h
   expect(publicResult((await repo.get(signed.id))!)).toEqual(view);
   expect(view.html).toContain("$2,750");
   expect(view.html).toContain("$25");
-  const { content, quote, variables_resolved, resolved_styles, header_footer } =
-    signed.versions[0];
+  const {
+    content,
+    quote,
+    variables_resolved,
+    resolved_styles,
+    header_footer,
+    cover,
+  } = signed.versions[0];
   expect(
     versionHash({
       content,
@@ -123,6 +129,7 @@ it("current money preferences parse while current signed rendering and content h
       variables_resolved,
       resolved_styles,
       header_footer,
+      cover,
     }),
   ).toBe(hash);
   expect(JSON.stringify(await repo.get(signed.id))).toBe(before);

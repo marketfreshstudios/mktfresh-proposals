@@ -42,12 +42,14 @@ it("only an exact leading title field heading is stripped from new drafts, inclu
     template_id: template.id,
   };
   const created = await service.create(input, staff);
-  expect(created.content[0].text).toBe("Scope");
+  expect(created.content[0].type).toBe("page_break");
+  expect(created.content[1].text).toBe("Scope");
   const ai = await service.create(
     { ...input, content: template.content },
     { ...staff, actor: "ai:Assistant" },
   );
-  expect(ai.content[0].text).toBe("Scope");
+  expect(ai.content[0].type).toBe("page_break");
+  expect(ai.content[1].text).toBe("Scope");
   expect(template.content[0].text).toBe("{{proposal.title}}");
   for (const text of [
     "Our {{proposal.title}}",

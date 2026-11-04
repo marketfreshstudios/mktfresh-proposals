@@ -1,3 +1,4 @@
+import { fitStoredImages } from "../lib/image-size";
 import {
   printContent,
   printCss,
@@ -70,7 +71,7 @@ export function clientDocumentHtml(
   });
 }
 export function clientDocumentCss(p: PublicProposal) {
-  return `${printCss}${pageBandCss}${printPageCss(p.resolved_styles, p.header_footer)}${plannedPrintCss}${`.proposal-typography{--proposal-body:${fontFamily(p.proposal_fonts?.body)};--proposal-heading:${fontFamily(p.proposal_fonts?.heading)}}`}${documentStyleCss(p.resolved_styles, p.company.accent_colour)}
+  return `${printCss}${pageBandCss}${printPageCss(p.resolved_styles, p.header_footer, false)}${plannedPrintCss}${`.proposal-typography{--proposal-body:${fontFamily(p.proposal_fonts?.body)};--proposal-heading:${fontFamily(p.proposal_fonts?.heading)}}`}${documentStyleCss(p.resolved_styles, p.company.accent_colour)}
   .client-canonical{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:#25241f;overflow-wrap:anywhere;--font-ui:"Instrument Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",monospace}
   .client-canonical .print-root{font:400 16px/1.65 var(--proposal-body,"Source Serif 4",serif);color:inherit}
   `;
@@ -101,6 +102,7 @@ export function paginateClientDocument(
         if (items[index]) card.dataset.clientItemId = items[index].id;
       },
     );
+  fitStoredImages(root);
   if (plan) applyPagePlan(root, plan);
   else paginatePrintDocument(root);
   // The unplanned PDF paginator emits atoms rather than source wrappers.
@@ -140,6 +142,7 @@ export function paginateClientDocument(
         styles: p.resolved_styles,
         logo,
         print: true,
+        inContent: true,
         band: bindings[n]?.[kind].value,
       });
       if (html)
@@ -149,5 +152,6 @@ export function paginateClientDocument(
         );
     }
   });
+  fitStoredImages(root);
   return { root, sheets, plan };
 }

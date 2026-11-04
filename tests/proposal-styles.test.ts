@@ -176,6 +176,7 @@ it("old stored versions retain their exact hash input and never gain styles on r
   const v = p.versions[0];
   delete v.resolved_styles;
   delete v.header_footer;
+  delete v.cover;
   const oldInput = {
     content: v.content,
     quote: v.quote,

@@ -1,6 +1,7 @@
 import { it, expect } from "vitest";
 import {
   BandSchema,
+  bandImages,
   HeaderFooterSettingsSchema,
   TemplateBandsSchema,
   defaultHeaderFooter,
@@ -26,8 +27,14 @@ it("reducing valid columns never fails because their combined root content excee
 it("strict schemas enforce column counts, image slots and embedded/default image sources", () => {
   const hf = defaultHeaderFooter();
   expect(hf.showOnCover).toBe(false);
-  expect(hf.bandHeightIn).toBe(0.5);
-  expect(hf.shared.header.image?.src).toBe("workspace-logo");
+  expect(hf.distanceIn).toBe(0.3);
+  expect(
+    HeaderFooterSettingsSchema.parse({ ...hf, bandHeightIn: 0.75 })
+      .bandHeightIn,
+  ).toBeUndefined();
+  expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
+    "workspace-logo",
+  );
   expect(() =>
     HeaderFooterSettingsSchema.parse({ ...hf, unknown: true }),
   ).toThrow();
@@ -69,7 +76,7 @@ it("thirds to one column retains every rich node, mark and field in order withou
   expect(n.slots).toEqual([
     { type: "doc", content: before.slots.flatMap((s) => s.content) },
   ]);
-  expect(n.image?.slot).toBe(0);
+  expect(bandImages(n)[0]?.slot).toBe(0);
   expect(b).toEqual(before);
   expect(changeBandLayout(n, "thirds").slots).toHaveLength(3);
 });
@@ -149,45 +156,46 @@ it("load defaults, template inheritance, same-link publication, hash and signing
   expect(versionHash({ ...v, header_footer: hf })).not.toBe(old);
 });
 
-it("shares exact per-page geometry for every band height and switch state, including hidden overrides", async () => {
+it("margin bands on, off and hidden never take content space; tall images clamp to the shared max", async () => {
   const { pageGeometry, pageContentHeight } =
     await import("../src/lib/page-bands");
   const { resolveStyles } = await import("../src/lib/proposal-styles");
   const styles = resolveStyles(null, undefined, {
     margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 },
   });
-  for (const bandHeightIn of [0.4, 0.5, 0.75] as const)
+  for (const distanceIn of [0.25, 0.3, 0.4] as const)
     for (const showHeader of [false, true])
       for (const showFooter of [false, true]) {
         const hf = {
           ...defaultHeaderFooter(),
-          bandHeightIn,
+          distanceIn,
           showHeader,
           showFooter,
         };
-        const g = pageGeometry(styles, hf, 3),
-          band = 96 * bandHeightIn;
-        expect(pageContentHeight(styles, hf, 3)).toBeCloseTo(
-          912 - (showHeader ? band + 24 : 0) - (showFooter ? band + 24 : 0),
-        );
-        expect(pageContentHeight(styles, hf, 1)).toBe(912);
-        expect(g.header?.y).toBe(showHeader ? 72 : undefined);
-        expect(g.footer?.y).toBe(showFooter ? 984 - band : undefined);
-        expect(
-          pageContentHeight(
-            styles,
-            {
-              ...hf,
-              overrides: { cover: { header: "hidden", footer: "hidden" } },
-            },
-            3,
-          ),
-        ).toBe(g.content.height);
+        bandImages(hf.shared.header)[0].node.attrs!.height = 500;
+        for (const page of [1, 2, 3]) {
+          const g = pageGeometry(styles, hf, page);
+          expect(g.content).toEqual({ x: 72, y: 72, width: 672, height: 912 });
+          expect(
+            pageContentHeight(
+              styles,
+              {
+                ...hf,
+                overrides: { cover: { header: "hidden", footer: "hidden" } },
+              },
+              page,
+            ),
+          ).toBe(912);
+          expect(g.bandLimits.header.height).toBeCloseTo(
+            72 - distanceIn * 96 - 8,
+            10,
+          );
+          if (g.header) {
+            expect(g.header.height).toBe(g.bandLimits.header.height);
+            expect(g.header.y + g.header.height + 8).toBeCloseTo(72, 10);
+          }
+        }
       }
-  const g = pageGeometry(styles, defaultHeaderFooter(), 3);
-  expect(g.content).toEqual({ x: 72, y: 144, width: 672, height: 768 });
-  expect(g.header).toEqual({ x: 72, y: 72, width: 672, height: 48 });
-  expect(g.footer).toEqual({ x: 72, y: 936, width: 672, height: 48 });
   expect(pageContentHeight(styles, undefined, 3)).toBe(912);
 });
 
@@ -234,7 +242,9 @@ it("band text is inert, resolves page values locally and reuses the current work
   expect(next).toContain("A &lt;script&gt;");
   expect(next).not.toContain("<script>");
   expect(next).toContain("field-chip");
-  expect(hf.shared.header.image?.src).toBe("workspace-logo");
+  expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
+    "workspace-logo",
+  );
 });
 
 it("renders bold and italic marks on both literal text and field nodes", async () => {
@@ -266,4 +276,51 @@ it("renders bold and italic marks on both literal text and field nodes", async (
   });
   expect(html).toContain("<em><strong>Studio</strong></em>");
   expect(html).toContain("<em> prepared</em>");
+});
+
+it("legacy band images migrate into the start of their slot without mutating stored input", () => {
+  const old = {
+    layout: "half",
+    slots: [
+      {
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "Name" }] },
+        ],
+      },
+      { type: "doc", content: [] },
+    ],
+    image: { src: "workspace-logo", alt: "Logo", height: 32, slot: 0 },
+  };
+  const before = JSON.stringify(old),
+    next = BandSchema.parse(old);
+  expect(next.image).toBeUndefined();
+  expect(next.slots[0].content[0].content![0]).toEqual({
+    type: "image",
+    attrs: { src: "workspace-logo", alt: "Logo", height: 32 },
+  });
+  expect(next.slots[0].content[0].content![1].text).toBe("Name");
+  expect(JSON.stringify(old)).toBe(before);
+  expect(() =>
+    BandSchema.parse({
+      ...next,
+      slots: [
+        {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "image",
+                  attrs: { src: "https://outside.example/img", height: 18 },
+                },
+              ],
+            },
+          ],
+        },
+        next.slots[1],
+      ],
+    }),
+  ).toThrow();
 });

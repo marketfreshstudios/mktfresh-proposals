@@ -1,4 +1,5 @@
 "use client";
+import { SelectableImage } from "./editor/selectable-image";
 import { useState, useRef } from "react";
 import { ToolbarPopover } from "./toolbar-popover";
 import { CoverSchema, defaultCover, type Cover } from "../lib/cover";
@@ -38,48 +39,80 @@ export function DocumentCover({
   const titleElement = useRef<HTMLHeadingElement>(null);
   const [logoMenu, setLogoMenu] = useState(false),
     [logoError, setLogoError] = useState("");
-  const value = cover ?? {
-    workspace: "{{workspace.name}}",
-    eyebrow: "Proposal for {{client.company}}",
-    byline: `From {{sender.name}}${validUntil ? " · Valid until {{proposal.valid_until}}" : ""}`,
+  const value = cover ?? defaultCover();
+  const resolvedMap = {
+    "workspace.name": workspace ?? "",
+    "client.company": company,
+    "sender.name": sender,
+    "proposal.validity": validUntil
+      ? `Valid until ${readableDate(validUntil, timezone)}`
+      : "",
+    ...map,
   };
-  const replace = (key: "workspace" | "eyebrow" | "byline", text: string) =>
-    onCover?.({ ...value, [key]: text });
+  const replace = (
+    key: "workspace" | "eyebrow" | "byline" | "prepared_for",
+    text: string,
+  ) => onCover?.({ ...value, [key]: text });
   const src = cover?.logo === null ? undefined : cover?.logo || logo;
   const line = (
-    key: "workspace" | "eyebrow" | "byline",
+    key: "workspace" | "eyebrow" | "byline" | "prepared_for",
     label: string,
     className: string,
-  ) => (
-    <p className={`${className} cover-field`} key={key}>
-      {onCover ? (
-        <>
-          <span className="cover-field-measure">
-            <HeadingTokens text={value[key] || "\u200b"} map={map} />
-          </span>
-          <FieldTextArea
-            aria-label={label}
-            rows={1}
-            maxLength={key === "byline" ? 4000 : 2000}
-            value={value[key]}
-            onValue={(text) => replace(key, text)}
-          />
-        </>
-      ) : (
-        <HeadingTokens text={value[key]} map={map} />
-      )}
-    </p>
-  );
+  ) =>
+    !value[key]
+      ?.replace(
+        /{{\s*([\w.-]+)\s*}}/g,
+        (_, path: string) =>
+          resolvedMap[path as keyof typeof resolvedMap] ?? `{{${path}}}`,
+      )
+      .trim() ? null : (
+      <p className={`${className} cover-field`} key={key}>
+        {onCover ? (
+          <>
+            <span className="cover-field-measure">
+              <HeadingTokens text={value[key] || "\u200b"} map={resolvedMap} />
+            </span>
+            <FieldTextArea
+              aria-label={label}
+              rows={1}
+              maxLength={key === "byline" ? 4000 : 2000}
+              value={value[key] ?? ""}
+              onValue={(text) => replace(key, text)}
+            />
+          </>
+        ) : (
+          <HeadingTokens text={value[key] ?? ""} map={resolvedMap} />
+        )}
+      </p>
+    );
 
   return (
     <header className="document-cover">
       <div className="cover-logo">
         {src && (
-          <img
-            src={src}
-            alt="Company logo"
-            style={{ maxHeight: 60, maxWidth: 180 }}
-            onClick={onCover ? () => setLogoMenu(!logoMenu) : undefined}
+          <SelectableImage
+            kind="cover"
+            value={{
+              src: cover?.logo || "workspace-logo",
+              alt: cover?.logo_alt ?? "Company logo",
+              height: cover?.logo_height ?? 60,
+            }}
+            source={src}
+            onChange={
+              onCover
+                ? (image) =>
+                    onCover({
+                      ...value,
+                      logo:
+                        image.src === "workspace-logo" ? undefined : image.src,
+                      logo_height: image.height,
+                      logo_alt: image.alt,
+                    })
+                : undefined
+            }
+            onDelete={
+              onCover ? () => onCover({ ...value, logo: null }) : undefined
+            }
           />
         )}
         {onCover && (
@@ -168,17 +201,8 @@ export function DocumentCover({
           </div>
         )}
       </div>
-      {cover || onCover ? (
-        <>
-          {line("workspace", "Cover workspace name", "print-workspace")}
-          {line("eyebrow", "Cover eyebrow", "flow-eyebrow")}
-        </>
-      ) : (
-        <>
-          {workspace && <p className="print-workspace">{workspace}</p>}
-          <p className="flow-eyebrow">Proposal for {company}</p>
-        </>
-      )}
+      {line("workspace", "Cover workspace name", "print-workspace")}
+      {line("eyebrow", "Cover eyebrow", "flow-eyebrow")}
       {onTitle ? (
         <h1 ref={titleElement}>
           <span aria-hidden="true" className="cover-title-measure">
@@ -208,16 +232,8 @@ export function DocumentCover({
       ) : (
         <h1 ref={titleElement}>{title}</h1>
       )}
-      {cover || onCover ? (
-        line("byline", "Cover byline", "flow-byline")
-      ) : (
-        <p className="flow-byline">
-          From {sender}
-          {validUntil && (
-            <> · Valid until {readableDate(validUntil, timezone)}</>
-          )}
-        </p>
-      )}
+      {line("prepared_for", "Cover client name", "flow-prepared-for")}
+      {line("byline", "Cover byline", "flow-byline")}
     </header>
   );
 }

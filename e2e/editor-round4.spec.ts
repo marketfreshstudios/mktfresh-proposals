@@ -233,7 +233,8 @@ test("pricing moves as a whole when it fits; tall quotes split only at intact ca
         (f) => f.block === "pricing",
       );
     const free =
-      912 -
+      previous.content_area!.top +
+      previous.content_area!.height -
       Math.max(...previous.fragments.map((f) => f.bottom ?? f.y + f.height));
     const table = pricing.find((f) => !f.unit)!,
       card = pricing.find((f) => !!f.unit)!;
@@ -276,7 +277,7 @@ test("pricing moves as a whole when it fits; tall quotes split only at intact ca
       {
         id: "long",
         type: "paragraph" as const,
-        text: "Clear scope, thoughtful work, and useful results. ".repeat(500),
+        text: "Clear scope, thoughtful work, and useful results. ".repeat(650),
       },
     ],
   };

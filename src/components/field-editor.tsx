@@ -1,4 +1,10 @@
 "use client";
+import {
+  InlineBandImage,
+  bandImageDragOver,
+  bandImageDrop,
+  type BandImageOptions,
+} from "./editor/inline-band-image";
 import { bandRichText } from "./editor/band-rich-text";
 import { pageSpacers, pageSpacerKey } from "./page-spacers";
 import { createPortal } from "react-dom";
@@ -18,6 +24,8 @@ import type { RichText } from "../lib/model";
 import { Button } from "./ui";
 /** Draft-only editing adapter. Historical content is never passed through this. */
 export function fieldNodes(node: RichText): RichText {
+  if (node.type === "doc" && !node.content?.length)
+    return { ...node, content: [{ type: "paragraph" }] };
   return {
     ...node,
     ...(node.content
@@ -60,7 +68,9 @@ export function FieldEditor({
   onBeforeInsert,
   onTextStyle,
   bandEditor,
+  bandImage,
 }: {
+  bandImage?: BandImageOptions;
   bandEditor?: (editor: import("@tiptap/core").Editor | null) => void;
   value: RichText;
   onChange: (v: RichText) => void;
@@ -100,15 +110,35 @@ export function FieldEditor({
     [linkError, setLinkError] = useState("");
   const [picker, setPicker] = useState(false),
     [popoverTrigger, setPopoverTrigger] = useState<HTMLElement | null>(null);
-  const editor = useEditor({
+  const imageOptions = useRef(bandImage);
+  imageOptions.current = bandImage;
+  const editor: import("@tiptap/core").Editor | null = useEditor({
     immediatelyRender: false,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
+      handleDOMEvents: {
+        dragover: (view, event) =>
+          imageOptions.current && editor
+            ? bandImageDragOver(editor, imageOptions.current, event)
+            : false,
+        drop: (_view, event) =>
+          imageOptions.current && editor
+            ? bandImageDrop(editor, imageOptions.current, event)
+            : false,
+      },
       attributes: label
         ? { role: "textbox", "aria-label": label, "aria-multiline": "true" }
         : {},
     },
     extensions: [
+      ...(bandImage
+        ? [
+            InlineBandImage.configure({
+              settings:
+                imageOptions as React.MutableRefObject<BandImageOptions>,
+            }),
+          ]
+        : []),
       pageSpacers(() => values.current),
       StarterKit.configure({
         trailingNode: false,
@@ -264,8 +294,16 @@ export function FieldEditor({
           ? bandRichText(editor.getJSON() as RichText)
           : editor.getJSON(),
       ) !== JSON.stringify(bandEditor ? bandRichText(next) : next)
-    )
-      editor.commands.setContent(next, { emitUpdate: false });
+    ) {
+      let current = true;
+      queueMicrotask(() => {
+        if (current && !editor.isDestroyed)
+          editor.commands.setContent(next, { emitUpdate: false });
+      });
+      return () => {
+        current = false;
+      };
+    }
   }, [value, editor]);
   // Display values are decorations, not document edits. Refresh node views without
   // replacing equal JSON (which ProseMirror correctly treats as unchanged).

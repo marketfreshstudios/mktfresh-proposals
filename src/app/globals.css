@@ -1850,3 +1850,44 @@ select:hover:not(:disabled),
   ) {
   font-family: var(--font-sans);
 }
+/* Shared disclosure icons: the same size and muted color in every state. */
+summary {
+  list-style: none;
+}
+summary::marker {
+  content: "";
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure-marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.disclosure-icon,
+.panel-chevron.disclosure-icon {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--ink-muted);
+  vertical-align: middle;
+}
+.disclosure-marker .disclosure-open {
+  display: none;
+}
+details[open] > summary > .disclosure-marker .disclosure-closed {
+  display: none;
+}
+details[open] > summary > .disclosure-marker .disclosure-open {
+  display: block;
+}
+.panel-chevron.disclosure-icon {
+  display: block;
+}

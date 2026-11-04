@@ -203,7 +203,19 @@ export function renderBlocks(
             ) && (b.src?.length ?? 0) < 1000000,
             "Images must be embedded PNG/JPEG (no remote requests)",
           );
-          return `<img src="${b.src}" alt="${escape(b.alt ?? "")}" />`;
+          check(
+            b.width_percent === undefined ||
+              (Number.isFinite(b.width_percent) &&
+                b.width_percent > 0 &&
+                b.width_percent <= 100),
+            "Image width must be between 0 and 100 percent",
+          );
+          check(
+            b.align === undefined ||
+              ["left", "center", "right"].includes(b.align),
+            "Invalid image alignment",
+          );
+          return `<img class="proposal-block-image" src="${b.src}" alt="${escape(b.alt ?? "")}" style="display:block;width:${b.width_percent ?? 100}%;height:auto;max-height:none;margin-left:${b.align === "right" || b.align === "center" ? "auto" : "0"};margin-right:${b.align === "left" || b.align === "center" ? "auto" : "0"}" />`;
         case "contract": {
           check(
             Array.isArray(b.clauses) && b.clauses.length <= 50,

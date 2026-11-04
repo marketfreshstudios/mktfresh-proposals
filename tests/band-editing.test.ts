@@ -19,7 +19,7 @@ it("resets shared template presentation while retaining switches and per-page ov
     },
   ];
   template.divider = false;
-  template.bandHeightIn = 0.75;
+  template.distanceIn = 0.4;
   template.showOnCover = true;
   const reset = resetBandSettings(current, template);
   expect(reset.shared).toEqual(template.shared);
@@ -27,7 +27,7 @@ it("resets shared template presentation while retaining switches and per-page ov
     showHeader: false,
     showFooter: false,
     divider: false,
-    bandHeightIn: 0.75,
+    distanceIn: 0.4,
     showOnCover: true,
     overrides: current.overrides,
   });
@@ -101,4 +101,12 @@ it("stores pasted/editor list and link content in the strict band format without
     { type: "link", attrs: { href: "https://example.test" } },
   ]);
   expect((source.content[0].attrs as any).start).toBe(1);
+});
+
+it("an empty band document uses ProseMirror's canonical empty paragraph", async () => {
+  const { fieldNodes } = await import("../src/components/field-editor");
+  expect(fieldNodes({ type: "doc", content: [] })).toEqual({
+    type: "doc",
+    content: [{ type: "paragraph" }],
+  });
 });

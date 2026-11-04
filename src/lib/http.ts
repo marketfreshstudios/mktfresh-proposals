@@ -10,7 +10,7 @@ import {
   TemplateBandsSchema,
   defaultTemplateBands,
 } from "./page-bands";
-import { CoverSchema } from "./cover";
+import { CoverSchema, loadedCover, contentAfterCover } from "./cover";
 import { publishedExpiry } from "./editor-publication";
 import { PagePlanSchema } from "./page-plan";
 import { authoringPreview } from "./authoring-preview";
@@ -646,7 +646,14 @@ async function handleRoute(req: Request, path: string[]) {
             : table === "templates"
               ? entities.map((e) => ({
                   ...e,
-                  header_footer: e.header_footer ?? defaultTemplateBands(),
+                  header_footer: TemplateBandsSchema.parse(
+                    e.header_footer ?? defaultTemplateBands(),
+                  ),
+                  cover: loadedCover(
+                    e.cover === undefined
+                      ? undefined
+                      : CoverSchema.parse(e.cover),
+                  ),
                 }))
               : entities,
         );
@@ -768,12 +775,16 @@ async function handleRoute(req: Request, path: string[]) {
                 .max(100),
               active: z.boolean(),
               header_footer: TemplateBandsSchema.default(defaultTemplateBands),
-              cover: CoverSchema.optional(),
+              cover: CoverSchema.default(() => loadedCover()),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
             })
             .parse(raw);
-          entity.content = reviewBlocks(entity.content as Block[], false);
+          entity.content = reviewBlocks(
+            contentAfterCover(entity.content as Block[]),
+            false,
+          );
+          entity.cover = loadedCover(entity.cover);
           await validateStyles(
             rt.repo,
             (
