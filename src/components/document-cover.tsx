@@ -249,15 +249,20 @@ export function DocumentCover({
       .reverse()
       .find((e) => !e.hidden && e.kind !== "logo");
     pendingFocus.current = previous?.id ?? null;
-    current.onCover?.({
-      ...current.value,
-      elements:
-        target.kind === "extra"
-          ? current.elements.filter((e) => e.id !== id)
-          : current.elements.map((e) =>
-              e.id === id ? { ...e, hidden: true } : e,
-            ),
-    });
+    const apply = () => {
+      current.onCover?.({
+        ...current.value,
+        elements:
+          target.kind === "extra"
+            ? current.elements.filter((e) => e.id !== id)
+            : current.elements.map((e) =>
+                e.id === id ? { ...e, hidden: true } : e,
+              ),
+      });
+    };
+    history
+      ? history.inScope(`text:cover-${previous?.id ?? id}`, apply)
+      : apply();
     if (previous) choose(previous.id);
     else select(null);
   };
