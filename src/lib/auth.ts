@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { z } from "zod";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { timingSafeEqual } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
+import {
+  readCookie,
+  staffCredentials,
+  keepStaffSession,
+  authClient,
+} from "./staff-session";
 import { AppError, type Actor } from "./model";
 import { supabase } from "./repository";
 export function equalSecret(a: string, b: string) {
@@ -22,15 +27,7 @@ export function actor(request: Request, name = "client"): Actor {
     user_agent: (request.headers.get("user-agent") ?? "").slice(0, 1000),
   };
 }
-export function cookie(request: Request, name: string) {
-  return (
-    (request.headers.get("cookie") ?? "")
-      .split(";")
-      .map((s) => s.trim())
-      .find((s) => s.startsWith(name + "="))
-      ?.slice(name.length + 1) ?? ""
-  );
-}
+export const cookie = readCookie;
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   // Browsers send "Origin: null" (or omit it) for some same-origin form posts,
@@ -51,7 +48,22 @@ export function sameOrigin(request: Request) {
       }
     });
 }
-export async function staff(request: Request) {
+type StaffActor = Actor & {
+  workspace_id: string;
+  staff_role: "owner" | "member";
+  staff_name: string;
+  staff_email: string;
+};
+const staffRequests = new WeakMap<Request, Promise<StaffActor>>();
+export function staff(request: Request) {
+  let result = staffRequests.get(request);
+  if (!result) {
+    result = checkStaff(request);
+    staffRequests.set(request, result);
+  }
+  return result;
+}
+async function checkStaff(request: Request): Promise<StaffActor> {
   const authorization = request.headers.get("authorization");
   if (!authorization && !["GET", "HEAD"].includes(request.method)) {
     if (!sameOrigin(request))
@@ -74,63 +86,27 @@ export async function staff(request: Request) {
       staff_name: await localDisplayName(),
       staff_email: "staff@example.test",
     };
-  if (
-    !token &&
-    process.env.DESIGN_PREVIEW_OPEN === "1" &&
-    process.env.SUPABASE_URL
-  )
-    return designPreviewStaff(request);
-  if (!token || !process.env.SUPABASE_URL)
-    throw new AppError(401, "Staff login required");
-  const db = supabase(),
-    { data, error } = await db.auth.getUser(token);
-  if (error || !data.user) throw new AppError(401, "Invalid session");
+  const credentials = await staffCredentials(request),
+    db = supabase();
+  const user = credentials.user;
   const member = await db
     .from("staff_users")
     .select("user_id,workspace_id,role,display_name")
-    .eq("user_id", data.user.id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (member.error || !member.data)
     throw new AppError(403, "Staff access required");
+  keepStaffSession(request, credentials);
   return {
-    ...actor(request, "staff:" + data.user.id),
+    ...actor(request, "staff:" + user.id),
     workspace_id: member.data.workspace_id,
     staff_role: member.data.role as "owner" | "member",
-    staff_name: member.data.display_name || data.user.email || "Staff",
-    staff_email: data.user.email ?? "",
-  };
-}
-// Temporary, read-only open access so a design tool can browse the staff app.
-// Enabled only while the DESIGN_PREVIEW_OPEN=1 env var is set. Requests that
-// carry a real session or bearer token never reach this path, and any write
-// (non-GET/HEAD) is refused.
-async function designPreviewStaff(request: Request) {
-  if (!["GET", "HEAD"].includes(request.method))
-    throw new AppError(403, "This preview is read-only");
-  const owner = await supabase()
-    .from("staff_users")
-    .select("user_id,workspace_id,display_name")
-    .eq("role", "owner")
-    .limit(1)
-    .maybeSingle();
-  if (owner.error || !owner.data)
-    throw new AppError(401, "Staff login required");
-  return {
-    ...actor(request, "staff:" + owner.data.user_id),
-    workspace_id: owner.data.workspace_id as string,
-    staff_role: "owner" as const,
-    staff_name: owner.data.display_name || "Staff",
-    staff_email: "",
+    staff_name: member.data.display_name || user.email || "Staff",
+    staff_email: user.email ?? "",
   };
 }
 export async function login(email: string, password: string) {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY)
-    throw new AppError(503, "Configure Supabase Auth");
-  const db = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  const db = authClient();
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new AppError(401, "Invalid credentials");
   const member = await supabase()

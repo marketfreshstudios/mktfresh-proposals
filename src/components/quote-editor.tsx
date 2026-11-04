@@ -1,4 +1,5 @@
 "use client";
+import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { useBandEditing } from "./editor/band-editing";
 import { bandPages, resolvedBandPages } from "../lib/band-overrides";
 import { resetBandSettings } from "./editor/reset-band-settings";
@@ -2812,7 +2813,14 @@ function QuoteEditorContent({
       )}
       {error && !stale && (
         <EditorNotice kind="error">
-          <span title={error}>Your changes are kept here. {error}</span>
+          <span title={error}>
+            {isStaffSignedOut(error) ? (
+              error
+            ) : (
+              <>Your changes are kept here. {error}</>
+            )}
+          </span>
+          {isStaffSignedOut(error) && <StaffSignIn />}
           <EditorButton variant="primary" onClick={() => void save()}>
             Retry
           </EditorButton>

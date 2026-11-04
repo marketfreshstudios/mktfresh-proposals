@@ -1,4 +1,10 @@
 "use client";
+import {
+  STAFF_SIGNED_OUT,
+  staffErrorMessage,
+  isStaffSignedOut,
+  StaffSignIn,
+} from "./staff-sign-in";
 import { quoteSublines } from "../lib/quote-model";
 import { useMoney } from "./money-context";
 import { statusDisplay } from "../lib/status-display";
@@ -64,14 +70,17 @@ export function Banner({
   tone?: string;
   action?: ReactNode;
 }) {
+  const signedOut =
+    isStaffSignedOut(title) ||
+    (typeof children === "string" && isStaffSignedOut(children));
   return (
     <section
       className={`banner ${tone}`}
       role={tone === "danger" ? "alert" : "status"}
     >
-      <strong>{title}</strong>
-      {children && <div>{children}</div>}
-      {action}
+      <strong>{signedOut ? STAFF_SIGNED_OUT : title}</strong>
+      {!signedOut && children && <div>{children}</div>}
+      {signedOut ? <StaffSignIn /> : action}
     </section>
   );
 }
@@ -291,7 +300,11 @@ export async function api<T = any>(
   if (!response.ok)
     throw new ApiError(
       response.status,
-      data.error ?? "Unable to complete request",
+      path.startsWith("/api/") &&
+        !path.startsWith("/api/public/") &&
+        !["/api/auth/login", "/api/auth/local"].includes(path.split("?")[0])
+        ? staffErrorMessage(response.status, data)
+        : (data.error ?? "Unable to complete request"),
     );
   return data;
 }

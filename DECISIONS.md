@@ -49,7 +49,7 @@ Use authenticated Streamable HTTP with protected-resource metadata, authorizatio
 
 - Rebuilt the exported screens with their supplied tokens, self-hosted fonts and Font Awesome icons. Staff screens are desktop-first; client screens are captured at 390px and 1440px, in both themes. Visual fixtures explicitly simulate provider-specific states; screenshots do not claim provider acceptance.
 - Document surfaces stay white in dark mode. Entered workspace accent colours choose black or white button text by measured luminance. PDFs embed the document font and workspace logo; emails use the same identity and separate totals.
-- Browser sessions use HttpOnly cookies and same-origin mutation checks against the request origin or explicitly configured APP_URL/OAUTH_ISSUER. Local development sign-in is unavailable in production. Sessions expire and require sign-in again; there is no open staff signup.
+- Browser sessions use HttpOnly cookies and same-origin mutation checks against the request origin or explicitly configured APP_URL/OAUTH_ISSUER. Local development sign-in is unavailable in production. Staff browser sessions refresh server-side and slide for 30 days of inactivity (see the 4 November session decision below); there is no open staff signup.
 - Signing/toggling can supply the reviewed version hash in addition to the aggregate revision. This prevents background email/job writes from invalidating an unchanged document while still rejecting any changed scope/price. Staff draft editing retains full revision CAS.
 - Immediate post-response queue draining uses Next `after`; cron remains recovery. Provider-match corrections read only reviewed customer IDs from the current client record at retry, without changing signed identity or content.
 - Catalogue upgrade migration converts only editable Phase 1 catalogue JSON, never proposal/version evidence. Old price IDs cannot be converted reliably to lookup keys; re-sync the catalogue before new sends. Supabase entity reads now paginate too.
@@ -462,3 +462,14 @@ The owner clarified that “Shared on N pages” counts only actual visible shar
 - Owner clarification supersedes the initial live-repagination requirement: client choices keep the published PagePlan. Conditional clauses and totals update inside those pages through the same trusted print-source/plan projection used by the sealed PDF. No client-computed plan is accepted, and signing, version hashing and the PDF renderer remain unchanged.
 - Public document data includes the published bands and only `plan_terms.client_copy` as a separate client-visible string map. Internal plan/billing metadata stays private.
 - Shared page counts use one helper: `1 page` / `N pages`; one-page change descriptions say `Changes show on this page only`.
+
+
+## Staff session lifetime and recovery — 4 November 2026
+
+Keep Supabase access and rotating refresh credentials server-only in HttpOnly cookies, with a 30-day sliding browser inactivity lifetime. Access cookies cover `/`; refresh cookies cover `/api`. Both use SameSite=Lax and production Secure. The proxy forwards refreshed request cookies to the handler and response cookies to the browser, avoiding the one-hour access-token failure. Staff membership is rechecked; bearer tokens do not borrow browser refresh credentials. Local DEV and AI OAuth sessions retain their own behavior.
+
+Concurrent rotations use a bounded, hashed-key ten-second single-flight/result cache per server process and Supabase’s documented refresh reuse interval across instances. No persistent token store or hosted Auth policy change is needed. Auth outages return 503 without destroying cookies; revoked/expired credentials return staff-specific 401, distinct from membership 403. Logout clears both cookies and revokes only the current hosted session.
+
+Unrefreshable editor sessions keep their existing local recovery/autosave state. Sign in opens a separate tab and closes after success (with return guidance if closing is unavailable); Retry saves from the unchanged editor. The temporary anonymous design-preview bypass is removed independently.
+
+Reference: [Supabase session rotation and reuse](https://supabase.com/docs/guides/auth/sessions), [server-side request/response cookie refresh](https://supabase.com/docs/guides/auth/server-side/creating-a-client).

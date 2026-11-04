@@ -163,7 +163,7 @@ export function StaffApp({
       if (["proposals", "archives"].includes(section) && id && id !== "new")
         setP(await api(`/api/proposals/${id}`));
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) {
+      if (e instanceof ApiError && e.status === 401 && !data) {
         location.href =
           "/login?next=" +
           encodeURIComponent(location.pathname + location.search);
@@ -482,7 +482,19 @@ async function allProposals() {
 }
 function Login({ local }: { local: boolean }) {
   const [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [resumed, setResumed] = useState(false);
+  if (resumed)
+    return (
+      <main className="login">
+        <div className="card stack">
+          <h1>You're signed in</h1>
+          <p>
+            Return to your editor and choose Retry to save your kept changes.
+          </p>
+        </div>
+      </main>
+    );
   return (
     <main className="login">
       <div className="card stack">
@@ -504,6 +516,11 @@ function Login({ local }: { local: boolean }) {
                 email: f.get("email"),
                 password: f.get("password"),
               });
+              if (new URL(location.href).searchParams.get("resume") === "1") {
+                setResumed(true);
+                window.close();
+                return;
+              }
               const next = new URL(location.href).searchParams.get("next");
               location.href =
                 next?.startsWith("/") && !next.startsWith("//") ? next : "/";

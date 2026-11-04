@@ -1,4 +1,5 @@
 "use client";
+import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
 import { useHistoryStatus } from "./editor-history";
@@ -114,6 +115,7 @@ export function EditorHeader({
   primaryLabel?: string;
   onPrimary?: () => void;
 }) {
+  const retryAction = isStaffSignedOut(error) ? openStaffSignIn : retry;
   const [leaving, setLeaving] = useState(false);
   const pending = leaving || saving;
   const history = useHistoryStatus();
@@ -140,7 +142,9 @@ export function EditorHeader({
     : pending
       ? "Saving…"
       : error
-        ? "Couldn't save — Retry"
+        ? isStaffSignedOut(error)
+          ? "Signed out — Sign in"
+          : "Couldn't save — Retry"
         : dirty
           ? "Unsaved changes"
           : "All changes saved";
@@ -172,7 +176,9 @@ export function EditorHeader({
                 : pending
                   ? "Saving…"
                   : error
-                    ? "Couldn't save · Retry"
+                    ? isStaffSignedOut(error)
+                      ? "Signed out · Sign in"
+                      : "Couldn't save · Retry"
                     : dirty
                       ? "Unsaved changes"
                       : notLiveReason
@@ -216,7 +222,9 @@ export function EditorHeader({
           : pending
             ? "Saving…"
             : error
-              ? "Couldn't save · Retry"
+              ? isStaffSignedOut(error)
+                ? "Signed out · Sign in"
+                : "Couldn't save · Retry"
               : recovered
                 ? "Unsaved changes recovered"
                 : dirty
@@ -233,7 +241,9 @@ export function EditorHeader({
           : pending
             ? "Saving…"
             : error
-              ? "Retry"
+              ? isStaffSignedOut(error)
+                ? "Sign in"
+                : "Retry"
               : recovered
                 ? "Recovered"
                 : dirty
@@ -268,7 +278,7 @@ export function EditorHeader({
         >
           <span className="editor-status-dot" aria-hidden="true" />
           {stale || (error && !offline && !pending) ? (
-            <button type="button" onClick={retry} aria-label={text}>
+            <button type="button" onClick={retryAction} aria-label={text}>
               {tablet ? shortText : text}
             </button>
           ) : (
@@ -386,7 +396,7 @@ export function EditorHeader({
         title={tooltip}
       >
         {error && !offline && !pending ? (
-          <button type="button" onClick={retry} aria-label={label}>
+          <button type="button" onClick={retryAction} aria-label={label}>
             <Icon name={icon} />
             {label}
           </button>

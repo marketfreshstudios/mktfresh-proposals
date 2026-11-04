@@ -43,11 +43,11 @@ On this Mac, CLI 2.117.0 stalled before container startup. The acceptance test w
 
 ## API contract
 
-Internal routes use `Authorization: Bearer <Supabase access token>`, checked with `auth.getUser()` plus the protected staff allowlist in both Proxy middleware and route handlers. For local development only, use `DEV_STAFF_TOKEN`. Successful login returns a Supabase session; Phase 2 can use the Supabase client for session refresh/sign-out. There is no public signup route.
+Internal routes use `Authorization: Bearer <Supabase access token>`, checked with `auth.getUser()` plus the protected staff allowlist in both Proxy middleware and route handlers. For local development only, use `DEV_STAFF_TOKEN`. Browser login returns only `{authenticated:true}` and stores access/refresh tokens in HttpOnly, SameSite=Lax cookies (Secure in production). Both cookies slide for 30 days of inactivity; the refresh cookie is restricted to `/api`. Expired access tokens refresh server-side before staff requests continue, including forwarding rotated cookies from Proxy to the route and browser. Concurrent refreshes share a short result window; Supabase’s refresh-token reuse protection covers requests across server instances. Logout clears both cookies and revokes the browser session. There is no public signup route or anonymous design-preview bypass.
 
 | Method / route                                | Purpose                                                                               |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `POST /api/auth/login`                        | `{email,password}` → Supabase session for an allowlisted staff user                   |
+| `POST /api/auth/login`                        | `{email,password}` → `{authenticated:true}` plus HttpOnly cookies for allowlisted staff                   |
 | `GET, POST, PUT /api/clients`                 | List or upsert client records; PUT accepts the full record with its `id`              |
 | `GET, POST, PUT /api/pricing_items`           | Products and billing mappings; deactivate instead of deleting                          |
 | `GET, POST, PUT /api/templates`               | Block content and default quote line references                                       |
@@ -127,7 +127,7 @@ node --env-file=.env.local --import tsx scripts/sync-stripe-catalog.ts
 Stripe sends snapshot webhooks (API version `2024-06-20`) to `/api/webhooks/stripe/00000000-0000-4000-8000-000000000001`. Subscribe to `checkout.session.completed`, `invoice.paid`, and `invoice.payment_failed`. Set `STRIPE_WEBHOOK_SECRET` from `stripe listen` for local testing. The endpoint verifies and queues receipts; the authenticated cron drains them. Do not substitute live credentials. Actual sandbox acceptance is pending owner setup.
 
 ### Staff interface and review checks
-Open `/login` and use the local token form while developing; hosted sessions use Supabase email/password and an HttpOnly cookie. Start at `/`, then `/proposals/new`. All content edits autosave with a revision check. Public toggles/signatures additionally send `reviewed_hash` from the API: it binds acceptance to the actual reviewed document while allowing unrelated background job updates. A changed hash requires explicit reload/re-review.
+Open `/login` and use the local token form while developing; hosted sessions use Supabase email/password and server-refreshed HttpOnly cookies. If a refresh token is revoked or expired, open **Sign in** from the save bar, authenticate in the separate tab, then return and choose **Retry**; the editor and its device recovery copy stay intact. A valid account missing staff membership remains a distinct 403 error. Start at `/`, then `/proposals/new`. All content edits autosave with a revision check. Public toggles/signatures additionally send `reviewed_hash` from the API: it binds acceptance to the actual reviewed document while allowing unrelated background job updates. A changed hash requires explicit reload/re-review.
 
 Successful send/sign/countersign responses schedule an immediate durable-job drain with Next `after`; the authenticated hourly cron remains recovery. Settings and provider IDs are staff-only. Historical PDF imports are read-only at `/archives/:id`. Screenshots are indexed in `docs/screenshots/README.md`.
 
