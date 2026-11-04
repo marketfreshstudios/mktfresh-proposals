@@ -1902,6 +1902,9 @@ function QuoteEditorContent({
       ) : tab === "Styles" ? (
         <ProposalStyles
           settings={p.workspace_settings}
+          headerFooter={bands}
+          onHeaderFooter={(header_footer) => change({ header_footer })}
+          pageCount={browserPages?.plan.pages ?? 1}
           inherited={p.template_style_overrides}
           value={p.style_overrides}
           onChange={(style_overrides) => change({ style_overrides })}

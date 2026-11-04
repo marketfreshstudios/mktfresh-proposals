@@ -337,6 +337,7 @@ test("choice groups, signatures and a fitting pricing table stay on one sheet, a
   }
   const before = await paper.getAttribute("data-pagination");
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await page.getByText("Page & margins", { exact: true }).click();
   await page.getByRole("button", { name: "Comfortable", exact: true }).click();
   await expect
     .poll(() => paper.getAttribute("data-pagination"))

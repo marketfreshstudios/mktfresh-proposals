@@ -327,6 +327,7 @@ for (const width of [1440, 375]) {
       name: "Proposal styles",
       exact: true,
     });
+    await styles.getByText("Text styles", { exact: true }).click();
     await styles
       .getByRole("spinbutton", { name: "Title size (px)", exact: true })
       .fill("44");
@@ -533,6 +534,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     name: "Proposal styles",
     exact: true,
   });
+  await templateStyles.getByText("Text styles", { exact: true }).click();
   await templateStyles
     .getByRole("combobox", { name: "Text level", exact: true })
     .selectOption("heading3");

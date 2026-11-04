@@ -165,3 +165,141 @@ test("shared rest bands resolve page fields after pagination; cover and certific
     historical.layout.sheets!.every((s) => !s.html.includes("data-page-band=")),
   ).toBe(true);
 });
+
+test("Styles switches autosave, retain overrides, free space and repaginate the cover", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    content: [
+      {
+        id: "long",
+        type: "paragraph",
+        text: "A useful detail for the proposal. ".repeat(1400),
+      },
+    ],
+  });
+  const hf = defaultHeaderFooter();
+  hf.overrides.long = { header: "hidden" };
+  await f.editRemote({ header_footer: hf });
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const plan = () =>
+    page
+      .locator(".editor-paper")
+      .evaluate((el) => JSON.parse(el.getAttribute("data-pagination")!));
+  const original = await plan();
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  const panel = page.locator(".proposal-styles");
+  await expect(
+    panel
+      .locator("details")
+      .filter({
+        has: page.locator("summary").filter({ hasText: /^Text styles$/ }),
+      })
+      .first(),
+  ).not.toHaveAttribute("open");
+  const header = panel.getByRole("switch", { name: "Header", exact: true }),
+    footer = panel.getByRole("switch", { name: "Footer", exact: true });
+  await expect(header).toBeChecked();
+  await expect(footer).toBeChecked();
+  await header.uncheck();
+  await expect.poll(() => f.active().header_footer?.showHeader).toBe(false);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
+    "data-content-height",
+    "840",
+  );
+  expect(f.active().header_footer?.overrides).toEqual(hf.overrides);
+  await footer.uncheck();
+  await expect.poll(() => f.active().header_footer?.showFooter).toBe(false);
+  await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
+    "data-content-height",
+    "912",
+  );
+  await header.check();
+  await footer.check();
+  await expect
+    .poll(
+      () =>
+        f.active().header_footer?.showHeader &&
+        f.active().header_footer?.showFooter,
+    )
+    .toBe(true);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  expect(await plan()).toEqual(original);
+  await panel
+    .getByRole("switch", { name: "Show on cover", exact: true })
+    .check();
+  await expect.poll(() => f.active().header_footer?.showOnCover).toBe(true);
+  await expect(
+    page.locator(".page-sheet").first().locator(".page-band"),
+  ).toHaveCount(2);
+  await expect(page.locator(".page-sheet").first()).toHaveAttribute(
+    "data-content-height",
+    "768",
+  );
+  expect((await plan()).starts[0].offset).toBeLessThan(
+    original.starts[0].offset,
+  );
+  await panel.getByRole("button", { name: "0.75 in", exact: true }).click();
+  await expect.poll(() => f.active().header_footer?.bandHeightIn).toBe(0.75);
+  await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
+    "data-content-height",
+    "720",
+  );
+  await panel
+    .getByRole("switch", { name: "Divider line", exact: true })
+    .uncheck();
+  await expect.poll(() => f.active().header_footer?.divider).toBe(false);
+  await expect(page.locator(".page-band").first()).toHaveAttribute(
+    "data-divider",
+    "false",
+  );
+  await page.reload();
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await expect(
+    panel.getByRole("switch", { name: "Show on cover", exact: true }),
+  ).toBeChecked();
+  await panel.getByText("Page & margins", { exact: true }).click();
+  await expect(
+    panel.getByRole("button", { name: "Standard", exact: true }),
+  ).toBeVisible();
+  await panel.getByText("Text styles", { exact: true }).click();
+  await expect(
+    panel.getByRole("combobox", { name: /Text level/ }),
+  ).toBeVisible();
+});
+
+test("new Studio templates start with shared bands and save template switches without overrides", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  let saved: any;
+  await page.route("**/api/templates", async (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: await f.repo.entities("templates") });
+    saved = route.request().postDataJSON();
+    await f.repo.put("templates", saved);
+    return route.fulfill({ json: saved });
+  });
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto("/studio/templates");
+  await page
+    .getByRole("button", { name: "+ New template", exact: true })
+    .click();
+  const styles = page.locator(".proposal-styles");
+  await expect(
+    styles.getByRole("switch", { name: "Header", exact: true }),
+  ).toBeChecked();
+  await styles
+    .getByRole("switch", { name: "Show on cover", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Save template", exact: true })
+    .click();
+  await expect.poll(() => saved?.header_footer?.showOnCover).toBe(true);
+  expect(saved.header_footer.shared.header.layout).toBe("half");
+  expect(saved.header_footer).not.toHaveProperty("overrides");
+  await expect(page.locator(".template-paged-paper .page-band")).toHaveCount(2);
+});

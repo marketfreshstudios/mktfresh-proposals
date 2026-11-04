@@ -1,4 +1,5 @@
 "use client";
+import type { HeaderFooterSettings } from "../lib/page-bands";
 import { useEffect, useId, useState } from "react";
 import {
   curatedFonts,
@@ -29,7 +30,13 @@ export function ProposalStyles({
   resetLabel = "Reset to defaults",
   onReset,
   availableFonts = [],
+  headerFooter,
+  onHeaderFooter,
+  pageCount = 1,
 }: {
+  headerFooter?: HeaderFooterSettings;
+  onHeaderFooter?: (value: HeaderFooterSettings) => void;
+  pageCount?: number;
   settings?: WorkspaceSettings | null;
   inherited?: StyleOverrides;
   value?: StyleOverrides;
@@ -89,240 +96,265 @@ export function ProposalStyles({
         Changes apply to this proposal only. Workspace defaults live in Studio →
         Workspace.
       </p>
-      <fieldset className="style-density">
-        <legend>Density</legend>
-        <div role="group" aria-label="Density choices">
-          {(["standard", "comfortable"] as const).map((density) => (
-            <button
-              key={density}
-              type="button"
-              aria-pressed={styles.layout!.density === density}
-              onClick={() => onChange({ ...value, density })}
+      <details className="style-accordion" open={!headerFooter}>
+        <summary>Text styles</summary>
+        <div className="style-accordion-body">
+          <label className="field">
+            Text level
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value as StyleLevel)}
             >
-              {density === "standard" ? "Standard" : "Comfortable"}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset className="style-fields style-margin-grid">
-        <legend>Page margins (inches)</legend>
-        {(["top", "right", "bottom", "left"] as const).map((side) => (
-          <StyleNumber
-            key={side}
-            name={side[0].toUpperCase() + side.slice(1)}
-            ariaLabel={`Page margin ${side}`}
-            value={styles.layout!.margins[side]}
-            min={0.25}
-            max={2}
-            step={0.05}
-            onChange={(n) =>
-              onChange({ ...value, margins: { ...value?.margins, [side]: n } })
-            }
-          />
-        ))}
-      </fieldset>
-      <hr />
-      <label className="field">
-        Text level
-        <select
-          value={level}
-          onChange={(e) => setLevel(e.target.value as StyleLevel)}
-        >
-          {styleLevels.map((l) => (
-            <option key={l} value={l}>
-              {styleLabels[l]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="style-font-grid">
-        <label className="field">
-          Font
-          <select
-            aria-label={`${styleLabels[level]} font`}
-            value={
-              typeof selected.font === "string"
-                ? selected.font
-                : selected.font.id
-            }
-            onChange={(e) =>
-              patch({
-                font:
-                  uploads.find((f) => f.id === e.target.value) ??
-                  (e.target.value as FontChoice),
-              })
-            }
-          >
-            {["Serif", "Sans", "Monospace"].map((category) => (
-              <optgroup key={category} label={category}>
-                {curatedFonts
-                  .filter((f) => f.category === category)
-                  .map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-            {!!uploads.length && (
-              <optgroup label="Uploaded">
-                {uploads.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
+              {styleLevels.map((l) => (
+                <option key={l} value={l}>
+                  {styleLabels[l]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="style-font-grid">
+            <label className="field">
+              Font
+              <select
+                aria-label={`${styleLabels[level]} font`}
+                value={
+                  typeof selected.font === "string"
+                    ? selected.font
+                    : selected.font.id
+                }
+                onChange={(e) =>
+                  patch({
+                    font:
+                      uploads.find((f) => f.id === e.target.value) ??
+                      (e.target.value as FontChoice),
+                  })
+                }
+              >
+                {["Serif", "Sans", "Monospace"].map((category) => (
+                  <optgroup key={category} label={category}>
+                    {curatedFonts
+                      .filter((f) => f.category === category)
+                      .map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
-              </optgroup>
-            )}
-          </select>
-        </label>
-        {field("Size (px)", "size", 8, 96)}
-      </div>
-      <fieldset className="style-colors">
-        <legend>Color</legend>
-        <div role="group" aria-label="Color choices">
-          {(["ink", "accent", "custom"] as const).map((colour) => (
-            <button
-              key={colour}
-              type="button"
-              aria-pressed={
-                colour === "custom"
-                  ? selected.colour.startsWith("#")
-                  : selected.colour === colour
-              }
-              onClick={() =>
-                patch({
-                  colour:
+                {!!uploads.length && (
+                  <optgroup label="Uploaded">
+                    {uploads.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </label>
+            {field("Size (px)", "size", 8, 96)}
+          </div>
+          <fieldset className="style-colors">
+            <legend>Color</legend>
+            <div role="group" aria-label="Color choices">
+              {(["ink", "accent", "custom"] as const).map((colour) => (
+                <button
+                  key={colour}
+                  type="button"
+                  aria-pressed={
                     colour === "custom"
                       ? selected.colour.startsWith("#")
-                        ? selected.colour
-                        : "#25241f"
-                      : colour,
-                })
-              }
-            >
-              <span
-                className="style-swatch"
-                style={{
-                  background: styleColour(
-                    colour === "custom"
-                      ? selected.colour.startsWith("#")
-                        ? selected.colour
-                        : "#25241f"
-                      : colour,
-                    settings?.accent_colour,
-                  ),
-                }}
+                      : selected.colour === colour
+                  }
+                  onClick={() =>
+                    patch({
+                      colour:
+                        colour === "custom"
+                          ? selected.colour.startsWith("#")
+                            ? selected.colour
+                            : "#25241f"
+                          : colour,
+                    })
+                  }
+                >
+                  <span
+                    className="style-swatch"
+                    style={{
+                      background: styleColour(
+                        colour === "custom"
+                          ? selected.colour.startsWith("#")
+                            ? selected.colour
+                            : "#25241f"
+                          : colour,
+                        settings?.accent_colour,
+                      ),
+                    }}
+                  />
+                  {colour === "ink"
+                    ? "Ink"
+                    : colour === "accent"
+                      ? "Accent"
+                      : "Custom"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          {selected.colour.startsWith("#") && (
+            <label className="field">
+              Custom color
+              <input
+                type="color"
+                value={selected.colour}
+                onChange={(e) => patch({ colour: e.target.value })}
               />
-              {colour === "ink"
-                ? "Ink"
-                : colour === "accent"
-                  ? "Accent"
-                  : "Custom"}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-      {selected.colour.startsWith("#") && (
-        <label className="field">
-          Custom color
-          <input
-            type="color"
-            value={selected.colour}
-            onChange={(e) => patch({ colour: e.target.value })}
-          />
-        </label>
-      )}
-      <p
-        className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
-        role={contrast < 4.5 ? "alert" : undefined}
-      >
-        {contrast.toFixed(2)}:1 against white paper
-        {contrast < 4.5
-          ? " — choose at least 4.5:1 to save"
-          : " · Passes contrast"}
-      </p>
-      <div className="style-spacing-grid">
-        {field("Weight", "weight", 100, 900)}
-        {field("Space above (px)", "space_above", 0, 160)}
-        {field("Space below (px)", "space_below", 0, 160)}
-      </div>
-      <details className="style-typography-details">
-        <summary>Typography details</summary>
-        <label className="field">
-          Letter case
-          <select
-            value={selected.letter_case}
-            onChange={(e) =>
-              patch({ letter_case: e.target.value as TextStyle["letter_case"] })
-            }
+            </label>
+          )}
+          <p
+            className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
+            role={contrast < 4.5 ? "alert" : undefined}
           >
-            <option value="normal">Normal</option>
-            <option value="uppercase">Uppercase</option>
-          </select>
-        </label>
-        {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
+            {contrast.toFixed(2)}:1 against white paper
+            {contrast < 4.5
+              ? " — choose at least 4.5:1 to save"
+              : " · Passes contrast"}
+          </p>
+          <div className="style-spacing-grid">
+            {field("Weight", "weight", 100, 900)}
+            {field("Space above (px)", "space_above", 0, 160)}
+            {field("Space below (px)", "space_below", 0, 160)}
+          </div>
+          <details className="style-typography-details">
+            <summary>Typography details</summary>
+            <label className="field">
+              Letter case
+              <select
+                value={selected.letter_case}
+                onChange={(e) =>
+                  patch({
+                    letter_case: e.target.value as TextStyle["letter_case"],
+                  })
+                }
+              >
+                <option value="normal">Normal</option>
+                <option value="uppercase">Uppercase</option>
+              </select>
+            </label>
+            {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
+          </details>
+          <hr />
+          <div className="style-preview-heading">
+            <strong>Sample</strong>
+            <Button
+              type="button"
+              className="style-reset"
+              onClick={() => {
+                if (confirm(`${resetLabel}?`))
+                  (onReset ?? (() => onChange({})))();
+              }}
+            >
+              {resetLabel}
+            </Button>
+            <div role="group" aria-label="Sample page width">
+              <button
+                type="button"
+                aria-pressed={!phone}
+                onClick={() => setPhone(false)}
+              >
+                Desktop
+              </button>
+              <button
+                type="button"
+                aria-pressed={phone}
+                onClick={() => setPhone(true)}
+              >
+                Phone
+              </button>
+            </div>
+          </div>
+          <div
+            className="style-preview-viewport"
+            data-width={phone ? "phone" : "desktop"}
+          >
+            <div
+              id={id}
+              className="proposal-typography style-sample"
+              data-level={level}
+            >
+              <style>
+                {curatedFontFaces(curatedFonts)}
+                {styleFontFaces(styles)}
+                {documentStyleCss(styles, settings?.accent_colour).replaceAll(
+                  ".proposal-typography.proposal-typography",
+                  `[id="${id}"]`,
+                )}
+              </style>
+              <h1>A proposal for your next chapter</h1>
+              <h2>Our approach</h2>
+              <p className="style-body">
+                Clear goals and thoughtful work, shaped around your business.
+              </p>
+              <h3>Built around you</h3>
+              <p className="style-body">
+                Each detail supports the outcome we agree on together.
+              </p>
+              <h4>The next step</h4>
+              <p className="style-body">
+                Review your proposal and let us know what you think.
+              </p>
+            </div>
+          </div>
+        </div>
       </details>
-      <hr />
-      <div className="style-preview-heading">
-        <strong>Sample</strong>
-        <Button
-          type="button"
-          className="style-reset"
-          onClick={() => {
-            if (confirm(`${resetLabel}?`)) (onReset ?? (() => onChange({})))();
-          }}
-        >
-          {resetLabel}
-        </Button>
-        <div role="group" aria-label="Sample page width">
-          <button
-            type="button"
-            aria-pressed={!phone}
-            onClick={() => setPhone(false)}
-          >
-            Desktop
-          </button>
-          <button
-            type="button"
-            aria-pressed={phone}
-            onClick={() => setPhone(true)}
-          >
-            Phone
-          </button>
+      <details className="style-accordion" open={!headerFooter}>
+        <summary>Page &amp; margins</summary>
+        <div className="style-accordion-body">
+          <fieldset className="style-density">
+            <legend>Density</legend>
+            <div role="group" aria-label="Density choices">
+              {(["standard", "comfortable"] as const).map((density) => (
+                <button
+                  key={density}
+                  type="button"
+                  aria-pressed={styles.layout!.density === density}
+                  onClick={() => onChange({ ...value, density })}
+                >
+                  {density === "standard" ? "Standard" : "Comfortable"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="style-fields style-margin-grid">
+            <legend>Page margins (inches)</legend>
+            {(["top", "right", "bottom", "left"] as const).map((side) => (
+              <StyleNumber
+                key={side}
+                name={side[0].toUpperCase() + side.slice(1)}
+                ariaLabel={`Page margin ${side}`}
+                value={styles.layout!.margins[side]}
+                min={0.25}
+                max={2}
+                step={0.05}
+                onChange={(n) =>
+                  onChange({
+                    ...value,
+                    margins: { ...value?.margins, [side]: n },
+                  })
+                }
+              />
+            ))}
+          </fieldset>
         </div>
-      </div>
-      <div
-        className="style-preview-viewport"
-        data-width={phone ? "phone" : "desktop"}
-      >
-        <div
-          id={id}
-          className="proposal-typography style-sample"
-          data-level={level}
-        >
-          <style>
-            {curatedFontFaces(curatedFonts)}
-            {styleFontFaces(styles)}
-            {documentStyleCss(styles, settings?.accent_colour).replaceAll(
-              ".proposal-typography.proposal-typography",
-              `[id="${id}"]`,
-            )}
-          </style>
-          <h1>A proposal for your next chapter</h1>
-          <h2>Our approach</h2>
-          <p className="style-body">
-            Clear goals and thoughtful work, shaped around your business.
-          </p>
-          <h3>Built around you</h3>
-          <p className="style-body">
-            Each detail supports the outcome we agree on together.
-          </p>
-          <h4>The next step</h4>
-          <p className="style-body">
-            Review your proposal and let us know what you think.
-          </p>
-        </div>
-      </div>
+      </details>
+      {headerFooter && onHeaderFooter && (
+        <details className="style-accordion" open>
+          <summary>Header &amp; footer</summary>
+          <BandSettings
+            value={headerFooter}
+            onChange={onHeaderFooter}
+            pageCount={pageCount}
+          />
+        </details>
+      )}
     </section>
   );
 }
@@ -379,5 +411,83 @@ function StyleNumber({
         </small>
       )}
     </label>
+  );
+}
+
+function BandSettings({
+  value,
+  onChange,
+  pageCount,
+}: {
+  value: HeaderFooterSettings;
+  onChange: (v: HeaderFooterSettings) => void;
+  pageCount: number;
+}) {
+  const id = useId();
+  const toggle = (
+    key: "showHeader" | "showFooter" | "showOnCover" | "divider",
+    label: string,
+    subtitle?: string,
+  ) => (
+    <label className="band-setting">
+      <span>
+        <strong>{label}</strong>
+        {subtitle && <small id={`${id}-${key}`}>{subtitle}</small>}
+      </span>
+      <span className="band-switch-hit">
+        <input
+          className="band-switch-input"
+          type="checkbox"
+          role="switch"
+          aria-label={label}
+          aria-describedby={subtitle ? `${id}-${key}` : undefined}
+          checked={value[key]}
+          onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+        />
+      </span>
+    </label>
+  );
+  const shared = (enabled: boolean) =>
+    enabled ? Math.max(0, pageCount - (value.showOnCover ? 0 : 1)) : 0;
+  return (
+    <div className="band-settings">
+      {toggle(
+        "showHeader",
+        "Header",
+        `Shared on ${shared(value.showHeader)} pages`,
+      )}
+      {toggle(
+        "showFooter",
+        "Footer",
+        `Shared on ${shared(value.showFooter)} pages`,
+      )}
+      {toggle(
+        "showOnCover",
+        "Show on cover",
+        !value.showOnCover
+          ? "Off, because the cover has its own logo and title"
+          : undefined,
+      )}
+      <fieldset className="band-height">
+        <legend>Band height</legend>
+        <div role="group" aria-label="Band height">
+          {([0.4, 0.5, 0.75] as const).map((height) => (
+            <button
+              key={height}
+              type="button"
+              aria-pressed={value.bandHeightIn === height}
+              onClick={() => onChange({ ...value, bandHeightIn: height })}
+            >
+              {height} in
+            </button>
+          ))}
+        </div>
+        <p>
+          Each band plus its 0.25 in gap comes out of the page's content area.
+          Page breaks update to match.
+        </p>
+      </fieldset>
+      {toggle("divider", "Divider line")}
+    </div>
   );
 }

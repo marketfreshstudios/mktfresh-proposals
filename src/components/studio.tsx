@@ -1649,6 +1649,11 @@ function TemplatesStudioContent({
     (draft && (
       <ProposalStyles
         settings={data.settings}
+        headerFooter={proposalBands(draft.header_footer)}
+        onHeaderFooter={({ overrides: _overrides, ...header_footer }) =>
+          editDraft({ ...draft, header_footer })
+        }
+        pageCount={browserPages?.plan.pages ?? 1}
         value={draft.style_overrides}
         onChange={(style_overrides) => editDraft({ ...draft, style_overrides })}
         resetLabel="Reset to workspace"
