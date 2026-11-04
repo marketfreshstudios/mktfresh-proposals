@@ -33,10 +33,12 @@ Owner Image default for PR #59: before any column is focused, Image uses the exi
 
 ## Local check results
 
-- Full browser suite: **154 passed, 3 optional screenshot-only checks skipped** (12.3 minutes).
+- Full browser suite: **154 passed, 3 optional screenshot-only checks skipped** (12.4 minutes).
 - Final shared-band suite after owner clarification: **7 passed**, including exact 18px editor/PDF scaling of a 64px upload, both no-cursor image defaults, focused-column commands, last-column field insertion, removed-column fallback and complete page Tab order.
 - Vitest: **321 passed** across 55 files.
 - Typecheck, formatting, neutral-code guard and production build pass. API runtime tracing verifies **328 files** for the PDF renderer.
 - No GitHub CI wait; no hosted resource changes or live-provider verification are part of this PR.
 
 Band rich text removes Tiptap-only list/link metadata before storage while preserving text, fields and marks. The editor compares the normalized shape too, so ordinary typing does not replace the document or lose the cursor.
+
+Word selection inside an open band retains its column. Edit shared is disabled when no page shows that band; enabling Show on cover makes it available for a one-page template. Both interaction regressions pass.

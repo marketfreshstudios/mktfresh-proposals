@@ -357,6 +357,12 @@ test("band marks preserve selection and page fields never enter body menus; focu
   await expect(
     band.getByRole("button", { name: "Bold", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
+  const first = band.getByRole("textbox", { name: "header column 1" });
+  await first.fill("First word");
+  await first.dblclick({ position: { x: 8, y: 8 } });
+  await band.getByRole("button", { name: "Italic", exact: true }).click();
+  await expect(first.locator("em")).toHaveText("First");
+  await expect(first).toBeFocused();
   await page.keyboard.press("Escape");
   await band.press("Shift+Tab");
   const coverLast = page.locator('[data-block-id="block-text-0"]');
@@ -448,6 +454,23 @@ test("Studio edits shared template bands with history, and proposals inherit the
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect(bands(page).first()).toContainText("Template shared note");
+  await page
+    .getByRole("button", { name: "+ New template", exact: true })
+    .click();
+  const settings = page.locator(".band-settings");
+  await expect(
+    settings.getByRole("button", { name: "Edit shared header", exact: true }),
+  ).toBeDisabled();
+  await settings
+    .getByRole("switch", { name: "Show on cover", exact: true })
+    .check();
+  await settings
+    .getByRole("button", { name: "Edit shared header", exact: true })
+    .click();
+  await expect(bands(page).first()).toHaveAttribute(
+    "data-band-state",
+    "editing",
+  );
 });
 
 test("Styles edits scroll to a band, and Reset uses current template bands with Undo and missing-template fallback", async ({

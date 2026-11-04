@@ -183,7 +183,9 @@ export function PageBand(props: Props) {
             : { bottom: geometry.margins.bottom }),
         } as CSSProperties
       }
-      onDoubleClick={begin}
+      onDoubleClick={() => {
+        if (!editing) begin();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" && !editing) {
           e.preventDefault();

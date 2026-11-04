@@ -514,14 +514,14 @@ function BandSettings({
       <div className="band-style-actions">
         <button
           type="button"
-          disabled={!value.showHeader}
+          disabled={!shared(value.showHeader)}
           onClick={() => editing?.edit("header")}
         >
           Edit shared header
         </button>
         <button
           type="button"
-          disabled={!value.showFooter}
+          disabled={!shared(value.showFooter)}
           onClick={() => editing?.edit("footer")}
         >
           Edit shared footer
