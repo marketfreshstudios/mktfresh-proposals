@@ -6479,3 +6479,566 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .band-settings .band-switch-input:checked {
   background: var(--accent);
 }
+/* Shared band editing is authoring chrome; it never contributes to page geometry. */
+.page-band-frame {
+  position: absolute;
+  outline-offset: 6px;
+  color: #5f5b53;
+  font: 12px/16px var(--font-ui);
+}
+.page-band-frame > .band-rest-content > .page-band,
+.proposal-typography.proposal-typography
+  .page-band-frame
+  > .page-band[data-page-band] {
+  position: absolute;
+  inset: 0 !important;
+  height: 100% !important;
+  overflow: hidden;
+}
+.page-band-frame .band-rest-content {
+  display: contents;
+}
+.band-hover-controls,
+.band-source-tag {
+  display: none;
+}
+@media (min-width: 960px) {
+  .page-band-frame[tabindex]:is(:hover, :focus, :focus-within) {
+    outline: 1px dashed #9db3a8;
+  }
+  .page-band-frame[data-band-state="editing"] {
+    outline: 1.5px solid #9db3a8;
+    z-index: 20;
+  }
+  .page-band-frame[tabindex]:is(:hover, :focus, :focus-within)
+    > .band-hover-controls {
+    display: flex;
+  }
+  :is(.editor-paper, .template-paged-paper)[data-band-editing]
+    > :not(.editor-page-sheets, style, .document-page-count) {
+    opacity: 0.55;
+  }
+}
+.band-hover-controls {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+}
+[data-band-frame="header"] > .band-hover-controls {
+  bottom: calc(100% + 6px);
+}
+[data-band-frame="footer"] > .band-hover-controls {
+  top: calc(100% + 6px);
+}
+.band-label {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #eef3f0;
+  color: #24402f;
+  font: 600 11px/22px var(--font-ui);
+}
+.band-hover-actions {
+  display: flex;
+  gap: 4px;
+}
+.band-hover-actions button {
+  position: relative;
+  background: transparent;
+  border: 0;
+  min-width: 44px;
+  height: 44px;
+  padding: 8px;
+  color: var(--ink);
+  isolation: isolate;
+  font: 600 11px/28px var(--font-ui);
+}
+.band-hover-actions button:before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.band-hover-actions .band-edit-button {
+  color: white;
+}
+.band-hover-actions .band-edit-button:before {
+  background: #1c1b18;
+  border-color: #1c1b18;
+}
+.band-edit-bar.editor-edit-bar {
+  position: absolute !important;
+  left: -6px !important;
+  top: auto;
+  bottom: calc(100% + 14px);
+  height: 40px !important;
+  min-height: 40px;
+  width: max-content;
+  max-width: calc(100vw - 40px);
+  padding: 0 4px;
+  gap: 0;
+  border-radius: 12px;
+  background: #1c1b18;
+  color: white;
+  box-shadow: 0 10px 28px rgba(20, 18, 14, 0.28);
+  transform: none !important;
+  overflow: visible;
+  z-index: 20;
+  font: 500 12px/16px var(--font-ui);
+}
+.band-edit-bar[data-band-kind="footer"] {
+  top: calc(100% + 14px);
+  bottom: auto;
+}
+.band-edit-bar[data-band-kind="header"][data-inside="true"] {
+  top: calc(100% + 14px);
+  bottom: auto;
+}
+.band-edit-bar[data-band-kind="footer"][data-inside="true"] {
+  bottom: calc(100% + 14px);
+  top: auto;
+}
+.band-edit-bar.editor-edit-bar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 5px;
+  height: 40px;
+  min-height: 40px;
+  min-width: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  font: 600 12px/16px var(--font-ui);
+  position: relative;
+}
+.band-edit-bar button:after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+}
+.band-edit-bar button:hover,
+.band-edit-bar button[aria-expanded="true"],
+.band-edit-bar button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+.band-edit-bar button > i {
+  font:
+    italic 700 16px Georgia,
+    serif;
+}
+.band-edit-bar .band-done {
+  height: 32px !important;
+  min-height: 32px !important;
+  margin-left: 8px;
+  background: white !important;
+  color: #1c1b18 !important;
+}
+.band-edit-bar .band-done:after {
+  inset: -6px 0;
+}
+.band-edit-bar .band-shared-count {
+  color: rgba(255, 255, 255, 0.72);
+  padding: 0 8px;
+  font: 500 12px/16px var(--font-ui);
+}
+.band-separator {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.16);
+  margin: 0 4px;
+}
+.band-field-icon {
+  font: 600 12px/16px var(--font-mono);
+}
+.band-layout-glyph {
+  display: grid;
+  align-items: center;
+  gap: 4px;
+  width: 22px;
+  height: 20px;
+}
+.band-layout-glyph > span {
+  display: block;
+  background: currentColor;
+  border-radius: 1px;
+  width: 100%;
+  max-width: 30px;
+  height: 6px;
+}
+.band-edit-bar .band-layout-glyph {
+  color: white;
+}
+.band-popover.toolbar-popover {
+  padding: 0;
+  border: 1px solid #e3ded4;
+  border-radius: 12px;
+  background: white;
+  color: #1c1b18;
+  box-shadow:
+    0 2px 4px rgba(20, 18, 14, 0.06),
+    0 16px 40px rgba(20, 18, 14, 0.16);
+  font: 400 13px/18px var(--font-ui);
+}
+.band-popover button {
+  color: #1c1b18;
+  background: white;
+  border: 0;
+  min-height: 44px;
+  font: 500 13px/18px var(--font-ui);
+}
+.band-popover button:hover {
+  background: #f3f0ea;
+}
+.band-popover h3 {
+  margin: 0 0 8px;
+  color: #5f5b53;
+  font: 600 11px/16px var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.band-layout-menu {
+  width: 268px;
+  padding: 10px;
+}
+.band-layout-menu section {
+  margin: 0 0 10px;
+}
+.band-layout-menu section > div {
+  display: flex;
+  gap: 8px;
+}
+.band-layout-menu button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  gap: 4px;
+  padding: 0;
+  width: 72px;
+  font: 500 11px/14px var(--font-ui);
+  background: transparent;
+}
+.band-layout-menu .band-layout-glyph {
+  width: 72px;
+  height: 36px;
+  border: 1.5px solid #ddd8ce;
+  border-radius: 8px;
+  padding: 8px;
+  color: #8a857b;
+}
+.band-layout-menu [aria-checked="true"] .band-layout-glyph {
+  border-color: #1c1b18;
+  background: #f3f0ea;
+}
+.band-layout-menu p {
+  margin: 12px 0 0;
+  border-top: 1px solid #e3ded4;
+  padding: 10px 4px 0;
+  color: #5f5b53;
+  font: 400 11px/16px var(--font-ui);
+}
+.band-fields-menu {
+  width: 300px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 10px;
+}
+.band-fields-menu > input {
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  border: 1px solid #ddd8ce;
+  border-radius: 10px;
+  background: white;
+  color: #1c1b18;
+  padding: 0 12px;
+  font: 400 14px/20px var(--font-ui);
+  margin-bottom: 12px;
+}
+.band-fields-menu section + section {
+  margin-top: 14px;
+}
+.band-fields-menu button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  gap: 2px 8px;
+  align-items: center;
+  text-align: left;
+  padding: 6px 4px;
+  min-height: 44px;
+  border-radius: 6px;
+}
+.band-fields-menu strong {
+  font: 600 13px/18px var(--font-ui);
+}
+.band-fields-menu code {
+  color: #6b4fbb;
+  font: 400 11px/16px var(--font-mono);
+}
+.band-fields-menu small {
+  grid-column: 1/-1;
+  color: #5f5b53;
+  font: 400 12px/16px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.band-popover-more button,
+.band-image-menu > button,
+.band-upload {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  width: 100%;
+}
+.band-image-menu {
+  min-width: 220px;
+  padding: 8px;
+}
+.band-upload {
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.band-upload:hover {
+  background: #f3f0ea;
+}
+.band-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+.band-upload:focus-within {
+  outline: 2px solid #9db3a8;
+}
+.proposal-typography .page-band-frame .field-editor {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.proposal-typography .page-band-frame .tiptap {
+  outline: none;
+  min-height: 16px;
+  color: inherit;
+  font: inherit;
+  line-height: 16px;
+}
+.proposal-typography .page-band-frame .tiptap > * {
+  margin: 0 !important;
+  padding: 0;
+  font: inherit;
+  line-height: 16px;
+}
+.page-band-frame .band-slot-content {
+  width: 100%;
+}
+.band-style-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.band-style-actions button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 13px/18px var(--font-ui);
+}
+.band-style-actions button:disabled {
+  opacity: 0.4;
+}
+@media (max-width: 959px) {
+  .band-style-actions {
+    display: none;
+  }
+}
+.band-edit-bar.editor-edit-bar button {
+  width: auto !important;
+}
+.page-band-frame[tabindex][data-band-state="editing"]:is(
+    :hover,
+    :focus,
+    :focus-within
+  ) {
+  outline: 1.5px solid #9db3a8;
+}
+.proposal-typography.proposal-typography
+  .page-band[data-page-band]
+  :is(.field-editor, .field-editor-content, .tiptap) {
+  font: inherit !important;
+  line-height: 16px !important;
+}
+.page-band-frame .band-source-tag {
+  display: inline-flex;
+  position: absolute;
+  left: -6px;
+  height: 20px;
+  border-radius: 6px;
+  padding: 0 6px;
+  color: white;
+  background: #1c1b18;
+  font: 600 11px/20px var(--font-ui);
+}
+[data-band-frame="header"] > .band-source-tag {
+  bottom: calc(100% + 6px);
+}
+[data-band-frame="footer"] > .band-source-tag {
+  top: calc(100% + 6px);
+}
+.band-edit-bar button:focus-visible,
+.band-popover button:focus-visible,
+.page-band-frame:focus-visible {
+  outline: 2px solid #9db3a8;
+  outline-offset: 2px;
+}
+[data-theme="dark"] .band-edit-bar {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.band-reset {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.band-reset > button {
+  justify-self: start;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: 600 13px/18px var(--font-ui);
+  color: var(--ink);
+  background: var(--surface);
+}
+.band-reset p {
+  margin: 0;
+  color: var(--ink-muted);
+  font: 400 12px/18px var(--font-ui);
+}
+.proposal-typography.proposal-typography
+  .page-band[data-page-band]
+  .band-slot
+  img.ProseMirror-separator {
+  display: inline !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+}
+/* The 40px bar has 44px hit boxes; visual button surfaces remain 32px. */
+.band-edit-bar.editor-edit-bar button,
+.band-edit-bar.editor-edit-bar .band-done {
+  height: 44px !important;
+  min-height: 44px !important;
+  background: transparent !important;
+  isolation: isolate;
+}
+.band-edit-bar.editor-edit-bar button:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 6px 2px;
+  border-radius: 8px;
+}
+.band-edit-bar.editor-edit-bar button:after {
+  content: none;
+}
+.band-edit-bar.editor-edit-bar
+  button:is(:hover, [aria-expanded="true"], [aria-pressed="true"]):before {
+  background: rgba(255, 255, 255, 0.1);
+}
+.band-edit-bar.editor-edit-bar .band-done:before {
+  background: white;
+}
+.band-fields-menu button {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.band-fields-menu code {
+  max-width: 170px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+@media (max-width: 959px) {
+  .band-reset {
+    display: none;
+  }
+}
+/* Popovers are top-layer chrome, even though their React owner is on the paper. */
+.band-popover.band-popover-layout {
+  width: 268px;
+  min-width: 268px;
+}
+.band-popover.band-popover-fields {
+  width: 300px;
+  min-width: 300px;
+}
+.band-popover .band-layout-menu,
+.band-popover .band-fields-menu {
+  width: 100%;
+}
+.band-popover.band-popover h3 {
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  color: #5f5b53 !important;
+  font: 600 11px/16px var(--font-ui) !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+.band-popover .band-fields-menu > input {
+  width: 100% !important;
+}
+/* Match the shared EditBar's single-line overflow behavior on narrow desktop canvases. */
+.band-edit-bar.editor-edit-bar {
+  max-width: calc(100% + var(--editor-sheet-right, 72px) - 6px);
+}
+.band-edit-scroll {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 44px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.band-edit-scroll::-webkit-scrollbar {
+  display: none;
+}
+.band-edit-scroll > * {
+  flex: none;
+}
+@media (min-width: 960px) {
+  /* Transparent body wrappers must not trap block toolbars below rest bands. */
+  :is(.editor-paper, .template-paged-paper) > .editor-page-sheets {
+    z-index: auto;
+  }
+  :is(.editor-paper, .template-paged-paper)
+    > :not(.editor-page-sheets, style, .document-page-count) {
+    z-index: auto;
+  }
+  .page-band-frame {
+    z-index: 1;
+  }
+  .page-band-frame[data-band-state="editing"] {
+    z-index: 20;
+  }
+}

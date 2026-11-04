@@ -58,7 +58,9 @@ export function FieldEditor({
   autoFocus = false,
   onBeforeInsert,
   onTextStyle,
+  bandEditor,
 }: {
+  bandEditor?: (editor: import("@tiptap/core").Editor | null) => void;
   value: RichText;
   onChange: (v: RichText) => void;
   map: Record<string, string>;
@@ -195,6 +197,12 @@ export function FieldEditor({
         setPicker(true);
     },
   });
+  const bandOwner = useRef(bandEditor);
+  bandOwner.current = bandEditor;
+  useEffect(() => {
+    bandOwner.current?.(editor);
+    return () => bandOwner.current?.(null);
+  }, [editor]);
   function insertField(path: string, atEnd = false) {
     if (!editor) return;
     const size = editor.state.doc.content.size;
@@ -411,7 +419,7 @@ export function FieldEditor({
         }
       }}
     >
-      {toolbar === undefined || inlineControls ? (
+      {bandEditor ? null : toolbar === undefined || inlineControls ? (
         <div
           data-editor-chrome
           className="inline-formatting-row"

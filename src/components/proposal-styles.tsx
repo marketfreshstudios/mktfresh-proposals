@@ -1,4 +1,7 @@
 "use client";
+import { ToastSurface } from "./block-controls";
+import { useEditorHistory } from "./editor-history";
+import { useBandEditing } from "./editor/band-editing";
 import type { HeaderFooterSettings } from "../lib/page-bands";
 import { useEffect, useId, useState } from "react";
 import {
@@ -32,8 +35,12 @@ export function ProposalStyles({
   availableFonts = [],
   headerFooter,
   onHeaderFooter,
+  onResetBands,
+  bandsResetLabel = "Reset to template",
   pageCount = 1,
 }: {
+  onResetBands?: () => void | Promise<void>;
+  bandsResetLabel?: string;
   headerFooter?: HeaderFooterSettings;
   onHeaderFooter?: (value: HeaderFooterSettings) => void;
   pageCount?: number;
@@ -352,6 +359,8 @@ export function ProposalStyles({
             value={headerFooter}
             onChange={onHeaderFooter}
             pageCount={pageCount}
+            onReset={onResetBands}
+            resetLabel={bandsResetLabel}
           />
         </details>
       )}
@@ -418,12 +427,26 @@ function BandSettings({
   value,
   onChange,
   pageCount,
+  onReset,
+  resetLabel,
 }: {
+  onReset?: () => void | Promise<void>;
+  resetLabel: string;
   value: HeaderFooterSettings;
   onChange: (v: HeaderFooterSettings) => void;
   pageCount: number;
 }) {
   const id = useId();
+  const editing = useBandEditing();
+  const history = useEditorHistory();
+  const [resetBusy, setResetBusy] = useState(false),
+    [resetError, setResetError] = useState(""),
+    [resetUndo, setResetUndo] = useState<number | null>(null);
+  useEffect(() => {
+    if (resetUndo === null) return;
+    const timer = setTimeout(() => setResetUndo(null), 5000);
+    return () => clearTimeout(timer);
+  }, [resetUndo]);
   const toggle = (
     key: "showHeader" | "showFooter" | "showOnCover" | "divider",
     label: string,
@@ -488,6 +511,69 @@ function BandSettings({
         </p>
       </fieldset>
       {toggle("divider", "Divider line")}
+      <div className="band-style-actions">
+        <button
+          type="button"
+          disabled={!value.showHeader}
+          onClick={() => editing?.edit("header")}
+        >
+          Edit shared header
+        </button>
+        <button
+          type="button"
+          disabled={!value.showFooter}
+          onClick={() => editing?.edit("footer")}
+        >
+          Edit shared footer
+        </button>
+      </div>
+      {onReset && (
+        <div className="band-reset">
+          <button
+            type="button"
+            disabled={resetBusy}
+            onClick={async () => {
+              setResetBusy(true);
+              setResetError("");
+              try {
+                const before = history?.controller?.engine.past.at(-1)?.id;
+                await onReset();
+                const after = history?.controller?.engine.past.at(-1)?.id;
+                setResetUndo(after !== before ? (after ?? null) : null);
+              } catch (e) {
+                setResetError(
+                  e instanceof Error
+                    ? e.message
+                    : "Could not reset shared bands. Try again.",
+                );
+              } finally {
+                setResetBusy(false);
+              }
+            }}
+          >
+            {resetBusy ? "Resetting…" : resetLabel}
+          </button>
+          <p>
+            {resetLabel === "Reset to default"
+              ? "Restores the built-in header and footer."
+              : "Restores the template's shared header and footer. Pages with their own keep them."}
+          </p>
+          {resetError && <p role="alert">{resetError}</p>}
+        </div>
+      )}
+      {resetUndo !== null && (
+        <ToastSurface>
+          Shared header and footer reset ·{" "}
+          <button
+            onClick={() => {
+              history?.controller?.undo(undefined, resetUndo);
+              setResetUndo(null);
+            }}
+          >
+            Undo
+          </button>
+        </ToastSurface>
+      )}
     </div>
   );
 }

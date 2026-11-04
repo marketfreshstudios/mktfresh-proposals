@@ -1,4 +1,5 @@
 "use client";
+import { BandEditingProvider } from "./editor/band-editing";
 import { PageBreakAction, PageBreakProvider } from "./page-break-action";
 import {
   EditorPopoverProvider,
@@ -345,7 +346,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                   }
                 }}
               >
-                {children}
+                <BandEditingProvider>{children}</BandEditingProvider>
               </div>
               {guidance &&
                 typeof document !== "undefined" &&

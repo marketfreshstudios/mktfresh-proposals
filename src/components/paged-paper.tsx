@@ -1,7 +1,14 @@
 "use client";
 import { pageGeometry, type HeaderFooterSettings } from "../lib/page-bands";
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { flushSync } from "react-dom";
+import { useBandEditing } from "./editor/band-editing";
 import { PageBand } from "./editor/page-band";
 import { pageBandCss } from "../lib/page-band-render";
 import { PageSheet, type SheetBox } from "./editor/page-sheet";
@@ -24,9 +31,11 @@ export function PagedPaper({
   contentKey,
   onPagination,
   headerFooter,
+  onHeaderFooter,
   values = {},
   logo,
 }: {
+  onHeaderFooter?: (hf: HeaderFooterSettings) => void;
   headerFooter?: HeaderFooterSettings;
   values?: Record<string, string>;
   logo?: string;
@@ -38,6 +47,16 @@ export function PagedPaper({
   contentKey: string;
   onPagination: (value: BrowserPages) => void;
 }) {
+  const bandEditing = useBandEditing();
+  useLayoutEffect(() => {
+    const el = paper.current;
+    if (!el) return;
+    if (bandEditing?.active) el.dataset.bandEditing = bandEditing.active;
+    else delete el.dataset.bandEditing;
+    return () => {
+      delete el.dataset.bandEditing;
+    };
+  }, [bandEditing?.active, paper]);
   const surface = useRef<HTMLDivElement>(null);
   const selection = useBlockSelection();
   const [boxes, setBoxes] = useState<SheetBox[]>([{ top: 0, height: 320 }]);
@@ -45,6 +64,91 @@ export function PagedPaper({
     [pages, setPages] = useState(1);
   const [measuredKey, setMeasuredKey] = useState("");
   const [sources, setSources] = useState<BrowserPages | null>(null);
+  // Sheet backgrounds are a separate visual layer. Keep their keyboard stops
+  // in reading order with the existing block focus stops, without reparenting text.
+  useEffect(() => {
+    const el = paper.current;
+    if (!el || !onHeaderFooter) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || event.defaultPrevented || bandEditing?.active)
+        return;
+      const target = event.target as HTMLElement;
+      const band = target.closest<HTMLElement>("[data-band-frame]");
+      const block = target.closest<HTMLElement>(".block-frame");
+      const assignment =
+        block &&
+        sources?.assignments.find(
+          (a) =>
+            block.dataset.blockId === `block-${a.block}` ||
+            block.dataset.blockId === `template-${a.block}`,
+        );
+      const number = band ? Number(band.dataset.bandPage) : assignment?.page;
+      if (!number) return;
+      const ids =
+        sources?.assignments
+          .filter((a) => a.page === number)
+          .map((a) => a.block) ?? [];
+      const blocks = [...el.querySelectorAll<HTMLElement>(".block-frame")]
+        .filter((b) =>
+          ids.some(
+            (id) =>
+              b.dataset.blockId === `block-${id}` ||
+              b.dataset.blockId === `template-${id}`,
+          ),
+        )
+        .filter(
+          (b) =>
+            b.getClientRects().length && getComputedStyle(b).display !== "none",
+        );
+      const header = el.querySelector<HTMLElement>(
+        `[data-band-frame=header][data-band-page="${number}"][tabindex="0"]`,
+      );
+      const footer = el.querySelector<HTMLElement>(
+        `[data-band-frame=footer][data-band-page="${number}"][tabindex="0"]`,
+      );
+      let next: HTMLElement | null | undefined;
+      if (band && target === band) {
+        if (band.dataset.bandFrame === "header")
+          next = event.shiftKey
+            ? el.querySelector<HTMLElement>(
+                `[data-band-frame=footer][data-band-page="${number - 1}"][tabindex="0"]`,
+              )
+            : (blocks[0] ?? footer);
+        else
+          next = event.shiftKey
+            ? (blocks.at(-1) ?? header)
+            : el.querySelector<HTMLElement>(
+                `[data-band-frame=header][data-band-page="${number + 1}"][tabindex="0"]`,
+              );
+      } else if (block) {
+        const stops = [
+          block,
+          ...block.querySelectorAll<HTMLElement>(
+            'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),[tabindex="0"],[contenteditable="true"]',
+          ),
+        ].filter(
+          (b) =>
+            b.tabIndex >= 0 &&
+            b.getClientRects().length &&
+            getComputedStyle(b).visibility !== "hidden",
+        );
+        if (event.shiftKey && block === blocks[0] && target === stops[0])
+          next = header;
+        if (
+          !event.shiftKey &&
+          block === blocks.at(-1) &&
+          target === stops.at(-1)
+        )
+          next = footer;
+      }
+      if (next) {
+        event.preventDefault();
+        next.focus();
+      }
+    };
+    el.addEventListener("keydown", key);
+    return () => el.removeEventListener("keydown", key);
+  }, [sources, bandEditing?.active, !!onHeaderFooter]);
   const latest = useRef({
     content,
     headerFooter,
@@ -362,6 +466,7 @@ export function PagedPaper({
                 <PageBand
                   key={kind}
                   hf={headerFooter}
+                  onChange={onHeaderFooter}
                   kind={kind}
                   page={n + 1}
                   pageCount={pages}
