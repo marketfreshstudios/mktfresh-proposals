@@ -67,3 +67,57 @@ test("edit popovers use application typography inside the cover", async ({
   expect(styles[1]).toEqual(styles[0]);
   expect(styles[2]).toEqual(styles[0]);
 });
+async function middleWord(
+  page: import("@playwright/test").Page,
+  selector: string,
+) {
+  return page.locator(selector).evaluate((el) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n: Node | null;
+    while ((n = walker.nextNode())) {
+      const text = n.textContent ?? "";
+      const match = /\b\w+\b/g;
+      match.exec(text);
+      const m = match.exec(text);
+      if (!m) continue;
+      const r = document.createRange();
+      r.setStart(n, m.index);
+      r.setEnd(n, m.index + m[0].length);
+      const s = getSelection()!;
+      s.removeAllRanges();
+      s.addRange(r);
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+      return m[0];
+    }
+    throw Error("Middle word unavailable");
+  });
+}
+test("cover formatting retains the selected middle word through rerenders", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await f.editRemote({ title: "A thoughtful project proposal" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const title = page.getByRole("textbox", {
+    name: "Proposal title",
+    exact: true,
+  });
+  await title.click();
+  const word = await middleWord(page, "#cover-title");
+  for (const name of ["Bold", "Italic"]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await expect
+      .poll(() => page.evaluate(() => getSelection()?.toString()))
+      .toBe(word);
+  }
+  await expect(title.locator("strong em,em strong")).toHaveText(word);
+  await expect(title).toHaveText("A thoughtful project proposal");
+  await expect
+    .poll(
+      () =>
+        f.active().cover?.elements?.find((e) => e.kind === "title")?.content,
+    )
+    .toBeTruthy();
+  expect(await page.evaluate(() => getSelection()?.toString())).toBe(word);
+});
