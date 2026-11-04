@@ -344,7 +344,7 @@ for (const width of [1440, 375]) {
       colour: getComputedStyle(el).color,
     }));
     await page.goto(`/p/${f.draft.id}?preview=1`);
-    await expect(page.locator(".flow-document h1")).toHaveCSS(
+    await expect(page.locator("#proposal-document h1")).toHaveCSS(
       "font-size",
       "44px",
     );

@@ -2,6 +2,11 @@
 import { pairSignatureNodes } from "./signature-pair";
 import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
+import {
+  ClientPageSheets,
+  captureClientPosition,
+  restoreClientPosition,
+} from "./client-page-sheets";
 import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
 import { documentSpacing } from "../lib/document-spacing";
 import type { CSSProperties } from "react";
@@ -23,7 +28,7 @@ import {
   selectedContent,
 } from "../lib/quote-model";
 import type { QuoteItem } from "../lib/model";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
@@ -273,15 +278,30 @@ function NewClientFlow({
   ]);
 
   useEffect(() => {
+    if (p?.title) document.title = p.title;
+  }, [p?.title]);
+
+  useEffect(() => {
     main.current?.focus({ preventScroll: true });
     window.scrollTo(0, 0);
   }, [step]);
   useEffect(() => {
     if (step === "read" && readSection !== null) {
-      document
-        .getElementById(`section-${readSection}`)
-        ?.scrollIntoView({ block: "start" });
-      setReadSection(null);
+      const scroll = () => {
+        const target =
+          document
+            .getElementById("proposal-document")
+            ?.shadowRoot?.getElementById(`section-${readSection}`) ??
+          document.getElementById(`section-${readSection}`);
+        if (target) {
+          target.scrollIntoView({ block: "start" });
+          setReadSection(null);
+        }
+      };
+      scroll();
+      document.addEventListener("client-document-ready", scroll);
+      return () =>
+        document.removeEventListener("client-document-ready", scroll);
     }
   }, [step, readSection]);
   useEffect(() => {
@@ -482,32 +502,34 @@ function NewClientFlow({
         </div>
       </header>
       {p && !locked && !ended && (
-        <ol className="flow-progress" aria-label="Proposal progress">
-          {[
-            "Review",
-            "Sign",
-            ...(recurring || requiresCheckout ? ["Billing"] : []),
-          ].map((label, index) => (
-            <li
-              key={label}
-              aria-current={
-                activeStep === label.toLowerCase() ||
-                (label === "Review" && activeStep === "read")
-                  ? "step"
-                  : undefined
-              }
-              className={
-                activeStep === "done" ||
-                index <=
-                  (activeStep === "read" ? 0 : activeStep === "sign" ? 1 : 2)
-                  ? "reached"
-                  : ""
-              }
-            >
-              <span className="sr-only">{label}</span>
-            </li>
-          ))}
-        </ol>
+        <nav aria-label="Proposal progress">
+          <ol className="flow-progress">
+            {[
+              "Review",
+              "Sign",
+              ...(recurring || requiresCheckout ? ["Billing"] : []),
+            ].map((label, index) => (
+              <li
+                key={label}
+                aria-current={
+                  activeStep === label.toLowerCase() ||
+                  (label === "Review" && activeStep === "read")
+                    ? "step"
+                    : undefined
+                }
+                className={
+                  activeStep === "done" ||
+                  index <=
+                    (activeStep === "read" ? 0 : activeStep === "sign" ? 1 : 2)
+                    ? "reached"
+                    : ""
+                }
+              >
+                <span className="sr-only">{label}</span>
+              </li>
+            ))}
+          </ol>
+        </nav>
       )}
       <main
         className={`client-body flow-body ${review ? "flow-review" : ""}`}
@@ -963,6 +985,14 @@ function NewClientFlow({
                 </div>
                 {showCopy && (
                   <FlowDocument
+                    forceFlowing={phone}
+                    workspaceLogo={
+                      p.company.logo
+                        ? preview
+                          ? `/api/proposals/${token}/preview-logo`
+                          : `/api/public/${token}/brand/logo`
+                        : undefined
+                    }
                     proposal={p}
                     frozen
                     logo={
@@ -1072,6 +1102,14 @@ function NewClientFlow({
             ) : (
               <>
                 <FlowDocument
+                  forceFlowing={phone}
+                  workspaceLogo={
+                    p.company.logo
+                      ? preview
+                        ? `/api/proposals/${token}/preview-logo`
+                        : `/api/public/${token}/brand/logo`
+                      : undefined
+                  }
                   logo={
                     p.cover && p.company.logo
                       ? preview
@@ -1318,7 +1356,63 @@ function SeparateInvoice({
     </section>
   ) : null;
 }
-function FlowDocument({
+function FlowDocument(props: {
+  logo?: string;
+  workspaceLogo?: string;
+  forceFlowing?: boolean;
+  proposal: PublicProposal;
+  frozen?: boolean;
+  busy?: boolean;
+  onToggle?: (id: string, selected: boolean) => void;
+}) {
+  const [desktop, setDesktop] = useState(false);
+  const [layoutFailed, setLayoutFailed] = useState(false);
+  const position = useRef<ReturnType<typeof captureClientPosition>>(undefined);
+  useLayoutEffect(() => {
+    const query = matchMedia("(min-width: 1100px)");
+    const change = () => {
+      const documentRoot = document.getElementById("proposal-document");
+      if (documentRoot)
+        position.current = captureClientPosition(
+          documentRoot.shadowRoot ?? documentRoot,
+        );
+      setDesktop(query.matches && !props.forceFlowing);
+    };
+    change();
+    query.addEventListener("change", change);
+    return () => query.removeEventListener("change", change);
+  }, [props.forceFlowing]);
+  const ready = () => {
+    const root = document.getElementById("proposal-document");
+    if (root && position.current) {
+      restoreClientPosition(root.shadowRoot ?? root, position.current);
+      position.current = undefined;
+    }
+    document.dispatchEvent(new Event("client-document-ready"));
+  };
+  useLayoutEffect(() => {
+    if (!desktop) ready();
+  }, [desktop]);
+  return (
+    <>
+      <ClientPrint
+        proposal={props.proposal}
+        logo={props.workspaceLogo ?? props.logo}
+      />
+      {desktop && !layoutFailed ? (
+        <ClientPageSheets
+          {...props}
+          logo={props.workspaceLogo ?? props.logo}
+          onReady={ready}
+          onError={() => setLayoutFailed(true)}
+        />
+      ) : (
+        <FlowingDocument {...props} />
+      )}
+    </>
+  );
+}
+function FlowingDocument({
   logo,
   proposal: p,
   frozen = false,
@@ -1344,7 +1438,6 @@ function FlowDocument({
       className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >
-      <ClientPrint proposal={p} logo={logo} />
       <DocumentCover
         logo={logo}
         cover={p.cover}

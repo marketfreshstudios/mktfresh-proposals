@@ -1,4 +1,5 @@
 "use client";
+import { sharedPagesLabel } from "../lib/page-count";
 import { ToolbarPopover } from "./toolbar-popover";
 import { UseSharedConfirm } from "./editor/band-menu";
 import type { ResolvedBandPage } from "../lib/band-overrides";
@@ -499,7 +500,7 @@ function BandSettings({
     const excluded = own.filter(
       (p) => p.kind === kind && (p.page !== 1 || value.showOnCover),
     );
-    return `Shared on ${shared(kind)} pages${(["unique", "hidden"] as const)
+    return `${sharedPagesLabel(shared(kind))}${(["unique", "hidden"] as const)
       .map((source) => {
         const count = excluded.filter((p) => p.source === source).length;
         return count ? ` · ${count} ${source}` : "";

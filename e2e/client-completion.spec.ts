@@ -287,8 +287,9 @@ test("client completion: exact charges, one contact footer, reading width, email
         theme,
       );
       await open(initial);
-      const readingWidth = (await page.locator(".flow-document").boundingBox())!
-        .width;
+      const readingWidth = (await page
+        .locator("#proposal-document")
+        .boundingBox())!.width;
       await page.locator(".flow-sender-contact").scrollIntoViewIfNeeded();
       await expect(
         page
@@ -355,10 +356,10 @@ test("client completion: exact charges, one contact footer, reading width, email
       await page
         .getByRole("button", { name: "View the signed proposal", exact: true })
         .click();
-      expect((await page.locator(".flow-document").boundingBox())!.width).toBe(
-        readingWidth,
-      );
-      await page.locator(".flow-document").scrollIntoViewIfNeeded();
+      expect(
+        (await page.locator("#proposal-document").boundingBox())!.width,
+      ).toBe(readingWidth);
+      await page.locator("#proposal-document").scrollIntoViewIfNeeded();
       await capture(
         "billing-signed-reading-width",
         width === 1440 ? "5a" : width === 768 ? "5b" : "1a",
@@ -443,10 +444,10 @@ test("client completion: exact charges, one contact footer, reading width, email
       await page
         .getByRole("button", { name: "View the signed proposal", exact: true })
         .click();
-      expect((await page.locator(".flow-document").boundingBox())!.width).toBe(
-        readingWidth,
-      );
-      await page.locator(".flow-document").scrollIntoViewIfNeeded();
+      expect(
+        (await page.locator("#proposal-document").boundingBox())!.width,
+      ).toBe(readingWidth);
+      await page.locator("#proposal-document").scrollIntoViewIfNeeded();
       await capture(
         "completed-signed-reading-width",
         width === 1440 ? "5a" : width === 768 ? "5b" : "1g",

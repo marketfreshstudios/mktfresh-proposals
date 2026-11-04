@@ -6,7 +6,7 @@ The editor v2 references (Redesign 10/11, editor-v2.md, tokens, icons) live in `
 1. **Client web page:**
    - On desktop (≥1100px), the client page draws each page as a Letter sheet with its header and footer, matching the PDF (frame 3a), scaled to fit the document column.
    - Below 1100px (tablet and phone), the client page stays the current flowing layout with no bands.
-   - Choosing options on the client page can change content (totals text, conditional clauses), so the desktop sheets re-paginate live with the same shared geometry and pagination code.
+   - Choosing options can change totals and conditional clauses, but client sheets keep the published PagePlan breaks, matching the sealed PDF for that selection. No client-computed pagination is accepted or persisted. This owner clarification in PR #61 supersedes the initial live-repagination requirement; signing stays unchanged.
 2. **Existing data:** every proposal and template is a test, so there is no backward-compatibility requirement.
    - Proposals and templates without `header_footer` get the defaults when loaded.
    - Frozen versions without `header_footer` still render without bands, so a sealed PDF never changes.

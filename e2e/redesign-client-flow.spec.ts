@@ -204,10 +204,11 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await expect(
         page.getByLabel("Proposal totals", { exact: true }),
       ).not.toContainText("Yearly");
-      await expect(page.locator(".flow-document")).toHaveCSS(
-        "background-color",
-        "rgb(255, 255, 255)",
-      );
+      await expect(
+        page
+          .locator(width >= 1100 ? ".client-letter-sheet" : ".flow-document")
+          .first(),
+      ).toHaveCSS("background-color", "rgb(255, 255, 255)");
       if (width === 1440)
         await expect(page.locator(".flow-choices")).toHaveCSS("width", "340px");
       else {

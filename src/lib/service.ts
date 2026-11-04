@@ -1128,6 +1128,18 @@ export function publicResult(p: Proposal, options?: { qboConnected: boolean }) {
     ...(v.cover ? { cover: v.cover } : {}),
     resolved_styles: v.resolved_styles,
     pagination: v.pagination,
+    ...(v.header_footer ? { header_footer: v.header_footer } : {}),
+    ...(v.quote.some((i) => typeof i.plan_terms?.client_copy === "string")
+      ? {
+          client_item_terms: Object.fromEntries(
+            v.quote.flatMap((i) =>
+              typeof i.plan_terms?.client_copy === "string"
+                ? [[i.id, i.plan_terms.client_copy]]
+                : [],
+            ),
+          ),
+        }
+      : {}),
     contact: {
       name: p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
       email: p.sender?.email ?? p.workspace_settings?.email ?? "",

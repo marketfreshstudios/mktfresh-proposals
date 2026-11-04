@@ -961,3 +961,29 @@ Tablet uses tap-to-select, tap/Edit-to-type, and the 44px band bar. Phone uses t
 PDF rendering resolves unique/hidden bands from the existing frozen plan. Shared geometry, PagePlan, pagination mathematics, document-print/planned-print, readiness, billing, AI tools and the client web page are unchanged. Versions already freeze these settings in their hash. The override publication test confirms the client token stays the same and the previous version hash stays intact.
 
 Evidence: ten requested captures at 1440/768/375 are linked in [the implementation notes](docs/header-footer-overrides.md) and embedded in the PR description. Phone keyboard captures simulate the visible viewport; **iOS Safari and Android Chrome software-keyboard docking remain manual checks**. Final local verification: **160 browser tests passed, three optional captures skipped** (12.4 minutes); the **six final override checks passed** after the owner clarified visible shared counts and Styles exclusions; **329 unit/database tests passed** (56 files). Typecheck, formatting, neutral-code guard, production build and PDF runtime tracing (**328 API files**) pass. Actual PDF text assertions confirm unique/hidden placement and the page-count footer; a neutral specimen was also rendered with Poppler for visual review. All runs used local/mock data, with no hosted changes. GitHub CI is not awaited.
+
+## Header/footer PR 4 — client desktop Letter sheets
+
+Built from merged #60 (`d69a976`) on `codex/client-page-bands`, PR #61. Desktop `/p/:token` at ≥1100px projects the published document into scaled Letter sheets using the existing trusted print source, PagePlan application, page geometry and band rendering. Shared/unique/hidden bands and cover rules come from the published version; page fields resolve locally as plain text. No editor, PDF renderer, geometry, PagePlan, hashing, signing or billing logic changes. The same projection adds bands to browser print.
+
+Owner clarification: client choices keep the published breaks. No client-computed plan is accepted. Conditional clauses and totals update within those pages exactly as the PDF applies the selection to the stored plan. The initial live-repagination requirement is superseded.
+
+Tablet/phone retain the existing flowing view and contract disclosure controls. Native choice controls have at least 44px on-screen hit regions after scaling. Width transitions preserve choices/current section; signatures stay in their existing independent step. The public result exposes published bands and only the client-visible plan-terms copy, without internal billing metadata. Page count wording is a separate small commit using a tested shared helper.
+
+Validation: **331 unit/database checks passed; full browser suite 164 passed, 3 optional capture tests skipped (167 total)**. The full signing flow ran at 1440px through both PDFs, mocked billing, download and verification. Frozen-break tests remain unchanged and pass. The final requested capture check also passes, including logo-route loading, content overflow, canonical heights, 44px scaled targets and whole-page axe. TypeScript, formatting, neutrality and the production build pass; the PDF-runtime trace verifies all 328 files. The five requested screenshots are linked in PR #61 and [the client sheet notes](docs/header-footer-client-sheets.md). All work used local mocked providers; no hosted resource or live credential use. PR opened for review; do not merge automatically or wait for GitHub CI.
+
+### PR #61 CI follow-up — preserve active client controls (4 November 2026)
+
+Reproduced the later-sheet checkbox timeout under Chromium 4× CPU throttling. The trace showed the click completed and the saved proposal contained the checked option, while optimistic/busy/response renders removed the native input during the click's completion checks. This was an app DOM-identity race, rather than an unchecked option or an invalid published break.
+
+The projection now retains native inputs by item ID, patches busy state in place, and redraws only when rendered document inputs change. It prepares scaled sheet dimensions before revealing a new view and reports readiness after column width settles. Published plans ignore font-completion redraws; their frozen breaks stay unchanged. The active control also anchors scroll during updates, so selecting an item on a continued pricing page cannot jump to the pricing block's first page.
+
+The original `last.check()` and selection/exclusivity assertions remain intact. A new 4× regression holds the save response and asserts native control identity, checked state, later-sheet visibility, zero idle sheet/style movement after readiness, late-font-event stability, and settled resize geometry. Final-source stress: five consecutive repetitions of each case passed (10 checks). No screenshot gallery was regenerated.
+
+Reproduce the stress run locally (Chromium):
+
+```sh
+CLIENT_SHEETS_CPU_RATE=4 npx playwright test e2e/client-page-sheets.spec.ts --grep 'pricing controls keep|ready client sheets' --repeat-each=5
+```
+
+Final verification: **331 unit/database tests passed; the full browser suite passed 164 tests with 3 optional capture tests skipped (167 total, 12.5 minutes)**. TypeScript, formatting, neutrality and the production build pass; the API/PDF runtime trace verifies all 328 files. The final throttled run passed all 10 checks (five repetitions of each case). Push to PR #61 without waiting for GitHub CI. Providers remained mocked; no hosted resources or live credentials were used.

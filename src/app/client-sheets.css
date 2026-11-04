@@ -1,0 +1,18 @@
+/* Desktop client projection only. Tablet/phone keep the flowing document. */
+@media (min-width: 1100px) {
+  .flow-sender-contact a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .client-document-sheets {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .flow-result > .client-document-sheets {
+    width: calc(100% - 372px);
+    margin: 24px auto;
+  }
+}
