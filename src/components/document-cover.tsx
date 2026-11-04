@@ -68,14 +68,22 @@ function Spacing({
           );
         }, 0)
       : 0,
-    room = Math.max(0, available - used);
+    // DOM margins still describe the preceding render. Replace this line's
+    // measured spacing with its current model before deriving either limit.
+    // This also updates the other slider immediately when one side changes.
+    measuredAbove = parseFloat(computed?.marginTop ?? "0") || 0,
+    measuredBelow =
+      (parseFloat(computed?.marginBottom ?? "0") || 0) +
+      (parseFloat(computed?.paddingBottom ?? "0") || 0),
+    above = element.space_above ?? measuredAbove,
+    below = element.space_below ?? measuredBelow,
+    fixedUsed = used - measuredAbove - measuredBelow,
+    aboveLimit = available - fixedUsed - below,
+    belowLimit = available - fixedUsed - above;
   return (
     <>
       <SpacingInput
-        max={
-          room +
-          (element.space_above ?? (parseFloat(computed?.marginTop ?? "0") || 0))
-        }
+        max={aboveLimit}
         label="Space above"
         value={
           element.space_above ??
@@ -90,11 +98,7 @@ function Spacing({
         onChange={(space_above) => update({ space_above })}
       />
       <SpacingInput
-        max={
-          room +
-          (element.space_below ??
-            (parseFloat(computed?.marginBottom ?? "0") || 0))
-        }
+        max={belowLimit}
         label="Space below"
         value={
           element.space_below ??

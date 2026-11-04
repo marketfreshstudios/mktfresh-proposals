@@ -306,7 +306,17 @@ test("cover sliders use available space, clamp with guidance, and support keyboa
       exact: true,
     }),
     number = page.getByRole("spinbutton", { name: "Space below", exact: true });
-  expect(Number(await slider.getAttribute("max"))).toBeGreaterThan(200);
+  const originalLimit = Number(await slider.getAttribute("max"));
+  expect(originalLimit).toBeGreaterThan(200);
+  const above = page.getByRole("spinbutton", {
+      name: "Space above",
+      exact: true,
+    }),
+    originalAbove = Number(await above.inputValue());
+  await above.fill(String(originalAbove + 40));
+  await expect(slider).toHaveAttribute("max", String(originalLimit - 40));
+  await above.fill(String(originalAbove));
+  await expect(slider).toHaveAttribute("max", String(originalLimit));
   await slider.focus();
   await slider.press("ArrowRight");
   const first = Number(await number.inputValue());
@@ -314,6 +324,7 @@ test("cover sliders use available space, clamp with guidance, and support keyboa
   await expect(number).toHaveValue(String(first + 10));
   await number.fill("9999");
   const max = Number(await slider.getAttribute("max"));
+  expect(max).toBe(originalLimit);
   await expect(number).toHaveValue(String(max));
   await expect(
     page.getByRole("status").filter({ hasText: `Max ${max} px on this page` }),
