@@ -8078,3 +8078,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .proposal-styles .band-spacing-settings .band-setting {
   border: 0;
 }
+
+.document-cover .cover-text-line {
+  min-height: 18px;
+}

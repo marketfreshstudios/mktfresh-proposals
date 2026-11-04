@@ -247,7 +247,12 @@ export function DocumentCover({
     const previous = current.elements
       .slice(0, index)
       .reverse()
-      .find((e) => !e.hidden && e.kind !== "logo");
+      .find(
+        (e) =>
+          !e.hidden &&
+          e.kind !== "logo" &&
+          root.current?.querySelector(`[data-cover-element="${e.id}"]`),
+      );
     pendingFocus.current = previous?.id ?? null;
     const apply = () => {
       current.onCover?.({
