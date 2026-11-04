@@ -2,15 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { staffRequestHeaders, withStaffCookies } from "./lib/staff-session";
 import { AppError } from "./lib/model";
 import { staff } from "./lib/auth";
+export function staffPagePath(path: string) {
+  return (
+    !/^\/(?:api|login|p|oauth|mcp|_next|fonts|schemas)(?:\/|$)/.test(path) &&
+    !["/favicon.ico", "/pdf.worker.min.mjs", "/pdfjs-LICENSE.txt"].includes(
+      path,
+    )
+  );
+}
 export async function proxy(request: NextRequest) {
+  const page = staffPagePath(request.nextUrl.pathname);
+  if (!page && !request.nextUrl.pathname.startsWith("/api/"))
+    return NextResponse.next();
   try {
     await staff(request);
-    return withStaffCookies(
-      request,
-      NextResponse.next({ request: { headers: staffRequestHeaders(request) } }),
-    );
+    const response = NextResponse.next({
+      request: { headers: staffRequestHeaders(request) },
+    });
+    if (page) response.headers.set("Cache-Control", "no-store");
+    return withStaffCookies(request, response);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 503;
+    if (page && status === 401) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set(
+        "next",
+        request.nextUrl.pathname + request.nextUrl.search,
+      );
+      const response = NextResponse.redirect(url, 307);
+      response.headers.set("Cache-Control", "no-store");
+      return withStaffCookies(request, response);
+    }
     return withStaffCookies(
       request,
       NextResponse.json(
@@ -30,6 +52,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/((?!api(?:/|$)|login(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
     "/api/proposals/:path*",
     "/api/clients/:path*",
     "/api/pricing_items/:path*",
