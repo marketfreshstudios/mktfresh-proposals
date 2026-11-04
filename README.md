@@ -240,3 +240,9 @@ Staff open a sent proposal's **Edit** action on the same record and client link.
 A signature locks the accepted content. If unpublished work existed, the editor identifies it and **Duplicate as new draft** recovers it without changing signed evidence. **Reopen** handles unsigned Lost/client-declined/Expired proposals using the workspace validity default, the same token, a readiness check and no email.
 
 Tablet tools use an overlay drawer. Phone reading uses full sheets, and selecting a block opens its section-editing view; Done returns to reading. Quote/Fields/Styles/Send open focus-trapping bottom sheets, and formatting follows the keyboard viewport. Real iOS Safari/Android Chrome docking remains a manual device check.
+
+### Shared page headers and footers (foundation)
+
+Proposal and template Styles now group Text styles, Page & margins, and Header & footer. Shared bands default to on after the cover, with a workspace-logo/title header and a client/page-count footer. Their height, switches and divider affect the canonical Letter content area through one shared geometry function. Unsigned proposal edits use normal autosave/live publication; templates retain Save template. New versions freeze band settings into their content hash, while older frozen versions with no band settings remain band-free.
+
+Band editing and per-page override UI follow in later PRs; client web sheets are a separate phase. See [implementation and 1440px/PDF evidence](docs/header-footer-foundation.md).

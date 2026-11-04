@@ -430,3 +430,12 @@ At 924px the owner chose PR 1’s existing modal drawer behavior: verify its scr
 - Pair only adjacent client/company signatures, preserving intervening text, explicit breaks and stored frozen boundaries. Client appears left, Company right; stored block order and signed evidence stay unchanged.
 - Store an optional cover in the existing proposal, template and version JSON. Missing covers retain their previous presentation. New templates use field-based defaults; drafts inherit template covers. Include a present cover in the version hash and the existing live-edit/recovery lifecycle, without changing publication policy.
 - Use one sub-line fallback function for inputs, reading and print. Repeated unnamed sub-lines are an inline hint, not a readiness rule. Removing a line is an ordinary undoable quote edit and never removes the last line.
+
+## Header/footer foundation — PR #58
+
+- Store strict header/footer settings in the existing proposal/template JSON and freeze a present value into new versions and hashes. Missing authoring settings load built-in defaults; missing frozen-version settings stay absent and render without bands. No SQL migration.
+- Use canonical Letter geometry where it fits. Narrow editor sheets keep unscaled responsive text and may extend for their displayed content; band heights and top/bottom insets remain canonical. Their source breaks and canonical area sizes still come from Letter pagination.
+- The built-in header image uses the owner-approved `workspace-logo` reference, resolved through the existing cover logo route/PDF embedding. Uploaded images are embedded PNG/JPEG data. No asset store.
+- `page-bands.ts` owns geometry, with a fixed 24px gap per shown band. Cover switches can change page 1's height. Hidden per-page overrides still reserve space; override editing/behavior remains PR 3's scope.
+- Page number/count are local band-render values, never general proposal variables or AI tool fields. Count proposal pages only; append the existing unbanded certificate separately. Band text uses the resolved proposal body font at 12px/16px.
+- Styles uses Text styles / Page & margins / Header & footer accordions. Template controls use the existing explicit Save template flow; proposal controls use existing autosave/history/live publication.
