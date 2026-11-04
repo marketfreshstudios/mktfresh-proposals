@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import type { Editor } from "@tiptap/core";
 import {
   CoverSchema,
@@ -139,6 +145,17 @@ export function DocumentCover({
   const [selected, select] = useState<string | null>(null),
     [logoMenu, setLogoMenu] = useState(false),
     [logoError, setLogoError] = useState("");
+  const pendingFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (!pendingFocus.current) return;
+    const node = root.current?.querySelector<HTMLElement>(
+      `[data-cover-element="${pendingFocus.current}"] .tiptap`,
+    );
+    if (node) {
+      node.focus({ preventScroll: true });
+      pendingFocus.current = null;
+    }
+  }, [elements]);
   const logoTrigger = useRef<HTMLButtonElement>(null),
     logoInput = useRef<HTMLInputElement>(null);
   const resolvedMap = {
@@ -214,16 +231,37 @@ export function DocumentCover({
       id,
       kind: "extra",
       align: "left",
+      space_above: 0,
+      space_below: 10,
       content: coverText(""),
     });
+    pendingFocus.current = id;
     current.onCover?.({ ...current.value, elements: next });
     choose(id);
-    requestAnimationFrame(() =>
-      root.current
-        ?.querySelector<HTMLElement>(`[data-cover-element="${id}"] .tiptap`)
-        ?.focus(),
-    );
   };
+  const remove = (id: string) => {
+    const current = latest.current,
+      index = current.elements.findIndex((e) => e.id === id),
+      target = current.elements[index];
+    if (!target) return;
+    const previous = current.elements
+      .slice(0, index)
+      .reverse()
+      .find((e) => !e.hidden && e.kind !== "logo");
+    pendingFocus.current = previous?.id ?? null;
+    current.onCover?.({
+      ...current.value,
+      elements:
+        target.kind === "extra"
+          ? current.elements.filter((e) => e.id !== id)
+          : current.elements.map((e) =>
+              e.id === id ? { ...e, hidden: true } : e,
+            ),
+    });
+    if (previous) choose(previous.id);
+    else select(null);
+  };
+
   const alignAll = (align: "left" | "center" | "right") =>
     onCover?.({
       ...value,
@@ -373,6 +411,7 @@ export function DocumentCover({
             select={() => choose(e.id)}
             update={(patch, text) => change(e.id, patch, text)}
             add={() => add(e.id)}
+            remove={() => remove(e.id)}
             alignAll={alignAll}
           />
         );
@@ -389,6 +428,7 @@ function CoverText({
   select,
   update,
   add,
+  remove,
   alignAll,
 }: {
   element: CoverElement;
@@ -399,6 +439,7 @@ function CoverText({
   select: () => void;
   update: (patch: Partial<CoverElement>, text?: RichText) => void;
   add: () => void;
+  remove: () => void;
   alignAll: (align: "left" | "center" | "right") => void;
 }) {
   const frame = useRef<HTMLDivElement>(null),
@@ -408,10 +449,6 @@ function CoverText({
     ),
     [trigger, setTrigger] = useState<HTMLElement | null>(null),
     [, paint] = useState(0);
-  useEffect(() => {
-    if (selected && e.kind === "extra" && editor && !editor.isFocused)
-      editor.commands.focus("end");
-  }, [selected, editor]);
   const label = {
     title: "Proposal title",
     workspace: "Cover workspace name",
@@ -579,7 +616,7 @@ function CoverText({
               <button
                 type="button"
                 onClick={() => {
-                  update({ hidden: true });
+                  remove();
                   setMenu(null);
                 }}
               >
