@@ -285,9 +285,12 @@ test("staff pages redirect before HTML and accept a refresh-only session", async
     const response = await page.request.get(path, { maxRedirects: 0 });
     expect(response.status()).toBe(307);
     expect(response.headers()["cache-control"]).toContain("no-store");
-    expect(new URL(response.headers().location).searchParams.get("next")).toBe(
-      path,
-    );
+    expect(
+      new URL(
+        response.headers().location,
+        "http://127.0.0.1:3100",
+      ).searchParams.get("next"),
+    ).toBe(path);
     expect(await response.text()).not.toContain("Dashboard");
   }
   await page.goto("/login");

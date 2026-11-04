@@ -132,3 +132,277 @@ test("cover field atoms have the same highlight as band fields", async ({
   await expect(chip).toHaveCSS("background-color", "rgb(240, 236, 228)");
   await expect(chip).toHaveCSS("border-radius", "4px");
 });
+test("phone client content has a single inset, full-width details and unwrapped prices", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    quote: (q) =>
+      q.map((item, n) => ({
+        ...item,
+        name: n === 0 ? "Website Build" : item.name,
+        description: "A full-width description for the agreed work.",
+        sublines:
+          n === 0
+            ? [{ ...item.sublines[0], amount: 275000, interval: "one_time" }]
+            : item.sublines,
+      })),
+  });
+  for (const width of [375, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/p/${f.draft.id}?preview=1`);
+    const paper = page.locator(".flow-document");
+    await expect(paper).toBeVisible();
+    const inset = await paper.evaluate((el) => {
+      const r = el.getBoundingClientRect(),
+        s = getComputedStyle(el);
+      return {
+        left: r.left + parseFloat(s.paddingLeft),
+        right: innerWidth - r.right + parseFloat(s.paddingRight),
+        scroll: document.documentElement.scrollWidth,
+        width: innerWidth,
+      };
+    });
+    expect(inset.left).toBeLessThanOrEqual(16);
+    expect(inset.right).toBeLessThanOrEqual(16);
+    expect(inset.scroll).toBe(inset.width);
+    const row = page.locator(".flow-quote-line").first(),
+      name = row.locator(".flow-line-title > strong").first(),
+      price = row.locator(".amount");
+    const a = (await name.boundingBox())!,
+      b = (await price.boundingBox())!;
+    expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+    await expect(price).toHaveText("$2,750");
+    await expect(price).toHaveCSS("white-space", "nowrap");
+    const desc = (await row.locator(".quote-description").boundingBox())!,
+      r = (await row.boundingBox())!;
+    expect(Math.abs(desc.x - r.x)).toBeLessThanOrEqual(1);
+    if (process.env.REVIEW3_CAPTURE === "1" && width === 375) {
+      await page.screenshot({ path: `${shots}/client-intro-after.png` });
+      await row.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: `${shots}/client-pricing-after.png` });
+    }
+  }
+  const AxeBuilder = (await import("@axe-core/playwright")).default;
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+test("cover lines add below, retain formatting/spacing across undo redo and reload", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const title = page.getByRole("textbox", {
+    name: "Proposal title",
+    exact: true,
+  });
+  await title.click();
+  await page.getByRole("button", { name: "More cover actions" }).click();
+  await page
+    .getByRole("button", { name: "Add line below", exact: true })
+    .click();
+  let extra = page.getByRole("textbox", {
+    name: "Cover extra line",
+    exact: true,
+  });
+  await expect(extra).toBeFocused();
+  await extra.fill("Personal project note");
+  await extra.press("ControlOrMeta+a");
+  await page.getByRole("button", { name: "Bold", exact: true }).click();
+  await page.getByRole("button", { name: "Spacing", exact: true }).click();
+  await page
+    .getByRole("spinbutton", { name: "Space below", exact: true })
+    .fill("32");
+  await page.keyboard.press("Escape");
+  await expect
+    .poll(
+      () =>
+        f.active().cover?.elements?.find((e) => e.kind === "extra")
+          ?.space_below,
+    )
+    .toBe(32);
+  const original = f.active().cover?.elements?.find((e) => e.kind === "extra");
+  expect(f.active().cover!.elements!.findIndex((e) => e.kind === "extra")).toBe(
+    f.active().cover!.elements!.findIndex((e) => e.kind === "title") + 1,
+  );
+  await extra.click();
+  await page.getByRole("button", { name: "More cover actions" }).click();
+  await page.getByRole("button", { name: "Remove line", exact: true }).click();
+  await expect(extra).toHaveCount(0);
+  await expect(title).toBeFocused();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(extra).toHaveText("Personal project note");
+  await expect(extra.locator("strong")).toHaveText("Personal project note");
+  await expect
+    .poll(() => f.active().cover?.elements?.find((e) => e.kind === "extra"))
+    .toEqual(original);
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await expect(extra).toHaveCount(0);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(extra).toBeVisible();
+  await expect
+    .poll(() => f.active().cover?.elements?.find((e) => e.kind === "extra"))
+    .toEqual(original);
+  await page.reload();
+  await expect(extra).toHaveText("Personal project note");
+});
+test("cover sliders use available space, clamp with guidance, and support keyboard steps", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page
+    .getByRole("textbox", { name: "Cover client name", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Spacing", exact: true }).click();
+  const slider = page.getByRole("slider", {
+      name: "Space below slider",
+      exact: true,
+    }),
+    number = page.getByRole("spinbutton", { name: "Space below", exact: true });
+  expect(Number(await slider.getAttribute("max"))).toBeGreaterThan(200);
+  await slider.focus();
+  await slider.press("ArrowRight");
+  const first = Number(await number.inputValue());
+  await slider.press("Shift+ArrowRight");
+  await expect(number).toHaveValue(String(first + 10));
+  await number.fill("9999");
+  const max = Number(await slider.getAttribute("max"));
+  await expect(number).toHaveValue(String(max));
+  await expect(
+    page.getByRole("status").filter({ hasText: `Max ${max} px on this page` }),
+  ).toBeVisible();
+});
+test("every cover line spacing moves the editor and actual PDF content equally", async ({
+  page,
+}) => {
+  const { defaultCover, coverElements, coverText } =
+    await import("../src/lib/cover");
+  const { execFileSync } = await import("node:child_process");
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  const logo = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 24;
+    return c.toDataURL("image/png");
+  });
+  const base = defaultCover(),
+    elements = coverElements(base, f.draft.title)
+      .filter((e) => e.kind !== "eyebrow")
+      .map((e) => ({
+        ...e,
+        space_above: 0,
+        space_below: 0,
+        ...(e.kind === "logo" ? {} : { content: coverText(`${e.kind}Marker`) }),
+      }));
+  elements.push({
+    id: "extra",
+    kind: "extra",
+    align: "left",
+    space_above: 0,
+    space_below: 0,
+    content: coverText("extraMarker"),
+  });
+  await f.editRemote({ cover: { ...base, logo, logo_height: 24, elements } });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const pdfY = async (marker: string) => {
+    await page
+      .getByRole("button", { name: "Preview PDF", exact: true })
+      .click();
+    await expect(
+      page.getByRole("link", { name: "Download preview", exact: true }),
+    ).toBeVisible();
+    const file = `.data/cover-spacing-${crypto.randomUUID()}.pdf`;
+    writeFileSync(file, Buffer.from(f.renders.at(-1)!.pdf_base64, "base64"));
+    const xml = execFileSync("pdftotext", ["-bbox", file, "-"], {
+      encoding: "utf8",
+    });
+    const word = [
+      ...xml.matchAll(/<word[^>]*yMin="([\d.]+)"[^>]*>([^<]*)<\/word>/g),
+    ].find((m) => m[2] === marker);
+    expect(word, marker).toBeTruthy();
+    await page
+      .getByRole("button", { name: "Close PDF preview", exact: true })
+      .click();
+    return (Number(word![1]) * 96) / 72;
+  };
+  for (const e of elements) {
+    const marker = e.kind === "logo" ? "workspaceMarker" : `${e.kind}Marker`,
+      target = page.locator(`[data-cover-element="${e.id}"]`);
+    const beforePdf = await pdfY(marker),
+      before = (await target.boundingBox())!.y;
+    if (e.kind === "logo") await target.locator("img").click();
+    else await target.locator(".tiptap").click();
+    await page.getByRole("button", { name: "Spacing", exact: true }).click();
+    await page
+      .getByRole("spinbutton", { name: "Space above", exact: true })
+      .fill("16");
+    await page.keyboard.press("Escape");
+    expect((await target.boundingBox())!.y - before).toBeCloseTo(16, 0);
+    const afterPdf = await pdfY(marker);
+    expect(afterPdf - beforePdf).toBeCloseTo(16, 0);
+  }
+});
+test("independent line settings match editor and PDF geometry and hide only their own controls", async ({
+  page,
+}) => {
+  const { defaultHeaderFooter } = await import("../src/lib/page-bands");
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1920, height: 1100 });
+  await f.editRemote({ header_footer: defaultHeaderFooter() });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  const styles = page.locator(".proposal-styles"),
+    header = styles
+      .locator(".band-section")
+      .filter({ has: page.locator("summary").filter({ hasText: /^Header$/ }) }),
+    footer = styles
+      .locator(".band-section")
+      .filter({ has: page.locator("summary").filter({ hasText: /^Footer$/ }) });
+  await expect(
+    header.getByRole("slider", {
+      name: "Spacing above line slider",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await footer.getByRole("switch", { name: "Footer divider line" }).uncheck();
+  await expect(
+    footer.getByRole("slider", {
+      name: "Spacing below line slider",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  for (const [h, fo] of [
+    [false, true],
+    [true, false],
+  ]) {
+    await header
+      .getByRole("switch", { name: "Header divider line" })
+      .setChecked(h);
+    await footer
+      .getByRole("switch", { name: "Footer divider line" })
+      .setChecked(fo);
+    await page
+      .locator(".editor-page-sheets[data-layout-settled=true]")
+      .waitFor();
+    const heights = await page
+      .locator(".editor-page-sheets .page-sheet")
+      .evaluateAll((es) =>
+        es.map((e) => Number(e.getAttribute("data-content-height"))),
+      );
+    const count = f.renders.length;
+    await page
+      .getByRole("button", { name: "Preview PDF", exact: true })
+      .click();
+    await expect.poll(() => f.renders.length).toBeGreaterThan(count);
+    f.renders
+      .at(-1)!
+      .layout.sheets!.forEach((s, n) =>
+        expect(s.content_area!.height).toBeCloseTo(heights[n], 0),
+      );
+    await page
+      .getByRole("button", { name: "Close PDF preview", exact: true })
+      .click();
+  }
+});

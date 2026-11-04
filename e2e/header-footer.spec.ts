@@ -327,6 +327,9 @@ test("new Studio templates start with shared bands and save template switches wi
   await styles
     .getByRole("switch", { name: "Header show on cover", exact: true })
     .check();
+  await styles
+    .getByRole("switch", { name: "Footer show on cover", exact: true })
+    .check();
   await page
     .getByRole("button", { name: "Save template", exact: true })
     .click();
