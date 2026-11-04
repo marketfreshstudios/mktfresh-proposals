@@ -1,4 +1,5 @@
 "use client";
+import { sharedPagesLabel, sharedChangesLabel } from "../../lib/page-count";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -181,7 +182,7 @@ export function PageBand(props: Props) {
   const label = `${kind === "header" ? "Header" : "Footer"} · ${source === "shared" ? "Shared" : source === "hidden" ? "Hidden" : `Unique to page ${page}`}`;
   const scopeLabel =
     source === "shared"
-      ? `Shared on ${sharedCount} pages`
+      ? sharedPagesLabel(sharedCount)
       : `Unique to page ${page}`;
   const open = (which: typeof menu, el: HTMLElement) => {
     control?.select(id);
@@ -533,7 +534,7 @@ export function PageBand(props: Props) {
             <div>
               <strong>{label}</strong>
               {source === "shared" && (
-                <small>Changes show on {sharedCount} pages</small>
+                <small>{sharedChangesLabel(sharedCount)}</small>
               )}
             </div>
             <button type="button" onClick={() => done(true)}>

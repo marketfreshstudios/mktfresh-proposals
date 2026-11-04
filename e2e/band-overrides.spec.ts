@@ -57,7 +57,7 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
   await expect(band).toHaveAttribute("data-band-state", "editing");
   await expect(band.getByRole("toolbar")).toHaveCSS("height", "44px");
   await expect(page.locator(".band-touch-scope")).toHaveText(
-    "Shared on 1 pages",
+    "Shared on 1 page",
   );
   await capture(page, "2a-768-tablet-band");
   await band
@@ -72,7 +72,7 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
     "Header · Shared",
   );
   await expect(page.locator(".band-phone-header")).toContainText(
-    "Changes show on 1 pages",
+    "Changes show on this page only",
   );
   const bar = page.getByRole("toolbar", { name: "Shared header formatting" });
   await expect(bar).toHaveCSS("height", "48px");
@@ -116,7 +116,7 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
     exact: true,
   });
   await expect(sheet).toBeVisible();
-  await expect(sheet.locator("header > p")).toHaveText("Shared on 1 pages");
+  await expect(sheet.locator("header > p")).toHaveText("Shared on 1 page");
   await capture(page, "2c-375-band-sheet");
   await expect(sheet.getByRole("menuitem").first()).toHaveCSS(
     "min-height",
@@ -286,10 +286,10 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
     page.getByRole("region", { name: "Pages with their own", exact: true }),
   ).toContainText("Page 2 · footer hidden");
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 pages · 1 unique",
+    "Shared on 1 page · 1 unique",
   );
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 pages · 1 hidden",
+    "Shared on 1 page · 1 hidden",
   );
   await capture(page, "1i-1440-styles");
   await page
@@ -352,10 +352,10 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   await actions(page, sharedFooter);
   await expect(
     page.getByRole("menuitem", { name: /Edit shared footer/ }),
-  ).toContainText("Changes show on all 1 pages");
+  ).toContainText("Changes show on this page only");
   await page.getByRole("menuitem", { name: /Edit shared footer/ }).click();
   await expect(sharedFooter.locator(".band-shared-count")).toHaveText(
-    "Shared on 1 pages",
+    "Shared on 1 page",
   );
   await sharedFooter.getByRole("button", { name: "Done", exact: true }).click();
   await actions(

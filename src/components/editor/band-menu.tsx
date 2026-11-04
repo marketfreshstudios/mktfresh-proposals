@@ -1,4 +1,5 @@
 "use client";
+import { sharedChangesLabel } from "../../lib/page-count";
 import { useLayoutEffect, useRef } from "react";
 import { menuKeys } from "./band-menus";
 import type { BandKind, BandSource } from "../../lib/band-overrides";
@@ -41,7 +42,7 @@ export function BandMenu({
         <strong>
           {shared ? `Edit shared ${kind}` : `Edit this page's ${kind}`}
         </strong>
-        {shared && <small>Changes show on all {count} pages</small>}
+        {shared && <small>{sharedChangesLabel(count)}</small>}
       </button>
       {!sharedOnly && (
         <>
