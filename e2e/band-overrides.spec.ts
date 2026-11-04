@@ -56,6 +56,9 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
   await band.click();
   await expect(band).toHaveAttribute("data-band-state", "editing");
   await expect(band.getByRole("toolbar")).toHaveCSS("height", "44px");
+  await expect(page.locator(".band-touch-scope")).toHaveText(
+    "Shared on 1 pages",
+  );
   await capture(page, "2a-768-tablet-band");
   await band
     .getByRole("textbox", { name: "header column 2" })
@@ -67,6 +70,9 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
   await band.click();
   await expect(page.locator(".band-phone-header")).toContainText(
     "Header · Shared",
+  );
+  await expect(page.locator(".band-phone-header")).toContainText(
+    "Changes show on 1 pages",
   );
   const bar = page.getByRole("toolbar", { name: "Shared header formatting" });
   await expect(bar).toHaveCSS("height", "48px");
@@ -110,6 +116,7 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
     exact: true,
   });
   await expect(sheet).toBeVisible();
+  await expect(sheet.locator("header > p")).toHaveText("Shared on 1 pages");
   await capture(page, "2c-375-band-sheet");
   await expect(sheet.getByRole("menuitem").first()).toHaveCSS(
     "min-height",
@@ -154,8 +161,9 @@ async function actions(
 ) {
   await band.scrollIntoViewIfNeeded();
   await band.hover();
+  const kind = await band.getAttribute("data-band-frame");
   await band
-    .getByRole("button", { name: "header actions", exact: true })
+    .getByRole("button", { name: `${kind} actions`, exact: true })
     .click();
 }
 test("per-page menus preserve geometry, confirm and Undo restore unique edits, PDF and Styles agree", async ({
@@ -272,12 +280,16 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
       exact: true,
     }),
   ).toHaveCount(1);
+  await capture(page, "1j-1440-sections-markers");
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Pages with their own", exact: true }),
   ).toContainText("Page 2 · footer hidden");
   await expect(page.locator(".band-settings")).toContainText(
     "Shared on 1 pages · 1 unique",
+  );
+  await expect(page.locator(".band-settings")).toContainText(
+    "Shared on 1 pages · 1 hidden",
   );
   await capture(page, "1i-1440-styles");
   await page
@@ -308,6 +320,52 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   expect(sheets[1].html).not.toContain('data-page-band="footer"');
   expect(sheets[2].html).not.toContain("A unique page note");
   expect(sheets[2].html).toContain("Page 3 of 3");
+  const bytes = Buffer.from(f.renders[0].pdf_base64, "base64");
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const task = getDocument({
+    data: new Uint8Array(bytes),
+    useSystemFonts: true,
+  });
+  try {
+    const pdf = await task.promise;
+    const text = async (n: number) =>
+      (await (await pdf.getPage(n)).getTextContent()).items
+        .map((i) => ("str" in i ? i.str : ""))
+        .join(" ");
+    expect(await text(2)).toContain("A unique page note");
+    expect(await text(2)).not.toContain("Page 2 of 3");
+    expect(await text(3)).not.toContain("A unique page note");
+    expect(await text(3)).toContain("Page 3 of 3");
+    if (process.env.CAPTURE_HF3)
+      await (
+        await import("node:fs/promises")
+      ).writeFile(".data/hf3-overrides-preview.pdf", bytes);
+  } finally {
+    await task.destroy();
+  }
+  await page
+    .getByRole("button", { name: "Close PDF preview", exact: true })
+    .click();
+  const sharedFooter = page.locator(
+    '[data-band-frame="footer"][data-band-page="3"]',
+  );
+  await actions(page, sharedFooter);
+  await expect(
+    page.getByRole("menuitem", { name: /Edit shared footer/ }),
+  ).toContainText("Changes show on all 1 pages");
+  await page.getByRole("menuitem", { name: /Edit shared footer/ }).click();
+  await expect(sharedFooter.locator(".band-shared-count")).toHaveText(
+    "Shared on 1 pages",
+  );
+  await sharedFooter.getByRole("button", { name: "Done", exact: true }).click();
+  await actions(
+    page,
+    page.locator('[data-band-frame="header"][data-band-page="3"]'),
+  );
+  await page.getByRole("menuitem", { name: /Hide on this page/ }).click();
+  await expect(page.locator(".band-settings")).toContainText(
+    "Shared on 0 pages · 1 unique · 1 hidden",
+  );
 });
 test("reflow follows the anchor once; deleting it transfers the band and page deletion Undo restores both", async ({
   page,

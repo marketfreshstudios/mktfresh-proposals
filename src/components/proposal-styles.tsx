@@ -495,8 +495,17 @@ function BandSettings({
             ).length,
         )
       : 0;
-  const subtitle = (kind: "header" | "footer") =>
-    `Shared on ${shared(kind)} pages${own.some((p) => p.kind === kind && p.source === "unique") ? ` · ${own.filter((p) => p.kind === kind && p.source === "unique").length} unique` : ""}`;
+  const subtitle = (kind: "header" | "footer") => {
+    const excluded = own.filter(
+      (p) => p.kind === kind && (p.page !== 1 || value.showOnCover),
+    );
+    return `Shared on ${shared(kind)} pages${(["unique", "hidden"] as const)
+      .map((source) => {
+        const count = excluded.filter((p) => p.source === source).length;
+        return count ? ` · ${count} ${source}` : "";
+      })
+      .join("")}`;
+  };
   return (
     <div className="band-settings">
       {toggle("showHeader", "Header", subtitle("header"))}
