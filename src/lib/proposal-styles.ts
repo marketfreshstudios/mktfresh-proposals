@@ -230,6 +230,18 @@ export function styleFontFaces(
     )
     .join("");
 }
+/** Shared typographic line box for print CSS and page-bounded style controls. */
+export function textLineHeight(styles: ResolvedStyles, level: StyleLevel) {
+  return level === "title"
+    ? 1.15
+    : level === "heading1"
+      ? 1.25
+      : level === "body"
+        ? documentLayout(styles).density === "standard"
+          ? 1.5
+          : 1.65
+        : 1.35;
+}
 /** Shared screen/print rules. Scope excludes the PDF completion certificate and app chrome. */
 export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
   if (!styles) return "";
@@ -258,16 +270,7 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
     styleLevels
       .map((level) => {
         const s = styles[level],
-          lh =
-            level === "title"
-              ? 1.15
-              : level === "heading1"
-                ? 1.25
-                : level === "body"
-                  ? documentLayout(styles).density === "standard"
-                    ? 1.5
-                    : 1.65
-                  : 1.35;
+          lh = textLineHeight(styles, level);
         const declaration = `font-family:${fontFamily(s.font)};font-size:${s.size}px;font-weight:${s.weight};line-height:${lh};color:${styleColour(s.colour, accent)};text-transform:${s.letter_case === "normal" ? "none" : "uppercase"};letter-spacing:${s.letter_spacing}em;`;
         return (
           `${selector(level)}{${declaration}${level === "body" ? "" : `margin-top:${s.space_above}px;margin-bottom:${s.space_below}px;`}}` +

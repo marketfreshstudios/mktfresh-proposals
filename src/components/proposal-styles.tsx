@@ -25,6 +25,7 @@ import {
   type ProposalFont,
 } from "../lib/proposal-fonts";
 import {
+  textLineHeight,
   styleLevels,
   styleLabels,
   resolveStyles,
@@ -250,7 +251,7 @@ export function ProposalStyles({
               max={Math.max(
                 0,
                 pageGeometry(styles, headerFooter, 1).content.height -
-                  selected.size * 1.5 -
+                  selected.size * textLineHeight(styles, level) -
                   selected.space_below,
               )}
               inputStep="any"
@@ -263,7 +264,7 @@ export function ProposalStyles({
               max={Math.max(
                 0,
                 pageGeometry(styles, headerFooter, 1).content.height -
-                  selected.size * 1.5 -
+                  selected.size * textLineHeight(styles, level) -
                   selected.space_above,
               )}
               inputStep="any"
