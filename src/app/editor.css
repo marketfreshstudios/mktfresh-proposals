@@ -8000,3 +8000,13 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   color: inherit;
   font: inherit;
 }
+
+/* Each cover line owns both spaces; neighbouring margins never swallow a change. */
+.document-cover:has(> .cover-element) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.document-cover > .cover-element {
+  flex: none;
+}
