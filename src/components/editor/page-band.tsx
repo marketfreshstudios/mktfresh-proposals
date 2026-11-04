@@ -61,7 +61,8 @@ export function PageBand(props: Props) {
     toolbar = useBlockToolbar();
   const root = useRef<HTMLDivElement>(null),
     editors = useRef<(Editor | null)[]>([]),
-    column = useRef<number | null>(null);
+    column = useRef<number | null>(null),
+    clickPoint = useRef<{ x: number; y: number; slot: number } | null>(null);
   const [menu, setMenu] = useState<
       "more" | "confirm" | "layout" | "fields" | "image" | null
     >(null),
@@ -78,12 +79,13 @@ export function PageBand(props: Props) {
   const shown =
     !!hf && (kind === "header" ? headerShown(hf, page) : footerShown(hf, page));
   const editable = !!device && !!onChange;
-  const begin = () => {
+  const begin = (point?: { x: number; y: number; slot: number }) => {
     if (!editable) return;
     if (resolved === "hidden" && hf && anchor)
       onChange?.(setBandOverride(hf, anchor, kind, emptyBand(hf.shared[kind])));
     selection.clear();
-    column.current = null;
+    column.current = point?.slot ?? null;
+    clickPoint.current = point ?? null;
     control?.begin(id);
   };
   const done = (focus = false) => {
@@ -93,7 +95,7 @@ export function PageBand(props: Props) {
       requestAnimationFrame(() => root.current?.focus({ preventScroll: true }));
   };
   useEffect(() => {
-    if (!editing || !phone) return;
+    if (!editing || !phone || clickPoint.current) return;
     const frame = requestAnimationFrame(() =>
       editors.current[0]?.commands.focus("end"),
     );
@@ -252,9 +254,6 @@ export function PageBand(props: Props) {
             : { bottom: geometry.distance }),
         } as CSSProperties & Record<string, string | number>
       }
-      onDoubleClick={() => {
-        if (!editing && device === "desktop") begin();
-      }}
       onClick={(event) => {
         if (
           editing ||
@@ -262,14 +261,14 @@ export function PageBand(props: Props) {
           (event.target as Element).closest("button,input")
         )
           return;
-        if (phone) begin();
-        else if (tablet) {
-          if (selected) begin();
-          else {
-            selection.clear();
-            control?.select(id);
-          }
-        }
+        const slot = (event.target as Element).closest<HTMLElement>(
+          "[data-band-slot]",
+        );
+        begin({
+          x: event.clientX,
+          y: event.clientY,
+          slot: Number(slot?.dataset.bandSlot ?? 0),
+        });
       }}
       onKeyDown={(e) => {
         if (e.target === e.currentTarget && e.key === "Enter" && !editing) {
@@ -302,6 +301,7 @@ export function PageBand(props: Props) {
           {band.slots.map((slot, n) => (
             <div
               className="band-slot"
+              data-band-slot={n}
               key={n}
               style={{
                 justifyContent: bandJustify(band.layout)[n],
@@ -347,6 +347,21 @@ export function PageBand(props: Props) {
                     }
                     editors.current[n] = e;
                     if (e) {
+                      const point = clickPoint.current;
+                      if (point?.slot === n)
+                        requestAnimationFrame(() => {
+                          if (e.isDestroyed) return;
+                          const position = e.view.posAtCoords({
+                            left: point.x,
+                            top: point.y,
+                          });
+                          e.commands.setTextSelection(
+                            position?.pos ??
+                              Math.max(1, e.state.doc.content.size - 1),
+                          );
+                          e.view.focus();
+                          clickPoint.current = null;
+                        });
                       const paint = () => refreshMarks((v) => v + 1);
                       markListeners.current.set(e, paint);
                       e.on("transaction", paint);
@@ -403,17 +418,6 @@ export function PageBand(props: Props) {
         <div className="band-hover-controls">
           <span className="band-label">{label}</span>
           <span className="band-hover-actions">
-            <button
-              type="button"
-              tabIndex={-1}
-              className="band-edit-button"
-              onClick={(event) => {
-                event.stopPropagation();
-                begin();
-              }}
-            >
-              Edit
-            </button>
             <button
               tabIndex={-1}
               aria-label={`${kind} actions`}

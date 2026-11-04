@@ -17,8 +17,7 @@ const bands = (page: import("@playwright/test").Page, kind = "header") =>
 async function open(page: import("@playwright/test").Page, kind = "header") {
   const band = bands(page, kind).first();
   await band.scrollIntoViewIfNeeded();
-  await band.hover();
-  await band.getByRole("button", { name: "Edit", exact: true }).click();
+  await band.click();
   return band;
 }
 test("shared band states preserve geometry; edit, history and PDF use the same shared content", async ({
@@ -133,7 +132,7 @@ test("layout reflow is lossless, fields insert at cursor or last-column end, men
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(band).toBeFocused();
-  await open(page);
+  await band.press("Enter");
   await band.getByRole("button", { name: "Insert band field" }).click();
   await page.getByRole("menuitem", { name: /Page count/ }).click();
   await expect(band.getByRole("textbox")).toContainText("Three3");
@@ -220,8 +219,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
   await tablet.scrollIntoViewIfNeeded();
   await tablet.click();
   await expect(tablet).toHaveAttribute("data-band-selected", "true");
-  await expect(tablet).toHaveAttribute("data-band-state", "rest");
-  await tablet.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(tablet).toHaveAttribute("data-band-state", "editing");
   await expect(tablet.getByRole("toolbar")).toHaveCSS("height", "44px");
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 375, height: 900 });
@@ -295,6 +293,8 @@ test("band image uploads and reserved workspace logos work in either column and 
             ?.slot,
       )
       .toBe(0);
+    await page.keyboard.press("Escape");
+    await band.press("Enter");
     const last = band.getByRole("textbox", { name: `${kind} column 2` });
     const previous = await last.locator('[data-field="page.count"]').count();
     await band.getByRole("button", { name: "Insert band field" }).click();
@@ -344,7 +344,7 @@ test("band image uploads and reserved workspace logos work in either column and 
       )
       .toBe(1);
     await page.keyboard.press("Escape");
-    band = await open(page, kind);
+    await band.press("Enter");
     await band.getByRole("button", { name: "Image", exact: true }).click();
     await page
       .getByRole("button", { name: "Remove image", exact: true })
