@@ -3,7 +3,7 @@ import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
-import { defaultCover } from "../lib/cover";
+import { defaultCover, contentAfterCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
 import { contentSections } from "../lib/ai-review";
@@ -1766,9 +1766,9 @@ function TemplatesStudioContent({
                   cover: defaultCover(),
                   active: true,
                   default_quote: [],
-                  content: [
+                  content: contentAfterCover([
                     { id: crypto.randomUUID(), type: "paragraph", text: "" },
-                  ],
+                  ]),
                 });
               else
                 setSaved({

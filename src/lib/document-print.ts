@@ -1,3 +1,4 @@
+import { defaultCover } from "./cover";
 import { pageGeometry, type HeaderFooterSettings } from "./page-bands";
 import {
   signatureHtml,
@@ -52,9 +53,30 @@ export function printContent(input: {
   planned?: boolean;
   pagination?: import("./page-plan").PagePlan;
 }) {
-  const cover = input.cover
-    ? `<header class="print-cover" data-print-block="cover">${(input.cover.logo === null ? undefined : input.cover.logo || input.logo) ? `<img src="${escape(input.cover.logo || input.logo || "")}" alt="${escape(input.cover.logo_alt ?? "Company logo")}" style="height:${input.cover.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}<p class="print-workspace">${escape(resolve(input.cover.workspace, input.variables))}</p><p class="eyebrow">${escape(resolve(input.cover.eyebrow, input.variables))}</p><h1>${escape(input.title)}</h1><p class="byline">${escape(resolve(input.cover.byline, input.variables))}</p></header>`
-    : `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const presentation = input.cover ?? defaultCover();
+  const map = {
+    "workspace.name": input.workspace ?? "",
+    "client.company": input.company,
+    "sender.name": input.sender,
+    "proposal.validity": input.validity ? `Valid until ${input.validity}` : "",
+    ...input.variables,
+  };
+  const line = (
+    key: "workspace" | "eyebrow" | "prepared_for" | "byline",
+    className: string,
+  ) => {
+    if (
+      key === "workspace" &&
+      presentation[key] === "{{workspace.name}}" &&
+      !map["workspace.name"]
+    )
+      return "";
+    const text = resolve(presentation[key] ?? "", map);
+    return text.trim() ? `<p class="${className}">${escape(text)}</p>` : "";
+  };
+  const src =
+    presentation.logo === null ? undefined : presentation.logo || input.logo;
+  const cover = `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
     : {};

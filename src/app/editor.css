@@ -1402,7 +1402,9 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
-.pdf-width-editor .editor-paper :is(.flow-byline, .print-workspace) {
+.pdf-width-editor
+  .editor-paper
+  :is(.flow-byline, .print-workspace, .flow-prepared-for) {
   font:
     500 12px/1.5 "Instrument Sans",
     sans-serif;

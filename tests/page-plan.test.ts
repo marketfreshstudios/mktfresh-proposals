@@ -55,6 +55,7 @@ it("hashes saved pagination, preserves absent-plan hashes, and freezes the plan 
         variables_resolved: v.variables_resolved,
         resolved_styles: v.resolved_styles,
         header_footer: v.header_footer,
+        cover: v.cover,
       }),
     ),
   );
