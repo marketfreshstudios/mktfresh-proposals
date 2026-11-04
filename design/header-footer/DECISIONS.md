@@ -26,7 +26,7 @@ The editor v2 references (Redesign 10/11, editor-v2.md, tokens, icons) live in `
      - a page that starts at an explicit break uses that page_break's id
      - otherwise, the id of the block that starts the page
      - page 1 is `cover`
-     - when one block starts 3+ pages, the later ones use `id#2`, `id#3`, and so on
+     - every repeated non-cover start is suffixed: `id`, `id#2`, `id#3`, and so on (two starts already need distinct keys)
    - **Page count:** `{{page.count}}` counts proposal pages only. The certificate page has no bands.
    - **Templates:** they also store `showHeader`/`showFooter`. Templates have no per-page overrides.
    - **Styles tab:** it becomes the accordions shown in 1i (Text styles, Page & margins, Header & footer). Existing controls are unchanged.
@@ -38,3 +38,8 @@ The editor v2 references (Redesign 10/11, editor-v2.md, tokens, icons) live in `
    - PR 2: editing shared bands
    - PR 3: overrides, cover pill, Sections markers, tablet/phone editor
    - PR 4: client desktop sheets
+
+7. **PR 3 owner clarifications:**
+   - Header and footer collisions resolve independently. An exact match to the page's current anchor wins; otherwise the earlier anchor in document order wins and is re-keyed to the current page anchor. Other entries are dropped with the eight-second removed-band Undo toast. A deleted anchor does not transfer over an existing destination override.
+   - Editing a hidden band creates an empty unique band with the shared layout; Undo restores `hidden`. A hidden band's menu has Edit and Use shared only.
+   - “Shared on N pages” includes only pages actually showing shared content. Unique and hidden bands are excluded. Styles states the exclusions (`· 1 unique`, `· 1 hidden`, or both); edit bars, menus and the phone header use the same shared N. Frame 1i's Footer “8” was a design slip.

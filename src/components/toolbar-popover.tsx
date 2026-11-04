@@ -8,19 +8,30 @@ export function ToolbarPopover({
   close,
   trigger,
   avoid,
+  onEscape,
+  visualViewport = false,
 }: {
+  onEscape?: () => void;
+  visualViewport?: boolean;
   children: ReactNode;
   className: string;
   close: () => void;
   trigger?: HTMLElement | null;
   avoid?: HTMLElement | null;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null),
+    escapeAction = useRef(onEscape);
+  escapeAction.current = onEscape;
   useManagedPopover(true, close);
   useLayoutEffect(() => {
     const el = ref.current!;
     el.showPopover();
+    const viewport = visualViewport ? window.visualViewport : null;
     const place = () => {
+      const top = (viewport?.offsetTop ?? 0) + 8,
+        bottom =
+          (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 8;
+      if (visualViewport) el.style.maxHeight = `${bottom - top}px`;
       const anchor =
         trigger ?? el.closest(".phone-formatting-bar") ?? el.parentElement;
       const bounds = anchor!.getBoundingClientRect(),
@@ -44,10 +55,7 @@ export function ToolbarPopover({
         }
       }
       let x = Math.max(left, Math.min(bounds.left, right - box.width)),
-        y = Math.max(
-          8,
-          Math.min(bounds.bottom + 4, innerHeight - box.height - 8),
-        );
+        y = Math.max(top, Math.min(bounds.bottom + 4, bottom - box.height));
       if (avoid) {
         const text = avoid.getBoundingClientRect();
         const clear = (x: number, y: number) =>
@@ -81,6 +89,8 @@ export function ToolbarPopover({
     resize.observe(el);
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
+    viewport?.addEventListener("resize", place);
+    viewport?.addEventListener("scroll", place);
     const outside = (e: PointerEvent) => {
       if (
         !el.contains(e.target as Node) &&
@@ -101,7 +111,7 @@ export function ToolbarPopover({
       event.preventDefault();
       event.stopImmediatePropagation();
       const active = document.activeElement;
-      close();
+      (escapeAction.current ?? close)();
       requestAnimationFrame(() => {
         if (
           trigger?.isConnected &&
@@ -117,6 +127,8 @@ export function ToolbarPopover({
       resize.disconnect();
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
+      viewport?.removeEventListener("resize", place);
+      viewport?.removeEventListener("scroll", place);
       document.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("keydown", escape, true);
       el.hidePopover();
@@ -131,7 +143,7 @@ export function ToolbarPopover({
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.preventDefault();
-          close();
+          (escapeAction.current ?? close)();
           requestAnimationFrame(() => trigger?.focus({ preventScroll: true }));
         }
       }}

@@ -13,6 +13,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import type { Block } from "../../lib/model";
 import { useBlockToolbar } from "../block-controls";
 import { FormattingControls } from "../formatting-controls";
@@ -44,6 +45,9 @@ export function EditBar(
         children: ReactNode;
         kind: "header" | "footer";
         inside: boolean;
+        device?: "desktop" | "tablet" | "phone";
+        sourceLabel?: string;
+        portal?: HTMLElement | null;
       }
     | {
         id: string;
@@ -54,49 +58,77 @@ export function EditBar(
         variant?: "block";
       },
 ) {
-  if (props.variant === "band")
-    return (
-      <div
-        data-editor-chrome
-        className="editor-edit-bar band-edit-bar"
-        data-band-kind={props.kind}
-        data-inside={props.inside}
-        role="toolbar"
-        aria-label={`Shared ${props.kind} formatting`}
-        onMouseDown={(e) => {
-          if ((e.target as Element).closest("button")) e.preventDefault();
-        }}
-        onKeyDown={(e) => {
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key))
-            return;
-          const buttons = Array.from(
-            e.currentTarget.querySelectorAll<HTMLButtonElement>(
-              "button:not(:disabled)",
-            ),
-          );
-          const index = buttons.indexOf(
-            document.activeElement as HTMLButtonElement,
-          );
-          if (index < 0) return;
-          e.preventDefault();
-          buttons[
-            e.key === "Home"
-              ? 0
-              : e.key === "End"
-                ? buttons.length - 1
-                : (index + (e.key === "ArrowRight" ? 1 : -1) + buttons.length) %
-                  buttons.length
-          ]?.focus();
-          (document.activeElement as HTMLElement)?.scrollIntoView({
-            block: "nearest",
-            inline: "nearest",
-          });
-        }}
-      >
-        <div className="band-edit-scroll">{props.children}</div>
-      </div>
-    );
+  if (props.variant === "band") return <BandEditBar {...props} />;
   return <BlockEditBar {...props} />;
+}
+function BandEditBar(
+  props: Extract<Parameters<typeof EditBar>[0], { variant: "band" }>,
+) {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (props.device !== "phone") return;
+    const viewport = window.visualViewport;
+    const update = () =>
+      root.current?.style.setProperty(
+        "--editor-keyboard-inset",
+        `${Math.max(0, innerHeight - (viewport?.height ?? innerHeight) - (viewport?.offsetTop ?? 0))}px`,
+      );
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [props.device]);
+  const bar = (
+    <div
+      ref={root}
+      data-editor-chrome
+      data-device={props.device ?? "desktop"}
+      data-band-dock={props.device === "phone" ? "keyboard" : "margin"}
+      className="editor-edit-bar band-edit-bar"
+      data-band-kind={props.kind}
+      data-inside={props.inside}
+      role="toolbar"
+      aria-label={`${props.sourceLabel ?? "Shared"} ${props.kind} formatting`}
+      onMouseDown={(e) => {
+        if ((e.target as Element).closest("button")) e.preventDefault();
+      }}
+      onKeyDown={(e) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+        const buttons = Array.from(
+          e.currentTarget.querySelectorAll<HTMLButtonElement>(
+            "button:not(:disabled)",
+          ),
+        );
+        const index = buttons.indexOf(
+          document.activeElement as HTMLButtonElement,
+        );
+        if (index < 0) return;
+        e.preventDefault();
+        buttons[
+          e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? buttons.length - 1
+              : (index + (e.key === "ArrowRight" ? 1 : -1) + buttons.length) %
+                buttons.length
+        ]?.focus();
+        (document.activeElement as HTMLElement)?.scrollIntoView({
+          block: "nearest",
+          inline: "nearest",
+        });
+      }}
+    >
+      <div className="band-edit-scroll">{props.children}</div>
+    </div>
+  );
+  return props.device === "phone"
+    ? createPortal(bar, props.portal ?? document.body)
+    : bar;
 }
 function BlockEditBar({
   id,

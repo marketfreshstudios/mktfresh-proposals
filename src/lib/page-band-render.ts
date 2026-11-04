@@ -6,6 +6,7 @@ import {
   headerShown,
   footerShown,
   pageGeometry,
+  type Band,
   type HeaderFooterSettings,
 } from "./page-bands";
 import { fontFamily } from "./proposal-fonts";
@@ -36,7 +37,9 @@ export function pageBandHtml({
   styles,
   logo,
   print = false,
+  band: override,
 }: {
+  band?: Band | "hidden";
   hf: HeaderFooterSettings | undefined;
   kind: "header" | "footer";
   page: number;
@@ -51,7 +54,8 @@ export function pageBandHtml({
     !(kind === "header" ? headerShown(hf, page) : footerShown(hf, page))
   )
     return "";
-  const band = hf.shared[kind],
+  if (override === "hidden") return "";
+  const band = override ?? hf.shared[kind],
     g = pageGeometry(styles, hf, page),
     rect = g[kind]!;
   // Page fields are local to this rendering operation, never general proposal variables.
@@ -109,7 +113,7 @@ export function pageBandHtml({
   const slots = band.slots
     .map(
       (slot, n) =>
-        `<div class="band-slot" style="justify-content:${bandJustify(band.layout)[n]};text-align:${bandJustify(band.layout)[n]}">${src && band.image?.slot === n ? `<img src="${escape(src)}" alt="${escape(band.image.alt)}">` : ""}<div class="band-slot-content">${rich(slot)}</div></div>`,
+        `<div class="band-slot" data-band-slot="${n}" style="justify-content:${bandJustify(band.layout)[n]};text-align:${bandJustify(band.layout)[n]}">${src && band.image?.slot === n ? `<img src="${escape(src)}" alt="${escape(band.image.alt)}">` : ""}<div class="band-slot-content">${rich(slot)}</div></div>`,
     )
     .join("");
   const insets = print

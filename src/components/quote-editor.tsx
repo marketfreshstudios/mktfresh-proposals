@@ -1,4 +1,6 @@
 "use client";
+import { useBandEditing } from "./editor/band-editing";
+import { bandPages, resolvedBandPages } from "../lib/band-overrides";
 import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultHeaderFooter } from "../lib/page-bands";
 import {
@@ -236,6 +238,7 @@ function QuoteEditorContent({
       block: number;
       clause: number;
     } | null>(null);
+  const bandEditing = useBandEditing();
   const locked = !!p.signers.length || p.versions.some((v) => v.frozen);
   const bands = locked
     ? p.versions.at(-1)?.header_footer
@@ -553,6 +556,7 @@ function QuoteEditorContent({
   }
   function change(update: Partial<Proposal>) {
     if (locked) return;
+    if (Object.keys(bandEditing?.moves ?? {}).length) bandEditing?.setMoves({});
     history.record(
       editable(latest.current),
       editable({ ...latest.current, ...update }),
@@ -1805,6 +1809,7 @@ function QuoteEditorContent({
   const outline = (
     <>
       <SectionsNav
+        headerFooter={bands}
         currentSectionId={currentSectionId}
         content={p.content}
         onMove={move}
@@ -1904,6 +1909,18 @@ function QuoteEditorContent({
         <ProposalStyles
           settings={p.workspace_settings}
           headerFooter={bands}
+          bandPages={
+            bands
+              ? resolvedBandPages(
+                  bands,
+                  bandPages(
+                    p.content,
+                    browserPages?.plan,
+                    browserPages?.assignments,
+                  ),
+                )
+              : undefined
+          }
           onHeaderFooter={(header_footer) => change({ header_footer })}
           onResetBands={async () => {
             const templates =
@@ -2870,6 +2887,19 @@ function QuoteEditorContent({
                   className="paper editor-paper proposal-typography document-reading"
                 >
                   <PagedPaper
+                    onBandReflow={(header_footer, withContentEdit) => {
+                      const step = history.controller.engine.past.at(-1);
+                      if (
+                        withContentEdit &&
+                        step &&
+                        JSON.stringify(step.after) ===
+                          JSON.stringify(editable(latest.current))
+                      ) {
+                        step.after = { ...step.after, header_footer };
+                        applyChange({ header_footer });
+                      } else change({ header_footer });
+                      return history.controller.engine.lastId;
+                    }}
                     paper={paper}
                     styles={resolveStyles(
                       p.workspace_settings,
