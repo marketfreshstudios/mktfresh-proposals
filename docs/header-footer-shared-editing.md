@@ -28,3 +28,15 @@ Opened Redesign 13 in a browser and compared frames 1b, 1c, 1g and 1l. Both drop
 ## Validation
 
 `e2e/band-editing.spec.ts` covers unchanged hover/focus geometry, live shared content in editor/PDF, undo, lossless column reduction, cursor and fallback insertion, keyboard/focus order, menu axe checks, touch targets, margin flip, desktop-only editing, image/workspace-logo commands, template editing/inheritance and both reset paths. The existing pagination, frozen-break, signing, geometry and certificate checks remain intact.
+
+Owner Image default for PR #59: before any column is focused, Image uses the existing image’s column, or the **first** column if no image exists. After column focus, image commands use that column. Field insertion independently falls back to the end of the **last** column.
+
+## Local check results
+
+- Full browser suite: **154 passed, 3 optional screenshot-only checks skipped** (12.3 minutes).
+- Final shared-band suite after owner clarification: **7 passed**, including exact 18px editor/PDF scaling of a 64px upload, both no-cursor image defaults, focused-column commands, last-column field insertion, removed-column fallback and complete page Tab order.
+- Vitest: **321 passed** across 55 files.
+- Typecheck, formatting, neutral-code guard and production build pass. API runtime tracing verifies **328 files** for the PDF renderer.
+- No GitHub CI wait; no hosted resource changes or live-provider verification are part of this PR.
+
+Band rich text removes Tiptap-only list/link metadata before storage while preserving text, fields and marks. The editor compares the normalized shape too, so ordinary typing does not replace the document or lose the cursor.

@@ -90,8 +90,14 @@ test("layout reflow is lossless, fields insert at cursor or last-column end, men
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
   const band = await open(page);
+  await band.getByRole("textbox", { name: "header column 3" }).click();
   await band.getByRole("button", { name: "Layout", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "Left", exact: true }).click();
+  await expect(band.getByRole("textbox")).toHaveText("OneTwoThree");
+  await band.getByRole("button", { name: "Insert band field" }).click();
+  await page.getByRole("menuitem", { name: /Page count/ }).click();
+  await expect(band.getByRole("textbox")).toHaveText("OneTwoThree3");
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(band.getByRole("textbox")).toHaveText("OneTwoThree");
   const text = band.getByRole("textbox");
   await text.click();
@@ -241,25 +247,34 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
 test("band image uploads and reserved workspace logos work in either column and both bands", async ({
   page,
 }) => {
-  const { testSignatureImage } = await import("../tests/helpers");
   const f = await editorFixture(page, false, { content });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#345941";
+    context.fillRect(0, 0, 64, 64);
+    return canvas.toDataURL("image/png");
+  });
   for (const kind of ["header", "footer"]) {
     let band = await open(page, kind);
-    const text = band.getByRole("textbox", { name: `${kind} column 1` });
-    await text.click();
+    // Before a text cursor exists: existing image column, otherwise FIRST column.
+    // The default header has an image in column 1; the footer has none.
+
     await band.getByRole("button", { name: "Image", exact: true }).click();
     await page.getByLabel("Upload band image").setInputFiles({
       name: "logo.png",
       mimeType: "image/png",
-      buffer: Buffer.from(testSignatureImage.split(",")[1], "base64"),
+      buffer: Buffer.from(image.split(",")[1], "base64"),
     });
     const img = band.locator(".band-slot > img");
     await expect(img).toHaveCount(1);
-    expect(
-      await img.evaluate((e) => e.getBoundingClientRect().height),
-    ).toBeLessThanOrEqual(18);
+    expect(await img.evaluate((e) => e.getBoundingClientRect().height)).toBe(
+      18,
+    );
     await expect
       .poll(
         () =>
@@ -267,6 +282,13 @@ test("band image uploads and reserved workspace logos work in either column and 
             ?.slot,
       )
       .toBe(0);
+    const last = band.getByRole("textbox", { name: `${kind} column 2` });
+    const previous = await last.locator('[data-field="page.count"]').count();
+    await band.getByRole("button", { name: "Insert band field" }).click();
+    await page.getByRole("menuitem", { name: /Page count/ }).click();
+    await expect(last.locator('[data-field="page.count"]')).toHaveCount(
+      previous + 1,
+    );
     const rendered = f.renders.length;
     await page
       .getByRole("button", { name: "Preview PDF", exact: true })
@@ -274,7 +296,9 @@ test("band image uploads and reserved workspace logos work in either column and 
     await expect.poll(() => f.renders.length).toBe(rendered + 1);
     const heights = await pdfImageHeights(f.renders.at(-1)!.pdf_base64, 2);
     expect(heights.length).toBeGreaterThan(0);
-    expect(heights.every((height) => height > 0 && height <= 18.01)).toBe(true);
+    expect(heights.every((height) => height >= 17.99 && height <= 18.01)).toBe(
+      true,
+    );
     await page
       .getByRole("button", { name: "Close PDF preview", exact: true })
       .click();
@@ -291,6 +315,23 @@ test("band image uploads and reserved workspace logos work in either column and 
             ?.src,
       )
       .toBe("workspace-logo");
+    await band.getByRole("textbox", { name: `${kind} column 2` }).click();
+    await band.getByRole("button", { name: "Image", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Remove image", exact: true }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Use workspace logo", exact: true })
+      .click();
+    await expect
+      .poll(
+        () =>
+          f.active().header_footer?.shared[kind as "header" | "footer"].image
+            ?.slot,
+      )
+      .toBe(1);
+    await page.keyboard.press("Escape");
+    band = await open(page, kind);
     await band.getByRole("button", { name: "Image", exact: true }).click();
     await page
       .getByRole("button", { name: "Remove image", exact: true })
@@ -317,11 +358,39 @@ test("band marks preserve selection and page fields never enter body menus; focu
     band.getByRole("button", { name: "Bold", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
+  await band.press("Shift+Tab");
+  const coverLast = page.locator('[data-block-id="block-text-0"]');
+  await expect(coverLast).toBeFocused();
+  await coverLast
+    .getByRole("button", { name: "Add a block below", exact: true })
+    .focus();
+  await page.keyboard.press("Tab");
+  await expect(band).toBeFocused();
   await band.press("Tab");
   await expect(page.locator('[data-block-id="block-heading-1"]')).toBeFocused();
+  const footer = bands(page, "footer").last();
+  await footer.focus();
+  await footer.press("Tab");
+  await expect(
+    page.getByRole("tab", { name: "Quote", exact: true }),
+  ).toBeFocused();
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
   await expect(page.locator(".field-options")).not.toContainText("page.number");
   await expect(page.locator(".field-options")).not.toContainText("page.count");
+  await open(page);
+  const list = band.getByRole("textbox", { name: "header column 2" });
+  await list.fill("");
+  await list.pressSequentially("1. A numbered band note");
+  await expect(list.locator("ol li")).toContainText("A numbered band note");
+  await expect(list).toBeFocused();
+  await expect
+    .poll(() =>
+      JSON.stringify(f.active().header_footer?.shared.header.slots[1]),
+    )
+    .toContain("A numbered band note");
+  await expect(page.getByRole("button", { name: /Couldn.t save/ })).toHaveCount(
+    0,
+  );
 });
 
 test("Studio edits shared template bands with history, and proposals inherit the saved result", async ({

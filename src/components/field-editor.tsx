@@ -1,4 +1,5 @@
 "use client";
+import { bandRichText } from "./editor/band-rich-text";
 import { pageSpacers, pageSpacerKey } from "./page-spacers";
 import { createPortal } from "react-dom";
 import { FormattingControls } from "./formatting-controls";
@@ -184,7 +185,12 @@ export function FieldEditor({
       };
     },
     onUpdate: ({ editor }) => {
-      const update = () => change.current(editor.getJSON() as RichText);
+      const update = () =>
+        change.current(
+          bandEditor
+            ? bandRichText(editor.getJSON() as RichText)
+            : (editor.getJSON() as RichText),
+        );
       if (history && !standalone)
         history.inScope(textHistoryScope(root.current), update);
       else update();
@@ -251,7 +257,14 @@ export function FieldEditor({
   }, [editor, editorId, !!toolbar]);
   useEffect(() => {
     const next = fieldNodes(value);
-    if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(next))
+    if (
+      editor &&
+      JSON.stringify(
+        bandEditor
+          ? bandRichText(editor.getJSON() as RichText)
+          : editor.getJSON(),
+      ) !== JSON.stringify(bandEditor ? bandRichText(next) : next)
+    )
       editor.commands.setContent(next, { emitUpdate: false });
   }, [value, editor]);
   // Display values are decorations, not document edits. Refresh node views without

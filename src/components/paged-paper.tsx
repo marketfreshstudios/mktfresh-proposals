@@ -70,7 +70,12 @@ export function PagedPaper({
     const el = paper.current;
     if (!el || !onHeaderFooter) return;
     const key = (event: KeyboardEvent) => {
-      if (event.key !== "Tab" || event.defaultPrevented || bandEditing?.active)
+      if (
+        event.key !== "Tab" ||
+        event.defaultPrevented ||
+        bandEditing?.active ||
+        !matchMedia("(min-width:960px)").matches
+      )
         return;
       const target = event.target as HTMLElement;
       const band = target.closest<HTMLElement>("[data-band-frame]");
@@ -84,42 +89,73 @@ export function PagedPaper({
         );
       const number = band ? Number(band.dataset.bandPage) : assignment?.page;
       if (!number) return;
-      const ids =
-        sources?.assignments
-          .filter((a) => a.page === number)
-          .map((a) => a.block) ?? [];
-      const blocks = [...el.querySelectorAll<HTMLElement>(".block-frame")]
-        .filter((b) =>
-          ids.some(
-            (id) =>
-              b.dataset.blockId === `block-${id}` ||
-              b.dataset.blockId === `template-${id}`,
-          ),
-        )
-        .filter(
-          (b) =>
-            b.getClientRects().length && getComputedStyle(b).display !== "none",
+      const visible = (b: HTMLElement) =>
+        b.tabIndex >= 0 &&
+        !!b.getClientRects().length &&
+        getComputedStyle(b).visibility !== "hidden";
+      const blocksOn = (page: number) => {
+        const ids =
+          sources?.assignments
+            .filter((a) => a.page === page)
+            .map((a) => a.block) ?? [];
+        return [...el.querySelectorAll<HTMLElement>(".block-frame")]
+          .filter((b) =>
+            ids.some(
+              (id) =>
+                b.dataset.blockId === `block-${id}` ||
+                b.dataset.blockId === `template-${id}`,
+            ),
+          )
+          .filter(visible);
+      };
+      const bandOn = (kind: "header" | "footer", page: number) =>
+        el.querySelector<HTMLElement>(
+          `[data-band-frame=${kind}][data-band-page="${page}"][tabindex="0"]`,
         );
-      const header = el.querySelector<HTMLElement>(
-        `[data-band-frame=header][data-band-page="${number}"][tabindex="0"]`,
-      );
-      const footer = el.querySelector<HTMLElement>(
-        `[data-band-frame=footer][data-band-page="${number}"][tabindex="0"]`,
-      );
+      const outside = (backward: boolean) => {
+        const candidates = [
+          ...document.querySelectorAll<HTMLElement>(
+            'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[tabindex="0"],[contenteditable="true"]',
+          ),
+        ].filter((b) => !el.contains(b) && visible(b));
+        return backward
+          ? candidates
+              .filter(
+                (b) =>
+                  !!(
+                    el.compareDocumentPosition(b) &
+                    Node.DOCUMENT_POSITION_PRECEDING
+                  ),
+              )
+              .at(-1)
+          : candidates.find(
+              (b) =>
+                !!(
+                  el.compareDocumentPosition(b) &
+                  Node.DOCUMENT_POSITION_FOLLOWING
+                ),
+            );
+      };
+      const blocks = blocksOn(number),
+        header = bandOn("header", number),
+        footer = bandOn("footer", number);
       let next: HTMLElement | null | undefined;
       if (band && target === band) {
         if (band.dataset.bandFrame === "header")
           next = event.shiftKey
-            ? el.querySelector<HTMLElement>(
-                `[data-band-frame=footer][data-band-page="${number - 1}"][tabindex="0"]`,
-              )
-            : (blocks[0] ?? footer);
+            ? (bandOn("footer", number - 1) ??
+              blocksOn(number - 1).at(-1) ??
+              outside(true))
+            : (blocks[0] ??
+              footer ??
+              bandOn("header", number + 1) ??
+              outside(false));
         else
           next = event.shiftKey
-            ? (blocks.at(-1) ?? header)
-            : el.querySelector<HTMLElement>(
-                `[data-band-frame=header][data-band-page="${number + 1}"][tabindex="0"]`,
-              );
+            ? (blocks.at(-1) ?? header ?? outside(true))
+            : (bandOn("header", number + 1) ??
+              blocksOn(number + 1)[0] ??
+              outside(false));
       } else if (block) {
         const stops = [
           block,
@@ -133,13 +169,13 @@ export function PagedPaper({
             getComputedStyle(b).visibility !== "hidden",
         );
         if (event.shiftKey && block === blocks[0] && target === stops[0])
-          next = header;
+          next = header ?? bandOn("footer", number - 1);
         if (
           !event.shiftKey &&
           block === blocks.at(-1) &&
           target === stops.at(-1)
         )
-          next = footer;
+          next = footer ?? bandOn("header", number + 1);
       }
       if (next) {
         event.preventDefault();

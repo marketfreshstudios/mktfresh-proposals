@@ -136,6 +136,10 @@ export function PageBand(props: Props) {
     editors.current[
       Math.min(column.current ?? band.slots.length - 1, band.slots.length - 1)
     ];
+  const imageSlot = Math.min(
+    column.current ?? band.image?.slot ?? 0,
+    band.slots.length - 1,
+  );
   const insert = (path: string) => {
     const e = active();
     if (!e) return;
@@ -355,6 +359,7 @@ export function PageBand(props: Props) {
           >
             <span className="band-field-icon">{"{ }"}</span> Field
           </button>
+          <span className="band-separator" />
           <button
             aria-label="Image"
             title="Image"
@@ -398,7 +403,15 @@ export function PageBand(props: Props) {
             <LayoutMenu
               value={band.layout}
               onPick={(layout) => {
-                patch(changeBandLayout(band, layout));
+                const next = changeBandLayout(band, layout);
+                // A removed column no longer owns a cursor. Field insertion now
+                // uses the documented end-of-last-column fallback.
+                if (
+                  column.current !== null &&
+                  column.current >= next.slots.length
+                )
+                  column.current = null;
+                patch(next);
                 setMenu(null);
                 requestAnimationFrame(() =>
                   trigger?.focus({ preventScroll: true }),
@@ -439,7 +452,7 @@ export function PageBand(props: Props) {
                         image: {
                           src: String(reader.result),
                           alt: "Band image",
-                          slot: column.current ?? band.slots.length - 1,
+                          slot: imageSlot,
                         },
                       });
                       if (!next.success) {
@@ -465,7 +478,7 @@ export function PageBand(props: Props) {
                     image: {
                       src: "workspace-logo",
                       alt: "Workspace logo",
-                      slot: column.current ?? band.slots.length - 1,
+                      slot: imageSlot,
                     },
                   });
                   setMenu(null);
@@ -473,7 +486,7 @@ export function PageBand(props: Props) {
               >
                 Use workspace logo
               </button>
-              {band.image && (
+              {band.image?.slot === imageSlot && (
                 <button
                   onClick={() => {
                     const { image: _, ...next } = band;

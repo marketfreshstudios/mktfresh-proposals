@@ -943,3 +943,7 @@ The separately committed CI timing fix flushes responsive pagination, waits for 
 Desktop shared bands now have non-moving hover/focus outlines, margin controls, a band EditBar, lossless Layout menu, cursor-aware Field menu, embedded image upload and workspace-logo restoration. Shared edits use normal saving/publication and session history. Header/Footer content remains locked after a signature through the existing update rules. Tablet/phone stay at rest for PR 3; client pages remain PR 4.
 
 Styles can scroll to and edit the first shared band. “Reset to template” uses the current saved template (built-in fallback if missing), preserving independent visibility switches and overrides. Studio has the same editing and “Reset to default.” Both resets support Undo. See [implementation notes and 1440px evidence](docs/header-footer-shared-editing.md).
+
+Before column focus, Image uses the existing image’s column or the first column if none; focused image commands use that column. Field insertion independently falls back to the end of the last column.
+
+Local validation for PR #59: full browser suite **154 passed / 3 optional capture checks skipped**; final shared-band suite **7 passed**; Vitest **321 passed**. Typecheck, formatting, neutral-code guard, production build and PDF runtime tracing (**328 files**) pass. Screenshots are in the linked implementation notes and PR description. No CI wait or hosted changes.
