@@ -990,7 +990,7 @@ function NewClientFlow({
                       p.company.logo
                         ? preview
                           ? `/api/proposals/${token}/preview-logo`
-                          : `/api/public/${token}/logo`
+                          : `/api/public/${token}/brand/logo`
                         : undefined
                     }
                     proposal={p}
@@ -1107,7 +1107,7 @@ function NewClientFlow({
                     p.company.logo
                       ? preview
                         ? `/api/proposals/${token}/preview-logo`
-                        : `/api/public/${token}/logo`
+                        : `/api/public/${token}/brand/logo`
                       : undefined
                   }
                   logo={

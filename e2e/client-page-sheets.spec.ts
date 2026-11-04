@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { editorFixture } from "./editor-fixture";
-import { clientActor } from "../tests/helpers";
+import { clientActor, testSignatureImage } from "../tests/helpers";
 import { publicResult } from "../src/lib/service";
 import { defaultHeaderFooter } from "../src/lib/page-bands";
 import { sealedPdf } from "../src/lib/pdf";
@@ -194,6 +194,24 @@ test("desktop client sheets use frozen PDF breaks, bands and geometry, with cris
       .locator('[data-page-band="footer"]'),
   ).toHaveCount(0);
   await expect(host.locator("details")).toHaveCount(0);
+  // The logo is served by the existing public brand route, including in bands.
+  f.current().company.logo = `${f.repo.workspaceId}/fixture-logo.png`;
+  await page.route("**/api/public/**/brand/logo", (route) =>
+    route.fulfill({
+      body: Buffer.from(testSignatureImage.split(",")[1], "base64"),
+      contentType: "image/png",
+    }),
+  );
+  await page.reload();
+  await host.waitFor();
+  const bandLogo = host.locator(".page-band img").first();
+  await expect(bandLogo).toHaveJSProperty("naturalWidth", 1);
+  expect(
+    await bandLogo.evaluate((el) => (el as HTMLElement).offsetHeight),
+  ).toBeLessThanOrEqual(18);
+  f.current().company.logo = null;
+  await page.reload();
+  await host.waitFor();
   const a11y = await new AxeBuilder({ page }).analyze();
   expect(a11y.violations).toEqual([]);
   for (const width of [1440, 1280, 1100]) {
@@ -215,6 +233,10 @@ test("desktop client sheets use frozen PDF breaks, bands and geometry, with cris
       viewport: innerWidth,
     }));
     expect(metrics.scroll).toBeLessThanOrEqual(metrics.viewport);
+    for (const area of await host.locator(".client-sheet-content").all())
+      expect(
+        await area.evaluate((el) => el.scrollWidth - el.clientWidth),
+      ).toBeLessThanOrEqual(1);
     expect(metrics.scale).toBeCloseTo(Math.min(1, metrics.width / 816), 3);
     for (const control of await host.locator("input[data-client-item]").all()) {
       const box = await control.boundingBox();
@@ -222,11 +244,17 @@ test("desktop client sheets use frozen PDF breaks, bands and geometry, with cris
       expect(box!.height).toBeGreaterThanOrEqual(43.9);
     }
     if (process.env.CAPTURE_EDITOR_EVIDENCE === "1" && width !== 1280) {
-      await mkdir("docs/screenshots/header-footer-pr4", { recursive: true });
-      await page.screenshot({
-        path: `docs/screenshots/header-footer-pr4/client-${width}.png`,
-        fullPage: true,
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+        return new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
       });
+      await mkdir("docs/screenshots/header-footer-pr4", { recursive: true });
+      if (width === 1100)
+        await page.screenshot({
+          path: "docs/screenshots/header-footer-pr4/client-1100.png",
+        });
       if (width === 1440) {
         for (let n = 0; n < Math.min(3, f.plan.pages); n++)
           await host

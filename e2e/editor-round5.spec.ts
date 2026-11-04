@@ -218,12 +218,18 @@ test("adjacent list and paragraph spacing uses the larger style gap in editor, c
           : root.getBoundingClientRect().width /
             (root as HTMLElement).offsetWidth;
         return pairs.map(([a, b, expected]) => {
-          const el = (n: number) =>
-            (root.shadowRoot ?? root).querySelector(
+          const el = (n: number) => {
+            const source = (root.shadowRoot ?? root).querySelector(
               client
                 ? `[data-document-block="${content[n].id}"]`
                 : `[data-block-id="block-${content[n].id}"] .block-content`,
             )!;
+            // Unplanned PDF atoms carry the gap as padding. Measure visible
+            // content, exactly as the PDF box_top/box_bottom assertion below.
+            return client && source.hasAttribute("data-source-block")
+              ? (source.firstElementChild ?? source)
+              : source;
+          };
           return {
             gap:
               (el(b).getBoundingClientRect().top -
