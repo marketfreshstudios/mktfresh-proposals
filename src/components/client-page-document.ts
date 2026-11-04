@@ -1,3 +1,4 @@
+import { fitStoredImages } from "../lib/image-size";
 import {
   printContent,
   printCss,
@@ -101,6 +102,7 @@ export function paginateClientDocument(
         if (items[index]) card.dataset.clientItemId = items[index].id;
       },
     );
+  fitStoredImages(root);
   if (plan) applyPagePlan(root, plan);
   else paginatePrintDocument(root);
   // The unplanned PDF paginator emits atoms rather than source wrappers.
@@ -150,5 +152,6 @@ export function paginateClientDocument(
         );
     }
   });
+  fitStoredImages(root);
   return { root, sheets, plan };
 }

@@ -204,7 +204,8 @@ test("AI pill counts sections, cycles in order and wraps, then distinguishes don
     name: "3 to review · Next",
     exact: true,
   });
-  await expect(pill).toHaveText("3 to review · Next ›");
+  await expect(pill).toHaveText("3 to review · Next");
+  await expect(pill.locator("svg.disclosure-icon")).toHaveCount(1);
   const pending = content.filter((b) => b.ai_review);
   for (const b of [pending[0], pending[2], pending[3], pending[0]]) {
     await pill.click();

@@ -101,7 +101,7 @@ export function pageBandHtml({
     if (n.type === "image") {
       const src = n.attrs?.src === "workspace-logo" ? logo : n.attrs?.src;
       return src
-        ? `<img src="${escape(src)}" alt="${escape(n.attrs?.alt ?? "")}" style="height:${n.attrs?.height ?? 18}px">`
+        ? `<img src="${escape(src)}" alt="${escape(n.attrs?.alt ?? "")}" data-image-height="${n.attrs?.height ?? 18}" style="height:${n.attrs?.height ?? 18}px">`
         : "";
     }
     if (n.type === "hardBreak") return "<br>";

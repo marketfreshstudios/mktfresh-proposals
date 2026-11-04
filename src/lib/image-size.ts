@@ -20,3 +20,29 @@ export type ImageValue = {
   width_percent?: number;
   align?: "left" | "center" | "right";
 };
+/** Trusted DOM-only sizing, shared by editor, print and desktop client sheets.
+ * Uses logical widths so transformed Letter sheets never clamp an image twice. */
+export function fitStoredImages(root: ParentNode) {
+  root
+    .querySelectorAll<HTMLImageElement>("img[data-image-height]")
+    .forEach((image) => {
+      const requested = Number(image.dataset.imageHeight),
+        ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
+      const column =
+        image.closest<HTMLElement>(".band-slot,.print-cover,.cover-logo") ??
+        image.parentElement;
+      if (!column || !ratio || !Number.isFinite(requested) || requested <= 0)
+        return;
+      const computed = parseFloat(getComputedStyle(image).maxHeight);
+      const height = Math.max(
+        0,
+        Math.min(
+          requested,
+          column.clientWidth / ratio,
+          Number.isFinite(computed) ? computed : Infinity,
+        ),
+      );
+      image.style.height = `${height}px`;
+      image.style.width = "auto";
+    });
+}

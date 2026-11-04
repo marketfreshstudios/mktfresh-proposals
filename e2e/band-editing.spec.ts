@@ -152,7 +152,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
     await bar.evaluate((e) => {
       const b = e.getBoundingClientRect(),
         r = e.parentElement!.getBoundingClientRect();
-      return Math.round(r.top - b.bottom);
+      return Math.round(b.top - r.bottom);
     }),
   ).toBe(14);
   for (const name of ["Layout", "Insert band field"]) {
@@ -274,13 +274,11 @@ test("inline band image uploads, cursor insertion, workspace sources and deletio
     await first.click();
     await first.press("End");
     await band.getByRole("button", { name: "Image", exact: true }).click();
-    await page
-      .getByLabel("Upload band image")
-      .setInputFiles({
-        name: "logo.png",
-        mimeType: "image/png",
-        buffer: Buffer.from(image.split(",")[1], "base64"),
-      });
+    await page.getByLabel("Upload band image").setInputFiles({
+      name: "logo.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(image.split(",")[1], "base64"),
+    });
     const img = band.locator('[data-image-kind="band"] img');
     await expect(img).toHaveCount(1);
     expect(await img.evaluate((el) => el.getBoundingClientRect().height)).toBe(
@@ -308,13 +306,16 @@ test("inline band image uploads, cursor insertion, workspace sources and deletio
       .getByRole("button", { name: "Preview PDF", exact: true })
       .click();
     await expect.poll(() => f.renders.length).toBe(rendered + 1);
-    const heights = f.renders
-      .at(-1)!
-      .layout.sheets!.flatMap((s) =>
-        [...s.html.matchAll(/<img[^>]*style="height:([\d.]+)px/g)].map((m) =>
-          Number(m[1]),
+    const heights = await page.evaluate(
+      (sheets) =>
+        sheets.flatMap((html) =>
+          Array.from(
+            new DOMParser().parseFromString(html, "text/html").images,
+            (image) => parseFloat(image.style.height),
+          ),
         ),
-      );
+      f.renders.at(-1)!.layout.sheets!.map((s) => s.html),
+    );
     expect(heights).toContain(18);
     await page
       .getByRole("button", { name: "Close PDF preview", exact: true })
@@ -462,7 +463,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
   const settings = page.locator(".band-settings");
   await expect(
     settings.getByRole("button", { name: "Edit shared header", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await settings
     .getByRole("switch", { name: "Show on cover", exact: true })
     .check();

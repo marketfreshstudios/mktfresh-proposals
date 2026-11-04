@@ -152,7 +152,10 @@ test("shared rest bands resolve page fields after pagination; cover and certific
     .filter((s) => s.trim());
   expect(text).toHaveLength(10);
   expect(text[2]).toMatch(/Page\s+3\s+of\s+9/);
-  expect(text[0]).not.toContain("Prepared for");
+  expect(rendered.layout.sheets![0].html).not.toContain(
+    'data-page-band="footer"',
+  );
+  expect(text[0]).not.toMatch(/Page\s+1\s+of\s+9/);
   expect(text[9]).toContain("Certificate of completion");
   expect(text[9]).not.toContain("Prepared for");
   expect(text[9]).not.toMatch(/Page\s+\d+\s+of\s+9/);
@@ -176,7 +179,7 @@ test("shared rest bands resolve page fields after pagination; cover and certific
   ).toBe(true);
 });
 
-test("Styles switches autosave, retain overrides, free space and repaginate the cover", async ({
+test("Styles switches retain content space and breaks, keep overrides and show cover bands", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, {
@@ -309,5 +312,8 @@ test("new Studio templates start with shared bands and save template switches wi
   await expect.poll(() => saved?.header_footer?.showOnCover).toBe(true);
   expect(saved.header_footer.shared.header.layout).toBe("half");
   expect(saved.header_footer).not.toHaveProperty("overrides");
-  await expect(page.locator(".template-paged-paper .page-band")).toHaveCount(2);
+  await expect(page.locator(".template-paged-paper .page-sheet")).toHaveCount(
+    2,
+  );
+  await expect(page.locator(".template-paged-paper .page-band")).toHaveCount(4);
 });

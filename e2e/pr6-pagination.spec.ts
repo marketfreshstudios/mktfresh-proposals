@@ -306,13 +306,13 @@ test("cover fields keep tokens, persist per proposal, remove logo, and inherit i
     page.locator('.cover-field .field-chip[data-field="workspace.name"]'),
   ).toBeVisible();
   await page
-    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .getByRole("textbox", { name: "Cover client name", exact: true })
     .fill("Prepared especially for {{client.first_name}}");
   await expect
-    .poll(() => f.active().cover?.eyebrow)
+    .poll(() => f.active().cover?.prepared_for)
     .toBe("Prepared especially for {{client.first_name}}");
   await page
-    .getByRole("textbox", { name: "Cover eyebrow", exact: true })
+    .getByRole("textbox", { name: "Cover client name", exact: true })
     .blur();
   await expect(
     page.locator('.cover-field .field-chip[data-field="client.first_name"]'),

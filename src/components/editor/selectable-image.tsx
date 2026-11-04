@@ -1,6 +1,7 @@
 "use client";
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
@@ -9,6 +10,7 @@ import {
 } from "react";
 import {
   constrainedImageSize,
+  fitStoredImages,
   imagePercent,
   type ImageValue,
 } from "../../lib/image-size";
@@ -19,6 +21,7 @@ export function SelectableImage({
   source = value.src,
   kind = "block",
   maxHeight = Infinity,
+  maximumHeight,
   onChange,
   onDelete,
   onSelect,
@@ -32,6 +35,7 @@ export function SelectableImage({
   source?: string;
   kind?: "block" | "cover" | "band";
   maxHeight?: number;
+  maximumHeight?: () => number;
   onChange?: (value: ImageValue) => void;
   onDelete?: () => void;
   onSelect?: () => void;
@@ -100,6 +104,18 @@ export function SelectableImage({
       viewport?.removeEventListener("scroll", place);
     };
   }, []);
+  useLayoutEffect(() => {
+    if (kind === "block" || !root.current || !image.current) return;
+    const apply = () => root.current && fitStoredImages(root.current);
+    const resize = new ResizeObserver(apply);
+    const column = root.current.closest(
+      kind === "band" ? ".band-slot" : ".cover-logo",
+    );
+    if (column) resize.observe(column);
+    resize.observe(image.current);
+    apply();
+    return () => resize.disconnect();
+  }, [kind, source, value.height, preview?.height, maxHeight]);
   const available = () => {
     const container =
       kind === "band"
@@ -109,21 +125,26 @@ export function SelectableImage({
           : root.current?.parentElement;
     return container?.getBoundingClientRect().width ?? 1;
   };
+  const limit = () => maximumHeight?.() ?? maxHeight;
   const dimensions = (height: number) =>
     constrainedImageSize(
       height,
       (image.current?.naturalWidth ?? 1) /
         Math.max(1, image.current?.naturalHeight ?? 1),
       available(),
-      maxHeight,
+      limit(),
     );
-  const commit = (size: { width: number; height: number }) =>
+  const commit = (size: { width: number; height: number }) => {
+    // A margin can temporarily leave no room for an image. Preserve its
+    // positive stored size while rendering it at the available (zero) height.
+    if (size.height <= 0 || size.width <= 0) return;
     save({
       ...latest.current.value,
       ...(kind === "block"
         ? { width_percent: imagePercent(size.width, available()) }
         : { height: size.height }),
     });
+  };
   const resize = (
     event: ReactPointerEvent<HTMLButtonElement>,
     corner: string,
@@ -179,7 +200,11 @@ export function SelectableImage({
         : (preview?.height ?? value.height ?? (kind === "cover" ? 60 : 18)),
     maxWidth: "100%",
     maxHeight:
-      kind === "block" || !Number.isFinite(maxHeight) ? "none" : maxHeight,
+      kind === "band"
+        ? "var(--band-image-max,18px)"
+        : kind === "block" || !Number.isFinite(maxHeight)
+          ? "none"
+          : maxHeight,
     objectFit: "contain",
   };
   return (
@@ -209,6 +234,10 @@ export function SelectableImage({
           : { display: "inline-block" }),
       }}
       onKeyDown={(e) => {
+        if (
+          (e.target as Element).closest("input,textarea,[contenteditable=true]")
+        )
+          return;
         if ((e.target as Element).closest("input,textarea,select")) return;
         if (e.key === "Enter" && e.target === root.current) {
           e.preventDefault();
@@ -245,10 +274,28 @@ export function SelectableImage({
       <img
         ref={image}
         src={source}
+        data-image-height={
+          kind === "block"
+            ? undefined
+            : (preview?.height ?? value.height ?? (kind === "cover" ? 60 : 18))
+        }
+        onLoad={() => {
+          if (root.current && kind !== "block") fitStoredImages(root.current);
+        }}
         alt={value.alt ?? ""}
         draggable={draggable}
         onDragStart={onDragStart}
         style={imgStyle}
+        onPointerDown={
+          editable
+            ? (event) => {
+                if (event.button === 0) {
+                  event.stopPropagation();
+                  select();
+                }
+              }
+            : undefined
+        }
         onClick={
           editable
             ? (e) => {
@@ -321,7 +368,9 @@ export function SelectableImage({
                     kind === "cover"
                       ? 60
                       : kind === "band"
-                        ? Math.min(18, maxHeight)
+                        ? limit() > 0
+                          ? Math.min(18, limit())
+                          : value.height
                         : undefined,
                   width_percent: kind === "block" ? 100 : undefined,
                 })
@@ -344,6 +393,7 @@ export function SelectableImage({
                   Alt text
                   <input
                     autoFocus
+                    maxLength={300}
                     value={value.alt ?? ""}
                     onChange={(e) => save({ ...value, alt: e.target.value })}
                   />
@@ -392,7 +442,19 @@ export function SelectableImage({
               setError("Choose a valid PNG or JPEG image");
               return;
             }
-            save({ ...value, src });
+            const current = latest.current.value;
+            save({
+              ...current,
+              src,
+              ...(kind === "band"
+                ? {
+                    height:
+                      limit() > 0
+                        ? Math.min(current.height ?? 18, limit())
+                        : current.height,
+                  }
+                : {}),
+            });
             setError("");
             e.target.value = "";
           }}

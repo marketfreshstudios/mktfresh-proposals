@@ -102,3 +102,11 @@ it("stores pasted/editor list and link content in the strict band format without
   ]);
   expect((source.content[0].attrs as any).start).toBe(1);
 });
+
+it("an empty band document uses ProseMirror's canonical empty paragraph", async () => {
+  const { fieldNodes } = await import("../src/components/field-editor");
+  expect(fieldNodes({ type: "doc", content: [] })).toEqual({
+    type: "doc",
+    content: [{ type: "paragraph" }],
+  });
+});

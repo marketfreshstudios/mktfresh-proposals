@@ -1,3 +1,4 @@
+import { fitStoredImages } from "../lib/image-size";
 import {
   pageGeometry,
   pageContentHeight,
@@ -103,6 +104,7 @@ export function paginateBrowser(
     )
     .forEach((el) => el.style.setProperty("display", "block", "important"));
   root.parentElement!.append(clone);
+  fitStoredImages(clone);
   const top = clone.getBoundingClientRect().top,
     starts: PageStart[] = [],
     assignments: BrowserPages["assignments"] = [];

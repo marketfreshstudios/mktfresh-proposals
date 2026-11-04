@@ -52,8 +52,6 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
   await band.scrollIntoViewIfNeeded();
   await band.click();
   await expect(band).toHaveAttribute("data-band-selected", "true");
-  await expect(band).toHaveAttribute("data-band-state", "rest");
-  await band.click();
   await expect(band).toHaveAttribute("data-band-state", "editing");
   await expect(band.getByRole("toolbar")).toHaveCSS("height", "44px");
   await expect(page.locator(".band-touch-scope")).toHaveText(

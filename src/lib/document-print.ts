@@ -76,7 +76,7 @@ export function printContent(input: {
   };
   const src =
     presentation.logo === null ? undefined : presentation.logo || input.logo;
-  const cover = `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
+  const cover = `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" data-image-height="${presentation.logo_height ?? 60}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
     : {};

@@ -457,6 +457,7 @@ export class ProposalService {
         403,
       );
       if (p.status === "draft") delete p.workspace_settings;
+      p.cover = loadedCover(p.cover);
       if (input.pagination) {
         check(
           actor.actor.startsWith("staff:"),
@@ -738,6 +739,7 @@ export class ProposalService {
         "Confirm review of AI changes before sending",
       );
       p.quote = draftItems(p.quote);
+      p.cover = loadedCover(p.cover);
 
       p.workspace_settings = settingsSnapshot(settings);
       const ready = readiness(p, catalog, this.clock(), confirmAiReview);

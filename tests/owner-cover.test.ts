@@ -59,6 +59,29 @@ it("manual and AI creates start content on page 2, and AI edits cannot put scope
     }
   }
 });
+it("existing old-default covers normalize on a save or send without a separate cover edit", async () => {
+  for (const action of ["save", "send"] as const) {
+    const f = await setup();
+    const old = structuredClone(f.draft);
+    old.cover = {
+      workspace: "{{workspace.name}}",
+      eyebrow: "Proposal for {{client.company}}",
+      byline: "From {{sender.name}} · {{proposal.validity}}",
+    };
+    await f.repo.save(old, old.revision);
+    const result =
+      action === "send"
+        ? await f.service.send(old.id, staff)
+        : await f.service.edit(
+            old.id,
+            { revision: old.revision, title: "Updated" },
+            staff,
+          );
+    expect(result.cover).toEqual(defaultCover());
+    if (action === "send")
+      expect(result.versions.at(-1)!.cover).toEqual(defaultCover());
+  }
+});
 it("cover order and indefinite validity are empty safe, while signed payloads and hashes never migrate", async () => {
   const f = await setup();
   let sent = await f.service.send(f.draft.id, staff);
@@ -95,4 +118,18 @@ it("cover order and indefinite validity are empty safe, while signed payloads an
   expect(html).not.toContain("From Staff");
   expect(JSON.stringify(version)).toBe(before);
   expect(versionHash(version)).toBe(hash);
+});
+
+it("a template cover break does not let the redundant title heading reappear", async () => {
+  const { withoutTitleHeading } = await import("../src/lib/editor-document");
+  const content = [
+    { id: "break", type: "page_break" as const },
+    { id: "title", type: "heading" as const, text: "{{proposal.title}}" },
+    { id: "body", type: "paragraph" as const, text: "Scope" },
+  ];
+  expect(withoutTitleHeading(content).map((b) => b.id)).toEqual([
+    "break",
+    "body",
+  ]);
+  expect(content).toHaveLength(3);
 });

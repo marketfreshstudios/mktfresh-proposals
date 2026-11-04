@@ -102,6 +102,7 @@ function BandImageView({
           node.attrs.src === "workspace-logo" ? options.logo : node.attrs.src
         }
         maxHeight={options.maxHeight}
+        maximumHeight={() => extension.options.settings.current.maxHeight}
         externalSelected={selected}
         draggable
         onSelect={() => {

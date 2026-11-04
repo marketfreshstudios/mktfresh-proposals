@@ -217,10 +217,23 @@ export function PageBand(props: Props) {
     editors.current[
       Math.min(column.current ?? band.slots.length - 1, band.slots.length - 1)
     ];
-  const insertImage = (src: string, alt: string) => {
+  const insertImage = async (src: string, alt: string) => {
     const e = active();
     if (!e) return;
-    const height = Math.min(18, geometry.bandLimits[kind].imageHeight);
+    const resource = src === "workspace-logo" ? logo : src;
+    let ratio = 1;
+    if (resource) {
+      const image = new Image();
+      image.src = resource;
+      await image.decode().catch(() => {});
+      ratio = image.naturalWidth / Math.max(1, image.naturalHeight) || 1;
+    }
+    if (e.isDestroyed) return;
+    const height = Math.min(
+      18,
+      geometry.bandLimits[kind].imageHeight,
+      e.view.dom.closest(".band-slot")!.getBoundingClientRect().width / ratio,
+    );
     if (height <= 0) {
       setError("Increase the page margin to make room for an image.");
       return;
@@ -311,10 +324,7 @@ export function PageBand(props: Props) {
       data-band-state={editing ? "editing" : "rest"}
       data-band-source={source}
       data-band-selected={selected}
-      data-small-margin={
-        (kind === "header" ? geometry.margins.top : geometry.margins.bottom) <
-        57.6
-      }
+      data-small-margin={geometry.distance < 57.6}
       data-band-anchor={anchor}
       className="page-band-frame"
       role="group"
@@ -439,9 +449,13 @@ export function PageBand(props: Props) {
                             requestAnimationFrame(selectImage);
                             return;
                           }
+                          // A rest label and its editable line can have slightly
+                          // different font baselines. Bands are single-line: use
+                          // the mounted line’s vertical center and the clicked x.
+                          const line = e.view.dom.getBoundingClientRect();
                           const position = e.view.posAtCoords({
                             left: point.x,
-                            top: point.y,
+                            top: line.top + line.height / 2,
                           });
                           e.commands.setTextSelection(
                             position?.pos ??
@@ -529,11 +543,7 @@ export function PageBand(props: Props) {
           kind={kind}
           device={device ?? "desktop"}
           sourceLabel={source === "shared" ? "Shared" : "Unique"}
-          inside={
-            (kind === "header"
-              ? geometry.margins.top
-              : geometry.margins.bottom) < 57.6
-          }
+          inside={geometry.distance < 57.6}
         >
           <button
             aria-label="Bold"

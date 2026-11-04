@@ -1,3 +1,4 @@
+import { fitStoredImages } from "./image-size";
 import { bandPages, resolvedBandPages } from "./band-overrides";
 import { pageBandHtml, pageBandCss } from "./page-band-render";
 import { pageGeometry } from "./page-bands";
@@ -139,6 +140,7 @@ export async function sealedPdf(
         images.map((img) => (img as HTMLImageElement).decode().catch(() => {})),
       );
     });
+    await page.locator(".print-root").evaluate(fitStoredImages);
     // Serialize only this trusted repository function, never document content.
     // tsx preserves nested function names with __name; keep that helper scoped here.
     const layout: PrintLayout = version.pagination
@@ -265,6 +267,7 @@ export async function sealedPdf(
             ),
           ),
         );
+      await page.locator(".print-root").evaluate(fitStoredImages);
       const html = await page
         .locator(".print-sheet")
         .evaluateAll((sheets) => sheets.map((el) => el.innerHTML));

@@ -9,10 +9,11 @@ export function duplicateBlock(block: Block): Block {
 }
 /** Draft/template authoring only. Never apply to a stored sent/signed version. */
 export function withoutTitleHeading(content: Block[]) {
-  return content[0]?.type === "heading" &&
-    (content[0].level ?? 1) === 1 &&
-    content[0].text === "{{proposal.title}}"
-    ? content.slice(1)
+  const first = content[0]?.type === "page_break" ? 1 : 0;
+  return content[first]?.type === "heading" &&
+    (content[first].level ?? 1) === 1 &&
+    content[first].text === "{{proposal.title}}"
+    ? content.filter((_, index) => index !== first)
     : content;
 }
 /** Authoring-only insertion when a text block was selected without a cursor. */

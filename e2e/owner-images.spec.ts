@@ -82,6 +82,10 @@ test("block, cover and band image controls resize with locked proportions, save 
   await page
     .getByLabel("Alt text", { exact: true })
     .fill("Clear accessible image");
+  await page.getByLabel("Alt text", { exact: true }).press("End");
+  await page.getByLabel("Alt text", { exact: true }).press("Backspace");
+  await expect(block.locator("img")).toHaveCount(1);
+  await page.getByLabel("Alt text", { exact: true }).press("e");
   await page.keyboard.press("Escape");
   await expect
     .poll(() => f.active().content.find((b) => b.id === "photo")!.alt)
@@ -221,4 +225,117 @@ test("band images drag across columns with an insertion caret and exact undo", a
         .map((i) => i.slot),
     )
     .toEqual([1]);
+});
+test("phone touch resizing keeps proportions and the shared dark image toolbar", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  const { f } = await imageFixture(page);
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const image = page.locator(
+    '[data-block-id="block-photo"] [data-image-kind="block"]',
+  );
+  await image.locator("img").click();
+  await expect(image.getByRole("toolbar")).toHaveCSS(
+    "background-color",
+    "rgb(28, 27, 24)",
+  );
+  const corner = image.getByRole("button", {
+    name: "Resize image bottom right",
+    exact: true,
+  });
+  await corner.scrollIntoViewIfNeeded();
+  const b = (await corner.boundingBox())!,
+    cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: b.x + 22, y: b.y + 22 }],
+  });
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: b.x + 2, y: b.y + 12 }],
+  });
+  await expect(image.getByRole("status")).toContainText("×");
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect
+    .poll(() => f.active().content.find((b) => b.id === "photo")?.width_percent)
+    .toBeLessThan(50);
+  const box = (await image.locator("img").boundingBox())!;
+  expect(box.width / box.height).toBeCloseTo(320 / 180, 2);
+});
+test("wide cover logos fit the column proportionally without changing their stored size", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  const { f } = await imageFixture(page);
+  const wide = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = 1000;
+    c.height = 100;
+    c.getContext("2d")!.fillRect(0, 0, 1000, 100);
+    return c.toDataURL("image/png");
+  });
+  await f.editRemote({
+    cover: { ...defaultCover(), logo: wide, logo_height: 60 },
+  });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const image = page.locator('.document-cover [data-image-kind="cover"] img');
+  await expect
+    .poll(() => image.evaluate((el) => (el as HTMLImageElement).naturalWidth))
+    .toBe(1000);
+  const size = (await image.boundingBox())!;
+  expect(size.width / size.height).toBeCloseTo(10, 1);
+  expect(size.height).toBeLessThan(60);
+  expect(f.active().cover?.logo_height).toBe(60);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect
+    .poll(() => image.evaluate((el) => el.getBoundingClientRect().height))
+    .toBeCloseTo(60, 1);
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.renders.length).toBe(1);
+  expect(f.renders[0].layout.sheets![0].html).toMatch(
+    /data-image-height="60"[^>]*height: ?60px/,
+  );
+});
+test("a single band click places the caret at the clicked text", async ({
+  page,
+}) => {
+  const { f } = await imageFixture(page);
+  const hf = defaultHeaderFooter();
+  hf.shared.header.slots[0] = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "Before after" }] },
+    ],
+  };
+  await f.editRemote({ header_footer: hf });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const band = page.locator('[data-band-frame="header"]').first();
+  await band.scrollIntoViewIfNeeded();
+  const text = band.locator('[data-band-slot="0"] p');
+  const point = await text.evaluate((el) => {
+    const r = document.createRange();
+    r.setStart(el.firstChild!, 7);
+    r.collapse(true);
+    const b = r.getBoundingClientRect();
+    return { x: b.left, y: b.top + b.height / 2 };
+  });
+  await page.mouse.click(point.x, point.y);
+  await expect(
+    band.getByRole("textbox", { name: "header column 1" }),
+  ).toBeFocused();
+  await page.keyboard.type("here ");
+  await expect(
+    band.getByRole("textbox", { name: "header column 1" }),
+  ).toHaveText("Before here after");
+  await expect(
+    band.getByRole("button", { name: "Edit", exact: true }),
+  ).toHaveCount(0);
 });

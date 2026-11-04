@@ -24,6 +24,8 @@ import type { RichText } from "../lib/model";
 import { Button } from "./ui";
 /** Draft-only editing adapter. Historical content is never passed through this. */
 export function fieldNodes(node: RichText): RichText {
+  if (node.type === "doc" && !node.content?.length)
+    return { ...node, content: [{ type: "paragraph" }] };
   return {
     ...node,
     ...(node.content
