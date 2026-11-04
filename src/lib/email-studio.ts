@@ -11,7 +11,7 @@ import {
   definition,
   emailValues,
 } from "./email-templates";
-import { validateTemplate } from "./email-template-content";
+import { editableEmail, validateTemplate } from "./email-template-content";
 import { emailIdentity } from "./email-identity";
 import { defaultValidUntil } from "./validity";
 import { appOrigin } from "./links";
@@ -38,7 +38,7 @@ export async function emailStudioPreview(
       (await emailTemplates(repo)).find((t) => t.key === key) ??
       definition(key);
   check(
-    !stored.staff ||
+    editableEmail(stored) ||
       (!options.subject && !options.body && !options.button_label),
     "Staff notifications are read-only",
     403,

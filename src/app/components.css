@@ -875,3 +875,10 @@ textarea.ps-field__control {
   background: var(--accent);
   color: var(--on-accent);
 }
+
+.record-job-highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 10px;
+  scroll-margin-top: 100px;
+}

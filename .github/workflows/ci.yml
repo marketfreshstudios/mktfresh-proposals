@@ -30,6 +30,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run verify:fonts
+      # Match Vercel's packaged Linux Chromium, including both sealing stages.
+      - run: VERCEL=1 npm run verify:pdf-jobs
   e2e:
     name: Browser tests (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest

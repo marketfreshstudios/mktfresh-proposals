@@ -1,3 +1,11 @@
+import {
+  PdfPrintError,
+  diagnosticText,
+  printMemory,
+  type PrintDiagnostic,
+} from "./pdf-diagnostics";
+import { validatePrintGeometry } from "./pdf-geometry";
+import { checkedPrint } from "./pdf-print";
 import { fitStoredImages } from "./image-size";
 import { bandPages, resolvedBandPages } from "./band-overrides";
 import { pageBandHtml, pageBandCss } from "./page-band-render";
@@ -5,7 +13,7 @@ import { pageGeometry } from "./page-bands";
 import { readableDate } from "./validity";
 import { signatureHtml } from "./signature-presentation";
 import { applyPagePlan, plannedPrintCss } from "./planned-print";
-import { documentStyleCss, styleFonts } from "./proposal-styles";
+import { documentStyleCss, styleFonts, pageMetrics } from "./proposal-styles";
 import { completionCertificate } from "./completion-certificate";
 import { fontFamily, curatedFonts, type ProposalFont } from "./proposal-fonts";
 import {
@@ -38,10 +46,91 @@ export async function sealedPdf(
   },
   options?: { preview?: boolean },
 ) {
+  const stage = options?.preview
+    ? ("preview" as const)
+    : signers.some((s) => s.role === "company")
+      ? ("company" as const)
+      : ("client" as const);
+  const failures: PrintDiagnostic[] = [],
+    consoleLines: string[] = [],
+    stderr: string[] = [];
+  const baseMetrics = pageMetrics(version.resolved_styles);
+  let geometry: unknown = {
+      width: baseMetrics.width,
+      height: baseMetrics.height,
+      margins: baseMetrics.margins,
+      content_height: baseMetrics.contentHeight,
+      content_width: baseMetrics.contentWidth,
+    },
+    pageCount = version.pagination?.pages ?? 0,
+    chromiumVersion = "not launched",
+    browserPid: number | undefined;
+  const capture = (
+    error: unknown,
+    print: "proposal body" | "certificate",
+    attempt: number,
+  ) => {
+    const value: PrintDiagnostic = {
+      stage,
+      print,
+      attempt,
+      page_count: print === "certificate" ? 1 : pageCount,
+      geometry:
+        print === "certificate"
+          ? {
+              width: 816,
+              height: 1056,
+              margins: 0,
+              padding: { top: 48, right: 54, bottom: 48, left: 54 },
+            }
+          : geometry,
+      memory: printMemory(browserPid),
+      chromium: chromiumVersion,
+      console: consoleLines.slice(-12),
+      stderr: stderr.slice(-12),
+      error: diagnosticText(
+        error instanceof Error ? error.message : String(error),
+      ),
+      at: new Date().toISOString(),
+    };
+    failures.push(value);
+    console.error("pdf_print_failure", value);
+    return value;
+  };
+  try {
+    const g = validatePrintGeometry(
+      version.resolved_styles,
+      version.header_footer,
+    );
+    geometry = {
+      width: g.width,
+      height: g.height,
+      margins: g.margins,
+      content: g.content,
+    };
+  } catch (error) {
+    const diagnostic = capture(error, "proposal body", 0);
+    throw new PdfPrintError(
+      error instanceof Error ? error.message : String(error),
+      [diagnostic],
+      error,
+    );
+  }
+  const watch = (page: import("playwright-core").Page) => {
+    page.on("console", (message) => {
+      consoleLines.push(diagnosticText(`${message.type()}: ${message.text()}`));
+      if (consoleLines.length > 24) consoleLines.shift();
+    });
+    page.on("pageerror", (error) => {
+      consoleLines.push(diagnosticText(error.message));
+      if (consoleLines.length > 24) consoleLines.shift();
+    });
+  };
   const serverless = process.env.VERCEL
     ? (await import("@sparticuz/chromium")).default
     : null;
-  const browser = await chromium.launch({
+  const server = await chromium.launchServer({
+    host: "127.0.0.1",
     ...(serverless
       ? {
           args: serverless.args,
@@ -53,7 +142,15 @@ export async function sealedPdf(
       ? { executablePath: process.env.CHROMIUM_EXECUTABLE_PATH }
       : {}),
   });
+  browserPid = server.process().pid;
+  server.process().stderr?.on("data", (chunk: Buffer) => {
+    stderr.push(diagnosticText(chunk.toString()));
+    if (stderr.length > 24) stderr.shift();
+  });
+  let browser: import("playwright-core").Browser | undefined;
   try {
+    browser = await chromium.connect(server.wsEndpoint(), { timeout: 30000 });
+    chromiumVersion = browser.version();
     const chosen = brand?.settings?.proposal_fonts;
     const ids = new Set([
       ...styleFonts(version.resolved_styles),
@@ -80,7 +177,8 @@ export async function sealedPdf(
       )
       .join("");
     const style = `<style>${families.join("")}${custom}body{--proposal-body:${fontFamily(brand?.settings?.proposal_fonts?.body)};--proposal-heading:${fontFamily(brand?.settings?.proposal_fonts?.heading)};font-family:${fontFamily(brand?.settings?.proposal_fonts?.body)}}h1,h2,h3,h4{font-family:${fontFamily(brand?.settings?.proposal_fonts?.heading)}}</style>`;
-    const page = await browser.newPage({ javaScriptEnabled: false });
+    let page = await browser.newPage({ javaScriptEnabled: false });
+    watch(page);
     await page.route("**/*", (route) => route.abort());
     const signedBlock = (s: Signer) =>
       signatureHtml({
@@ -103,6 +201,7 @@ export async function sealedPdf(
           `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             cover: version.cover,
+            legacyCover: version.cover === undefined,
             title:
               version.variables_resolved["proposal.title"] ??
               brand?.document?.title ??
@@ -283,11 +382,13 @@ export async function sealedPdf(
         );
         document.body.append(mark);
       });
-    const body = await page.pdf({
-      format: "Letter",
-      printBackground: true,
-      preferCSSPageSize: true,
+    pageCount = layout.pages;
+    const printed = await checkedPrint(page, browser, "proposal", {
+      failure: capture,
+      pageCreated: watch,
     });
+    page = printed.page;
+    const body = printed.bytes;
     if (
       !version.pagination &&
       (await PDFDocument.load(body)).getPageCount() !== layout.pages
@@ -295,7 +396,13 @@ export async function sealedPdf(
       throw new Error("PDF pagination differs from the document layout");
     const bodyHash = sha256(body);
     if (options?.preview)
-      return { body, pdf: Buffer.from(body), bodyHash, layout };
+      return {
+        body,
+        pdf: Buffer.from(body),
+        bodyHash,
+        layout,
+        print_failures: failures,
+      };
     const certificate = completionCertificate(version, signers, events, brand);
     await page.setContent(htmlDocument(style + certificate));
     await page.evaluate(() => document.fonts.ready);
@@ -306,11 +413,12 @@ export async function sealedPdf(
         ),
       );
     });
-    const auditBytes = await page.pdf({
-      format: "Letter",
-      printBackground: true,
-      preferCSSPageSize: true,
+    const certificatePrint = await checkedPrint(page, browser, "certificate", {
+      failure: capture,
+      pageCreated: watch,
     });
+    page = certificatePrint.page;
+    const auditBytes = certificatePrint.bytes;
     const certificatePdf = await PDFDocument.load(auditBytes);
     if (certificatePdf.getPageCount() !== 1)
       throw new Error("Completion certificate must fit on one page");
@@ -321,8 +429,25 @@ export async function sealedPdf(
       auditPdf.getPageIndices(),
     ))
       pdf.addPage(copied);
-    return { body, pdf: Buffer.from(await pdf.save()), bodyHash, layout };
+    return {
+      body,
+      pdf: Buffer.from(await pdf.save()),
+      bodyHash,
+      layout,
+      print_failures: failures,
+    };
+  } catch (error) {
+    // A recovered body failure still belongs in Evidence if a later certificate
+    // failure aborts the job; keep the complete bounded print-attempt history.
+    if (failures.length)
+      throw new PdfPrintError(
+        error instanceof Error ? error.message : String(error),
+        failures,
+        error,
+      );
+    throw error;
   } finally {
-    await browser.close();
+    await browser?.close().catch(() => {});
+    await server.close();
   }
 }

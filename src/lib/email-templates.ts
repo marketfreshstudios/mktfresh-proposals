@@ -1,3 +1,4 @@
+import { jobRecordAnchor, type JobFailure } from "./job-presentation";
 import { publishedPresentation } from "./editor-publication";
 import {
   billingCompletionText,
@@ -11,6 +12,8 @@ import { escape } from "./presentation";
 import {
   resolveEmailText,
   emailDefaults,
+  editableEmail,
+  oldJobEmailDefault,
   definition,
   emailValues,
   validateTemplate,
@@ -22,11 +25,48 @@ export * from "./email-template-content";
 import { emailLayout } from "./email-layout";
 import { proposalLink, appOrigin } from "./links";
 import { emailIdentity } from "./email-identity";
-import { sha256 } from "./content";
+import { sha256, canonical } from "./content";
 export async function emailTemplates(repo: Repository) {
   const saved = await repo.entities<EmailTemplate>("email_templates");
+  const previous = saved.find((t) => t.key === "staff_billing_failed");
+  if (
+    previous &&
+    previous.subject === oldJobEmailDefault.subject &&
+    previous.button_label === oldJobEmailDefault.button_label &&
+    canonical(previous.body) === canonical(oldJobEmailDefault.body)
+  ) {
+    const replacement = {
+      ...previous,
+      ...definition(previous.key),
+      version_id: randomUUID(),
+      updated_at: new Date().toISOString(),
+      updated_by: "system",
+    };
+    await repo.saveEmailTemplate(
+      {
+        ...replacement,
+        id:
+          (previous as EmailTemplate & { id?: string }).id ??
+          emailId(`template:${repo.workspaceId}:${previous.key}`),
+      },
+      {
+        id: replacement.version_id!,
+        type: "email_template_saved",
+        actor: "system",
+        ip: "",
+        user_agent: "",
+        created_at: replacement.updated_at!,
+        metadata: {
+          key: previous.key,
+          name: replacement.name,
+          migration: true,
+        },
+      },
+    );
+    saved.splice(saved.indexOf(previous), 1, replacement);
+  }
   return emailDefaults.map((d) =>
-    !d.staff
+    editableEmail(d)
       ? structuredClone(saved.find((t) => t.key === d.key) ?? d)
       : structuredClone(d),
   );
@@ -44,7 +84,7 @@ export async function saveEmailTemplate(
 ) {
   check(actor.actor.startsWith("staff:"), "Staff authorization required", 403);
   const d = definition(key);
-  check(!d.staff, "Staff notifications are read-only", 403);
+  check(editableEmail(d), "Staff notifications are read-only", 403);
   const data = reset ? d : validateTemplate(input);
   const previous = (await emailTemplates(repo)).find((t) => t.key === key);
   const id = randomUUID(),
@@ -62,7 +102,12 @@ export async function saveEmailTemplate(
     updated_by: actor.actor,
   };
   await repo.saveEmailTemplate(
-    { ...template, id: emailId(`template:${repo.workspaceId}:${key}`) },
+    {
+      ...template,
+      id:
+        (previous as EmailTemplate & { id?: string })?.id ??
+        emailId(`template:${repo.workspaceId}:${key}`),
+    },
     {
       id,
       type: "email_template_saved",
@@ -140,6 +185,7 @@ export function renderTemplate(
     url?: string;
     declineNote?: string;
     billingConfirmation?: BillingCompletion;
+    jobFailure?: JobFailure;
   } = {},
 ) {
   validateTemplate({
@@ -147,7 +193,15 @@ export function renderTemplate(
     body: t.body,
     button_label: t.button_label,
   });
-  const map = emailValues(p),
+  const map = {
+      ...emailValues(p),
+      ...(options.jobFailure
+        ? {
+            "job.name": options.jobFailure.name,
+            "job.summary": options.jobFailure.summary,
+          }
+        : {}),
+    },
     subject = resolveEmailText(t.subject, map);
   check(
     subject.trim() && !/[\r\n]/.test(subject),
@@ -179,6 +233,10 @@ export function renderTemplate(
       .join("");
     body.text += "\n\n" + facts;
   }
+  if (options.jobFailure?.details) {
+    body.html += `<p style="margin:16px 0;font-size:12px;line-height:18px;color:#625f56"><strong>Details</strong><br>${escape(options.jobFailure.details).replaceAll("\n", "<br>")}</p>`;
+    body.text += "\n\nDetails: " + options.jobFailure.details;
+  }
   const s = p.workspace_settings,
     link = t.staff
       ? `${appOrigin()}/proposals/${p.id}${t.key === "staff_signed" ? "?action=countersign" : ""}`
@@ -196,14 +254,25 @@ export function renderTemplate(
       (s?.logo && p.token
         ? proposalLink(p).replace("/p/", "/api/public/") + "/brand/logo"
         : undefined),
-    button: { label: t.button_label, url: options.url ?? link },
+    button: {
+      label: t.button_label,
+      url:
+        options.url ??
+        (options.jobFailure
+          ? `${appOrigin()}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
+          : link),
+    },
     test: options.test,
   });
   return {
     ...layout,
     subject: options.test ? `[Test] ${subject}` : subject,
     body_html: body.html,
-    button_url: options.url ?? link,
+    button_url:
+      options.url ??
+      (options.jobFailure
+        ? `${appOrigin()}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
+        : link),
     button_label: t.button_label,
   };
 }
@@ -230,6 +299,7 @@ export async function prepareEmail(
       body: plainBody(j.payload.note || "Your proposal is ready to review."),
     };
   const r = renderTemplate(t, p, {
+    jobFailure: j.payload.job_failure as JobFailure | undefined,
     billingConfirmation: j.payload.billing_confirmation as
       BillingCompletion | undefined,
     declineNote:

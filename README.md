@@ -241,6 +241,12 @@ A signature locks the accepted content. If unpublished work existed, the editor 
 
 Tablet tools use an overlay drawer. Phone reading uses full sheets, and selecting a block opens its section-editing view; Done returns to reading. Quote/Fields/Styles/Send open focus-trapping bottom sheets, and formatting follows the keyboard viewport. Real iOS Safari/Android Chrome docking remains a manual device check.
 
+### Sealed PDFs and job alerts
+
+For sealed-PDF recovery and staff alerts, see [PDF job reliability](docs/pdf-job-reliability.md). The renderer validates Letter dimensions and retries Chromium's opaque print failure once on a fresh target. Stage, geometry, page count, memory and bounded Chromium logs are retained in staff Evidence. Old frozen versions keep their old cover, absent bands and stored breaks; current header/footer geometry is unchanged. Run `npm run verify:pdf-jobs` for real sealing/preview regressions, or `VERCEL=1 npm run verify:pdf-jobs` on Linux for the packaged production Chromium (requires Poppler).
+
+Failure alerts are sent only when retries exhaust or a job needs a staff decision, deduplicated by job/error/recipient. Studio → Emails → Job needs attention is editable; unchanged stored defaults migrate while custom copy is preserved. Its Open proposal button highlights the relevant Retry row. Re-running an already sealed job does not duplicate completion copies.
+
 ### Page headers and footers
 
 Proposal and template Styles group Text styles, Page & margins, and Header & footer. Shared bands default to on after the cover, with a workspace-logo/title header and a client/page-count footer. Header and Footer have independent distance, content height, divider-side spacing and content gap settings, with one shared divider switch. Shared geometry grows each effective margin to fit its enabled band's stack. Every page uses those margins, including cover and hidden-band pages; switching a band off globally removes its stack. Old distance settings normalize on load. Unsigned proposal edits use normal autosave/live publication; templates retain Save template. New versions freeze band settings into their content hash, while older frozen versions with no band settings remain band-free.

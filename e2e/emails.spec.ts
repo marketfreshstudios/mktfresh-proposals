@@ -192,7 +192,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
         await expect(
           page.getByRole("textbox", { name: "Primary button label" }),
         ).toHaveValue(template.button_label);
-        if (template.staff) {
+        if (template.staff && template.key !== "staff_billing_failed") {
           await expect(
             page.getByRole("textbox", { name: "Subject", exact: true }),
           ).toHaveAttribute("readonly", "");
@@ -202,10 +202,20 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
               exact: true,
             }),
           ).toHaveCount(0);
-        } else
+        } else {
+          await expect(
+            page.getByRole("textbox", { name: "Subject", exact: true }),
+          ).toBeEditable();
+          await expect(
+            page.getByRole("button", {
+              name: "Save email template",
+              exact: true,
+            }),
+          ).toHaveCount(1);
           await expect(
             page.getByRole("textbox", { name: "Email body", exact: true }),
           ).toBeVisible();
+        }
         await shot(`editor-${template.key}`, width, theme);
         if (template.key === "proposal_sent") {
           await page
