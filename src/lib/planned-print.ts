@@ -126,11 +126,17 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
   last.append(...Array.from(remaining.childNodes));
   sheet(last);
   remaining.remove();
-  const max = parseFloat(
-    getComputedStyle(root).getPropertyValue("--print-content-height"),
-  );
   const overflow_pages = sheets.flatMap((el, n) =>
-    el.getBoundingClientRect().height > max + 1 ? [n + 1] : [],
+    el.getBoundingClientRect().height >
+    (parseFloat(
+      getComputedStyle(el).getPropertyValue("--print-sheet-height"),
+    ) ||
+      parseFloat(
+        getComputedStyle(root).getPropertyValue("--print-content-height"),
+      )) +
+      1
+      ? [n + 1]
+      : [],
   );
   return {
     pages: sheets.length,
@@ -139,7 +145,7 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
   };
 }
 export const plannedPrintCss = `
-.print-root[data-planned] .print-sheet{height:auto;min-height:var(--print-content-height);overflow:visible;break-after:page;display:flow-root}
+.print-root[data-planned] .print-sheet{height:auto;min-height:var(--print-sheet-height,var(--print-content-height));overflow:visible;break-after:page;display:flow-root}
 .print-root[data-planned] .print-sheet:last-child{break-after:auto}
 .print-root[data-planned] .print-source{display:flow-root;margin-top:var(--block-space-before,0px);padding:0}
 .print-root[data-planned] .print-source>*:first-child{margin-top:0}

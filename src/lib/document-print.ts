@@ -1,3 +1,4 @@
+import { pageGeometry, type HeaderFooterSettings } from "./page-bands";
 import {
   signatureHtml,
   signaturePairStarts,
@@ -8,9 +9,19 @@ import { documentQuote } from "./document-quote";
 import { escape, renderBlocks, resolve } from "./presentation";
 import type { Block, Quote } from "./model";
 import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
-export function printPageCss(styles?: ResolvedStyles) {
+export function printPageCss(
+  styles?: ResolvedStyles,
+  hf?: HeaderFooterSettings,
+) {
   const m = pageMetrics(styles),
     p = m.margins;
+  if (hf) {
+    const css = (page: number) => {
+      const g = pageGeometry(styles, hf, page);
+      return `--print-content-height:${g.content.height}px;--print-sheet-height:${g.frameHeight}px;height:${g.frameHeight}px;padding:${g.before}px 0 ${g.after}px;position:relative;`;
+    };
+    return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-sheet-height:${m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
+  }
   return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
 }
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
@@ -117,9 +128,14 @@ export type PageFragment = {
   box_bottom?: number;
 };
 export type PrintLayout = {
+  geometry?: ReturnType<typeof pageGeometry>[];
   pages: number;
   boundaries: PageBoundary[];
-  sheets?: { html: string; fragments: PageFragment[] }[];
+  sheets?: {
+    html: string;
+    fragments: PageFragment[];
+    content_area?: { top: number; height: number };
+  }[];
   pricing_pages?: number;
   overflow_pages?: number[];
 };
@@ -151,6 +167,13 @@ export function collectPrintSheets(sheets: HTMLElement[]) {
     };
     return {
       html: sheet.innerHTML,
+      content_area: {
+        top: parseFloat(getComputedStyle(sheet).paddingTop) || 0,
+        height:
+          sheet.clientHeight -
+          (parseFloat(getComputedStyle(sheet).paddingTop) || 0) -
+          (parseFloat(getComputedStyle(sheet).paddingBottom) || 0),
+      },
       fragments: Array.from(
         sheet.querySelectorAll<HTMLElement>(".print-atom"),
       ).flatMap((atom) => {
@@ -213,13 +236,22 @@ export function paginatePrintDocument(root: HTMLElement): {
     pendingBreak = false,
     currentUnit: string | undefined,
     currentPart: { id: string; start: number } | undefined,
-    previousAfter = 0;
+    previousAfter = 0,
+    height = 0,
+    frameHeight = 0;
   function newPage(explicit = false) {
     previousAfter = 0;
     page = doc.createElement("div");
     page.className = "print-sheet";
     root.append(page);
     count++;
+    const style = getComputedStyle(page);
+    height =
+      parseFloat(style.getPropertyValue("--print-content-height")) ||
+      page.getBoundingClientRect().height;
+    frameHeight =
+      parseFloat(style.getPropertyValue("--print-sheet-height")) ||
+      page.getBoundingClientRect().height;
     if (count > 1)
       boundaries.push({
         page: count,
@@ -233,9 +265,8 @@ export function paginatePrintDocument(root: HTMLElement): {
       });
   }
   newPage();
-  const height = page.getBoundingClientRect().height;
   function fits() {
-    return page.scrollHeight <= height + 0.5;
+    return page.scrollHeight <= frameHeight + 0.5;
   }
   function textCount(node: Node) {
     return node.textContent?.length ?? 0;

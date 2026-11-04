@@ -1,3 +1,4 @@
+import { pageMetrics } from "./proposal-styles";
 import { z } from "zod";
 import type { RichText } from "./model";
 
@@ -184,3 +185,76 @@ export function changeBandLayout(band: Band, layout: BandLayout): Band {
   if (next.image) next.image.slot = Math.min(next.image.slot, count - 1);
   return BandSchema.parse(next);
 }
+
+// All page distances below are CSS pixels at 96px/in, including PDF print CSS.
+export type BandRect = { x: number; y: number; width: number; height: number };
+export const BAND_GAP = 24;
+export function headerShown(
+  hf: HeaderFooterSettings | undefined,
+  page: number,
+) {
+  return !!hf?.showHeader && (page !== 1 || hf.showOnCover);
+}
+export function footerShown(
+  hf: HeaderFooterSettings | undefined,
+  page: number,
+) {
+  return !!hf?.showFooter && (page !== 1 || hf.showOnCover);
+}
+export function pageGeometry(
+  styles: import("./proposal-styles").ResolvedStyles | undefined,
+  hf: HeaderFooterSettings | undefined,
+  page: number,
+) {
+  const m = pageMetrics(styles),
+    margin = {
+      top: m.margins.top * 96,
+      right: m.margins.right * 96,
+      bottom: m.margins.bottom * 96,
+      left: m.margins.left * 96,
+    };
+  const band = 96 * (hf?.bandHeightIn ?? 0.5),
+    head = headerShown(hf, page),
+    foot = footerShown(hf, page);
+  const before = head ? band + BAND_GAP : 0,
+    after = foot ? band + BAND_GAP : 0;
+  return {
+    page,
+    width: m.width,
+    height: m.height,
+    margins: margin,
+    content: {
+      x: margin.left,
+      y: margin.top + before,
+      width: m.contentWidth,
+      height: m.contentHeight - before - after,
+    },
+    header: head
+      ? { x: margin.left, y: margin.top, width: m.contentWidth, height: band }
+      : null,
+    footer: foot
+      ? {
+          x: margin.left,
+          y: m.height - margin.bottom - band,
+          width: m.contentWidth,
+          height: band,
+        }
+      : null,
+    frameHeight: m.contentHeight,
+    before,
+    after,
+  };
+}
+export const pageContentHeight = (
+  styles: import("./proposal-styles").ResolvedStyles | undefined,
+  hf: HeaderFooterSettings | undefined,
+  page: number,
+) => pageGeometry(styles, hf, page).content.height;
+export const bandRects = (
+  styles: import("./proposal-styles").ResolvedStyles | undefined,
+  hf: HeaderFooterSettings | undefined,
+  page: number,
+) => {
+  const { header, footer } = pageGeometry(styles, hf, page);
+  return { header, footer };
+};

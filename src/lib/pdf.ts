@@ -1,3 +1,4 @@
+import { pageGeometry } from "./page-bands";
 import { readableDate } from "./validity";
 import { signatureHtml } from "./signature-presentation";
 import { applyPagePlan, plannedPrintCss } from "./planned-print";
@@ -96,7 +97,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${printPageCss(version.resolved_styles)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
           printContent({
             cover: version.cover,
             title:
@@ -177,6 +178,9 @@ export async function sealedPdf(
         );
       layout.sheets!.forEach((sheet, n) => (sheet.fragments = fragments[n]));
     }
+    layout.geometry = Array.from({ length: layout.pages }, (_, n) =>
+      pageGeometry(version.resolved_styles, version.header_footer, n + 1),
+    );
     const pricingIds = new Set(
       version.content
         .filter((b) => b.type === "pricing_table")

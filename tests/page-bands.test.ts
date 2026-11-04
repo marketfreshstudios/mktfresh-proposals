@@ -129,3 +129,45 @@ it("load defaults, template inheritance, same-link publication, hash and signing
   expect(versionHash({ ...v, header_footer: undefined })).toBe(old);
   expect(versionHash({ ...v, header_footer: hf })).not.toBe(old);
 });
+
+it("shares exact per-page geometry for every band height and switch state, including hidden overrides", async () => {
+  const { pageGeometry, pageContentHeight } =
+    await import("../src/lib/page-bands");
+  const { resolveStyles } = await import("../src/lib/proposal-styles");
+  const styles = resolveStyles(null, undefined, {
+    margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 },
+  });
+  for (const bandHeightIn of [0.4, 0.5, 0.75] as const)
+    for (const showHeader of [false, true])
+      for (const showFooter of [false, true]) {
+        const hf = {
+          ...defaultHeaderFooter(),
+          bandHeightIn,
+          showHeader,
+          showFooter,
+        };
+        const g = pageGeometry(styles, hf, 3),
+          band = 96 * bandHeightIn;
+        expect(pageContentHeight(styles, hf, 3)).toBeCloseTo(
+          912 - (showHeader ? band + 24 : 0) - (showFooter ? band + 24 : 0),
+        );
+        expect(pageContentHeight(styles, hf, 1)).toBe(912);
+        expect(g.header?.y).toBe(showHeader ? 72 : undefined);
+        expect(g.footer?.y).toBe(showFooter ? 984 - band : undefined);
+        expect(
+          pageContentHeight(
+            styles,
+            {
+              ...hf,
+              overrides: { cover: { header: "hidden", footer: "hidden" } },
+            },
+            3,
+          ),
+        ).toBe(g.content.height);
+      }
+  const g = pageGeometry(styles, defaultHeaderFooter(), 3);
+  expect(g.content).toEqual({ x: 72, y: 144, width: 672, height: 768 });
+  expect(g.header).toEqual({ x: 72, y: 72, width: 672, height: 48 });
+  expect(g.footer).toEqual({ x: 72, y: 936, width: 672, height: 48 });
+  expect(pageContentHeight(styles, undefined, 3)).toBe(912);
+});

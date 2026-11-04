@@ -1,4 +1,5 @@
 "use client";
+import { pageGeometry, type HeaderFooterSettings } from "../lib/page-bands";
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { PageSheet, type SheetBox } from "./editor/page-sheet";
@@ -20,7 +21,9 @@ export function PagedPaper({
   sheets = false,
   contentKey,
   onPagination,
+  headerFooter,
 }: {
+  headerFooter?: HeaderFooterSettings;
   paper: RefObject<HTMLElement | null>;
   content: Block[];
   styles: ResolvedStyles;
@@ -38,6 +41,7 @@ export function PagedPaper({
   const [sources, setSources] = useState<BrowserPages | null>(null);
   const latest = useRef({
     content,
+    headerFooter,
     styles,
     onPagination,
     enabled,
@@ -46,6 +50,7 @@ export function PagedPaper({
   });
   latest.current = {
     content,
+    headerFooter,
     styles,
     onPagination,
     enabled,
@@ -101,16 +106,32 @@ export function PagedPaper({
           const left = Math.max(64, Math.min(88, spare / 2));
           root!.style.setProperty(
             "--editor-sheet-width",
-            `${desktop ? Math.min(available, contentWidth + 176) : available}px`,
+            `${desktop && v.headerFooter && available >= metrics.width ? metrics.width : desktop ? Math.min(available, contentWidth + 176) : available}px`,
           );
           root!.style.setProperty(
             "--editor-sheet-left",
-            `${desktop ? left : 40}px`,
+            `${desktop && v.headerFooter && available >= metrics.width ? pageGeometry(v.styles, v.headerFooter, 1).margins.left : desktop ? left : 40}px`,
           );
           root!.style.setProperty(
             "--editor-sheet-right",
-            `${desktop ? spare - left : 36}px`,
+            `${desktop && v.headerFooter && available >= metrics.width ? pageGeometry(v.styles, v.headerFooter, 1).margins.right : desktop ? spare - left : 36}px`,
           );
+        }
+        if (v.headerFooter && v.enabled) {
+          const g = pageGeometry(v.styles, v.headerFooter, 1);
+          root!.style.setProperty(
+            "padding-top",
+            `${g.content.y}px`,
+            "important",
+          );
+          root!.style.setProperty(
+            "padding-bottom",
+            `${g.margins.bottom + g.after}px`,
+            "important",
+          );
+        } else {
+          root!.style.removeProperty("padding-top");
+          root!.style.removeProperty("padding-bottom");
         }
         // Give initial font/logo metrics a bounded grace period. After that,
         // measure what's available and refresh when the pending batch settles.
@@ -235,9 +256,19 @@ export function PagedPaper({
           v.content,
           v.styles,
           v.enabled && !v.sheets,
+          false,
+          v.headerFooter,
         );
         if (v.enabled && v.sheets)
-          setBoxes(projectPageSheets(root!, v.content, value.plan));
+          setBoxes(
+            projectPageSheets(
+              root!,
+              v.content,
+              value.plan,
+              v.styles,
+              v.headerFooter,
+            ),
+          );
         setPages(value.plan.pages);
         setMeasuredKey(v.contentKey);
         setSources(value);
@@ -288,7 +319,7 @@ export function PagedPaper({
     surface.current?.parentElement?.dispatchEvent(
       new Event("pagination-layout-change"),
     );
-  }, [contentKey, JSON.stringify(styles)]);
+  }, [contentKey, JSON.stringify(styles), JSON.stringify(headerFooter)]);
   if (!enabled) return <div ref={surface} hidden />;
   return (
     <div
@@ -311,6 +342,7 @@ export function PagedPaper({
             <PageSheet
               key={n}
               number={n + 1}
+              geometry={pageGeometry(styles, headerFooter, n + 1)}
               box={box}
               fragments={[
                 ...(sources?.assignments ?? []).filter((v) => v.page === n + 1),

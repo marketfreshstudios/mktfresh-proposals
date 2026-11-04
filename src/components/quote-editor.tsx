@@ -1,4 +1,5 @@
 "use client";
+import { defaultHeaderFooter } from "../lib/page-bands";
 import {
   sublineLabel,
   ambiguousSublines,
@@ -235,6 +236,9 @@ function QuoteEditorContent({
       clause: number;
     } | null>(null);
   const locked = !!p.signers.length || p.versions.some((v) => v.frozen);
+  const bands = locked
+    ? p.versions.at(-1)?.header_footer
+    : (p.header_footer ?? defaultHeaderFooter());
   const closed = ["declined", "expired"].includes(p.status);
   const live = !!p.token && p.versions.length > 0 && !closed && !locked;
   const paper = useRef<HTMLElement>(null),
@@ -1815,6 +1819,7 @@ function QuoteEditorContent({
             ),
             false,
             true,
+            bands,
           )
         }
         onPage={(page) => {
@@ -2858,6 +2863,7 @@ function QuoteEditorContent({
                       panels.printMode && !(panels.phone && selection.selected)
                     }
                     sheets
+                    headerFooter={bands}
                     content={p.content}
                     contentKey={JSON.stringify([
                       p.title,
@@ -2866,6 +2872,7 @@ function QuoteEditorContent({
                       p.style_overrides,
                       p.template_style_overrides,
                       p.cover,
+                      bands,
                     ])}
                     onPagination={receivePagination}
                   />

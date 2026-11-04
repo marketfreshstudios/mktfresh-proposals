@@ -4,6 +4,7 @@ export type SheetBox = { top: number; height: number; gap?: number };
 /** Display only. Page numbers and boundaries are supplied by the live PagePlan. */
 export function PageSheet({
   number,
+  geometry,
   box,
   showLabel,
   children,
@@ -11,6 +12,7 @@ export function PageSheet({
   onBackgroundClick,
 }: {
   number: number;
+  geometry?: ReturnType<typeof import("../../lib/page-bands").pageGeometry>;
   box: SheetBox;
   showLabel: boolean;
   children?: ReactNode;
@@ -33,9 +35,22 @@ export function PageSheet({
       <section
         className="editor-page-sheet page-sheet"
         data-editor-page={number}
+        data-content-height={geometry?.content.height}
+        data-page-geometry={geometry ? JSON.stringify(geometry) : undefined}
         data-source-fragments={JSON.stringify(fragments ?? [])}
         aria-label={`Page ${number}`}
-        style={{ top: box.top, height: box.height } as CSSProperties}
+        style={
+          {
+            top: box.top,
+            height: box.height,
+            ...(geometry
+              ? {
+                  paddingTop: geometry.content.y,
+                  paddingBottom: geometry.margins.bottom + geometry.after,
+                }
+              : {}),
+          } as CSSProperties
+        }
         onPointerDown={(e) => {
           if (e.target === e.currentTarget) onBackgroundClick();
         }}

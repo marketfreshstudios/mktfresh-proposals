@@ -1,5 +1,5 @@
 "use client";
-import { defaultTemplateBands } from "../lib/page-bands";
+import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
 import { defaultCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
@@ -1611,6 +1611,7 @@ function TemplatesStudioContent({
                 templateStyles,
                 false,
                 true,
+                proposalBands(draft?.header_footer),
               )
             }
             onChange={(content) => {
@@ -1904,12 +1905,14 @@ function TemplatesStudioContent({
                         paper={templatePaper}
                         styles={templateStyles}
                         content={content}
+                        headerFooter={proposalBands(draft?.header_footer)}
                         contentKey={JSON.stringify([
                           printView(content, templatePreview.quote),
                           draft?.default_quote,
                           draft?.default_items,
                           draft?.style_overrides,
                           draft?.cover,
+                          draft?.header_footer,
                         ])}
                         onPagination={receivePagination}
                         sheets
