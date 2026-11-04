@@ -447,3 +447,11 @@ Shared bands use the document editor's cursor, history, popover and publication 
 Owner clarification for PR #59: proposal “Reset to template” uses the template's current saved shared bands, divider, height and Show on cover, falling back to built-in defaults if the template no longer exists. Studio labels its built-in reset “Reset to default,” with helper “Restores the built-in header and footer.” Header/Footer switches and per-page overrides are retained; both resets are undoable. No creation-time snapshot storage is added.
 
 Owner Image default for PR #59: before any column is focused, Image uses the existing image’s column, or the **first** column if no image exists. After column focus, image commands use that column. Field insertion independently falls back to the end of the **last** column.
+
+## Header/footer PR 3: page identity and override collisions (3 November 2026)
+
+Overrides follow explicit page-break IDs or live page-start block IDs, with `cover` for page 1 and `#2`, `#3`, … for repeated non-cover starts. Header and footer resolve independently. The owner confirmed that an exact current-anchor match wins a collision; otherwise the earlier anchor in document order wins and is re-keyed to the current page anchor. Other collided overrides are removed with an eight-second Undo toast. A deleted anchor transfers to the new first block only while that page remains, and never overwrites an existing destination override. Page/content deletion and its automatic override cleanup share one history step.
+
+Editing a hidden band turns it into an empty unique band with the shared layout. Its menu offers Edit and Use shared; Use shared retains the confirmation and Undo. Templates continue to store shared bands only. Client web-page bands remain a separate PR.
+
+The owner clarified that “Shared on N pages” counts only actual visible shared bands, excluding unique and hidden pages. Styles lists the exclusions (`· 1 unique · 1 hidden` when applicable); edit bars, menus and the phone header use the same N. Redesign 13 frame 1i's footer “8” was a design slip, not a rule to include hidden pages.
