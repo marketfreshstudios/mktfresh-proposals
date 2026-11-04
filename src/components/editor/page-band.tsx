@@ -1,5 +1,5 @@
 "use client";
-import { SelectableImage } from "./selectable-image";
+import { bandRichText } from "./band-rich-text";
 import { sharedPagesLabel, sharedChangesLabel } from "../../lib/page-count";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
@@ -73,8 +73,7 @@ export function PageBand(props: Props) {
       "more" | "confirm" | "layout" | "fields" | "image" | null
     >(null),
     [trigger, setTrigger] = useState<HTMLElement | null>(null),
-    [error, setError] = useState(""),
-    [imageSelected, setImageSelected] = useState(false);
+    [error, setError] = useState("");
   const device = control?.device,
     phone = device === "phone",
     tablet = device === "tablet";
@@ -139,7 +138,12 @@ export function PageBand(props: Props) {
         done();
     };
     const escape = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || menu) return;
+      if (
+        e.key !== "Escape" ||
+        menu ||
+        root.current?.querySelector('[data-image-selected="true"]')
+      )
+        return;
       e.preventDefault();
       e.stopImmediatePropagation();
       done(true);
@@ -163,8 +167,9 @@ export function PageBand(props: Props) {
     return () => cancelAnimationFrame(frame);
   }, [menu]);
   if (!hf || !shown) return null;
-  const band =
+  const band = BandSchema.parse(
       resolved === "hidden" ? hf.shared[kind] : (resolved ?? hf.shared[kind]),
+    ),
     geometry = pageGeometry(styles, hf, page, { [kind]: resolved }),
     rect = geometry[kind]!;
   const patch = (next: Band) => {
@@ -212,10 +217,70 @@ export function PageBand(props: Props) {
     editors.current[
       Math.min(column.current ?? band.slots.length - 1, band.slots.length - 1)
     ];
-  const imageSlot = Math.min(
-    column.current ?? band.image?.slot ?? 0,
-    band.slots.length - 1,
-  );
+  const insertImage = (src: string, alt: string) => {
+    const e = active();
+    if (!e) return;
+    const height = Math.min(18, geometry.bandLimits[kind].imageHeight);
+    if (height <= 0) {
+      setError("Increase the page margin to make room for an image.");
+      return;
+    }
+    if (column.current === null)
+      e.commands.setTextSelection(Math.max(1, e.state.doc.content.size - 1));
+    e.commands.insertContent({ type: "image", attrs: { src, alt, height } });
+    e.view.focus();
+    setMenu(null);
+    setError("");
+  };
+  const moveImage = (
+    fromSlot: number,
+    from: number,
+    toSlot: number,
+    to: number,
+  ) => {
+    const sourceEditor = editors.current[fromSlot],
+      targetEditor = editors.current[toSlot];
+    if (!sourceEditor || !targetEditor) return;
+    const node = sourceEditor.state.doc.nodeAt(from);
+    if (node?.type.name !== "image") return;
+    if (sourceEditor === targetEditor) {
+      if (to >= from && to <= from + node.nodeSize) return;
+      const tr = sourceEditor.state.tr.delete(from, from + node.nodeSize);
+      tr.insert(
+        Math.max(
+          1,
+          Math.min(
+            to > from ? to - node.nodeSize : to,
+            tr.doc.content.size - 1,
+          ),
+        ),
+        node,
+      ).setMeta("preventUpdate", true);
+      sourceEditor.view.dispatch(tr);
+    } else {
+      sourceEditor.view.dispatch(
+        sourceEditor.state.tr
+          .delete(from, from + node.nodeSize)
+          .setMeta("preventUpdate", true),
+      );
+      targetEditor.view.dispatch(
+        targetEditor.state.tr
+          .insert(
+            Math.max(1, Math.min(to, targetEditor.state.doc.content.size - 1)),
+            targetEditor.schema.nodeFromJSON(node.toJSON()),
+          )
+          .setMeta("preventUpdate", true),
+      );
+    }
+    patch({
+      ...band,
+      slots: band.slots.map((slot, n) =>
+        editors.current[n] ? bandRichText(editors.current[n]!.getJSON()) : slot,
+      ) as Band["slots"],
+    });
+    column.current = toSlot;
+    targetEditor.view.focus();
+  };
   const insert = (path: string) => {
     const e = active();
     if (!e) return;
@@ -329,35 +394,6 @@ export function PageBand(props: Props) {
                 column.current = n;
               }}
             >
-              {band.image?.slot === n &&
-                (band.image.src !== "workspace-logo" || logo) && (
-                  <SelectableImage
-                    kind="band"
-                    value={band.image}
-                    source={
-                      band.image.src === "workspace-logo"
-                        ? logo
-                        : band.image.src
-                    }
-                    maxHeight={geometry.bandLimits[kind].imageHeight}
-                    onChange={(image) =>
-                      patch({
-                        ...band,
-                        image: {
-                          ...band.image!,
-                          src: image.src,
-                          alt: image.alt ?? "",
-                          height: image.height,
-                        },
-                      })
-                    }
-                    onDelete={() => {
-                      const { image: _, ...next } = band;
-                      patch(next);
-                    }}
-                    onSelectionChange={setImageSelected}
-                  />
-                )}
               <div
                 className="band-slot-content"
                 data-history-block={`band-${kind}-${source === "shared" ? "shared" : anchor}-${n}`}
@@ -367,6 +403,13 @@ export function PageBand(props: Props) {
                   map={map}
                   showNames={false}
                   label={`${kind} column ${n + 1}`}
+                  bandImage={{
+                    key: id,
+                    slot: n,
+                    logo,
+                    maxHeight: geometry.bandLimits[kind].imageHeight,
+                    move: moveImage,
+                  }}
                   bandEditor={(e) => {
                     const old = editors.current[n];
                     const listener = old && markListeners.current.get(old);
@@ -382,12 +425,18 @@ export function PageBand(props: Props) {
                         requestAnimationFrame(() => {
                           if (e.isDestroyed) return;
                           if (point.image) {
-                            root.current
-                              ?.querySelector<HTMLImageElement>(
-                                `[data-band-slot="${n}"] img`,
-                              )
-                              ?.click();
-                            clickPoint.current = null;
+                            const selectImage = () => {
+                              if (!editing || e.isDestroyed) return;
+                              const image =
+                                root.current?.querySelector<HTMLImageElement>(
+                                  `[data-band-slot="${n}"] .document-image > img`,
+                                );
+                              if (image) {
+                                image.click();
+                                clickPoint.current = null;
+                              } else requestAnimationFrame(selectImage);
+                            };
+                            requestAnimationFrame(selectImage);
                             return;
                           }
                           const position = e.view.posAtCoords({
@@ -471,7 +520,7 @@ export function PageBand(props: Props) {
           </span>
         </div>
       )}
-      {editing && !imageSelected && (
+      {editing && !active()?.isActive("image") && (
         <EditBar
           variant="band"
           portal={root.current?.closest<HTMLElement>(
@@ -668,23 +717,18 @@ export function PageBand(props: Props) {
                     }
                     const reader = new FileReader();
                     reader.onload = () => {
-                      const next = BandSchema.safeParse({
-                        ...band,
-                        image: {
-                          src: String(reader.result),
-                          alt: "Band image",
-                          slot: imageSlot,
-                        },
-                      });
-                      if (!next.success) {
+                      const src = String(reader.result);
+                      if (
+                        !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(
+                          src,
+                        )
+                      ) {
                         setError(
                           "Choose a valid PNG or JPEG image smaller than 750 KB.",
                         );
                         return;
                       }
-                      patch(next.data);
-                      setMenu(null);
-                      setError("");
+                      insertImage(src, "Band image");
                     };
                     reader.onerror = () =>
                       setError("Image could not be read. Try another file.");
@@ -694,30 +738,11 @@ export function PageBand(props: Props) {
               </label>
               <button
                 onClick={() => {
-                  patch({
-                    ...band,
-                    image: {
-                      src: "workspace-logo",
-                      alt: "Workspace logo",
-                      slot: imageSlot,
-                    },
-                  });
-                  setMenu(null);
+                  insertImage("workspace-logo", "Workspace logo");
                 }}
               >
                 Use workspace logo
               </button>
-              {band.image?.slot === imageSlot && (
-                <button
-                  onClick={() => {
-                    const { image: _, ...next } = band;
-                    patch(next);
-                    setMenu(null);
-                  }}
-                >
-                  Remove image
-                </button>
-              )}
               {error && <p role="alert">{error}</p>}
             </div>
           )}

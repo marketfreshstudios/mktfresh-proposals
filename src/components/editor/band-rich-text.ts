@@ -4,6 +4,15 @@ export function bandRichText(node: RichText): RichText {
   return {
     type: node.type,
     ...(node.text !== undefined ? { text: node.text } : {}),
+    ...(node.type === "image"
+      ? {
+          attrs: {
+            src: node.attrs?.src ?? "",
+            alt: node.attrs?.alt ?? "",
+            height: node.attrs?.height ?? 18,
+          },
+        }
+      : {}),
     ...(node.type === "variable"
       ? { attrs: { path: node.attrs?.path ?? "" } }
       : {}),

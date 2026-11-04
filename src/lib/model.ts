@@ -142,7 +142,7 @@ export type RichText = {
   text?: string;
   content?: RichText[];
   marks?: { type: string; attrs?: Record<string, unknown> }[];
-  attrs?: { path?: string };
+  attrs?: { path?: string; src?: string; alt?: string; height?: number };
 };
 export type Template = {
   header_footer?: TemplateBands;

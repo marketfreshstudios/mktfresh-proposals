@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
-import { defaultHeaderFooter, pageGeometry } from "../src/lib/page-bands";
+import {
+  defaultHeaderFooter,
+  pageGeometry,
+  bandImages,
+} from "../src/lib/page-bands";
 import { defaultCover } from "../src/lib/cover";
 import { resolveStyles } from "../src/lib/proposal-styles";
 async function imageFixture(page: import("@playwright/test").Page) {
@@ -95,6 +99,17 @@ test("block, cover and band image controls resize with locked proportions, save 
     exact: true,
   });
   const rect = (await corner.boundingBox())!;
+
+  expect(
+    await corner.evaluate((el) => {
+      const b = el.getBoundingClientRect();
+      return (
+        document
+          .elementFromPoint(b.x + 40, b.y + 40)
+          ?.closest(".image-resize-handle") === el
+      );
+    }),
+  ).toBe(true);
   await page.mouse.move(rect.x + 40, rect.y + 40);
   await page.mouse.down();
   await page.mouse.move(rect.x + 500, rect.y + 500, { steps: 8 });
@@ -105,7 +120,11 @@ test("block, cover and band image controls resize with locked proportions, save 
     2,
   ).bandLimits.header.imageHeight;
   await expect
-    .poll(() => f.active().header_footer!.shared.header.image!.height!)
+    .poll(
+      () =>
+        bandImages(f.active().header_footer!.shared.header)[0].node.attrs!
+          .height!,
+    )
     .toBeCloseTo(limit, 2);
   const height = await bandImage
     .locator("img")
@@ -138,4 +157,68 @@ test("image deletion and keyboard resizing use normal editor history", async ({
   await expect
     .poll(() => f.active().content.filter((b) => b.id === "photo").length)
     .toBe(1);
+});
+
+test("band images drag across columns with an insertion caret and exact undo", async ({
+  page,
+}) => {
+  const { f } = await imageFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
+  const band = page.locator('[data-band-frame="header"]').first();
+  await band.locator("img").click();
+  const img = band.locator('[data-image-kind="band"] img'),
+    target = band.getByRole("textbox", { name: "header column 2" });
+  const transfer = await page.evaluateHandle(() => new DataTransfer());
+  const box = (await target.boundingBox())!;
+  await img.dispatchEvent("dragstart", { dataTransfer: transfer });
+  await target.dispatchEvent("dragover", {
+    dataTransfer: transfer,
+    clientX: box.x + box.width - 4,
+    clientY: box.y + 8,
+  });
+  await expect(page.locator(".band-image-insertion-caret")).toBeVisible();
+  await target.dispatchEvent("drop", {
+    dataTransfer: transfer,
+    clientX: box.x + box.width - 4,
+    clientY: box.y + 8,
+  });
+  await expect
+    .poll(() =>
+      bandImages(f.active().header_footer!.shared.header)
+        .filter((i) => i.node.attrs?.alt === "Band logo")
+        .map((i) => i.slot),
+    )
+    .toEqual([1]);
+  await expect(page.locator(".band-image-insertion-caret")).toHaveCount(0);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect
+    .poll(() =>
+      bandImages(f.active().header_footer!.shared.header)
+        .filter((i) => i.node.attrs?.alt === "Band logo")
+        .map((i) => i.slot),
+    )
+    .toEqual([0]);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await band.locator('[data-image-kind="band"] img').click();
+  await page.keyboard.press("ControlOrMeta+x");
+  await expect
+    .poll(
+      () =>
+        bandImages(f.active().header_footer!.shared.header).filter(
+          (i) => i.node.attrs?.alt === "Band logo",
+        ).length,
+    )
+    .toBe(0);
+  await target.click();
+  await target.press("End");
+  await page.keyboard.press("ControlOrMeta+v");
+  await expect
+    .poll(() =>
+      bandImages(f.active().header_footer!.shared.header)
+        .filter((i) => i.node.attrs?.alt === "Band logo")
+        .map((i) => i.slot),
+    )
+    .toEqual([1]);
 });

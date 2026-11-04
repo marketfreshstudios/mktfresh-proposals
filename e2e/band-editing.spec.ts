@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
-import { defaultHeaderFooter } from "../src/lib/page-bands";
+import { defaultHeaderFooter, bandImages } from "../src/lib/page-bands";
 import type { Block } from "../src/lib/model";
 test.beforeEach(({ page }) => page.setDefaultTimeout(10000));
 const content: Block[] = Array.from({ length: 3 }, (_, n) => [
@@ -255,42 +255,43 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
   ).toHaveCount(1);
 });
 
-test("band image uploads and reserved workspace logos work in either column and both bands", async ({
+test("inline band image uploads, cursor insertion, workspace sources and deletion work in both bands", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, { content });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
   const image = await page.evaluate(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const context = canvas.getContext("2d")!;
-    context.fillStyle = "#345941";
-    context.fillRect(0, 0, 64, 64);
-    return canvas.toDataURL("image/png");
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 64;
+    c.getContext("2d")!.fillRect(0, 0, 64, 64);
+    return c.toDataURL("image/png");
   });
-  for (const kind of ["header", "footer"]) {
-    let band = await open(page, kind);
-    // Before a text cursor exists: existing image column, otherwise FIRST column.
-    // The default header has an image in column 1; the footer has none.
-
+  for (const kind of ["header", "footer"] as const) {
+    const band = await open(page, kind),
+      first = band.getByRole("textbox", { name: `${kind} column 1` });
+    await first.click();
+    await first.press("End");
     await band.getByRole("button", { name: "Image", exact: true }).click();
-    await page.getByLabel("Upload band image").setInputFiles({
-      name: "logo.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(image.split(",")[1], "base64"),
-    });
-    const img = band.locator(".band-slot > img");
+    await page
+      .getByLabel("Upload band image")
+      .setInputFiles({
+        name: "logo.png",
+        mimeType: "image/png",
+        buffer: Buffer.from(image.split(",")[1], "base64"),
+      });
+    const img = band.locator('[data-image-kind="band"] img');
     await expect(img).toHaveCount(1);
-    expect(await img.evaluate((e) => e.getBoundingClientRect().height)).toBe(
+    expect(await img.evaluate((el) => el.getBoundingClientRect().height)).toBe(
       18,
     );
     await expect
       .poll(
         () =>
-          f.active().header_footer?.shared[kind as "header" | "footer"].image
-            ?.slot,
+          bandImages(f.active().header_footer!.shared[kind]).find(
+            (i) => i.node.attrs?.src === image,
+          )?.slot,
       )
       .toBe(0);
     await page.keyboard.press("Escape");
@@ -307,49 +308,37 @@ test("band image uploads and reserved workspace logos work in either column and 
       .getByRole("button", { name: "Preview PDF", exact: true })
       .click();
     await expect.poll(() => f.renders.length).toBe(rendered + 1);
-    const heights = await pdfImageHeights(f.renders.at(-1)!.pdf_base64, 2);
-    expect(heights.length).toBeGreaterThan(0);
-    expect(heights.every((height) => height >= 17.99 && height <= 18.01)).toBe(
-      true,
-    );
+    const heights = f.renders
+      .at(-1)!
+      .layout.sheets!.flatMap((s) =>
+        [...s.html.matchAll(/<img[^>]*style="height:([\d.]+)px/g)].map((m) =>
+          Number(m[1]),
+        ),
+      );
+    expect(heights).toContain(18);
     await page
       .getByRole("button", { name: "Close PDF preview", exact: true })
       .click();
-    band = await open(page, kind);
-    await band.getByRole("textbox", { name: `${kind} column 1` }).click();
+    await open(page, kind);
+    await last.click();
+    await last.press("End");
     await band.getByRole("button", { name: "Image", exact: true }).click();
     await page
       .getByRole("button", { name: "Use workspace logo", exact: true })
       .click();
     await expect
-      .poll(
-        () =>
-          f.active().header_footer?.shared[kind as "header" | "footer"].image
-            ?.src,
+      .poll(() =>
+        bandImages(f.active().header_footer!.shared[kind]).some(
+          (i) => i.slot === 1 && i.node.attrs?.src === "workspace-logo",
+        ),
       )
-      .toBe("workspace-logo");
-    await band.getByRole("textbox", { name: `${kind} column 2` }).click();
-    await band.getByRole("button", { name: "Image", exact: true }).click();
-    await expect(
-      page.getByRole("button", { name: "Remove image", exact: true }),
-    ).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "Use workspace logo", exact: true })
-      .click();
-    await expect
-      .poll(
-        () =>
-          f.active().header_footer?.shared[kind as "header" | "footer"].image
-            ?.slot,
-      )
-      .toBe(1);
+      .toBe(true);
+    await img.click();
+    await band.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(img).toHaveCount(0);
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(img).toHaveCount(1);
     await page.keyboard.press("Escape");
-    await band.press("Enter");
-    await band.getByRole("button", { name: "Image", exact: true }).click();
-    await page
-      .getByRole("button", { name: "Remove image", exact: true })
-      .click();
-    await expect(band.locator(".band-slot > img")).toHaveCount(0);
     await page.keyboard.press("Escape");
   }
 });

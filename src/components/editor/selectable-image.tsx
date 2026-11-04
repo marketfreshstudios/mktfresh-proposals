@@ -23,6 +23,8 @@ export function SelectableImage({
   onDelete,
   onSelect,
   onSelectionChange,
+  externalSelected,
+  onDeselect,
   draggable = false,
   onDragStart,
 }: {
@@ -34,6 +36,8 @@ export function SelectableImage({
   onDelete?: () => void;
   onSelect?: () => void;
   onSelectionChange?: (selected: boolean) => void;
+  externalSelected?: boolean;
+  onDeselect?: () => void;
   draggable?: boolean;
   onDragStart?: React.DragEventHandler<HTMLImageElement>;
 }) {
@@ -53,6 +57,9 @@ export function SelectableImage({
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
   useEffect(() => {
+    if (externalSelected !== undefined) setSelected(externalSelected);
+  }, [externalSelected]);
+  useEffect(() => {
     onSelectionChange?.(selected);
   }, [selected]);
   const save = (next: ImageValue) => {
@@ -61,9 +68,9 @@ export function SelectableImage({
   };
   const select = () => {
     if (!editable) return;
-    setSelected(true);
-    onSelect?.();
     root.current?.focus({ preventScroll: true });
+    onSelect?.();
+    setSelected(true);
   };
   useEffect(() => {
     if (!selected) return;
@@ -93,8 +100,15 @@ export function SelectableImage({
       viewport?.removeEventListener("scroll", place);
     };
   }, []);
-  const available = () =>
-    root.current?.parentElement?.getBoundingClientRect().width ?? 1;
+  const available = () => {
+    const container =
+      kind === "band"
+        ? root.current?.closest(".band-slot")
+        : kind === "cover"
+          ? root.current?.closest(".cover-logo")
+          : root.current?.parentElement;
+    return container?.getBoundingClientRect().width ?? 1;
+  };
   const dimensions = (height: number) =>
     constrainedImageSize(
       height,
@@ -204,6 +218,7 @@ export function SelectableImage({
           e.preventDefault();
           e.stopPropagation();
           setSelected(false);
+          onDeselect?.();
           setPanel(null);
         }
         if (selected && ["Delete", "Backspace"].includes(e.key)) {

@@ -1,6 +1,7 @@
 import { it, expect } from "vitest";
 import {
   BandSchema,
+  bandImages,
   HeaderFooterSettingsSchema,
   TemplateBandsSchema,
   defaultHeaderFooter,
@@ -31,7 +32,9 @@ it("strict schemas enforce column counts, image slots and embedded/default image
     HeaderFooterSettingsSchema.parse({ ...hf, bandHeightIn: 0.75 })
       .bandHeightIn,
   ).toBeUndefined();
-  expect(hf.shared.header.image?.src).toBe("workspace-logo");
+  expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
+    "workspace-logo",
+  );
   expect(() =>
     HeaderFooterSettingsSchema.parse({ ...hf, unknown: true }),
   ).toThrow();
@@ -73,7 +76,7 @@ it("thirds to one column retains every rich node, mark and field in order withou
   expect(n.slots).toEqual([
     { type: "doc", content: before.slots.flatMap((s) => s.content) },
   ]);
-  expect(n.image?.slot).toBe(0);
+  expect(bandImages(n)[0]?.slot).toBe(0);
   expect(b).toEqual(before);
   expect(changeBandLayout(n, "thirds").slots).toHaveLength(3);
 });
@@ -169,7 +172,7 @@ it("margin bands on, off and hidden never take content space; tall images clamp 
           showHeader,
           showFooter,
         };
-        hf.shared.header.image!.height = 500;
+        bandImages(hf.shared.header)[0].node.attrs!.height = 500;
         for (const page of [1, 2, 3]) {
           const g = pageGeometry(styles, hf, page);
           expect(g.content).toEqual({ x: 72, y: 72, width: 672, height: 912 });
@@ -239,7 +242,9 @@ it("band text is inert, resolves page values locally and reuses the current work
   expect(next).toContain("A &lt;script&gt;");
   expect(next).not.toContain("<script>");
   expect(next).toContain("field-chip");
-  expect(hf.shared.header.image?.src).toBe("workspace-logo");
+  expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
+    "workspace-logo",
+  );
 });
 
 it("renders bold and italic marks on both literal text and field nodes", async () => {
@@ -271,4 +276,51 @@ it("renders bold and italic marks on both literal text and field nodes", async (
   });
   expect(html).toContain("<em><strong>Studio</strong></em>");
   expect(html).toContain("<em> prepared</em>");
+});
+
+it("legacy band images migrate into the start of their slot without mutating stored input", () => {
+  const old = {
+    layout: "half",
+    slots: [
+      {
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "Name" }] },
+        ],
+      },
+      { type: "doc", content: [] },
+    ],
+    image: { src: "workspace-logo", alt: "Logo", height: 32, slot: 0 },
+  };
+  const before = JSON.stringify(old),
+    next = BandSchema.parse(old);
+  expect(next.image).toBeUndefined();
+  expect(next.slots[0].content[0].content![0]).toEqual({
+    type: "image",
+    attrs: { src: "workspace-logo", alt: "Logo", height: 32 },
+  });
+  expect(next.slots[0].content[0].content![1].text).toBe("Name");
+  expect(JSON.stringify(old)).toBe(before);
+  expect(() =>
+    BandSchema.parse({
+      ...next,
+      slots: [
+        {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "image",
+                  attrs: { src: "https://outside.example/img", height: 18 },
+                },
+              ],
+            },
+          ],
+        },
+        next.slots[1],
+      ],
+    }),
+  ).toThrow();
 });

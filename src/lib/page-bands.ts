@@ -49,12 +49,24 @@ const NodeSchema: z.ZodType<RichText> = z.lazy(() =>
         "bulletList",
         "orderedList",
         "listItem",
+        "image",
       ]),
       text: z.string().max(10000).optional(),
       content: z.array(NodeSchema).max(100).optional(),
       marks: z.array(MarkSchema).max(10).optional(),
       attrs: z
         .object({
+          src: z
+            .union([
+              z.literal("workspace-logo"),
+              z
+                .string()
+                .max(1000000)
+                .regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/),
+            ])
+            .optional(),
+          alt: z.string().max(300).optional(),
+          height: z.number().positive().max(1056).optional(),
           path: z
             .string()
             .regex(/^[\w.-]+$/)
@@ -64,7 +76,15 @@ const NodeSchema: z.ZodType<RichText> = z.lazy(() =>
         .strict()
         .optional(),
     })
-    .strict(),
+    .strict()
+    .superRefine((node, ctx) => {
+      if (node.type === "image" && (!node.attrs?.src || !node.attrs.height))
+        ctx.addIssue({
+          code: "custom",
+          message: "Band image source and height required",
+          path: ["attrs"],
+        });
+    }),
 );
 const SlotSchema = z
   .object({ type: z.literal("doc"), content: z.array(NodeSchema) })
@@ -104,6 +124,25 @@ export const BandSchema = z
         message: "Image slot is outside the band layout",
         path: ["image", "slot"],
       });
+  })
+  .transform((band) => {
+    const next = structuredClone(band);
+    if (next.image) {
+      const image = {
+        type: "image",
+        attrs: {
+          src: next.image.src,
+          alt: next.image.alt,
+          height: next.image.height ?? 18,
+        },
+      };
+      const slot = next.slots[next.image.slot];
+      if (slot.content[0]?.type === "paragraph")
+        slot.content[0].content = [image, ...(slot.content[0].content ?? [])];
+      else slot.content.unshift({ type: "paragraph", content: [image] });
+      delete next.image;
+    }
+    return next;
   });
 export type Band = z.infer<typeof BandSchema>;
 const shared = z.object({ header: BandSchema, footer: BandSchema }).strict();
@@ -181,7 +220,7 @@ export function proposalBands(
 }
 /** Lossless layout conversion. Dropped column docs append in order to the last column. */
 export function changeBandLayout(band: Band, layout: BandLayout): Band {
-  const next = structuredClone(band),
+  const next = BandSchema.parse(band),
     count = bandJustify(layout).length;
   next.layout = layout;
   while (next.slots.length < count)
@@ -332,3 +371,13 @@ export const bandRects = (
   const { header, footer } = pageGeometry(styles, hf, page);
   return { header, footer };
 };
+
+export function bandImages(band: Band) {
+  const found: { slot: number; node: RichText }[] = [];
+  const visit = (node: RichText, slot: number) => {
+    if (node.type === "image") found.push({ slot, node });
+    for (const child of node.content ?? []) visit(child, slot);
+  };
+  band.slots.forEach((node, slot) => visit(node, slot));
+  return found;
+}

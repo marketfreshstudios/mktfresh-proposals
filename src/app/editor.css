@@ -7686,3 +7686,60 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   position: relative;
   z-index: 24;
 }
+.band-inline-image {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+}
+.page-band-frame .band-slot-content {
+  overflow: visible;
+}
+.page-band-frame .tiptap > p {
+  display: inline;
+  white-space: nowrap;
+}
+.band-image-insertion-caret {
+  position: fixed;
+  width: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 100;
+}
+[data-image-kind="band"] .image-resize-handle.top-left {
+  top: -44px;
+  left: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.top-right {
+  top: -44px;
+  right: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-left {
+  bottom: -44px;
+  left: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-right {
+  bottom: -44px;
+  right: -44px;
+}
+[data-image-kind="band"] .image-resize-handle.top-left::after {
+  top: 39px;
+  left: 39px;
+}
+[data-image-kind="band"] .image-resize-handle.top-right::after {
+  top: 39px;
+  left: -5px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-left::after {
+  top: -5px;
+  left: 39px;
+}
+[data-image-kind="band"] .image-resize-handle.bottom-right::after {
+  top: -5px;
+  left: -5px;
+}
+.proposal-typography.proposal-typography
+  .page-band-frame
+  .page-band[data-page-band][data-band-mode="editing"]
+  .band-slot-content {
+  overflow: visible;
+}

@@ -1,7 +1,11 @@
 import { signature, clientActor } from "../tests/helpers";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
-import { defaultHeaderFooter, pageContentHeight } from "../src/lib/page-bands";
+import {
+  defaultHeaderFooter,
+  pageContentHeight,
+  bandImages,
+} from "../src/lib/page-bands";
 import { resolveStyles } from "../src/lib/proposal-styles";
 import type { Block } from "../src/lib/model";
 const content: Block[] = Array.from({ length: 3 }, (_, n) => [
@@ -27,10 +31,9 @@ test("canonical editor and PDF content areas match every edge distance and switc
           showHeader,
           showFooter,
         };
-        hf.shared.header.image = {
+        bandImages(hf.shared.header)[0].node.attrs = {
           src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=",
           alt: "Tall logo",
-          slot: 0,
           height: 500,
         };
         await f.editRemote({ header_footer: hf });
