@@ -1,4 +1,5 @@
 "use client";
+import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
 import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultTemplateBands, proposalBands } from "../lib/page-bands";
 import { defaultCover } from "../lib/cover";
@@ -115,7 +116,9 @@ function useSave(run: Runner) {
 function SaveError({ error }: { error: string }) {
   return error ? (
     <Banner tone="danger" title="Your changes are still here">
-      {error} Correct the issue and try again.
+      {isStaffSignedOut(error)
+        ? error
+        : `${error} Correct the issue and try again.`}
     </Banner>
   ) : null;
 }
@@ -1809,8 +1812,13 @@ function TemplatesStudioContent({
         {templateError && (
           <EditorNotice kind="error">
             <span title={templateError}>
-              Your changes are still here. {templateError}
+              {isStaffSignedOut(templateError) ? (
+                templateError
+              ) : (
+                <>Your changes are still here. {templateError}</>
+              )}
             </span>
+            {isStaffSignedOut(templateError) && <StaffSignIn />}
             <EditorButton variant="primary" onClick={() => void saveTemplate()}>
               Retry
             </EditorButton>

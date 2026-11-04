@@ -1,4 +1,5 @@
 "use client";
+import { staffErrorMessage } from "./staff-sign-in";
 import { printView, viewKey } from "../lib/print-view";
 import { useRef } from "react";
 import { usePrintPreview } from "./use-print-preview";
@@ -58,7 +59,10 @@ export function usePdfPreview(proposal: Proposal) {
         }
       }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "PDF preview unavailable");
+      if (!res.ok)
+        throw new Error(
+          staffErrorMessage(res.status, data, "PDF preview unavailable"),
+        );
       if (!data.layout || !data.pdf_base64)
         throw new Error("PDF preview unavailable");
       return data as PdfPreview;

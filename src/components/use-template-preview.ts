@@ -1,4 +1,5 @@
 "use client";
+import { staffErrorMessage } from "./staff-sign-in";
 import { printView, viewKey } from "../lib/print-view";
 import { usePrintPreview } from "./use-print-preview";
 import type { Template, Item } from "../lib/model";
@@ -37,7 +38,10 @@ export function useTemplatePreview(
         signal,
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error ?? "Template layout unavailable");
+      if (!r.ok)
+        throw new Error(
+          staffErrorMessage(r.status, data, "Template layout unavailable"),
+        );
       if (!data.layout) throw new Error("Template layout unavailable");
       return data as PdfPreview;
     },

@@ -1,4 +1,5 @@
 "use client";
+import { staffErrorMessage } from "./staff-sign-in";
 import { ClientContactFields, clientFormValues } from "./client-contact-fields";
 import { useState } from "react";
 import { Sheet } from "./foundation";
@@ -101,8 +102,11 @@ export function CreateClientModal({
                       `${i.path.join(".")}: ${i.message}`,
                   )
                   .join("; ") ||
-                  value.error ||
-                  "Unable to save client",
+                  staffErrorMessage(
+                    response.status,
+                    value,
+                    "Unable to save client",
+                  ),
               );
             }
             onSaved(value);

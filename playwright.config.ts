@@ -12,12 +12,20 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:3100" },
   webServer: [
     {
+      command: "node --import tsx e2e/staff-auth-server.ts",
+      url: "http://127.0.0.1:3112",
+      reuseExistingServer: false,
+    },
+    {
       command: "npm run dev -- --port 3100",
       url: "http://127.0.0.1:3100",
       reuseExistingServer: false,
       timeout: 120000,
       env: {
         APP_MODE: "local",
+        SUPABASE_URL: "http://127.0.0.1:3112",
+        SUPABASE_ANON_KEY: "local-auth-fixture-anon",
+        SUPABASE_SERVICE_ROLE_KEY: "local-auth-fixture-service",
         BILLING_MODE: "mock",
         OAUTH_ISSUER: "http://127.0.0.1:3100",
         DATA_DIR: e2eDataDir,
