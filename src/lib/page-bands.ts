@@ -272,35 +272,6 @@ export function changeBandLayout(band: Band, layout: BandLayout): Band {
 
 // All page distances below are CSS pixels at 96px/in, including PDF print CSS.
 export type BandRect = { x: number; y: number; width: number; height: number };
-export const BAND_GAP = 8;
-export function bandImageHeightLimit(
-  marginPx: number,
-  distanceIn: number,
-  divider: boolean,
-) {
-  return Math.max(
-    0,
-    marginPx - distanceIn * 96 - BAND_GAP - 6 - (divider ? 1 : 0),
-  );
-}
-export function bandDataHeight(band: Band, divider: boolean) {
-  const height = (node: RichText): number =>
-    Math.max(
-      node.type === "image"
-        ? Number((node.attrs as Record<string, unknown>)?.height ?? 18)
-        : 0,
-      ...(node.content ?? []).map(height),
-    );
-  return (
-    Math.max(
-      16,
-      band.image?.height ?? (band.image ? 18 : 0),
-      ...band.slots.map(height),
-    ) +
-    6 +
-    (divider ? 1 : 0)
-  );
-}
 export function headerShown(
   hf: HeaderFooterSettings | undefined,
   page: number,
@@ -326,37 +297,41 @@ export function pageGeometry(
       bottom: m.margins.bottom * 96,
       left: m.margins.left * 96,
     };
-  const distance = 96 * (hf?.distanceIn ?? 0.3);
-  const limits = {
-    header: {
-      height: Math.max(0, margin.top - distance - BAND_GAP),
-      imageHeight: bandImageHeightLimit(
-        margin.top,
-        hf?.distanceIn ?? 0.3,
-        hf?.divider ?? true,
-      ),
-    },
-    footer: {
-      height: Math.max(0, margin.bottom - distance - BAND_GAP),
-      imageHeight: bandImageHeightLimit(
-        margin.bottom,
-        hf?.distanceIn ?? 0.3,
-        hf?.divider ?? true,
-      ),
-    },
+  const baseMargins = { ...margin };
+  const spacing = {
+    header: bandSpacing(hf, "header"),
+    footer: bandSpacing(hf, "footer"),
   };
-  const height = (kind: "header" | "footer") =>
-    Math.min(
-      limits[kind].height,
-      hf
-        ? bandDataHeight(
-            resolved?.[kind] && resolved[kind] !== "hidden"
-              ? (resolved[kind] as Band)
-              : hf.shared[kind],
-            hf.divider,
-          )
-        : 0,
+  const distances = {
+    header: spacing.header.distanceIn * 96,
+    footer: spacing.footer.distanceIn * 96,
+  };
+  const limits = Object.fromEntries(
+    (["header", "footer"] as const).map((kind) => [
+      kind,
+      {
+        height:
+          spacing[kind].heightIn * 96 +
+          spacing[kind].spaceByLine +
+          (hf?.divider ? 1 : 0),
+        imageHeight: spacing[kind].heightIn * 96,
+      },
+    ]),
+  ) as Record<"header" | "footer", { height: number; imageHeight: number }>;
+  // Global switches alone remove a stack. Cover/unique/hidden states never
+  // change effective margins or the canonical content height between pages.
+  if (hf?.showHeader)
+    margin.top = Math.max(
+      margin.top,
+      distances.header + limits.header.height + spacing.header.spaceToContent,
     );
+  if (hf?.showFooter)
+    margin.bottom = Math.max(
+      margin.bottom,
+      distances.footer + limits.footer.height + spacing.footer.spaceToContent,
+    );
+  const contentHeight = m.height - margin.top - margin.bottom;
+  const height = (kind: "header" | "footer") => limits[kind].height;
   const head = headerShown(hf, page),
     foot = footerShown(hf, page);
   const before = 0,
@@ -366,18 +341,21 @@ export function pageGeometry(
     width: m.width,
     height: m.height,
     margins: margin,
-    distance,
+    baseMargins,
+    distances,
+    spacing,
+    distance: distances.header,
     bandLimits: limits,
     content: {
       x: margin.left,
       y: margin.top,
       width: m.contentWidth,
-      height: m.contentHeight,
+      height: contentHeight,
     },
     header: head
       ? {
           x: margin.left,
-          y: distance,
+          y: distances.header,
           width: m.contentWidth,
           height: height("header"),
         }
@@ -385,12 +363,12 @@ export function pageGeometry(
     footer: foot
       ? {
           x: margin.left,
-          y: m.height - distance - height("footer"),
+          y: m.height - distances.footer - height("footer"),
           width: m.contentWidth,
           height: height("footer"),
         }
       : null,
-    frameHeight: m.contentHeight,
+    frameHeight: contentHeight,
     before,
     after,
   };

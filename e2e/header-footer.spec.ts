@@ -28,6 +28,8 @@ test("canonical editor and PDF content areas match every edge distance and switc
         const hf = {
           ...defaultHeaderFooter(),
           distanceIn,
+          headerSpacing: { ...defaultHeaderFooter().headerSpacing, distanceIn },
+          footerSpacing: { ...defaultHeaderFooter().footerSpacing, distanceIn },
           showHeader,
           showFooter,
         };
@@ -69,7 +71,12 @@ test("canonical editor and PDF content areas match every edge distance and switc
             hf,
             n + 1,
           );
-          expect(expected).toBe(912);
+          expect(expected).toBeCloseTo(
+            1056 -
+              Math.max(72, showHeader ? distanceIn * 96 + 39 : 0) -
+              Math.max(72, showFooter ? distanceIn * 96 + 39 : 0),
+            8,
+          );
           expect(areas[n].canonical).toBe(expected);
           expect(Math.abs(areas[n].height - expected)).toBeLessThanOrEqual(1);
           expect(
@@ -253,11 +260,18 @@ test("Styles switches retain content space and breaks, keep overrides and show c
     "912",
   );
   expect(await plan()).toEqual(original);
-  await panel.getByRole("button", { name: "0.4 in", exact: true }).click();
-  await expect.poll(() => f.active().header_footer?.distanceIn).toBe(0.4);
+  await panel
+    .getByRole("group", { name: "Header distance from edge" })
+    .getByRole("button", { name: "0.4 in", exact: true })
+    .click();
+  await expect
+    .poll(() => f.active().header_footer?.headerSpacing.distanceIn)
+    .toBe(0.4);
   await expect(page.locator(".page-sheet").nth(1)).toHaveAttribute(
     "data-content-height",
-    "912",
+    String(
+      pageContentHeight(resolveStyles(f.settings), f.active().header_footer, 2),
+    ),
   );
   await panel
     .getByRole("switch", { name: "Divider line", exact: true })

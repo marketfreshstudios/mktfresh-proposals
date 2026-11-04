@@ -1,6 +1,6 @@
 "use client";
 import { SpacingInput } from "./editor/spacing-input";
-import { bandSpacing } from "../lib/page-bands";
+import { bandSpacing, pageGeometry } from "../lib/page-bands";
 import { Disclosure } from "./ui";
 import { sharedPagesLabel } from "../lib/page-count";
 import { ToolbarPopover } from "./toolbar-popover";
@@ -241,6 +241,7 @@ export function ProposalStyles({
               ariaLabel={`${styleLabels[level]} space above (px)`}
               value={selected.space_above}
               max={160}
+              inputStep="any"
               onChange={(space_above) => patch({ space_above })}
             />
             <SpacingInput
@@ -248,6 +249,7 @@ export function ProposalStyles({
               ariaLabel={`${styleLabels[level]} space below (px)`}
               value={selected.space_below}
               max={160}
+              inputStep="any"
               onChange={(space_below) => patch({ space_below })}
             />
           </div>
@@ -377,6 +379,7 @@ export function ProposalStyles({
         <details className="style-accordion" open>
           <Disclosure>Header &amp; footer</Disclosure>
           <BandSettings
+            styles={styles}
             value={headerFooter}
             onChange={onHeaderFooter}
             pageCount={pageCount}
@@ -446,6 +449,7 @@ function StyleNumber({
 }
 
 function BandSettings({
+  styles,
   value,
   onChange,
   pageCount,
@@ -453,6 +457,7 @@ function BandSettings({
   resetLabel,
   pages,
 }: {
+  styles: ReturnType<typeof resolveStyles>;
   onReset?: () => void | Promise<void>;
   resetLabel: string;
   pages?: ResolvedBandPage[];
@@ -460,6 +465,7 @@ function BandSettings({
   onChange: (v: HeaderFooterSettings) => void;
   pageCount: number;
 }) {
+  const geometry = pageGeometry(styles, value, 1);
   const id = useId();
   const [confirm, setConfirm] = useState<HTMLElement | null>(null);
   const editing = useBandEditing();
@@ -590,6 +596,7 @@ function BandSettings({
               ariaLabel={`${title} space by the line`}
               value={spacing.spaceByLine}
               max={24}
+              step={1}
               onChange={(spaceByLine) => update({ spaceByLine })}
             />
             <SpacingInput
@@ -597,8 +604,21 @@ function BandSettings({
               ariaLabel={`${title} space to content`}
               value={spacing.spaceToContent}
               max={48}
+              step={1}
               onChange={(spaceToContent) => update({ spaceToContent })}
             />
+            <p className="band-margin-note" role="status">
+              {(() => {
+                const edge = kind === "header" ? "top" : "bottom",
+                  label = kind === "header" ? "Top" : "Bottom",
+                  effective = geometry.margins[edge],
+                  base = geometry.baseMargins[edge],
+                  inches = Number((effective / 96).toFixed(2));
+                return effective > base
+                  ? `${label} margin grows to ${inches} in to fit the ${kind}`
+                  : `${label} margin: ${inches} in (fits)`;
+              })()}
+            </p>
           </fieldset>
         );
       })}

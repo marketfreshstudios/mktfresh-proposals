@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 export function SpacingInput({
   label,
   value,
@@ -8,6 +8,7 @@ export function SpacingInput({
   max = 200,
   step = 4,
   ariaLabel = label,
+  inputStep = step,
 }: {
   label: string;
   value: number;
@@ -16,8 +17,15 @@ export function SpacingInput({
   max?: number;
   step?: number;
   ariaLabel?: string;
+  inputStep?: number | "any";
 }) {
+  const id = useId();
   const [raw, setRaw] = useState(String(value));
+  const invalid =
+    raw === "" ||
+    !Number.isFinite(Number(raw)) ||
+    Number(raw) < min ||
+    Number(raw) > max;
   useEffect(() => setRaw(String(value)), [value]);
   const change = (n: number) => {
     const v = Math.max(min, Math.min(max, n));
@@ -25,8 +33,8 @@ export function SpacingInput({
     onChange(v);
   };
   return (
-    <label className="field spacing-field">
-      <span>{label}</span>
+    <div className="field spacing-field">
+      <label htmlFor={id}>{label}</label>
       <span className="spacing-stepper">
         <button
           type="button"
@@ -38,10 +46,13 @@ export function SpacingInput({
         </button>
         <input
           type="number"
+          id={id}
           aria-label={ariaLabel}
           min={min}
           max={max}
-          step={step}
+          step={inputStep}
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? `${id}-error` : undefined}
           value={raw}
           onChange={(e) => {
             setRaw(e.target.value);
@@ -65,6 +76,11 @@ export function SpacingInput({
           +
         </button>
       </span>
-    </label>
+      {invalid && (
+        <small id={`${id}-error`} role="alert">
+          Enter a value from {min} to {max}.
+        </small>
+      )}
+    </div>
   );
 }

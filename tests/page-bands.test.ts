@@ -156,7 +156,7 @@ it("load defaults, template inheritance, same-link publication, hash and signing
   expect(versionHash({ ...v, header_footer: hf })).not.toBe(old);
 });
 
-it("margin bands on, off and hidden never take content space; tall images clamp to the shared max", async () => {
+it("independent stacks grow margins consistently on all pages and cap tall images to content height", async () => {
   const { pageGeometry, pageContentHeight } =
     await import("../src/lib/page-bands");
   const { resolveStyles } = await import("../src/lib/proposal-styles");
@@ -169,13 +169,28 @@ it("margin bands on, off and hidden never take content space; tall images clamp 
         const hf = {
           ...defaultHeaderFooter(),
           distanceIn,
+          headerSpacing: { ...defaultHeaderFooter().headerSpacing, distanceIn },
+          footerSpacing: { ...defaultHeaderFooter().footerSpacing, distanceIn },
           showHeader,
           showFooter,
         };
         bandImages(hf.shared.header)[0].node.attrs!.height = 500;
         for (const page of [1, 2, 3]) {
           const g = pageGeometry(styles, hf, page);
-          expect(g.content).toEqual({ x: 72, y: 72, width: 672, height: 912 });
+          const top = Math.max(
+              72,
+              showHeader ? distanceIn * 96 + 24 + 6 + 1 + 8 : 0,
+            ),
+            bottom = Math.max(
+              72,
+              showFooter ? distanceIn * 96 + 24 + 6 + 1 + 8 : 0,
+            );
+          expect(g.content).toEqual({
+            x: 72,
+            y: top,
+            width: 672,
+            height: 1056 - top - bottom,
+          });
           expect(
             pageContentHeight(
               styles,
@@ -185,14 +200,13 @@ it("margin bands on, off and hidden never take content space; tall images clamp 
               },
               page,
             ),
-          ).toBe(912);
-          expect(g.bandLimits.header.height).toBeCloseTo(
-            72 - distanceIn * 96 - 8,
-            10,
-          );
+          ).toBe(g.content.height);
+          expect(g.bandLimits.header.height).toBeCloseTo(24 + 6 + 1, 10);
           if (g.header) {
             expect(g.header.height).toBe(g.bandLimits.header.height);
-            expect(g.header.y + g.header.height + 8).toBeCloseTo(72, 10);
+            expect(g.header.y + g.header.height + 8).toBeLessThanOrEqual(
+              g.margins.top + 0.001,
+            );
           }
         }
       }
