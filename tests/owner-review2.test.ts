@@ -100,7 +100,7 @@ it("cover styles retain dynamic titles, rich fields, image offsets and frozen se
           kind: "extra",
           content: coverText("hello"),
           align: "left",
-          space_above: 201,
+          space_above: 1057,
         },
       ],
     }).success,

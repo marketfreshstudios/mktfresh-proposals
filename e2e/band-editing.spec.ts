@@ -465,7 +465,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
     settings.getByRole("button", { name: "Edit shared header", exact: true }),
   ).toBeEnabled();
   await settings
-    .getByRole("switch", { name: "Show on cover", exact: true })
+    .getByRole("switch", { name: "Header show on cover", exact: true })
     .check();
   await settings
     .getByRole("button", { name: "Edit shared header", exact: true })

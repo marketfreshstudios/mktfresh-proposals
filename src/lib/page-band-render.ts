@@ -2,6 +2,7 @@ import type { RichText } from "./model";
 import { escape } from "./presentation";
 import {
   BandSchema,
+  bandDivider,
   bandColumns,
   bandJustify,
   headerShown,
@@ -134,5 +135,5 @@ export function pageBandHtml({
     kind === "header"
       ? `top:${inContent ? rect.y - g.margins.top : rect.y}px`
       : `bottom:${inContent ? g.distances.footer - g.margins.bottom : g.distances.footer}px`;
-  return `<div class="page-band" data-page-band="${kind}" data-band-page="${page}" data-divider="${hf.divider}" data-band-mode="${print ? "print" : "rest"}" style="${insets};${edge};height:${rect.height}px;--band-image-max:${g.bandLimits[kind].imageHeight}px;--band-space-by-line:${g.spacing[kind].spaceByLine}px;grid-template-columns:${bandColumns(band.layout)};font-family:${escape(fontFamily(styles?.body.font ?? "serif"))}">${slots}</div>`;
+  return `<div class="page-band" data-page-band="${kind}" data-band-page="${page}" data-divider="${bandDivider(hf, kind)}" data-band-mode="${print ? "print" : "rest"}" style="${insets};${edge};height:${rect.height}px;--band-image-max:${g.bandLimits[kind].imageHeight}px;--band-space-by-line:${g.spacing[kind].spaceByLine}px;grid-template-columns:${bandColumns(band.layout)};font-family:${escape(fontFamily(styles?.body.font ?? "serif"))}">${slots}</div>`;
 }

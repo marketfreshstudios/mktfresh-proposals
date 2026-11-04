@@ -1,4 +1,5 @@
 "use client";
+import { bandOnCover, bandSpacing } from "../../lib/page-bands";
 import type { HeaderFooterSettings } from "../../lib/page-bands";
 import { useBandEditing } from "./band-editing";
 /** Margin-only chrome. Enabling cover bands uses the ordinary settings history. */
@@ -14,7 +15,10 @@ export function CoverBandPill({
   onChange: (value: HeaderFooterSettings) => void;
 }) {
   const editing = useBandEditing();
-  if (hf.showOnCover || !hf[kind === "header" ? "showHeader" : "showFooter"])
+  if (
+    bandOnCover(hf, kind) ||
+    !hf[kind === "header" ? "showHeader" : "showFooter"]
+  )
     return null;
   return (
     <div
@@ -26,7 +30,13 @@ export function CoverBandPill({
       <button
         type="button"
         onClick={() => {
-          onChange({ ...hf, showOnCover: true });
+          onChange({
+            ...hf,
+            [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
+              ...bandSpacing(hf, kind),
+              showOnCover: true,
+            },
+          });
           editing?.announce("Header and footer shown on cover");
         }}
       >

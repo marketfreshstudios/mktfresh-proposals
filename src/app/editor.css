@@ -8065,3 +8065,16 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   font: 600 11px/1.5 var(--font-ui);
   color: var(--ink-muted);
 }
+.proposal-styles .band-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.proposal-styles .band-spacing-settings {
+  border: 0;
+  padding: 16px;
+  min-width: 0;
+}
+.proposal-styles .band-spacing-settings .band-setting {
+  border: 0;
+}

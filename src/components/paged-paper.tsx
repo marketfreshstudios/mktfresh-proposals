@@ -5,7 +5,11 @@ import {
   reconcileBandOverrides,
   type BandPages,
 } from "../lib/band-overrides";
-import { pageGeometry, type HeaderFooterSettings } from "../lib/page-bands";
+import {
+  bandOnCover,
+  pageGeometry,
+  type HeaderFooterSettings,
+} from "../lib/page-bands";
 import {
   useEffect,
   useLayoutEffect,
@@ -588,7 +592,7 @@ export function PagedPaper({
                     bindings.filter(
                       (p) =>
                         p[kind].source === "shared" &&
-                        (headerFooter?.showOnCover || p.page !== 1),
+                        (bandOnCover(headerFooter, kind) || p.page !== 1),
                     ).length
                   }
                   movedFrom={
