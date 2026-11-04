@@ -489,3 +489,49 @@ test("a continuous spacing drag is one document undo step", async ({
     page.getByRole("spinbutton", { name: "Space below", exact: true }),
   ).toHaveValue(original);
 });
+test("selected image toolbar keeps the same live controls across desktop and phone resize", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const f = await editorFixture(page);
+  const logo = await page.evaluate(() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 24;
+    c.getContext("2d")!.fillRect(0, 0, 24, 24);
+    return c.toDataURL("image/png");
+  });
+  const { defaultCover } = await import("../src/lib/cover");
+  await f.editRemote({ cover: { ...defaultCover(), logo, logo_height: 24 } });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.locator(".cover-logo img").click();
+  const bar = page.getByRole("toolbar", { name: "Image actions", exact: true });
+  await expect(bar).toBeVisible();
+  await bar.evaluate((el) => {
+    (window as any).__imageBar = el;
+    (window as any).__imageActions = Array.from(el.querySelectorAll("button"));
+  });
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  for (let i = 0; i < 6; i++)
+    for (const width of [375, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await expect(bar).toHaveCSS(
+        "position",
+        width === 375 ? "fixed" : "absolute",
+      );
+      const same = await bar.evaluate((el) => ({
+        bar: el === (window as any).__imageBar,
+        buttons: Array.from(el.querySelectorAll("button")).every(
+          (b, n) =>
+            b === (window as any).__imageActions[n] &&
+            b.isConnected &&
+            b.getClientRects().length > 0,
+        ),
+      }));
+      expect(same).toEqual({ bar: true, buttons: true });
+      for (const button of await bar.getByRole("button").all())
+        await expect(button).toBeVisible();
+    }
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+});

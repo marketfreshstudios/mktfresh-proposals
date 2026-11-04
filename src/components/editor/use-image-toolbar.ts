@@ -1,26 +1,47 @@
 "use client";
 import {
+  createElement,
   useLayoutEffect,
-  useEffect,
   useState,
+  useRef,
   type RefObject,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 /** A fixed toolbar must escape transformed sheets and their lower stacking layer. */
 export function PhoneToolbar({ children }: { children: ReactNode }) {
-  const [phone, setPhone] = useState(
-    () =>
-      typeof window !== "undefined" && matchMedia("(max-width:699px)").matches,
+  const anchor = useRef<HTMLSpanElement>(null);
+  const [host] = useState(() =>
+    typeof document !== "undefined" ? document.createElement("span") : null,
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!host) return;
+    host.style.display = "contents";
+    host.dataset.editorChrome = "";
     const media = matchMedia("(max-width:699px)");
-    const change = () => setPhone(media.matches);
-    change();
-    media.addEventListener("change", change);
-    return () => media.removeEventListener("change", change);
-  }, []);
-  return phone ? createPortal(children, document.body) : children;
+    const place = () => {
+      const parent = media.matches ? document.body : anchor.current;
+      if (!parent || host.parentElement === parent) return;
+      const focused = host.contains(document.activeElement)
+        ? (document.activeElement as HTMLElement)
+        : null;
+      // Move the same portal container. Changing the portal target remounts
+      // every action and briefly removes focused/clickable buttons on resize.
+      parent.appendChild(host);
+      focused?.focus({ preventScroll: true });
+    };
+    place();
+    media.addEventListener("change", place);
+    return () => {
+      media.removeEventListener("change", place);
+      host.remove();
+    };
+  }, [host]);
+  return createElement(
+    "span",
+    { ref: anchor, "data-editor-chrome": "", style: { display: "contents" } },
+    host ? createPortal(children, host) : null,
+  );
 }
 /** Intrinsic toolbar geometry is independent of the selected image's width. */
 export function useImageToolbar(
