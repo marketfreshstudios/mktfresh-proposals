@@ -216,15 +216,28 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
   ).toBe(14);
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 768, height: 1000 });
-  await expect(bands(page).first()).not.toHaveAttribute("tabindex", "0");
-  const rest = await bands(page).first().boundingBox();
-  await page.mouse.dblclick(
-    rest!.x + rest!.width / 2,
-    rest!.y + rest!.height / 2,
-  );
-  await expect(page.locator(".band-edit-bar")).toHaveCount(0);
+  const tablet = bands(page).first();
+  await tablet.scrollIntoViewIfNeeded();
+  await tablet.click();
+  await expect(tablet).toHaveAttribute("data-band-selected", "true");
+  await expect(tablet).toHaveAttribute("data-band-state", "rest");
+  await tablet.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(tablet.getByRole("toolbar")).toHaveCSS("height", "44px");
+  await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 375, height: 900 });
-  await expect(page.locator(".band-edit-bar")).toHaveCount(0);
+  await tablet.scrollIntoViewIfNeeded();
+  await tablet.click();
+  await expect(page.locator(".band-phone-header")).toContainText(
+    "Header · Shared",
+  );
+  await expect(page.locator(".band-edit-bar")).toHaveAttribute(
+    "data-band-dock",
+    "keyboard",
+  );
+  await page
+    .locator(".band-phone-header")
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
   await page.getByRole("button", { name: "Open Quote", exact: true }).click();
   await page
     .locator(".editor-v2-sheet")

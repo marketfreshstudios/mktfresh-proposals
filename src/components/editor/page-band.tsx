@@ -1,5 +1,13 @@
 "use client";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import {
+  setBandOverride,
+  removeBandOverride,
+  emptyBand,
+} from "../../lib/band-overrides";
+import { BandMenu, UseSharedConfirm } from "./band-menu";
+import { BandPopover } from "./band-popover";
 import type { Editor } from "@tiptap/core";
 import { pageBandHtml } from "../../lib/page-band-render";
 import {
@@ -17,13 +25,17 @@ import { fontFamily } from "../../lib/proposal-fonts";
 import { FieldEditor } from "../field-editor";
 import { useBlockSelection, useBlockToolbar } from "../block-controls";
 import { Icon } from "../ui";
-import { ToolbarPopover } from "../toolbar-popover";
 import { useBandEditing } from "./band-editing";
 import { EditBar } from "./edit-bar";
 import { BandFieldMenu, LayoutGlyph, LayoutMenu, menuKeys } from "./band-menus";
 type Props = Parameters<typeof pageBandHtml>[0] & {
   onChange?: (hf: HeaderFooterSettings) => void;
   source?: "shared" | "unique" | "hidden";
+  anchor?: string;
+  allowOverrides?: boolean;
+  sharedCount?: number;
+  movedFrom?: number;
+  onDismissMove?: () => void;
 };
 export function PageBand(props: Props) {
   const {
@@ -36,6 +48,12 @@ export function PageBand(props: Props) {
     logo,
     onChange,
     source = "shared",
+    band: resolved,
+    anchor,
+    allowOverrides = true,
+    sharedCount = Math.max(0, pageCount - (hf?.showOnCover ? 0 : 1)),
+    movedFrom,
+    onDismissMove,
   } = props;
   const control = useBandEditing(),
     selection = useBlockSelection(),
@@ -43,21 +61,26 @@ export function PageBand(props: Props) {
   const root = useRef<HTMLDivElement>(null),
     editors = useRef<(Editor | null)[]>([]),
     column = useRef<number | null>(null);
-  const [desktop, setDesktop] = useState(false),
-    [menu, setMenu] = useState<"more" | "layout" | "fields" | "image" | null>(
-      null,
-    ),
+  const [menu, setMenu] = useState<
+      "more" | "confirm" | "layout" | "fields" | "image" | null
+    >(null),
     [trigger, setTrigger] = useState<HTMLElement | null>(null),
     [error, setError] = useState("");
+  const device = control?.device,
+    phone = device === "phone",
+    tablet = device === "tablet";
   const [, refreshMarks] = useState(0);
   const markListeners = useRef(new Map<Editor, () => void>());
-  const id = `${kind}-${page}`,
-    editing = control?.active === id && desktop && !!onChange;
+  const id = `${kind}-${anchor ?? page}`,
+    editing = control?.active === id && !!device && !!onChange,
+    selected = control?.selected === id;
   const shown =
     !!hf && (kind === "header" ? headerShown(hf, page) : footerShown(hf, page));
-  const editable = desktop && !!onChange && source === "shared";
+  const editable = !!device && !!onChange;
   const begin = () => {
     if (!editable) return;
+    if (resolved === "hidden" && hf && anchor)
+      onChange?.(setBandOverride(hf, anchor, kind, emptyBand(hf.shared[kind])));
     selection.clear();
     column.current = null;
     control?.begin(id);
@@ -69,29 +92,36 @@ export function PageBand(props: Props) {
       requestAnimationFrame(() => root.current?.focus({ preventScroll: true }));
   };
   useEffect(() => {
-    const media = matchMedia("(min-width:960px)");
-    const update = () => setDesktop(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
+    if (!editing || !phone) return;
+    const frame = requestAnimationFrame(() =>
+      editors.current[0]?.commands.focus("end"),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [editing, phone]);
   useEffect(() => {
     if (!editable || !shown || !root.current) return;
     return control?.register(id, {
       kind,
       page,
+      source,
       element: root.current,
       edit: begin,
     });
-  }, [editable, shown, id]);
+  }, [editable, shown, id, source, page]);
   useEffect(() => {
-    if (!editing) {
+    if (!editing && !selected) {
       setMenu(null);
       return;
     }
     const outside = (e: PointerEvent) => {
       const el = e.target as Element;
-      if (!root.current?.contains(el) && !el.closest(".band-popover")) done();
+      if (
+        !root.current?.contains(el) &&
+        !el.closest(
+          ".band-popover,.band-phone-sheet,.band-phone-header,.band-edit-bar",
+        )
+      )
+        done();
     };
     const escape = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || menu) return;
@@ -105,7 +135,7 @@ export function PageBand(props: Props) {
       document.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("keydown", escape, true);
     };
-  }, [editing, menu]);
+  }, [editing, selected, menu]);
   useEffect(() => {
     if (menu !== "more" && menu !== "image") return;
     const frame = requestAnimationFrame(() =>
@@ -118,12 +148,43 @@ export function PageBand(props: Props) {
     return () => cancelAnimationFrame(frame);
   }, [menu]);
   if (!hf || !shown) return null;
-  const band = hf.shared[kind],
+  const band =
+      resolved === "hidden" ? hf.shared[kind] : (resolved ?? hf.shared[kind]),
     geometry = pageGeometry(styles, hf, page),
     rect = geometry[kind]!;
-  const patch = (next: Band) =>
-    onChange?.({ ...hf, shared: { ...hf.shared, [kind]: next } });
+  const patch = (next: Band) => {
+    onDismissMove?.();
+    onChange?.(
+      source !== "shared" && anchor
+        ? setBandOverride(hf, anchor, kind, next)
+        : { ...hf, shared: { ...hf.shared, [kind]: next } },
+    );
+  };
+  const unique = () => {
+    if (!anchor) return;
+    onChange?.(setBandOverride(hf, anchor, kind, hf.shared[kind]));
+    setMenu(null);
+    selection.clear();
+    column.current = null;
+    control?.begin(id);
+  };
+  const hide = () => {
+    if (anchor) onChange?.(setBandOverride(hf, anchor, kind, "hidden"));
+    done(true);
+  };
+  const useShared = () => {
+    if (!anchor) return;
+    onChange?.(removeBandOverride(hf, anchor, kind));
+    control?.announce(`Page ${page} now uses the shared ${kind}`);
+    done(true);
+  };
+  const label = `${kind === "header" ? "Header" : "Footer"} · ${source === "shared" ? "Shared" : source === "hidden" ? "Hidden" : `Unique to page ${page}`}`;
+  const scopeLabel =
+    source === "shared"
+      ? `Shared on ${sharedCount} pages`
+      : `Unique to page ${page}`;
   const open = (which: typeof menu, el: HTMLElement) => {
+    control?.select(id);
     setTrigger(el);
     setMenu(menu === which ? null : which);
   };
@@ -169,6 +230,12 @@ export function PageBand(props: Props) {
       data-band-page={page}
       data-band-state={editing ? "editing" : "rest"}
       data-band-source={source}
+      data-band-selected={selected}
+      data-small-margin={
+        (kind === "header" ? geometry.margins.top : geometry.margins.bottom) <
+        57.6
+      }
+      data-band-anchor={anchor}
       className="page-band-frame"
       role="group"
       tabIndex={editable ? 0 : undefined}
@@ -184,14 +251,35 @@ export function PageBand(props: Props) {
         } as CSSProperties
       }
       onDoubleClick={() => {
-        if (!editing) begin();
+        if (!editing && device === "desktop") begin();
+      }}
+      onClick={(event) => {
+        if (
+          editing ||
+          !editable ||
+          (event.target as Element).closest("button,input")
+        )
+          return;
+        if (phone) begin();
+        else if (tablet) {
+          if (selected) begin();
+          else {
+            selection.clear();
+            control?.select(id);
+          }
+        }
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && !editing) {
+        if (e.target === e.currentTarget && e.key === "Enter" && !editing) {
           e.preventDefault();
           begin();
         }
-        if (e.shiftKey && e.key === "F10" && editable) {
+        if (
+          e.target === e.currentTarget &&
+          e.shiftKey &&
+          e.key === "F10" &&
+          editable
+        ) {
           e.preventDefault();
           open("more", root.current!);
         }
@@ -239,7 +327,7 @@ export function PageBand(props: Props) {
                 )}
               <div
                 className="band-slot-content"
-                data-history-block={`band-${kind}-${n}`}
+                data-history-block={`band-${kind}-${source === "shared" ? "shared" : anchor}-${n}`}
               >
                 <FieldEditor
                   value={slot}
@@ -280,28 +368,57 @@ export function PageBand(props: Props) {
       ) : (
         <div
           className="band-rest-content"
-          dangerouslySetInnerHTML={{ __html: pageBandHtml(props) }}
+          dangerouslySetInnerHTML={{
+            __html: pageBandHtml({ ...props, band: resolved }),
+          }}
         />
       )}
-      {source !== "shared" && (
-        <span className="band-source-tag">
-          {source === "hidden" ? "Hidden" : `Unique to page ${page}`}
-        </span>
+      {movedFrom !== undefined && source !== "shared" && !editing ? (
+        <div data-editor-chrome className="band-reflow-note" role="status">
+          <strong>Unique</strong>
+          <span title={`Moved here from page ${movedFrom} with its section`}>
+            Moved here from page {movedFrom} with its section
+          </span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDismissMove?.();
+            }}
+          >
+            OK
+          </button>
+        </div>
+      ) : (
+        source !== "shared" && (
+          <span className="band-source-tag">
+            {source === "hidden" ? "Hidden" : "Unique"}
+          </span>
+        )
       )}
       {editable && !editing && (
         <div className="band-hover-controls">
-          <span className="band-label">
-            {kind === "header" ? "Header · Shared" : "Footer · Shared"}
-          </span>
+          <span className="band-label">{label}</span>
           <span className="band-hover-actions">
-            <button tabIndex={-1} className="band-edit-button" onClick={begin}>
+            <button
+              type="button"
+              tabIndex={-1}
+              className="band-edit-button"
+              onClick={(event) => {
+                event.stopPropagation();
+                begin();
+              }}
+            >
               Edit
             </button>
             <button
               tabIndex={-1}
               aria-label={`${kind} actions`}
               title="More"
-              onClick={(e) => open("more", e.currentTarget)}
+              onClick={(e) => {
+                e.stopPropagation();
+                open("more", e.currentTarget);
+              }}
             >
               ⋯
             </button>
@@ -311,7 +428,12 @@ export function PageBand(props: Props) {
       {editing && (
         <EditBar
           variant="band"
+          portal={root.current?.closest<HTMLElement>(
+            ".quote-workspace,.studio-template-layout",
+          )}
           kind={kind}
+          device={device ?? "desktop"}
+          sourceLabel={source === "shared" ? "Shared" : "Unique"}
           inside={
             (kind === "header"
               ? geometry.margins.top
@@ -345,14 +467,16 @@ export function PageBand(props: Props) {
             <span aria-hidden>▾</span>
           </button>
           <span className="band-separator" />
-          <button
-            aria-label="Line"
-            aria-pressed={hf.divider}
-            onClick={() => onChange?.({ ...hf, divider: !hf.divider })}
-          >
-            — Line
-          </button>
-          <span className="band-separator" />
+          {!phone && (
+            <button
+              aria-label="Line"
+              aria-pressed={hf.divider}
+              onClick={() => onChange?.({ ...hf, divider: !hf.divider })}
+            >
+              — Line
+            </button>
+          )}
+          {!phone && <span className="band-separator" />}
           <button
             aria-label="Insert band field"
             aria-expanded={menu === "fields"}
@@ -371,36 +495,85 @@ export function PageBand(props: Props) {
             <Icon name="image" />
           </button>
           <span className="band-separator" />
-          <span className="band-shared-count">
-            Shared on {Math.max(0, pageCount - (hf.showOnCover ? 0 : 1))} pages
-          </span>
-          <button className="band-done" onClick={() => done(true)}>
-            Done
-          </button>
+          {device === "desktop" && (
+            <span className="band-shared-count">{scopeLabel}</span>
+          )}
+          {device !== "desktop" && (
+            <button
+              className="band-bar-more"
+              type="button"
+              aria-label={`${kind} actions`}
+              title="More"
+              onClick={(e) => open("more", e.currentTarget)}
+            >
+              ⋯
+            </button>
+          )}
+          {!phone && (
+            <button className="band-done" onClick={() => done(true)}>
+              Done
+            </button>
+          )}
         </EditBar>
       )}
+      {editing && tablet && (
+        <span className="band-touch-scope">{scopeLabel}</span>
+      )}
+      {editing &&
+        phone &&
+        createPortal(
+          <header data-editor-chrome className="band-phone-header">
+            <button
+              type="button"
+              aria-label="Back to proposal"
+              onClick={() => done(true)}
+            >
+              ‹
+            </button>
+            <div>
+              <strong>{label}</strong>
+              {source === "shared" && (
+                <small>Changes show on {sharedCount} pages</small>
+              )}
+            </div>
+            <button type="button" onClick={() => done(true)}>
+              Done
+            </button>
+          </header>,
+          document.body,
+        )}
       {menu && (
-        <ToolbarPopover
-          className={`band-popover band-popover-${menu}`}
+        <BandPopover
+          phone={phone}
+          mode={menu}
+          kind={kind}
+          page={page}
+          subtitle={scopeLabel}
           trigger={trigger}
           close={() => setMenu(null)}
+          onEscape={menu === "confirm" ? () => setMenu("more") : undefined}
         >
           {menu === "more" ? (
-            <div
-              role="menu"
-              aria-label={`${kind} actions`}
-              onKeyDown={menuKeys}
-            >
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setMenu(null);
-                  begin();
-                }}
-              >
-                Edit shared {kind}
-              </button>
-            </div>
+            <BandMenu
+              kind={kind}
+              source={source}
+              count={sharedCount}
+              sharedOnly={!allowOverrides || !anchor}
+              onEdit={() => {
+                setMenu(null);
+                begin();
+              }}
+              onUnique={unique}
+              onShared={() => setMenu("confirm")}
+              onHide={hide}
+            />
+          ) : menu === "confirm" ? (
+            <UseSharedConfirm
+              kind={kind}
+              page={page}
+              onCancel={() => setMenu("more")}
+              onConfirm={useShared}
+            />
           ) : menu === "layout" ? (
             <LayoutMenu
               value={band.layout}
@@ -502,7 +675,7 @@ export function PageBand(props: Props) {
               {error && <p role="alert">{error}</p>}
             </div>
           )}
-        </ToolbarPopover>
+        </BandPopover>
       )}
     </div>
   );

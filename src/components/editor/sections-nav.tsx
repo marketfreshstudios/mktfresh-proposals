@@ -1,4 +1,6 @@
 "use client";
+import { bandPages, resolvedBandPages } from "../../lib/band-overrides";
+import type { HeaderFooterSettings } from "../../lib/page-bands";
 import type { Block } from "../../lib/model";
 import type { BrowserPages } from "../browser-pagination";
 import {
@@ -61,8 +63,10 @@ export function SectionsNav({
   measure,
   onPage,
   currentSectionId,
+  headerFooter,
 }: {
   currentSectionId?: string | null;
+  headerFooter?: HeaderFooterSettings;
   content: Block[];
   pagination?: BrowserPages | null;
   onChange: (v: Block[]) => void;
@@ -74,6 +78,12 @@ export function SectionsNav({
   const pages = computedPages(content, pagination),
     feedback = useBlockFeedback();
   const selected = useBlockSelection().selected;
+  const bandStatus = headerFooter
+    ? resolvedBandPages(
+        headerFooter,
+        bandPages(content, pagination?.plan, pagination?.assignments),
+      )
+    : [];
   const assignments = new Map(
     pagination?.assignments.map((a) => [a.block, a.page]),
   );
@@ -200,6 +210,9 @@ export function SectionsNav({
                   <span className="section-label page-label">
                     Page {p.number}
                   </span>
+                  {bandStatus[p.number - 1] && (
+                    <BandPageMarker page={bandStatus[p.number - 1]} />
+                  )}
                 </button>
                 {
                   <>
@@ -321,5 +334,39 @@ export function SectionsNav({
         + Add page
       </button>
     </nav>
+  );
+}
+
+function BandPageMarker({
+  page,
+}: {
+  page: ReturnType<typeof resolvedBandPages>[number];
+}) {
+  const kinds = (["header", "footer"] as const).filter(
+    (kind) => page[kind].source !== "shared",
+  );
+  if (!kinds.length) return null;
+  const label = kinds
+    .map((kind) =>
+      page[kind].source === "hidden"
+        ? `${kind === "header" ? "Header" : "Footer"} hidden`
+        : `Unique ${kind}`,
+    )
+    .join(" · ");
+  return (
+    <span
+      className="band-page-marker"
+      role="img"
+      aria-label={label}
+      title={label}
+    >
+      {kinds.map((kind) => (
+        <i
+          key={kind}
+          data-kind={kind}
+          data-hidden={page[kind].source === "hidden"}
+        />
+      ))}
+    </span>
   );
 }

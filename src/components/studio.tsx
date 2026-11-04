@@ -1914,6 +1914,7 @@ function TemplatesStudioContent({
                   >
                     {mode === "templates" && (
                       <PagedPaper
+                        allowOverrides={false}
                         enabled={!phoneSection}
                         paper={templatePaper}
                         styles={templateStyles}

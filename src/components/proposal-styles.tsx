@@ -1,4 +1,7 @@
 "use client";
+import { ToolbarPopover } from "./toolbar-popover";
+import { UseSharedConfirm } from "./editor/band-menu";
+import type { ResolvedBandPage } from "../lib/band-overrides";
 import { ToastSurface } from "./block-controls";
 import { useEditorHistory } from "./editor-history";
 import { useBandEditing } from "./editor/band-editing";
@@ -38,12 +41,14 @@ export function ProposalStyles({
   onResetBands,
   bandsResetLabel = "Reset to template",
   pageCount = 1,
+  bandPages,
 }: {
   onResetBands?: () => void | Promise<void>;
   bandsResetLabel?: string;
   headerFooter?: HeaderFooterSettings;
   onHeaderFooter?: (value: HeaderFooterSettings) => void;
   pageCount?: number;
+  bandPages?: ResolvedBandPage[];
   settings?: WorkspaceSettings | null;
   inherited?: StyleOverrides;
   value?: StyleOverrides;
@@ -359,6 +364,7 @@ export function ProposalStyles({
             value={headerFooter}
             onChange={onHeaderFooter}
             pageCount={pageCount}
+            pages={bandPages}
             onReset={onResetBands}
             resetLabel={bandsResetLabel}
           />
@@ -429,14 +435,17 @@ function BandSettings({
   pageCount,
   onReset,
   resetLabel,
+  pages,
 }: {
   onReset?: () => void | Promise<void>;
   resetLabel: string;
+  pages?: ResolvedBandPage[];
   value: HeaderFooterSettings;
   onChange: (v: HeaderFooterSettings) => void;
   pageCount: number;
 }) {
   const id = useId();
+  const [confirm, setConfirm] = useState<HTMLElement | null>(null);
   const editing = useBandEditing();
   const history = useEditorHistory();
   const [resetBusy, setResetBusy] = useState(false),
@@ -470,20 +479,28 @@ function BandSettings({
       </span>
     </label>
   );
-  const shared = (enabled: boolean) =>
-    enabled ? Math.max(0, pageCount - (value.showOnCover ? 0 : 1)) : 0;
+  const own = (pages ?? []).flatMap((p) =>
+    (["header", "footer"] as const)
+      .filter((kind) => p[kind].source !== "shared")
+      .map((kind) => ({ page: p.page, kind, source: p[kind].source })),
+  );
+  const shared = (kind: "header" | "footer") =>
+    value[kind === "header" ? "showHeader" : "showFooter"]
+      ? Math.max(
+          0,
+          pageCount -
+            (value.showOnCover ? 0 : 1) -
+            own.filter(
+              (p) => p.kind === kind && (p.page !== 1 || value.showOnCover),
+            ).length,
+        )
+      : 0;
+  const subtitle = (kind: "header" | "footer") =>
+    `Shared on ${shared(kind)} pages${own.some((p) => p.kind === kind && p.source === "unique") ? ` · ${own.filter((p) => p.kind === kind && p.source === "unique").length} unique` : ""}`;
   return (
     <div className="band-settings">
-      {toggle(
-        "showHeader",
-        "Header",
-        `Shared on ${shared(value.showHeader)} pages`,
-      )}
-      {toggle(
-        "showFooter",
-        "Footer",
-        `Shared on ${shared(value.showFooter)} pages`,
-      )}
+      {toggle("showHeader", "Header", subtitle("header"))}
+      {toggle("showFooter", "Footer", subtitle("footer"))}
       {toggle(
         "showOnCover",
         "Show on cover",
@@ -514,19 +531,66 @@ function BandSettings({
       <div className="band-style-actions">
         <button
           type="button"
-          disabled={!shared(value.showHeader)}
+          disabled={!shared("header")}
           onClick={() => editing?.edit("header")}
         >
           Edit shared header
         </button>
         <button
           type="button"
-          disabled={!shared(value.showFooter)}
+          disabled={!shared("footer")}
           onClick={() => editing?.edit("footer")}
         >
           Edit shared footer
         </button>
       </div>
+      {own.length > 0 && (
+        <section className="band-own-pages" aria-label="Pages with their own">
+          <h4>Pages with their own</h4>
+          {own.map((p) => (
+            <div key={`${p.page}-${p.kind}`}>
+              <span>
+                Page {p.page} · {p.kind}
+                {p.source === "hidden" ? " hidden" : ""}
+              </span>
+              <button
+                type="button"
+                onClick={() => editing?.goTo(p.kind, p.page)}
+              >
+                Go to
+                <span className="sr-only">
+                  {" "}
+                  page {p.page} {p.kind}
+                </span>
+              </button>
+            </div>
+          ))}
+          <button type="button" onClick={(e) => setConfirm(e.currentTarget)}>
+            Use shared on every page
+          </button>
+        </section>
+      )}
+      {confirm && (
+        <ToolbarPopover
+          className="band-popover band-popover-confirm"
+          trigger={confirm}
+          close={() => setConfirm(null)}
+        >
+          <UseSharedConfirm
+            all
+            kind="header"
+            page={0}
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => {
+              onChange({ ...value, overrides: {} });
+              setConfirm(null);
+              editing?.announce(
+                "Every page now uses the shared header and footer",
+              );
+            }}
+          />
+        </ToolbarPopover>
+      )}
       {onReset && (
         <div className="band-reset">
           <button

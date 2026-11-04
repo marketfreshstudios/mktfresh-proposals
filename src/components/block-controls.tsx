@@ -346,7 +346,24 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                   }
                 }}
               >
-                <BandEditingProvider>{children}</BandEditingProvider>
+                <BandEditingProvider
+                  renderNotices={(notices, undo) =>
+                    notices.length ? (
+                      <ToastSurface className="band-notices">
+                        {notices.map((notice) => (
+                          <div key={notice.key} className="band-notice-row">
+                            <span>{notice.text} · </span>
+                            <button type="button" onClick={() => undo(notice)}>
+                              Undo
+                            </button>
+                          </div>
+                        ))}
+                      </ToastSurface>
+                    ) : null
+                  }
+                >
+                  {children}
+                </BandEditingProvider>
               </div>
               {guidance &&
                 typeof document !== "undefined" &&

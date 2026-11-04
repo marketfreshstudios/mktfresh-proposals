@@ -1,4 +1,10 @@
 "use client";
+import {
+  bandPages,
+  resolvedBandPages,
+  reconcileBandOverrides,
+  type BandPages,
+} from "../lib/band-overrides";
 import { pageGeometry, type HeaderFooterSettings } from "../lib/page-bands";
 import {
   useEffect,
@@ -9,6 +15,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { useBandEditing } from "./editor/band-editing";
+import { CoverBandPill } from "./editor/cover-band-pill";
 import { PageBand } from "./editor/page-band";
 import { pageBandCss } from "../lib/page-band-render";
 import { PageSheet, type SheetBox } from "./editor/page-sheet";
@@ -32,10 +39,17 @@ export function PagedPaper({
   onPagination,
   headerFooter,
   onHeaderFooter,
+  onBandReflow,
+  allowOverrides = true,
   values = {},
   logo,
 }: {
   onHeaderFooter?: (hf: HeaderFooterSettings) => void;
+  onBandReflow?: (
+    hf: HeaderFooterSettings,
+    withContentEdit: boolean,
+  ) => number | undefined;
+  allowOverrides?: boolean;
   headerFooter?: HeaderFooterSettings;
   values?: Record<string, string>;
   logo?: string;
@@ -74,7 +88,7 @@ export function PagedPaper({
         event.key !== "Tab" ||
         event.defaultPrevented ||
         bandEditing?.active ||
-        !matchMedia("(min-width:960px)").matches
+        !matchMedia("(min-width:700px)").matches
       )
         return;
       const target = event.target as HTMLElement;
@@ -185,6 +199,55 @@ export function PagedPaper({
     el.addEventListener("keydown", key);
     return () => el.removeEventListener("keydown", key);
   }, [sources, bandEditing?.active, !!onHeaderFooter]);
+  const previousBands = useRef<BandPages | undefined>(undefined);
+  const previousBandContentKey = useRef<string | undefined>(undefined);
+  const bandState = bandPages(content, sources?.plan, sources?.assignments);
+  const bindings = headerFooter
+    ? resolvedBandPages(headerFooter, bandState)
+    : [];
+  useEffect(() => {
+    if (
+      !allowOverrides ||
+      !sources ||
+      measuredKey !== contentKey ||
+      !headerFooter ||
+      !onHeaderFooter
+    )
+      return;
+    const current = bandPages(content, sources.plan, sources.assignments);
+    const withContentEdit =
+      previousBandContentKey.current !== undefined &&
+      previousBandContentKey.current !== contentKey;
+    previousBandContentKey.current = contentKey;
+    // Restoring a band with Undo is not another reflow. Reconcile identities
+    // when content/order/page starts change, not again for the cleanup itself.
+    if (JSON.stringify(previousBands.current) === JSON.stringify(current))
+      return;
+    const result = reconcileBandOverrides(
+      headerFooter,
+      current,
+      previousBands.current,
+    );
+    previousBands.current = current;
+    if (Object.keys(result.moved).length)
+      bandEditing?.setMoves({ ...bandEditing.moves, ...result.moved });
+    if (result.changed) {
+      const step = onBandReflow?.(result.value, withContentEdit);
+      if (!onBandReflow) onHeaderFooter(result.value);
+      for (const removed of result.removed)
+        bandEditing?.announce(
+          `Page ${removed.page}'s ${removed.kind} was removed`,
+          step,
+        );
+    }
+  }, [
+    sources,
+    measuredKey,
+    contentKey,
+    headerFooter,
+    !!onHeaderFooter,
+    allowOverrides,
+  ]);
   const latest = useRef({
     content,
     headerFooter,
@@ -498,9 +561,44 @@ export function PagedPaper({
               showLabel={n > 0}
               onBackgroundClick={selection.clear}
             >
+              {n === 0 &&
+                headerFooter &&
+                onHeaderFooter &&
+                (["header", "footer"] as const).map((kind) => (
+                  <CoverBandPill
+                    key={`cover-${kind}`}
+                    kind={kind}
+                    hf={headerFooter}
+                    onChange={onHeaderFooter}
+                    height={
+                      pageGeometry(styles, headerFooter, 1).margins[
+                        kind === "header" ? "top" : "bottom"
+                      ]
+                    }
+                  />
+                ))}
               {(["header", "footer"] as const).map((kind) => (
                 <PageBand
                   key={kind}
+                  anchor={bindings[n]?.[kind].key}
+                  source={bindings[n]?.[kind].source}
+                  band={bindings[n]?.[kind].value}
+                  allowOverrides={allowOverrides}
+                  sharedCount={
+                    bindings.filter(
+                      (p) =>
+                        p[kind].source === "shared" &&
+                        (headerFooter?.showOnCover || p.page !== 1),
+                    ).length
+                  }
+                  movedFrom={
+                    bandEditing?.moves[`${kind}:${bindings[n]?.[kind].key}`]
+                  }
+                  onDismissMove={() =>
+                    bandEditing?.dismissMove(
+                      `${kind}:${bindings[n]?.[kind].key}`,
+                    )
+                  }
                   hf={headerFooter}
                   onChange={onHeaderFooter}
                   kind={kind}
