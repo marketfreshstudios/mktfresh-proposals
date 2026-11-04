@@ -1,4 +1,11 @@
 import {
+  StaffSessionExpired,
+  setStaffCookies,
+  clearStaffCookies,
+  withStaffCookies,
+  revokeStaffSession,
+} from "./staff-session";
+import {
   HeaderFooterSettingsSchema,
   TemplateBandsSchema,
   defaultTemplateBands,
@@ -92,6 +99,9 @@ async function body(req: Request) {
   }
 }
 export async function handle(req: Request, path: string[]) {
+  return withStaffCookies(req, await handleRoute(req, path));
+}
+async function handleRoute(req: Request, path: string[]) {
   try {
     const method = req.method;
     if (path[0] === "auth" && path[1] === "local" && method === "POST") {
@@ -131,11 +141,7 @@ export async function handle(req: Request, path: string[]) {
         .parse(await body(req));
       const session = await login(input.email, input.password);
       const response = json({ authenticated: true });
-      response.headers.set(
-        "Set-Cookie",
-        `proposal_session=${session.access_token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${session.expires_in}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
-      );
-      return response;
+      return setStaffCookies(response, session);
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
       const rt = runtime(uuid.parse(path[2]));
@@ -314,6 +320,12 @@ export async function handle(req: Request, path: string[]) {
       }
       return json(results);
     }
+    if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
+      if (req.headers.get("authorization")) await staff(req);
+      else check(sameOrigin(req), "Same-origin request required", 403);
+      await revokeStaffSession(req);
+      return clearStaffCookies(json({ signed_out: true }));
+    }
     const user = await staff(req),
       rt = runtime(user.workspace_id);
     if (path[0] === "auth" && path[1] === "session" && method === "GET") {
@@ -412,14 +424,6 @@ export async function handle(req: Request, path: string[]) {
         name: input.display_name,
       });
       return json(updated);
-    }
-    if (path[0] === "auth" && path[1] === "logout" && method === "POST") {
-      const response = json({ signed_out: true });
-      response.headers.set(
-        "Set-Cookie",
-        "proposal_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
-      );
-      return response;
     }
     if (path[0] === "workspace-logo") {
       if (method === "POST") {
@@ -1091,7 +1095,14 @@ export async function handle(req: Request, path: string[]) {
   } catch (e) {
     if (e instanceof DuplicateClient)
       return json({ error: e.message, existing_client: e.existing }, 409);
-    if (e instanceof AppError) return json({ error: e.message }, e.status);
+    if (e instanceof AppError)
+      return json(
+        {
+          error: e.message,
+          ...(e instanceof StaffSessionExpired ? { code: e.code } : {}),
+        },
+        e.status,
+      );
     if (e instanceof z.ZodError) {
       const hints: Record<string, string> = {
         timezone: "Enter a timezone such as America/New_York.",
