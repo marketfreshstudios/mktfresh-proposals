@@ -121,3 +121,14 @@ test("cover formatting retains the selected middle word through rerenders", asyn
     .toBeTruthy();
   expect(await page.evaluate(() => getSelection()?.toString())).toBe(word);
 });
+test("cover field atoms have the same highlight as band fields", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.goto(`/proposals/${f.draft.id}`);
+  const chip = page
+    .locator('.document-cover [data-field="workspace.name"]')
+    .first();
+  await expect(chip).toHaveCSS("background-color", "rgb(240, 236, 228)");
+  await expect(chip).toHaveCSS("border-radius", "4px");
+});

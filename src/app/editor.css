@@ -7991,3 +7991,12 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   letter-spacing: normal;
   text-transform: none;
 }
+/* Editable atoms remain recognizable without changing their document text style. */
+.document-cover .field-editor .field-chip {
+  background: #f0ece4;
+  border: 0;
+  border-radius: 4px;
+  padding: 0 4px;
+  color: inherit;
+  font: inherit;
+}
