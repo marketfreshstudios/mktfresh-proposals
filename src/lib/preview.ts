@@ -1,3 +1,4 @@
+import { proposalBands } from "./page-bands";
 import { freezeStyles } from "./proposal-styles";
 import { draftItems } from "./quote-model";
 import type { Proposal } from "./model";
@@ -16,6 +17,7 @@ export function previewProposal(
     p.quote = draftItems(p.quote);
 
     const version = {
+      header_footer: proposalBands(p.header_footer),
       id: p.id,
       version_no: 0,
 
@@ -34,6 +36,7 @@ export function previewProposal(
       frozen: false,
     };
     version.content_hash = versionHash({
+      header_footer: version.header_footer,
       ...(version.cover ? { cover: version.cover } : {}),
       content: version.content,
       quote: version.quote,

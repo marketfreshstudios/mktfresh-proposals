@@ -458,15 +458,7 @@ export class Worker {
       !!body &&
       sha256(await this.storage.get(body.storage_path)) === file.body_sha256;
     const v = p.versions.find((v) => v.content_hash === file.version_hash);
-    const versionValid =
-      !!v &&
-      versionHash({
-        content: v.content,
-        quote: v.quote,
-        variables_resolved: v.variables_resolved,
-        resolved_styles: v.resolved_styles,
-        pagination: v.pagination,
-      }) === file.version_hash;
+    const versionValid = !!v && versionHash(v) === file.version_hash;
     return {
       valid: actual === file.sha256 && bodyValid && versionValid,
       file_sha256: actual,

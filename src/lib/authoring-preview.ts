@@ -4,6 +4,7 @@ import type { WorkspaceSettings } from "./workspace";
 /** A staff-only template specimen; never stored, sent or used for billing. */
 export function authoringPreview(
   input: {
+    header_footer?: import("./page-bands").TemplateBands;
     cover?: import("./cover").Cover;
     id: string;
     content: Block[];
@@ -49,6 +50,9 @@ export function authoringPreview(
     client_signed_at: null,
     completed_at: null,
     pagination: input.pagination,
+    header_footer: input.header_footer
+      ? { ...input.header_footer, overrides: {} }
+      : undefined,
     cover: input.cover,
     content: input.content,
     quote: input.quote,

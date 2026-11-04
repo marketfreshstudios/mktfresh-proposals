@@ -17,6 +17,7 @@ export function useTemplatePreview(
         pagination: template.pagination,
         content: template.content,
         quote: templateDefaultQuote(template, catalog).quote,
+        header_footer: template.header_footer,
         cover: template.cover,
         style_overrides: template.style_overrides ?? {},
       }

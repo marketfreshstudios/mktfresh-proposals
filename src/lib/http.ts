@@ -1,3 +1,8 @@
+import {
+  HeaderFooterSettingsSchema,
+  TemplateBandsSchema,
+  defaultTemplateBands,
+} from "./page-bands";
 import { CoverSchema } from "./cover";
 import { publishedExpiry } from "./editor-publication";
 import { PagePlanSchema } from "./page-plan";
@@ -583,6 +588,7 @@ export async function handle(req: Request, path: string[]) {
           id: uuid,
           content: z.array(z.record(z.string(), z.unknown())).max(300),
           quote: QuoteSchema,
+          header_footer: TemplateBandsSchema.optional(),
           cover: CoverSchema.optional(),
           style_overrides: StyleOverridesSchema.optional(),
           pagination: PagePlanSchema.optional(),
@@ -633,7 +639,12 @@ export async function handle(req: Request, path: string[]) {
                 default_password_hash: undefined,
                 default_password_enabled: !!e.default_password_hash,
               }))
-            : entities,
+            : table === "templates"
+              ? entities.map((e) => ({
+                  ...e,
+                  header_footer: e.header_footer ?? defaultTemplateBands(),
+                }))
+              : entities,
         );
       }
       if (method === "POST" || method === "PUT") {
@@ -752,6 +763,7 @@ export async function handle(req: Request, path: string[]) {
                 )
                 .max(100),
               active: z.boolean(),
+              header_footer: TemplateBandsSchema.default(defaultTemplateBands),
               cover: CoverSchema.optional(),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
@@ -850,6 +862,7 @@ export async function handle(req: Request, path: string[]) {
               content: z.array(z.record(z.string(), z.unknown())).max(300),
               quote: QuoteSchema,
               valid_until: z.string().nullable(),
+              header_footer: HeaderFooterSettingsSchema.optional(),
               cover: CoverSchema.optional(),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
@@ -917,6 +930,7 @@ export async function handle(req: Request, path: string[]) {
         const input = z
           .object({
             revision: z.number().int(),
+            header_footer: HeaderFooterSettingsSchema.optional(),
             cover: CoverSchema.optional(),
             style_overrides: StyleOverridesSchema.optional(),
             pagination: PagePlanSchema.optional(),

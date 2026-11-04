@@ -496,6 +496,7 @@ function QuoteEditorContent({
         cacheKey,
         JSON.stringify({
           revision: p.revision,
+          header_footer: p.header_footer,
           cover: p.cover,
           title: p.title,
           content: p.content,
@@ -522,6 +523,7 @@ function QuoteEditorContent({
     latest = useRef(p);
   latest.current = p;
   const editable = (v: Proposal) => ({
+    header_footer: v.header_footer,
     cover: v.cover,
     title: v.title,
     content: v.content,

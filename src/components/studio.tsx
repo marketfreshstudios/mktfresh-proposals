@@ -1,4 +1,5 @@
 "use client";
+import { defaultTemplateBands } from "../lib/page-bands";
 import { defaultCover } from "../lib/cover";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
@@ -1493,6 +1494,7 @@ function TemplatesStudioContent({
             id: draft.id,
             content,
             quote: templatePreview.quote,
+            header_footer: draft.header_footer,
             cover: draft.cover,
             style_overrides: draft.style_overrides,
           },
@@ -1742,6 +1744,7 @@ function TemplatesStudioContent({
                 setDraft({
                   id: crypto.randomUUID(),
                   name: "Untitled template",
+                  header_footer: defaultTemplateBands(),
                   cover: defaultCover(),
                   active: true,
                   default_quote: [],

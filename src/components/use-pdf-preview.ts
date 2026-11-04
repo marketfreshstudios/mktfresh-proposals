@@ -7,6 +7,7 @@ import type { PdfPreview } from "../lib/pdf-preview";
 export const pdfPreviewInput = (p: Proposal) => ({
   revision: p.revision,
   pagination: p.pagination,
+  header_footer: p.header_footer,
   cover: p.cover,
   title: p.title,
   content: p.content,

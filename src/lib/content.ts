@@ -37,12 +37,14 @@ export const versionHash = (
     | "quote"
     | "variables_resolved"
     | "resolved_styles"
+    | "header_footer"
     | "cover"
     | "pagination"
   >,
 ) =>
   sha256(
     canonical({
+      ...(v.header_footer ? { header_footer: v.header_footer } : {}),
       ...(v.cover ? { cover: v.cover } : {}),
       content: v.content,
       quote: v.quote,
