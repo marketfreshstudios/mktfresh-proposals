@@ -7978,3 +7978,16 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .image-edit-bar {
   --font-ui: "Instrument Sans", system-ui, sans-serif;
 }
+/* Edit chrome uses application typography even inside a styled cover heading. */
+.toolbar-popover {
+  font: 400 14px/1.5 var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--ink);
+}
+.toolbar-popover :is(button, input, label, select) {
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+}
