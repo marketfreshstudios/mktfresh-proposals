@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "./ui";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { TextStyleControl } from "../lib/editor-document";
 import { ToolbarPopover } from "./toolbar-popover";
@@ -77,7 +78,7 @@ export function TextStylePicker({
         </span>
         {edit && (
           <span className="text-style-caret" aria-hidden="true">
-            ▾
+            <Icon name="chevron-down" className="disclosure-icon" />
           </span>
         )}
       </button>

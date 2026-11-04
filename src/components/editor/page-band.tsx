@@ -559,7 +559,7 @@ export function PageBand(props: Props) {
             onClick={(e) => open("layout", e.currentTarget)}
           >
             <LayoutGlyph layout={band.layout} /> Layout{" "}
-            <span aria-hidden>▾</span>
+            <Icon name="chevron-down" className="disclosure-icon" />
           </button>
           <span className="band-separator" />
           {!phone && (

@@ -18,10 +18,17 @@ import {
 import icons from "./icons.json";
 import { totals } from "../lib/presentation";
 import type { BillingLine, Proposal, Quote } from "../lib/model";
-export function Icon({ name }: { name: keyof typeof icons }) {
+export function Icon({
+  name,
+  className,
+}: {
+  name: keyof typeof icons;
+  className?: string;
+}) {
   const i = icons[name];
   return (
     <svg
+      className={className}
       aria-hidden="true"
       viewBox={i.viewBox}
       height="16"
@@ -356,5 +363,24 @@ export function JobState({
         </Button>
       )}
     </div>
+  );
+}
+
+/** One disclosure marker for native details throughout the app. */
+export function Disclosure({
+  children,
+  ...props
+}: React.ComponentProps<"summary">) {
+  return (
+    <summary {...props}>
+      <span className="disclosure-marker" aria-hidden="true">
+        <Icon
+          className="disclosure-icon disclosure-closed"
+          name="chevron-right"
+        />
+        <Icon className="disclosure-icon disclosure-open" name="chevron-down" />
+      </span>
+      {children}
+    </summary>
   );
 }

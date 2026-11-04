@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import { useState } from "react";
 import type { ReferenceDocument } from "../lib/documents";
 import { Button, Field, post } from "./ui";
@@ -54,9 +55,9 @@ export function ReferenceDocuments({
         {documents.map((d) => (
           <div key={d.id} className="stack">
             <details>
-              <summary>
+              <Disclosure>
                 {d.name} · {d.version || "Awaiting first fetch"}
-              </summary>
+              </Disclosure>
               <p>SHA-256: {d.content_hash || "Unavailable"}</p>
               <pre>{d.content}</pre>
             </details>

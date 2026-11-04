@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import { stripeBillingStatus } from "../lib/billing-confirmation";
 import { StripeBillingDetails } from "./billing-breakdown";
 import { ProposalEmailLog } from "./email-studio";
@@ -882,7 +883,7 @@ function QuoteSummary({ p }: { p: Proposal }) {
       <Totals lines={quote} currency={p.currency} />
       {excluded.length > 0 && (
         <details className="not-chosen">
-          <summary>Items not chosen ({excluded.length})</summary>
+          <Disclosure>Items not chosen ({excluded.length})</Disclosure>
           {excluded.map((i) => (
             <p key={i.id}>{i.name}</p>
           ))}
@@ -1546,7 +1547,7 @@ export function RecordV4({
             </a>
             {v && (
               <details>
-                <summary>Version {v.version_no} · content hash</summary>
+                <Disclosure>Version {v.version_no} · content hash</Disclosure>
                 <code className="hash">{v.content_hash}</code>
               </details>
             )}

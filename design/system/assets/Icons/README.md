@@ -57,3 +57,5 @@ Files are named for their **job in this product**, not for the Font Awesome glyp
 - `running` is the only icon that animates, and only while a job is actually running. Respect `prefers-reduced-motion`.
 - Decorative icons get `aria-hidden="true"` and the adjacent text carries the meaning. A rare icon-only control gets an `aria-label`.
 - Need a glyph that isn't here? Take it from Font Awesome Free Solid, add it to this folder under a semantic name, and add a row above. Do not draw one.
+
+Disclosure chevrons: `chevron-left.svg`, `chevron-right.svg`, `chevron-up.svg` and `chevron-down.svg` are unchanged Font Awesome Free 6.7.2 Solid sources (CC BY 4.0, attribution retained in each SVG), mapped to the same names in `src/components/icons.json`.

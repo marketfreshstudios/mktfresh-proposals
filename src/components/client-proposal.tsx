@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import { pairSignatureNodes } from "./signature-pair";
 import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
@@ -1485,7 +1486,7 @@ function FlowingDocument({
               <h2>{block.text || "Statement of Work & Contract"}</h2>
               {(block.clauses ?? []).map((c) => (
                 <details key={c.id}>
-                  <summary>{resolve(c.heading, p.variables)}</summary>
+                  <Disclosure>{resolve(c.heading, p.variables)}</Disclosure>
                   <p style={{ whiteSpace: "pre-wrap" }}>
                     {resolve(c.body, p.variables)}
                   </p>

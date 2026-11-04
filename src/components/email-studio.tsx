@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "./ui";
 import { useEffect, useRef, useState } from "react";
 import type { Data } from "./staff-app";
 import { api, post, Button, Field, Banner, date } from "./ui";
@@ -439,7 +440,7 @@ function EmailEditor({
                 <p className="muted">Showing the last valid preview.</p>
               )}
               <details>
-                <summary>Plain-text alternative</summary>
+                <Disclosure>Plain-text alternative</Disclosure>
                 <pre className="email-plain-text">{preview.text}</pre>
               </details>
             </>
@@ -518,9 +519,9 @@ export function ProposalEmailLog({
       {logs.length
         ? logs.map((log) => (
             <details key={log.id}>
-              <summary>
+              <Disclosure>
                 {log.snapshot.subject} · {date(log.sent_at)}
-              </summary>
+              </Disclosure>
               <dl>
                 <dt>To</dt>
                 <dd>{log.snapshot.to}</dd>
@@ -536,7 +537,7 @@ export function ProposalEmailLog({
                 srcDoc={previewHtml(log.snapshot.html)}
               />
               <details>
-                <summary>Plain text</summary>
+                <Disclosure>Plain text</Disclosure>
                 <pre className="email-plain-text">{log.snapshot.text}</pre>
               </details>
             </details>

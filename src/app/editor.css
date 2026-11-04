@@ -6339,13 +6339,9 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .proposal-styles .style-accordion > summary::-webkit-details-marker {
   display: none;
 }
-.proposal-styles .style-accordion > summary::after {
-  content: "›";
-  color: var(--ink-muted);
-}
-.proposal-styles .style-accordion[open] > summary::after {
-  content: "▾";
-  font-size: 11px;
+.proposal-styles .style-accordion > summary {
+  justify-content: flex-start;
+  gap: 8px;
 }
 .style-accordion-body {
   display: flex;
@@ -7744,4 +7740,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   .page-band[data-page-band][data-band-mode="editing"]
   .band-slot-content {
   overflow: visible;
+}
+.proposal-styles .style-accordion > summary > .disclosure-marker {
+  margin-right: 0;
 }
