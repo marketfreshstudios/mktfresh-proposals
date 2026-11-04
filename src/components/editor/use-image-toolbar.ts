@@ -1,8 +1,30 @@
 "use client";
-import { useLayoutEffect, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useEffect,
+  useState,
+  type RefObject,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+/** A fixed toolbar must escape transformed sheets and their lower stacking layer. */
+export function PhoneToolbar({ children }: { children: ReactNode }) {
+  const [phone, setPhone] = useState(
+    () =>
+      typeof window !== "undefined" && matchMedia("(max-width:699px)").matches,
+  );
+  useEffect(() => {
+    const media = matchMedia("(max-width:699px)");
+    const change = () => setPhone(media.matches);
+    change();
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
+  return phone ? createPortal(children, document.body) : children;
+}
 /** Intrinsic toolbar geometry is independent of the selected image's width. */
 export function useImageToolbar(
-  image: RefObject<HTMLSpanElement | null>,
+  image: RefObject<HTMLElement | null>,
   toolbar: RefObject<HTMLSpanElement | null>,
   selected: boolean,
 ) {
@@ -12,6 +34,10 @@ export function useImageToolbar(
     if (!selected || !root || !bar) return;
     let frame = 0;
     const place = () => {
+      // Crossing the phone breakpoint reparents the toolbar into a portal.
+      // Always use its current node, rather than the one initially observed.
+      const bar = toolbar.current;
+      if (!bar?.isConnected) return;
       if (innerWidth < 700) {
         for (const key of ["left", "top", "bottom"])
           bar.style.removeProperty(key);
@@ -34,10 +60,16 @@ export function useImageToolbar(
         right = Math.min(innerWidth - 8, sheet.right - 8);
       const x = Math.max(left, Math.min(b.left, right - t.width));
       const minimum = Math.max(8, region?.top ?? 0, sheet.top + 8);
-      const above = b.top - t.height - 14 >= minimum;
+      const gap =
+        root.dataset.imageKind === "band"
+          ? 46
+          : root.dataset.imageKind
+            ? 24
+            : 14;
+      const above = b.top - t.height - gap >= minimum;
       const y = above
-        ? b.top - t.height - 14
-        : Math.min(b.bottom + 14, innerHeight - t.height - 8);
+        ? b.top - t.height - gap
+        : Math.min(b.bottom + gap, innerHeight - t.height - 8);
       const scale = b.width / (root.offsetWidth || b.width || 1);
       Object.assign(bar.style, {
         left: `${(x - b.left) / scale}px`,
@@ -53,14 +85,24 @@ export function useImageToolbar(
     const observer = new ResizeObserver(schedule);
     observer.observe(root);
     observer.observe(bar);
+    const position = new MutationObserver(schedule);
+    position.observe(root, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
+    window.addEventListener("input", schedule, true);
+    window.addEventListener("click", schedule, true);
     place();
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      position.disconnect();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("input", schedule, true);
+      window.removeEventListener("click", schedule, true);
     };
   }, [selected]);
 }

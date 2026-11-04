@@ -14,7 +14,7 @@ import {
   imagePercent,
   type ImageValue,
 } from "../../lib/image-size";
-import { useImageToolbar } from "./use-image-toolbar";
+import { useImageToolbar, PhoneToolbar } from "./use-image-toolbar";
 import { useEditorHistory } from "../editor-history";
 import { ToolbarPopover } from "../toolbar-popover";
 export function SelectableImage({
@@ -31,7 +31,13 @@ export function SelectableImage({
   onDeselect,
   draggable = false,
   onDragStart,
+  onAlign,
+  toolbarExtra,
+  placementStyle,
 }: {
+  onAlign?: (align: "left" | "center" | "right") => void;
+  toolbarExtra?: React.ReactNode;
+  placementStyle?: CSSProperties;
   value: ImageValue;
   source?: string;
   kind?: "block" | "cover" | "band";
@@ -82,7 +88,10 @@ export function SelectableImage({
   useEffect(() => {
     if (!selected) return;
     const outside = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) {
+      if (
+        !root.current?.contains(e.target as Node) &&
+        !(e.target as Element).closest(`[data-image-toolbar="${id}"]`)
+      ) {
         setSelected(false);
         setPanel(null);
       }
@@ -215,6 +224,11 @@ export function SelectableImage({
       ref={root}
       className="document-image"
       data-image-kind={kind}
+      data-image-x={
+        typeof placementStyle?.marginLeft === "number"
+          ? placementStyle.marginLeft
+          : undefined
+      }
       data-image-selected={editable && selected}
       data-image-owner={id}
       tabIndex={editable ? 0 : undefined}
@@ -235,13 +249,13 @@ export function SelectableImage({
                 value.align === "left" || value.align === "center" ? "auto" : 0,
             }
           : { display: "inline-block" }),
+        ...placementStyle,
       }}
       onKeyDown={(e) => {
-        if (
-          (e.target as Element).closest("input,textarea,[contenteditable=true]")
-        )
-          return;
-        if ((e.target as Element).closest("input,textarea,select")) return;
+        const input = (e.target as Element).closest(
+          "input,textarea,select,[contenteditable=true]",
+        );
+        if (input && root.current?.contains(input)) return;
         if (e.key === "Enter" && e.target === root.current) {
           e.preventDefault();
           select();
@@ -330,62 +344,66 @@ export function SelectableImage({
               </span>
             )}
           </span>
-          <span
-            data-editor-chrome
-            ref={bar}
-            className="editor-edit-bar image-edit-bar"
-            role="toolbar"
-            aria-label="Image actions"
-            onMouseDown={(e) => {
-              if ((e.target as Element).closest("button")) e.preventDefault();
-            }}
-          >
-            <button type="button" onClick={() => input.current?.click()}>
-              Replace
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                trigger.current = e.currentTarget;
-                setPanel(panel === "alt" ? null : "alt");
+          <PhoneToolbar>
+            <span
+              data-editor-chrome
+              data-image-toolbar={id}
+              ref={bar}
+              className="editor-edit-bar image-edit-bar"
+              role="toolbar"
+              aria-label="Image actions"
+              onMouseDown={(e) => {
+                if ((e.target as Element).closest("button")) e.preventDefault();
               }}
             >
-              Alt text
-            </button>
-            {kind === "block" && (
+              <button type="button" onClick={() => input.current?.click()}>
+                Replace
+              </button>
               <button
                 type="button"
                 onClick={(e) => {
                   trigger.current = e.currentTarget;
-                  setPanel(panel === "align" ? null : "align");
+                  setPanel(panel === "alt" ? null : "alt");
                 }}
               >
-                Align
+                Alt text
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                save({
-                  ...value,
-                  height:
-                    kind === "cover"
-                      ? 60
-                      : kind === "band"
-                        ? limit() > 0
-                          ? Math.min(18, limit())
-                          : value.height
-                        : undefined,
-                  width_percent: kind === "block" ? 100 : undefined,
-                })
-              }
-            >
-              Reset size
-            </button>
-            <button type="button" className="image-delete" onClick={onDelete}>
-              Delete
-            </button>
-          </span>
+              {(kind === "block" || onAlign) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    trigger.current = e.currentTarget;
+                    setPanel(panel === "align" ? null : "align");
+                  }}
+                >
+                  Align
+                </button>
+              )}
+              {toolbarExtra}
+              <button
+                type="button"
+                onClick={() =>
+                  save({
+                    ...value,
+                    height:
+                      kind === "cover"
+                        ? 60
+                        : kind === "band"
+                          ? limit() > 0
+                            ? Math.min(18, limit())
+                            : value.height
+                          : undefined,
+                    width_percent: kind === "block" ? 100 : undefined,
+                  })
+                }
+              >
+                Reset size
+              </button>
+              <button type="button" className="image-delete" onClick={onDelete}>
+                Delete
+              </button>
+            </span>
+          </PhoneToolbar>
           {panel && (
             <ToolbarPopover
               className="image-controls-popover"
@@ -409,7 +427,8 @@ export function SelectableImage({
                     type="button"
                     aria-pressed={(value.align ?? "left") === align}
                     onClick={() => {
-                      save({ ...value, align });
+                      if (onAlign) onAlign(align);
+                      else save({ ...value, align });
                       setPanel(null);
                     }}
                   >

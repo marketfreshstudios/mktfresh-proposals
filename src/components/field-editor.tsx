@@ -15,7 +15,8 @@ import { useBlockToolbar } from "./block-controls";
 import { FieldOptions } from "./field-options";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { useEditorHistory, textHistoryScope } from "./editor-history";
-import { Node, mergeAttributes } from "@tiptap/core";
+import { Node, Extension, mergeAttributes } from "@tiptap/core";
+import { Plugin } from "@tiptap/pm/state";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { blockText, type TextLevel } from "../lib/editor-document";
 import StarterKit from "@tiptap/starter-kit";
@@ -69,7 +70,13 @@ export function FieldEditor({
   onTextStyle,
   bandEditor,
   bandImage,
+  coverEditor,
+  domId,
+  maxLength,
 }: {
+  maxLength?: number;
+  domId?: string;
+  coverEditor?: (editor: import("@tiptap/core").Editor | null) => void;
   bandImage?: BandImageOptions;
   bandEditor?: (editor: import("@tiptap/core").Editor | null) => void;
   value: RichText;
@@ -111,6 +118,8 @@ export function FieldEditor({
   const [picker, setPicker] = useState(false),
     [popoverTrigger, setPopoverTrigger] = useState<HTMLElement | null>(null);
   const imageOptions = useRef(bandImage);
+  const limit = useRef(maxLength);
+  limit.current = maxLength;
   imageOptions.current = bandImage;
   const editor: import("@tiptap/core").Editor | null = useEditor({
     immediatelyRender: false,
@@ -127,10 +136,35 @@ export function FieldEditor({
             : false,
       },
       attributes: label
-        ? { role: "textbox", "aria-label": label, "aria-multiline": "true" }
+        ? {
+            role: "textbox",
+            "aria-label": label,
+            "aria-multiline": "true",
+            ...(domId ? { id: domId } : {}),
+          }
         : {},
     },
     extensions: [
+      ...(maxLength
+        ? [
+            Extension.create({
+              name: "textLengthLimit",
+              addProseMirrorPlugins() {
+                return [
+                  new Plugin({
+                    filterTransaction: (tr) =>
+                      !tr.docChanged ||
+                      !limit.current ||
+                      blockText({
+                        type: "paragraph",
+                        content: tr.doc.toJSON() as RichText,
+                      }).length <= limit.current,
+                  }),
+                ];
+              },
+            }),
+          ]
+        : []),
       ...(bandImage
         ? [
             InlineBandImage.configure({
@@ -233,8 +267,8 @@ export function FieldEditor({
         setPicker(true);
     },
   });
-  const bandOwner = useRef(bandEditor);
-  bandOwner.current = bandEditor;
+  const bandOwner = useRef(bandEditor ?? coverEditor);
+  bandOwner.current = bandEditor ?? coverEditor;
   useEffect(() => {
     bandOwner.current?.(editor);
     return () => bandOwner.current?.(null);
@@ -470,7 +504,8 @@ export function FieldEditor({
         }
       }}
     >
-      {bandEditor ? null : toolbar === undefined || inlineControls ? (
+      {bandEditor || coverEditor ? null : toolbar === undefined ||
+        inlineControls ? (
         <div
           data-editor-chrome
           className="inline-formatting-row"

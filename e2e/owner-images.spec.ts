@@ -134,6 +134,21 @@ test("block, cover and band image controls resize with locked proportions, save 
     .locator("img")
     .evaluate((el) => el.getBoundingClientRect().height);
   expect(height).toBeCloseTo(limit, 1);
+  await bandImage.focus();
+  await bandImage.press("Enter");
+  await expect(bandImage).toHaveAttribute("data-image-selected", "true");
+  await bandImage.press("Shift+ArrowUp");
+  await expect
+    .poll(
+      () =>
+        bandImages(f.active().header_footer!.shared.header)[0].node.attrs!
+          .height,
+    )
+    .toBe(16);
+  await bandImage.press("Delete");
+  await expect(bandImage).toHaveCount(0);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(band.locator('[data-image-kind="band"]')).toHaveCount(1);
 });
 
 test("image deletion and keyboard resizing use normal editor history", async ({
@@ -237,7 +252,7 @@ test("phone touch resizing keeps proportions and the shared dark image toolbar",
     '[data-block-id="block-photo"] [data-image-kind="block"]',
   );
   await image.locator("img").click();
-  await expect(image.getByRole("toolbar")).toHaveCSS(
+  await expect(page.getByRole("toolbar", { name: "Image actions" })).toHaveCSS(
     "background-color",
     "rgb(28, 27, 24)",
   );

@@ -142,5 +142,5 @@ test("cover logo upload is a keyboard button and its menu avoids the title", asy
   });
   await expect(menu).toHaveCount(0);
   await expect.poll(() => f.active().cover?.logo).toBe(testSignatureImage);
-  await expect(page.locator(".document-cover img")).toBeVisible();
+  await expect(page.locator(".document-cover .cover-logo img")).toBeVisible();
 });

@@ -39,7 +39,7 @@ async function obsoleteCompletion(page: Page, root: Locator) {
     };
   });
   const original = await root
-    .locator(".document-cover img")
+    .locator(".document-cover .cover-logo img")
     .getAttribute("src");
   await root.evaluate((el) => {
     el.querySelector("img")!.src = "/obsolete-logo";
@@ -197,10 +197,9 @@ for (const editor of ["proposal", "template"] as const) {
             "settled",
           );
           await expect(sheets).toHaveCount(14);
-          await expect(root.locator(".document-cover img")).toHaveJSProperty(
-            "naturalWidth",
-            600,
-          );
+          await expect(
+            root.locator(".document-cover .cover-logo img"),
+          ).toHaveJSProperty("naturalWidth", 600);
           await expect(surface).toHaveAttribute("data-layout-settled", "true");
           await expect
             .poll(() => page.evaluate(() => (window as any).assetReplans))

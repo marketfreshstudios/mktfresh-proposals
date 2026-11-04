@@ -187,7 +187,10 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       if (width === 375) {
         await capture("sections", "2c", width, theme);
         await expect(page.locator(".editor-paper")).toBeVisible();
-        await page.locator(".editor-paper .tiptap").first().click();
+        await page
+          .locator(".editor-paper .block-frame .tiptap")
+          .first()
+          .click();
         await expect(
           page.locator('.editor-phone-header[data-editing="true"]'),
         ).toBeVisible();
@@ -282,7 +285,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
 
   await page.getByRole("tab", { name: "Quote", exact: true }).click();
   await expect(
-    page.locator(".editor-paper .tiptap .field-chip").first(),
+    page.locator(".editor-paper .block-frame .tiptap .field-chip").first(),
   ).toHaveText("Jane");
   expect(JSON.stringify(active.content)).toBe(contentBeforeNames);
   const amountInput = page.getByRole("spinbutton", {
@@ -291,11 +294,15 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   });
   await amountInput.fill("2601");
   await expect(
-    page.locator('.editor-paper .tiptap [data-field="quote.one_time_total"]'),
+    page.locator(
+      '.editor-paper .block-frame .tiptap [data-field="quote.one_time_total"]',
+    ),
   ).toHaveText("$2,601");
   await amountInput.fill("2600");
   await expect(
-    page.locator('.editor-paper .tiptap [data-field="quote.one_time_total"]'),
+    page.locator(
+      '.editor-paper .block-frame .tiptap [data-field="quote.one_time_total"]',
+    ),
   ).toHaveText("$2,600");
   await expect(
     page.getByRole("button", { name: "Keep $2,600", exact: true }),

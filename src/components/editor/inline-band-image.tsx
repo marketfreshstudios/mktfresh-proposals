@@ -124,13 +124,17 @@ function BandImageView({
             JSON.stringify(dragging),
           );
         }}
-        onChange={(image) =>
+        onChange={(image) => {
           updateAttributes({
             src: image.src,
             alt: image.alt ?? "",
             height: image.height ?? 18,
-          })
-        }
+          });
+          // Attribute edits must retain the selected image for the next key
+          // command, including Delete and the native cut/copy handlers.
+          const pos = getPos();
+          if (pos !== undefined) editor.commands.setNodeSelection(pos);
+        }}
         onDelete={deleteNode}
       />
     </NodeViewWrapper>
@@ -174,10 +178,20 @@ export const InlineBandImage = Node.create<{
   ],
   addNodeView() {
     return ReactNodeViewRenderer(BandImageView, {
-      stopEvent: ({ event }) =>
-        !!(event.target as Element)
+      stopEvent: ({ event }) => {
+        const key = event as KeyboardEvent;
+        if (
+          event.type === "keydown" &&
+          (event.target as Element).closest(".document-image") &&
+          !(event.target as Element).closest("input,textarea") &&
+          (["Enter", "Escape", "Delete", "Backspace"].includes(key.key) ||
+            (key.shiftKey && /^Arrow/.test(key.key)))
+        )
+          return true;
+        return !!(event.target as Element)
           .closest("[data-editor-chrome]")
-          ?.closest(".band-inline-image"),
+          ?.closest(".band-inline-image");
+      },
     });
   },
 });
