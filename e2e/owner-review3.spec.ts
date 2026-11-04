@@ -535,3 +535,32 @@ test("selected image toolbar keeps the same live controls across desktop and pho
     }
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
 });
+test("undoing a rapid cover-line deletion preserves the preceding line edit", async ({
+  page,
+}) => {
+  const f = await editorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page.clock.setFixedTime(new Date());
+  const previous = page.getByRole("textbox", {
+    name: "Cover client name",
+    exact: true,
+  });
+  await previous.fill("Keep this formatted line");
+  await previous.press("ControlOrMeta+a");
+  await page.getByRole("button", { name: "Bold", exact: true }).click();
+  const byline = page.getByRole("textbox", {
+    name: "Cover byline",
+    exact: true,
+  });
+  await byline.click();
+  await page.getByRole("button", { name: "More cover actions" }).click();
+  await page.getByRole("button", { name: "Remove line", exact: true }).click();
+  await expect(byline).toHaveCount(0);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(byline).toBeVisible();
+  await expect(previous).toHaveText("Keep this formatted line");
+  await expect(previous.locator("strong")).toHaveText(
+    "Keep this formatted line",
+  );
+});

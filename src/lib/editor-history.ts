@@ -60,7 +60,14 @@ export function applyHistoryDelta(current: any, from: any, to: any): any {
   return structuredClone(to);
 }
 export class EditorHistory<T> {
-  past: { id: number; before: T; after: T; scope: string; time: number }[] = [];
+  past: {
+    id: number;
+    before: T;
+    after: T;
+    scope: string;
+    time: number;
+    group?: string;
+  }[] = [];
   future: typeof this.past = [];
   private serial = 0;
   private group: { key: string; step?: number } | null = null;
@@ -92,7 +99,9 @@ export class EditorHistory<T> {
     if (
       last &&
       ((this.group?.step === last?.id && this.group?.step !== undefined) ||
-        (scope.startsWith("text:") &&
+        (!this.group &&
+          !last.group &&
+          scope.startsWith("text:") &&
           last?.scope === scope &&
           now - last.time < 500)) &&
       !this.future.length
@@ -106,6 +115,7 @@ export class EditorHistory<T> {
         after: structuredClone(after),
         scope,
         time: now,
+        ...(this.group ? { group: this.group.key } : {}),
       });
     if (this.group) this.group.step = this.past.at(-1)?.id;
     this.past = this.past.slice(-100);

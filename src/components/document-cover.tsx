@@ -265,9 +265,16 @@ export function DocumentCover({
               ),
       });
     };
-    history
-      ? history.inScope(`text:cover-${previous?.id ?? id}`, apply)
-      : apply();
+    const engine = history?.controller?.engine,
+      key = `cover-remove:${id}`;
+    engine?.beginGroup(key);
+    try {
+      history
+        ? history.inScope(`text:cover-${previous?.id ?? id}`, apply)
+        : apply();
+    } finally {
+      engine?.endGroup(key);
+    }
     if (previous) choose(previous.id);
     else select(null);
   };

@@ -98,3 +98,19 @@ it("groups a complete slider drag even when its duration exceeds typing debounce
   h.endGroup("slider");
   expect(h.past).toHaveLength(2);
 });
+it("explicit actions never merge with typing before or after them in the same scope", () => {
+  const h = new EditorHistory<{ text: string; line: boolean }>();
+  const a = { text: "old", line: true },
+    b = { text: "edited", line: true },
+    c = { text: "edited", line: false },
+    d = { text: "later", line: false };
+  h.record(a, b, "text:a", 0);
+  h.beginGroup("delete");
+  h.record(b, c, "text:a", 1);
+  h.endGroup("delete");
+  h.record(c, d, "text:a", 2);
+  expect(h.past).toHaveLength(3);
+  expect(h.undo(d, "text:a")).toEqual(c);
+  expect(h.undo(c, "text:a")).toEqual(b);
+  expect(h.redo(b, "text:a")).toEqual(c);
+});
