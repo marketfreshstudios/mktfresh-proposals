@@ -31,6 +31,10 @@ Before phone captures were taken from a separate `bbd46a8` checkout with the sam
 
 A desktop-to-phone resize could briefly remove image-toolbar actions: changing between an inline render and a portal remounted every button. The shared image/cover toolbar now keeps one portal container and moves that same container across the breakpoint, preserving DOM identity and focus. The original tiny-logo visibility/bounds assertions are unchanged. Both that test and a new 4× CPU-throttled identity/visibility check passed ten consecutive runs each (20 total); each throttled run switches widths twelve times.
 
+Fast line deletion is also an explicit history boundary: it cannot combine with typing/formatting before or after it. A browser regression fixes the clock so those actions happen within the typing-group window, then verifies Undo restores the deleted line while preserving the preceding line’s edited text and bold mark.
+
+The cover range limits also compensate for React’s render/commit timing: the current model replaces that line’s previously measured margins before either maximum is calculated. This prevents a temporary doubled maximum and makes the opposite slider update immediately. Ten repeated cross-side runs and thirty repeated clamp/drag/deletion checks pass without changing timeouts or weakening assertions.
+
 ## Validation
 
 Focused regressions include real Chromium/PDF text-position checks for every cover element, independent divider combinations, retained page geometry, line history/reload, pointer-drag Undo, phone widths/axe and server refresh/redirect/cookie flags. The full suite and production build results are recorded below after completion.
