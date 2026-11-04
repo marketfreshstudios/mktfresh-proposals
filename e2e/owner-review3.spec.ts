@@ -45,7 +45,12 @@ test("edit popovers use application typography inside the cover", async ({
     .getByRole("textbox", { name: "Proposal title", exact: true })
     .click();
   const styles = [];
-  for (const name of ["Align", "Spacing", "More cover actions"]) {
+  for (const name of [
+    "Align",
+    "Spacing",
+    "More cover actions",
+    "Insert field",
+  ]) {
     await page.getByRole("button", { name, exact: true }).click();
     const menu = page.locator(".cover-controls-popover");
     styles.push(
@@ -62,10 +67,46 @@ test("edit popovers use application typography inside the cover", async ({
     );
     await page.keyboard.press("Escape");
   }
-  expect(styles[0][0]).toBe("14px");
+  expect(styles[0][0]).toBe("13px");
   expect(styles[0][1]).toContain("Instrument Sans");
   expect(styles[1]).toEqual(styles[0]);
   expect(styles[2]).toEqual(styles[0]);
+  expect(styles[3]).toEqual(styles[0]);
+  const paragraph = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
+  await paragraph.locator(".tiptap").click();
+  await paragraph
+    .getByRole("button", { name: "More block actions", exact: true })
+    .click();
+  const body = await page.locator(".edit-more-menu").evaluate((el) => {
+    const s = getComputedStyle(el);
+    return [s.fontSize, s.fontFamily];
+  });
+  expect(styles[0].slice(0, 2)).toEqual(body);
+  await page.keyboard.press("Escape");
+  const band = page.locator('[data-band-frame="header"]').first();
+  await band.scrollIntoViewIfNeeded();
+  await band.click();
+  for (const name of ["Layout", "Insert band field", "Image"]) {
+    await band.getByRole("button", { name, exact: true }).click();
+    expect(
+      await page.locator(".band-popover").evaluate((el) => {
+        const s = getComputedStyle(el);
+        return [s.fontSize, s.fontFamily];
+      }),
+    ).toEqual(body);
+    await page.keyboard.press("Escape");
+  }
+  await band.getByRole("button", { name: "Done", exact: true }).click();
+  await band.hover();
+  await band
+    .getByRole("button", { name: "header actions", exact: true })
+    .click();
+  expect(
+    await page.locator(".band-popover").evaluate((el) => {
+      const s = getComputedStyle(el);
+      return [s.fontSize, s.fontFamily];
+    }),
+  ).toEqual(body);
 });
 async function middleWord(
   page: import("@playwright/test").Page,
