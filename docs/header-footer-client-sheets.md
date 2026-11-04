@@ -34,4 +34,18 @@ The checks compare actual PDF page count, each page's extracted band text, canon
 
 Existing desktop client selectors and measurements now target the print-source projection and undo its scale; their expected typography, spacing and alignment values remain unchanged. The existing PagePlan, frozen-break, PDF and hash assertions are unchanged. The existing full signing scenario runs at 1440px.
 
-**331 unit/database checks pass. The full browser suite passes: 163 passed and 3 optional capture tests skipped (166 total).** The final screenshot/geometry/logo/overflow/a11y check also passes. TypeScript, formatting, neutrality and the production build pass. The PDF runtime trace verifies 328 files. All providers remained mocked; no hosted resources or live credentials were used. GitHub CI was not awaited.
+**331 unit/database checks pass. The full browser suite passes: 164 passed and 3 optional capture tests skipped (167 total).** The final screenshot/geometry/logo/overflow/a11y check also passes. TypeScript, formatting, neutrality and the production build pass. The PDF runtime trace verifies 328 files. All providers remained mocked; no hosted resources or live credentials were used. GitHub CI was not awaited.
+
+## CI control-stability follow-up (4 November 2026)
+
+At 4× CPU slowdown, the original checkbox click succeeded and saved, but optimistic/busy/response redraws detached the clicked native input before action completion. Inputs now retain their identity across projections; busy changes patch their disabled state without rebuilding sheets. Equivalent response/status updates do not redraw the document. Frames are sized before reveal, readiness waits for stable column width, and published plans do not rebuild on late font events. The active control preserves scroll position across continued pricing pages.
+
+The unchanged original checkbox assertions and the new slow-save/identity/geometry/viewport regression passed five consecutive repetitions each at 4× slowdown. The added regression also dispatches a late font signal and resizes the viewport, checking stable geometry after readiness. The published PagePlan, PDF generation, signing and billing are unchanged. No new screenshot gallery was captured.
+
+Final follow-up verification: 331 unit/database tests and the full browser suite (164 passed, 3 optional capture tests skipped) pass. TypeScript, formatting, neutrality and production build/PDF-runtime tracing (328 files) pass.
+
+```sh
+CLIENT_SHEETS_CPU_RATE=4 npx playwright test e2e/client-page-sheets.spec.ts --grep 'pricing controls keep|ready client sheets' --repeat-each=5
+```
+
+The final-source stress run passed all 10 checks (five repetitions of each case), including later-sheet visibility during the held response and after it completes.

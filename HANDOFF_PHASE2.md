@@ -970,4 +970,20 @@ Owner clarification: client choices keep the published breaks. No client-compute
 
 Tablet/phone retain the existing flowing view and contract disclosure controls. Native choice controls have at least 44px on-screen hit regions after scaling. Width transitions preserve choices/current section; signatures stay in their existing independent step. The public result exposes published bands and only the client-visible plan-terms copy, without internal billing metadata. Page count wording is a separate small commit using a tested shared helper.
 
-Validation: **331 unit/database checks passed; full browser suite 163 passed, 3 optional capture tests skipped (166 total)**. The full signing flow ran at 1440px through both PDFs, mocked billing, download and verification. Frozen-break tests remain unchanged and pass. The final requested capture check also passes, including logo-route loading, content overflow, canonical heights, 44px scaled targets and whole-page axe. TypeScript, formatting, neutrality and the production build pass; the PDF-runtime trace verifies all 328 files. The five requested screenshots are linked in PR #61 and [the client sheet notes](docs/header-footer-client-sheets.md). All work used local mocked providers; no hosted resource or live credential use. PR opened for review; do not merge automatically or wait for GitHub CI.
+Validation: **331 unit/database checks passed; full browser suite 164 passed, 3 optional capture tests skipped (167 total)**. The full signing flow ran at 1440px through both PDFs, mocked billing, download and verification. Frozen-break tests remain unchanged and pass. The final requested capture check also passes, including logo-route loading, content overflow, canonical heights, 44px scaled targets and whole-page axe. TypeScript, formatting, neutrality and the production build pass; the PDF-runtime trace verifies all 328 files. The five requested screenshots are linked in PR #61 and [the client sheet notes](docs/header-footer-client-sheets.md). All work used local mocked providers; no hosted resource or live credential use. PR opened for review; do not merge automatically or wait for GitHub CI.
+
+### PR #61 CI follow-up — preserve active client controls (4 November 2026)
+
+Reproduced the later-sheet checkbox timeout under Chromium 4× CPU throttling. The trace showed the click completed and the saved proposal contained the checked option, while optimistic/busy/response renders removed the native input during the click's completion checks. This was an app DOM-identity race, rather than an unchecked option or an invalid published break.
+
+The projection now retains native inputs by item ID, patches busy state in place, and redraws only when rendered document inputs change. It prepares scaled sheet dimensions before revealing a new view and reports readiness after column width settles. Published plans ignore font-completion redraws; their frozen breaks stay unchanged. The active control also anchors scroll during updates, so selecting an item on a continued pricing page cannot jump to the pricing block's first page.
+
+The original `last.check()` and selection/exclusivity assertions remain intact. A new 4× regression holds the save response and asserts native control identity, checked state, later-sheet visibility, zero idle sheet/style movement after readiness, late-font-event stability, and settled resize geometry. Final-source stress: five consecutive repetitions of each case passed (10 checks). No screenshot gallery was regenerated.
+
+Reproduce the stress run locally (Chromium):
+
+```sh
+CLIENT_SHEETS_CPU_RATE=4 npx playwright test e2e/client-page-sheets.spec.ts --grep 'pricing controls keep|ready client sheets' --repeat-each=5
+```
+
+Final verification: **331 unit/database tests passed; the full browser suite passed 164 tests with 3 optional capture tests skipped (167 total, 12.5 minutes)**. TypeScript, formatting, neutrality and the production build pass; the API/PDF runtime trace verifies all 328 files. The final throttled run passed all 10 checks (five repetitions of each case). Push to PR #61 without waiting for GitHub CI. Providers remained mocked; no hosted resources or live credentials were used.
