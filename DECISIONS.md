@@ -473,3 +473,12 @@ Concurrent rotations use a bounded, hashed-key ten-second single-flight/result c
 Unrefreshable editor sessions keep their existing local recovery/autosave state. Sign in opens a separate tab and closes after success (with return guidance if closing is unavailable); Retry saves from the unchanged editor. The temporary anonymous design-preview bypass is removed independently.
 
 Reference: [Supabase session rotation and reuse](https://supabase.com/docs/guides/auth/sessions), [server-side request/response cookie refresh](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
+
+
+## 4 November 2026 — sealed PDF failures and actionable staff alerts
+
+- The owner classified TEST 2's two historical Printing failed errors as transient after its original payload rendered successfully and attempt 3 completed. The exact internal cause is unconfirmed; do not claim a proven margin, font, resource-pressure or certificate defect. Persist future diagnostics in Evidence in addition to runtime logs.
+- Missing cover data on a frozen version selects the historical cover; missing band data stays band-free. Never populate new defaults into the frozen object or invent a PagePlan. New versions retain current cover/header/footer behavior.
+- Validate Letter print dimensions, then allow one fresh-target retry only for Chromium's opaque print protocol failure. Keep the already laid-out HTML, frozen breaks and hashes. Existing persisted job retries remain available after that bound.
+- Notify staff at terminal failure or a decision, deduplicated by job/error/recipient, with job-specific copy. Preserve raw Evidence and immutable sent-email snapshots. The existing staff_billing_failed template key becomes the editable Job needs attention template; migrate only unchanged defaults, preserving custom copy. Other staff templates remain read-only.
+- Production verification was read-only: the existing sealed PDF/certificate and frozen hash verify; one client completion email and one staff completion notification are logged. No hosted retry or send was performed.
