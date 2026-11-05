@@ -1,4 +1,6 @@
 "use client";
+import { CopyContactButton } from "./contact-value";
+import { EditClientModal } from "./edit-client-modal";
 import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
@@ -191,6 +193,7 @@ function QuoteEditorContent({
 }) {
   const blockFeedback = useBlockFeedback();
   const [reassignOpen, setReassignOpen] = useState(false);
+  const [editClientOpen, setEditClientOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   useEffect(() => {
     if (linkCopied) {
@@ -1677,21 +1680,51 @@ function QuoteEditorContent({
           onChange={(valid_until) => change({ valid_until })}
         />
       </Field>
-      <Field label="From">
-        <select value={sender} onChange={(e) => setSender(e.target.value)}>
-          {staff.map((s) => (
-            <option key={s.user_id} value={s.user_id}>
-              {s.display_name} · {settings?.company_name} &lt;{s.email}&gt;
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="To">
-        <input
-          value={`${p.client.first_name} ${p.client.last_name} <${p.client.email}>`}
-          readOnly
-        />
-      </Field>
+      {delivery === "manual" ? (
+        <section className="manual-client-contact" aria-label="Client contact">
+          <header>
+            <strong>Client contact</strong>
+            <button
+              type="button"
+              className="text-link"
+              onClick={async () => {
+                if (await save()) setEditClientOpen(true);
+              }}
+            >
+              Edit client
+            </button>
+          </header>
+          <p>
+            {p.client.company} ·{" "}
+            {[p.client.first_name, p.client.last_name]
+              .filter(Boolean)
+              .join(" ")}
+          </p>
+          <div className="manual-contact-email">
+            <span>{p.client.email}</span>
+            <CopyContactButton kind="email" value={p.client.email} />
+          </div>
+          <small>Signs the proposal and receives the signed copy.</small>
+        </section>
+      ) : (
+        <>
+          <Field label="From">
+            <select value={sender} onChange={(e) => setSender(e.target.value)}>
+              {staff.map((s) => (
+                <option key={s.user_id} value={s.user_id}>
+                  {s.display_name} · {settings?.company_name} &lt;{s.email}&gt;
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="To">
+            <input
+              value={`${p.client.first_name} ${p.client.last_name} <${p.client.email}>`}
+              readOnly
+            />
+          </Field>
+        </>
+      )}
       {delivery === "email" && (
         <>
           {(emailError || emailValidation) && (
@@ -1781,8 +1814,12 @@ function QuoteEditorContent({
         {delivery === "email"
           ? "The client link is added automatically. "
           : "The app won't email this link or send automatic reminders unless you turn them on in the record. "}
-        From must match{" "}
-        {settings?.sending_domain || "the workspace’s verified domain"}.
+        {delivery === "email" && (
+          <>
+            From must match{" "}
+            {settings?.sending_domain || "the workspace’s verified domain"}.
+          </>
+        )}
       </small>
       <footer className="send-panel-footer">
         <DialogActions>
@@ -2749,6 +2786,20 @@ function QuoteEditorContent({
         content={p.content}
         onChange={(content) => change({ content })}
       />
+      {editClientOpen && (
+        <EditClientModal
+          client={p.client}
+          onClose={() => setEditClientOpen(false)}
+          onSaved={async () => {
+            const current = await api<Proposal>(`/api/proposals/${p.id}`);
+            revision.current = current.revision;
+            latest.current = { ...current, quote: editorQuote(current) };
+            setP(latest.current);
+            setLastSaved(current.updated_at);
+            onSaved(current);
+          }}
+        />
+      )}
       {reassignOpen && (
         <ReassignDialog
           proposal={p}

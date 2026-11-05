@@ -263,3 +263,13 @@ button.contact-open {
 .catalog-row:last-child {
   border-radius: 0 0 12px 12px;
 }
+
+/* The shared top-layer toast remains visible above the phone tools sheet. */
+.block-feedback-toast.contact-toast {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  box-shadow: 0 4px 24px #0003;
+}

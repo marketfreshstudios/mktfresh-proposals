@@ -1,3 +1,8 @@
+import {
+  saveClient,
+  sameClientContact,
+  unsignedClientProposal,
+} from "./clients";
 import { withSignatureHeadings } from "./signature-headings";
 import { validClientToken, newClientCode } from "./client-code";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
@@ -386,11 +391,38 @@ export class ProposalService {
     check(current, "Workspace settings required");
     return withDraftSettings(p, current);
   }
-  private async saveEditorial(
-    candidate: Proposal,
-    expected: number,
-    actor: Actor,
-  ) {
+  /** Staff contact edits share the normal readiness/publication path, then commit atomically. */
+  async updateClient(raw: unknown, actor: Actor) {
+    check(
+      actor.actor.startsWith("staff:"),
+      "Only staff can update proposal contacts",
+      403,
+    );
+    return saveClient(this.repo, raw, async (client) => {
+      const documents: Proposal[] = [];
+      for (const current of await this.repo.list()) {
+        if (
+          !unsignedClientProposal(current, client.id) ||
+          sameClientContact(current.client, client)
+        )
+          continue;
+        const candidate = structuredClone(current);
+        if (candidate.versions.length)
+          candidate.published_state ??= publicationState(candidate);
+        candidate.client = structuredClone(client);
+        event(candidate, "edited", actor, {
+          client_id: client.id,
+          client_contact_updated: true,
+        });
+        await this.prepareEditorial(candidate, actor);
+        candidate.revision = current.revision + 1;
+        candidate.updated_at = this.clock().toISOString();
+        documents.push(candidate);
+      }
+      return this.repo.saveClientAndProposals(client, documents);
+    });
+  }
+  private async prepareEditorial(candidate: Proposal, actor: Actor) {
     if (
       candidate.versions.length &&
       ["sent", "viewed"].includes(candidate.status)
@@ -419,6 +451,13 @@ export class ProposalService {
       }
       if (ready.errors.length) candidate.live_blockers = [...ready.errors];
     }
+  }
+  private async saveEditorial(
+    candidate: Proposal,
+    expected: number,
+    actor: Actor,
+  ) {
+    await this.prepareEditorial(candidate, actor);
     return mutate(this.repo, candidate.id, (p) => {
       check(p.revision === expected, "Proposal changed; reload", 409);
       check(

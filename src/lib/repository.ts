@@ -1,3 +1,4 @@
+import { sameClientContact, unsignedClientProposal } from "./clients";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -32,6 +33,10 @@ export interface Repository {
   ): Promise<void>;
   emailLog<T>(proposalId: string): Promise<T[]>;
   saveClientContact(client: Client): Promise<Client>;
+  saveClientAndProposals(
+    client: Client,
+    documents: Proposal[],
+  ): Promise<Client>;
   deleteClient(id: string, actor: Actor): Promise<void>;
   linkClientStripe(
     id: string,
@@ -109,6 +114,50 @@ export class MemoryRepository implements Repository {
     const clients = this.catalog.get("clients") ?? new Map();
     clients.set(client.id, structuredClone(saved));
     this.catalog.set("clients", clients);
+    return saved;
+  }
+  async saveClientAndProposals(client: Client, documents: Proposal[]) {
+    const existing = this.catalog.get("clients")?.get(client.id) as
+      Client | undefined;
+    const saved = {
+      ...client,
+      stripe_customer_id: existing?.stripe_customer_id ?? null,
+    };
+    const updates = new Map(documents.map((p) => [p.id, p]));
+    if (updates.size !== documents.length)
+      throw new AppError(409, "Duplicate proposal updates");
+    for (const current of this.rows.values()) {
+      if ((current.workspace_id ?? LOCAL_WORKSPACE_ID) !== this.workspaceId)
+        continue;
+      if (
+        !unsignedClientProposal(current, client.id) ||
+        sameClientContact(current.client, saved)
+      )
+        continue;
+      const next = updates.get(current.id);
+      if (
+        !next ||
+        next.revision !== current.revision + 1 ||
+        next.client.id !== client.id ||
+        (next.workspace_id ?? LOCAL_WORKSPACE_ID) !== this.workspaceId
+      )
+        throw new AppError(
+          409,
+          "Client proposals changed; retry saving the client",
+        );
+      updates.delete(current.id);
+    }
+    if (updates.size)
+      throw new AppError(
+        409,
+        "Proposal signed or changed; retry saving the client",
+      );
+    // Validate everything before either write; no awaits in this transaction.
+    const clients = this.catalog.get("clients") ?? new Map();
+    clients.set(client.id, structuredClone(saved));
+    this.catalog.set("clients", clients);
+    for (const p of documents)
+      this.rows.set(p.id, structuredClone({ ...p, client: saved }));
     return saved;
   }
   async linkClientStripe(
@@ -312,6 +361,16 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async saveClientAndProposals(client: Client, documents: Proposal[]) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const saved = await super.saveClientAndProposals(client, documents);
+      await this.persist();
+      return saved;
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
   override async linkClientStripe(
     id: string,
     expected: string | null,
@@ -452,6 +511,25 @@ export class SupabaseRepository implements Repository {
       contact: client,
     });
     if (error) throw error;
+    return data as Client;
+  }
+  async saveClientAndProposals(client: Client, documents: Proposal[]) {
+    const { data, error } = await this.db.rpc("save_client_and_proposals", {
+      target_workspace: this.workspaceId,
+      contact: client,
+      documents: documents.map((p) => ({
+        ...p,
+        workspace_id: this.workspaceId,
+      })),
+    });
+    if (error) {
+      if (error.code === "40001")
+        throw new AppError(
+          409,
+          "Client proposals changed; retry saving the client",
+        );
+      throw error;
+    }
     return data as Client;
   }
   async linkClientStripe(

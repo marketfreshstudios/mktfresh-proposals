@@ -559,3 +559,10 @@ Shared DialogActions orders the DOM as well as the visual group: backwards/secon
 ## Owner review 5 — list marker typography
 
 List marker sizing follows each item's actual first-line boxes: a uniform size is used as-is, mixed first-line text uses its largest size, and nested items are independent. Marker font size, proportional line height and the gap adjoining a larger item use one shared DOM calculation in editable decorations, canonical browser pagination, client flowing/sheet projections and Chromium print. These are display decorations, never document JSON, revision or undo entries. The next unchanged item keeps its default marker/font size. PagePlan format and signing rules stay unchanged.
+
+
+## Manual delivery — client contact and unsigned proposal propagation
+
+Owner confirmed: “It should update the client and any unsigned proposals with this same client.” Staff client edits from either Clients or Review & send now commit the client record and all matching unsigned native proposal copies atomically in their workspace. Signed/frozen and imported historical records retain their evidence. Sent/viewed updates reuse the normal readiness-checked live publication path and same client token; no email is sent by the contact edit and past emails are unchanged. A revision/signature race aborts the whole contact transaction. The connector's existing client-only/draft-only limits remain intact.
+
+There is no separate alternate-recipient selection model: proposals historically copied the client at creation. The manual card/modal show that actual proposal contact, even if it differs from the current primary record; saving applies the owner’s synchronization rule. Manual delivery hides From, shows read-only Client contact with shared copy feedback and Edit client, and keeps the existing sender selection internally. Switching delivery mode or saving the client preserves the Send panel’s note, subject, password and other local state. The shared edit modal keeps Clients’ fields/validation and Cancel-left/Save-right order. A service-only SQL function is required for the atomic propagation and is supplied for the owner to run before merge.

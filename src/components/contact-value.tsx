@@ -1,4 +1,5 @@
 "use client";
+import { ToastSurface } from "./toast-surface";
 import { useEffect, useState } from "react";
 import { formattedPhone } from "../lib/client-contact";
 import { Icon } from "./ui";
@@ -21,9 +22,12 @@ export function ContactToast() {
     };
   }, []);
   return notice ? (
-    <div className="contact-toast" role={notice.error ? "alert" : "status"}>
+    <ToastSurface
+      className="contact-toast"
+      role={notice.error ? "alert" : "status"}
+    >
       {notice.text}
-    </div>
+    </ToastSurface>
   ) : null;
 }
 export function ContactValue({
@@ -53,15 +57,7 @@ export function ContactValue({
           {shown}
         </a>
       )}
-      <button
-        type="button"
-        className="contact-open contact-copy-icon"
-        aria-label={`Copy ${kind}: ${shown}`}
-        title={`Copy ${kind}`}
-        onClick={() => void copyContactValue(shown)}
-      >
-        <Icon name="copy" />
-      </button>
+      <CopyContactButton kind={kind} value={shown} />
       <a
         className="contact-open"
         href={href}
@@ -74,6 +70,26 @@ export function ContactValue({
         </span>
       </a>
     </span>
+  );
+}
+
+export function CopyContactButton({
+  kind,
+  value,
+}: {
+  kind: "email" | "phone";
+  value: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="contact-open contact-copy-icon"
+      aria-label={`Copy ${kind}: ${value}`}
+      title={`Copy ${kind}`}
+      onClick={() => void copyContactValue(value)}
+    >
+      <Icon name="copy" />
+    </button>
   );
 }
 

@@ -43,7 +43,7 @@ import {
 } from "./studio";
 import { whiteContrast, accessibleAccent } from "./brand";
 import { clientBilling } from "./client-billing";
-import { DuplicateClient, saveClient, linkStripeCustomer } from "./clients";
+import { DuplicateClient, linkStripeCustomer } from "./clients";
 import { proposalAction, proposalActions } from "./proposal-actions";
 import { previewResult } from "./preview";
 import {
@@ -854,7 +854,7 @@ async function handleRoute(req: Request, path: string[]) {
               (previous?.stripe_customer_id ?? null),
             "Choose a Stripe customer from How they’re billed on the client page",
           );
-          const client = await saveClient(rt.repo, raw);
+          const client = await rt.service.updateClient(raw, user);
           await workspaceEvent(rt.repo, user, "client_saved", {
             name: client.company,
             client_id: client.id,
