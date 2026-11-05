@@ -1,5 +1,6 @@
 "use client";
-import { groupedEmails, emailWhen } from "../lib/studio-v3";
+import { HeadingTokens } from "./editor/heading-tokens";
+import { groupedEmails, emailWhen, studioDate } from "../lib/studio-v3";
 import { Icon } from "./ui";
 import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
@@ -122,11 +123,17 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
                     <strong>{t.name}</strong>
                     <small>{emailWhen[t.key]}</small>
                   </span>
-                  <span className="studio-email-subject">{t.subject}</span>
-                  <span className="studio-email-edited">
-                    {t.updated_at
-                      ? `Edited ${date(t.updated_at)} · ${data.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
-                      : "Default"}
+                  <span className="studio-email-subject">
+                    <HeadingTokens text={t.subject} map={emailFields} />
+                  </span>
+                  <span
+                    className={`studio-email-edited ${editableEmail(t) && t.updated_at ? "success" : ""}`}
+                  >
+                    {!editableEmail(t)
+                      ? "Read-only"
+                      : t.updated_at
+                        ? `Edited ${studioDate(t.updated_at)} · ${data.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
+                        : "Default"}
                   </span>
                   <Icon name="chevron-right" />
                   <span className="sr-only">Open {t.name}</span>

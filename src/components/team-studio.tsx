@@ -112,7 +112,7 @@ export function TeamStudio({
               setDialog({ action: "invite" });
             }}
           >
-            Invite user
+            Invite
           </Button>
         )}
       </header>
@@ -174,13 +174,19 @@ export function TeamStudio({
             </div>
             <div role="cell">
               <span className="team-mobile-label">Status</span>
-              <span className={`team-status team-status-${person.status}`}>
+              <span
+                className={`team-status team-status-${person.user_id === self ? "self" : person.status}`}
+              >
                 {person.user_id === self ? (
                   "You"
                 ) : person.status === "invited" && person.invited_at ? (
                   <>
-                    <span>Invite sent {date(person.invited_at)}</span>
-                    <small>Not accepted yet</small>
+                    <span
+                      title={`Invited ${date(person.invited_at)} · Not accepted yet`}
+                    >
+                      Invite sent
+                      <span className="sr-only"> · Not accepted yet</span>
+                    </span>
                   </>
                 ) : (
                   staffStatusLabel(person.status)
@@ -203,6 +209,7 @@ export function TeamStudio({
             <div role="cell">
               {owner && (
                 <Button
+                  variant="ghost"
                   aria-label={`Actions for ${person.display_name}`}
                   onClick={(e) => {
                     setError("");

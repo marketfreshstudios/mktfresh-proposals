@@ -1,4 +1,5 @@
 "use client";
+import { studioDate, templateUsage } from "../lib/studio-v3";
 import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
@@ -9,7 +10,7 @@ import { blockText } from "../lib/editor-document";
 import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
 import { fontCss } from "../lib/proposal-fonts";
-import { api, post, Button, Field, Empty, Icon, Banner, date } from "./ui";
+import { api, post, Button, Empty, Icon, Banner } from "./ui";
 import { TemplateWarnings } from "./template-warnings";
 const blockType = (b: Block) =>
   b.type === "contract"
@@ -48,7 +49,7 @@ export function StudioTemplateList({
   const lastEdit = (id: string) => {
     const e = edited(id);
     return e
-      ? `Edited ${date(e.created_at)} · ${data.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
+      ? `Edited ${studioDate(e.created_at)} · ${data.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
       : "Default";
   };
   const items = data.library.filter(
@@ -97,7 +98,10 @@ export function StudioTemplateList({
   return (
     <div className="studio-v3-list">
       <div className="studio-list-intro">
-        <p>Reusable proposals and content, ready for your next client.</p>
+        <p>
+          Starting points for new proposals, and content you can drop into any
+          of them.
+        </p>
         <Button variant="primary" busy={busy} onClick={create}>
           {blocks ? "New block" : "New template"}
         </Button>
@@ -120,13 +124,17 @@ export function StudioTemplateList({
             Saved blocks · {data.library.length}
           </a>
         </nav>
-        <Field label={blocks ? "Search blocks" : "Search templates"}>
+        <label className="field studio-search">
+          <span className="sr-only">
+            {blocks ? "Search blocks" : "Search templates"}
+          </span>
           <input
+            placeholder={blocks ? "Search blocks" : "Search templates"}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </Field>
+        </label>
       </div>
       {error && (
         <Banner tone="danger" title="Could not create">
@@ -165,12 +173,17 @@ export function StudioTemplateList({
                           (b) => b.type === "heading" && (b.level ?? 1) === 1,
                         ).length
                       }{" "}
-                      sections · used{" "}
-                      {
+                      {t.content.filter(
+                        (b) => b.type === "heading" && (b.level ?? 1) === 1,
+                      ).length === 1
+                        ? "section"
+                        : "sections"}{" "}
+                      ·{" "}
+                      {templateUsage(
                         data.proposals.filter((p) => p.template_id === t.id)
-                          .length
-                      }{" "}
-                      times · {lastEdit(t.id)}
+                          .length,
+                      )}{" "}
+                      · {lastEdit(t.id)}
                     </small>
                   </div>
                 </a>
@@ -191,10 +204,8 @@ export function StudioTemplateList({
             </header>
             {recent.map((b) => (
               <a href={`/studio/blocks/${b.id}`} key={b.id}>
-                <span>
-                  <strong>{b.name}</strong>
-                  <small>{blockType(b.block)}</small>
-                </span>
+                <strong>{b.name}</strong>
+                <span className="muted">{blockType(b.block)}</span>
                 <Icon name="chevron-right" />
               </a>
             ))}

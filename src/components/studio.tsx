@@ -230,8 +230,16 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         </Button>
       </div>
       <div className="studio-sync-meta">
-        ● {stripeStatus(data.connections)} ·{" "}
-        {synced ? `Synced ${relativeTime(synced)}` : "No recorded sync yet"} ·{" "}
+        <span
+          className={data.connections?.stripe ? "success" : "warning"}
+          aria-hidden="true"
+        >
+          ●
+        </span>{" "}
+        {data.connections?.stripe
+          ? `Synced with Stripe · ${data.connections.mode === "live" ? "live" : "test"} mode`
+          : stripeStatus(data.connections)}{" "}
+        · {synced ? relativeTime(synced) : "No recorded sync yet"} ·{" "}
         <Button
           onClick={() =>
             run(async () => {
@@ -269,13 +277,15 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             </button>
           ))}
         </nav>
-        <Field label="Search products">
+        <label className="field studio-search">
+          <span className="sr-only">Search products</span>
           <input
             type="search"
+            placeholder="Search products"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </Field>
+        </label>
       </div>
       <div
         className={`studio-products-layout ${selected ? "with-detail" : ""}`}
@@ -307,15 +317,17 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
               >
                 <span>
                   <strong>{itemDisplayName(i)}</strong>
-                  <small>{i.description || i.sku}</small>
+                  <small>{i.description}</small>
                 </span>
                 <span>
-                  {(i.sublines ?? [i]).map((s, n) => (
-                    <span className="catalog-price" key={n}>
-                      {money(s.amount, data.settings?.currency)}
-                      {intervalSuffix(s.interval)}
-                    </span>
-                  ))}
+                  <span className="catalog-price">
+                    {(i.sublines ?? [i])
+                      .map(
+                        (s) =>
+                          `${money(s.amount, data.settings?.currency)}${intervalSuffix(s.interval)}`,
+                      )
+                      .join(" + ")}
+                  </span>
                 </span>
                 <span>
                   {i.schedule
@@ -326,25 +338,12 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                   )}
                 </span>
                 <span>
-                  <span className="studio-tag">{source(i)}</span>
-                  {productMappings(i, data.connections?.qbo ?? null).map(
-                    (m, n) => (
-                      <small
-                        key={n}
-                        title={m.detail}
-                        className={m.warning ? "warning" : ""}
-                      >
-                        {m.label}
-                      </small>
-                    ),
-                  )}
+                  <span
+                    className={`studio-tag ${source(i) === "Stripe" ? "studio-tag-stripe" : ""}`}
+                  >
+                    {source(i)}
+                  </span>
                 </span>
-                <span role="tooltip" className="mapping-tooltip">
-                  {productMappings(i, data.connections?.qbo ?? null)
-                    .map((m) => m.detail)
-                    .join(" ")}
-                </span>
-                <Icon name="chevron-right" />
               </a>
             ))}
             {families.map((f) => (
@@ -368,7 +367,6 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 <span>Entered per proposal</span>
                 <span>—</span>
                 <span className="studio-tag">Custom</span>
-                <Icon name="chevron-right" />
               </a>
             ))}
           </div>
@@ -397,35 +395,6 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             </header>
             {item ? (
               <>
-                <h3>Used in</h3>
-                <p>
-                  {data.templates
-                    .filter(
-                      (t) =>
-                        t.default_quote.some(
-                          (l) => l.pricing_item_id === item.id,
-                        ) ||
-                        t.default_items?.some(
-                          (q) => q.pricing_item_id === item.id,
-                        ),
-                    )
-                    .map((t) => t.name)
-                    .join(" · ") || "No templates"}{" "}
-                  ·{" "}
-                  {
-                    data.proposals.filter(
-                      (p) =>
-                        ![
-                          "completed",
-                          "declined",
-                          "expired",
-                          "archived",
-                        ].includes(p.status) &&
-                        p.quote.some((q) => q.pricing_item_id === item.id),
-                    ).length
-                  }{" "}
-                  open proposals
-                </p>
                 <CatalogItem
                   key={item.id}
                   item={item}
@@ -433,6 +402,38 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                   run={run}
                   close={() => pick(null)}
                 />
+                <section className="studio-product-used">
+                  {" "}
+                  <h3>Used in</h3>
+                  <p>
+                    {data.templates
+                      .filter(
+                        (t) =>
+                          t.default_quote.some(
+                            (l) => l.pricing_item_id === item.id,
+                          ) ||
+                          t.default_items?.some(
+                            (q) => q.pricing_item_id === item.id,
+                          ),
+                      )
+                      .map((t) => t.name)
+                      .join(" · ") || "No templates"}{" "}
+                    ·{" "}
+                    {
+                      data.proposals.filter(
+                        (p) =>
+                          ![
+                            "completed",
+                            "declined",
+                            "expired",
+                            "archived",
+                          ].includes(p.status) &&
+                          p.quote.some((q) => q.pricing_item_id === item.id),
+                      ).length
+                    }{" "}
+                    open proposals
+                  </p>
+                </section>
               </>
             ) : (
               <>
@@ -578,38 +579,54 @@ function CatalogItem({
           />
         </Field>
       ))}
-      {i?.stripe_lookup_key && (
-        <p className="muted">
-          Synced from Stripe. Change the price there and it updates here.{" "}
-          <a
-            href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
-            target="_blank"
-            rel="noopener"
-          >
-            Edit in Stripe ↗
-          </a>
-        </p>
+      {i?.stripe_lookup_key ? (
+        <div className="studio-price-field">
+          <label>Price</label>
+          <div className="studio-readonly-price">
+            <strong>
+              {(i.sublines ?? [i])
+                .map(
+                  (line) =>
+                    `${money(line.amount, data.settings?.currency)}${intervalSuffix(line.interval)}`,
+                )
+                .join(" + ")}
+            </strong>
+            <a
+              href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
+              target="_blank"
+              rel="noopener"
+            >
+              Edit in Stripe ↗
+            </a>
+          </div>
+          <small className="muted">
+            Synced from Stripe. Change the price there and it updates here.
+          </small>
+          <input type="hidden" name="price" value={i.amount / 100} />
+          <input type="hidden" name="interval" value={i.interval} />
+        </div>
+      ) : (
+        <div className="studio-brand-grid">
+          <Field label="List price">
+            <input
+              name="price"
+              readOnly={!!i?.stripe_lookup_key}
+              type="number"
+              step=".01"
+              min="0"
+              required
+              defaultValue={(i?.amount ?? 0) / 100}
+            />
+          </Field>
+          <Field label="Interval">
+            <select name="interval" defaultValue={i?.interval ?? "one_time"}>
+              <option value="one_time">One-time</option>
+              <option value="month">Monthly</option>
+              <option value="year">Yearly</option>
+            </select>
+          </Field>
+        </div>
       )}
-      <div className="studio-brand-grid">
-        <Field label="List price">
-          <input
-            name="price"
-            readOnly={!!i?.stripe_lookup_key}
-            type="number"
-            step=".01"
-            min="0"
-            required
-            defaultValue={(i?.amount ?? 0) / 100}
-          />
-        </Field>
-        <Field label="Interval">
-          <select name="interval" defaultValue={i?.interval ?? "one_time"}>
-            <option value="one_time">One-time</option>
-            <option value="month">Monthly</option>
-            <option value="year">Yearly</option>
-          </select>
-        </Field>
-      </div>
       {i?.schedule && (
         <section className="studio-product-terms">
           <h3>Plan terms</h3>
@@ -745,25 +762,26 @@ function CatalogItem({
               />
             </Field>
           </fieldset>
+          <ProductMappingDetails
+            item={i}
+            qboConnected={data.connections?.qbo ?? null}
+          />
+          <section className="client-copy-preview">
+            <p className="eyebrow">Client sees</p>
+            <strong>{i ? itemDisplayName(i) : "New item"}</strong>
+            {minimum && <p>{minimum}-month minimum commitment.</p>}
+            {count && (
+              <p>
+                After {count} paid invoices:{" "}
+                {money(Math.round(Number(then || 0) * 100))} per recurring
+                period.
+              </p>
+            )}
+            {copy && <p>{copy}</p>}
+            <small>Payoff counts paid invoices, not calendar months.</small>
+          </section>
         </div>
       </details>
-      <ProductMappingDetails
-        item={i}
-        qboConnected={data.connections?.qbo ?? null}
-      />
-      <section className="client-copy-preview">
-        <p className="eyebrow">Client sees</p>
-        <strong>{i ? itemDisplayName(i) : "New item"}</strong>
-        {minimum && <p>{minimum}-month minimum commitment.</p>}
-        {count && (
-          <p>
-            After {count} paid invoices:{" "}
-            {money(Math.round(Number(then || 0) * 100))} per recurring period.
-          </p>
-        )}
-        {copy && <p>{copy}</p>}
-        <small>Payoff counts paid invoices, not calendar months.</small>
-      </section>
       <SaveError error={save.error} />
       <DialogActions>
         <Button onClick={close} disabled={save.busy}>
@@ -2912,8 +2930,10 @@ export function ConnectionsStudio({
     },
     {
       id: "assistants",
-      name: "AI assistants",
-      state: `${connected.length} connected`,
+      name: connected.some((a) => /claude/i.test(a.name))
+        ? "Claude"
+        : "AI assistants",
+      state: connected.length ? "Connected" : "Not connected",
       line: stale
         ? "An assistant has not connected recently. Manage its grant to reconnect."
         : "Assistants read reference data and create drafts. A person always reviews, sends and signs.",
@@ -2939,8 +2959,8 @@ export function ConnectionsStudio({
       <SaveError error={error} />
       {error && <Button onClick={load}>Try loading connections again</Button>}
       <p className="studio-description">
-        Services connected to this workspace. Connection status comes from this
-        deployment.
+        Payments, invoicing, email delivery, AI assistants and imports. Each one
+        shows if it's healthy and offers one fix when it isn't.
       </p>
       <div className="studio-connections-v3">
         {[
@@ -2956,7 +2976,7 @@ export function ConnectionsStudio({
                 .filter((c) => group.ids.includes(c.id))
                 .map((c) => (
                   <section
-                    className={`connection-card ${/needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
+                    className={`connection-card ${c.id !== "assistants" && /needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
                     key={c.id}
                   >
                     <span className="connection-monogram" aria-hidden="true">
@@ -2969,8 +2989,14 @@ export function ConnectionsStudio({
                             : c.name[0]}
                     </span>
                     <div>
-                      <h3>{c.name}</h3>
-                      <span className="connection-state">● {c.state}</span>
+                      <div className="connection-title">
+                        <h3>{c.name}</h3>
+                        <span
+                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /Connected|Configured|Verified|Imported/.test(c.state) ? "success" : "warning"}`}
+                        >
+                          ● {c.state}
+                        </span>
+                      </div>
                       <p>{c.line}</p>
                       <small>{c.detail}</small>
                     </div>

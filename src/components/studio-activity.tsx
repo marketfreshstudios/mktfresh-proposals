@@ -11,7 +11,7 @@ import {
   type ActivityRow,
 } from "../lib/studio-activity";
 import { eventLabel } from "../lib/event-label";
-import { api, Button, Field, Banner, Empty } from "./ui";
+import { api, Button, Banner, Empty } from "./ui";
 import { Skeleton } from "./foundation";
 export function ActivityStudio({ data }: { data: Data }) {
   const [rows, setRows] = useState<ActivityRow[] | null>(null),
@@ -107,16 +107,18 @@ export function ActivityStudio({ data }: { data: Data }) {
           }}
           options={activityGroups.map((g) => ({ value: g, label: g }))}
         />
-        <Field label="Search activity">
+        <label className="field studio-search">
+          <span className="sr-only">Search activity</span>
           <input
             type="search"
+            placeholder="Search activity"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               setLimit(50);
             }}
           />
-        </Field>
+        </label>
       </div>
       {error ? (
         <Banner

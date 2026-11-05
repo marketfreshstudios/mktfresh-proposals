@@ -2,7 +2,8 @@
 import { eventLabel } from "../lib/event-label";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
-import { api, post, Icon, ThemeToggle, Button } from "./ui";
+import { api, Icon } from "./ui";
+import { StudioAccount } from "./studio-account";
 import { studioRoutes } from "../lib/staff-routes";
 import type { EmailTemplate } from "../lib/email-template-content";
 import type { Activity } from "../lib/studio";
@@ -57,34 +58,31 @@ export function StudioHome({ data }: { data: Data }) {
       : "Loading latest activity…",
   ];
   return (
-    <nav
-      className="studio-home-list studio-page"
-      aria-label="Studio navigation"
-    >
-      {studioRoutes.map(([href, name], n) => (
-        <a href={href} key={href}>
-          <span>
-            <strong>{name}</strong>
-            <small className={n === 3 && problems.length ? "warning" : ""}>
-              {statuses[n]}
-            </small>
-          </span>
-          <Icon name="chevron-right" />
-        </a>
-      ))}
-      <div className="studio-home-account">
-        <span>{data.user.staff_name}</span>
-        <ThemeToggle />
-        <Button
-          onClick={async () => {
-            await post("/api/auth/logout");
-            location.href = "/login";
-          }}
-        >
-          Sign out
-        </Button>
+    <>
+      <nav
+        className="studio-home-list studio-page"
+        aria-label="Studio navigation"
+      >
+        {studioRoutes.map(([href, name], n) => (
+          <a href={href} key={href}>
+            <span>
+              <strong>{name}</strong>
+              <small className={n === 3 && problems.length ? "warning" : ""}>
+                {statuses[n]}
+              </small>
+            </span>
+            <Icon name="chevron-right" />
+          </a>
+        ))}
+      </nav>
+      <div className="studio-phone-account">
+        <StudioAccount name={data.user.staff_name ?? "Staff"} label="Account" />
+        <p className="muted">
+          Templates and Products work best on a larger screen, but they open and
+          can be edited here.
+        </p>
       </div>
-    </nav>
+    </>
   );
 }
 

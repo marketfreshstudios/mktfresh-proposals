@@ -39,6 +39,15 @@ async function fixture(page: Page) {
         text: "A reusable introduction for {{client.company}}.",
       },
     });
+  for (const i of await f.repo.entities<any>("pricing_items"))
+    await f.repo.put("pricing_items", {
+      ...i,
+      description: i.schedule
+        ? "Design and build, paid over time"
+        : i.interval === "one_time"
+          ? "Planning and project delivery"
+          : "Ongoing service and support",
+    });
   await workspaceEvent(f.repo, staff, "templates_saved", {
     name: saved[0].name,
     entity_id: saved[0].id,
@@ -52,11 +61,25 @@ async function fixture(page: Page) {
     email: "jamie@example.test",
     role: "member",
   });
-  const people = f.members.map((m) => ({
-    ...m,
-    status: "active",
-    last_sign_in_at: "2026-11-05T12:00:00Z",
-  }));
+  const people = [
+    ...f.members.map((m) => ({
+      ...m,
+      status: "active",
+      invited_at: null as string | null,
+      last_sign_in_at: "2026-11-05T12:00:00Z",
+    })),
+    ...["invited", "deactivated"].map((status, n) => ({
+      ...f.members[0],
+      user_id: crypto.randomUUID(),
+      display_name: n ? "Sam Example" : "Maya Example",
+      name: n ? "Sam Example" : "Maya Example",
+      email: n ? "sam@example.test" : "maya@example.test",
+      role: "member" as const,
+      status,
+      invited_at: n ? null : "2026-11-01T12:00:00Z",
+      last_sign_in_at: "",
+    })),
+  ];
   const requests: { path: string; body: any }[] = [];
   await page.route("**/api/**", async (route) => {
     const req = route.request(),
@@ -126,10 +149,10 @@ async function fixture(page: Page) {
   };
 }
 const shots = "docs/screenshots/studio-v3-phase1";
-async function capture(page: Page, name: string) {
+async function capture(page: Page, name: string, fullPage = true) {
   if (process.env.STUDIO_V3_CAPTURE === "1") {
     mkdirSync(shots, { recursive: true });
-    await page.screenshot({ path: `${shots}/${name}.png`, fullPage: true });
+    await page.screenshot({ path: `${shots}/${name}.png`, fullPage });
   }
 }
 test("Studio v3 route lists, nine staff emails and Workspace autosave keep values on error", async ({
@@ -186,7 +209,10 @@ test("Studio v3 route lists, nine staff emails and Workspace autosave keep value
     .getByRole("button", { name: "Billing defaults", exact: true })
     .click();
   await expect(
-    page.getByText("Connected · test mode · Manage", { exact: true }),
+    page.getByRole("link", {
+      name: "● Connected · test mode · Manage",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     page.getByText("Existing Stripe subscribers", { exact: true }),
@@ -215,7 +241,7 @@ test("Studio v3 Staff permissions and Team actions retain the existing endpoints
   const f = await fixture(page);
   await page.goto("/studio/workspace?view=team");
   await expect(
-    page.getByRole("button", { name: "Invite user", exact: true }),
+    page.getByRole("button", { name: "Invite", exact: true }),
   ).toBeVisible();
   const other = f.members.find((m) => `staff:${m.user_id}` !== staff.actor)!;
   await page
@@ -247,7 +273,7 @@ test("Studio v3 Staff permissions and Team actions retain the existing endpoints
   await expect(page.getByLabel("Verified sending domain")).toBeDisabled();
   await page.getByRole("button", { name: "Team", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Invite user", exact: true }),
+    page.getByRole("button", { name: "Invite", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("combobox", { name: /Role for/ }).first(),
@@ -294,7 +320,22 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
     await expect(
       page.getByRole("table", { name: "Workspace team" }),
     ).toBeVisible();
-    if (width === 768) await capture(page, "workspace-team-768");
+    if (width === 768) {
+      await page.evaluate(() =>
+        window.scrollTo(0, document.documentElement.scrollHeight),
+      );
+      const footer = page.locator(".bottom-tabs");
+      await expect
+        .poll(async () => {
+          const bar = await footer.boundingBox(),
+            last = await page
+              .getByRole("link", { name: "Recent changes · Team activity" })
+              .boundingBox();
+          return bar!.y - last!.y - last!.height;
+        })
+        .toBeGreaterThanOrEqual(24);
+      await capture(page, "workspace-team-768", false);
+    }
     if (width === 1440) {
       for (const [key] of workspaceSections) {
         await page
@@ -306,6 +347,14 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
           .click();
         await expect(page.locator(".workspace-section-card")).toBeVisible();
         await capture(page, `workspace-${key}-1440`);
+        if (key === "team") {
+          await page
+            .getByRole("button", { name: "Actions for Jamie Example" })
+            .click();
+          await expect(page.getByRole("dialog")).toBeVisible();
+          await capture(page, "workspace-team-menu-1440");
+          await page.keyboard.press("Escape");
+        }
       }
     }
     if (width !== 1440) {
@@ -371,10 +420,122 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
   await capture(page, "02b-staff-emails-1440");
   await page
     .locator(".sidebar")
-    .getByRole("button", { name: "Dark mode", exact: true })
+    .getByRole("button", { name: /Account menu/ })
     .click();
+  await page.getByRole("button", { name: "Dark mode", exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await capture(page, "02b-staff-emails-dark-1440");
+  await page.goto("/studio/workspace?view=brand");
+  await capture(page, "workspace-brand-dark-1440");
+  await page.goto("/studio/connections");
+  await expect(page.locator(".connection-state.success").first()).toBeVisible();
+  await capture(page, "04-connections-dark-1440");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("owner review Studio presentation keeps semantic statuses, controls and mobile clearance", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/studio/templates");
+  const search = page.getByRole("searchbox", { name: "Search templates" });
+  await expect(search).toHaveAttribute("placeholder", "Search templates");
+  await expect(page.locator(".studio-saved-preview>a>svg").first()).toHaveCSS(
+    "width",
+    "10px",
+  );
+  await expect(page.locator(".studio-saved-preview>a").first()).toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
+  const active = page.locator('.sidebar nav a[aria-current="page"]');
+  await expect(active).toHaveCSS(
+    "color",
+    await page
+      .locator(".workspace")
+      .evaluate((el) => getComputedStyle(el).getPropertyValue("--ink").trim())
+      .then((c) => (c.startsWith("#") ? "rgb(19, 48, 58)" : c)),
+  );
+  await expect(page.locator(".sidebar footer").getByRole("button")).toHaveCount(
+    1,
+  ); // Only the account row is visible in the desktop footer.
+  await page
+    .locator(".sidebar")
+    .getByRole("button", { name: /Account menu/ })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Dark mode", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Sign out", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.goto("/studio/emails");
+  await expect(
+    page.locator('.studio-email-subject [data-field="proposal.title"]').first(),
+  ).toHaveText("Proposal title");
+  await page.getByRole("tab", { name: "Staff notifications · 9" }).click();
+  await expect(
+    page.locator(".studio-email-edited").filter({ hasText: "Read-only" }),
+  ).toHaveCount(6);
+  const group = page.locator(".studio-email-stage").first();
+  const title = await group.locator("h2").boundingBox(),
+    card = await group.locator(".studio-email-rows").boundingBox();
+  expect(title!.x + title!.width).toBeLessThan(card!.x);
+  await page.goto("/studio/workspace?view=brand");
+  await expect(
+    page.locator(".workspace-section-card > header [role=status]"),
+  ).toHaveCount(0);
+  const toggle = page.getByRole("switch", { name: /Show.*Powered by/ });
+  const control = await toggle.boundingBox(),
+    label = await page.locator(".workspace-switch>span").boundingBox();
+  expect(control!.x).toBeGreaterThan(label!.x + label!.width);
+  await page.getByRole("button", { name: "Team", exact: true }).click();
+  const description = await page.locator(".team-heading>p").boundingBox(),
+    heading = await page
+      .locator(".workspace-section-card>header")
+      .boundingBox();
+  expect(description!.y - heading!.y - heading!.height).toBeLessThanOrEqual(5);
+  const row = page.locator(".team-person").filter({ hasText: "Jamie Example" });
+  await expect(row.locator(".team-status")).toHaveText("Active");
+  const status = await row.locator(".team-status").boundingBox(),
+    role = await row.getByRole("combobox").boundingBox();
+  expect(status!.x + status!.width).toBeLessThan(role!.x);
+  await page.goto("/studio/products");
+  await expect(page.locator(".studio-sync-meta")).toContainText(
+    "Synced with Stripe · test mode",
+  );
+  const catalog = await f.repo.entities<any>("pricing_items");
+  const stripe = catalog.find((i) => i.stripe_lookup_key);
+  await page.goto(`/studio/products?item=${stripe.id}`);
+  const panel = page.getByRole("complementary", { name: "Product details" });
+  await expect(
+    panel.getByRole("spinbutton", { name: "List price", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("combobox", { name: "Interval", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("link", { name: "Edit in Stripe" }),
+  ).toBeVisible();
+  await page.goto("/studio/connections");
+  const connected = page
+    .locator(".connection-card")
+    .filter({ hasText: "Stripe" })
+    .first();
+  await expect(connected.locator(".connection-state")).toHaveClass(/success/);
+  await expect(
+    page
+      .locator(".connection-card")
+      .filter({ hasText: "AI assistants" })
+      .locator(".connection-state"),
+  ).toHaveClass(/muted/);
+  const monogram = await connected
+      .locator(".connection-monogram")
+      .boundingBox(),
+    button = await connected.getByRole("button").boundingBox();
+  expect(button!.x).toBeGreaterThan(monogram!.x + monogram!.width);
 });

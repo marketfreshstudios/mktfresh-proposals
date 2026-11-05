@@ -2,7 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import { SupabaseTeamStore } from "../src/lib/team-store";
 import { describe, expect, it } from "vitest";
 import { emailDefaults } from "../src/lib/email-template-content";
-import { groupedEmails, stripeStatus } from "../src/lib/studio-v3";
+import {
+  groupedEmails,
+  stripeStatus,
+  studioDate,
+  templateUsage,
+} from "../src/lib/studio-v3";
 import {
   activityGroup,
   teamActivity,
@@ -10,6 +15,19 @@ import {
 } from "../src/lib/studio-activity";
 import { staffRoute, legacyStaffRedirect } from "../src/lib/staff-routes";
 describe("Studio v3 existing data and routes", () => {
+  it("formats template usage and short editing dates", () => {
+    expect([0, 1, 14].map(templateUsage)).toEqual([
+      "Not used yet",
+      "Used once",
+      "Used 14 times",
+    ]);
+    expect(studioDate("2026-10-21T12:00:00Z", new Date("2026-11-05"))).toBe(
+      "Oct 21",
+    );
+    expect(studioDate("2025-10-21T12:00:00Z", new Date("2026-11-05"))).toBe(
+      "Oct 21, 2025",
+    );
+  });
   it("reads all Team activity in stable, workspace-scoped pages without changing recent changes", async () => {
     const records = Array.from({ length: 1002 }, (_, n) => ({
       id: String(n),

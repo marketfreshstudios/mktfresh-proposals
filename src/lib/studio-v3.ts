@@ -1,4 +1,19 @@
 import type { EmailTemplate } from "./email-template-content";
+export function studioDate(value: string, now = new Date()) {
+  const d = new Date(value);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(d.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+  });
+}
+export function templateUsage(count: number) {
+  return count === 0
+    ? "Not used yet"
+    : count === 1
+      ? "Used once"
+      : `Used ${count} times`;
+}
 export const emailStages = [
   { name: "Send", keys: ["proposal_sent"] },
   { name: "Follow up", keys: ["reminder_unopened", "reminder_viewed"] },

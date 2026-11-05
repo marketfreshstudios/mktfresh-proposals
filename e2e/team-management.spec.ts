@@ -182,7 +182,7 @@ test("Super admin Team list, invite/resend and set-password acceptance use app e
   expect(JSON.stringify(await f.store.audit())).not.toContain(
     "Private example password!",
   );
-  await page.getByRole("button", { name: "Invite user", exact: true }).click();
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "Role", exact: true }),
   ).toHaveValue("member");
@@ -238,7 +238,7 @@ test("Super admin Team list, invite/resend and set-password acceptance use app e
   expect((await f.store.get(added.user_id))!.status).toBe("active");
   await page.goto("/studio/workspace?view=team");
   await expect(
-    page.getByRole("button", { name: "Invite user", exact: true }),
+    page.getByRole("button", { name: "Invite", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Actions for/ })).toHaveCount(
     0,

@@ -42,6 +42,27 @@ export function WorkspaceStudio({
     [licensed, setLicensed] = useState(false),
     [uploading, setUploading] = useState(false),
     [uploadError, setUploadError] = useState("");
+  const [logoMeta, setLogoMeta] = useState<{
+    name: string;
+    size: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!draft.logo) return;
+    let active = true;
+    fetch("/api/workspace-logo")
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.blob();
+      })
+      .then((blob) => {
+        if (active && blob.type.startsWith("image/"))
+          setLogoMeta({ name: "Workspace logo.png", size: blob.size });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [draft.logo]);
   const [passwordEnabled, setPasswordEnabled] = useState(
       data.settings?.default_password_enabled ?? false,
     ),
@@ -252,9 +273,19 @@ export function WorkspaceStudio({
             {draft.logo ? (
               <img src="/api/workspace-logo" alt="Workspace logo" />
             ) : (
-              <span className="avatar">{draft.company_name.slice(0, 1)}</span>
+              <span className="workspace-logo-empty" aria-hidden="true">
+                {draft.company_name.slice(0, 1)}
+              </span>
             )}
-            <Field label="Logo · PNG, under 750 KB">
+            <label className="workspace-logo-label">
+              <span>Logo · PNG, under 750 KB</span>
+              <span className="workspace-logo-file">
+                {draft.logo
+                  ? logoMeta
+                    ? `${logoMeta.name} · ${Math.max(1, Math.round(logoMeta.size / 1024))} KB`
+                    : "Workspace logo.png"
+                  : "No logo uploaded"}
+              </span>
               <input
                 type="file"
                 ref={logoFile}
@@ -269,6 +300,7 @@ export function WorkspaceStudio({
                     const result = await post("/api/workspace-logo", {
                       image: await readData(file),
                     });
+                    setLogoMeta({ name: file.name, size: file.size });
                     change({ logo: result.path }, true);
                     setUploadError("");
                   } catch (e) {
@@ -278,8 +310,10 @@ export function WorkspaceStudio({
                   }
                 }}
               />
-              <Button onClick={() => logoFile.current?.click()}>Replace</Button>
-            </Field>
+              <Button variant="ghost" onClick={() => logoFile.current?.click()}>
+                {draft.logo ? "Replace" : "Upload logo"}
+              </Button>
+            </label>
           </div>
         </div>
         <Field label="Accent color">
@@ -295,25 +329,19 @@ export function WorkspaceStudio({
               />
             ))}
             <input
-              type="color"
-              aria-label="Accent color"
-              value={draft.accent_colour}
-              onChange={(e) => change({ accent_colour: e.target.value })}
-            />
-            <input
               aria-label="Accent hex"
               value={draft.accent_colour}
               onChange={(e) => change({ accent_colour: e.target.value })}
               onBlur={() => void flush()}
             />
+            <p className={contrast >= 4.5 ? "success" : "warning"}>
+              {contrast >= 4.5
+                ? "✓ Readable on white"
+                : "Needs 4.5:1 contrast on white"}{" "}
+              ({contrast.toFixed(1)}:1)
+            </p>
           </div>
         </Field>
-        <p className={contrast >= 4.5 ? "success" : "warning"}>
-          {contrast >= 4.5
-            ? "✓ Readable on white"
-            : "Needs 4.5:1 contrast on white"}{" "}
-          ({contrast.toFixed(1)}:1)
-        </p>
         {contrast > 0 && contrast < 4.5 && (
           <Button
             onClick={() =>
@@ -435,7 +463,10 @@ export function WorkspaceStudio({
             </p>
           </div>
           <a href="/studio/connections?view=stripe">
-            {stripeStatus(data.connections)} · Manage
+            <span className={data.connections?.stripe ? "success" : "warning"}>
+              ● {stripeStatus(data.connections)}
+            </span>{" "}
+            · Manage
           </a>
         </div>
         <div className="workspace-setting-row">
@@ -449,9 +480,10 @@ export function WorkspaceStudio({
             </p>
           </div>
           <a href="/studio/connections?view=qbo">
-            {data.connections?.qbo
-              ? "Sandbox configured · Manage"
-              : "Not connected · Connect"}
+            <span className={data.connections?.qbo ? "success" : "warning"}>
+              ● {data.connections?.qbo ? "Sandbox configured" : "Not connected"}
+            </span>{" "}
+            · {data.connections?.qbo ? "Manage" : "Connect"}
           </a>
         </div>
         <details className="workspace-more">
@@ -755,9 +787,11 @@ export function WorkspaceStudio({
       >
         <header>
           <h2>{workspaceSections.find(([key]) => key === section)?.[1]}</h2>
-          <span role="status" className={current?.error ? "danger" : "muted"}>
-            {uploading ? "Uploading…" : (current?.status ?? "Saved")}
-          </span>
+          {section !== "billing" && (uploading || current) && (
+            <span role="status" className={current?.error ? "danger" : "muted"}>
+              {uploading ? "Uploading…" : (current?.status ?? "")}
+            </span>
+          )}
         </header>
         <div className="stack">{cards[section]}</div>
         {uploadError && (

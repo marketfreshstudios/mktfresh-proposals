@@ -1407,3 +1407,520 @@
 .studio-v3-shell .workspace .btn.primary {
   border-radius: var(--radius-pill);
 }
+
+/* Owner review: Studio list surfaces and semantic states (document editors excluded). */
+.studio-v3-shell .sidebar nav a.active {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font-weight: 600;
+}
+.studio-v3-shell
+  .workspace
+  a:not(
+    .btn,
+    [aria-current="page"],
+    .studio-template-card,
+    .studio-table-row,
+    .email-list-row,
+    .studio-segments a,
+    .studio-area-chips a
+  ) {
+  color: var(--ink);
+}
+.studio-v3-shell .success {
+  color: var(--success);
+}
+.studio-v3-shell .warning {
+  color: var(--warning);
+}
+.studio-list-tools .studio-search {
+  margin: 0 0 0 auto;
+  flex: 0 1 286px;
+  gap: 0;
+}
+.studio-search input {
+  height: 40px;
+}
+.studio-saved-preview > a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 12px;
+  gap: 20px;
+  min-height: 52px;
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+  font-size: 13px;
+}
+.studio-saved-preview > a > svg {
+  width: 10px;
+  height: 10px;
+  color: var(--ink-muted);
+}
+.studio-email-stage {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.studio-email-stage h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+  padding-top: 20px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.studio-email-stage h2::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+}
+.studio-email-subject .field-chip {
+  font: 500 11px/18px var(--font-ui);
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.studio-v3-emails .email-list-row {
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 140px 10px;
+}
+.studio-v3-emails .email-list-row > svg {
+  width: 10px;
+  height: 10px;
+}
+.studio-v3-shell .studio-sync-meta .btn {
+  color: var(--ink);
+}
+.product-table .catalog-price {
+  display: inline;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.product-table > :is(a, div),
+.studio-products-layout.with-detail .product-table > :is(a, div) {
+  grid-template-columns:
+    minmax(0, 2fr) minmax(140px, 1fr) minmax(100px, 1fr)
+    70px;
+}
+.product-table .studio-tag-stripe {
+  color: var(--ai);
+  background: var(--ai-soft);
+  border-color: transparent;
+}
+.studio-price-field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+.studio-price-field > label {
+  font-weight: 600;
+}
+.studio-readonly-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-sunken);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.studio-readonly-price strong {
+  font-variant-numeric: tabular-nums;
+}
+.studio-readonly-price a {
+  font-size: 12px;
+}
+.studio-product-used {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 20px;
+}
+.studio-connections-v3 .connection-card {
+  flex-direction: row;
+  align-items: center;
+  padding: 18px;
+  gap: 14px;
+}
+.studio-connections-v3 .connection-card > div:not(.button-wrap) {
+  min-width: 0;
+  flex: 1;
+}
+.studio-connections-v3 .connection-card > .button-wrap {
+  flex: none;
+}
+.studio-connections-v3 .connection-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.studio-connections-v3 .connection-title h3 {
+  margin: 0;
+}
+.studio-connections-v3 .connection-state {
+  padding: 0;
+  background: none;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.studio-connections-v3 p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 19px;
+  color: var(--ink-muted);
+}
+.studio-connections-v3 small {
+  font-size: 12px;
+  line-height: 19px;
+}
+.workspace-section-card > header {
+  margin-bottom: 4px;
+}
+.workspace-section-card > .stack > p:first-child {
+  margin-bottom: 16px;
+}
+.workspace-section-card > .stack > .proposal-styles,
+.workspace-section-card > .stack > .reference-documents {
+  margin-top: 16px;
+}
+.workspace-logo-row {
+  position: relative;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  height: 40px;
+  padding: 4px 8px;
+  margin-top: 24px;
+}
+.workspace-brand-top .workspace-logo-row {
+  gap: 10px;
+}
+.workspace-logo-row > img,
+.workspace-logo-empty {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
+  border-radius: 6px;
+}
+.workspace-logo-empty {
+  display: grid;
+  place-items: center;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.workspace-logo-label {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-logo-label > span:first-child {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspace-logo-file {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.workspace-logo-row .btn {
+  width: auto;
+  min-height: 30px;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--ink);
+  border: 0;
+  background: none;
+}
+.workspace-accent > p {
+  margin: 0;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.workspace-section-card .workspace-switch {
+  flex-direction: row-reverse !important;
+  justify-content: space-between;
+  min-height: 60px;
+  padding-top: 12px;
+}
+.workspace-section-card .workspace-switch > input {
+  order: initial !important;
+  margin-left: auto;
+}
+.workspace-section-card .workspace-switch > span {
+  order: initial !important;
+}
+.workspace-section-card .team-table {
+  border: 0;
+  border-radius: 0;
+}
+.workspace-section-card .team-person {
+  grid-template-columns: minmax(0, 1fr) 100px 130px 40px;
+}
+.workspace-section-card .team-person > [role="cell"]:nth-child(2) {
+  grid-column: 3;
+  grid-row: 1;
+}
+.workspace-section-card .team-person > [role="cell"]:nth-child(3) {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+.workspace-section-card .team-person > [role="cell"]:last-child {
+  grid-column: 4;
+  grid-row: 1;
+}
+.workspace-section-card .team-person .btn.ghost {
+  border: 0;
+  background: none;
+  min-width: 36px;
+  padding: 0;
+}
+.workspace-section-card .team-status-active {
+  color: var(--success);
+}
+.workspace-section-card .team-status-invited {
+  color: var(--warning);
+}
+.workspace-section-card .team-status-self {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.workspace-section-card .team-profile {
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin: 0;
+}
+.workspace-section-card .team-profile h2 {
+  font-size: 14px;
+  line-height: 20px;
+}
+.workspace-section-card .team-profile-form {
+  gap: 8px;
+}
+.workspace-section-card .team-heading p {
+  margin: 0;
+}
+.studio-account {
+  position: relative;
+}
+.studio-account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 12px var(--font-ui);
+  cursor: pointer;
+}
+.studio-account-trigger .avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+}
+.studio-account-menu {
+  display: grid;
+  gap: 12px;
+  min-width: 200px;
+}
+.studio-account-menu small {
+  color: var(--ink-muted);
+}
+.studio-phone-account {
+  display: none;
+}
+.studio-home-list.studio-page {
+  display: block;
+  gap: 0;
+}
+.studio-home-list.studio-page > a {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.studio-home-list.studio-page > a:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 1279px) {
+  .studio-products-layout.with-detail .product-table > :is(a, div) {
+    grid-template-columns: minmax(0, 1fr) 140px;
+  }
+}
+@media (max-width: 1099px) {
+  .studio-v3-shell {
+    --studio-tabbar-height: 65px;
+  }
+  .studio-v3-shell .workspace {
+    padding-bottom: 0;
+  }
+  .studio-v3-shell .page-body {
+    padding-bottom: calc(
+      var(--studio-tabbar-height) + env(safe-area-inset-bottom) + 24px
+    );
+  }
+  .studio-phone-account {
+    display: block;
+    margin-top: 16px;
+  }
+  .studio-phone-account > p {
+    font-size: 12px;
+    line-height: 19px;
+  }
+  .studio-v3-emails .email-list-row {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 100px 10px;
+  }
+}
+@media (max-width: 699px) {
+  .studio-list-tools .studio-search {
+    flex: auto;
+    margin: 0;
+  }
+  .studio-saved-preview > a {
+    grid-template-columns: minmax(0, 1fr) 96px 10px;
+    gap: 10px;
+  }
+  .studio-email-stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .studio-email-stage h2 {
+    padding-top: 0;
+  }
+  .studio-v3-emails .email-list-row {
+    grid-template-columns: minmax(0, 1fr) 66px 10px;
+  }
+  .studio-connections-v3 .connection-card {
+    flex-wrap: wrap;
+  }
+  .studio-connections-v3 .connection-card > div:not(.button-wrap) {
+    flex-basis: calc(100% - 60px);
+  }
+  .studio-connections-v3 .connection-card > .button-wrap {
+    margin-left: 52px;
+  }
+  .workspace-logo-row {
+    flex-direction: row;
+    align-items: center;
+    height: 44px;
+  }
+  .workspace-logo-row .btn {
+    min-height: 44px;
+  }
+  .workspace-section-card .team-person {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 8px;
+  }
+  .workspace-section-card .team-person > [role="cell"]:nth-child(2) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .workspace-section-card .team-person > [role="cell"]:nth-child(3) {
+    grid-column: 1;
+    grid-row: 2;
+    text-align: left;
+  }
+  .workspace-section-card .team-person > [role="cell"]:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+.studio-v3-shell .sidebar nav a {
+  font-weight: 400;
+}
+.studio-v3-shell .sidebar nav a.active {
+  font-weight: 600;
+}
+.studio-connections-v3 .connection-state.muted {
+  color: var(--ink-muted);
+}
+.studio-connections-v3 .btn {
+  border-radius: var(--radius-pill);
+}
+.workspace-accent input[aria-label="Accent hex"] {
+  width: 84px;
+  flex: 0 0 84px;
+}
+.workspace-section-card .team-profile-form > .field {
+  flex: 1 1 220px;
+}
+.workspace-section-card .team-profile-form > .field > .field {
+  flex: none;
+}
+.studio-account-trigger .avatar::before {
+  content: attr(data-initials);
+}
+.workspace-section-card .team-status-active::before {
+  content: "● ";
+}
+.workspace-section-card .team-status-invited::before {
+  content: "● ";
+}
+.studio-tablet-header > .studio-account {
+  margin-left: auto;
+}
+.studio-tablet-header .studio-account-trigger {
+  width: 44px;
+  justify-content: center;
+  padding: 0;
+}
+.studio-tablet-header .studio-account-trigger > span:last-child {
+  display: none;
+}
+.workspace-section-card#team {
+  position: relative;
+}
+.workspace-section-card .team-heading {
+  display: block;
+}
+.workspace-section-card .team-heading > .button-wrap {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+}
+.workspace-section-card .team-heading > p {
+  max-width: calc(100% - 100px);
+}
+@media (max-width: 699px) {
+  .workspace-section-card .team-heading > .button-wrap {
+    top: 18px;
+    right: 16px;
+  }
+}
+.studio-saved-preview > a {
+  background: transparent;
+}
+.saved-block-table .studio-table-row > svg {
+  width: 10px;
+  height: 10px;
+}
+
+.studio-saved-preview > a:hover,
+.studio-saved-preview > a:focus-visible {
+  background: var(--row-hover);
+  text-decoration: none;
+}

@@ -1,4 +1,5 @@
 "use client";
+import { StudioAccount } from "./studio-account";
 import { YeswellBrand } from "./yeswell-brand";
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
@@ -29,6 +30,10 @@ export function StaffShell({
   onSignout: () => void;
   children: ReactNode;
 }) {
+  useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
+  }, []);
   const [studio, setStudio] = useState(false);
   const studioButton = useRef<HTMLButtonElement>(null),
     studioPopover = useRef<HTMLDivElement>(null);
@@ -129,19 +134,25 @@ export function StaffShell({
               <Icon name="studio" />
               <span>Studio</span>
             </button>
-            <div className="shell-person">
-              <span className="avatar" aria-hidden="true">
-                {name.slice(0, 1) || "U"}
-              </span>
-              <span>
-                {name}
-                <small>{email}</small>
-              </span>
-            </div>
-            <ThemeToggle />
-            <button className="btn ghost sign-out" onClick={onSignout}>
-              Sign out
-            </button>
+            {inStudio ? (
+              <StudioAccount name={name} email={email} onSignout={onSignout} />
+            ) : (
+              <>
+                <div className="shell-person">
+                  <span className="avatar" aria-hidden="true">
+                    {name.slice(0, 1) || "U"}
+                  </span>
+                  <span>
+                    {name}
+                    <small>{email}</small>
+                  </span>
+                </div>
+                <ThemeToggle />
+                <button className="btn ghost sign-out" onClick={onSignout}>
+                  Sign out
+                </button>
+              </>
+            )}
           </footer>
         </aside>
         <main className="workspace" id="workspace-content" tabIndex={-1}>
@@ -161,7 +172,11 @@ export function StaffShell({
                   <YeswellBrand />
                 </a>
                 <span>{settings?.company_name ?? "Workspace"}</span>
-                <span className="avatar">{name.slice(0, 1)}</span>
+                <StudioAccount
+                  name={name}
+                  email={email}
+                  onSignout={onSignout}
+                />
               </div>
               <nav className="studio-area-chips" aria-label="Studio areas">
                 {studioRoutes.map(([href, label]) => (

@@ -510,26 +510,27 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await expect(
         page.getByRole("searchbox", { name: "Search products", exact: true }),
       ).toHaveCSS("height", "44px");
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Design project" }),
-      ).toContainText("Invoice manually");
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Consulting session" }),
-      ).toContainText("QuickBooks");
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Support plan" }),
-      ).toContainText("Needs Stripe price");
-      const mapped = page
-        .locator(".catalog-row")
-        .filter({ hasText: "Managed hosting" });
-      await mapped.focus();
-
-      await expect(mapped.locator(".mapping-tooltip")).toBeVisible();
+      for (const [name, mapping] of [
+        ["Design project", "Invoice manually"],
+        ["Consulting session", "QuickBooks"],
+        ["Support plan", "Needs Stripe price"],
+        ["Managed hosting", "Stripe"],
+      ]) {
+        const row = page.locator(".catalog-row").filter({ hasText: name });
+        await expect(row.locator(".studio-tag")).toHaveCount(1);
+        await row.click();
+        await page.getByText("More product details", { exact: true }).click();
+        await expect(
+          page.locator(".studio-product-detail .product-mapping-details"),
+        ).toContainText(mapping);
+        await page.keyboard.press("Escape");
+      }
       await capture("products-and-mapping", "7b", width, theme);
       await page
         .locator(".catalog-row")
         .filter({ hasText: "Design project" })
         .click();
+      await page.getByText("More product details", { exact: true }).click();
       await expect(
         page.locator(".studio-product-detail .product-mapping-details"),
       ).toContainText("Invoice manually");
@@ -540,13 +541,12 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await page.keyboard.press("Escape");
       qbo = true;
       await page.reload();
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Design project" }),
-      ).toContainText("Needs QuickBooks item");
+
       await page
         .locator(".catalog-row")
         .filter({ hasText: "Design project" })
         .click();
+      await page.getByText("More product details", { exact: true }).click();
       await expect(
         page.locator(".studio-product-detail .product-mapping-details"),
       ).toContainText("Needs QuickBooks item");
