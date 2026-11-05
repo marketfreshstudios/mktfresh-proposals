@@ -54,8 +54,21 @@ export function ToolbarPopover({
           right = Math.min(right, end);
         }
       }
+      const toolbar = anchor?.closest(".editor-edit-bar");
+      const edge = toolbar?.getBoundingClientRect() ?? bounds;
+      const below = bottom - edge.bottom - 4,
+        above = edge.top - top - 4;
       let x = Math.max(left, Math.min(bounds.left, right - box.width)),
         y = Math.max(top, Math.min(bounds.bottom + 4, bottom - box.height));
+      if (toolbar) {
+        // Relocated bars can sit at the bottom of a page. Keep their sibling
+        // actions clickable while a menu is open instead of clamping over them.
+        const useAbove = box.height > below && above > below;
+        const room = Math.max(44, useAbove ? above : below);
+        el.style.maxHeight = `${Math.min(500, room)}px`;
+        const height = el.getBoundingClientRect().height;
+        y = useAbove ? edge.top - height - 4 : edge.bottom + 4;
+      }
       if (avoid) {
         const text = avoid.getBoundingClientRect();
         const clear = (x: number, y: number) =>
