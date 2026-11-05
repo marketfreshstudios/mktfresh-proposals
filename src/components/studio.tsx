@@ -1,4 +1,6 @@
 "use client";
+import { stripeStatus } from "../lib/studio-v3";
+import { relativeTime } from "./studio-v3";
 import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
@@ -152,170 +154,289 @@ function Section({
 }
 export { WorkspaceStudio } from "./workspace-studio";
 export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
-  const [selected, setSelected] = useState<Item | null | undefined>(undefined),
+  const [selected, setSelected] = useState<string | null>(() =>
+      typeof window !== "undefined"
+        ? new URLSearchParams(location.search).get("item")
+        : null,
+    ),
     [query, setQuery] = useState(""),
-    [inactive, setInactive] = useState(false),
-    [family, setFamily] = useState(false);
+    [filter, setFilter] = useState("All"),
+    [family, setFamily] = useState(false),
+    [adding, setAdding] = useState(false),
+    [synced, setSynced] = useState<string | null>(null);
   const money = useMoney();
-  const items = data.catalog
-    .filter(
-      (i) =>
-        (inactive || (i.active && !i.legacy)) &&
-        `${itemDisplayName(i)} ${i.sku}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-    )
-    .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
+  useEffect(() => {
+    api<Activity[]>("/api/workspace_events")
+      .then((events) =>
+        setSynced(
+          events.find((e) => e.type === "catalog_synced")?.created_at ?? null,
+        ),
+      )
+      .catch(() => {});
+  }, []);
+  const pick = (id: string | null) => {
+    setSelected(id);
+    const url = new URL(location.href);
+    if (id) url.searchParams.set("item", id);
+    else url.searchParams.delete("item");
+    history.replaceState(null, "", url);
+  };
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+        e.preventDefault();
+        pick(selected ? null : (data.catalog[0]?.id ?? null));
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [selected, data.catalog]);
+  const choices = ["All", "Stripe", "Custom families", "Archived"];
+  const visible = (i: Item) =>
+    filter === "Archived"
+      ? !i.active || i.legacy
+      : i.active &&
+        !i.legacy &&
+        filter !== "Custom families" &&
+        (filter !== "Stripe" || !!i.stripe_lookup_key);
+  const items = data.catalog.filter(
+    (i) =>
+      visible(i) &&
+      `${itemDisplayName(i)} ${i.description}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const families = data.families.filter(
+    (f) =>
+      (filter === "All" ||
+        filter === "Custom families" ||
+        (filter === "Archived" && !f.active)) &&
+      (filter === "Archived" ? !f.active : f.active) &&
+      f.name.toLowerCase().includes(query.toLowerCase()),
+  );
+  const item = data.catalog.find((i) => i.id === selected),
+    custom = data.families.find((f) => f.id === selected);
+  const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Entered");
   return (
-    <div className="stack studio-catalog">
-      <DialogActions>
+    <div className="studio-products-v3">
+      <div className="studio-list-intro">
+        <p>
+          Services you can add to a quote. Stripe products keep their Stripe
+          price; custom families are priced on each proposal.
+        </p>
+        <Button variant="primary" onClick={() => setFamily(true)}>
+          New custom family
+        </Button>
+      </div>
+      <div className="studio-sync-meta">
+        ● {stripeStatus(data.connections)} ·{" "}
+        {synced ? `Synced ${relativeTime(synced)}` : "No recorded sync yet"} ·{" "}
         <Button
           onClick={() =>
-            run(
-              () => post("/api/catalog-sync/stripe"),
-              "Stripe test products synced",
-            )
+            run(async () => {
+              const result = await post("/api/catalog-sync/stripe");
+              setSynced(result.synced_at);
+            }, "Products synced")
           }
         >
-          Sync now · Stripe test
+          Sync now
         </Button>
-        <Button onClick={() => setFamily(true)}>+ Custom family</Button>
-        <Button onClick={() => setSelected(null)}>+ Item</Button>
-      </DialogActions>
-      <p>
-        List prices are the values you set in Stripe. Enter each amount on a
-        proposal; the app never suggests a price.
-      </p>
-      <TemplateWarnings templates={data.templates} catalog={data.catalog} />
-      <div className="studio-filters">
-        <Field label="Search products">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} />
-        </Field>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={inactive}
-            onChange={(e) => setInactive(e.target.checked)}
-          />
-          Include inactive and legacy
-        </label>
       </div>
-      {items.length ? (
-        <div className="catalog-table">
-          <div className="catalog-heading">
-            <span>Item</span>
-            <span>List price</span>
-            <span>Source</span>
-            <span>Terms</span>
-            <span>Accounting</span>
-          </div>
-          {items.map((i) => (
+      <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+      <div className="studio-list-tools">
+        <nav className="studio-filter-chips" aria-label="Product types">
+          {choices.map((c) => (
             <button
-              className="catalog-row"
-              key={i.id}
-              aria-describedby={`mapping-${i.id}`}
-              onClick={() => setSelected(i)}
+              key={c}
+              aria-pressed={filter === c}
+              onClick={() => setFilter(c)}
             >
-              <span>
-                <strong>{itemDisplayName(i)}</strong>
-                <small>
-                  {i.sku}
-                  {!i.active ? " · Inactive" : i.legacy ? " · Legacy" : ""}
-                </small>
-              </span>
-              <span>
-                {(i.sublines ?? [i]).map((s, n) => (
-                  <span className="catalog-price" key={n}>
-                    {money(s.amount)}
-                    {intervalSuffix(s.interval)}
-                  </span>
-                ))}
-              </span>
-              <span>{i.stripe_lookup_key ? "Stripe" : "Entered"}</span>
-              <span>
-                {i.min_term_months
-                  ? `${i.min_term_months}-month minimum`
-                  : i.interval === "one_time"
-                    ? "One-time"
-                    : "Month to month"}
-                {i.schedule && (
-                  <small>
-                    After {i.schedule.after_paid_invoices} paid invoices ·{" "}
-                    {money(i.schedule.then.amount)}
-                    {intervalSuffix(i.interval)}
-                  </small>
-                )}
-              </span>
-              <span className="product-mapping" id={`mapping-${i.id}`}>
-                {productMappings(i, data.connections?.qbo ?? null).map(
-                  (state, n) => (
-                    <span
-                      key={n}
-                      className={
-                        state.warning
-                          ? "mapping-state warning"
-                          : "mapping-state"
-                      }
-                      title={state.detail}
-                    >
-                      {state.label}
-                    </span>
-                  ),
-                )}
-                <span role="tooltip" className="mapping-tooltip">
-                  {productMappings(i, data.connections?.qbo ?? null).map(
-                    (state, n) => (
-                      <span key={n}>
-                        {state.detail}
-                        <br />
-                      </span>
-                    ),
-                  )}
-                </span>
-              </span>
+              {c} ·{" "}
+              {c === "Custom families"
+                ? data.families.filter((f) => f.active).length
+                : c === "Archived"
+                  ? data.catalog.filter((i) => !i.active || i.legacy).length
+                  : data.catalog.filter(
+                      (i) =>
+                        i.active &&
+                        !i.legacy &&
+                        (c !== "Stripe" || i.stripe_lookup_key),
+                    ).length +
+                    (c === "All"
+                      ? data.families.filter((f) => f.active).length
+                      : 0)}
             </button>
           ))}
-        </div>
-      ) : (
-        <Empty
-          title={query ? "No matching items" : "Your products start here"}
-          action={
-            <Button onClick={() => setQuery("")}>
-              {query ? "Clear search" : "Show inactive items"}
-            </Button>
-          }
-        >
-          Sync your Stripe test products or add an item.
-        </Empty>
-      )}
-      <section className="studio-section">
-        <h2>Custom families</h2>
-        {data.families.length ? (
-          data.families.map((f) => (
-            <div className="row" key={f.id}>
-              <strong>{f.name}</strong>
-              <span>
-                {f.active ? "Active" : "Inactive"} · Amount entered per proposal
-              </span>
+        </nav>
+        <Field label="Search products">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </Field>
+      </div>
+      <div
+        className={`studio-products-layout ${selected ? "with-detail" : ""}`}
+      >
+        <div>
+          <div className="studio-data-table product-table">
+            <div className="studio-table-head">
+              <span>Product</span>
+              <span>Price</span>
+              <span>Plan terms</span>
+              <span>Source</span>
             </div>
-          ))
-        ) : (
-          <p>
-            No custom families yet. Use a service name, never a client name.
-          </p>
+            {items.map((i) => (
+              <a
+                className="studio-table-row catalog-row-v3"
+                href={`?item=${i.id}`}
+                key={i.id}
+                onClick={(e) => {
+                  if (
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    e.button === 0
+                  ) {
+                    e.preventDefault();
+                    pick(i.id);
+                  }
+                }}
+              >
+                <span>
+                  <strong>{itemDisplayName(i)}</strong>
+                  <small>{i.description || i.sku}</small>
+                </span>
+                <span>
+                  {(i.sublines ?? [i]).map((s, n) => (
+                    <span className="catalog-price" key={n}>
+                      {money(s.amount)}
+                      {intervalSuffix(s.interval)}
+                    </span>
+                  ))}
+                </span>
+                <span>
+                  {i.schedule
+                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount)}/mo`
+                    : "—"}
+                  {i.min_term_months && (
+                    <small>{i.min_term_months}-month minimum</small>
+                  )}
+                </span>
+                <span className="studio-tag">{source(i)}</span>
+                <Icon name="chevron-right" />
+              </a>
+            ))}
+            {families.map((f) => (
+              <a
+                className="studio-table-row"
+                href={`?item=${f.id}`}
+                key={f.id}
+                onClick={(e) => {
+                  if (
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    e.button === 0
+                  ) {
+                    e.preventDefault();
+                    pick(f.id);
+                  }
+                }}
+              >
+                <strong>{f.name}</strong>
+                <span>Entered per proposal</span>
+                <span>—</span>
+                <span className="studio-tag">Custom</span>
+                <Icon name="chevron-right" />
+              </a>
+            ))}
+          </div>
+          {!items.length && !families.length && (
+            <Empty
+              title={
+                query ? "No matching products" : "Your products start here"
+              }
+            >
+              Sync your Stripe products or create a custom family.
+            </Empty>
+          )}
+          <Button onClick={() => setAdding(true)}>Add one-time product</Button>
+        </div>
+        {(item || custom) && (
+          <aside className="studio-product-detail" aria-label="Product details">
+            <header>
+              <h2>{item ? itemDisplayName(item) : custom!.name}</h2>
+              <button
+                aria-label="Close product details"
+                className="btn"
+                onClick={() => pick(null)}
+              >
+                <Icon name="chevron-right" />
+              </button>
+            </header>
+            {item ? (
+              <>
+                <h3>Used in</h3>
+                <p>
+                  {data.templates
+                    .filter(
+                      (t) =>
+                        t.default_quote.some(
+                          (l) => l.pricing_item_id === item.id,
+                        ) ||
+                        t.default_items?.some(
+                          (q) => q.pricing_item_id === item.id,
+                        ),
+                    )
+                    .map((t) => t.name)
+                    .join(" · ") || "No templates"}{" "}
+                  ·{" "}
+                  {
+                    data.proposals.filter(
+                      (p) =>
+                        ![
+                          "completed",
+                          "declined",
+                          "expired",
+                          "archived",
+                        ].includes(p.status) &&
+                        p.quote.some((q) => q.pricing_item_id === item.id),
+                    ).length
+                  }{" "}
+                  open proposals
+                </p>
+                <CatalogItem
+                  key={item.id}
+                  item={item}
+                  data={data}
+                  run={run}
+                  close={() => pick(null)}
+                />
+              </>
+            ) : (
+              <>
+                <span className="studio-tag">Custom family</span>
+                <Field label="Family name">
+                  <input readOnly value={custom!.name} />
+                </Field>
+                <p>
+                  Entered per proposal. Use this family for a custom scope and
+                  the agreed price; the app never sets prices.
+                </p>
+              </>
+            )}
+          </aside>
         )}
-      </section>
-      {selected !== undefined && (
-        <Sheet
-          title={selected ? itemDisplayName(selected) : "New product"}
-          onClose={() => setSelected(undefined)}
-        >
+      </div>
+      {adding && (
+        <Sheet title="New product" onClose={() => setAdding(false)}>
           <CatalogItem
-            key={selected?.id ?? "new"}
-            item={selected}
+            item={null}
             data={data}
             run={run}
-            close={() => setSelected(undefined)}
+            close={() => setAdding(false)}
           />
         </Sheet>
       )}
@@ -435,7 +556,16 @@ function CatalogItem({
         ["stripe_lookup_key", "Stripe lookup key"],
         ["qbo_item_ref", "QuickBooks item reference"],
       ].map(([key, label]) => (
-        <Field key={key} label={label}>
+        <Field
+          key={key}
+          label={
+            key === "display_name"
+              ? "Name on proposals"
+              : key === "description"
+                ? "Description the client sees"
+                : label
+          }
+        >
           <input
             name={key}
             required={["name", "sku"].includes(key)}
@@ -448,10 +578,23 @@ function CatalogItem({
         qboConnected={data.connections?.qbo ?? null}
       />
       <p>Display name is app-only. Stripe sync preserves it.</p>
+      {i?.stripe_lookup_key && (
+        <p>
+          Synced from Stripe. Change the price there and it updates here.{" "}
+          <a
+            href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
+            target="_blank"
+            rel="noopener"
+          >
+            Edit in Stripe ↗
+          </a>
+        </p>
+      )}
       <div className="studio-brand-grid">
         <Field label="List price">
           <input
             name="price"
+            readOnly={!!i?.stripe_lookup_key}
             type="number"
             step=".01"
             min="0"

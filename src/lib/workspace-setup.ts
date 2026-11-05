@@ -4,6 +4,7 @@ export type ConnectionStatus = {
   qbo: boolean;
   email: boolean;
   mock: boolean;
+  mode?: "test" | "live" | "mock";
 };
 export function connectionStatus(value: unknown): ConnectionStatus | null {
   if (
