@@ -1400,3 +1400,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.studio-home-list small.warning,
+.workspace-section-card p.warning {
+  color: var(--warning);
+}
+.studio-v3-shell .workspace .btn.primary {
+  border-radius: var(--radius-pill);
+}

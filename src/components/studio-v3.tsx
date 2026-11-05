@@ -1,4 +1,5 @@
 "use client";
+import { eventLabel } from "../lib/event-label";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import { api, post, Icon, ThemeToggle, Button } from "./ui";
@@ -51,7 +52,7 @@ export function StudioHome({ data }: { data: Data }) {
     "Brand, team and signatory",
     events
       ? events[0]
-        ? `Last: ${events[0].detail}`
+        ? `Last: ${eventLabel(events[0])} · ${events[0].detail}`
         : "No activity yet"
       : "Loading latest activity…",
   ];

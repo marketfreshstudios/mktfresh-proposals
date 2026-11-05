@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
 import { setup, staff } from "../tests/helpers";
 import { emailTemplates } from "../src/lib/email-templates";
+import { eventLabel } from "../src/lib/event-label";
 import { activity, workspaceEvent } from "../src/lib/studio";
 import { WorkspaceSettingsSchema } from "../src/lib/workspace";
 import { workspaceSections } from "../src/lib/studio-v3";
@@ -273,6 +274,10 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
     for (const [name, path] of routes) {
       await page.goto(path);
       await expect(page.locator(".studio-v3-shell")).toBeVisible();
+      for (const action of await page
+        .locator(".studio-v3-shell .workspace .btn.primary")
+        .all())
+        await expect(action).toHaveCSS("border-radius", "999px");
       await expect
         .poll(() =>
           page.evaluate(
@@ -331,6 +336,16 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
       ).toBeVisible();
       for (const status of await page.locator(".studio-home-list small").all())
         await expect(status).toHaveCSS("white-space", "nowrap");
+      const latest = (await activity(f.repo))[0];
+      await expect(
+        page.getByText(`Last: ${eventLabel(latest)} · ${latest.detail}`, {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(page.locator(".studio-home-list small.warning")).toHaveCSS(
+        "color",
+        "rgb(122, 72, 0)",
+      );
       await capture(page, "studio-home-375");
     }
   }
