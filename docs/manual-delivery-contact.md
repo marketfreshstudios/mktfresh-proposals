@@ -25,3 +25,6 @@ Run `supabase/migrations/20261105193738_client_contact_propagation.sql` in this 
 Tests cover all unsigned statuses, frozen/signed and foreign-workspace exclusions, new-recipient publishing/signing, no client emails from edits, preserved past email logs, PostgreSQL rollback/permissions, desktop/tablet/phone UI, actual clipboard writes/visible feedback, validation, state preservation and unchanged email delivery. Final results are recorded in HANDOFF_PHASE2.md and the PR.
 
 Requested captures: [Manual mode at 1440](screenshots/manual-delivery-contact/manual-1440.png), [Edit client modal](screenshots/manual-delivery-contact/edit-client-1440.png), [Manual mode at 375](screenshots/manual-delivery-contact/manual-375.png).
+
+
+Final local validation (November 5, 2026): types; all 439 unit tests across 88 files; formatting; neutral-code checks; production build and 330-file PDF runtime trace; curated-font PDF embedding; real PDF job regressions; and the full browser suite (233 passed, 4 skipped, 15.8 minutes). The new contact checks pass at 1440, 768 and 375, including clipboard writes, feedback visible above sheets, 44px targets, validation, state preservation, a differing copied recipient, and preservation of hidden client notes. Requested screenshots were inspected. No CI wait or hosted SQL execution.
