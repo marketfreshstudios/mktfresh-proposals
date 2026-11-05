@@ -82,9 +82,7 @@ for (const width of [1440, 768, 375])
     await expect(contact).toContainText("Acme & Sons");
     await expect(contact).toContainText("Jane Doe");
     await expect(contact).toContainText("jane@example.test");
-    await expect(contact).toContainText(
-      "Signs the proposal and receives the signed copy.",
-    );
+    await expect(contact.locator("small")).toHaveCount(0);
     const copy = contact.getByRole("button", {
       name: "Copy email: jane@example.test",
       exact: true,
