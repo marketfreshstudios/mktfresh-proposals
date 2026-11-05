@@ -198,6 +198,7 @@ test("Super admin Team list, invite/resend and set-password acceptance use app e
     .match(/class="email-cta" href="([^"]+)"/)[1]
     .replaceAll("&amp;", "&");
   const emailPage = await page.context().newPage();
+  await emailPage.setViewportSize({ width: 1440, height: 1100 });
   await emailPage.setContent(mail.html);
   await capture(emailPage, "invite-email");
   await emailPage.close();
