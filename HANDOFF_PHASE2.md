@@ -1082,3 +1082,11 @@ The staff-session popup regression now synchronizes on the completed server logi
 Validation results and requested four screenshots are recorded in the PR. No CI wait or merge is performed.
 
 Reassignment validation: **403 unit/database tests** and **204 browser tests passed** (4 optional capture tests skipped), plus types, formatting, neutral-code check, production build/328-file PDF trace, all curated font embeddings and native PDF-job regression checks. The four requested neutral-data screenshots are in `docs/screenshots/proposal-reassignment/`. The local Supabase advisor could not connect to an unstarted local stack; actual SQL/permissions/rollback/removal tests pass in PGlite. Hosted SQL is still pending owner execution.
+
+## Manual delivery — owner review
+
+New branch from merged PR #68 (`0d5d73b`). Review & send offers Email it from the app (default) or I'll send it myself. Both use the same guarded publication/version/password/AI flow. Manual sends queue no initial email, show a copyable-link confirmation, and default scheduled client reminders off. The record can opt in to reminders; on-demand reminders and client-triggered signing/billing/completion emails continue normally. Staff records and list menus expose the existing client link, including closed/signed proposals.
+
+No hosted SQL or new setup is needed: delivery policy lives in the existing proposal JSON. The obsolete alternate Send UI has been removed in favor of the editor. AI connectors remain drafts-only. See `docs/manual-delivery.md` for the automatic-email inventory, API and behavior. Four requested neutral-data screenshots are included in the PR. Validation results are recorded there; no CI wait or merge is performed.
+
+Manual-delivery validation: **412 unit/database tests** and the **full browser suite: 206 passed, 4 optional capture tests skipped**. Types, formatting, neutral-code check, production build/328-file renderer trace, all 12 curated font embeddings and native PDF job regressions passed. The first browser run exposed a new fixture reusing an existing test company name; the fixture now isolates both company and email, preserving the unchanged customer-match guard. The manual and original signing tests pass together and in the complete rerun. Screenshots are in `docs/screenshots/manual-delivery/`. No hosted SQL or live email was run.
