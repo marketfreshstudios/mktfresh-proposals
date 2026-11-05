@@ -1,10 +1,32 @@
 # Studio v3 — Phase 1, PR 1
 
-Source: `design/studio-v3/specs/studio-v3.md` (spec before prototype before older docs). This PR covers the shell and list pages, Products/detail, Connections, all existing Workspace sections, and Activity. Existing editors and protected proposal behavior remain in place. Phase 2 controls stay hidden.
+Source: `design/studio-v3/specs/studio-v3.md` (spec before prototype before older docs). The clickable prototype was inspected before implementation. This PR covers the Studio shell/list pages, Products/detail, Connections, all existing Workspace sections, and Activity. Existing template, saved-block and email editors remain in place for PRs 2–3.
 
-## Owner decisions needed before the affected controls
+## Resolved owner decisions
 
-1. **Workspace header/footer defaults (§6.4):** `WorkspaceSettingsSchema` stores `proposal_styles` and `proposal_fonts`, but no header/footer settings. `WorkspaceStudio` does not pass header/footer data to `ProposalStyles`; bands currently exist only on templates/proposals. Should this Phase 1 PR add persisted workspace band defaults and their inheritance, or omit the workspace band controls until separately scoped? Existing template/proposal band editing remains unchanged either way.
-2. **Default link validity “Never” (§6.8):** `default_validity_days` is a required integer from 1–365. Individual proposals can already be indefinite, but the workspace creation default cannot. Should this Phase 1 PR extend that existing setting/default-creation behavior to support an indefinite workspace default, or keep the existing days-only control for now?
+- Workspace header/footer defaults and inheritance are deferred to Phase 2. Workspace Proposal styles has the existing style controls only; no band group. Templates keep their existing built-in **Reset to default**, including in PR 2.
+- Workspace default link validity remains **1–365 days**. No “Never” option; individual proposals can still be indefinite.
+- Phase 2 controls are hidden: saved-block linking/Used in, payment methods, reply-to, separate reminder timing, stop-after, countersign reminders, the new body-size/margin presets and quote-layout options. Existing per-level text-style controls remain; the Workspace page-margin editor is hidden.
 
-No hosted resources or credentials are used for implementation or testing. Hosted SQL needs will be stated explicitly after the scope decisions.
+## Implementation
+
+- Desktop: Yeswell shell and static workspace label; tablet: Studio chips and bottom navigation; phone: six area rows with real counts/status, plus the existing theme/sign-out actions.
+- Templates: static first-page cards, search, usage counts from proposals, recent saved blocks. Saved blocks: type filters and table, no Used in column. New `/studio/blocks/:id` opens the existing block editor. Existing routes and redirects remain.
+- Emails: client/staff tabs and delivery-stage groups. Exactly nine staff emails; the job failure template is listed once. Default wording and every email editor remain unchanged.
+- Products: filter/search table, canonical `?item=` detail panel, existing custom-family creation and product/plan controls. Synced prices are read-only; Stripe links use the configured mode and lookup-key search (price IDs are deliberately not persisted). A successful existing catalogue sync records its timestamp as workspace activity. Prices are not computed or suggested.
+- Connections: Billing, Email, AI assistants, Imports, using existing health/grant/import data. Stripe mode comes from the server deployment status. Pricing references moved to Workspace; the former `?view=reference` location redirects there. Refresh/fallback/auth behavior is unchanged.
+- Workspace: ten sections; text saves after 600ms idle or blur, other controls on change. Saves are serialized and drain newer changes. Errors keep local values and offer Retry; password mutations survive a failed save. Protected controls stay disabled for Staff, using the existing server permissions. Existing contact/consent/profile and advanced billing controls remain accessible.
+- Team: role selects and every existing menu/profile/invite/reset/reassignment action. Removal is disabled while unfinished proposals remain, with links and reassignment/deactivation alternatives. Deactivated rows use muted surfaces rather than reduced text opacity, preserving contrast.
+- Activity: timezone day groups, categories including Team, search, Load more and CSV of the current filter. Team history uses the existing staff-only Team endpoint with an explicit `history=all` read; its default recent list stays at 40. The backing read paginates with the existing workspace filter and stable created-at/ID order, verified with mocked Supabase responses. No role checks, auth flows or policies changed. [Supabase range reference](https://supabase.com/docs/reference/javascript/range).
+
+Missing edit metadata is labelled Default; timestamps/authors are not invented. Billing copy remains workspace-neutral (project/kickoff fees); actual service names and plan terms come from product data.
+
+## Validation and evidence
+
+Final results are recorded in HANDOFF_PHASE2.md and the PR. Browser tests cover route aliases, nine staff emails/groups, autosave success/error recovery, protected controls, Team actions, every Workspace section at narrow widths, no horizontal scroll, and axe. Existing Studio/editor tests use the new list/section navigation while preserving their behavior, frozen-version and PDF assertions.
+
+All captures use local mock data. The [side-by-side reference index](screenshots/studio-v3-phase1/COMPARISONS.md) pairs every list and Workspace section with its source render, plus dark mode, tablet Team and phone Studio/Emails. Reproduce captures with `STUDIO_V3_CAPTURE=1 npx playwright test e2e/studio-v3.spec.ts`.
+
+**No hosted SQL, migration, credentials or resource changes are needed.** Signing, readiness, billing routing, PagePlan, sealed files, short links/rate limits and proposal editor behavior are unchanged. CI is not awaited; no merge is performed.
+
+Final local results (November 5, 2026): 444 unit tests across 89 files; full browser suite 236 passed / 4 skipped (15.8 minutes); final Studio-specific run 3 passed. Types, formatting, neutral checks, production build / 330-file PDF trace, font embedding and real PDF-job checks passed. All 23 comparison images were checked for presence and representative desktop, tablet, phone and dark captures were visually inspected.
