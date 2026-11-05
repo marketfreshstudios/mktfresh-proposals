@@ -516,3 +516,7 @@ Apply the hosted SQL from the PR before merging/deploying. [Implementation, perm
 ## Yeswell product identity
 
 Yeswell is the staff product, separate from each workspace's proposal identity. Client pages and emails carry an optional, default-on “Powered by Yeswell” footer controlled by super admins; sealed PDFs and certificates never carry product attribution. The setting uses existing workspace JSON storage (no hosted SQL). It applies to existing links and newly prepared emails, while past email snapshots remain immutable. See `docs/yeswell-brand.md` for the unchanged deployment and future domain plan.
+
+## Owner review 4 — stable short links
+
+New first publications use twelve case-sensitive CSPRNG characters from an unambiguous 57-symbol alphabet (~70 bits), with no slug or client name. The existing globally unique token column/index is reused; uniqueness conflicts retry generation. Existing long tokens are accepted unchanged, and publishing, renaming or reopening never rotates an established token. No hosted SQL is needed. Token-protection clarification is tracked in PR #72.

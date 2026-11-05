@@ -1,3 +1,4 @@
+import { validClientToken, newClientCode } from "./client-code";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
   proposalBands,
@@ -57,7 +58,7 @@ import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
 import { readiness } from "./quote";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import {
   AppError,
   check,
@@ -795,7 +796,7 @@ export class ProposalService {
       p.delivery_method = delivery;
       p.automatic_reminders = delivery === "email";
       p.sent_at = now;
-      p.token ??= randomBytes(32).toString("base64url");
+      p.token ??= newClientCode();
       p.status = p.first_viewed_at ? "viewed" : "sent";
       const version = editorialVersion(p, now);
       p.versions.push(version);
@@ -888,7 +889,7 @@ export class ProposalService {
     });
   }
   async byToken(token: string, password = "") {
-    check(/^[A-Za-z0-9_-]{43}$/.test(token), "Not found", 404);
+    check(validClientToken(token), "Not found", 404);
     const p = await this.repo.byToken(token);
     check(p, "Not found", 404);
     publicAccess(p, password, this.clock());

@@ -1,3 +1,4 @@
+import { validClientToken } from "./client-code";
 import { pdfPreview } from "./pdf-preview";
 import { StripeHttp } from "./providers/stripe-http";
 import { StripeProvider } from "./providers/stripe";
@@ -88,7 +89,7 @@ export function runtime(workspaceId = LOCAL_WORKSPACE_ID): Runtime {
 }
 // Token lookup returns only the tenant selector; all subsequent operations are scoped.
 export async function publicRuntime(token: string) {
-  check(/^[A-Za-z0-9_-]{43}$/.test(token), "Not found", 404);
+  check(validClientToken(token), "Not found", 404);
   if (process.env.APP_MODE === "local") return runtime();
   const { data, error } = await supabase()
     .from("proposals")

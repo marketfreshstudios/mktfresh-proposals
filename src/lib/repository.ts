@@ -207,6 +207,13 @@ export class MemoryRepository implements Repository {
       throw new AppError(409, "Proposal changed; reload and try again");
     if (p.workspace_id && p.workspace_id !== this.workspaceId)
       throw new AppError(403, "Workspace mismatch");
+    if (
+      p.token &&
+      [...this.rows.values()].some(
+        (row) => row.id !== p.id && row.token === p.token,
+      )
+    )
+      throw new AppError(409, "Client link collision; retry");
     this.rows.set(
       p.id,
       structuredClone({ ...p, workspace_id: this.workspaceId }),
