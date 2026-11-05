@@ -254,9 +254,20 @@ function BlockEditBar({
     const place = () => {
       const bounds = main.getBoundingClientRect(),
         block = owner.getBoundingClientRect(),
+        textBounds = text
+          ? owner.querySelector(".tiptap")?.getBoundingClientRect()
+          : undefined,
         width = layout.phone
           ? innerWidth
-          : Math.max(32, bounds.right - 12 - block.left);
+          : Math.max(
+              32,
+              Math.min(
+                bounds.right - 12 - block.left,
+                // Long bars scroll without covering the entire preceding line.
+                // Keep a text-column strip available for selecting that block.
+                textBounds ? textBounds.right - block.left - 16 : Infinity,
+              ),
+            );
       bar.style.setProperty("--edit-max-width", `${width}px`);
       bar.dataset.scrolling = String(bar.scrollWidth > bar.clientWidth + 1);
       const buttons = Array.from(
