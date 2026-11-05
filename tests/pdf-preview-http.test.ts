@@ -1,4 +1,7 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setup, staff, signature } from "./helpers";
 import { handle } from "../src/lib/http";
 const state = vi.hoisted(() => ({
@@ -29,7 +32,12 @@ vi.mock("../src/lib/auth", async (original) => {
     },
   };
 });
-beforeEach(() => state.render.mockClear());
+beforeEach(() => {
+  state.render.mockClear();
+  vi.stubEnv("APP_MODE", "local");
+  vi.stubEnv("DATA_DIR", mkdtempSync(join(tmpdir(), "http-limit-")));
+});
+afterEach(() => vi.unstubAllEnvs());
 it("caches layout by printed content hash across revisions/review flags and invalidates real content changes", async () => {
   const f = await setup(),
     storage = { put: vi.fn(), get: vi.fn() };

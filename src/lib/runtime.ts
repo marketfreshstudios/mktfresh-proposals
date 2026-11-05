@@ -90,7 +90,11 @@ export function runtime(workspaceId = LOCAL_WORKSPACE_ID): Runtime {
 // Token lookup returns only the tenant selector; all subsequent operations are scoped.
 export async function publicRuntime(token: string) {
   check(validClientToken(token), "Not found", 404);
-  if (process.env.APP_MODE === "local") return runtime();
+  if (process.env.APP_MODE === "local") {
+    const rt = runtime();
+    check(await rt.repo.byToken(token), "Not found", 404);
+    return rt;
+  }
   const { data, error } = await supabase()
     .from("proposals")
     .select("workspace_id")

@@ -1,3 +1,4 @@
+import { limitClientLink } from "./client-link-limits";
 import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
 import { ReassignmentService } from "./reassignment";
@@ -105,8 +106,18 @@ async function body(req: Request) {
     throw new AppError(400, "Invalid JSON");
   }
 }
+const resolvedClientLinks = new WeakSet<Request>();
 export async function handle(req: Request, path: string[]) {
-  return withStaffCookies(req, await handleRoute(req, path));
+  const result =
+    path[0] === "public"
+      ? await limitClientLink(
+          req,
+          path[1] ?? "",
+          () => handleRoute(req, path),
+          () => resolvedClientLinks.has(req),
+        )
+      : await handleRoute(req, path);
+  return withStaffCookies(req, result);
 }
 async function handleRoute(req: Request, path: string[]) {
   try {
@@ -189,6 +200,7 @@ async function handleRoute(req: Request, path: string[]) {
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
         rt = await publicRuntime(token);
+      resolvedClientLinks.add(req);
       const workspaceBrand = (
         await rt.repo.entities<WorkspaceSettings>("workspace_settings")
       )[0];
@@ -878,9 +890,10 @@ async function handleRoute(req: Request, path: string[]) {
             contentAfterCover(entity.content as Block[]),
             false,
           );
+          const savedTemplateId = entity.id;
           const previousTemplate = (
             await rt.repo.entities<import("./model").Template>("templates")
-          ).find((t) => t.id === entity.id);
+          ).find((t) => t.id === savedTemplateId);
           if (
             !entity.signature_heading_defaulted &&
             !previousTemplate?.signature_heading_defaulted
