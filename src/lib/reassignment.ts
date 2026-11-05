@@ -182,6 +182,7 @@ export class ReassignmentService {
           subject = `${name} assigned you ${p.title}`.replace(/[\r\n]+/g, " ");
         const text = `${name} assigned you ${p.title}.`;
         const layout = emailLayout({
+          staff: true,
           title: p.title,
           workspace: settings.company_name,
           sender: name,

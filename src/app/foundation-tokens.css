@@ -176,3 +176,36 @@
   --link: var(--accent-text);
   --selected: var(--accent-soft);
 }
+
+/* Product identity is staff-only. Client flow and paper-* remain workspace branded. */
+.staff-foundation,
+[data-theme="light"] .staff-foundation {
+  --yeswell-ink: #13303a;
+  --yeswell-clay: #c2602f;
+  --ink: var(--yeswell-ink);
+  --accent: var(--yeswell-ink);
+  --accent-hover: #1c414c;
+  --accent-pressed: #0c222a;
+  --on-accent: #ffffff;
+  --accent-text: #a44d23; /* Clay darkened for AA text on light surfaces. */
+  --accent-soft: #e6edef;
+  --choice-ground: #eef3f3;
+  --choice-border: #819ba2;
+  --focus-ring: var(--yeswell-ink);
+  --focus-outline: 2px solid var(--yeswell-ink);
+  --selected: var(--accent-soft);
+  --link: var(--accent-text);
+}
+[data-theme="dark"] .staff-foundation {
+  --ink: #eef3f3;
+  --accent: #eef3f3;
+  --accent-hover: #d8e3e5;
+  --accent-pressed: #bdcfd3;
+  --on-accent: #13303a;
+  --accent-text: #e08456;
+  --accent-soft: #233c43;
+  --choice-ground: #20343b;
+  --choice-border: #7b969d;
+  --focus-ring: #eef3f3;
+  --focus-outline: 2px solid #eef3f3;
+}

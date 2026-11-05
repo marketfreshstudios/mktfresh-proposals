@@ -65,6 +65,7 @@ export async function sendTeamEmail(
   }).toString();
   const layout = (buttonUrl: string) =>
     emailLayout({
+      staff: true,
       title: key === "team_invite" ? "You're invited" : "Choose a new password",
       bodyHtml: body.html,
       bodyText: body.text,

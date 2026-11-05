@@ -182,9 +182,29 @@ test("revoked session keeps editor text, signs in in another tab, and Retry save
     finishLogin();
     await route.fulfill({ response });
   });
+  // A fresh login tab can show server HTML long before its JavaScript arrives
+  // on CI. Hold hydration deliberately: submitting that form used to navigate
+  // with a native GET, so no /api/auth/login response ever arrived.
+  let releaseScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  const scriptRoute = async (route: import("@playwright/test").Route) => {
+    await scriptsReady;
+    await route.continue();
+  };
+  await context.route("**/_next/static/**/*.js", scriptRoute);
   const popupPromise = context.waitForEvent("page");
   await bar.getByRole("link", { name: "Sign in", exact: true }).click();
   const popup = await popupPromise;
+  await expect(
+    popup.getByRole("button", { name: "Sign in", exact: true }),
+  ).toBeDisabled();
+  releaseScripts();
+  await expect(
+    popup.getByRole("button", { name: "Sign in", exact: true }),
+  ).toBeEnabled();
+  await context.unroute("**/_next/static/**/*.js", scriptRoute);
   await popup.getByLabel("Email address").fill("staff@example.test");
   await popup.getByLabel("Password", { exact: true }).fill("fixture-password");
   const closed = popup.waitForEvent("close");

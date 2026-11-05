@@ -52,7 +52,9 @@ it("proposal and reminder HTML keep the note/brand/footer, exactly one button an
   const emails = [...mailer.sent.values()] as { html: string; text: string }[];
   expect(emails.length).toBeGreaterThanOrEqual(2);
   for (const m of emails) {
-    expect(m.html.match(/<a\b/g)).toHaveLength(1);
+    expect(m.html.match(/class="email-cta"/g)).toHaveLength(1);
+    expect(m.html.match(/<a\b/g)).toHaveLength(2);
+    expect(m.html).toContain('href="https://yeswell.co" rel="noopener"');
     expect(m.html).toContain("View proposal");
     if (m.text.includes("Here is the agreed scope."))
       expect(m.html).toContain(

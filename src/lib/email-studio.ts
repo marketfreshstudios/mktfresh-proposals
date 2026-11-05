@@ -132,6 +132,7 @@ export async function emailStudioPreview(
   }
   const result = renderTemplate(template, p, {
     test,
+    showPoweredBy: settings.show_powered_by !== false,
     logo: logo ?? "",
     url: options.proposal_id
       ? `${appOrigin()}/p/${p.id}?preview=1`

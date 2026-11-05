@@ -33,6 +33,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
+import { PoweredByYeswell } from "./powered-by-yeswell";
 import type { BillingLine } from "../lib/model";
 import type { publicResult } from "../lib/service";
 import { QuoteItemBody } from "./quote-item-body";
@@ -45,6 +46,7 @@ export type PublicProposal = ReturnType<typeof publicResult>;
 type Brand = {
   name: string;
   email: string;
+  show_powered_by?: boolean;
   logo?: string | null;
   accent_colour?: string;
   contact?: { name: string; email: string };
@@ -1226,6 +1228,9 @@ function NewClientFlow({
           company={brand.name}
         />
         <ContactToast />
+        {(p?.show_powered_by ?? brand.show_powered_by) !== false && (
+          <PoweredByYeswell />
+        )}
       </main>
     </div>
   );
@@ -1312,6 +1317,7 @@ function Contact({
 }: {
   name: string;
   email: string;
+  show_powered_by?: boolean;
   company: string;
 }) {
   return (

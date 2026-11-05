@@ -1,4 +1,6 @@
 "use client";
+import { staffPageName } from "../lib/staff-brand";
+import { YeswellBrand } from "./yeswell-brand";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
 import {
@@ -184,6 +186,10 @@ export function StaffApp({
       setLoading(false);
     }
   }
+  useEffect(() => {
+    if (section !== "billing")
+      document.title = `${p?.title ?? staffPageName(path)} · Yeswell`;
+  }, [section, p?.title, path.join("/")]);
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
   }, [section, id, action]);
@@ -483,12 +489,20 @@ async function allProposals() {
   return first;
 }
 function Login({ local }: { local: boolean }) {
+  // Server HTML is visible before hydration. Never let the browser submit the
+  // form natively (GET /login) before the credential POST handler is installed.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
+    setReady(true);
+  }, []);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [resumed, setResumed] = useState(false);
   if (resumed)
     return (
-      <main className="login">
+      <main className="login staff-foundation yeswell-auth">
         <div className="card stack">
           <h1>You're signed in</h1>
           <p>
@@ -498,10 +512,11 @@ function Login({ local }: { local: boolean }) {
       </main>
     );
   return (
-    <main className="login">
+    <main className="login staff-foundation yeswell-auth">
       <div className="card stack">
+        <YeswellBrand />
         <h1>Welcome back</h1>
-        <p className="muted">Sign in to your proposal workspace.</p>
+        <p className="muted">Sign in to your Yeswell workspace.</p>
         {error && (
           <Banner tone="danger" title="Unable to sign in">
             {error}
@@ -509,6 +524,7 @@ function Login({ local }: { local: boolean }) {
         )}
         <form
           className="form"
+          method="post"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -548,7 +564,7 @@ function Login({ local }: { local: boolean }) {
               autoComplete="current-password"
             />
           </Field>
-          <Button type="submit" variant="primary" busy={busy}>
+          <Button type="submit" variant="primary" busy={busy} disabled={!ready}>
             Sign in
           </Button>
         </form>

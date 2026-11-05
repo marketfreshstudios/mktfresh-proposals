@@ -160,6 +160,10 @@ export async function verifyPdfJobs(kind: (typeof regressionKinds)[number]) {
     await writeFile(file, bytes);
     const text = execFileSync("pdftotext", [file, "-"], { encoding: "utf8" });
     assert(text.includes("Certificate of completion"));
+    assert(
+      !text.includes("Yeswell"),
+      "Product branding must stay out of proposal PDF and certificate",
+    );
     assert(text.replace(/\s/g, "").includes(version.content_hash));
     if (kind.startsWith("old")) {
       // This checks legacy cover wording, not Poppler's treatment of its

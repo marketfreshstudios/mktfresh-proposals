@@ -1,6 +1,8 @@
-# MarketFresh proposal system
+# Yeswell
 
-Phase 2 proposal workspace with staff authoring, client signing, required countersignatures, sealed PDF evidence, test-only billing adapters, OAuth MCP drafting and historical imports. STOP 1 deployment and verification instructions are in [HANDOFF_PHASE2.md](HANDOFF_PHASE2.md). The original brief is in [AGENTS.md](AGENTS.md); tradeoffs and source discrepancies are in [DECISIONS.md](DECISIONS.md).
+White-label proposal workspace with staff authoring, client signing, required countersignatures, sealed PDF evidence, test-only billing adapters, OAuth MCP drafting and historical imports. STOP 1 deployment and verification instructions are in [HANDOFF_PHASE2.md](HANDOFF_PHASE2.md). The original brief is in [AGENTS.md](AGENTS.md); tradeoffs and source discrepancies are in [DECISIONS.md](DECISIONS.md).
+
+Branding, client attribution and the unchanged domain plan are documented in [Yeswell identity](docs/yeswell-brand.md). MarketFresh Studios is workspace 1.
 
 ## Local development
 

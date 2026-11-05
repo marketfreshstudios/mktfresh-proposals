@@ -967,3 +967,30 @@ label.flow-quote-line {
     padding-inline: 0;
   }
 }
+
+/* Product attribution stays outside the workspace-branded document and sealed files. */
+.client-flow .powered-by-yeswell {
+  text-align: center;
+  padding: 20px 16px 28px;
+  font: 400 11px/18px var(--font-ui);
+  color: var(--ink-muted);
+}
+.client-flow .powered-by-yeswell a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  color: inherit;
+}
+.client-flow .powered-by-yeswell img {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+@media print {
+  .client-flow .powered-by-yeswell {
+    display: none;
+  }
+}

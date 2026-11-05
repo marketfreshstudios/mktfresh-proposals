@@ -401,6 +401,9 @@ it("workspace logo previews use stored bytes, retain brand accent and fall back 
     {},
   );
   expect(fallback.logo_error).toContain("saved logo could not be loaded");
-  expect(fallback.result.html).not.toContain("<img");
+  expect(fallback.result.html).not.toContain('alt="Example Studio"');
+  expect(fallback.result.html.match(/<img\b/g)).toHaveLength(1);
+  expect(fallback.result.html).toContain("/favicon-16.png");
+  expect(fallback.result.html).toContain("Powered by Yeswell");
   expect(fallback.result.html).toContain("Example Studio</p>");
 });

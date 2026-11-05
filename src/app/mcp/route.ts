@@ -44,7 +44,13 @@ async function handler(req: Request) {
       );
     }
     const server = new Server(
-      { name: "proposal-drafting", version: "2.0.0" },
+      {
+        name: "Yeswell",
+        title: "Yeswell",
+        description:
+          "Read your workspace and prepare proposal drafts in Yeswell. Sending and signing remain staff-only.",
+        version: "2.0.0",
+      },
       { capabilities: { tools: {} } },
     );
     server.setRequestHandler(ListToolsRequestSchema, async () => ({

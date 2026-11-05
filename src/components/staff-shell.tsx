@@ -1,4 +1,5 @@
 "use client";
+import { YeswellBrand } from "./yeswell-brand";
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 
@@ -67,22 +68,18 @@ export function StaffShell({
     <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
       <div
         className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""}`}
-        style={
-          {
-            "--accent": settings?.accent_colour ?? "#365C4A",
-          } as React.CSSProperties
-        }
       >
         <a className="skip-link" href="#workspace-content">
           Skip to content
         </a>
         <aside className="sidebar">
           <a className="brand" href="/">
-            {settings?.logo ? (
-              <img src="/api/workspace-logo" alt={settings.company_name} />
-            ) : (
-              (settings?.company_name ?? "Your workspace")
-            )}
+            <span className="yeswell-wide">
+              <YeswellBrand />
+            </span>
+            <span className="yeswell-tight">
+              <YeswellBrand mark />
+            </span>
           </a>
           <button
             className="btn primary shell-new"
@@ -135,6 +132,15 @@ export function StaffShell({
           </footer>
         </aside>
         <main className="workspace" id="workspace-content" tabIndex={-1}>
+          {!insideProposal && (
+            <a
+              href="/"
+              className="staff-mobile-brand"
+              aria-label="Yeswell home"
+            >
+              <YeswellBrand mark />
+            </a>
+          )}
           {children}
         </main>
         {!insideProposal && (

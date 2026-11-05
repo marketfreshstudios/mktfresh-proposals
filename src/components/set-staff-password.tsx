@@ -1,4 +1,5 @@
 "use client";
+import { YeswellBrand } from "./yeswell-brand";
 import { useEffect, useState } from "react";
 import { post, Field, Button, Banner } from "./ui";
 export function SetStaffPassword() {
@@ -7,6 +8,8 @@ export function SetStaffPassword() {
     [busy, setBusy] = useState(false),
     [show, setShow] = useState(false);
   useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
     const p = new URLSearchParams(location.hash.slice(1));
     if (p.has("token_hash")) {
       setLink({
@@ -17,10 +20,11 @@ export function SetStaffPassword() {
     }
   }, []);
   return (
-    <main className="login">
+    <main className="login staff-foundation yeswell-auth">
       <div className="card stack">
+        <YeswellBrand />
         <h1>Set your password</h1>
-        <p>Choose a password to sign in to your workspace.</p>
+        <p>Choose a password to sign in to your Yeswell workspace.</p>
         {error && (
           <Banner tone="danger" title="Password could not be set">
             {error}

@@ -26,6 +26,7 @@ export const WorkspaceSettingsSchema = z.object({
   default_password_hash: z.string().nullable().optional(),
   default_password_enabled: z.boolean().optional(),
   money: z.object({ cents: z.enum(["auto", "always"]) }).optional(),
+  show_powered_by: z.boolean().default(true),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
   company_signatory: CompanySignatorySchema.nullable().optional(),
