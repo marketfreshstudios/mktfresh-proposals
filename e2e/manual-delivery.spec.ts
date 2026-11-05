@@ -32,7 +32,9 @@ async function fixture(request: APIRequestContext) {
       "clients",
       {
         id: clientId,
-        company: "Example Company",
+        // The shared mock billing catalogue deliberately checks company matches
+        // across emails; isolate both names and emails from other test clients.
+        company: `Manual delivery ${clientId.slice(0, 8)}`,
         first_name: "Jane",
         last_name: "Doe",
         email: `jane-${clientId}@example.test`,
