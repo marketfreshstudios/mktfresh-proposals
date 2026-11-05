@@ -1855,9 +1855,14 @@ export function RecordV4({
             <Field label="Invoice reference (optional)">
               <input name="reference" maxLength={4000} />
             </Field>
-            <Button type="submit" variant="primary" busy={invoiceBusy}>
-              Mark as invoiced
-            </Button>
+            <DialogActions>
+              <Button disabled={invoiceBusy} onClick={() => setInvoice(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" busy={invoiceBusy}>
+                Mark as invoiced
+              </Button>
+            </DialogActions>
           </form>
         </Sheet>
       )}

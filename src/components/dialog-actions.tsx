@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 export function dialogActionRank(label: string) {
-  return /^(cancel|back|go back|close|keep editing|not now|discard)\b/i.test(
+  return /^(cancel|back|go back|close|keep|not now|discard)\b/i.test(
     label.trim(),
   )
     ? 0

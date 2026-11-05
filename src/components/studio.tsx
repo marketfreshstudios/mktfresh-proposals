@@ -1143,9 +1143,14 @@ function CatalogItem({
         <small>Payoff counts paid invoices, not calendar months.</small>
       </section>
       <SaveError error={save.error} />
-      <Button type="submit" variant="primary" busy={save.busy}>
-        Save item and terms
-      </Button>
+      <DialogActions>
+        <Button onClick={close} disabled={save.busy}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" busy={save.busy}>
+          Save item and terms
+        </Button>
+      </DialogActions>
     </form>
   );
 }
