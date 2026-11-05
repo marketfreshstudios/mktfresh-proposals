@@ -8199,3 +8199,15 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     min-width: 44px;
   }
 }
+
+@media (min-width: 700px) {
+  .editor-edit-bar[data-toolbar-placed="true"] {
+    left: var(--toolbar-left) !important;
+    top: var(--toolbar-top) !important;
+    bottom: auto !important;
+    max-width: var(--toolbar-max-width) !important;
+  }
+  .editor-edit-bar[data-toolbar-narrow="true"] .edit-delete {
+    position: static;
+  }
+}

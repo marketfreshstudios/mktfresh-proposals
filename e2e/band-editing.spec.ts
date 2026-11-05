@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
+import { clearNeighbours } from "./toolbar-assertions";
 import { defaultHeaderFooter, bandImages } from "../src/lib/page-bands";
 import type { Block } from "../src/lib/model";
 test.beforeEach(({ page }) => page.setDefaultTimeout(10000));
@@ -138,7 +139,7 @@ test("layout reflow is lossless, fields insert at cursor or last-column end, men
   await expect(band.getByRole("textbox")).toContainText("Three3");
 });
 
-test("band menus are accessible, controls keep 44px hit areas, and bars flip only in small margins", async ({
+test("band menus are accessible, controls keep 44px hit areas, and bars avoid text at every margin", async ({
   page,
 }) => {
   const { default: AxeBuilder } = await import("@axe-core/playwright");
@@ -148,13 +149,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
   const band = await open(page);
   const bar = band.getByRole("toolbar");
   await expect(bar).toHaveCSS("height", "40px");
-  expect(
-    await bar.evaluate((e) => {
-      const b = e.getBoundingClientRect(),
-        r = e.parentElement!.getBoundingClientRect();
-      return Math.round(b.top - r.bottom);
-    }),
-  ).toBe(14);
+  await clearNeighbours(bar, band);
   for (const name of ["Layout", "Insert band field"]) {
     await bar.getByRole("button", { name, exact: true }).click();
     const results = await new AxeBuilder({ page })
@@ -204,15 +199,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars flip onl
     "data-inside",
     "true",
   );
-  expect(
-    await small
-      .getByRole("toolbar")
-      .evaluate(
-        (e) =>
-          e.getBoundingClientRect().top -
-          e.parentElement!.getBoundingClientRect().bottom,
-      ),
-  ).toBe(14);
+  await clearNeighbours(small.getByRole("toolbar"), small);
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 768, height: 1000 });
   const tablet = bands(page).first();

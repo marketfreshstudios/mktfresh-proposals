@@ -547,6 +547,7 @@ export function PageBand(props: Props) {
       {editing && !active()?.isActive("image") && (
         <EditBar
           variant="band"
+          frame={root}
           portal={root.current?.closest<HTMLElement>(
             ".quote-workspace,.studio-template-layout",
           )}
