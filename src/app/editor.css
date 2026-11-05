@@ -8326,3 +8326,50 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   margin-top: 0;
   width: auto;
 }
+
+.manual-client-contact {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+.manual-client-contact > header,
+.manual-contact-email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.manual-client-contact > header {
+  justify-content: space-between;
+}
+.manual-client-contact > header button {
+  min-height: 44px;
+}
+.manual-client-contact > p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.manual-contact-email > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.manual-contact-email .contact-copy-icon {
+  width: 44px;
+  height: 44px;
+}
+.manual-client-contact > small {
+  display: block;
+  color: var(--ink-muted);
+}
+.manual-client-contact > header button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
+  color: var(--accent-text);
+  font: 600 13px/18px var(--font-ui);
+  cursor: pointer;
+}
+.manual-client-contact > header button:hover {
+  text-decoration: underline;
+}

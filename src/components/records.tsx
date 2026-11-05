@@ -15,7 +15,7 @@ import { StripeBillingDetails } from "./billing-breakdown";
 import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
-import { ClientContactFields, clientFormValues } from "./client-contact-fields";
+import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -2364,62 +2364,13 @@ export function ClientsV4({
         </Sheet>
       )}
       {editClient && (
-        <Sheet
-          title={`Edit ${client.company}`}
-          onClose={() => {
-            if (!busy) setEditClient(false);
+        <EditClientModal
+          client={client}
+          onClose={() => setEditClient(false)}
+          onSaved={async () => {
+            await onRefresh();
           }}
-        >
-          <form
-            className="form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (busy) return;
-              setBusy(true);
-              setError("");
-              const values = clientFormValues(e.currentTarget);
-              try {
-                await post("/api/clients", {
-                  ...client,
-                  ...values,
-                  qbo_customer_id: values.qbo_customer_id || null,
-                  stripe_customer_id: client.stripe_customer_id,
-                });
-                setEditClient(false);
-                await onRefresh();
-              } catch (e) {
-                setError((e as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {error && (
-              <Banner tone="danger" title="Client could not be saved">
-                {error}
-              </Banner>
-            )}
-            <ClientContactFields client={client} />
-            <Field label="Verified QuickBooks customer ID">
-              <input
-                name="qbo_customer_id"
-                defaultValue={client.qbo_customer_id ?? ""}
-              />
-            </Field>
-            <p>
-              Only enter a QuickBooks ID after checking this client’s identity.
-              Choose a Stripe customer in How they’re billed.
-            </p>
-            <DialogActions>
-              <Button disabled={busy} onClick={() => setEditClient(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" busy={busy}>
-                Save client
-              </Button>
-            </DialogActions>
-          </form>
-        </Sheet>
+        />
       )}
       {confirm && (
         <Sheet

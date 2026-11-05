@@ -111,7 +111,10 @@ test("manual publish exposes one copyable link, no email, record/list access and
   await expect(
     page.getByRole("textbox", { name: "Note", exact: true }),
   ).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: /From/ })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: /From/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Client contact", exact: true }),
+  ).toBeVisible();
   await capture(page, "delivery-choice-1440");
   const published = page.waitForResponse(
     (r) =>

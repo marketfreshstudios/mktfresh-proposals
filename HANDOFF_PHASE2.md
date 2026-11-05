@@ -1143,3 +1143,14 @@ No hosted SQL or new credentials are needed. Short links/rate limits, billing, s
 
 
 Final local validation (November 5, 2026): `npm run typecheck`; `npm test` (435 tests, 87 files); `npm run format:check`; `npm run check:neutral`; `npm run build` including the 330-file PDF runtime trace; `npm run verify:fonts`; `npm run verify:pdf-jobs` (pre-band planned/unplanned and large-band fixtures); and the full `npm run test:e2e` (229 passed, 4 skipped). The corrected cover-cursor and live image-toolbar resize tests pass within that full run. Requested screenshots and actual PDF page images were inspected. No CI wait or merge.
+
+
+## Manual delivery contact — owner follow-up after PR #73
+
+Manual Review & send hides From and replaces To with Client contact (company, actual recipient name/email, shared copy icon, “Signs the proposal and receives the signed copy.”). Edit client opens the same shared modal used by Clients → Edit, with its existing fields/validation and Cancel-left/Save-right actions. It preserves current hidden client notes/provider metadata and keeps delivery, sender selection, subject/note and password state in the editor. Email mode retains its existing form. Contact-copy feedback now uses the existing shared top-layer toast so it remains visible over phone/tablet sheets; controls have 44px targets.
+
+Owner confirmed that saving a client must update that client and every unsigned native proposal for the same client, from either edit location. Signed/frozen and imported historical records remain unchanged. The new transaction uses proposal revisions and row locks, preserves explicitly linked Stripe customers, and rolls back all contact/proposal updates on a concurrent signature or revision conflict. Sent/viewed changes reuse the existing readiness-checked publication path and same link; prior versions, PagePlans and email logs are preserved, and the contact edit queues no email. The connector retains its existing client-only/draft-only limits.
+
+**Hosted SQL required before merge:** run `supabase/migrations/20261105193738_client_contact_propagation.sql` in this app’s Supabase SQL editor. It adds only a service-role-only, security-invoker function; the PR description includes the full SQL. No hosted SQL has been applied by this task.
+
+The actual proposal recipient historically came from its creation-time `proposal.client` copy, with no alternate-contact picker. The manual card/modal show that actual copy, including if it differs from the current primary client; saving synchronizes the client and unsigned copies under the owner’s confirmed rule. Details and requested 1440/375 captures are in `docs/manual-delivery-contact.md`. Final full-suite results follow after validation.
