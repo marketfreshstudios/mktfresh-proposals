@@ -18,3 +18,7 @@ Limits are fixed windows: **30 failed unknown-token lookups per IP per 10 minute
 A Vercel Firewall rate-limit rule would be a sensible additional coarse burst/bot layer, rejecting floods before they invoke the app or Postgres. No Vercel settings are changed in this PR.
 
 The local Supabase advisor could not connect because no local stack is running on port 55322. PGlite executes the migration and verifies grants, RLS and atomic concurrent increments. No hosted database was queried or changed.
+
+## Validation
+
+Local validation: **427 unit/database tests passed** (84 files); **full browser suite: 211 passed, 4 optional capture tests skipped (14.9m)**. Types, formatting, the clean production build and 330-file PDF trace passed. All 12 curated font embeddings and native old/current client/company PDF-job regressions passed. The client geometry test now waits for the existing layout-ready signal, rather than reading the hidden canonical measurement stage; all measurements/tolerances remain unchanged, and five consecutive focused runs passed. The original block-controls interaction also passes unchanged after keeping an exposed text strip beside wide scrolling toolbars. No GitHub CI wait or merge. Hosted SQL remains for the owner before merge.
