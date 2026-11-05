@@ -24,8 +24,7 @@ export const ReassignSchema = z
           .object({ id: z.uuid(), revision: z.number().int().nonnegative() })
           .strict(),
       )
-      .min(1)
-      .max(200),
+      .min(1),
     from_user_id: z.uuid().optional(),
   })
   .strict();

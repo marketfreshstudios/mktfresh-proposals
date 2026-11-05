@@ -7,7 +7,7 @@ begin
  perform 1 from public.workspaces where id=target_workspace for update;
  select * into member from public.staff_users where workspace_id=target_workspace and user_id=actor_id and status='active' and not password_change_required;
  if not found then raise exception 'Staff access required' using errcode='42501'; end if;
- if jsonb_array_length(documents) < 1 or jsonb_array_length(documents)>200 then raise exception 'Choose 1 to 200 proposals'; end if;
+ if jsonb_array_length(documents) < 1 then raise exception 'Choose at least one proposal'; end if;
  if member.role <> 'owner' and jsonb_array_length(documents)>1 then raise exception 'Only a super admin can bulk reassign proposals' using errcode='42501'; end if;
  for document in select value from jsonb_array_elements(documents) loop
   select state into previous from public.proposals where workspace_id=target_workspace and id=(document->>'id')::uuid for update;
