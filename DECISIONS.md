@@ -495,3 +495,12 @@ Invites and password resets use generated Supabase links and the existing app ma
 Removal is blocked by unfinished native proposals whose sender is this person or unsent drafts they created. The error links each record and offers Deactivate instead; no reassignment UI is added. Auth identities and historical actions/signatures remain. Existing Workspace security-field permissions are preserved; whole Studio sections are not newly restricted. Signing/delegation, provider billing, readiness, PagePlan and MCP's draft-only tools remain unchanged.
 
 Apply the hosted SQL from the PR before merging/deploying. [Implementation, permission audit and requested screenshots](docs/team-management.md).
+
+## Proposal reassignment (4 November 2026)
+
+- Add an explicit proposal owner only when reassigned; resolve existing ownership from the saved sender, then the staff creator. Keep `created_by` and all earlier evidence intact. A duplicate starts under its new creator.
+- Super admins may hand off any proposal; Staff may hand off their own. Only active members of the same workspace are targets. Unsigned Sent/Viewed handoffs also update future correspondence and client contact, while preserving every published version/hash/PagePlan and token. Closed/signed/archived handoffs change internal ownership and staff notifications only.
+- Bulk handoff is one workspace-scoped transaction with per-proposal revision and ownership guards. Team removal checks current owner, so the historical creator/sender no longer blocks removal after a handoff. Native unfinished work includes client-signed work awaiting completion.
+- Append proposal timeline and workspace Activity audit entries using actual actor and old/new names. Notify defaults on and sends one idempotent staff-only assignment email per changed proposal through the existing worker and email log. No-op handoffs create nothing. The reassign response schedules only assignment emails, not unrelated jobs.
+- Preserve delivered email snapshots; refresh pending correspondence for a new live sender. Refuse a handoff while an email is actively delivering, avoiding changing its identity mid-delivery. Retain the existing verified sending-domain rule. Internal-only assignments need no sender change.
+- Hosted SQL is supplied for the owner to apply before merge; no hosted writes or real email sends are performed during development. Signing, delegation, billing, readiness and PagePlan stay unchanged. See `docs/proposal-reassignment.md`.
