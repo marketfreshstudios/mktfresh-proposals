@@ -29,7 +29,7 @@ export function ActivityStudio({ data }: { data: Data }) {
       setError("");
       const [events, team] = await Promise.all([
         api<ActivityRow[]>("/api/workspace_events"),
-        api<{ recent?: TeamAudit[] }>("/api/team").catch(() => ({
+        api<{ recent?: TeamAudit[] }>("/api/team?history=all").catch(() => ({
           recent: [],
         })),
       ]);

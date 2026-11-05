@@ -484,7 +484,9 @@ async function handleRoute(req: Request, path: string[]) {
         const team = teamService(user.workspace_id);
         return json({
           members: await team.list(),
-          recent: await team.store.audit(),
+          recent: await team.store.audit(
+            new URL(req.url).searchParams.get("history") === "all",
+          ),
         });
       }
       if (method === "POST" && path[1] === "invite")
