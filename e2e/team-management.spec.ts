@@ -127,6 +127,7 @@ async function fixture(page: Page) {
 test("Super admin Team list, invite/resend and set-password acceptance use app email without revealing credentials", async ({
   page,
 }) => {
+  page.setDefaultTimeout(15000);
   await page.setViewportSize({ width: 1440, height: 1100 });
   const f = await fixture(page);
   await page.goto("/studio/workspace?view=team");
@@ -138,6 +139,20 @@ test("Super admin Team list, invite/resend and set-password acceptance use app e
   );
   await expect(page.getByRole("table")).toContainText("Deactivated");
   await capture(page, "team-super-admin");
+  await page.getByRole("button", { name: "Actions for Alex Morgan" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Set password", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Send password reset", exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Actions for Jamie Example" }).click();
   await expect(
     page.getByRole("button", { name: "Set password", exact: true }),

@@ -115,7 +115,7 @@ export async function emailStudioPreview(
     sending_domain: settings.sending_domain,
   };
   let logo: string | undefined, logo_error: string | undefined;
-  if (p.workspace_settings?.logo) {
+  if (p.workspace_settings?.logo && !key.startsWith("team_")) {
     try {
       check(
         p.workspace_settings.logo.startsWith(repo.workspaceId + "/"),

@@ -248,7 +248,12 @@ export function renderTemplate(
       ? `${appOrigin()}/proposals/${p.id}${t.key === "staff_signed" ? "?action=countersign" : ""}`
       : proposalLink(p);
   const layout = emailLayout({
-    title: p.title,
+    title:
+      t.key === "team_invite"
+        ? "You're invited"
+        : t.key === "team_password_reset"
+          ? "Choose a new password"
+          : p.title,
     bodyHtml: body.html,
     bodyText: body.text,
     workspace: s?.company_name ?? "Workspace",

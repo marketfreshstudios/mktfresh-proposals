@@ -129,6 +129,9 @@ it("password set activates invited users, uses only the admin API input, and kee
       password,
     }),
   ).rejects.toThrow("profile");
+  await expect(
+    f.team.change(f.admin, f.admin.actor.slice(6), { action: "reset_sent" }),
+  ).rejects.toThrow("profile");
 });
 it("last Super admin and self guards preserve at least one active admin", async () => {
   const f = await teamFixture(),

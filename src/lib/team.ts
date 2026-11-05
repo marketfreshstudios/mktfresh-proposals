@@ -182,7 +182,11 @@ export class TeamService {
     const input = TeamChangeSchema.parse(raw);
     const member = await this.store.get(id);
     check(member, "Staff member not found in this workspace", 404);
-    if (["deactivate", "remove", "password_set"].includes(input.action))
+    if (
+      ["deactivate", "remove", "password_set", "reset_sent"].includes(
+        input.action,
+      )
+    )
       check(
         !self,
         "Use your profile for your own password; you cannot deactivate or remove yourself",

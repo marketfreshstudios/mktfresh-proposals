@@ -24,7 +24,6 @@ export function TeamStudio({
     [dialog, setDialog] = useState<Dialog | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
     [work, setWork] = useState<{ id: string; title: string }[]>([]);
   const Heading = embedded ? "h3" : "h2";
   const owner = data.user.staff_role === "owner",
@@ -60,7 +59,6 @@ export function TeamStudio({
     try {
       await post(path, input);
       setDialog(null);
-      setNotice(message);
       await load();
       await run(async () => {}, message);
       return true;
@@ -108,7 +106,6 @@ export function TeamStudio({
           {error}
         </Banner>
       )}
-      {notice && <p role="status">{notice}</p>}
       <div className="team-table" role="table" aria-label="Workspace team">
         <div className="team-table-head" role="row">
           <span role="columnheader">Name & email</span>
@@ -287,13 +284,15 @@ export function TeamStudio({
                 ...(dialog.person!.status === "invited"
                   ? ["invite_resent"]
                   : []),
-                "reset_sent",
+                ...(dialog.person!.user_id !== self ? ["reset_sent"] : []),
                 dialog.person!.status === "deactivated"
                   ? "reactivate"
                   : "deactivate",
                 "remove",
               ].map((action) => (
-                <Button
+                <button
+                  type="button"
+                  className="btn"
                   key={action}
                   disabled={
                     ["deactivate", "remove"].includes(action) &&
@@ -321,7 +320,7 @@ export function TeamStudio({
                       } as Record<string, string>
                     )[action]
                   }
-                </Button>
+                </button>
               ))}
             </div>
           ) : (
@@ -337,8 +336,8 @@ export function TeamStudio({
                   try {
                     await post("/api/auth/set-password", input);
                     setDialog(null);
-                    setNotice("Your password was changed");
                     await load();
+                    await run(async () => {}, "Your password was changed");
                   } catch (e) {
                     setError((e as Error).message);
                   } finally {
