@@ -519,7 +519,7 @@ Yeswell is the staff product, separate from each workspace's proposal identity. 
 
 ## Owner review 4 — stable short links
 
-New first publications use twelve case-sensitive CSPRNG characters from an unambiguous 57-symbol alphabet (~70 bits), with no slug or client name. The existing globally unique token column/index is reused; uniqueness conflicts retry generation. Existing long tokens are accepted unchanged, and publishing, renaming or reopening never rotates an established token. No hosted SQL is needed. Token-protection clarification is tracked in PR #72.
+New first publications use twelve case-sensitive CSPRNG characters from an unambiguous 57-symbol alphabet (~70 bits), with no slug or client name. The existing globally unique token column/index is reused; uniqueness conflicts retry generation. Existing long tokens are accepted unchanged, and publishing, renaming or reopening never rotates an established token. No new token lookup column is needed. The owner subsequently approved the durable-protection migration described below.
 
 ## Owner review 4 — visible record editing
 
@@ -528,3 +528,11 @@ The record header puts Edit beside Preview as client for editable unsigned nativ
 ## Owner review 4 — signature heading defaults
 
 New proposals (including assistant drafts) and templates start with an editable Signatures heading before an unheaded signature run. Signature insertion adds the heading and signature in the same history step. Existing drafts/templates receive the default once, tracked in their existing JSON; subsequent explicit removals stay removed. Published and frozen content is never normalized. No hosted SQL is required.
+
+## Owner review 4 — inline font sizes
+
+Inline fontSize marks store numeric presets (8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 30 px at 96 dpi). Default removes the mark. The common rich-text editor and renderers preserve marks for selection, typing, history and internal copy/paste; unsupported pasted sizes fall back to the text style, and invalid stored presets are rejected. Headings now use rich text while retaining their plain text for navigation. Header/footer sizes are limited by the band's fixed content height; the Size menu explains the maximum, keyboard changes are refused above it, and stored marks render clamped if the band later becomes smaller. PagePlan and version hash formats are unchanged.
+
+## Owner review 4 — durable link protection (owner clarification)
+
+Use fixed durable windows: 30 failed token lookups per salted IP hash per 10 minutes, and 10 failed submitted passwords per hashed link per 15 minutes. Successes and initial password-required page loads are not charged. Exhausted windows return 429 with Retry-After; unknown links retain their identical 404 before exhaustion. Production uses an atomic service-role-only SQL function with RLS on the counter table, HMAC keys derived from the existing INTEGRATION_ENCRYPTION_KEY, and Vercel's trusted forwarded-IP header. No raw IPs, tokens or passwords enter the counter table. Local development uses a locked durable file, with forwarded-IP simulation confined to local mode. The owner must apply the supplied migration before merging. A Vercel Firewall rule is a sensible additional coarse burst/bot layer before requests reach Postgres; no Vercel settings are changed here.

@@ -5,7 +5,7 @@ From merged Yeswell PR #71 (`34ee4d9`).
 - First publication issues a stable 12-character, case-sensitive, unambiguous random code. Existing 43-character links remain accepted. The existing unique token index enforces collision retries; no new lookup column is needed.
 - Records expose Edit beside Preview as client, or Duplicate as new draft for signed native records. The record menu omits Edit; list menus retain their shortcut.
 - New drafts/templates get an editable Signatures heading before an unheaded signature run. Existing drafts/templates receive the default once; sent/frozen versions remain untouched.
-- Rich text supports exact-selection preset font sizes, Default/Mixed, keyboard stepping, typing, history, paste and shared editor/client/PDF rendering. Bands enforce their content-height limit.
+- Rich text supports exact-selection preset font sizes, Default/Mixed, keyboard stepping, typing, history, paste and shared editor/client/PDF rendering. Bands enforce their content-height limit. Wide text toolbars scroll while leaving a narrow exposed strip of the text column, so selecting the preceding paragraph still works; Delete remains reachable.
 
 ## Hosted setup required before merge
 
