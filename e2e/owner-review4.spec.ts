@@ -261,6 +261,15 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
     .getByRole("button", { name: "Size", exact: true })
     .filter({ visible: true })
     .click();
+  const sizeOptions = await page
+    .getByRole("menuitemradio")
+    .evaluateAll((nodes) =>
+      nodes.map((n) => {
+        const r = n.getBoundingClientRect();
+        return { width: r.width, height: r.height };
+      }),
+    );
+  expect(sizeOptions.every((r) => r.width >= 180 && r.height >= 44)).toBe(true);
   await shot(page, "size-dropdown-1440");
   await page.keyboard.press("Escape");
   await expect
