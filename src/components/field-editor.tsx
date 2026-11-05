@@ -1,4 +1,5 @@
 "use client";
+import { ListMarkerSizes } from "./list-marker-sizes";
 import { InlineFontSize, registerInlineEditor } from "./inline-font-size";
 import {
   InlineBandImage,
@@ -169,6 +170,7 @@ export function FieldEditor({
         : {},
     },
     extensions: [
+      ListMarkerSizes,
       InlineFontSize.configure({
         maxSize: () =>
           imageOptions.current

@@ -1,4 +1,5 @@
 "use client";
+import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
 import { pairSignatureNodes } from "./signature-pair";
@@ -1433,6 +1434,20 @@ function FlowingDocument({
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
 }) {
+  const listRoot = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const root = listRoot.current;
+    if (!root) return;
+    const update = () => sizeListMarkers(root);
+    update();
+    const resize = new ResizeObserver(update);
+    resize.observe(root);
+    document.fonts.addEventListener("loadingdone", update);
+    return () => {
+      resize.disconnect();
+      document.fonts.removeEventListener("loadingdone", update);
+    };
+  }, [p]);
   const content = selectedContent(p.content, p.quote as QuoteItem[]);
   const spaces = p.resolved_styles?.layout
     ? documentSpacing(content, p.resolved_styles)
@@ -1443,6 +1458,7 @@ function FlowingDocument({
     }) as CSSProperties;
   return (
     <article
+      ref={listRoot}
       className="paper flow-document proposal-typography document-reading"
       id="proposal-document"
     >

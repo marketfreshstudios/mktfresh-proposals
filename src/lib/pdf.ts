@@ -1,3 +1,4 @@
+import { sizeListMarkers } from "./list-markers";
 import {
   PdfPrintError,
   diagnosticText,
@@ -240,6 +241,9 @@ export async function sealedPdf(
       );
     });
     await page.locator(".print-root").evaluate(fitStoredImages);
+    await page.evaluate(
+      `(() => {const __name = value => value; return (${sizeListMarkers.toString()})(document.querySelector(".print-root"));})()`,
+    );
     // Serialize only this trusted repository function, never document content.
     // tsx preserves nested function names with __name; keep that helper scoped here.
     const layout: PrintLayout = version.pagination

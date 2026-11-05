@@ -552,3 +552,7 @@ Proposal tools now include Blocks; Studio has the same insert catalogue. Click/k
 ## Owner review 5 — dialog actions
 
 Shared DialogActions orders the DOM as well as the visual group: backwards/secondary actions left, forward/destructive actions right, right-aligned with an 8px gap. Phone uses the same order with wrapping rather than reversing keyboard order. Destructive confirmations initially focus Cancel; Enter in an input cannot implicitly confirm destruction. Native browser confirmations for failed-save navigation and style reset are now app confirmations using the same actions. Menu commands, toolbar formatting and non-confirmation navigation retain their own order.
+
+## Owner review 5 — list marker typography
+
+List marker sizing follows each item's actual first-line boxes: a uniform size is used as-is, mixed first-line text uses its largest size, and nested items are independent. Marker font size, proportional line height and the gap adjoining a larger item use one shared DOM calculation in editable decorations, canonical browser pagination, client flowing/sheet projections and Chromium print. These are display decorations, never document JSON, revision or undo entries. The next unchanged item keeps its default marker/font size. PagePlan format and signing rules stay unchanged.
