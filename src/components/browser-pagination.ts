@@ -1,3 +1,4 @@
+import { sizeListMarkers } from "../lib/list-markers";
 import { fitStoredImages } from "../lib/image-size";
 import {
   pageGeometry,
@@ -105,6 +106,7 @@ export function paginateBrowser(
     .forEach((el) => el.style.setProperty("display", "block", "important"));
   root.parentElement!.append(clone);
   fitStoredImages(clone);
+  sizeListMarkers(clone);
   const top = clone.getBoundingClientRect().top,
     starts: PageStart[] = [],
     assignments: BrowserPages["assignments"] = [];

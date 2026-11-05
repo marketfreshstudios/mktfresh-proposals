@@ -94,3 +94,13 @@ it("leaves historical heading rendering unchanged and appends fields to rich hea
     "Jane",
   );
 });
+
+it("shared list typography scales markers and gaps without adding document marks", async () => {
+  const { listMarkerCss } = await import("../src/lib/list-markers");
+  const css = listMarkerCss(".proposal-typography", ".25em");
+  expect(css).toContain(
+    "li[data-list-size]::marker{font-size:var(--list-marker-size)}",
+  );
+  expect(css).toContain("line-height:var(--list-line-height)");
+  expect(css).toContain("var(--list-gap-scale,1)");
+});

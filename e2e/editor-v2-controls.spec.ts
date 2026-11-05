@@ -84,11 +84,11 @@ for (const width of [1440, 1180, 1024, 924])
         return {
           height: r.height,
           right: r.right,
-          limit: m.right - 12,
+          limit: innerWidth - 8,
           scrolling: el.scrollWidth > el.clientWidth,
           main: [main.scrollWidth, main.clientWidth],
           header: [header.scrollWidth, header.clientWidth],
-          deleteVisible: d.left >= m.left && d.right <= m.right,
+          deleteVisible: d.left >= 8 && d.right <= innerWidth - 8,
           hit: del.contains(
             document.elementFromPoint(
               d.left + d.width / 2,
@@ -98,9 +98,8 @@ for (const width of [1440, 1180, 1024, 924])
         };
       });
       expect(geometry.height).toBeCloseTo(40, 0);
-      expect(geometry.right <= geometry.limit + 1 || geometry.scrolling).toBe(
-        true,
-      );
+      expect(geometry.right).toBeLessThanOrEqual(geometry.limit + 1);
+      expect(geometry.scrolling).toBe(false);
       expect(geometry.main[0]).toBe(geometry.main[1]);
       expect(geometry.header[0]).toBe(geometry.header[1]);
       expect(geometry.deleteVisible).toBe(true);

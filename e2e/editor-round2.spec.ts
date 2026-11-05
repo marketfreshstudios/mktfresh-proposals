@@ -508,8 +508,11 @@ test("Workspace and templates save style overrides and show responsive live samp
           ?.heading2?.size,
     )
     .toBe(26);
-  page.once("dialog", (d) => d.accept());
   await styles
+    .getByRole("button", { name: "Reset to defaults", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Reset to defaults?" })
     .getByRole("button", { name: "Reset to defaults", exact: true })
     .click();
   await expect(
@@ -527,7 +530,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     await page
       .getByRole("button", { name: "Open Styles", exact: true })
       .click();
-  else await page.getByRole("button", { name: "Styles", exact: true }).click();
+  else await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const templateStyles = page.getByRole("region", {
     name: "Proposal styles",
     exact: true,

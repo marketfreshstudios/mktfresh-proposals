@@ -153,9 +153,11 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
     orderedList: "ol",
     listItem: "li",
     hardBreak: "br",
+    horizontalRule: "hr",
   };
   const tag = tags[node.type];
   check(tag, "Unsupported rich text node");
+  if (tag === "hr") return "<hr>";
   const body = (node.content ?? [])
     .map((n) => rich(n, map, depth + 1))
     .join("");

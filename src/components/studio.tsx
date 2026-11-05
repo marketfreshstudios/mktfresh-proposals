@@ -1,4 +1,7 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
+import { insertAuthoringBlocks } from "../lib/block-insertion";
+import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
@@ -327,7 +330,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                 />
               </Field>
               <Field label="Accent">
-                <div className="actions">
+                <DialogActions>
                   <input
                     type="color"
                     aria-label="Accent color"
@@ -335,7 +338,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                     onChange={(e) => setAccent(e.target.value)}
                   />
                   <code>{accent}</code>
-                </div>
+                </DialogActions>
               </Field>
               <p
                 className={contrast < 4.5 ? "danger" : "success"}
@@ -753,7 +756,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
     .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
   return (
     <div className="stack studio-catalog">
-      <div className="actions">
+      <DialogActions>
         <Button
           onClick={() =>
             run(
@@ -766,7 +769,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         </Button>
         <Button onClick={() => setFamily(true)}>+ Custom family</Button>
         <Button onClick={() => setSelected(null)}>+ Item</Button>
-      </div>
+      </DialogActions>
       <p>
         List prices are the values you set in Stripe. Enter each amount on a
         proposal; the app never suggests a price.
@@ -940,9 +943,14 @@ function FamilyForm({ run, close }: { run: Runner; close: () => void }) {
         <input name="name" minLength={3} required />
       </Field>
       <SaveError error={save.error} />
-      <Button type="submit" busy={save.busy}>
-        Create in Stripe test mode
-      </Button>
+      <DialogActions>
+        <Button onClick={close} disabled={save.busy}>
+          Cancel
+        </Button>
+        <Button type="submit" busy={save.busy}>
+          Create in Stripe test mode
+        </Button>
+      </DialogActions>
     </form>
   );
 }
@@ -1135,9 +1143,14 @@ function CatalogItem({
         <small>Payoff counts paid invoices, not calendar months.</small>
       </section>
       <SaveError error={save.error} />
-      <Button type="submit" variant="primary" busy={save.busy}>
-        Save item and terms
-      </Button>
+      <DialogActions>
+        <Button onClick={close} disabled={save.busy}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" busy={save.busy}>
+          Save item and terms
+        </Button>
+      </DialogActions>
     </form>
   );
 }
@@ -1173,6 +1186,7 @@ function TemplatesStudioContent({
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
+    [blocksTab, setBlocksTab] = useState(false),
     [mobile, setMobile] = useState(false),
     [insertAt, setInsertAt] = useState<number | null>(null),
     [replaceEmpty, setReplaceEmpty] = useState(false);
@@ -1437,30 +1451,64 @@ function TemplatesStudioContent({
       },
       blockFeedback.error,
     );
-  function insertBlock(block: Block) {
-    const next = [...currentContent.current],
-      at = insertAt ?? next.length;
-    if (
-      block.type === "pricing_table" &&
-      next.some((b) => b.type === "pricing_table")
-    )
+  function insertBlock(block: Block, extra: Block[] = [], atOverride?: number) {
+    const at = atOverride ?? insertAt ?? currentContent.current.length;
+    let next: Block[];
+    try {
+      next = insertAuthoringBlocks(
+        currentContent.current,
+        [block, ...extra],
+        at,
+        replaceEmpty && atOverride === undefined,
+      );
+    } catch (error) {
+      blockFeedback.error((error as Error).message);
       return;
-    next.splice(at, replaceEmpty ? 1 : 0, {
-      ...structuredClone(block),
-      id: crypto.randomUUID(),
-    });
-    patch(
-      block.type === "signature_block"
-        ? withSignatureHeadings(next, next[at].id)
-        : next,
-    );
+    }
+    patch(next);
     setInsertAt(null);
     setIndex(null);
+    setReplaceEmpty(false);
+    const inserted =
+      next.find(
+        (b, n) =>
+          n >= at &&
+          !content.some((old) => old.id === b.id) &&
+          b.type !== "heading",
+      ) ?? next[at];
     focusInserted(
-      `template-${next[at].id}`,
-      ["paragraph", "heading"].includes(block.type),
+      `template-${inserted.id}`,
+      ["paragraph", "heading"].includes(inserted.type),
     );
   }
+  const blockDrop = useBlockDrop(content, templatePaper, (blocks, at) =>
+    insertBlock(blocks[0], blocks.slice(1), at),
+  );
+  const templateBlocks = (
+    <BlockMenu
+      variant="panel"
+      anchor={null}
+      hasPricing={content.some((b) => b.type === "pricing_table")}
+      signatureRoles={content
+        .filter((b) => b.type === "signature_block")
+        .map((b) => b.role!)}
+      saved={data.library}
+      onChoose={(block, extra) =>
+        insertBlock(
+          block,
+          extra,
+          defaultBlockInsertion(
+            templatePaper.current,
+            content,
+            selection.selected,
+            browserPages?.assignments,
+          ),
+        )
+      }
+      onClose={() => setTemplateToolsOpen(false)}
+      onDragStart={() => setTemplateToolsOpen(false)}
+    />
+  );
   const specimen =
     draft && data.settings
       ? authoringPreview(
@@ -1642,11 +1690,13 @@ function TemplatesStudioContent({
     ));
   return (
     <div
+      {...blockDrop.handlers}
       ref={templatePanels.container}
       className="studio-template-layout"
       data-template-phone-editing={!!phoneSection}
       style={{ gridTemplateColumns: templatePanels.columns }}
     >
+      {blockDrop.line}
       <EditorControlConfig
         compact={templatePanels.compact}
         map={map}
@@ -2649,11 +2699,46 @@ function TemplatesStudioContent({
         </div>
         {templatePanels.right ? (
           <div className="editor-sidebar-scroll">
-            <Button onClick={() => setIndex(null)}>Styles</Button>
-            {templateTools}
+            <div
+              className="editor-tabs"
+              role="tablist"
+              aria-label="Template tools"
+            >
+              <button
+                role="tab"
+                aria-selected={blocksTab}
+                data-preserve-block-selection
+                onClick={() => setBlocksTab(true)}
+              >
+                Blocks
+              </button>
+              <button
+                role="tab"
+                aria-selected={!blocksTab}
+                onClick={() => {
+                  setBlocksTab(false);
+                  setIndex(null);
+                }}
+              >
+                Styles
+              </button>
+            </div>
+            {blocksTab ? templateBlocks : templateTools}
           </div>
         ) : (
           <>
+            <button
+              aria-label="Open Blocks"
+              title="Blocks"
+              data-preserve-block-selection
+              onClick={() => {
+                setBlocksTab(true);
+                if (templatePanels.canRight) templatePanels.toggle("right");
+                else setTemplateToolsOpen(true);
+              }}
+            >
+              <Icon name="document" />
+            </button>
             <button
               aria-label="Open Fields"
               title="Fields"
@@ -2681,13 +2766,15 @@ function TemplatesStudioContent({
       )}
       {!templatePanels.right && (inspector || templateToolsOpen) && (
         <Sheet
-          title={inspector ? "Edit block" : "Template styles"}
+          title={
+            blocksTab ? "Blocks" : inspector ? "Edit block" : "Template styles"
+          }
           onClose={() => {
             setIndex(null);
             setTemplateToolsOpen(false);
           }}
         >
-          {templateTools}
+          {blocksTab ? templateBlocks : templateTools}
         </Sheet>
       )}
       {insertAt !== null && (
@@ -2695,7 +2782,9 @@ function TemplatesStudioContent({
           anchor={insertAnchor}
           hasPricing={content.some((b) => b.type === "pricing_table")}
           saved={data.library}
-          signatures
+          signatureRoles={content
+            .filter((b) => b.type === "signature_block")
+            .map((b) => b.role!)}
           onChoose={insertBlock}
           onClose={() => {
             setInsertAt(null);
@@ -2878,7 +2967,7 @@ function BlockPanel({
             />
             Draft wording · warn before sending
           </label>
-          <div className="actions">
+          <DialogActions>
             <Button
               disabled={clause === 0}
               onClick={() => {
@@ -2918,7 +3007,7 @@ function BlockPanel({
             >
               Remove clause
             </Button>
-          </div>
+          </DialogActions>
         </>
       )}
       <Button
@@ -3079,7 +3168,7 @@ function TemplateDefaults({
                 ))}
             </select>
           </Field>
-          <div className="actions">
+          <DialogActions>
             <Button
               disabled={n === 0}
               onClick={() => {
@@ -3101,7 +3190,7 @@ function TemplateDefaults({
             >
               Remove item
             </Button>
-          </div>
+          </DialogActions>
         </div>
       ))}
       <Field label="Add product default">

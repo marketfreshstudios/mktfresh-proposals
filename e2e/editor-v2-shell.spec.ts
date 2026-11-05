@@ -186,6 +186,12 @@ test("exact breakpoint defaults, mutually exclusive narrow panels, shortcuts and
     .getByRole("tab", { name: "Fields", exact: true })
     .press("ArrowRight");
   await expect(
+    page.getByRole("tab", { name: "Blocks", exact: true }),
+  ).toBeFocused();
+  await page
+    .getByRole("tab", { name: "Blocks", exact: true })
+    .press("ArrowRight");
+  await expect(
     page.getByRole("tab", { name: "Styles", exact: true }),
   ).toBeFocused();
   await expect(

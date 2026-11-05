@@ -91,8 +91,13 @@ export function Sheet({
         <h2 id={titleId} tabIndex={-1}>
           {title}
         </h2>
-        <button type="button" className="btn ghost" onClick={onClose}>
-          Close
+        <button
+          type="button"
+          className="btn ghost"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          ×
         </button>
       </header>
       {children}

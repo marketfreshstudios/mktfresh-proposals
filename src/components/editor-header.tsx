@@ -1,4 +1,5 @@
 "use client";
+import { confirmDialog } from "./dialog-actions";
 import { ToolbarPopover } from "./toolbar-popover";
 import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
 import { useCallback, useRef, useState, type ReactNode } from "react";
@@ -118,9 +119,14 @@ export function EditorHeader({
       const ok = await save();
       if (
         ok ||
-        window.confirm(
-          "Your changes could not be saved. Leave the editor anyway? Your edits are kept on this device.",
-        )
+        (await confirmDialog({
+          title: "Leave the editor?",
+          description:
+            "Your changes could not be saved. Leave the editor anyway? Your edits are kept on this device.",
+          cancelLabel: "Keep editing",
+          confirmLabel: "Leave editor",
+          destructive: true,
+        }))
       ) {
         beforeLeave?.();
         window.location.assign(backHref);

@@ -1,4 +1,7 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
+import { insertAuthoringBlocks } from "../lib/block-insertion";
+import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign } from "../lib/proposal-owner";
@@ -1782,7 +1785,7 @@ function QuoteEditorContent({
         {settings?.sending_domain || "the workspace’s verified domain"}.
       </small>
       <footer className="send-panel-footer">
-        <div className="actions">
+        <DialogActions>
           <Button
             onClick={async () => {
               if (await save())
@@ -1809,7 +1812,7 @@ function QuoteEditorContent({
               ? "Publish client link"
               : `Send to ${p.client.first_name || "client"}`}
           </Button>
-        </div>
+        </DialogActions>
         <p className="send-blocked-reason" role="status">
           {offline
             ? "Reconnect to send"
@@ -1950,6 +1953,34 @@ function QuoteEditorContent({
                 .querySelector<HTMLDialogElement>("dialog.tools-sheet")
                 ?.close();
             } else fields?.insert(path);
+          }}
+        />
+      ) : tab === "Blocks" ? (
+        <BlockMenu
+          variant="panel"
+          anchor={null}
+          hasPricing={p.content.some((b) => b.type === "pricing_table")}
+          signatureRoles={p.content
+            .filter((b) => b.type === "signature_block")
+            .map((b) => b.role!)}
+          saved={library}
+          onChoose={(block, extra) =>
+            insertBlock(
+              block,
+              extra,
+              defaultBlockInsertion(
+                paper.current,
+                p.content,
+                selection.selected,
+                browserPages?.assignments,
+              ),
+            )
+          }
+          onClose={() => {
+            if (panels.phone) setDrawer(false);
+          }}
+          onDragStart={() => {
+            if (panels.mode !== "docked") setDrawer(false);
           }}
         />
       ) : tab === "Styles" ? (
@@ -2606,33 +2637,53 @@ function QuoteEditorContent({
       </section>
     );
   }
-  function insertBlock(block: Block) {
-    const id = uid(),
-      next = [...p.content],
-      index = insertAt ?? p.content.length;
-    next.splice(index, replaceEmpty ? 1 : 0, { ...block, id });
+  function insertBlock(block: Block, extra: Block[] = [], at?: number) {
+    const index = at ?? insertAt ?? p.content.length;
+    let next: Block[];
+    try {
+      next = insertAuthoringBlocks(
+        p.content,
+        [block, ...extra],
+        index,
+        replaceEmpty && at === undefined,
+      );
+    } catch (error) {
+      blockFeedback.error((error as Error).message);
+      return;
+    }
+    const id =
+      next.find(
+        (b, n) =>
+          n >= index &&
+          !p.content.some((old) => old.id === b.id) &&
+          b.type !== "heading",
+      )?.id ?? next[index].id!;
     setReplaceEmpty(false);
-    change({
-      content:
-        block.type === "signature_block"
-          ? withSignatureHeadings(next, id)
-          : next,
-    });
+    change({ content: next });
     setInsertAt(null);
-    const ss = contentSections(next),
-      sn = ss.findIndex((s) => s.indices.includes(index));
-    setSection(sn);
+    const ss = contentSections(next);
+    setSection(
+      ss.findIndex((s) =>
+        s.indices.includes(next.findIndex((b) => b.id === id)),
+      ),
+    );
     requestAnimationFrame(() => {
       const frame = document.getElementById(`block-${id}`);
-      const focus =
-        frame?.querySelector<HTMLElement>(
-          "input, textarea, [contenteditable=true]",
-        ) ?? frame;
       selection.select(`block-${id}`);
-      focus?.focus();
+      (
+        frame?.querySelector<HTMLElement>(
+          "input,textarea,[contenteditable=true]",
+        ) ?? frame
+      )?.focus();
       frame?.scrollIntoView({ block: "center" });
     });
   }
+  const blockDrop = useBlockDrop(
+    p.content,
+    paper,
+    (blocks, at) => insertBlock(blocks[0], blocks.slice(1), at),
+    locked || stale,
+  );
   function documentItem(i: QuoteItem) {
     const active = !i.optional || i.default_selected;
     const Row = i.optional ? "label" : "div";
@@ -2677,6 +2728,7 @@ function QuoteEditorContent({
   }
   return (
     <div
+      {...blockDrop.handlers}
       data-panels-ready={panels.ready}
       data-stale={stale}
       data-compact={panels.compact}
@@ -2684,6 +2736,7 @@ function QuoteEditorContent({
       data-phone-editing={panels.phone && !!selection.selected}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
+      {blockDrop.line}
       <EditorControlConfig
         compact={panels.compact}
         locked={locked || stale}
@@ -3187,6 +3240,9 @@ function QuoteEditorContent({
           anchor={insertAnchor}
           hasPricing={p.content.some((b) => b.type === "pricing_table")}
           saved={library}
+          signatureRoles={p.content
+            .filter((b) => b.type === "signature_block")
+            .map((b) => b.role!)}
           onChoose={insertBlock}
           onClose={() => {
             setInsertAt(null);

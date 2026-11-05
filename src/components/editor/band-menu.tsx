@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "../dialog-actions";
 import { sharedChangesLabel } from "../../lib/page-count";
 import { useLayoutEffect, useRef } from "react";
 import { menuKeys } from "./band-menus";
@@ -109,7 +110,7 @@ export function UseSharedConfirm({
           ? "Every page's own header and footer will be replaced by the shared ones. You can undo this."
           : `This page's own ${kind} will be replaced by the shared one. You can undo this.`}
       </p>
-      <div>
+      <DialogActions>
         <button type="button" onClick={onCancel}>
           Cancel
         </button>
@@ -120,7 +121,7 @@ export function UseSharedConfirm({
         >
           {all ? "Use shared on every page" : `Use shared ${kind}`}
         </button>
-      </div>
+      </DialogActions>
     </div>
   );
 }

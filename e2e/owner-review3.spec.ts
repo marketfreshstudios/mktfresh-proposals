@@ -529,10 +529,9 @@ test("selected image toolbar keeps the same live controls across desktop and pho
   for (let i = 0; i < 6; i++)
     for (const width of [375, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      await expect(bar).toHaveCSS(
-        "position",
-        width === 375 ? "fixed" : "absolute",
-      );
+      // Both the phone dock and the full-size attached desktop bar are fixed;
+      // resizing must retain the same live action nodes and their handlers.
+      await expect(bar).toHaveCSS("position", "fixed");
       const same = await bar.evaluate((el) => ({
         bar: el === (window as any).__imageBar,
         buttons: Array.from(el.querySelectorAll("button")).every(

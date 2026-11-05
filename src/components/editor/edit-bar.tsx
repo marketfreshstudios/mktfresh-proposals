@@ -258,8 +258,7 @@ function BlockEditBar({
       document.documentElement;
     if (!bar || !owner) return;
     const place = () => {
-      if (layout.phone) delete bar.dataset.toolbarPlaced;
-      else placeEditorToolbar(owner, bar);
+      placeEditorToolbar(owner, bar);
       bar.dataset.scrolling = String(bar.scrollWidth > bar.clientWidth + 1);
       const buttons = Array.from(
         bar.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),

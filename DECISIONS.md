@@ -540,3 +540,22 @@ Use fixed durable windows: 30 failed token lookups per salted IP hash per 10 min
 ## PR #72 CI follow-up — floating toolbar clearance
 
 The owner's no-overlap instruction supersedes the earlier prototype exemption for floating bars over neighbouring text. Cover, body, image and header/footer toolbars now share a screen-only placement rule: prefer nearby above/below space, avoid editable text, images and visible hit targets, and stay inside the visible sheet. When a dense page leaves no full-width opening, the same actions remain horizontally scrollable in a clear margin. Measuring placement must preserve horizontal scroll. Phone keyboard docks retain their existing behavior. Nothing in this placement path participates in pagination, page geometry, PagePlan persistence or PDF rendering.
+
+## Owner review 5 — attached edit bars
+
+The owner's production review supersedes PR #72's collision placement: desktop/tablet edit bars remain at natural size directly above the selected element. They stick below the editor header while that element is partially scrolled out of view; only popovers flip. Neighbour overlap is permitted; toolbar gaps/background do not intercept pointer clicks and Escape/empty-paper clicks dismiss the selection. Phone keyboard docks remain unchanged.
+
+
+Attached bars use viewport-fixed positioning while retaining their DOM owner. This keeps full-width bars out of canvas scroll geometry and prevents clipping by narrow panels. Bars are ordinary controls; only menus use native popovers. The bar is hidden when its block leaves the visible editor area.
+
+## Owner review 5 — Blocks and supported signatures
+
+Proposal tools now include Blocks; Studio has the same insert catalogue. Click/keyboard inserts after the selection or at the end of the visible page section, and pointer drag uses a visible insertion line. The gutter/phone + sheet exposes the same choices. Signatures inserts the client/company pair and a normal heading as one history operation. A proposal supports one client and one company signature block; existing roles disable their matching option (and the pair) with an explanation, backed by an insertion guard. No readiness/signing rules change. Divider is a standard rich-text horizontal rule, not a new PagePlan or block schema.
+
+## Owner review 5 — dialog actions
+
+Shared DialogActions orders the DOM as well as the visual group: backwards/secondary actions left, forward/destructive actions right, right-aligned with an 8px gap. Phone uses the same order with wrapping rather than reversing keyboard order. Destructive confirmations initially focus Cancel; Enter in an input cannot implicitly confirm destruction. Native browser confirmations for failed-save navigation and style reset are now app confirmations using the same actions. Menu commands, toolbar formatting and non-confirmation navigation retain their own order.
+
+## Owner review 5 — list marker typography
+
+List marker sizing follows each item's actual first-line boxes: a uniform size is used as-is, mixed first-line text uses its largest size, and nested items are independent. Marker font size, proportional line height and the gap adjoining a larger item use one shared DOM calculation in editable decorations, canonical browser pagination, client flowing/sheet projections and Chromium print. These are display decorations, never document JSON, revision or undo entries. The next unchanged item keeps its default marker/font size. PagePlan format and signing rules stay unchanged.

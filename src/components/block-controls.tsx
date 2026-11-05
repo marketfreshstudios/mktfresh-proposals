@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { BandEditingProvider } from "./editor/band-editing";
 import { PageBreakAction, PageBreakProvider } from "./page-break-action";
 import {
@@ -216,7 +217,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       const target = event.target as Element;
       if (
         target.closest(
-          ".phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover,.phone-header-more,.phone-header-done,.phone-header-back,.template-history-phone,.phone-editor-menu,[aria-label='Done editing template section']",
+          "[data-preserve-block-selection],.phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover,.phone-header-more,.phone-header-done,.phone-header-back,.template-history-phone,.phone-editor-menu,[aria-label='Done editing template section']",
         )
       )
         return;
@@ -800,19 +801,21 @@ export function useBlockFeedback() {
                           onChange={(e) => setName(e.target.value)}
                         />
                       </label>
-                      <Button
-                        type="submit"
-                        busy={saving}
-                        disabled={!name.trim()}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        disabled={saving}
-                        onClick={() => setCandidate(null)}
-                      >
-                        Cancel
-                      </Button>
+                      <DialogActions>
+                        <Button
+                          type="submit"
+                          busy={saving}
+                          disabled={!name.trim()}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          disabled={saving}
+                          onClick={() => setCandidate(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </DialogActions>
                     </form>
                   ) : (
                     <>
@@ -820,12 +823,17 @@ export function useBlockFeedback() {
                         Pricing and signature blocks are required for readiness.
                         Delete this block?
                       </p>
-                      <Button variant="danger" onClick={() => confirmation?.()}>
-                        Delete block
-                      </Button>
-                      <Button onClick={() => setConfirmation(null)}>
-                        Cancel
-                      </Button>
+                      <DialogActions>
+                        <Button
+                          variant="danger"
+                          onClick={() => confirmation?.()}
+                        >
+                          Delete block
+                        </Button>
+                        <Button onClick={() => setConfirmation(null)}>
+                          Cancel
+                        </Button>
+                      </DialogActions>
                     </>
                   )}
                   {toast?.error && (

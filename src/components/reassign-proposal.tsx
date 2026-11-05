@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { useEffect, useState } from "react";
 import { liveSenderAssignment } from "../lib/proposal-owner";
 import type { Proposal } from "../lib/model";
@@ -173,7 +174,7 @@ export function ReassignDialog({
             </p>
           </>
         )}
-        <div className="actions">
+        <DialogActions>
           <Button disabled={busy} onClick={onClose}>
             Cancel
           </Button>
@@ -185,7 +186,7 @@ export function ReassignDialog({
           >
             Reassign{proposal ? "" : ` ${selected.length} proposals`}
           </Button>
-        </div>
+        </DialogActions>
       </form>
     </Sheet>
   );

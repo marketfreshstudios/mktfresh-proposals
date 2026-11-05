@@ -1,3 +1,4 @@
+import { sizeListMarkers } from "../lib/list-markers";
 import { fitStoredImages } from "../lib/image-size";
 import {
   printContent,
@@ -103,6 +104,7 @@ export function paginateClientDocument(
       },
     );
   fitStoredImages(root);
+  sizeListMarkers(root);
   if (plan) applyPagePlan(root, plan);
   else paginatePrintDocument(root);
   // The unplanned PDF paginator emits atoms rather than source wrappers.

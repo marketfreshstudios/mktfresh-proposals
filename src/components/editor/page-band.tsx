@@ -170,7 +170,7 @@ export function PageBand(props: Props) {
         ?.querySelector<HTMLElement>(
           `.band-popover-${menu} button,.band-popover-${menu} input`,
         )
-        ?.focus(),
+        ?.focus({ preventScroll: true }),
     );
     return () => cancelAnimationFrame(frame);
   }, [menu]);

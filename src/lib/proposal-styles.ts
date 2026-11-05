@@ -1,3 +1,4 @@
+import { listMarkerCss } from "./list-markers";
 import { signatureCss } from "./signature-presentation";
 import { documentQuoteCss } from "./document-quote";
 import { documentFlowCss } from "./document-spacing";
@@ -291,6 +292,11 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
       : styles.layout
         ? `${scope} .flow-quote-line{padding-block:20px}`
         : "") +
-    (styles.layout ? documentFlowCss(styles) + signatureCss : "")
+    (styles.layout ? documentFlowCss(styles) + signatureCss : "") +
+    `${scope}{--list-line-ratio:${textLineHeight(styles, "body")}}` +
+    listMarkerCss(
+      scope,
+      documentLayout(styles).density === "comfortable" ? ".4em" : ".25em",
+    )
   );
 }

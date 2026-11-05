@@ -1,4 +1,5 @@
 "use client";
+import { useHasEditorPopover } from "./editor-popovers";
 import { FontSizePicker } from "./inline-font-size";
 import {
   useEffect,
@@ -147,6 +148,7 @@ export function DocumentCover({
   const root = useRef<HTMLElement>(null),
     latest = useRef({ value, elements, onCover, onTitle });
   latest.current = { value, elements, onCover, onTitle };
+  const hasPopover = useHasEditorPopover();
   const [selected, select] = useState<string | null>(null),
     [logoMenu, setLogoMenu] = useState(false),
     [logoError, setLogoError] = useState("");
@@ -187,6 +189,21 @@ export function DocumentCover({
     document.addEventListener("pointerdown", outside, true);
     return () => document.removeEventListener("pointerdown", outside, true);
   }, [selected]);
+  useEffect(() => {
+    if (!selected) return;
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        !hasPopover() &&
+        !document.querySelector("dialog:modal")
+      ) {
+        select(null);
+        (document.activeElement as HTMLElement)?.blur();
+      }
+    };
+    window.addEventListener("keydown", escape, true);
+    return () => window.removeEventListener("keydown", escape, true);
+  }, [selected, hasPopover]);
   const choose = (id: string) => {
     selection.clear();
     select(id);
@@ -294,6 +311,9 @@ export function DocumentCover({
     <header
       ref={root}
       className="document-cover"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) select(null);
+      }}
       data-content-height={contentHeight}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !e.defaultPrevented) {

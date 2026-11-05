@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
@@ -281,7 +282,7 @@ export function TeamStudio({
                 </ul>
               )}
               {work.length > 0 && dialog.person && (
-                <div className="actions">
+                <DialogActions>
                   <Button
                     onClick={() => {
                       setReassign(dialog.person!);
@@ -299,7 +300,7 @@ export function TeamStudio({
                   >
                     Deactivate instead
                   </Button>
-                </div>
+                </DialogActions>
               )}
             </Banner>
           )}
@@ -363,6 +364,7 @@ export function TeamStudio({
               key={dialog.action}
               dialog={dialog}
               busy={busy}
+              onCancel={() => setDialog(null)}
               onSubmit={async (input) => {
                 const own = dialog.action === "own_password";
                 if (own) {
@@ -403,7 +405,9 @@ function TeamForm({
   dialog,
   busy,
   onSubmit,
+  onCancel,
 }: {
+  onCancel: () => void;
   dialog: Dialog;
   busy: boolean;
   onSubmit: (input: Record<string, unknown>) => Promise<void>;
@@ -544,21 +548,32 @@ function TeamForm({
           sign in again.
         </p>
       )}
-      <Button type="submit" variant="primary" busy={busy}>
-        {action === "invite"
-          ? "Send invite"
-          : action === "password_set"
-            ? "Set password"
-            : action === "own_password"
-              ? "Change password"
-              : action === "remove"
-                ? "Remove from workspace"
-                : action === "reset_sent"
-                  ? "Send password reset"
-                  : action === "invite_resent"
-                    ? "Resend invite"
-                    : "Save changes"}
-      </Button>
+      <DialogActions>
+        <Button onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          variant={
+            ["remove", "deactivate"].includes(action) ? "danger" : "primary"
+          }
+          busy={busy}
+        >
+          {action === "invite"
+            ? "Send invite"
+            : action === "password_set"
+              ? "Set password"
+              : action === "own_password"
+                ? "Change password"
+                : action === "remove"
+                  ? "Remove from workspace"
+                  : action === "reset_sent"
+                    ? "Send password reset"
+                    : action === "invite_resent"
+                      ? "Resend invite"
+                      : "Save changes"}
+        </Button>
+      </DialogActions>
     </form>
   );
 }

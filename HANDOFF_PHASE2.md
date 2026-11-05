@@ -1128,3 +1128,18 @@ Band text and images remain collision obstacles even though their container is e
 The reported `owner-review2.spec.ts` test remains unchanged and passed five consecutive focused runs. Added native-click and rectangle-clearance checks in both editors at 1440/1024, with separate and inline covers, plus a long-paragraph menu/focus check and pure placement tests. The older band test now asserts no overlap/sheet containment instead of a fixed 14px offset, and the block matrix scrolls the actual editor canvas without deriving offsets from a movable toolbar; its no-movement tolerances and interaction assertions remain intact. No screenshot galleries were generated.
 
 Local follow-up validation: **431 unit/database tests passed** (85 files); **full browser suite: 216 passed, 4 optional capture tests skipped (15.0m)**. Types, formatting, neutral-code check, the clean production build and 330-file PDF trace passed. The original CI-reported cover test remains unchanged and passes in the full suite. No CI wait or merge.
+
+## Owner review 5 — attached bars, Blocks, dialog actions and list markers
+
+New branch from merged PR #72 (`d5c4712`). Removed the collision search that displaced/shrank edit bars: full-size bars now remain above the selection and stick under the header while the block remains visible. Menus may flip; bars do not. Phone docks remain. The owner's new rule replaces the prior no-overlap assertions.
+
+Proposal and Studio editors share the Blocks catalogue with click/keyboard and pointer-drop insertion. Signature pair/individual choices appear in the + menu, including phone. One client and one company block are supported; duplicate choices explain the limit and insertion also guards it. Signature heading+pair use one undo step. Divider is a standard rich-text node. No signing/readiness or PagePlan changes.
+
+Dialog action order/focus is shared. Desktop and phone keep secondary left / forward or destructive right, with DOM order matching visual order. Cancel/Keep gets initial destructive focus; implicit Enter from fields cannot destroy. Native failed-save/style-reset confirmations use the app's shared actions. The full dialog inventory is in `docs/owner-review5.md`.
+
+List marker sizing uses actual first-line font metrics (largest when mixed), with independent nested items, proportional line height and adjacent gaps. The same calculation runs in editor decorations, canonical pagination, PDF and client flowing/sheet projections. No decoration enters saved JSON/history. Real PDF vector bullets and numbered runs are verified.
+
+No hosted SQL or new credentials are needed. Short links/rate limits, billing, signing and PagePlan format remain unchanged. Requested screenshots use neutral fixtures only. Final full-suite results follow below.
+
+
+Final local validation (November 5, 2026): `npm run typecheck`; `npm test` (435 tests, 87 files); `npm run format:check`; `npm run check:neutral`; `npm run build` including the 330-file PDF runtime trace; `npm run verify:fonts`; `npm run verify:pdf-jobs` (pre-band planned/unplanned and large-band fixtures); and the full `npm run test:e2e` (229 passed, 4 skipped). The corrected cover-cursor and live image-toolbar resize tests pass within that full run. Requested screenshots and actual PDF page images were inspected. No CI wait or merge.

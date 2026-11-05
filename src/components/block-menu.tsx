@@ -5,33 +5,29 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
 import type { Block } from "../lib/model";
-import type icons from "./icons.json";
-type Option = {
-  name: string;
-  description: string;
-  icon: keyof typeof icons;
-  group: string;
-  block?: Block;
-  image?: boolean;
-  disabled?: boolean;
-};
+import { blockOptions, type BlockOption as Option } from "./block-options";
 export function BlockMenu({
   anchor,
   hasPricing,
   saved,
   onChoose,
   onClose,
-  signatures = false,
+  signatureRoles = [],
+  variant = "menu",
+  onDragStart,
 }: {
   anchor: HTMLElement | null;
   hasPricing: boolean;
   saved: { id: string; name: string; block: Block }[];
-  onChoose: (block: Block) => void;
+  onChoose: (block: Block, extra?: Block[]) => void;
   onClose: () => void;
   signatures?: boolean;
+  signatureRoles?: string[];
+  variant?: "menu" | "panel";
+  onDragStart?: () => void;
 }) {
   const { desktop, phone } = useControlLayout();
-  useManagedPopover(true, onClose);
+  useManagedPopover(variant === "menu", onClose);
   const [host, setHost] = useState<Element | null>(null),
     [query, setQuery] = useState(""),
     [active, setActive] = useState(0),
@@ -43,117 +39,19 @@ export function BlockMenu({
   const close = useRef(onClose),
     restoreTrigger = useRef(false);
   close.current = onClose;
-  const text = (kind?: string): Block => ({
-    type: "paragraph",
-    content: {
-      type: "doc",
-      content: kind
-        ? [
-            {
-              type: kind,
-              content: [{ type: "listItem", content: [{ type: "paragraph" }] }],
-            },
-          ]
-        : [{ type: "paragraph" }],
-    },
-  });
-  const allOptions: Option[] = [
-    ...([1, 2, 3] as const).map((level) => ({
-      group: "Text",
-      name: `Heading ${level}`,
-      description:
-        level === 1 ? "Start a new section" : "Subheading within this section",
-      icon: "heading" as const,
-      block: {
-        type: "heading" as const,
-        level,
-        text: level === 1 ? "New section" : "Subheading",
-      },
-    })),
-    {
-      group: "Text",
-      name: "Text",
-      description: "A paragraph of rich text",
-      icon: "align-left",
-      block: text(),
-    },
-    {
-      group: "Text",
-      name: "Bulleted list",
-      description: "An unordered list",
-      icon: "list-ul",
-      block: text("bulletList"),
-    },
-    {
-      group: "Text",
-      name: "Numbered list",
-      description: "A list of steps in order",
-      icon: "list-ol",
-      block: text("orderedList"),
-    },
-    {
-      group: "Media",
-      name: "Image",
-      description: "Upload a PNG or JPEG",
-      icon: "image",
-      image: true,
-    },
-    ...(!hasPricing || desktop
-      ? [
-          {
-            group: "Proposal",
-            name: "Pricing table",
-            description: hasPricing
-              ? "Already in this proposal"
-              : "The quote with totals",
-            disabled: hasPricing,
-            icon: "table" as const,
-            block: { type: "pricing_table" as const },
-          },
-        ]
-      : []),
-    {
-      group: "Proposal",
-      name: "Contract",
-      description: "Terms and contract clauses",
-      icon: "file-contract",
-      block: {
-        type: "contract",
-        text: "Statement of Work & Contract",
-        clauses: [],
-      },
-    },
-    {
-      group: "Proposal",
-      name: "Page break",
-      description: "Start the next PDF page",
-      icon: "file-lines",
-      block: { type: "page_break" },
-    },
-    ...(signatures
-      ? ["client", "company"].map((role) => ({
-          group: "Proposal",
-          name: role === "client" ? "Client signature" : "Company signature",
-          description: "A required signature block",
-          icon: "signature" as const,
-          block: {
-            type: "signature_block" as const,
-            role: role as "client" | "company",
-          },
-        }))
-      : []),
-    ...saved
-      .filter((s) => !(hasPricing && s.block.type === "pricing_table"))
-      .map((s) => ({
-        group: "Saved blocks",
-        name: s.name,
-        description: "Saved block",
-        icon: "bookmark" as const,
-        block: s.block,
-      })),
-  ];
+  const allOptions = blockOptions({ hasPricing, saved, signatureRoles });
+  const optionName = (option: Option) =>
+    variant === "panel"
+      ? option.name === "Text"
+        ? "Paragraph"
+        : option.name === "Pricing table"
+          ? "Pricing / Quote"
+          : option.name
+      : option.name;
   const options = allOptions.filter((o) =>
-    `${o.name} ${o.description}`.toLowerCase().includes(query.toLowerCase()),
+    `${optionName(o)} ${o.name} ${o.description}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   useEffect(() => {
     fallback.current = document.activeElement as HTMLElement;
@@ -166,6 +64,7 @@ export function BlockMenu({
   useLayoutEffect(() => {
     const popover = ref.current;
     if (!host || !popover) return;
+    if (variant === "panel") return;
     if (phone) {
       (popover as HTMLDialogElement).showModal();
       input.current?.focus();
@@ -258,8 +157,9 @@ export function BlockMenu({
         });
       }
     };
-  }, [host, anchor, desktop, phone]);
+  }, [host, anchor, desktop, phone, variant]);
   useEffect(() => {
+    if (variant === "panel") return;
     const outside = (e: PointerEvent) => {
       if (
         !ref.current?.contains(e.target as Node) &&
@@ -310,12 +210,15 @@ export function BlockMenu({
       document.removeEventListener("keydown", escape, true);
       window.removeEventListener("scroll", scroll, true);
     };
-  }, [anchor]);
+  }, [anchor, variant]);
   const choose = (option: Option) => {
     if (option.disabled) return;
     if (option.image) file.current?.click();
     else if (option.block) {
-      onChoose(structuredClone(option.block));
+      onChoose(
+        structuredClone(option.block),
+        option.extra?.map((b) => structuredClone(b)),
+      );
       onClose();
     }
   };
@@ -334,14 +237,16 @@ export function BlockMenu({
       [n]?.focus();
   };
   if (!host) return null;
-  const Surface = phone ? "dialog" : "div";
-  return createPortal(
+  const Surface = variant === "panel" ? "div" : phone ? "dialog" : "div";
+  const render = (content: import("react").ReactNode) =>
+    variant === "panel" ? content : createPortal(content, host);
+  return render(
     <Surface
       ref={(el: HTMLElement | null) => {
         ref.current = el;
       }}
       data-editor-chrome
-      popover={phone ? undefined : "manual"}
+      popover={phone || variant === "panel" ? undefined : "manual"}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -353,9 +258,13 @@ export function BlockMenu({
             onClose();
         }
       }}
-      role="dialog"
-      aria-label="Add a block"
-      className={`block-popover block-owned-dialog ${phone ? "phone-block-menu" : ""}`}
+      role={variant === "panel" ? "region" : "dialog"}
+      aria-label={variant === "panel" ? "Insert blocks" : "Add a block"}
+      className={
+        variant === "panel"
+          ? "blocks-panel block-owned-dialog"
+          : `block-popover block-owned-dialog ${phone ? "phone-block-menu" : ""}`
+      }
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.preventDefault();
@@ -381,14 +290,29 @@ export function BlockMenu({
         }
       }}
     >
-      {(desktop || phone) && (
+      {variant === "menu" && (desktop || phone) && (
         <header className="editor-block-menu-heading">
+          {phone && (
+            <button
+              type="button"
+              aria-label="Close block menu"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          )}
           <strong>
             {anchor?.dataset.insertEdge === "above" ? "Add above" : "Add below"}
           </strong>
-          <button type="button" aria-label="Close block menu" onClick={onClose}>
-            {phone ? "Cancel" : "×"}
-          </button>
+          {!phone && (
+            <button
+              type="button"
+              aria-label="Close block menu"
+              onClick={onClose}
+            >
+              ×
+            </button>
+          )}
         </header>
       )}
       <input
@@ -418,17 +342,29 @@ export function BlockMenu({
                         disabled={option.disabled}
                         aria-disabled={option.disabled || undefined}
                         tabIndex={i === active ? 0 : -1}
-                        aria-label={option.name}
+                        aria-label={optionName(option)}
                         className={i === active ? "active" : ""}
                         onFocus={() => setActive(i)}
                         onMouseEnter={() => setActive(i)}
+                        draggable={!option.disabled && !!option.block}
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData(
+                            "application/x-yeswell-block",
+                            JSON.stringify([
+                              option.block,
+                              ...(option.extra ?? []),
+                            ]),
+                          );
+                          event.dataTransfer.effectAllowed = "copy";
+                          onDragStart?.();
+                        }}
                         onClick={() => choose(option)}
                       >
                         <span className="block-menu-icon">
                           <Icon name={option.icon} />
                         </span>
                         <span>
-                          <strong>{option.name}</strong>
+                          <strong>{optionName(option)}</strong>
                           <small>{option.description}</small>
                         </span>
                       </button>
@@ -468,6 +404,5 @@ export function BlockMenu({
         }}
       />
     </Surface>,
-    host,
   );
 }
