@@ -1,3 +1,5 @@
+import { withSignatureHeadings } from "./signature-headings";
+import { validClientToken, newClientCode } from "./client-code";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
   proposalBands,
@@ -57,7 +59,7 @@ import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
 import { readiness } from "./quote";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import {
   AppError,
   check,
@@ -287,8 +289,13 @@ export class ProposalService {
       first_viewed_at: null,
       client_signed_at: null,
       completed_at: null,
+      signature_heading_defaulted: true,
       content: reviewBlocks(
-        withoutTitleHeading(input.content ?? structuredClone(template.content)),
+        withSignatureHeadings(
+          withoutTitleHeading(
+            input.content ?? structuredClone(template.content),
+          ),
+        ),
         actor.actor.startsWith("ai:"),
       ),
       quote: prepareQuote(
@@ -347,6 +354,25 @@ export class ProposalService {
     return withDraftSettings(p, settings);
   }
   async forRead(p: Proposal) {
+    if (
+      p.status === "draft" &&
+      p.source === "native" &&
+      !p.signature_heading_defaulted &&
+      !p.signers.length
+    ) {
+      p = await mutate(this.repo, p.id, (row) => {
+        if (
+          row.status !== "draft" ||
+          row.source !== "native" ||
+          row.signature_heading_defaulted ||
+          row.signers.length
+        )
+          return;
+        row.content = withSignatureHeadings(row.content);
+        row.signature_heading_defaulted = true;
+        delete row.pagination;
+      });
+    }
     p = {
       ...p,
       header_footer: proposalBands(p.header_footer),
@@ -795,7 +821,7 @@ export class ProposalService {
       p.delivery_method = delivery;
       p.automatic_reminders = delivery === "email";
       p.sent_at = now;
-      p.token ??= randomBytes(32).toString("base64url");
+      p.token ??= newClientCode();
       p.status = p.first_viewed_at ? "viewed" : "sent";
       const version = editorialVersion(p, now);
       p.versions.push(version);
@@ -888,7 +914,7 @@ export class ProposalService {
     });
   }
   async byToken(token: string, password = "") {
-    check(/^[A-Za-z0-9_-]{43}$/.test(token), "Not found", 404);
+    check(validClientToken(token), "Not found", 404);
     const p = await this.repo.byToken(token);
     check(p, "Not found", 404);
     publicAccess(p, password, this.clock());

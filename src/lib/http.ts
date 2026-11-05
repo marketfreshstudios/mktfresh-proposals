@@ -1,3 +1,5 @@
+import { limitClientLink } from "./client-link-limits";
+import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
 import { ReassignmentService } from "./reassignment";
 import { TeamWorkConflict } from "./team";
@@ -104,8 +106,18 @@ async function body(req: Request) {
     throw new AppError(400, "Invalid JSON");
   }
 }
+const resolvedClientLinks = new WeakSet<Request>();
 export async function handle(req: Request, path: string[]) {
-  return withStaffCookies(req, await handleRoute(req, path));
+  const result =
+    path[0] === "public"
+      ? await limitClientLink(
+          req,
+          path[1] ?? "",
+          () => handleRoute(req, path),
+          () => resolvedClientLinks.has(req),
+        )
+      : await handleRoute(req, path);
+  return withStaffCookies(req, result);
 }
 async function handleRoute(req: Request, path: string[]) {
   try {
@@ -188,6 +200,7 @@ async function handleRoute(req: Request, path: string[]) {
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
         rt = await publicRuntime(token);
+      resolvedClientLinks.add(req);
       const workspaceBrand = (
         await rt.repo.entities<WorkspaceSettings>("workspace_settings")
       )[0];
@@ -713,6 +726,15 @@ async function handleRoute(req: Request, path: string[]) {
       const table = path[0] as EntityTable;
       if (method === "GET") {
         const entities = await rt.repo.entities<Record<string, unknown>>(table);
+        if (table === "templates")
+          for (const e of entities) {
+            if (!e.signature_heading_defaulted) {
+              e.content = withSignatureHeadings(e.content as Block[]);
+              e.signature_heading_defaulted = true;
+              delete e.pagination;
+              await rt.repo.put("templates", e as any);
+            }
+          }
         return json(
           table === "workspace_settings"
             ? entities.map((e) => ({
@@ -857,6 +879,7 @@ async function handleRoute(req: Request, path: string[]) {
                 )
                 .max(100),
               active: z.boolean(),
+              signature_heading_defaulted: z.boolean().optional(),
               header_footer: TemplateBandsSchema.default(defaultTemplateBands),
               cover: CoverSchema.default(() => loadedCover()),
               style_overrides: StyleOverridesSchema.optional(),
@@ -867,6 +890,16 @@ async function handleRoute(req: Request, path: string[]) {
             contentAfterCover(entity.content as Block[]),
             false,
           );
+          const savedTemplateId = entity.id;
+          const previousTemplate = (
+            await rt.repo.entities<import("./model").Template>("templates")
+          ).find((t) => t.id === savedTemplateId);
+          if (
+            !entity.signature_heading_defaulted &&
+            !previousTemplate?.signature_heading_defaulted
+          )
+            entity.content = withSignatureHeadings(entity.content as Block[]);
+          entity.signature_heading_defaulted = true;
           entity.cover = loadedCover(entity.cover);
           await validateStyles(
             rt.repo,

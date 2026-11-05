@@ -1,4 +1,7 @@
-import { it, expect, vi, afterEach } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { beforeEach, it, expect, vi, afterEach } from "vitest";
 import { hashPassword } from "../src/lib/content";
 import { staff } from "./helpers";
 import { billingFixture } from "./billing-confirmation-fixture";
@@ -10,6 +13,10 @@ vi.mock("../src/lib/runtime", () => ({
   allRuntimes: vi.fn(),
 }));
 import { POST } from "../src/app/api/[...path]/route";
+beforeEach(() => {
+  vi.stubEnv("APP_MODE", "local");
+  vi.stubEnv("DATA_DIR", mkdtempSync(join(tmpdir(), "webhook-limit-")));
+});
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.clearAllMocks();

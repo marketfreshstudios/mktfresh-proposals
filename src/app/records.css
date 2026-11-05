@@ -1876,3 +1876,6 @@
 .delivery-choice .check {
   min-height: 44px;
 }
+.record-toolbar .record-edit {
+  min-height: 44px;
+}

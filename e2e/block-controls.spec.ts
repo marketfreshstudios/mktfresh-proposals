@@ -146,22 +146,21 @@ test("block controls own one block and never move document content on hover, foc
     }
     await block.evaluate((el) => {
       el.scrollIntoView({ block: "start" });
-      const bar = document.querySelector(
-        ":is(.editor-edit-bar,.phone-formatting-bar)",
-      );
+      // A collision-aware toolbar may flip or move away from its block. Keep
+      // the test's text target below the pinned header independently of that bar.
       const canvas =
         innerWidth >= 700
-          ? el.closest<HTMLElement>(".editor-document-region")
+          ? el.closest<HTMLElement>(
+              ".editor-document-region,.studio-template-main",
+            )
           : null;
-      (canvas ?? window).scrollBy(
-        0,
-        -(
-          (bar
-            ? (parseFloat(getComputedStyle(bar).top) || 0) +
-              bar.getBoundingClientRect().height
-            : 160) + 30
-        ),
-      );
+      const top =
+        canvas?.getBoundingClientRect().top ??
+        document
+          .querySelector(".template-editor-header,.editor-document-header")
+          ?.getBoundingClientRect().bottom ??
+        0;
+      (canvas ?? window).scrollBy(0, el.getBoundingClientRect().top - top - 96);
     });
   }
   async function positions(p: Page) {
@@ -740,7 +739,7 @@ test("block controls own one block and never move document content on hover, foc
     .getByRole("menuitem", { name: "Heading 1", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
-  await expect(templateBlocks.nth(1).locator("textarea")).toBeVisible();
+  await expect(templateBlocks.nth(1).locator(".tiptap")).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: "Add block", exact: true }),
   ).toHaveCount(0);

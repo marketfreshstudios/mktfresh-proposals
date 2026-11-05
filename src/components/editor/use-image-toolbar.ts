@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { placeEditorToolbar } from "./toolbar-placement";
 /** A fixed toolbar must escape transformed sheets and their lower stacking layer. */
 export function PhoneToolbar({ children }: { children: ReactNode }) {
   const anchor = useRef<HTMLSpanElement>(null);
@@ -48,6 +49,7 @@ export function useImageToolbar(
   image: RefObject<HTMLElement | null>,
   toolbar: RefObject<HTMLSpanElement | null>,
   selected: boolean,
+  options: { below?: boolean; gap?: number } = {},
 ) {
   useLayoutEffect(() => {
     const root = image.current,
@@ -60,44 +62,20 @@ export function useImageToolbar(
       const bar = toolbar.current;
       if (!bar?.isConnected) return;
       if (innerWidth < 700) {
+        delete bar.dataset.toolbarPlaced;
         for (const key of ["left", "top", "bottom"])
           bar.style.removeProperty(key);
         return;
       }
-      const b = root.getBoundingClientRect(),
-        t = bar.getBoundingClientRect();
-      const paper =
-        root.closest(".editor-paper,.template-paged-paper") ??
-        root.parentElement!;
-      const page = [...paper.querySelectorAll(".page-sheet")].find((el) => {
-        const rect = el.getBoundingClientRect();
-        return b.top >= rect.top && b.top < rect.bottom;
+      placeEditorToolbar(root, bar, {
+        gap:
+          root.dataset.imageKind === "band"
+            ? 46
+            : root.dataset.imageKind
+              ? 24
+              : 14,
+        ...options,
       });
-      const sheet = (page ?? paper).getBoundingClientRect();
-      const region = root
-        .closest(".editor-document-region,.studio-template-main")
-        ?.getBoundingClientRect();
-      const left = Math.max(8, sheet.left + 8),
-        right = Math.min(innerWidth - 8, sheet.right - 8);
-      const x = Math.max(left, Math.min(b.left, right - t.width));
-      const minimum = Math.max(8, region?.top ?? 0, sheet.top + 8);
-      const gap =
-        root.dataset.imageKind === "band"
-          ? 46
-          : root.dataset.imageKind
-            ? 24
-            : 14;
-      const above = b.top - t.height - gap >= minimum;
-      const y = above
-        ? b.top - t.height - gap
-        : Math.min(b.bottom + gap, innerHeight - t.height - 8);
-      const scale = b.width / (root.offsetWidth || b.width || 1);
-      Object.assign(bar.style, {
-        left: `${(x - b.left) / scale}px`,
-        top: `${(y - b.top) / scale}px`,
-        bottom: "auto",
-      });
-      bar.dataset.placement = above ? "above" : "below";
     };
     const schedule = () => {
       cancelAnimationFrame(frame);
@@ -111,8 +89,24 @@ export function useImageToolbar(
       attributes: true,
       attributeFilter: ["style", "class"],
     });
+    const paperObserver = new MutationObserver(schedule);
+    const paper = root.closest(".editor-paper,.template-paged-paper");
+    if (paper)
+      paperObserver.observe(paper, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    document.fonts.addEventListener("loadingdone", schedule);
     window.addEventListener("resize", schedule);
-    window.addEventListener("scroll", schedule, true);
+    const scroll = (event: Event) => {
+      if (!(
+        event.target instanceof Element &&
+        event.target.closest(".editor-edit-bar,.toolbar-popover")
+      ))
+        schedule();
+    };
+    window.addEventListener("scroll", scroll, true);
     window.addEventListener("input", schedule, true);
     window.addEventListener("click", schedule, true);
     place();
@@ -120,10 +114,12 @@ export function useImageToolbar(
       cancelAnimationFrame(frame);
       observer.disconnect();
       position.disconnect();
+      paperObserver.disconnect();
+      document.fonts.removeEventListener("loadingdone", schedule);
       window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("scroll", scroll, true);
       window.removeEventListener("input", schedule, true);
       window.removeEventListener("click", schedule, true);
     };
-  }, [selected]);
+  }, [selected, options.below, options.gap]);
 }

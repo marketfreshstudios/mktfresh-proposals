@@ -25,6 +25,13 @@ for (const width of [1440, 375])
     await page.setViewportSize({ width, height: 1100 });
     await page.goto(`/proposals/${f.draft.id}`);
     const check = async (selector: string) => {
+      if (width >= 1100 && selector === "#proposal-document")
+        // The hidden canonical measurement stage also contains quote rows. Only
+        // compare visible scaled sheets after their atomic layout commit.
+        await expect(page.locator(".client-document-sheets")).toHaveAttribute(
+          "data-layout-ready",
+          "true",
+        );
       const rows = page.locator(selector).first().locator(".flow-quote-line");
       await expect(rows).toHaveCount(2);
       const geometry = await rows.evaluateAll((els) =>

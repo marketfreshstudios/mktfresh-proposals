@@ -56,7 +56,7 @@ it("manual Send and reminder policy use the authenticated controller and the cur
   expect(response.status).toBe(200);
   const p = await response.json();
   expect(p.status).toBe("sent");
-  expect(p.token).toHaveLength(43);
+  expect(p.token).toHaveLength(12);
   expect(p.jobs).toEqual([]);
   expect((await call(`proposals/${id}/emails`)).status).toBe(200);
   expect(await (await call(`proposals/${id}/emails`)).json()).toEqual([]);

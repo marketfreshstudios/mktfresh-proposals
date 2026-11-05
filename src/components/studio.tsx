@@ -1,4 +1,5 @@
 "use client";
+import { withSignatureHeadings } from "../lib/signature-headings";
 import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
@@ -1448,7 +1449,11 @@ function TemplatesStudioContent({
       ...structuredClone(block),
       id: crypto.randomUUID(),
     });
-    patch(next);
+    patch(
+      block.type === "signature_block"
+        ? withSignatureHeadings(next, next[at].id)
+        : next,
+    );
     setInsertAt(null);
     setIndex(null);
     focusInserted(
@@ -2260,43 +2265,46 @@ function TemplatesStudioContent({
                                   className="document-heading-edit"
                                   data-heading-level={b.level ?? 1}
                                 >
-                                  <span
-                                    className="heading-measure"
-                                    aria-hidden="true"
-                                  >
-                                    <HeadingTokens
-                                      text={b.text || "\u200b"}
-                                      map={map}
-                                    />
-                                  </span>
-                                  <FieldTextArea
-                                    aria-label={`Heading ${n + 1}`}
-                                    className="document-heading"
-                                    rows={1}
-                                    value={b.text ?? ""}
-                                    textStyle={{
-                                      value: b.level ?? 1,
-                                      change: (level) => {
-                                        patch(
-                                          content.map((v, j) =>
-                                            j === n
-                                              ? convertTextStyle(b, level)
-                                              : v,
-                                          ),
-                                        );
-                                        focusInserted(`template-${b.id}`, true);
-                                      },
+                                  <FieldEditor
+                                    label={`Heading ${n + 1}`}
+                                    textLevel={b.level ?? 1}
+                                    map={map}
+                                    showNames={false}
+                                    onTextStyle={(level) => {
+                                      patch(
+                                        content.map((v, j) =>
+                                          j === n
+                                            ? convertTextStyle(b, level)
+                                            : v,
+                                        ),
+                                      );
+                                      focusInserted(`template-${b.id}`, true);
                                     }}
-                                    onValue={(text) =>
+                                    value={
+                                      b.content ?? {
+                                        type: "doc",
+                                        content: [
+                                          {
+                                            type: "paragraph",
+                                            content: b.text
+                                              ? [{ type: "text", text: b.text }]
+                                              : [],
+                                          },
+                                        ],
+                                      }
+                                    }
+                                    onChange={(value) =>
                                       patch(
                                         content.map((v, j) =>
                                           j === n
                                             ? {
                                                 ...b,
-                                                text: text.replace(
-                                                  /[\r\n]+/g,
-                                                  " ",
-                                                ),
+                                                content: value,
+                                                rich_heading: true,
+                                                text: blockText({
+                                                  type: "heading",
+                                                  content: value,
+                                                }).replace(/[\r\n]+/g, " "),
                                               }
                                             : v,
                                         ),

@@ -136,6 +136,7 @@ export async function seed(repo: Repository, mockMappings = false) {
           },
         ],
       },
+      { type: "heading", text: "Signatures", level: 1 },
       { type: "signature_block", role: "client" },
       { type: "signature_block", role: "company" },
     ],

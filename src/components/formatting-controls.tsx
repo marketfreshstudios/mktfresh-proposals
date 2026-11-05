@@ -1,4 +1,5 @@
 "use client";
+import { FontSizePicker } from "./inline-font-size";
 import { EditorIcon } from "./editor/editor-icon";
 import { PageBreakAction } from "./page-break-action";
 import { TextStylePicker } from "./text-style-picker";
@@ -110,6 +111,7 @@ export function FormattingControls({
             marks?.bullet ? "bullet" : marks?.ordered ? "numbered" : undefined
           }
         />
+        <FontSizePicker editor={editor} />
         <span className="edit-divider" />
         {item(
           "Bold",
@@ -187,6 +189,7 @@ export function FormattingControls({
           mac ? "Redo (⇧⌘Z)" : "Redo (Ctrl+Shift+Z or Ctrl+Y)",
         )}
       </div>
+      <FontSizePicker editor={editor} />
       {textStyle !== undefined && <TextStylePicker value={textStyle} />}
       <div className="formatting-group" role="group" aria-label="Text style">
         {button(

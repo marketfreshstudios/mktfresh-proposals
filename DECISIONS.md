@@ -516,3 +516,27 @@ Apply the hosted SQL from the PR before merging/deploying. [Implementation, perm
 ## Yeswell product identity
 
 Yeswell is the staff product, separate from each workspace's proposal identity. Client pages and emails carry an optional, default-on “Powered by Yeswell” footer controlled by super admins; sealed PDFs and certificates never carry product attribution. The setting uses existing workspace JSON storage (no hosted SQL). It applies to existing links and newly prepared emails, while past email snapshots remain immutable. See `docs/yeswell-brand.md` for the unchanged deployment and future domain plan.
+
+## Owner review 4 — stable short links
+
+New first publications use twelve case-sensitive CSPRNG characters from an unambiguous 57-symbol alphabet (~70 bits), with no slug or client name. The existing globally unique token column/index is reused; uniqueness conflicts retry generation. Existing long tokens are accepted unchanged, and publishing, renaming or reopening never rotates an established token. No new token lookup column is needed. The owner subsequently approved the durable-protection migration described below.
+
+## Owner review 4 — visible record editing
+
+The record header puts Edit beside Preview as client for editable unsigned native proposals, including phone/tablet. Locked signed native records show Duplicate as new draft in that position; they do not offer an Edit action. The record menu omits Edit, while list-row menus retain their existing shortcut. Archived unsigned records remain read-only until unarchived.
+
+## Owner review 4 — signature heading defaults
+
+New proposals (including assistant drafts) and templates start with an editable Signatures heading before an unheaded signature run. Signature insertion adds the heading and signature in the same history step. Existing drafts/templates receive the default once, tracked in their existing JSON; subsequent explicit removals stay removed. Published and frozen content is never normalized. No hosted SQL is required.
+
+## Owner review 4 — inline font sizes
+
+Inline fontSize marks store numeric presets (8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 30 px at 96 dpi). Default removes the mark. The common rich-text editor and renderers preserve marks for selection, typing, history and internal copy/paste; unsupported pasted sizes fall back to the text style, and invalid stored presets are rejected. Headings now use rich text while retaining their plain text for navigation. Header/footer sizes are limited by the band's fixed content height; the Size menu explains the maximum, keyboard changes are refused above it, and stored marks render clamped if the band later becomes smaller. PagePlan and version hash formats are unchanged.
+
+## Owner review 4 — durable link protection (owner clarification)
+
+Use fixed durable windows: 30 failed token lookups per salted IP hash per 10 minutes, and 10 failed submitted passwords per hashed link per 15 minutes. Successes and initial password-required page loads are not charged. Exhausted windows return 429 with Retry-After; unknown links retain their identical 404 before exhaustion. Production uses an atomic service-role-only SQL function with RLS on the counter table, HMAC keys derived from the existing INTEGRATION_ENCRYPTION_KEY, and Vercel's trusted forwarded-IP header. No raw IPs, tokens or passwords enter the counter table. Local development uses a locked durable file, with forwarded-IP simulation confined to local mode. The owner must apply the supplied migration before merging. A Vercel Firewall rule is a sensible additional coarse burst/bot layer before requests reach Postgres; no Vercel settings are changed here.
+
+## PR #72 CI follow-up — floating toolbar clearance
+
+The owner's no-overlap instruction supersedes the earlier prototype exemption for floating bars over neighbouring text. Cover, body, image and header/footer toolbars now share a screen-only placement rule: prefer nearby above/below space, avoid editable text, images and visible hit targets, and stay inside the visible sheet. When a dense page leaves no full-width opening, the same actions remain horizontally scrollable in a clear margin. Measuring placement must preserve horizontal scroll. Phone keyboard docks retain their existing behavior. Nothing in this placement path participates in pagination, page geometry, PagePlan persistence or PDF rendering.

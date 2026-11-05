@@ -22,6 +22,7 @@ import { ToolbarPopover } from "../toolbar-popover";
 import { FieldOptions } from "../field-options";
 import { EditorIcon } from "./editor-icon";
 import { useControlLayout } from "./control-layout";
+import { placeEditorToolbar } from "./toolbar-placement";
 import { useImageToolbar, PhoneToolbar } from "./use-image-toolbar";
 export const BlockActionPresentation = createContext<"bar" | "menu" | null>(
   null,
@@ -49,6 +50,7 @@ export function EditBar(
     | {
         variant: "band";
         children: ReactNode;
+        frame: RefObject<HTMLElement | null>;
         kind: "header" | "footer";
         inside: boolean;
         device?: "desktop" | "tablet" | "phone";
@@ -110,6 +112,10 @@ function BandEditBar(
   props: Extract<Parameters<typeof EditBar>[0], { variant: "band" }>,
 ) {
   const root = useRef<HTMLDivElement>(null);
+  useImageToolbar(props.frame, root, props.device !== "phone", {
+    below: props.kind === "footer" ? !props.inside : props.inside,
+    gap: 14,
+  });
   useEffect(() => {
     if (props.device !== "phone") return;
     const viewport = window.visualViewport;
@@ -252,12 +258,8 @@ function BlockEditBar({
       document.documentElement;
     if (!bar || !owner) return;
     const place = () => {
-      const bounds = main.getBoundingClientRect(),
-        block = owner.getBoundingClientRect(),
-        width = layout.phone
-          ? innerWidth
-          : Math.max(32, bounds.right - 12 - block.left);
-      bar.style.setProperty("--edit-max-width", `${width}px`);
+      if (layout.phone) delete bar.dataset.toolbarPlaced;
+      else placeEditorToolbar(owner, bar);
       bar.dataset.scrolling = String(bar.scrollWidth > bar.clientWidth + 1);
       const buttons = Array.from(
         bar.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
@@ -308,14 +310,23 @@ function BlockEditBar({
     const mutation = new MutationObserver(place);
     mutation.observe(bar, { childList: true, subtree: true });
     window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
+    window.addEventListener("input", place, true);
+    const scroll = (event: Event) => {
+      if (!(
+        event.target instanceof Element &&
+        event.target.closest(".editor-edit-bar,.toolbar-popover")
+      ))
+        place();
+    };
+    window.addEventListener("scroll", scroll, true);
     return () => {
       bar.removeEventListener("keydown", keys, true);
       bar.removeEventListener("focusin", focus);
       resize.disconnect();
       mutation.disconnect();
       window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("input", place, true);
+      window.removeEventListener("scroll", scroll, true);
     };
   });
   return (

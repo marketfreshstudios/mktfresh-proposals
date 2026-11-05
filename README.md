@@ -262,3 +262,7 @@ Click or tap a band to edit rich text, layout, fields and inline embedded images
 Proposal ownership can be handed off from the record/editor menu or in bulk from Team. Staff can reassign their own work; Super admins can reassign anyone’s. Lists provide an Owner column/filter. Apply the hosted reassignment SQL before deploying; see [Proposal reassignment](docs/proposal-reassignment.md).
 
 Review & send can publish a client link with **I'll send it myself**, without an app email. Scheduled reminders default off in that mode; the record can enable them, and Send reminder still works explicitly. Client-triggered signature/payment/completion emails continue. See [Manual delivery](docs/manual-delivery.md); no hosted SQL or new setup is required.
+
+### Owner review 4 rollout
+
+Newly published proposals use stable 12-character client codes; older links remain valid. The record header exposes Edit, signature insertion defaults a removable Signatures heading, and rich text supports preset inline sizes. See [owner review 4](docs/owner-review4.md) for the durable lookup/password limits and required hosted migration. Apply `20261105063146_client_link_limits.sql` before merging/deploying this change; production protection uses the existing server-only integration encryption key and fails closed when its store is unavailable.

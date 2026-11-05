@@ -121,11 +121,13 @@ export function ProposalMenu({
   data,
   onChanged,
   showUndo = true,
+  showEdit = true,
 }: {
   p: Proposal;
   data: Data;
   onChanged?: (p: Proposal) => void;
   showUndo?: boolean;
+  showEdit?: boolean;
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
@@ -300,20 +302,21 @@ export function ProposalMenu({
                   Sign — review client-signed document
                 </a>
               )}
-              {editable ? (
-                <a href={`/proposals/${p.id}?action=edit`}>Edit</a>
-              ) : (
-                <button disabled>
-                  Edit{" "}
-                  <small>
-                    {imported
-                      ? "Imported proposals are read-only."
-                      : p.archived_at
-                        ? "Unarchive to edit."
-                        : "Signed proposals are locked."}
-                  </small>
-                </button>
-              )}
+              {showEdit &&
+                (editable ? (
+                  <a href={`/proposals/${p.id}?action=edit`}>Edit</a>
+                ) : (
+                  <button disabled>
+                    Edit{" "}
+                    <small>
+                      {imported
+                        ? "Imported proposals are read-only."
+                        : p.archived_at
+                          ? "Unarchive to edit."
+                          : "Signed proposals are locked."}
+                    </small>
+                  </button>
+                ))}
               <button
                 disabled={busy || imported}
                 onClick={() => void act("duplicate")}
@@ -1319,7 +1322,42 @@ export function RecordV4({
               Preview as client
             </a>
           )}
-          <ProposalMenu p={p} data={data} onChanged={onChanged} />
+          {native && !p.archived_at && !p.signers.length && (
+            <a
+              className="btn record-edit"
+              href={`/proposals/${p.id}?action=edit`}
+            >
+              Edit
+            </a>
+          )}
+          {native && !!p.signers.length && (
+            <Button
+              className="record-edit"
+              onClick={async () => {
+                try {
+                  const next = await post<Proposal>(
+                    `/api/proposals/${p.id}/actions`,
+                    { revision: p.revision, action: "duplicate" },
+                  );
+                  location.href = `/proposals/${next.id}`;
+                } catch (e) {
+                  setError(
+                    e instanceof Error
+                      ? e.message
+                      : "Could not duplicate proposal",
+                  );
+                }
+              }}
+            >
+              Duplicate as new draft
+            </Button>
+          )}
+          <ProposalMenu
+            p={p}
+            data={data}
+            onChanged={onChanged}
+            showEdit={false}
+          />
         </div>
       </div>
       {p.token && (

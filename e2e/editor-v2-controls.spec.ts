@@ -215,7 +215,7 @@ test("text style conversions preserve chips; formatting retains selection and fo
   const bar = frame.locator(".editor-edit-bar");
   await bar.getByRole("button", { name: "Text style", exact: true }).click();
   await page.getByRole("menuitemradio", { name: /Heading 2/ }).click();
-  await expect(frame.locator("textarea")).toHaveValue(
+  await expect(frame.locator(".tiptap")).toHaveText(
     "Hello {{client.name}}, a useful proposal for your team.",
   );
   await bar.getByRole("button", { name: "Text style", exact: true }).click();
@@ -230,7 +230,7 @@ test("text style conversions preserve chips; formatting retains selection and fo
   await expect(input).toBeFocused();
   await expect(input.locator("strong")).toContainText("Hello");
   await input.press("Alt+Digit2");
-  await expect(frame.locator("textarea")).toHaveValue(
+  await expect(frame.locator(".tiptap")).toHaveText(
     "Hello {{client.name}}, a useful proposal for your team.",
   );
   await expect(frame.locator("h3")).toBeVisible();
@@ -325,7 +325,7 @@ test("toolbar roving keys and Tab traverse text, bar, above, handle, below and A
   await expect(style).toBeFocused();
   await page.keyboard.press("ArrowRight");
   await expect(
-    bar.getByRole("button", { name: "Bold", exact: true }),
+    bar.getByRole("button", { name: "Size", exact: true }),
   ).toBeFocused();
   await page.keyboard.press("ArrowLeft");
   await expect(style).toBeFocused();

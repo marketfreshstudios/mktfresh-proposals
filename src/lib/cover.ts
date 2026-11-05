@@ -1,3 +1,4 @@
+import { FontSizeMarkSchema } from "./inline-font-size";
 import { z } from "zod";
 import type { RichText } from "./model";
 const CoverTextNode: z.ZodType<RichText> = z.lazy(() =>
@@ -17,9 +18,14 @@ const CoverTextNode: z.ZodType<RichText> = z.lazy(() =>
         .optional(),
       marks: z
         .array(
-          z.object({ type: z.enum(["bold", "italic", "underline"]) }).strict(),
+          z.union([
+            z
+              .object({ type: z.enum(["bold", "italic", "underline"]) })
+              .strict(),
+            FontSizeMarkSchema,
+          ]),
         )
-        .max(3)
+        .max(4)
         .optional(),
     })
     .strict(),

@@ -59,7 +59,7 @@ it("manual delivery publishes the same version and plan as email delivery, with 
   const before = (await f.repo.get(f.draft.id))!;
   const p = await f.send();
   expect(p.status).toBe("sent");
-  expect(p.token).toHaveLength(43);
+  expect(p.token).toHaveLength(12);
   expect(p.delivery_method).toBe("manual");
   expect(p.automatic_reminders).toBe(false);
   expect(p.sent_at).toBeTruthy();
