@@ -1,4 +1,11 @@
-import { AppError, check, ClientSchema, type Client } from "./model";
+import { canonical } from "./content";
+import {
+  AppError,
+  check,
+  ClientSchema,
+  type Client,
+  type Proposal,
+} from "./model";
 import { AddressSchema, PhoneInputSchema, countryCode } from "./client-contact";
 import type { Repository } from "./repository";
 export class DuplicateClient extends AppError {
@@ -6,7 +13,25 @@ export class DuplicateClient extends AppError {
     super(409, "A client with this email already exists.");
   }
 }
-export async function saveClient(repo: Repository, raw: unknown) {
+export function sameClientContact(a: Client, b: Client) {
+  return canonical(a) === canonical(b);
+}
+/** Signed/frozen and imported records retain their copied contact forever. */
+export function unsignedClientProposal(p: Proposal, clientId: string) {
+  return (
+    p.client.id === clientId &&
+    p.source === "native" &&
+    !["signed_by_client", "completed"].includes(p.status) &&
+    !p.signers.length &&
+    !p.versions.some((v) => v.frozen)
+  );
+}
+export async function saveClient(
+  repo: Repository,
+  raw: unknown,
+  write: (client: Client) => Promise<Client> = (client) =>
+    repo.saveClientContact(client),
+) {
   const candidate = ClientSchema.parse(raw);
   if (candidate.address.country)
     candidate.address.country = countryCode(candidate.address.country);
@@ -29,7 +54,7 @@ export async function saveClient(repo: Repository, raw: unknown) {
   );
   if (existing) throw new DuplicateClient(existing);
   try {
-    return await repo.saveClientContact(client);
+    return await write(client);
   } catch (error) {
     if ((error as { code?: string }).code === "23505") {
       const duplicate = (await repo.entities<Client>("clients")).find(
