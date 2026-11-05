@@ -25,6 +25,7 @@ test("From lists the workspace team, defaults to the current user and submits a 
       };
     else if (path.endsWith("/send")) {
       const input = route.request().postDataJSON();
+      expect(input.delivery_method).toBe("email");
       expect(
         Object.keys(input)
           .filter((k) => k !== "pagination")
@@ -32,6 +33,7 @@ test("From lists the workspace team, defaults to the current user and submits a 
       ).toEqual([
         "body",
         "confirm_ai_review",
+        "delivery_method",
         "password",
         "revision",
         "sender_user_id",
@@ -42,7 +44,11 @@ test("From lists the workspace team, defaults to the current user and submits a 
         staff,
         input.confirm_ai_review,
         input.sender_user_id,
-        { expected_revision: input.revision, pagination: input.pagination },
+        {
+          delivery_method: input.delivery_method,
+          expected_revision: input.revision,
+          pagination: input.pagination,
+        },
       );
       value = p;
     } else if (path === `/api/proposals/${p.id}`) value = p;

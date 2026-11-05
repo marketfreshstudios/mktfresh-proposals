@@ -16,7 +16,10 @@ export function eventLabel(
     edited: "Proposal edited",
     ai_sections_reviewed: "Assistant sections reviewed",
     ai_review_undone: "Assistant review reopened",
-    sent: "Proposal sent",
+    sent:
+      e.metadata.delivery_method === "manual"
+        ? `Sent manually by ${e.metadata.actor_name ?? actorName} (link copied, no email from the app)`
+        : "Proposal sent",
     viewed: "Client opened the proposal",
     quote_changed: "Client updated their choices",
     consent_given:

@@ -1,4 +1,5 @@
 "use client";
+import { ManualDeliveryConfirmation } from "./client-link";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
@@ -1192,6 +1193,22 @@ export function RecordV4({
   onRefresh: () => Promise<void>;
   countersign?: boolean;
 }) {
+  const [share, setShare] = useState(false);
+  useEffect(() => {
+    setShare(
+      new URLSearchParams(window.location.search).get("delivery") ===
+        "manual" &&
+        p.delivery_method === "manual" &&
+        !!p.token &&
+        !!p.sent_at,
+    );
+  }, [p.id, p.delivery_method]);
+  function closeShare() {
+    setShare(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("delivery");
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }
   const applying = useRef(false);
   const [highlightedJob, setHighlightedJob] = useState<string | null>(null);
   useEffect(() => {
@@ -1267,6 +1284,13 @@ export function RecordV4({
                       : "Everything is complete";
   return (
     <div className="record-v4 stack">
+      {share && p.token && (
+        <ManualDeliveryConfirmation
+          p={p}
+          appUrl={data.app_url}
+          onClose={closeShare}
+        />
+      )}
       <div className="record-toolbar">
         <a href={returnUrl}>← Back to proposals</a>
         <div className="actions">

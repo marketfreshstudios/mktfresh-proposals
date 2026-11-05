@@ -131,6 +131,8 @@ export async function proposalAction(
     delete p.live_blockers;
     delete p.published_state;
     delete p.unpublished_work;
+    delete p.delivery_method;
+    delete p.automatic_reminders;
     delete p.owner;
     delete p.sender;
     delete p.notification_emails;

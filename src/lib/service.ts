@@ -633,6 +633,7 @@ export class ProposalService {
     confirmAiReview = false,
     senderId = actor.actor.slice(6),
     options: {
+      delivery_method?: "email" | "manual";
       note?: string;
       subject?: string;
       body?: import("./model").RichText;
@@ -652,6 +653,8 @@ export class ProposalService {
       "Staff authorization required",
       403,
     );
+    const delivery = options.delivery_method ?? "email";
+    check(["email", "manual"].includes(delivery), "Choose a delivery method");
     const members = await this.members(this.repo.workspaceId);
     const selected = members.find((m) => m.user_id === senderId);
     check(selected, "Choose a sender who belongs to this workspace", 400);
@@ -674,21 +677,26 @@ export class ProposalService {
       company_name: settings.company_name,
       sending_domain: domain,
     };
-    const mailTemplate = (await emailTemplates(this.repo)).find(
-      (t) => t.key === "proposal_sent",
-    )!;
-    const mailContent = {
-      ...mailTemplate,
-      ...validateTemplate({
-        subject: options.subject ?? mailTemplate.subject,
-        body:
-          options.body ??
-          (options.note !== undefined
-            ? plainBody(options.note)
-            : mailTemplate.body),
-        button_label: mailTemplate.button_label,
-      }),
-    };
+    const mailTemplate =
+      delivery === "email"
+        ? (await emailTemplates(this.repo)).find(
+            (t) => t.key === "proposal_sent",
+          )!
+        : null;
+    const mailContent = mailTemplate
+      ? {
+          ...mailTemplate,
+          ...validateTemplate({
+            subject: options.subject ?? mailTemplate.subject,
+            body:
+              options.body ??
+              (options.note !== undefined
+                ? plainBody(options.note)
+                : mailTemplate.body),
+            button_label: mailTemplate.button_label,
+          }),
+        }
+      : null;
     const catalog = await this.repo.entities<Item>("pricing_items");
     const before = await this.repo.get(id);
     check(before, "Not found", 404);
@@ -700,11 +708,12 @@ export class ProposalService {
       before.template_style_overrides,
       before.style_overrides,
     );
-    renderTemplate(mailContent, {
-      ...before,
-      workspace_settings: settingsSnapshot(settings),
-      sender,
-    });
+    if (mailContent)
+      renderTemplate(mailContent, {
+        ...before,
+        workspace_settings: settingsSnapshot(settings),
+        sender,
+      });
     const preflight = await this.checkReady(
       { ...before, workspace_settings: settingsSnapshot(settings) },
       confirmAiReview,
@@ -782,6 +791,8 @@ export class ProposalService {
       if (options.password !== undefined)
         p.password_hash =
           options.password === null ? null : hashPassword(options.password);
+      p.delivery_method = delivery;
+      p.automatic_reminders = delivery === "email";
       p.sent_at = now;
       p.token ??= randomBytes(32).toString("base64url");
       p.status = p.first_viewed_at ? "viewed" : "sent";
@@ -797,25 +808,28 @@ export class ProposalService {
           version: version.version_no,
           sender,
           confirmed_sections: confirmedSections,
+          delivery_method: delivery,
+          actor_name: actor.staff_name ?? actor.staff_email ?? "Staff",
         },
         now,
       );
-      queue(
-        p,
-        "email",
-        "send:" + version.version_no,
-        {
-          to: p.client.email,
-          email_template_key: "proposal_sent",
-          email_template: mailContent,
-          subject: options.subject ?? p.title,
-          send_version: version.version_no,
-          proposal_email: true,
-          note: options.note ?? "",
-          text: `${options.note ? options.note + "\n\n" : ""}Review your proposal: ${proposalLink(p)}`,
-        },
-        now,
-      );
+      if (mailContent)
+        queue(
+          p,
+          "email",
+          "send:" + version.version_no,
+          {
+            to: p.client.email,
+            email_template_key: "proposal_sent",
+            email_template: mailContent,
+            subject: options.subject ?? p.title,
+            send_version: version.version_no,
+            proposal_email: true,
+            note: options.note ?? "",
+            text: `${options.note ? options.note + "\n\n" : ""}Review your proposal: ${proposalLink(p)}`,
+          },
+          now,
+        );
     });
   }
   async byToken(token: string, password = "") {

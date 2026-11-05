@@ -1086,6 +1086,10 @@ async function handleRoute(req: Request, path: string[]) {
           ?.includes("application/json")
           ? await body(req)
           : {};
+        const delivery = z
+          .enum(["email", "manual"])
+          .default("email")
+          .parse(input.delivery_method);
         return json(
           await rt.service.send(
             id,
@@ -1095,6 +1099,7 @@ async function handleRoute(req: Request, path: string[]) {
               ? undefined
               : uuid.parse(input.sender_user_id),
             {
+              delivery_method: delivery,
               pagination: PagePlanSchema.optional().parse(input.pagination),
               expected_revision: z
                 .number()
@@ -1102,9 +1107,15 @@ async function handleRoute(req: Request, path: string[]) {
                 .min(0)
                 .optional()
                 .parse(input.revision),
-              note: z.string().max(4000).optional().parse(input.note),
-              subject: z.string().max(300).optional().parse(input.subject),
-              body: input.body,
+              note:
+                delivery === "email"
+                  ? z.string().max(4000).optional().parse(input.note)
+                  : undefined,
+              subject:
+                delivery === "email"
+                  ? z.string().max(300).optional().parse(input.subject)
+                  : undefined,
+              body: delivery === "email" ? input.body : undefined,
               password: z
                 .string()
                 .min(8)
