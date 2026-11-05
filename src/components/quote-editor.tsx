@@ -232,6 +232,7 @@ function QuoteEditorContent({
       user?.actor.slice(6) ?? staff[0]?.user_id ?? "",
     ),
     [note, setNote] = useState<import("../lib/model").RichText>(plainBody("")),
+    [delivery, setDelivery] = useState<"email" | "manual">("email"),
     [emailSubject, setEmailSubject] = useState(""),
     [emailError, setEmailError] = useState(""),
     [emailLoaded, setEmailLoaded] = useState(false),
@@ -729,15 +730,18 @@ function QuoteEditorContent({
           pagination: pagePlan.current,
           confirm_ai_review: confirmed,
           sender_user_id: sender,
-          subject: emailSubject,
-          body: note,
+          delivery_method: delivery,
+          ...(delivery === "email"
+            ? { subject: emailSubject, body: note }
+            : {}),
           ...(!protectedLink
             ? { password: null }
             : password
               ? { password }
               : {}),
         });
-        location.href = `/proposals/${p.id}`;
+        allowLeave.current = true;
+        location.href = `/proposals/${p.id}${delivery === "manual" ? "?delivery=manual" : ""}`;
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unable to send");
@@ -1639,6 +1643,29 @@ function QuoteEditorContent({
           </button>
         </div>
       </div>
+      <fieldset className="delivery-choice">
+        <legend>How will you deliver it?</legend>
+        <label className="check">
+          <input
+            type="radio"
+            name="proposal-delivery"
+            value="email"
+            checked={delivery === "email"}
+            onChange={() => setDelivery("email")}
+          />
+          Email it from the app
+        </label>
+        <label className="check">
+          <input
+            type="radio"
+            name="proposal-delivery"
+            value="manual"
+            checked={delivery === "manual"}
+            onChange={() => setDelivery("manual")}
+          />
+          I'll send it myself
+        </label>
+      </fieldset>
       <Field label="Valid until">
         <ValidityField
           timezone={settings?.timezone ?? "UTC"}
@@ -1661,62 +1688,66 @@ function QuoteEditorContent({
           readOnly
         />
       </Field>
-      {(emailError || emailValidation) && (
-        <Banner tone="danger" title="Check the email">
-          {emailError || emailValidation}
-          {emailError && (
-            <Button onClick={() => setEmailRetry((n) => n + 1)}>
-              Retry email template
-            </Button>
+      {delivery === "email" && (
+        <>
+          {(emailError || emailValidation) && (
+            <Banner tone="danger" title="Check the email">
+              {emailError || emailValidation}
+              {emailError && (
+                <Button onClick={() => setEmailRetry((n) => n + 1)}>
+                  Retry email template
+                </Button>
+              )}
+            </Banner>
           )}
-        </Banner>
+          <Field label="Subject">
+            <SubjectField
+              value={emailSubject}
+              disabled={!emailLoaded}
+              map={{
+                ...emailValues(p),
+                "sender.name":
+                  staff.find((m) => m.user_id === sender)?.display_name ??
+                  user?.staff_name ??
+                  "",
+              }}
+              onChange={(value) => {
+                subjectEdited.current = true;
+                setEmailSubject(value);
+              }}
+            />
+          </Field>
+          <div className="field send-email-note">
+            <span>Note</span>
+            {emailLoaded ? (
+              <FieldEditor
+                standalone
+                label="Note"
+                allowLinks
+                value={note}
+                onChange={(v) => {
+                  setNote(v);
+                }}
+                map={{
+                  ...emailValues(p),
+                  "sender.name":
+                    staff.find((m) => m.user_id === sender)?.display_name ??
+                    user?.staff_name ??
+                    "",
+                }}
+                showNames={false}
+              />
+            ) : (
+              <p role="status">Loading email template…</p>
+            )}
+          </div>
+          <p className="muted">
+            Subject and note start from your{" "}
+            <a href="/studio/emails/proposal_sent">Proposal sent email</a>.
+            Edits here apply only to this send.
+          </p>
+        </>
       )}
-      <Field label="Subject">
-        <SubjectField
-          value={emailSubject}
-          disabled={!emailLoaded}
-          map={{
-            ...emailValues(p),
-            "sender.name":
-              staff.find((m) => m.user_id === sender)?.display_name ??
-              user?.staff_name ??
-              "",
-          }}
-          onChange={(value) => {
-            subjectEdited.current = true;
-            setEmailSubject(value);
-          }}
-        />
-      </Field>
-      <div className="field send-email-note">
-        <span>Note</span>
-        {emailLoaded ? (
-          <FieldEditor
-            standalone
-            label="Note"
-            allowLinks
-            value={note}
-            onChange={(v) => {
-              setNote(v);
-            }}
-            map={{
-              ...emailValues(p),
-              "sender.name":
-                staff.find((m) => m.user_id === sender)?.display_name ??
-                user?.staff_name ??
-                "",
-            }}
-            showNames={false}
-          />
-        ) : (
-          <p role="status">Loading email template…</p>
-        )}
-      </div>
-      <p className="muted">
-        Subject and note start from your{" "}
-        <a href="/studio/emails/proposal_sent">Proposal sent email</a>. Edits
-        here apply only to this send.
-      </p>
       <label className="check">
         <input
           type="checkbox"
@@ -1743,7 +1774,10 @@ function QuoteEditorContent({
         </Field>
       )}
       <small>
-        The client link is added automatically. From must match{" "}
+        {delivery === "email"
+          ? "The client link is added automatically. "
+          : "The app won't email this link or send automatic reminders unless you turn them on in the record. "}
+        From must match{" "}
         {settings?.sending_domain || "the workspace’s verified domain"}.
       </small>
       <footer className="send-panel-footer">
@@ -1760,9 +1794,8 @@ function QuoteEditorContent({
             variant="primary"
             disabled={
               !ready.ready ||
-              !emailLoaded ||
-              !!emailValidation ||
-              !!emailError ||
+              (delivery === "email" &&
+                (!emailLoaded || !!emailValidation || !!emailError)) ||
               stale ||
               offline ||
               sending ||
@@ -1771,13 +1804,18 @@ function QuoteEditorContent({
             busy={sending}
             onClick={() => void sendProposal()}
           >
-            Send to {p.client.first_name || "client"}
+            {delivery === "manual"
+              ? "Publish client link"
+              : `Send to ${p.client.first_name || "client"}`}
           </Button>
         </div>
         <p className="send-blocked-reason" role="status">
           {offline
             ? "Reconnect to send"
-            : (ready.errors[0] ?? (emailError || emailValidation || ""))}
+            : (ready.errors[0] ??
+              (delivery === "email"
+                ? emailError || emailValidation || ""
+                : ""))}
         </p>
       </footer>
     </div>

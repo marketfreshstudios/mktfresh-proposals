@@ -286,6 +286,8 @@ export type Proposal = {
   /** Read-only list summary; full evidence is loaded on the record. */
   version_count?: number;
   creation_warnings?: string[];
+  delivery_method?: "email" | "manual";
+  automatic_reminders?: boolean;
   owner?: import("./proposal-owner").ProposalOwner;
   sender?: import("./email-identity").ProposalSender;
   notification_emails?: string[];

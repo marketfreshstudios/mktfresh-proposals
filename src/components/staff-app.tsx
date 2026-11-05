@@ -304,7 +304,9 @@ export function StaffApp({
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
       ) : (p.status === "draft" &&
           (!action || action === "edit" || action === "send")) ||
-        (action === "edit" && p.source === "native" && !p.marked_won_by) ? (
+        (["edit", "send"].includes(action) &&
+          p.source === "native" &&
+          !p.marked_won_by) ? (
         <ProposalEditor
           appUrl={data.app_url}
           initial={p}
@@ -317,16 +319,6 @@ export function StaffApp({
           user={data.user}
           documents={data.documents}
           onSaved={setP}
-        />
-      ) : action === "send" ? (
-        <SendProposal
-          data={data}
-          p={p}
-          catalog={data.catalog}
-          onSent={(next) => {
-            setP(next);
-            location.href = `/proposals/${p.id}`;
-          }}
         />
       ) : action === "countersign" ? (
         <RecordV4
@@ -760,138 +752,6 @@ function Document({ p }: { p: Proposal }) {
   }
   return (
     <article className="paper" dangerouslySetInnerHTML={{ __html: html }} />
-  );
-}
-function SendProposal({
-  data,
-  p,
-  catalog,
-  onSent,
-}: {
-  p: Proposal;
-  catalog: Item[];
-  catalog_error?: string;
-  data: Data;
-  onSent: (p: Proposal) => void;
-}) {
-  p = withDraftSettings(p, data.settings);
-  const [confirmed, setConfirmed] = useState(false),
-    [rotate, setRotate] = useState(false),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const [senderId, setSenderId] = useState(data.user.actor.slice(6));
-  const ready = readiness(p, catalog, new Date(), confirmed);
-  return (
-    <div className="grid">
-      <div className="stack">
-        <section className="card">
-          <h2>Ready to send</h2>
-          {ready.errors.map((e) => (
-            <p key={e}>× {e}</p>
-          ))}
-          {ready.warnings.map((w) => (
-            <p key={w}>! {w}</p>
-          ))}
-          {ready.ready && <p>✓ Content, signatures and quote are ready.</p>}
-        </section>
-        <section className="card stack">
-          <Field label="From">
-            <select
-              value={senderId}
-              onChange={(e) => setSenderId(e.target.value)}
-            >
-              {data.staff.map((member) => (
-                <option key={member.user_id} value={member.user_id}>
-                  {member.display_name} · {data.settings?.company_name} &lt;
-                  {member.email}&gt;
-                </option>
-              ))}
-            </select>
-          </Field>
-          <small>
-            Sender must use the verified sending domain:{" "}
-            {data.settings?.sending_domain ||
-              "not configured — set it in Settings"}
-            .
-          </small>
-          <h2>Recipient</h2>
-          <strong>
-            {p.client.first_name} {p.client.last_name}
-          </strong>
-          <span>{p.client.email}</span>
-          {p.valid_until && <small>Valid until {date(p.valid_until)}</small>}
-          {p.ai_unreviewed && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              I have reviewed the assistant’s scope and prices.
-            </label>
-          )}
-          {p.sent_at && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={rotate}
-                onChange={(e) => setRotate(e.target.checked)}
-              />
-              Re-send and rotate the link. The previous link will stop working.
-            </label>
-          )}
-          {error && (
-            <Banner tone="danger" title="Not sent">
-              {error}
-            </Banner>
-          )}
-          <Button
-            variant="primary"
-            busy={busy}
-            disabled={!ready.ready || (!!p.sent_at && !rotate)}
-            note={
-              !ready.ready
-                ? "Resolve the readiness checks before sending."
-                : p.sent_at && !rotate
-                  ? "Confirm link rotation to re-send."
-                  : undefined
-            }
-            onClick={async () => {
-              setBusy(true);
-              try {
-                onSent(
-                  await post(`/api/proposals/${p.id}/send`, {
-                    confirm_ai_review: confirmed,
-                    sender_user_id: senderId,
-                  }),
-                );
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "Unable to send");
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {p.sent_at ? "Re-send and rotate link" : "Send proposal"}
-          </Button>
-        </section>
-        <section className="card">
-          <h2>Reminders</h2>
-          <p>
-            Days {(p.workspace_settings?.reminder_days ?? []).join(" and ")}{" "}
-            after sending, unless signed or declined first.
-          </p>
-          <p>
-            Billing runs after the client signs. A failure never undoes a
-            signature.
-          </p>
-        </section>
-      </div>
-      <section>
-        <h2>What the client will see</h2>
-        <Document p={p} />
-      </section>
-    </div>
   );
 }
 function Audit({ p }: { p: Proposal }) {

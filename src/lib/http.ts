@@ -1080,12 +1080,33 @@ async function handleRoute(req: Request, path: string[]) {
       }
       if (method === "GET" && action === "emails")
         return json(await proposalEmailLog(rt.repo, id));
+      if (method === "POST" && action === "reminders") {
+        const input = z
+          .object({
+            revision: z.number().int().nonnegative(),
+            enabled: z.boolean(),
+          })
+          .strict()
+          .parse(await body(req));
+        return json(
+          await rt.service.setAutomaticReminders(
+            id,
+            input.revision,
+            input.enabled,
+            user,
+          ),
+        );
+      }
       if (method === "POST" && action === "send") {
         const input = req.headers
           .get("content-type")
           ?.includes("application/json")
           ? await body(req)
           : {};
+        const delivery = z
+          .enum(["email", "manual"])
+          .default("email")
+          .parse(input.delivery_method);
         return json(
           await rt.service.send(
             id,
@@ -1095,6 +1116,7 @@ async function handleRoute(req: Request, path: string[]) {
               ? undefined
               : uuid.parse(input.sender_user_id),
             {
+              delivery_method: delivery,
               pagination: PagePlanSchema.optional().parse(input.pagination),
               expected_revision: z
                 .number()
@@ -1102,9 +1124,15 @@ async function handleRoute(req: Request, path: string[]) {
                 .min(0)
                 .optional()
                 .parse(input.revision),
-              note: z.string().max(4000).optional().parse(input.note),
-              subject: z.string().max(300).optional().parse(input.subject),
-              body: input.body,
+              note:
+                delivery === "email"
+                  ? z.string().max(4000).optional().parse(input.note)
+                  : undefined,
+              subject:
+                delivery === "email"
+                  ? z.string().max(300).optional().parse(input.subject)
+                  : undefined,
+              body: delivery === "email" ? input.body : undefined,
               password: z
                 .string()
                 .min(8)

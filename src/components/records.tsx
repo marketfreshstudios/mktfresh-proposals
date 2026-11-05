@@ -1,4 +1,6 @@
 "use client";
+import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
+import { automaticRemindersEnabled } from "../lib/delivery";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
@@ -274,6 +276,14 @@ export function ProposalMenu({
             </form>
           ) : (
             <nav className="action-menu">
+              {p.token && (
+                <CopyClientLink
+                  menu
+                  token={p.token}
+                  appUrl={data.app_url}
+                  label="Copy client link"
+                />
+              )}
               {canReassign(p, data.user) && (
                 <button
                   onClick={() => {
@@ -1192,6 +1202,28 @@ export function RecordV4({
   onRefresh: () => Promise<void>;
   countersign?: boolean;
 }) {
+  const [reminders, setReminders] = useState(automaticRemindersEnabled(p));
+  useEffect(
+    () => setReminders(automaticRemindersEnabled(p)),
+    [p.id, p.automatic_reminders, p.delivery_method],
+  );
+  const [share, setShare] = useState(false),
+    [reminderBusy, setReminderBusy] = useState(false);
+  useEffect(() => {
+    setShare(
+      new URLSearchParams(window.location.search).get("delivery") ===
+        "manual" &&
+        p.delivery_method === "manual" &&
+        !!p.token &&
+        !!p.sent_at,
+    );
+  }, [p.id, p.delivery_method]);
+  function closeShare() {
+    setShare(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("delivery");
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }
   const applying = useRef(false);
   const [highlightedJob, setHighlightedJob] = useState<string | null>(null);
   useEffect(() => {
@@ -1267,6 +1299,13 @@ export function RecordV4({
                       : "Everything is complete";
   return (
     <div className="record-v4 stack">
+      {share && p.token && (
+        <ManualDeliveryConfirmation
+          p={p}
+          appUrl={data.app_url}
+          onClose={closeShare}
+        />
+      )}
       <div className="record-toolbar">
         <a href={returnUrl}>← Back to proposals</a>
         <div className="actions">
@@ -1283,7 +1322,58 @@ export function RecordV4({
           <ProposalMenu p={p} data={data} onChanged={onChanged} />
         </div>
       </div>
+      {p.token && (
+        <header className="record-link-header">
+          <CopyClientLink token={p.token} appUrl={data.app_url} />
+        </header>
+      )}
       <ProposalBadges p={p} />
+      {native && p.token && (
+        <section className="record-reminders">
+          <label className="check">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={reminders}
+              disabled={
+                reminderBusy ||
+                !!p.archived_at ||
+                !!p.signers.length ||
+                !["sent", "viewed"].includes(p.status)
+              }
+              onChange={async (e) => {
+                const enabled = e.target.checked;
+                setReminders(enabled);
+                setReminderBusy(true);
+                setError("");
+                try {
+                  onChanged(
+                    await post<Proposal>(`/api/proposals/${p.id}/reminders`, {
+                      revision: p.revision,
+                      enabled,
+                    }),
+                  );
+                } catch (e) {
+                  setReminders(automaticRemindersEnabled(p));
+                  setError((e as Error).message);
+                } finally {
+                  setReminderBusy(false);
+                }
+              }}
+            />
+            Automatic reminders from the app
+          </label>
+          <small className="muted">
+            {["sent", "viewed"].includes(p.status) &&
+            !p.signers.length &&
+            !p.archived_at
+              ? automaticRemindersEnabled(p)
+                ? "The app can email scheduled reminders. You can still send a reminder yourself at any time."
+                : "Scheduled reminders are off. Send reminder still works when you need it."
+              : "Reminders stop after signing or closing."}
+          </small>
+        </section>
+      )}
       {already && (
         <div role="status" className="notice-toast">
           {already}

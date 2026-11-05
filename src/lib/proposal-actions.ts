@@ -1,4 +1,5 @@
 import {
+  reminderCycle,
   publishedExpiry,
   editableProposal,
   editorialVersion,
@@ -131,6 +132,8 @@ export async function proposalAction(
     delete p.live_blockers;
     delete p.published_state;
     delete p.unpublished_work;
+    delete p.delivery_method;
+    delete p.automatic_reminders;
     delete p.owner;
     delete p.sender;
     delete p.notification_emails;
@@ -250,7 +253,7 @@ export async function proposalAction(
           subject: `Reminder: ${p.title}`,
           text: `Review your proposal: ${proposalLink(p)}`,
           reminder_day: "manual",
-          version: p.versions.length,
+          version: reminderCycle(p).version,
         },
         timestamp,
       );
