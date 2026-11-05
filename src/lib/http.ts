@@ -897,6 +897,12 @@ async function handleRoute(req: Request, path: string[]) {
         const q = new URL(req.url).searchParams;
         const list = (await rt.repo.list(q.get("q") ?? undefined)).filter(
           (p) =>
+            (!q.get("owner") ||
+              q.get("owner") === "all" ||
+              proposalOwnerId(p) ===
+                (q.get("owner") === "mine"
+                  ? user.actor.slice(6)
+                  : q.get("owner"))) &&
             (!q.get("status") || p.status === q.get("status")) &&
             (!q.get("client") || p.client.id === q.get("client")) &&
             (!q.get("source") || p.source === q.get("source")) &&
