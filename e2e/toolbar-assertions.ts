@@ -12,13 +12,16 @@ export async function clearNeighbours(bar: Locator, owner: Locator) {
           Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top) > 1;
         return [
           ...paper.querySelectorAll<HTMLElement>(
-            ".cover-element,.tiptap,[data-page-band],.flow-quote-line",
+            ".cover-element,.tiptap,[data-page-band],[data-band-frame],.flow-quote-line",
           ),
         ]
           .filter(
             (n) =>
-              !owner!.contains(n) &&
-              !n.closest("[data-editor-chrome],[data-page-measurement]") &&
+              !n.closest("[data-page-measurement]") &&
+              (!n.closest("[data-editor-chrome]") ||
+                n
+                  .closest("[data-editor-chrome]")!
+                  .matches(".page-band-frame")) &&
               getComputedStyle(n).visibility === "visible",
           )
           .filter((n) => intersects(n.getBoundingClientRect()))

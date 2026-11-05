@@ -77,6 +77,12 @@ for (const width of [1440, 1024])
         if (!(await header.count())) continue;
         await header.scrollIntoViewIfNeeded();
         await header.click();
+        const column = header.getByRole("textbox", {
+          name: "header column 1",
+          exact: true,
+        });
+        await column.click();
+        await expect(column).toBeFocused();
         await clearNeighbours(page.locator(".band-edit-bar"), header);
         await page
           .locator(".band-edit-bar")

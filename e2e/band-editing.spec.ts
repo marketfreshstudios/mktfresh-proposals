@@ -170,14 +170,17 @@ test("band menus are accessible, controls keep 44px hit areas, and bars avoid te
   for (const width of [1180, 1024]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect(bar).toHaveCSS("height", "40px");
-    expect(
-      await bar.evaluate(
-        (el) =>
-          el.getBoundingClientRect().right <=
-          el.closest(".editor-document-region")!.getBoundingClientRect().right -
-            12,
-      ),
-    ).toBe(true);
+    await expect
+      .poll(() =>
+        bar.evaluate(
+          (el) =>
+            el.getBoundingClientRect().right <=
+            el.closest(".editor-document-region")!.getBoundingClientRect()
+              .right -
+              12,
+        ),
+      )
+      .toBe(true);
     const hitAreas = await bar.locator("button").evaluateAll((es) =>
       es.map((e) => ({
         w: e.getBoundingClientRect().width,

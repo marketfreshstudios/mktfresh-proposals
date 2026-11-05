@@ -26,10 +26,16 @@ export function toolbarObstacles(
     )
       result.push(rect(r));
   };
-  const ignored = (el: Element) =>
-    !!el.closest(
-      '[data-editor-chrome],[data-page-measurement],[aria-hidden="true"]',
-    ) || getComputedStyle(el).visibility !== "visible";
+  const ignored = (el: Element) => {
+    const chrome = el.closest("[data-editor-chrome]");
+    // Bands use this attribute to stay out of body pagination, but their actual
+    // editable content is still a screen obstacle. Nested controls remain chrome.
+    return (
+      !!el.closest('[data-page-measurement],[aria-hidden="true"]') ||
+      (!!chrome && !chrome.matches(".page-band-frame")) ||
+      getComputedStyle(el).visibility !== "visible"
+    );
+  };
   const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
@@ -40,7 +46,7 @@ export function toolbarObstacles(
     for (const r of range.getClientRects()) add(r);
   }
   for (const el of paper.querySelectorAll<HTMLElement>(
-    "img,input,textarea,.signature-pair,.document-signature,.cover-element,.tiptap,[data-page-band],.flow-quote-line,summary,.block-content",
+    "img,input,textarea,.signature-pair,.document-signature,.cover-element,.tiptap,[data-page-band],[data-band-frame],.flow-quote-line,summary,.block-content",
   ))
     if (!ignored(el)) add(el.getBoundingClientRect());
   for (const cover of paper.querySelectorAll<HTMLElement>(".document-cover"))
