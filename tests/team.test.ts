@@ -76,3 +76,32 @@ it("team edits preserve email and membership and enforce owner/self and tenant b
     updateStaffDisplayName(actor, member.user_id, "Name\r\nBcc: bad"),
   ).rejects.toThrow("line breaks");
 });
+
+it("the workspace directory retains inactive identities used by saved signatory settings", async () => {
+  const member = {
+    user_id: staff.actor.slice(6),
+    role: "owner",
+    display_name: "Alex",
+    status: "deactivated",
+  };
+  const query = {
+    select: () => query,
+    eq: () => query,
+    then: (resolve: (v: unknown) => unknown) =>
+      resolve({ data: [member], error: null }),
+  };
+  mocked.supabase.mockReturnValue({
+    from: () => query,
+    auth: {
+      admin: {
+        getUserById: async () => ({
+          data: { user: { email: "trusted@example.test" } },
+          error: null,
+        }),
+      },
+    },
+  });
+  expect(await workspaceStaff("00000000-0000-4000-8000-000000000001")).toEqual([
+    { ...member, email: "trusted@example.test", name: "Alex" },
+  ]);
+});

@@ -51,6 +51,9 @@ begin
   raise exception 'The workspace must keep at least one active super admin' using errcode='23514'; end if;
  if operation='remove' and exists(select 1 from public.proposals where workspace_id=target_workspace and source <> 'proposify_import' and status not in ('completed','declined','expired','archived') and (state->'sender'->>'user_id'=target_id::text or (status='draft' and state->>'created_by'='staff:'||target_id))) then
   raise exception 'This person has unfinished proposals. Finish this work or use Deactivate instead.' using errcode='23514'; end if;
+ if operation in ('password_set','password_changed') then
+  update public.oauth_records set data=jsonb_set(data,'{revoked}','true'::jsonb) where workspace_id=target_workspace and kind='grant' and data->>'user_id'=target_id::text;
+ end if;
  if operation in ('deactivate','remove','reactivate') then perform team_private.revoke_staff_sessions(target_workspace,actor_id,target_id); end if;
  old_json=case when operation='invite' then null else to_jsonb(previous)-'session_version' end;
  if operation='invite' then

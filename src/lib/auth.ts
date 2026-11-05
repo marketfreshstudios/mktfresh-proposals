@@ -137,19 +137,17 @@ export async function workspaceStaff(workspaceId: string) {
     .eq("workspace_id", workspaceId);
   if (error) throw error;
   return Promise.all(
-    data
-      .filter((member) => (member.status ?? "active") === "active")
-      .map(async (member) => {
-        const { data, error } = await db.auth.admin.getUserById(member.user_id);
-        if (error || !data.user?.email)
-          throw new AppError(503, "Unable to load staff identity");
-        return {
-          ...member,
-          email: data.user.email,
-          display_name: member.display_name || data.user.email,
-          name: member.display_name || data.user.email,
-        };
-      }),
+    data.map(async (member) => {
+      const { data, error } = await db.auth.admin.getUserById(member.user_id);
+      if (error || !data.user?.email)
+        throw new AppError(503, "Unable to load staff identity");
+      return {
+        ...member,
+        email: data.user.email,
+        display_name: member.display_name || data.user.email,
+        name: member.display_name || data.user.email,
+      };
+    }),
   );
 }
 

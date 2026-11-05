@@ -70,6 +70,26 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
     change(owner, foreign, "role", { role: "member" }),
   ).rejects.toThrow("not found in this workspace");
   await change(owner, member, "role", { role: "owner" });
+  const passwordGrant = crypto.randomUUID();
+  await db.query(
+    "insert into oauth_records(id,workspace_id,kind,hash,data) values($1,$2,'grant',$3,$4)",
+    [
+      passwordGrant,
+      wid,
+      passwordGrant,
+      JSON.stringify({ user_id: member, revoked: false }),
+    ],
+  );
+  await change(owner, member, "password_set", {
+    password_change_required: false,
+  });
+  expect(
+    (
+      await db.query<any>("select data from oauth_records where id=$1", [
+        passwordGrant,
+      ])
+    ).rows[0].data.revoked,
+  ).toBe(true);
   await change(owner, owner, "role", { role: "member" });
   await expect(
     change(member, member, "role", { role: "member" }),
@@ -127,7 +147,7 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
   const audit = (
     await db.query<any>("select * from team_audit order by created_at")
   ).rows;
-  expect(audit).toHaveLength(5);
+  expect(audit).toHaveLength(6);
   expect(audit.at(-1).before.display_name).toBe("Alex");
   expect(audit.at(-1).after.display_name).toBe("New own name");
   await expect(
@@ -148,7 +168,7 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
       owner,
     ]),
   ).rejects.toThrow("permission denied");
-  expect((await db.query("select * from team_audit")).rows).toHaveLength(5);
+  expect((await db.query("select * from team_audit")).rows).toHaveLength(6);
   await expect(change(member, owner, "deactivate")).rejects.toThrow(
     "permission denied",
   );
