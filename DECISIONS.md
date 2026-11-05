@@ -512,3 +512,7 @@ Apply the hosted SQL from the PR before merging/deploying. [Implementation, perm
 - Keep client links reachable in authenticated staff records/lists. A post-publication confirmation exposes the canonical link and password guidance; it checks stored manual/sent state as well as the navigation parameter. Existing editor Copy client link stays.
 - Scheduled unopened/viewed reminders default off for manual sends. An audited, revision-guarded record switch opts in; the worker also gates pending automatic jobs. Expiry has no client email. Explicit staff reminders and all client-triggered signing/payment/completion messages remain in place. Explicit reminders use the send cycle so live edits do not silently suppress them.
 - Duplicate drafts reset delivery preferences. Consolidate the alternate `/send` UI into the current editor and remove its obsolete rotation promise. The one-link rule, signing/delegation, billing, readiness and PagePlan formats are unchanged. No SQL or hosted setup is needed; see `docs/manual-delivery.md`.
+
+## Yeswell product identity
+
+Yeswell is the staff product, separate from each workspace's proposal identity. Client pages and emails carry an optional, default-on “Powered by Yeswell” footer controlled by super admins; sealed PDFs and certificates never carry product attribution. The setting uses existing workspace JSON storage (no hosted SQL). It applies to existing links and newly prepared emails, while past email snapshots remain immutable. See `docs/yeswell-brand.md` for the unchanged deployment and future domain plan.
