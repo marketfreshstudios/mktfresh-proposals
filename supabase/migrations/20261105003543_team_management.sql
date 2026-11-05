@@ -80,17 +80,6 @@ revoke all on function public.change_team_member(uuid,uuid,uuid,text,jsonb) from
 grant execute on function public.change_team_member(uuid,uuid,uuid,text,jsonb) to service_role;
 -- A password update revokes refresh tokens at Auth; also reject surviving JWTs immediately.
 -- Preflight invitations without modifying an identity that belongs to another workspace.
-create function public.team_auth_identity(target_email text) returns jsonb
-language plpgsql security invoker set search_path='' as $$
-declare result jsonb;
-begin
- select jsonb_build_object('id',u.id,'workspace_id',s.workspace_id,'confirmed',u.email_confirmed_at is not null)
- into result from auth.users u left join public.staff_users s on s.user_id=u.id
- where lower(u.email)=lower(target_email) limit 1;
- return result;
-end $$;
-revoke all on function public.team_auth_identity(text) from public,anon,authenticated;
-grant execute on function public.team_auth_identity(text) to service_role;
 -- Auth tables are private to Supabase. This narrowly scoped definer is outside
 -- the exposed schema, checks the caller's membership again, and is service-only.
 create schema if not exists team_private;
@@ -119,3 +108,20 @@ create function public.staff_session_exists(target_user uuid,target_session uuid
 language sql security invoker set search_path='' as $$select team_private.staff_session_exists(target_user,target_session)$$;
 revoke all on function public.staff_session_exists(uuid,uuid) from public,anon,authenticated;
 grant execute on function public.staff_session_exists(uuid,uuid) to service_role;
+
+create function team_private.team_auth_identity(target_email text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare result jsonb;
+begin
+ select jsonb_build_object('id',u.id,'workspace_id',s.workspace_id,'confirmed',u.email_confirmed_at is not null)
+ into result from auth.users u left join public.staff_users s on s.user_id=u.id
+ where lower(u.email)=lower(target_email) limit 1;
+ return result;
+end $$;
+revoke all on function team_private.team_auth_identity(text) from public,anon,authenticated;
+grant execute on function team_private.team_auth_identity(text) to service_role;
+
+create function public.team_auth_identity(target_email text) returns jsonb
+language sql security invoker set search_path='' as $$select team_private.team_auth_identity(target_email)$$;
+revoke all on function public.team_auth_identity(text) from public,anon,authenticated;
+grant execute on function public.team_auth_identity(text) to service_role;

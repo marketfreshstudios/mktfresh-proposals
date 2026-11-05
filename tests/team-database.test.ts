@@ -29,6 +29,13 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
     [owner, wid, member, foreign, other],
   );
   await db.exec("set role service_role");
+  expect(
+    (
+      await db.query<any>("select team_auth_identity($1) as identity", [
+        `${owner}@example.test`,
+      ])
+    ).rows[0].identity,
+  ).toMatchObject({ id: owner, workspace_id: wid, confirmed: false });
   const change = async (
     actor: string,
     target: string,
@@ -131,6 +138,16 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
     member,
   ]);
   await db.exec("set role authenticated");
+  await expect(
+    db.query("select team_auth_identity($1)", [`${owner}@example.test`]),
+  ).rejects.toThrow("permission denied");
+  await expect(
+    db.query("select team_private.revoke_staff_sessions($1,$2,$3)", [
+      wid,
+      member,
+      owner,
+    ]),
+  ).rejects.toThrow("permission denied");
   expect((await db.query("select * from team_audit")).rows).toHaveLength(5);
   await expect(change(member, owner, "deactivate")).rejects.toThrow(
     "permission denied",
