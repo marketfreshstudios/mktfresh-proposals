@@ -37,4 +37,6 @@ The cover range limits also compensate for React’s render/commit timing: the c
 
 ## Validation
 
-Focused regressions include real Chromium/PDF text-position checks for every cover element, independent divider combinations, retained page geometry, line history/reload, pointer-drag Undo, phone widths/axe and server refresh/redirect/cookie flags. The full suite and production build results are recorded below after completion.
+Focused regressions include real Chromium/PDF text-position checks for every cover element, independent divider combinations, retained page geometry, line history/reload, pointer-drag Undo, phone widths/axe and server refresh/redirect/cookie flags. The completed full-suite and production-build results follow.
+
+Final local validation: **372 unit/database tests passed (67 files); the full browser suite passed 199 tests with four optional capture checks skipped (203 total, 14.4 minutes)**. TypeScript, formatting, neutrality and the production build pass, including the **328-file API/PDF runtime trace**. Existing signing, frozen-break/hash, conflict recovery, staff-session and client-choice checks pass. Requested screenshots are committed; physical mobile keyboard/touch behavior remains a manual check. Hand back without waiting for GitHub CI or merging.

@@ -1055,3 +1055,5 @@ Staff pages now authenticate/refresh before rendering, redirecting signed-out vi
 [Implementation details, neutral before/after screenshots and validation](docs/owner-review3.md). No hosted mutations. Do not wait for GitHub CI or merge automatically.
 
 The full run also exposed a desktop/phone toolbar remount gap. Image/cover actions now keep the same live DOM controls across docking changes. The unchanged tiny-logo check and a 4× CPU-throttled resize/identity regression passed ten consecutive runs each. The production build and 328-file PDF/API trace pass; the final complete browser rerun includes this fix.
+
+Final local validation: **372 unit/database tests passed (67 files); the full browser suite passed 199 tests with four optional capture checks skipped (203 total, 14.4 minutes)**. TypeScript, formatting, neutrality and the production build pass, including the **328-file API/PDF runtime trace**. Existing signing, frozen-break/hash, conflict recovery, staff-session and client-choice checks pass. Requested screenshots are committed; physical mobile keyboard/touch behavior remains a manual check. Hand back without waiting for GitHub CI or merging.
