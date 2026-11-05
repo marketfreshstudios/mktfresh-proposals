@@ -356,12 +356,14 @@ export class ProposalService {
   async forRead(p: Proposal) {
     if (
       p.status === "draft" &&
+      p.source === "native" &&
       !p.signature_heading_defaulted &&
       !p.signers.length
     ) {
       p = await mutate(this.repo, p.id, (row) => {
         if (
           row.status !== "draft" ||
+          row.source !== "native" ||
           row.signature_heading_defaulted ||
           row.signers.length
         )

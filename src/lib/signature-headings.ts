@@ -1,9 +1,13 @@
 import type { Block } from "./model";
 /** Authoring default only. Call once per draft/template, or on insertion, never on frozen versions. */
-export function withSignatureHeadings(blocks: Block[]): Block[] {
+export function withSignatureHeadings(
+  blocks: Block[],
+  insertedId?: string,
+): Block[] {
   const ids = new Set(blocks.map((b) => b.id));
   return blocks.flatMap((b, n) => {
     if (
+      (insertedId !== undefined && b.id !== insertedId) ||
       b.type !== "signature_block" ||
       ["heading", "signature_block"].includes(blocks[n - 1]?.type)
     )
