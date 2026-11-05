@@ -1,3 +1,4 @@
+import { FontSizeMarkSchema } from "./inline-font-size";
 import { pageMetrics } from "./proposal-styles";
 import { z } from "zod";
 import type { RichText } from "./model";
@@ -28,7 +29,8 @@ export const bandJustify = (
     : ["half", "wide"].includes(layout)
       ? ["start", "end"]
       : [layout === "center" ? "center" : layout === "right" ? "end" : "start"];
-const MarkSchema = z.discriminatedUnion("type", [
+const MarkSchema = z.union([
+  FontSizeMarkSchema,
   z.object({ type: z.enum(["bold", "italic", "underline"]) }).strict(),
   z
     .object({

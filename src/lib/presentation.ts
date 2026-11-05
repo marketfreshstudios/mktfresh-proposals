@@ -1,3 +1,4 @@
+import { hasInlineFontSize, inlineSizeHtml } from "./inline-font-size";
 import { formattedAddress } from "./client-contact";
 import { readableDate } from "./validity";
 import {
@@ -122,15 +123,17 @@ function escapedResolved(text: string, map: Record<string, string>) {
 }
 function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   check(depth < 30, "Content nesting too deep");
-  if (node.type === "variable")
-    return resolve("{{" + (node.attrs?.path ?? "") + "}}", map)
-      ? `<span class="field-chip">${escapedResolved("{{" + (node.attrs?.path ?? "") + "}}", map)}</span>`
-      : "";
-  if (node.type === "text") {
-    let s = escapedResolved(node.text ?? "", map);
+  if (node.type === "text" || node.type === "variable") {
+    let s =
+      node.type === "variable"
+        ? resolve("{{" + (node.attrs?.path ?? "") + "}}", map)
+          ? `<span class="field-chip">${escapedResolved("{{" + (node.attrs?.path ?? "") + "}}", map)}</span>`
+          : ""
+        : escapedResolved(node.text ?? "", map);
     for (const m of node.marks ?? []) {
       if (["bold", "italic", "underline"].includes(m.type))
         s = `<${{ bold: "strong", italic: "em", underline: "u" }[m.type]}>${s}</${{ bold: "strong", italic: "em", underline: "u" }[m.type]}>`;
+      else if (m.type === "fontSize") s = inlineSizeHtml(s, m.attrs?.size);
       else if (m.type === "link") {
         const href = String(m.attrs?.href ?? "");
         let safe = false;
@@ -176,7 +179,7 @@ export function renderBlocks(
       switch (b.type) {
         case "heading": {
           const level = [1, 2, 3].includes(b.level ?? 1) ? (b.level ?? 1) : 1;
-          return `<h${level + 1} data-heading-level="${level}">${escapedResolved(b.text ?? "", map)}</h${level + 1}>`;
+          return `<h${level + 1} data-heading-level="${level}">${b.content && (b.rich_heading || hasInlineFontSize(b.content)) ? rich(b.content, map).replace(/<\/?(?:div|p)>/g, "") : escapedResolved(b.text ?? "", map)}</h${level + 1}>`;
         }
         case "paragraph":
           return b.content

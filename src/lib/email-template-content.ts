@@ -1,3 +1,4 @@
+import { validateInlineSizes, inlineSizeHtml } from "./inline-font-size";
 import { z } from "zod";
 import { check, type Proposal, type RichText } from "./model";
 import { escape, variables } from "./presentation";
@@ -289,11 +290,12 @@ export function validateEmailBody(body: RichText) {
     for (const m of n.marks ?? []) {
       check(m && typeof m === "object", "Invalid email formatting");
       check(
-        ["bold", "italic", "link"].includes(m.type),
+        ["bold", "italic", "link", "fontSize"].includes(m.type),
         `Unsupported email formatting: ${m.type}`,
       );
       if (m.type === "link") safeLink(String(m.attrs?.href ?? ""));
     }
+    validateInlineSizes(n.marks);
     for (const c of n.content ?? []) visit(c, depth + 1);
   }
   visit(body);
@@ -343,6 +345,7 @@ export function renderEmailBody(
       for (const m of n.marks ?? []) {
         if (m.type === "bold") html = `<strong>${html}</strong>`;
         if (m.type === "italic") html = `<em>${html}</em>`;
+        if (m.type === "fontSize") html = inlineSizeHtml(html, m.attrs?.size);
         if (m.type === "link") {
           const href = safeLink(String(m.attrs?.href));
           html = `<a href="${escape(href)}" style="color:#365c4a;text-decoration:underline">${html}</a>`;

@@ -1,6 +1,10 @@
 "use client";
 import { SelectableImage } from "./editor/selectable-image";
-import { convertTextStyle, type TextLevel } from "../lib/editor-document";
+import {
+  blockText,
+  convertTextStyle,
+  type TextLevel,
+} from "../lib/editor-document";
 import { FieldEditor } from "./field-editor";
 import { FieldTextArea, FieldOptions } from "./field-options";
 import type { Block } from "../lib/model";
@@ -38,13 +42,35 @@ export function BlocksEditor({
             {b.type === "heading" ? (
               <label className="field">
                 Heading
-                <FieldTextArea
-                  textStyle={{ value: b.level ?? 1, change: style }}
-                  aria-label={`Heading ${n + 1}`}
-                  rows={2}
+                <FieldEditor
+                  inlineControls
                   autoFocus
-                  value={b.text ?? ""}
-                  onValue={(text) => patch({ ...b, text })}
+                  label={`Heading ${n + 1}`}
+                  textLevel={b.level ?? 1}
+                  onTextStyle={style}
+                  map={map}
+                  showNames={false}
+                  value={
+                    b.content ?? {
+                      type: "doc",
+                      content: [
+                        {
+                          type: "paragraph",
+                          content: b.text
+                            ? [{ type: "text", text: b.text }]
+                            : [],
+                        },
+                      ],
+                    }
+                  }
+                  onChange={(content) =>
+                    patch({
+                      ...b,
+                      content,
+                      rich_heading: true,
+                      text: blockText({ type: "heading", content }),
+                    })
+                  }
                 />
               </label>
             ) : b.type === "paragraph" ? (

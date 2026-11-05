@@ -119,6 +119,7 @@ export type Block = {
     | "contract";
   text?: string;
   level?: 1 | 2 | 3;
+  rich_heading?: boolean;
   content?: RichText;
   src?: string;
   alt?: string;

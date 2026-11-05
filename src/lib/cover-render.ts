@@ -1,3 +1,4 @@
+import { inlineSizeHtml } from "./inline-font-size";
 import {
   coverElementCss,
   coverElements,
@@ -30,7 +31,8 @@ export function coverInlineHtml(
         mark.type as "bold"
       ];
       value = `<${tag}>${value}</${tag}>`;
-    }
+    } else if (mark.type === "fontSize")
+      value = inlineSizeHtml(value, mark.attrs?.size);
   return value;
 }
 export function coverLineClass(e: CoverElement) {

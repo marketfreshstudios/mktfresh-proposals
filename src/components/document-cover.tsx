@@ -1,4 +1,5 @@
 "use client";
+import { FontSizePicker } from "./inline-font-size";
 import {
   useEffect,
   useLayoutEffect,
@@ -520,6 +521,7 @@ function CoverText({
         >
           <i>I</i>
         </button>
+        <FontSizePicker editor={editor} />
         <span className="edit-divider" />
         <button type="button" onClick={(event) => open("align", event)}>
           Align

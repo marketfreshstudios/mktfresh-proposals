@@ -20,10 +20,15 @@ export function bandRichText(node: RichText): RichText {
       ? {
           marks: node.marks
             .filter((mark) =>
-              ["bold", "italic", "underline", "link"].includes(mark.type),
+              ["bold", "italic", "underline", "link", "fontSize"].includes(
+                mark.type,
+              ),
             )
             .map((mark) => ({
               type: mark.type,
+              ...(mark.type === "fontSize"
+                ? { attrs: { size: mark.attrs?.size } }
+                : {}),
               ...(mark.type === "link"
                 ? { attrs: { href: mark.attrs?.href ?? "" } }
                 : {}),

@@ -20,9 +20,9 @@ export function withoutTitleHeading(content: Block[]) {
 export function appendField(block: Block, path: string): Block {
   const next = structuredClone(block),
     token = `{{${path}}}`;
-  if (next.type === "heading" || (next.type === "paragraph" && !next.content))
+  if (["heading", "paragraph"].includes(next.type) && !next.content)
     return { ...next, text: (next.text ?? "") + token };
-  if (next.type !== "paragraph") return next;
+  if (!["heading", "paragraph"].includes(next.type)) return next;
   let last: NonNullable<Block["content"]> | undefined;
   function walk(node: NonNullable<Block["content"]>) {
     if (node.type === "paragraph") last = node;
@@ -34,6 +34,10 @@ export function appendField(block: Block, path: string): Block {
     (next.content!.content ??= []).push(last);
   }
   (last.content ??= []).push({ type: "variable", attrs: { path } });
+  if (next.type === "heading") {
+    next.rich_heading = true;
+    next.text = blockText(next);
+  }
   return next;
 }
 
@@ -63,13 +67,20 @@ export function convertTextStyle(
         type: "paragraph",
         level: undefined,
         text,
-        content: undefined,
+        content:
+          block.content && text === blockText(block)
+            ? structuredClone(block.content)
+            : undefined,
       }
     : {
         ...block,
         type: "heading",
+        rich_heading: !!block.content || block.rich_heading,
         level,
         text: text.replace(/[\r\n]+/g, " "),
-        content: undefined,
+        content:
+          block.content && text === blockText(block)
+            ? structuredClone(block.content)
+            : undefined,
       };
 }

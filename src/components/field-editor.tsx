@@ -1,4 +1,5 @@
 "use client";
+import { InlineFontSize, registerInlineEditor } from "./inline-font-size";
 import {
   InlineBandImage,
   bandImageDragOver,
@@ -73,7 +74,11 @@ export function FieldEditor({
   coverEditor,
   domId,
   maxLength,
+  textLevel = 0,
+  onHeadingStartEnter,
 }: {
+  textLevel?: TextLevel;
+  onHeadingStartEnter?: () => void;
   maxLength?: number;
   domId?: string;
   coverEditor?: (editor: import("@tiptap/core").Editor | null) => void;
@@ -103,7 +108,14 @@ export function FieldEditor({
   styleChange.current = onTextStyle;
   const reveal = useRef(onBeforeInsert);
   reveal.current = onBeforeInsert;
+  const headingEnter = useRef(onHeadingStartEnter);
+  headingEnter.current = onHeadingStartEnter;
+  const levelRef = useRef(textLevel);
+  levelRef.current = textLevel;
   const editorId = useId();
+  const [sizeError, setSizeError] = useState("");
+  const inlineHistory = useRef(history);
+  inlineHistory.current = history;
   allowLinks = allowLinks || !!toolbar;
   const change = useRef(onChange),
     values = useRef(map),
@@ -125,6 +137,18 @@ export function FieldEditor({
     immediatelyRender: false,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
+      handleKeyDown: (view, event) => {
+        if (
+          headingEnter.current &&
+          event.key === "Enter" &&
+          view.state.selection.from === 1
+        ) {
+          event.preventDefault();
+          headingEnter.current();
+          return true;
+        }
+        return false;
+      },
       handleDOMEvents: {
         dragover: (view, event) =>
           imageOptions.current && editor
@@ -145,6 +169,13 @@ export function FieldEditor({
         : {},
     },
     extensions: [
+      InlineFontSize.configure({
+        maxSize: () =>
+          imageOptions.current
+            ? Math.floor((imageOptions.current.maxHeight * 12) / 16)
+            : undefined,
+        refused: setSizeError,
+      }),
       ...(maxLength
         ? [
             Extension.create({
@@ -267,6 +298,16 @@ export function FieldEditor({
         setPicker(true);
     },
   });
+  useEffect(
+    () =>
+      editor
+        ? registerInlineEditor(
+            editor,
+            () => inlineHistory.current?.controller?.engine,
+          )
+        : undefined,
+    [editor],
+  );
   const bandOwner = useRef(bandEditor ?? coverEditor);
   bandOwner.current = bandEditor ?? coverEditor;
   useEffect(() => {
@@ -313,7 +354,7 @@ export function FieldEditor({
       block,
       rich: true,
       textStyle: () => ({
-        value: 0,
+        value: levelRef.current,
         change: (level) => styleChange.current?.(level),
       }),
       insert: insertField,
@@ -375,7 +416,7 @@ export function FieldEditor({
       independent={standalone}
       textStyle={
         onTextStyle
-          ? { value: 0, change: (level) => onTextStyle(level) }
+          ? { value: textLevel, change: (level) => onTextStyle(level) }
           : toolbar
             ? null
             : undefined
@@ -529,6 +570,11 @@ export function FieldEditor({
       ) : toolbar.target && toolbar.owner === editorId ? (
         createPortal(controls, toolbar.target)
       ) : null}
+      {sizeError && (
+        <span role="alert" data-editor-chrome>
+          {sizeError}
+        </span>
+      )}
       <EditorContent className="field-editor-content" editor={editor} />
     </div>
   );

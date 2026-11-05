@@ -8107,3 +8107,63 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   color: var(--ink);
   font-size: 20px;
 }
+.inline-size-control {
+  display: inline-flex;
+  flex: none;
+}
+.inline-size-control > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.inline-size-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-height: 420px;
+  overflow: auto;
+  font: 400 13px/20px var(--font-ui);
+}
+.inline-size-menu button {
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.inline-size-menu button:hover,
+.inline-size-menu button:focus-visible {
+  background: var(--selected);
+}
+.inline-size-menu p {
+  max-width: 240px;
+  padding: 8px 12px;
+  color: var(--ink-muted);
+}
+.document-reading .document-heading-edit .field-editor,
+.document-reading .document-heading-edit .field-editor-content,
+.document-reading .document-heading-edit .tiptap,
+.document-reading .document-heading-edit .tiptap p {
+  font: inherit;
+  line-height: inherit;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+@media (max-width: 699px) {
+  /* The bar scrolls, but its overflow menu remains reachable at the viewport edge. */
+  .cover-edit-bar > [aria-label="More cover actions"] {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: #1c1b18;
+  }
+  .cover-edit-bar .inline-size-control > button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

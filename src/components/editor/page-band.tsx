@@ -1,4 +1,6 @@
 "use client";
+import { FontSizePicker } from "../inline-font-size";
+import { useHasEditorPopover } from "../editor-popovers";
 import { bandRichText } from "./band-rich-text";
 import { sharedPagesLabel, sharedChangesLabel } from "../../lib/page-count";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -44,6 +46,7 @@ type Props = Parameters<typeof pageBandHtml>[0] & {
   onDismissMove?: () => void;
 };
 export function PageBand(props: Props) {
+  const hasPopover = useHasEditorPopover();
   const {
     hf,
     kind,
@@ -145,6 +148,7 @@ export function PageBand(props: Props) {
       if (
         e.key !== "Escape" ||
         menu ||
+        hasPopover() ||
         root.current?.querySelector('[data-image-selected="true"]')
       )
         return;
@@ -339,6 +343,7 @@ export function PageBand(props: Props) {
           left: `var(--editor-sheet-left,${geometry.margins.left}px)`,
           right: `var(--editor-sheet-right,${geometry.margins.right}px)`,
           height: rect.height,
+          "--inline-font-max": `${(geometry.bandLimits[kind].imageHeight * 12) / 16}px`,
           "--band-image-max": `${geometry.bandLimits[kind].imageHeight}px`,
           "--band-space-by-line": `${geometry.spacing[kind].spaceByLine}px`,
           ...(kind === "header"
@@ -566,6 +571,12 @@ export function PageBand(props: Props) {
           >
             <i>I</i>
           </button>
+          <FontSizePicker
+            editor={active() ?? null}
+            maxSize={Math.floor(
+              (geometry.bandLimits[kind].imageHeight * 12) / 16,
+            )}
+          />
           <span className="band-separator" />
           <button
             aria-label="Layout"

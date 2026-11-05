@@ -2168,48 +2168,51 @@ function QuoteEditorContent({
               className="document-heading-edit"
               data-heading-level={b.level ?? 1}
             >
-              <span className="heading-measure" aria-hidden="true">
-                {panels.phone ? (
-                  b.text || "\u200b"
-                ) : (
-                  <HeadingTokens text={b.text || "\u200b"} map={map} />
-                )}
-              </span>
-              <FieldTextArea
+              <FieldEditor
+                label={`Heading ${n + 1}`}
+                textLevel={b.level ?? 1}
+                map={map}
+                showNames={false}
+                onTextStyle={style}
                 onBeforeInsert={() =>
                   setSection(sections.findIndex((s) => s.indices.includes(n)))
                 }
-                textStyle={{ value: b.level ?? 1, change: style }}
-                className="document-heading"
-                aria-label={`Heading ${n + 1}`}
-                rows={1}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    event.currentTarget.selectionStart === 0
-                  ) {
-                    event.preventDefault();
-                    const next = [...latest.current.content];
-                    next.splice(
-                      next.findIndex((v) => v.id === b.id),
-                      0,
+                value={
+                  b.content ?? {
+                    type: "doc",
+                    content: [
                       {
-                        id: uid(),
                         type: "paragraph",
-                        content: {
-                          type: "doc",
-                          content: [{ type: "paragraph" }],
-                        },
+                        content: b.text ? [{ type: "text", text: b.text }] : [],
                       },
-                    );
-                    change({ content: next });
+                    ],
                   }
+                }
+                onHeadingStartEnter={() => {
+                  const next = [...latest.current.content];
+                  next.splice(
+                    next.findIndex((v) => v.id === b.id),
+                    0,
+                    {
+                      id: uid(),
+                      type: "paragraph",
+                      content: {
+                        type: "doc",
+                        content: [{ type: "paragraph" }],
+                      },
+                    },
+                  );
+                  change({ content: next });
                 }}
-                value={b.text ?? ""}
-                onValue={(text) =>
+                onChange={(content) =>
                   patchBlock({
                     ...b,
-                    text: text.replace(/[\r\n]+/g, " "),
+                    content,
+                    rich_heading: true,
+                    text: blockText({ type: "heading", content }).replace(
+                      /[\r\n]+/g,
+                      " ",
+                    ),
                   })
                 }
               />
@@ -2611,7 +2614,9 @@ function QuoteEditorContent({
     setReplaceEmpty(false);
     change({
       content:
-        block.type === "signature_block" ? withSignatureHeadings(next) : next,
+        block.type === "signature_block"
+          ? withSignatureHeadings(next, id)
+          : next,
     });
     setInsertAt(null);
     const ss = contentSections(next),

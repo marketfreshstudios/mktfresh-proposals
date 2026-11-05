@@ -1,5 +1,7 @@
+import { validateInlineSizes } from "./inline-font-size";
 import { check, type Block, type Proposal } from "./model";
 export function reviewBlocks(content: Block[], ai: boolean) {
+  validateInlineSizes(content);
   const seen = new Set<string>();
   return content.map((b, index) => {
     let id = b.id ?? `block-${index}`;
