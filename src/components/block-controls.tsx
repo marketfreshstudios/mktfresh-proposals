@@ -216,7 +216,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       const target = event.target as Element;
       if (
         target.closest(
-          ".phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover,.phone-header-more,.phone-header-done,.phone-header-back,.template-history-phone,.phone-editor-menu,[aria-label='Done editing template section']",
+          "[data-preserve-block-selection],.phone-formatting-bar,.editor-edit-bar,.block-dialog,.block-feedback-toast,.block-owned-dialog,.block-popover,.phone-header-more,.phone-header-done,.phone-header-back,.template-history-phone,.phone-editor-menu,[aria-label='Done editing template section']",
         )
       )
         return;

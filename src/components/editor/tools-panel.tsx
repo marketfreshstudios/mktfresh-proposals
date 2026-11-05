@@ -1,9 +1,21 @@
 "use client";
 import { PanelChevron } from "../editor-header";
 import { useEffect, useRef, type ReactNode } from "react";
-export const editorTabs = ["Quote", "Fields", "Styles", "Send"] as const;
+export const editorTabs = [
+  "Quote",
+  "Fields",
+  "Blocks",
+  "Styles",
+  "Send",
+] as const;
 export type EditorTab = (typeof editorTabs)[number];
-const glyphs = { Quote: "$", Fields: "{ }", Styles: "Aa", Send: "➝" };
+const glyphs = {
+  Quote: "$",
+  Fields: "{ }",
+  Blocks: "▦",
+  Styles: "Aa",
+  Send: "➝",
+};
 export function PanelRail({
   onTab,
   onToggle,
@@ -31,6 +43,7 @@ export function PanelRail({
           type="button"
           key={tab}
           className="panel-rail-tab"
+          data-preserve-block-selection={tab === "Blocks" ? "" : undefined}
           aria-label={`Open ${tab}`}
           title={tab}
           onClick={() => onTab(tab)}
@@ -68,8 +81,9 @@ export function PanelTabs({
           event.key === "Home"
             ? 0
             : event.key === "End"
-              ? 3
-              : (editorTabs.indexOf(tab) + delta + 4) % 4;
+              ? editorTabs.length - 1
+              : (editorTabs.indexOf(tab) + delta + editorTabs.length) %
+                editorTabs.length;
         onTab(editorTabs[index]);
         root.current
           ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
@@ -79,6 +93,7 @@ export function PanelTabs({
       {editorTabs.map((value) => (
         <button
           type="button"
+          data-preserve-block-selection={value === "Blocks" ? "" : undefined}
           role="tab"
           key={value}
           aria-selected={tab === value}
