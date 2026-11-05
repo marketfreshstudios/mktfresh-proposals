@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import type { Editor } from "@tiptap/core";
 import {
   CoverSchema,
@@ -12,6 +18,7 @@ import {
 } from "../lib/cover";
 import { coverInlineHtml, coverLineClass } from "../lib/cover-render";
 import { SelectableImage } from "./editor/selectable-image";
+import { CoverAlignMenu } from "./editor/cover-align-menu";
 import { EditBar } from "./editor/edit-bar";
 import { SpacingInput } from "./editor/spacing-input";
 import { FieldEditor } from "./field-editor";
@@ -24,6 +31,7 @@ import { bandRichText } from "./editor/band-rich-text";
 import { Icon } from "./ui";
 import type { RichText } from "../lib/model";
 type Props = {
+  contentHeight?: number;
   title: string;
   company: string;
   sender: string;
@@ -46,9 +54,36 @@ function Spacing({
   update: (patch: Partial<CoverElement>) => void;
 }) {
   const computed = node ? getComputedStyle(node) : undefined;
+  const cover = node?.closest<HTMLElement>(".document-cover"),
+    available = Number(cover?.dataset.contentHeight ?? 912),
+    used = cover
+      ? Array.from(cover.children).reduce((sum, child) => {
+          const c = child as HTMLElement,
+            s = getComputedStyle(c);
+          return (
+            sum +
+            c.getBoundingClientRect().height +
+            (parseFloat(s.marginTop) || 0) +
+            (parseFloat(s.marginBottom) || 0)
+          );
+        }, 0)
+      : 0,
+    // DOM margins still describe the preceding render. Replace this line's
+    // measured spacing with its current model before deriving either limit.
+    // This also updates the other slider immediately when one side changes.
+    measuredAbove = parseFloat(computed?.marginTop ?? "0") || 0,
+    measuredBelow =
+      (parseFloat(computed?.marginBottom ?? "0") || 0) +
+      (parseFloat(computed?.paddingBottom ?? "0") || 0),
+    above = element.space_above ?? measuredAbove,
+    below = element.space_below ?? measuredBelow,
+    fixedUsed = used - measuredAbove - measuredBelow,
+    aboveLimit = available - fixedUsed - below,
+    belowLimit = available - fixedUsed - above;
   return (
     <>
       <SpacingInput
+        max={aboveLimit}
         label="Space above"
         value={
           element.space_above ??
@@ -63,6 +98,7 @@ function Spacing({
         onChange={(space_above) => update({ space_above })}
       />
       <SpacingInput
+        max={belowLimit}
         label="Space below"
         value={
           element.space_below ??
@@ -89,6 +125,7 @@ function elementStyle(e: CoverElement): CSSProperties {
   };
 }
 export function DocumentCover({
+  contentHeight = 912,
   title,
   company,
   sender,
@@ -112,6 +149,17 @@ export function DocumentCover({
   const [selected, select] = useState<string | null>(null),
     [logoMenu, setLogoMenu] = useState(false),
     [logoError, setLogoError] = useState("");
+  const pendingFocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (!pendingFocus.current) return;
+    const node = root.current?.querySelector<HTMLElement>(
+      `[data-cover-element="${pendingFocus.current}"] .tiptap`,
+    );
+    if (node) {
+      node.focus({ preventScroll: true });
+      pendingFocus.current = null;
+    }
+  }, [elements]);
   const logoTrigger = useRef<HTMLButtonElement>(null),
     logoInput = useRef<HTMLInputElement>(null);
   const resolvedMap = {
@@ -187,16 +235,54 @@ export function DocumentCover({
       id,
       kind: "extra",
       align: "left",
+      space_above: 0,
+      space_below: 10,
       content: coverText(""),
     });
+    pendingFocus.current = id;
     current.onCover?.({ ...current.value, elements: next });
     choose(id);
-    requestAnimationFrame(() =>
-      root.current
-        ?.querySelector<HTMLElement>(`[data-cover-element="${id}"] .tiptap`)
-        ?.focus(),
-    );
   };
+  const remove = (id: string) => {
+    const current = latest.current,
+      index = current.elements.findIndex((e) => e.id === id),
+      target = current.elements[index];
+    if (!target) return;
+    const previous = current.elements
+      .slice(0, index)
+      .reverse()
+      .find(
+        (e) =>
+          !e.hidden &&
+          e.kind !== "logo" &&
+          root.current?.querySelector(`[data-cover-element="${e.id}"]`),
+      );
+    pendingFocus.current = previous?.id ?? null;
+    const apply = () => {
+      current.onCover?.({
+        ...current.value,
+        elements:
+          target.kind === "extra"
+            ? current.elements.filter((e) => e.id !== id)
+            : current.elements.map((e) =>
+                e.id === id ? { ...e, hidden: true } : e,
+              ),
+      });
+    };
+    const engine = history?.controller?.engine,
+      key = `cover-remove:${id}`;
+    engine?.beginGroup(key);
+    try {
+      history
+        ? history.inScope(`text:cover-${previous?.id ?? id}`, apply)
+        : apply();
+    } finally {
+      engine?.endGroup(key);
+    }
+    if (previous) choose(previous.id);
+    else select(null);
+  };
+
   const alignAll = (align: "left" | "center" | "right") =>
     onCover?.({
       ...value,
@@ -207,6 +293,7 @@ export function DocumentCover({
     <header
       ref={root}
       className="document-cover"
+      data-content-height={contentHeight}
       onKeyDown={(e) => {
         if (e.key === "Escape" && !e.defaultPrevented) {
           e.preventDefault();
@@ -232,6 +319,7 @@ export function DocumentCover({
               }
               update={(patch) => change(e.id, patch)}
               onCover={onCover}
+              alignAll={alignAll}
             >
               {editable && (
                 <div className="cover-logo-controls" data-editor-chrome>
@@ -344,6 +432,7 @@ export function DocumentCover({
             select={() => choose(e.id)}
             update={(patch, text) => change(e.id, patch, text)}
             add={() => add(e.id)}
+            remove={() => remove(e.id)}
             alignAll={alignAll}
           />
         );
@@ -360,6 +449,7 @@ function CoverText({
   select,
   update,
   add,
+  remove,
   alignAll,
 }: {
   element: CoverElement;
@@ -370,6 +460,7 @@ function CoverText({
   select: () => void;
   update: (patch: Partial<CoverElement>, text?: RichText) => void;
   add: () => void;
+  remove: () => void;
   alignAll: (align: "left" | "center" | "right") => void;
 }) {
   const frame = useRef<HTMLDivElement>(null),
@@ -379,10 +470,6 @@ function CoverText({
     ),
     [trigger, setTrigger] = useState<HTMLElement | null>(null),
     [, paint] = useState(0);
-  useEffect(() => {
-    if (selected && e.kind === "extra" && editor && !editor.isFocused)
-      editor.commands.focus("end");
-  }, [selected, editor]);
   const label = {
     title: "Proposal title",
     workspace: "Cover workspace name",
@@ -534,25 +621,23 @@ function CoverText({
               }}
             />
           ) : menu === "align" ? (
-            (["left", "center", "right"] as const).map((align) => (
-              <button
-                type="button"
-                key={align}
-                aria-pressed={e.align === align}
-                onClick={() => {
-                  update({ align });
-                  setMenu(null);
-                }}
-              >
-                Align {align}
-              </button>
-            ))
+            <CoverAlignMenu
+              align={e.align}
+              onAlign={(align) => {
+                update({ align });
+                setMenu(null);
+              }}
+              onAll={(align) => {
+                alignAll(align);
+                setMenu(null);
+              }}
+            />
           ) : (
             <>
               <button
                 type="button"
                 onClick={() => {
-                  update({ hidden: true });
+                  remove();
                   setMenu(null);
                 }}
               >
@@ -567,18 +652,6 @@ function CoverText({
               >
                 Add line below
               </button>
-              {(["left", "center", "right"] as const).map((align) => (
-                <button
-                  type="button"
-                  key={align}
-                  onClick={() => {
-                    alignAll(align);
-                    setMenu(null);
-                  }}
-                >
-                  Align all cover items {align}
-                </button>
-              ))}
             </>
           )}
         </ToolbarPopover>
@@ -596,6 +669,7 @@ function CoverLogo({
   deselect,
   update,
   onCover,
+  alignAll,
   children,
 }: {
   element: CoverElement;
@@ -607,6 +681,7 @@ function CoverLogo({
   deselect: () => void;
   update: (patch: Partial<CoverElement>) => void;
   onCover?: Props["onCover"];
+  alignAll: (align: "left" | "center" | "right") => void;
   children: React.ReactNode;
 }) {
   const root = useRef<HTMLDivElement>(null),
@@ -689,6 +764,7 @@ function CoverLogo({
           source={src}
           placementStyle={style}
           onSelectionChange={(active) => (active ? select() : deselect())}
+          onAlignAll={editable ? alignAll : undefined}
           onAlign={
             editable ? (align) => update({ align, x: undefined }) : undefined
           }

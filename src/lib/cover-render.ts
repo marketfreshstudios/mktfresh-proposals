@@ -71,10 +71,10 @@ export function editableCoverHtml(
         map,
         true,
       );
-      if (!html.replace(/<[^>]*>/g, "").trim()) return "";
+      if (!html.replace(/<[^>]*>/g, "").trim() && e.kind !== "extra") return "";
       const tag = e.kind === "title" ? "h1" : "div";
-      return `<${tag} class="cover-element ${e.kind === "title" ? "" : "cover-text-line"} ${coverLineClass(e)}" data-cover-element="${escape(e.id)}" style="${style}">${html}</${tag}>`;
+      return `<${tag} class="cover-element ${e.kind === "title" ? "" : "cover-text-line"} ${coverLineClass(e)}" data-cover-element="${escape(e.id)}" style="${style}">${html || "<br>"}</${tag}>`;
     })
     .join("");
 }
-export const coverElementsCss = `.cover-text-line{font:500 12px/1.5 "Instrument Sans",sans-serif;margin:10px 0}.cover-element{position:relative}.cover-logo{width:100%;max-width:none;line-height:0}.cover-element .field-chip{font:inherit}`;
+export const coverElementsCss = `.cover-text-line{min-height:18px;font:500 12px/1.5 "Instrument Sans",sans-serif;margin:10px 0}.print-cover:has(>.cover-element){display:flex;flex-direction:column;align-items:stretch}.cover-element{position:relative;flex:none}.cover-logo{width:100%;max-width:none;line-height:0}.cover-element .field-chip{font:inherit}`;

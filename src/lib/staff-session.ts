@@ -41,7 +41,10 @@ export function staffCookiePair(
   return [
     serialized(STAFF_ACCESS_COOKIE, access, "/", age),
     ...(refresh !== undefined
-      ? [serialized(STAFF_REFRESH_COOKIE, refresh, "/api", age)]
+      ? [
+          serialized(STAFF_REFRESH_COOKIE, refresh, "/", age),
+          serialized(STAFF_REFRESH_COOKIE, "", "/api", 0),
+        ]
       : []),
   ];
 }
@@ -81,7 +84,11 @@ export function staffRequestHeaders(request: Request) {
             s.startsWith(name + "="),
           ),
       );
-    cookies.push(...values.map((s) => s.split(";")[0]));
+    cookies.push(
+      ...values
+        .filter((s) => !s.includes("Max-Age=0"))
+        .map((s) => s.split(";")[0]),
+    );
     headers.set("cookie", cookies.join("; "));
   }
   return headers;

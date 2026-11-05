@@ -251,7 +251,7 @@ export function FieldEditor({
     onUpdate: ({ editor }) => {
       const update = () =>
         change.current(
-          bandEditor
+          bandEditor || coverEditor
             ? bandRichText(editor.getJSON() as RichText)
             : (editor.getJSON() as RichText),
         );
@@ -324,15 +324,24 @@ export function FieldEditor({
     if (
       editor &&
       JSON.stringify(
-        bandEditor
+        bandEditor || coverEditor
           ? bandRichText(editor.getJSON() as RichText)
           : editor.getJSON(),
-      ) !== JSON.stringify(bandEditor ? bandRichText(next) : next)
+      ) !==
+        JSON.stringify(bandEditor || coverEditor ? bandRichText(next) : next)
     ) {
       let current = true;
       queueMicrotask(() => {
-        if (current && !editor.isDestroyed)
+        if (current && !editor.isDestroyed) {
+          // Server echoes and normalization must not move an active text selection.
+          const { from, to } = editor.state.selection;
           editor.commands.setContent(next, { emitUpdate: false });
+          const end = Math.max(1, editor.state.doc.content.size - 1);
+          editor.commands.setTextSelection({
+            from: Math.min(from, end),
+            to: Math.min(to, end),
+          });
+        }
       });
       return () => {
         current = false;

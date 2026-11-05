@@ -13,7 +13,11 @@ import { BandPopover } from "./band-popover";
 import type { Editor } from "@tiptap/core";
 import { pageBandHtml } from "../../lib/page-band-render";
 import {
+  boundedBandSettings,
   BandSchema,
+  bandDivider,
+  bandOnCover,
+  bandSpacing,
   bandColumns,
   bandJustify,
   changeBandLayout,
@@ -53,7 +57,7 @@ export function PageBand(props: Props) {
     band: resolved,
     anchor,
     allowOverrides = true,
-    sharedCount = Math.max(0, pageCount - (hf?.showOnCover ? 0 : 1)),
+    sharedCount = Math.max(0, pageCount - (bandOnCover(hf, kind) ? 0 : 1)),
     movedFrom,
     onDismissMove,
   } = props;
@@ -380,7 +384,7 @@ export function PageBand(props: Props) {
           className="page-band"
           data-page-band={kind}
           data-band-page={page}
-          data-divider={hf.divider}
+          data-divider={bandDivider(hf, kind)}
           data-band-mode="editing"
           style={{
             gridTemplateColumns: bandColumns(band.layout),
@@ -576,8 +580,19 @@ export function PageBand(props: Props) {
           {!phone && (
             <button
               aria-label="Line"
-              aria-pressed={hf.divider}
-              onClick={() => onChange?.({ ...hf, divider: !hf.divider })}
+              aria-pressed={bandDivider(hf, kind)}
+              onClick={() => {
+                const next = {
+                  ...hf,
+                  [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
+                    ...bandSpacing(hf, kind),
+                    divider: !bandDivider(hf, kind),
+                  },
+                };
+                onChange?.(
+                  styles ? boundedBandSettings(styles, next, kind) : next,
+                );
+              }}
             >
               — Line
             </button>

@@ -249,9 +249,14 @@ test("Styles switches retain content space and breaks, keep overrides and show c
   await page.locator(".editor-page-sheets[data-layout-settled=true]").waitFor();
   expect(await plan()).toEqual(original);
   await panel
-    .getByRole("switch", { name: "Show on cover", exact: true })
+    .getByRole("switch", { name: "Header show on cover", exact: true })
     .check();
-  await expect.poll(() => f.active().header_footer?.showOnCover).toBe(true);
+  await expect
+    .poll(() => f.active().header_footer?.headerSpacing.showOnCover)
+    .toBe(true);
+  await panel
+    .getByRole("switch", { name: "Footer show on cover", exact: true })
+    .check();
   await expect(
     page.locator(".page-sheet").first().locator(".page-band"),
   ).toHaveCount(2);
@@ -274,9 +279,11 @@ test("Styles switches retain content space and breaks, keep overrides and show c
     ),
   );
   await panel
-    .getByRole("switch", { name: "Divider line", exact: true })
+    .getByRole("switch", { name: "Header divider line", exact: true })
     .uncheck();
-  await expect.poll(() => f.active().header_footer?.divider).toBe(false);
+  await expect
+    .poll(() => f.active().header_footer?.headerSpacing.divider)
+    .toBe(false);
   await expect(page.locator(".page-band").first()).toHaveAttribute(
     "data-divider",
     "false",
@@ -284,7 +291,7 @@ test("Styles switches retain content space and breaks, keep overrides and show c
   await page.reload();
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await expect(
-    panel.getByRole("switch", { name: "Show on cover", exact: true }),
+    panel.getByRole("switch", { name: "Header show on cover", exact: true }),
   ).toBeChecked();
   await panel.getByText("Page & margins", { exact: true }).click();
   await expect(
@@ -318,12 +325,17 @@ test("new Studio templates start with shared bands and save template switches wi
     styles.getByRole("switch", { name: "Header", exact: true }),
   ).toBeChecked();
   await styles
-    .getByRole("switch", { name: "Show on cover", exact: true })
+    .getByRole("switch", { name: "Header show on cover", exact: true })
+    .check();
+  await styles
+    .getByRole("switch", { name: "Footer show on cover", exact: true })
     .check();
   await page
     .getByRole("button", { name: "Save template", exact: true })
     .click();
-  await expect.poll(() => saved?.header_footer?.showOnCover).toBe(true);
+  await expect
+    .poll(() => saved?.header_footer?.headerSpacing.showOnCover)
+    .toBe(true);
   expect(saved.header_footer.shared.header.layout).toBe("half");
   expect(saved.header_footer).not.toHaveProperty("overrides");
   await expect(page.locator(".template-paged-paper .page-sheet")).toHaveCount(

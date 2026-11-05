@@ -9,7 +9,24 @@ export default defineConfig({
   testDir: "e2e",
   workers: 1,
   timeout: 120000,
-  use: { baseURL: "http://127.0.0.1:3100" },
+  use: {
+    baseURL: "http://127.0.0.1:3100",
+    storageState: {
+      origins: [],
+      cookies: [
+        {
+          name: "proposal_session",
+          value: "e2e-staff-secret-only",
+          domain: "127.0.0.1",
+          path: "/",
+          expires: -1,
+          httpOnly: true,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+    },
+  },
   webServer: [
     {
       command: "node --import tsx e2e/staff-auth-server.ts",

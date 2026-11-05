@@ -16,6 +16,7 @@ import {
 } from "../../lib/image-size";
 import { useImageToolbar, PhoneToolbar } from "./use-image-toolbar";
 import { useEditorHistory } from "../editor-history";
+import { CoverAlignMenu } from "./cover-align-menu";
 import { ToolbarPopover } from "../toolbar-popover";
 export function SelectableImage({
   value,
@@ -32,9 +33,11 @@ export function SelectableImage({
   draggable = false,
   onDragStart,
   onAlign,
+  onAlignAll,
   toolbarExtra,
   placementStyle,
 }: {
+  onAlignAll?: (align: "left" | "center" | "right") => void;
   onAlign?: (align: "left" | "center" | "right") => void;
   toolbarExtra?: React.ReactNode;
   placementStyle?: CSSProperties;
@@ -420,6 +423,18 @@ export function SelectableImage({
                     onChange={(e) => save({ ...value, alt: e.target.value })}
                   />
                 </label>
+              ) : onAlignAll ? (
+                <CoverAlignMenu
+                  align={value.align ?? "left"}
+                  onAlign={(align) => {
+                    onAlign?.(align);
+                    setPanel(null);
+                  }}
+                  onAll={(align) => {
+                    onAlignAll(align);
+                    setPanel(null);
+                  }}
+                />
               ) : (
                 (["left", "center", "right"] as const).map((align) => (
                   <button

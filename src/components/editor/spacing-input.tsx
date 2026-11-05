@@ -1,84 +1,104 @@
 "use client";
-import { useEffect, useState, useId } from "react";
+import { useEffect, useState, useId, useRef } from "react";
+import { useEditorHistory } from "../editor-history";
+/** One page-bounded spacing control, shared by cover, bands and typography. */
 export function SpacingInput({
   label,
   value,
   onChange,
   min = 0,
-  max = 200,
-  step = 4,
+  max,
   ariaLabel = label,
-  inputStep = step,
+  inputStep = "any",
 }: {
   label: string;
   value: number;
   onChange: (n: number) => void;
   min?: number;
-  max?: number;
+  max: number;
   step?: number;
   ariaLabel?: string;
   inputStep?: number | "any";
 }) {
-  const id = useId();
-  const [raw, setRaw] = useState(String(value));
-  const invalid =
-    raw === "" ||
-    !Number.isFinite(Number(raw)) ||
-    Number(raw) < min ||
-    Number(raw) > max;
+  const id = useId(),
+    history = useEditorHistory(),
+    [raw, setRaw] = useState(String(value)),
+    [clamped, setClamped] = useState(false);
+  const dragging = useRef(false),
+    engine = history?.controller?.engine;
+  const limit = Math.max(min, Math.floor(max));
   useEffect(() => setRaw(String(value)), [value]);
+  useEffect(() => () => engine?.endGroup(id), [engine, id]);
   const change = (n: number) => {
-    const v = Math.max(min, Math.min(max, n));
+    const v = Math.max(min, Math.min(limit, n));
     setRaw(String(v));
+    setClamped(n > limit);
     onChange(v);
+  };
+  const finish = () => {
+    dragging.current = false;
+    engine?.endGroup(id);
   };
   return (
     <div className="field spacing-field">
       <label htmlFor={id}>{label}</label>
-      <span className="spacing-stepper">
-        <button
-          type="button"
-          aria-label={`Decrease ${ariaLabel}`}
-          disabled={value <= min}
-          onClick={() => change(value - step)}
-        >
-          −
-        </button>
+      <div className="spacing-slider-row">
         <input
-          type="number"
-          id={id}
-          aria-label={ariaLabel}
+          type="range"
+          aria-label={`${ariaLabel} slider`}
           min={min}
-          max={max}
-          step={inputStep}
-          aria-invalid={invalid || undefined}
-          aria-describedby={invalid ? `${id}-error` : undefined}
-          value={raw}
-          onChange={(e) => {
-            setRaw(e.target.value);
-            const n = Number(e.target.value);
-            if (
-              e.target.value !== "" &&
-              Number.isFinite(n) &&
-              n >= min &&
-              n <= max
-            )
-              onChange(n);
+          max={limit}
+          step={1}
+          value={Math.min(value, limit)}
+          onPointerDown={() => {
+            dragging.current = true;
+            engine?.beginGroup(id);
           }}
-          onBlur={() => setRaw(String(value))}
+          onPointerUp={finish}
+          onPointerCancel={finish}
+          onBlur={finish}
+          onKeyDown={(e) => {
+            if (
+              ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"].includes(
+                e.key,
+              )
+            ) {
+              e.preventDefault();
+              change(
+                value +
+                  (["ArrowLeft", "ArrowDown"].includes(e.key) ? -1 : 1) *
+                    (e.shiftKey ? 10 : 1),
+              );
+            }
+          }}
+          onChange={(e) => change(Number(e.target.value))}
         />
-        <button
-          type="button"
-          aria-label={`Increase ${ariaLabel}`}
-          disabled={value >= max}
-          onClick={() => change(value + step)}
-        >
-          +
-        </button>
-      </span>
-      {invalid && (
-        <small id={`${id}-error`} role="alert">
-          Enter a value from {min} to {max}.
+        <span className="spacing-number">
+          <input
+            type="number"
+            id={id}
+            aria-label={ariaLabel}
+            min={min}
+            max={limit}
+            step={inputStep}
+            value={raw}
+            aria-describedby={clamped ? `${id}-limit` : undefined}
+            onChange={(e) => {
+              setRaw(e.target.value);
+              if (
+                e.target.value !== "" &&
+                Number.isFinite(Number(e.target.value))
+              )
+                change(Number(e.target.value));
+            }}
+            onBlur={() => setRaw(String(value))}
+          />
+          <span aria-hidden="true">px</span>
+        </span>
+      </div>
+      {clamped && (
+        <small id={`${id}-limit`} role="status">
+          Max {limit} px on this page
         </small>
       )}
     </div>

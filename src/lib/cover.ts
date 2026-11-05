@@ -38,8 +38,8 @@ export const CoverElementSchema = z
     ]),
     content: CoverTextNode.optional(),
     align: z.enum(["left", "center", "right"]).default("left"),
-    space_above: z.number().min(0).max(200).optional(),
-    space_below: z.number().min(0).max(200).optional(),
+    space_above: z.number().min(0).max(1056).optional(),
+    space_below: z.number().min(0).max(1056).optional(),
     x: z.number().min(0).max(816).optional(),
     hidden: z.boolean().optional(),
   })

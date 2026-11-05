@@ -8,7 +8,7 @@ const content: Block[] = [
   { id: "next", type: "page_break" },
   { id: "scope", type: "paragraph", text: "The scope and delivery details." },
 ];
-test("cover margin pills enable both shared bands through ordinary undo history", async ({
+test("cover margin pills enable each shared band independently through undo history", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, { content });
@@ -31,9 +31,22 @@ test("cover margin pills enable both shared bands through ordinary undo history"
   ).toHaveCount(1);
   await expect(
     page.locator('[data-band-frame="footer"][data-band-page="1"]'),
+  ).toHaveCount(0);
+  await page
+    .locator('[data-cover-band="footer"]')
+    .getByRole("button", { name: "+ Use shared footer", exact: true })
+    .click();
+  await expect(
+    page.locator('[data-band-frame="footer"][data-band-page="1"]'),
   ).toHaveCount(1);
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(
+    page.locator('[data-band-frame="footer"][data-band-page="1"]'),
+  ).toHaveCount(0);
   await page
     .locator(".band-notices")
+    .locator(".band-notice-row")
+    .filter({ hasText: "Header shown on cover" })
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect(

@@ -60,9 +60,23 @@ export function applyHistoryDelta(current: any, from: any, to: any): any {
   return structuredClone(to);
 }
 export class EditorHistory<T> {
-  past: { id: number; before: T; after: T; scope: string; time: number }[] = [];
+  past: {
+    id: number;
+    before: T;
+    after: T;
+    scope: string;
+    time: number;
+    group?: string;
+  }[] = [];
   future: typeof this.past = [];
   private serial = 0;
+  private group: { key: string; step?: number } | null = null;
+  beginGroup(key: string) {
+    this.group = { key };
+  }
+  endGroup(key: string) {
+    if (this.group?.key === key) this.group = null;
+  }
   private version = 0;
   private listeners = new Set<() => void>();
   subscribe = (listener: () => void) => {
@@ -83,9 +97,13 @@ export class EditorHistory<T> {
     if (equal(before, after)) return;
     const last = this.past.at(-1);
     if (
-      scope.startsWith("text:") &&
-      last?.scope === scope &&
-      now - last.time < 500 &&
+      last &&
+      ((this.group?.step === last?.id && this.group?.step !== undefined) ||
+        (!this.group &&
+          !last.group &&
+          scope.startsWith("text:") &&
+          last?.scope === scope &&
+          now - last.time < 500)) &&
       !this.future.length
     ) {
       last.after = structuredClone(after);
@@ -97,7 +115,9 @@ export class EditorHistory<T> {
         after: structuredClone(after),
         scope,
         time: now,
+        ...(this.group ? { group: this.group.key } : {}),
       });
+    if (this.group) this.group.step = this.past.at(-1)?.id;
     this.past = this.past.slice(-100);
     this.future = [];
     this.emit();

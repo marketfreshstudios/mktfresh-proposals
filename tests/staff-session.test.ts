@@ -134,7 +134,7 @@ it("expired access refreshes in the proxy, reaches the actual save, and rotates 
   expect((await result.json()).title).toBe("Kept working after an hour");
   expect(state.refresh).toHaveBeenCalledOnce();
   for (const response of [gate, result]) {
-    expect(response.headers.getSetCookie()).toHaveLength(2);
+    expect(response.headers.getSetCookie()).toHaveLength(3);
     expect(response.headers.get("set-cookie")).toContain(
       "proposal_session=access-new",
     );
@@ -163,7 +163,7 @@ it("missing access uses the refresh cookie; valid access slides both cookies wit
     ),
   );
   expect(gate.headers.get("x-middleware-next")).toBe("1");
-  expect(gate.headers.getSetCookie()).toHaveLength(2);
+  expect(gate.headers.getSetCookie()).toHaveLength(3);
   expect(state.refresh).not.toHaveBeenCalled();
 });
 it("parallel expired requests share one rotation and both independent proposal saves succeed", async () => {
@@ -218,15 +218,16 @@ it("login keeps both tokens out of JSON and asserts production HttpOnly/Secure/L
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ authenticated: true });
   const cookies = response.headers.getSetCookie();
-  expect(cookies).toHaveLength(2);
-  for (const value of cookies) {
+  expect(cookies).toHaveLength(3);
+  expect(cookies[2]).toContain("Path=/api; Max-Age=0");
+  for (const value of cookies.slice(0, 2)) {
     expect(value).toContain("HttpOnly");
     expect(value).toContain("Secure");
     expect(value).toContain("SameSite=Lax");
     expect(value).toContain("Max-Age=2592000");
   }
   expect(cookies[0]).toMatch(/Path=\/;/);
-  expect(cookies[1]).toMatch(/Path=\/api;/);
+  expect(cookies[1]).toMatch(/Path=\/;/);
 });
 it("revoked refresh is 401 with cleared cookies; Auth outages preserve cookies and are retryable", async () => {
   state.refresh.mockResolvedValue({
@@ -290,4 +291,41 @@ it("anonymous proposals are 401 for both proxy and route even with the old desig
     expect(response.status).toBe(401);
   expect(state.getUser).not.toHaveBeenCalled();
   expect(state.refresh).not.toHaveBeenCalled();
+});
+
+it("staff pages redirect before rendering, preserve query, and refresh without a page flash", async () => {
+  for (const path of ["/", "/proposals/example?view=send"]) {
+    const req = new NextRequest("https://app.example.test" + path);
+    const response = await proxy(req);
+    expect(response.status).toBe(307);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const destination = new URL(response.headers.get("location")!);
+    expect(destination.pathname).toBe("/login");
+    expect(destination.searchParams.get("next")).toBe(path);
+    expect(await response.text()).not.toContain("Dashboard");
+  }
+  const req = new NextRequest("https://app.example.test/proposals/example", {
+    headers: { cookie: `proposal_refresh=${refreshToken}` },
+  });
+  const response = await proxy(req);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("location")).toBeNull();
+  expect(response.headers.get("x-middleware-request-cookie")).toContain(
+    "proposal_session=access-new",
+  );
+  expect(response.headers.getSetCookie()[1]).toContain("Path=/;");
+  for (const path of [
+    "/login",
+    "/p/example",
+    "/oauth/authorize",
+    "/mcp",
+    "/fonts/curated.css",
+    "/.well-known/oauth-authorization-server",
+  ]) {
+    const response = await proxy(
+      new NextRequest("https://app.example.test" + path),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  }
 });

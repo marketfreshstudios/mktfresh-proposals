@@ -154,8 +154,10 @@ export const BandSpacingSchema = z
     heightIn: z
       .union([z.literal(0.25), z.literal(0.4), z.literal(0.6), z.literal(0.8)])
       .default(0.25),
-    spaceByLine: z.number().min(0).max(24).default(6),
-    spaceToContent: z.number().min(0).max(48).default(8),
+    divider: z.boolean().optional(),
+    showOnCover: z.boolean().optional(),
+    spaceByLine: z.number().min(0).max(1056).default(6),
+    spaceToContent: z.number().min(0).max(1056).default(8),
   })
   .strict();
 export type BandSpacing = z.infer<typeof BandSpacingSchema>;
@@ -171,6 +173,41 @@ export const bandSpacing = (
 ): BandSpacing =>
   settings?.[kind === "header" ? "headerSpacing" : "footerSpacing"] ??
   BandSpacingSchema.parse({ distanceIn: settings?.distanceIn ?? 0.3 });
+/** Parse editable settings only; never normalize a stored signed version. */
+function editableBandSpacing(
+  value: {
+    divider: boolean;
+    showOnCover: boolean;
+    distanceIn?: number;
+    headerSpacing?: BandSpacing;
+    footerSpacing?: BandSpacing;
+  },
+  kind: "header" | "footer",
+): BandSpacing {
+  const spacing = bandSpacing(value, kind);
+  return {
+    ...spacing,
+    divider: spacing.divider ?? value.divider,
+    showOnCover: spacing.showOnCover ?? value.showOnCover,
+  };
+}
+export const bandDivider = (
+  hf: HeaderFooterSettings | undefined,
+  kind: "header" | "footer",
+) => bandSpacing(hf, kind).divider ?? hf?.divider ?? false;
+export const bandOnCover = (
+  hf: HeaderFooterSettings | undefined,
+  kind: "header" | "footer",
+) => bandSpacing(hf, kind).showOnCover ?? hf?.showOnCover ?? false;
+export function bandLineSpace(
+  hf: HeaderFooterSettings | undefined,
+  kind: "header" | "footer",
+) {
+  const s = bandSpacing(hf, kind);
+  // Missing independent flag identifies older frozen geometry, including its
+  // padding with the shared divider off. Keep that historical render unchanged.
+  return s.divider === false ? 0 : s.spaceByLine;
+}
 const switches = {
   headerSpacing: BandSpacingSchema.optional(),
   footerSpacing: BandSpacingSchema.optional(),
@@ -192,8 +229,8 @@ export const TemplateBandsSchema = z
   .transform((value) => ({
     ...value,
     bandHeightIn: undefined,
-    headerSpacing: bandSpacing(value, "header"),
-    footerSpacing: bandSpacing(value, "footer"),
+    headerSpacing: editableBandSpacing(value, "header"),
+    footerSpacing: editableBandSpacing(value, "footer"),
   }));
 export const HeaderFooterSettingsSchema = z
   .object({
@@ -214,8 +251,8 @@ export const HeaderFooterSettingsSchema = z
   .transform((value) => ({
     ...value,
     bandHeightIn: undefined,
-    headerSpacing: bandSpacing(value, "header"),
-    footerSpacing: bandSpacing(value, "footer"),
+    headerSpacing: editableBandSpacing(value, "header"),
+    footerSpacing: editableBandSpacing(value, "footer"),
   }));
 export type HeaderFooterSettings = z.infer<typeof HeaderFooterSettingsSchema>;
 export type TemplateBands = z.infer<typeof TemplateBandsSchema>;
@@ -276,13 +313,13 @@ export function headerShown(
   hf: HeaderFooterSettings | undefined,
   page: number,
 ) {
-  return !!hf?.showHeader && (page !== 1 || hf.showOnCover);
+  return !!hf?.showHeader && (page !== 1 || bandOnCover(hf, "header"));
 }
 export function footerShown(
   hf: HeaderFooterSettings | undefined,
   page: number,
 ) {
-  return !!hf?.showFooter && (page !== 1 || hf.showOnCover);
+  return !!hf?.showFooter && (page !== 1 || bandOnCover(hf, "footer"));
 }
 export function pageGeometry(
   styles: import("./proposal-styles").ResolvedStyles | undefined,
@@ -299,8 +336,14 @@ export function pageGeometry(
     };
   const baseMargins = { ...margin };
   const spacing = {
-    header: bandSpacing(hf, "header"),
-    footer: bandSpacing(hf, "footer"),
+    header: {
+      ...bandSpacing(hf, "header"),
+      spaceByLine: bandLineSpace(hf, "header"),
+    },
+    footer: {
+      ...bandSpacing(hf, "footer"),
+      spaceByLine: bandLineSpace(hf, "footer"),
+    },
   };
   const distances = {
     header: spacing.header.distanceIn * 96,
@@ -313,7 +356,7 @@ export function pageGeometry(
         height:
           spacing[kind].heightIn * 96 +
           spacing[kind].spaceByLine +
-          (hf?.divider ? 1 : 0),
+          (bandDivider(hf, kind) ? 1 : 0),
         imageHeight: spacing[kind].heightIn * 96,
       },
     ]),
@@ -395,4 +438,51 @@ export function bandImages(band: Band) {
   };
   band.slots.forEach((node, slot) => visit(node, slot));
   return found;
+}
+
+/** Maximum one spacing value can take while retaining two inches of content. */
+export function bandSpacingLimit(
+  styles: import("./proposal-styles").ResolvedStyles,
+  hf: HeaderFooterSettings,
+  kind: "header" | "footer",
+  key: "spaceByLine" | "spaceToContent",
+) {
+  const active = {
+    ...hf,
+    [kind === "header" ? "showHeader" : "showFooter"]: true,
+  };
+  const g = pageGeometry(styles, active, 1),
+    s = bandSpacing(hf, kind);
+  const other = g.margins[kind === "header" ? "bottom" : "top"];
+  const fixed =
+    s.distanceIn * 96 +
+    s.heightIn * 96 +
+    (bandDivider(hf, kind)
+      ? 1 + (key === "spaceByLine" ? 0 : s.spaceByLine)
+      : 0) +
+    (key === "spaceToContent" ? 0 : s.spaceToContent);
+  return Math.max(0, Math.floor(1056 - 192 - other - fixed));
+}
+/** UI setting changes cannot reserve more than the page can hold. Frozen data
+ * never passes through this helper. Reduce the edited stack, not the other band. */
+export function boundedBandSettings(
+  styles: import("./proposal-styles").ResolvedStyles,
+  hf: HeaderFooterSettings,
+  kind: "header" | "footer",
+): HeaderFooterSettings {
+  if (pageGeometry(styles, hf, 1).content.height >= 192) return hf;
+  const next = structuredClone(hf),
+    key = kind === "header" ? "headerSpacing" : "footerSpacing";
+  const spacing = { ...bandSpacing(next, kind) };
+  next[key] = spacing;
+  spacing.spaceToContent = Math.min(
+    spacing.spaceToContent,
+    bandSpacingLimit(styles, next, kind, "spaceToContent"),
+  );
+  if (bandDivider(next, kind))
+    spacing.spaceByLine = Math.min(
+      spacing.spaceByLine,
+      bandSpacingLimit(styles, next, kind, "spaceByLine"),
+    );
+  return next;
 }

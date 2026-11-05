@@ -1,6 +1,13 @@
 "use client";
 import { SpacingInput } from "./editor/spacing-input";
-import { bandSpacing, pageGeometry } from "../lib/page-bands";
+import {
+  boundedBandSettings,
+  bandOnCover,
+  bandDivider,
+  bandSpacing,
+  bandSpacingLimit,
+  pageGeometry,
+} from "../lib/page-bands";
 import { Disclosure } from "./ui";
 import { sharedPagesLabel } from "../lib/page-count";
 import { ToolbarPopover } from "./toolbar-popover";
@@ -18,6 +25,7 @@ import {
   type ProposalFont,
 } from "../lib/proposal-fonts";
 import {
+  textLineHeight,
   styleLevels,
   styleLabels,
   resolveStyles,
@@ -240,7 +248,12 @@ export function ProposalStyles({
               label="Space above (px)"
               ariaLabel={`${styleLabels[level]} space above (px)`}
               value={selected.space_above}
-              max={160}
+              max={Math.max(
+                0,
+                pageGeometry(styles, headerFooter, 1).content.height -
+                  selected.size * textLineHeight(styles, level) -
+                  selected.space_below,
+              )}
               inputStep="any"
               onChange={(space_above) => patch({ space_above })}
             />
@@ -248,7 +261,12 @@ export function ProposalStyles({
               label="Space below (px)"
               ariaLabel={`${styleLabels[level]} space below (px)`}
               value={selected.space_below}
-              max={160}
+              max={Math.max(
+                0,
+                pageGeometry(styles, headerFooter, 1).content.height -
+                  selected.size * textLineHeight(styles, level) -
+                  selected.space_above,
+              )}
               inputStep="any"
               onChange={(space_below) => patch({ space_below })}
             />
@@ -376,18 +394,15 @@ export function ProposalStyles({
         </div>
       </details>
       {headerFooter && onHeaderFooter && (
-        <details className="style-accordion" open>
-          <Disclosure>Header &amp; footer</Disclosure>
-          <BandSettings
-            styles={styles}
-            value={headerFooter}
-            onChange={onHeaderFooter}
-            pageCount={pageCount}
-            pages={bandPages}
-            onReset={onResetBands}
-            resetLabel={bandsResetLabel}
-          />
-        </details>
+        <BandSettings
+          styles={styles}
+          value={headerFooter}
+          onChange={onHeaderFooter}
+          pageCount={pageCount}
+          pages={bandPages}
+          onReset={onResetBands}
+          resetLabel={bandsResetLabel}
+        />
       )}
     </section>
   );
@@ -496,7 +511,15 @@ function BandSettings({
           aria-label={label}
           aria-describedby={subtitle ? `${id}-${key}` : undefined}
           checked={value[key]}
-          onChange={(e) => onChange({ ...value, [key]: e.target.checked })}
+          onChange={(e) =>
+            onChange(
+              boundedBandSettings(
+                styles,
+                { ...value, [key]: e.target.checked },
+                key === "showHeader" ? "header" : "footer",
+              ),
+            )
+          }
         />
       </span>
     </label>
@@ -511,15 +534,16 @@ function BandSettings({
       ? Math.max(
           0,
           pageCount -
-            (value.showOnCover ? 0 : 1) -
+            (bandOnCover(value, kind) ? 0 : 1) -
             own.filter(
-              (p) => p.kind === kind && (p.page !== 1 || value.showOnCover),
+              (p) =>
+                p.kind === kind && (p.page !== 1 || bandOnCover(value, kind)),
             ).length,
         )
       : 0;
   const subtitle = (kind: "header" | "footer") => {
     const excluded = own.filter(
-      (p) => p.kind === kind && (p.page !== 1 || value.showOnCover),
+      (p) => p.kind === kind && (p.page !== 1 || bandOnCover(value, kind)),
     );
     return `${sharedPagesLabel(shared(kind))}${(["unique", "hidden"] as const)
       .map((source) => {
@@ -530,99 +554,138 @@ function BandSettings({
   };
   return (
     <div className="band-settings">
-      {toggle("showHeader", "Header", subtitle("header"))}
-      {toggle("showFooter", "Footer", subtitle("footer"))}
-      {toggle(
-        "showOnCover",
-        "Show on cover",
-        !value.showOnCover
-          ? "Off, because the cover has its own logo and title"
-          : undefined,
-      )}
       {(["header", "footer"] as const).map((kind) => {
         const spacing = bandSpacing(value, kind),
           title = kind === "header" ? "Header" : "Footer";
         const update = (patch: Partial<typeof spacing>) =>
-          onChange({
-            ...value,
-            [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
-              ...spacing,
-              ...patch,
-            },
-          });
+          onChange(
+            boundedBandSettings(
+              styles,
+              {
+                ...value,
+                [kind === "header" ? "headerSpacing" : "footerSpacing"]: {
+                  ...spacing,
+                  ...patch,
+                },
+              },
+              kind,
+            ),
+          );
         return (
-          <fieldset className="band-spacing-settings" key={kind}>
-            <legend>{title} spacing</legend>
-            <fieldset className="band-height">
-              <legend>Distance from edge</legend>
-              <div role="group" aria-label={`${title} distance from edge`}>
-                {([0.25, 0.3, 0.4, 0.5] as const).map((distanceIn) => (
-                  <button
-                    type="button"
-                    key={distanceIn}
-                    aria-pressed={spacing.distanceIn === distanceIn}
-                    onClick={() => update({ distanceIn })}
-                  >
-                    {distanceIn} in
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <fieldset className="band-height">
-              <legend>Height</legend>
-              <div role="group" aria-label={`${title} height`}>
-                {(
-                  [
-                    ["Small", 0.25],
-                    ["Medium", 0.4],
-                    ["Large", 0.6],
-                    ["X-Large", 0.8],
-                  ] as const
-                ).map(([name, heightIn]) => (
-                  <button
-                    type="button"
-                    key={name}
-                    aria-pressed={spacing.heightIn === heightIn}
-                    onClick={() => update({ heightIn })}
-                  >
-                    {name}
-                    <small>{heightIn} in</small>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <SpacingInput
-              label="Space by the line"
-              ariaLabel={`${title} space by the line`}
-              value={spacing.spaceByLine}
-              max={24}
-              step={1}
-              onChange={(spaceByLine) => update({ spaceByLine })}
-            />
-            <SpacingInput
-              label="Space to content"
-              ariaLabel={`${title} space to content`}
-              value={spacing.spaceToContent}
-              max={48}
-              step={1}
-              onChange={(spaceToContent) => update({ spaceToContent })}
-            />
-            <p className="band-margin-note" role="status">
-              {(() => {
-                const edge = kind === "header" ? "top" : "bottom",
-                  label = kind === "header" ? "Top" : "Bottom",
-                  effective = geometry.margins[edge],
-                  base = geometry.baseMargins[edge],
-                  inches = Number((effective / 96).toFixed(2));
-                return effective > base
-                  ? `${label} margin grows to ${inches} in to fit the ${kind}`
-                  : `${label} margin: ${inches} in (fits)`;
-              })()}
-            </p>
-          </fieldset>
+          <details className="style-accordion band-section" key={kind} open>
+            <Disclosure>{title}</Disclosure>
+            <div className="style-accordion-body band-spacing-settings">
+              {toggle(
+                kind === "header" ? "showHeader" : "showFooter",
+                title,
+                subtitle(kind),
+              )}
+              <label className="band-setting">
+                <span>
+                  <strong>Show on cover</strong>
+                </span>
+                <span className="band-switch-hit">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    className="band-switch-input"
+                    aria-label={`${title} show on cover`}
+                    checked={bandOnCover(value, kind)}
+                    onChange={(e) => update({ showOnCover: e.target.checked })}
+                  />
+                </span>
+              </label>
+              <fieldset className="band-height">
+                <legend>Distance from edge</legend>
+                <div role="group" aria-label={`${title} distance from edge`}>
+                  {([0.25, 0.3, 0.4, 0.5] as const).map((distanceIn) => (
+                    <button
+                      type="button"
+                      key={distanceIn}
+                      aria-pressed={spacing.distanceIn === distanceIn}
+                      onClick={() => update({ distanceIn })}
+                    >
+                      {distanceIn} in
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset className="band-height">
+                <legend>Height</legend>
+                <div role="group" aria-label={`${title} height`}>
+                  {(
+                    [
+                      ["Small", 0.25],
+                      ["Medium", 0.4],
+                      ["Large", 0.6],
+                      ["X-Large", 0.8],
+                    ] as const
+                  ).map(([name, heightIn]) => (
+                    <button
+                      type="button"
+                      key={name}
+                      aria-pressed={spacing.heightIn === heightIn}
+                      onClick={() => update({ heightIn })}
+                    >
+                      {name}
+                      <small>{heightIn} in</small>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <SpacingInput
+                label={
+                  kind === "header"
+                    ? "Spacing below header"
+                    : "Spacing above footer"
+                }
+                value={spacing.spaceToContent}
+                max={bandSpacingLimit(styles, value, kind, "spaceToContent")}
+                onChange={(spaceToContent) => update({ spaceToContent })}
+              />
+              <label className="band-setting">
+                <span>
+                  <strong>Divider line</strong>
+                </span>
+                <span className="band-switch-hit">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    className="band-switch-input"
+                    aria-label={`${title} divider line`}
+                    checked={bandDivider(value, kind)}
+                    onChange={(e) => update({ divider: e.target.checked })}
+                  />
+                </span>
+              </label>
+              {bandDivider(value, kind) && (
+                <SpacingInput
+                  label={
+                    kind === "header"
+                      ? "Spacing above line"
+                      : "Spacing below line"
+                  }
+                  value={spacing.spaceByLine}
+                  max={bandSpacingLimit(styles, value, kind, "spaceByLine")}
+                  onChange={(spaceByLine) => update({ spaceByLine })}
+                />
+              )}
+              <p className="band-margin-note" role="status">
+                {(() => {
+                  const edge = kind === "header" ? "top" : "bottom",
+                    label = kind === "header" ? "Top" : "Bottom",
+                    effective = geometry.margins[edge],
+                    base = geometry.baseMargins[edge],
+                    inches = Number((effective / 96).toFixed(2));
+                  return effective > base
+                    ? `${label} margin grows to ${inches} in to fit the ${kind}`
+                    : `${label} margin: ${inches} in (fits)`;
+                })()}
+              </p>
+            </div>
+          </details>
         );
       })}
-      {toggle("divider", "Divider line")}
       <div className="band-style-actions">
         <button
           type="button"

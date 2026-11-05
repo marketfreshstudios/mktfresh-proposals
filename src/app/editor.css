@@ -7978,3 +7978,121 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .image-edit-bar {
   --font-ui: "Instrument Sans", system-ui, sans-serif;
 }
+/* Edit chrome uses application typography even inside a styled cover heading. */
+.toolbar-popover {
+  font: 500 13px/18px var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--ink);
+}
+.toolbar-popover :is(button, input, label, select) {
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+  text-transform: none;
+}
+/* Editable atoms remain recognizable without changing their document text style. */
+.document-cover .field-editor .field-chip {
+  background: #f0ece4;
+  border: 0;
+  border-radius: 4px;
+  padding: 0 4px;
+  color: inherit;
+  font: inherit;
+}
+
+/* Each cover line owns both spaces; neighbouring margins never swallow a change. */
+.document-cover:has(> .cover-element) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.document-cover > .cover-element {
+  flex: none;
+}
+.spacing-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.spacing-slider-row > input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  height: 36px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.spacing-number {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 12px var(--font-ui);
+  color: var(--ink-muted);
+}
+.spacing-number > input {
+  width: 70px;
+  min-width: 0;
+  height: 36px;
+  padding: 4px 6px;
+}
+@media (max-width: 959px) {
+  .spacing-slider-row > input[type="range"],
+  .spacing-number > input {
+    min-height: 44px;
+  }
+}
+.cover-controls-popover > button,
+.image-controls-popover > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cover-controls-popover .icon,
+.image-controls-popover .icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.menu-check {
+  margin-left: auto;
+}
+.menu-group-label {
+  display: block;
+  padding: 8px;
+  font: 600 11px/1.5 var(--font-ui);
+  color: var(--ink-muted);
+}
+.proposal-styles .band-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.proposal-styles .band-spacing-settings {
+  border: 0;
+  padding: 16px;
+  min-width: 0;
+}
+.proposal-styles .band-spacing-settings .band-setting {
+  border: 0;
+}
+
+.document-cover .cover-text-line {
+  min-height: 18px;
+}
+/* Sliders get the flexible width; their numeric value stays compact. */
+.spacing-slider-row .spacing-number {
+  flex: none;
+  width: 88px;
+}
+.spacing-slider-row .spacing-number > input {
+  width: 64px;
+  min-width: 0;
+}
+.proposal-styles .band-spacing-settings .band-height {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}

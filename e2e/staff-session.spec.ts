@@ -99,7 +99,7 @@ test("real proxy refreshes parallel saves and returns rotated HttpOnly browser c
       name: "proposal_refresh",
       value: fresh.refresh_token,
       domain: "127.0.0.1",
-      path: "/api",
+      path: "/",
       httpOnly: true,
       sameSite: "Lax",
     },
@@ -139,7 +139,7 @@ test("revoked session keeps editor text, signs in in another tab, and Retry save
       name: "proposal_refresh",
       value: session.refresh_token,
       domain: "127.0.0.1",
-      path: "/api",
+      path: "/",
       httpOnly: true,
       sameSite: "Lax",
     },
@@ -228,7 +228,7 @@ test("inline client save shows Sign in without clearing its entered contact deta
       name: "proposal_refresh",
       value: session.refresh_token,
       domain: "127.0.0.1",
-      path: "/api",
+      path: "/",
       httpOnly: true,
       sameSite: "Lax",
     },
@@ -270,4 +270,50 @@ test("inline client save shows Sign in without clearing its entered contact deta
   await expect(
     modal.getByRole("button", { name: "Create client", exact: true }),
   ).toBeEnabled();
+});
+
+test("staff pages redirect before HTML and accept a refresh-only session", async ({
+  page,
+  context,
+  request,
+}) => {
+  await context.clearCookies();
+  for (const path of [
+    "/",
+    "/proposals/00000000-0000-4000-8000-000000000123?view=send",
+  ]) {
+    const response = await page.request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    expect(
+      new URL(
+        response.headers().location,
+        "http://127.0.0.1:3100",
+      ).searchParams.get("next"),
+    ).toBe(path);
+    expect(await response.text()).not.toContain("Dashboard");
+  }
+  await page.goto("/login");
+  await expect(
+    page.getByRole("button", { name: "Sign in", exact: true }),
+  ).toBeVisible();
+  const session = await credentials(request);
+  await context.addCookies([
+    {
+      name: "proposal_refresh",
+      value: session.refresh_token,
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
+  const response = await page.request.get("/", { maxRedirects: 0 });
+  expect(response.status()).toBe(200);
+  expect(await response.text()).toContain("Dashboard");
+  const cookies = await context.cookies();
+  expect(cookies.some((c) => c.name === "proposal_session")).toBe(true);
+  expect(
+    cookies.filter((c) => c.name === "proposal_refresh").map((c) => c.path),
+  ).toEqual(["/"]);
 });
