@@ -1,3 +1,4 @@
+import { captureReview5 } from "./owner-review5-captures";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import type { RichText } from "../src/lib/model";
@@ -82,6 +83,10 @@ for (const kind of ["bulletList", "orderedList"])
     await expect(
       page.locator('.editor-page-sheets[data-layout-settled="true"]'),
     ).toBeVisible();
+    if (kind === "bulletList") {
+      await items.first().scrollIntoViewIfNeeded();
+      await captureReview5(page, "list-24px-editor-1440");
+    }
     const pages = await page.locator(".editor-page-sheets .page-sheet").count();
     await page
       .getByRole("button", { name: "Preview PDF", exact: true })
@@ -89,6 +94,12 @@ for (const kind of ["bulletList", "orderedList"])
     await expect(
       page.getByRole("link", { name: "Download preview", exact: true }),
     ).toBeVisible();
+    if (kind === "bulletList" && process.env.REVIEW5_CAPTURE === "1") {
+      await page
+        .getByRole("button", { name: "Go to page 2", exact: true })
+        .click();
+      await captureReview5(page, "list-24px-pdf-preview-1440");
+    }
     const render = f.renders.at(-1)!;
     expect(render.layout.pages).toBe(pages);
     const { getDocument, OPS } =

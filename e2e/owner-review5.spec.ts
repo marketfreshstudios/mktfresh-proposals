@@ -1,3 +1,4 @@
+import { captureReview5 } from "./owner-review5-captures";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 test("Blocks and plus menu insert the signer pair once, with its heading and one Undo", async ({
@@ -11,6 +12,7 @@ test("Blocks and plus menu insert the signer pair once, with its heading and one
   await page.goto(`/proposals/${f.draft.id}`);
   await page.locator(`[data-block-id="block-${id}"] .tiptap`).click();
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await captureReview5(page, "blocks-tab-1440");
   await page
     .locator(".blocks-panel")
     .getByRole("menuitem", { name: "Signatures", exact: true })
@@ -39,6 +41,11 @@ test("Blocks and plus menu insert the signer pair once, with its heading and one
   await frame
     .getByRole("button", { name: "Add a block below", exact: true })
     .click();
+  await page
+    .locator(".block-popover")
+    .getByRole("searchbox", { name: "Search blocks", exact: true })
+    .fill("signature");
+  await captureReview5(page, "plus-menu-signatures-1440");
   await page
     .locator(".block-popover")
     .getByRole("menuitem", { name: "Signatures", exact: true })
@@ -101,6 +108,13 @@ test("375px add sheet lists all signer blocks with duplicate explanations", asyn
     await expect(
       page.getByRole("menuitem", { name, exact: true }),
     ).toBeVisible();
+  await page
+    .getByRole("menuitem", { name: "Signatures", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page
+    .getByRole("searchbox", { name: "Search blocks", exact: true })
+    .fill("signature");
+  await captureReview5(page, "plus-sheet-signatures-375");
   await page.getByRole("menuitem", { name: "Signatures", exact: true }).click();
   await expect
     .poll(

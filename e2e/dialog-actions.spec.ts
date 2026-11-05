@@ -1,3 +1,4 @@
+import { captureReview5 } from "./owner-review5-captures";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 for (const width of [1440, 375])
@@ -22,6 +23,8 @@ for (const width of [1440, 375])
         exact: true,
       });
     await expect(cancel).toBeFocused();
+    if (width === 1440)
+      await captureReview5(page, "delete-required-cancel-first-1440");
     const a = (await cancel.boundingBox())!,
       b = (await remove.boundingBox())!;
     expect(a.x).toBeLessThan(b.x);
