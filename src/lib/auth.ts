@@ -1,3 +1,4 @@
+import { StaffPasswordRequired, validateStaffMembership } from "./staff-access";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
@@ -89,14 +90,13 @@ async function checkStaff(request: Request): Promise<StaffActor> {
   const credentials = await staffCredentials(request),
     db = supabase();
   const user = credentials.user;
-  const member = await db
-    .from("staff_users")
-    .select("user_id,workspace_id,role,display_name")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (member.error || !member.data)
-    throw new AppError(403, "Staff access required");
+  const member = {
+    data: await validateStaffMembership(user, credentials.access_token, {
+      passwordChange: true,
+    }),
+  };
   keepStaffSession(request, credentials);
+  if (member.data.password_change_required) throw new StaffPasswordRequired();
   return {
     ...actor(request, "staff:" + user.id),
     workspace_id: member.data.workspace_id,
@@ -109,13 +109,9 @@ export async function login(email: string, password: string) {
   const db = authClient();
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new AppError(401, "Invalid credentials");
-  const member = await supabase()
-    .from("staff_users")
-    .select("user_id,workspace_id,role,display_name")
-    .eq("user_id", data.user.id)
-    .maybeSingle();
-  if (member.error || !member.data)
-    throw new AppError(403, "Staff access required");
+  await validateStaffMembership(data.user, data.session.access_token, {
+    passwordChange: true,
+  });
   return data.session;
 }
 
@@ -137,7 +133,7 @@ export async function workspaceStaff(workspaceId: string) {
   const db = supabase();
   const { data, error } = await db
     .from("staff_users")
-    .select("user_id,role,display_name")
+    .select("user_id,role,display_name,status")
     .eq("workspace_id", workspaceId);
   if (error) throw error;
   return Promise.all(
@@ -187,7 +183,10 @@ export async function updateStaffDisplayName(
     throw new AppError(403, "Staff authorization required");
   const display_name = DisplayNameSchema.parse(name);
   if (actor.staff_role !== "owner" && actor.actor !== "staff:" + userId)
-    throw new AppError(403, "Only owners can edit another staff member's name");
+    throw new AppError(
+      403,
+      "Only super admins can edit another staff member's name",
+    );
   const members = await workspaceStaff(actor.workspace_id!);
   if (!members.some((m) => m.user_id === userId))
     throw new AppError(404, "Staff member not found in this workspace");

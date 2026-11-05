@@ -289,6 +289,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -313,6 +314,7 @@ export async function api<T = any>(
         !["/api/auth/login", "/api/auth/local"].includes(path.split("?")[0])
         ? staffErrorMessage(response.status, data)
         : (data.error ?? "Unable to complete request"),
+      data,
     );
   return data;
 }

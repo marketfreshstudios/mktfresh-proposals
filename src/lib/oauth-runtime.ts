@@ -1,3 +1,4 @@
+import { activeConnectorMember } from "./staff-access";
 import { OAuthServer } from "./oauth";
 import { LocalOAuthStore, SupabaseOAuthStore } from "./oauth-store";
 import { supabase } from "./repository";
@@ -17,5 +18,7 @@ export function oauthServer() {
       "https://chatgpt.com/connector_platform_oauth_redirect",
       ...(process.env.OAUTH_REDIRECT_URIS ?? "").split(",").filter(Boolean),
     ],
+    undefined,
+    activeConnectorMember,
   ));
 }

@@ -161,7 +161,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       await expect(
         page.getByRole("heading", { name: "Client emails", exact: true }),
       ).toBeVisible();
-      await expect(page.locator(".email-list-row")).toHaveCount(15);
+      await expect(page.locator(".email-list-row")).toHaveCount(17);
       await shot("emails-list", width, theme);
       if (width === 768) {
         await page.getByRole("button", { name: "Studio", exact: true }).click();
@@ -186,13 +186,26 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
           page.getByRole("heading", { name: template.name, exact: true }),
         ).toBeVisible();
         const frame = page.frameLocator('iframe[title="Email preview"]');
-        await expect(frame.locator("h1")).toHaveText("Your next project");
+        await expect(frame.locator("h1")).toHaveText(
+          template.key === "team_invite"
+            ? "You're invited"
+            : template.key === "team_password_reset"
+              ? "Choose a new password"
+              : "Your next project",
+        );
         await expect(frame.locator("a.email-cta")).toHaveCount(1);
         await expect(frame.locator("a[href]")).toHaveCount(0);
         await expect(
           page.getByRole("textbox", { name: "Primary button label" }),
         ).toHaveValue(template.button_label);
-        if (template.staff && template.key !== "staff_billing_failed") {
+        if (
+          template.staff &&
+          ![
+            "staff_billing_failed",
+            "team_invite",
+            "team_password_reset",
+          ].includes(template.key)
+        ) {
           await expect(
             page.getByRole("textbox", { name: "Subject", exact: true }),
           ).toHaveAttribute("readonly", "");

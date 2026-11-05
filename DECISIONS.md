@@ -482,3 +482,16 @@ Reference: [Supabase session rotation and reuse](https://supabase.com/docs/guide
 - Validate Letter print dimensions, then allow one fresh-target retry only for Chromium's opaque print protocol failure. Keep the already laid-out HTML, frozen breaks and hashes. Existing persisted job retries remain available after that bound.
 - Notify staff at terminal failure or a decision, deduplicated by job/error/recipient, with job-specific copy. Preserve raw Evidence and immutable sent-email snapshots. The existing staff_billing_failed template key becomes the editable Job needs attention template; migrate only unchanged defaults, preserving custom copy. Other staff templates remain read-only.
 - Production verification was read-only: the existing sealed PDF/certificate and frozen hash verify; one client completion email and one staff completion notification are logged. No hosted retry or send was performed.
+
+
+## Team management — 4 November 2026 (PR #67)
+
+Stored membership roles remain `owner` / `member`, labelled Super admin / Staff. The owner promotion query is supplied only in the PR description, not in committed files. Team lifecycle changes are service-managed, tenant-scoped and audited atomically; active Super admins cannot demote the last active admin or deactivate/remove themselves. Staff retain own-profile changes and a read-only team list.
+
+The owner approved admin ban plus a private, service-only SQL function to revoke the target user's Auth sessions and refresh tokens. Connector grants are also revoked so reactivation cannot revive them. Current membership and Auth-session existence are checked server-side; password changes use the Supabase admin API's session revocation. Forced password changes block other staff access until completed. Auth metadata supplies display names only, never authorization.
+
+Invites and password resets use generated Supabase links and the existing app mailer/layout/log, with editable Team invite/reset templates. The email log redacts reusable credentials; passwords are never persisted, logged, emailed or returned. Own-password changes require the current password; other-user changes are Super-admin-only and default to requiring a new password at next sign-in.
+
+Removal is blocked by unfinished native proposals whose sender is this person or unsent drafts they created. The error links each record and offers Deactivate instead; no reassignment UI is added. Auth identities and historical actions/signatures remain. Existing Workspace security-field permissions are preserved; whole Studio sections are not newly restricted. Signing/delegation, provider billing, readiness, PagePlan and MCP's draft-only tools remain unchanged.
+
+Apply the hosted SQL from the PR before merging/deploying. [Implementation, permission audit and requested screenshots](docs/team-management.md).

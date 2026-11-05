@@ -30,7 +30,7 @@ Playwright starts an isolated server on port 3100, creates fixture records, sign
 
 ### Fresh local Supabase acceptance
 
-The config uses dedicated `553xx` ports and project ID `mktfresh-proposals`. It does not reference other projects. The migration enables RLS on every application table and makes audit records/signatures/files immutable. Staff membership is explicitly provisioned in `staff_users`.
+The config uses dedicated `553xx` ports and project ID `mktfresh-proposals`. It does not reference other projects. The migration enables RLS on every application table and makes audit records/signatures/files immutable. Bootstrap one active `owner` membership in `staff_users`; invite subsequent users from Studio → Workspace → Team. Stored `owner` / `member` roles display as Super admin / Staff. See [Team management](docs/team-management.md) for lifecycle rules and hosted rollout ordering.
 
 ```sh
 npx supabase start
@@ -43,11 +43,15 @@ On this Mac, CLI 2.117.0 stalled before container startup. The acceptance test w
 
 ## API contract
 
-Internal routes use `Authorization: Bearer <Supabase access token>`, checked with `auth.getUser()` plus the protected staff allowlist in both Proxy middleware and route handlers. For local development only, use `DEV_STAFF_TOKEN`. Browser login returns only `{authenticated:true}` and stores access/refresh tokens in HttpOnly, SameSite=Lax cookies (Secure in production). Both cookies slide for 30 days of inactivity; the refresh cookie is restricted to `/api`. Expired access tokens refresh server-side before staff requests continue, including forwarding rotated cookies from Proxy to the route and browser. Concurrent refreshes share a short result window; Supabase’s refresh-token reuse protection covers requests across server instances. Logout clears both cookies and revokes the browser session. There is no public signup route or anonymous design-preview bypass.
+Internal routes use `Authorization: Bearer <Supabase access token>`, checked with `auth.getUser()` plus the protected staff allowlist in both Proxy middleware and route handlers. For local development only, use `DEV_STAFF_TOKEN`. Browser login returns `{authenticated:true}` (plus `password_change_required:true` when needed), never tokens, and stores access/refresh tokens in HttpOnly, SameSite=Lax cookies (Secure in production). Both cookies slide for 30 days of inactivity; both cookies use Path `/` so staff pages can refresh before rendering. Expired access tokens refresh server-side before staff requests continue, including forwarding rotated cookies from Proxy to the route and browser. Concurrent refreshes share a short result window; Supabase’s refresh-token reuse protection covers requests across server instances. Logout clears both cookies and revokes the browser session. There is no public signup route or anonymous design-preview bypass.
 
 | Method / route                                | Purpose                                                                               |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `POST /api/auth/login`                        | `{email,password}` → `{authenticated:true}` plus HttpOnly cookies for allowlisted staff                   |
+| `POST /api/auth/set-password` | Invite/reset acceptance or own password change; verifies one-time link or current password, returns no credentials |
+| `GET /api/team` | Workspace staff/status/last sign-in and recent audit changes |
+| `POST /api/team/invite` | Super admin invite using app email |
+| `POST /api/team/:userId` | Guarded name, role, password, reset, activation and removal actions |
 | `GET, POST, PUT /api/clients`                 | List or upsert client records; PUT accepts the full record with its `id`              |
 | `GET, POST, PUT /api/pricing_items`           | Products and billing mappings; deactivate instead of deleting                          |
 | `GET, POST, PUT /api/templates`               | Block content and default quote line references                                       |
@@ -91,7 +95,7 @@ For drawn signatures use `kind: "drawn"` and `image: "data:image/png;base64,..."
 
 ## Integration boundary
 
-- **Supabase:** real repository, Auth, private Storage, and full-text search adapter. Production requires a new dedicated project, migrations, two auth users, and their IDs in `staff_users`.
+- **Supabase:** real repository, Auth, private Storage, and full-text search adapter. Production requires a dedicated project, migrations and one bootstrapped active Super admin. Other users are invited through Team; invite/reset mail uses the app provider, not Supabase SMTP.
 - **Resend:** real HTTP adapter with deterministic idempotency keys; local mock unless configured. Production needs a verified sending domain and API key. It was not exercised against a live account.
 - **QuickBooks and Stripe:** real HTTP adapters are implemented behind `BILLING_MODE=test`, with contract tests for D2, D3, custom services, scheduled step-downs and unsent invoices. Stripe refuses live keys; QuickBooks refuses production. Actual provider acceptance is pending owner-supplied test credentials.
 - **PDF:** Playwright locally, bundled `@sparticuz/chromium` on Vercel, with embedded fonts and workspace branding. Hosted size/runtime acceptance remains pending.
@@ -101,7 +105,7 @@ Do not treat a passing mocked billing flow as a live-provider acceptance test. K
 
 ## Phase 2 workspace and quote foundation
 
-Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace and role; both roles currently have equal capabilities. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including consent, sending domain and fallback QuickBooks item. The deployment origin comes from APP_URL; the send screen chooses a staff sender. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
+Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace, role and status. Super admins manage Team and the existing workspace security settings; Staff retain authoring and their own profile changes. Company-signature delegation remains separate and unchanged. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including consent, sending domain and fallback QuickBooks item. The deployment origin comes from APP_URL; the send screen chooses a staff sender. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
 
 New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalogue/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
 

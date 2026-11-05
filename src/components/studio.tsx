@@ -1,4 +1,5 @@
 "use client";
+import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
@@ -387,7 +388,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
           <fieldset className="stack" disabled={!owner}>
             <legend className="screen-reader">Signatory and delegates</legend>
             {!owner && (
-              <p>Only an owner can change the signatory or delegates.</p>
+              <p>Only a super admin can change the signatory or delegates.</p>
             )}
             <div className="studio-brand-grid">
               <Field label="Signatory name">
@@ -697,17 +698,9 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
       <Section
         title="Team"
         id="team"
-        description="Display names appear in emails. Owners can edit everyone; members can edit their own name."
+        description="Display names appear in emails. Super admins can edit everyone; Staff can edit their own name."
       >
-        <TeamNames data={data} run={run} />
-        <p>
-          Add staff in your authentication administration, then add their user
-          IDs to this workspace’s staff list.{" "}
-          <a href="/studio/connections">
-            Manage assistant access in Connections
-          </a>
-          .
-        </p>
+        <TeamStudio data={data} run={run} embedded />
       </Section>
     </div>
   );
@@ -721,56 +714,6 @@ async function readData(file: File) {
       reject(new Error("The file could not be read. Choose it again."));
     r.readAsDataURL(file);
   });
-}
-function TeamNames({ data, run }: { data: Data; run: Runner }) {
-  const save = useSave(run);
-  return (
-    <>
-      <SaveError error={save.error} />
-      {data.staff.map((m) => (
-        <form
-          className="team-row"
-          key={m.user_id}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const name = new FormData(e.currentTarget).get("display_name");
-            void save.save(
-              () => post(`/api/team/${m.user_id}`, { display_name: name }),
-              "Display name saved",
-            );
-          }}
-        >
-          <div>
-            <strong>{m.display_name}</strong>
-            <small>
-              {m.email} · {m.role === "owner" ? "Owner" : "Member"}
-            </small>
-          </div>
-          <Field label={`Display name for ${m.email}`}>
-            <input
-              name="display_name"
-              required
-              defaultValue={m.display_name}
-              disabled={
-                data.user.staff_role !== "owner" &&
-                data.user.actor !== "staff:" + m.user_id
-              }
-            />
-          </Field>
-          <Button
-            type="submit"
-            busy={save.busy}
-            disabled={
-              data.user.staff_role !== "owner" &&
-              data.user.actor !== "staff:" + m.user_id
-            }
-          >
-            Save name
-          </Button>
-        </form>
-      ))}
-    </>
-  );
 }
 export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
   const [selected, setSelected] = useState<Item | null | undefined>(undefined),
@@ -3340,7 +3283,7 @@ export function ConnectionsStudio({
               <p>
                 {open === "stripe"
                   ? "Use a Stripe test-mode restricted key in this deployment. Sync only after the test products have been copied."
-                  : "QuickBooks sandbox credentials must be added to the deployment by the owner. Invoices remain in review until then."}
+                  : "QuickBooks sandbox credentials must be added to the deployment by a super admin. Invoices remain in review until then."}
               </p>
               <Button
                 onClick={() =>
