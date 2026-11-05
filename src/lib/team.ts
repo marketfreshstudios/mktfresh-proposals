@@ -1,3 +1,4 @@
+import { unfinishedAssignment } from "./proposal-owner";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AppError, check, type Actor } from "./model";
@@ -16,7 +17,7 @@ export class TeamWorkConflict extends AppError {
   constructor(readonly proposals: { id: string; title: string }[]) {
     super(
       409,
-      "This person has unfinished proposals. Finish this work before removing them, or use Deactivate to stop access now.",
+      "This person has unfinished proposals. Reassign or finish this work before removing them, or use Deactivate to stop access now.",
     );
   }
 }
@@ -263,14 +264,8 @@ export class TeamService {
       if (input.action === "reactivate")
         await this.store.change(actor, id, input.action);
     } else if (input.action === "remove") {
-      const work = (await this.repo.list()).filter(
-        (p) =>
-          p.source !== "proposify_import" &&
-          !["completed", "declined", "expired", "archived"].includes(
-            p.status,
-          ) &&
-          (p.sender?.user_id === id ||
-            (p.status === "draft" && p.created_by === "staff:" + id)),
+      const work = (await this.repo.list()).filter((p) =>
+        unfinishedAssignment(p, id),
       );
       if (work.length)
         throw new TeamWorkConflict(
