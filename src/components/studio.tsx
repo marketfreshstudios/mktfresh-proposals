@@ -2792,6 +2792,7 @@ export function ConnectionsStudio({
       qbo: boolean;
       email: boolean;
       mock: boolean;
+      mode?: "test" | "live" | "mock";
     } | null>(null),
     [error, setError] = useState(""),
     [open, setOpen] = useState(initial ?? "");
@@ -2808,20 +2809,17 @@ export function ConnectionsStudio({
         !a.last_used || Date.now() - Date.parse(a.last_used) > 7 * 86400000,
     ),
     imports = data.proposals.filter((p) => p.source === "proposify_import"),
-    missing = imports.filter((p) => !p.files.some((f) => f.kind === "import")),
-    references = data.documents,
-    referenceError = references.some((d) => d.fetch_error);
+    missing = imports.filter((p) => !p.files.some((f) => f.kind === "import"));
   const cards = [
     {
       id: "stripe",
       name: "Stripe",
-      state: health?.stripe
-        ? "Test mode configured"
-        : health?.mock
-          ? "Mock mode"
-          : "Not connected",
+      state: stripeStatus(health),
       line: "Recurring billing, Checkout for new clients and product sync.",
-      detail: "Test mode only. No live billing is enabled.",
+      detail:
+        health?.mode === "live"
+          ? "Live Stripe billing configured."
+          : "Stripe test mode; no live charges.",
       action: "Settings",
     },
     {
@@ -2834,7 +2832,7 @@ export function ConnectionsStudio({
     },
     {
       id: "email",
-      name: "Email",
+      name: "Email sending",
       state:
         health?.email && data.settings?.sending_domain
           ? "Configured"
@@ -2846,30 +2844,11 @@ export function ConnectionsStudio({
       action: "Settings",
     },
     {
-      id: "reference",
-      name: "Pricing reference",
-      state: referenceError
-        ? "Refresh needs attention"
-        : references.length
-          ? "Up to date"
-          : "Add a reference",
-      line: referenceError
-        ? "The last good version stays available while the refresh needs attention."
-        : "Your pricing playbook beside the editor. Read-only; the app never sets prices.",
-      detail: references
-        .map(
-          (d) =>
-            `${d.version || "No version yet"}${d.last_success_at ? ` · last success ${new Date(d.last_success_at).toLocaleString()}` : ""}`,
-        )
-        .join(" · "),
-      action: "Open",
-    },
-    {
       id: "assistants",
       name: "AI assistants",
-      state: stale ? "Drafts paused" : `${connected.length} connected`,
+      state: `${connected.length} connected`,
       line: stale
-        ? "An assistant has not connected recently. You can still write proposals by hand."
+        ? "An assistant has not connected recently. Manage its grant to reconnect."
         : "Assistants read reference data and create drafts. A person always reviews, sends and signs.",
       detail:
         connected.map((a) => a.name).join(", ") || "No assistants connected",
@@ -2892,24 +2871,46 @@ export function ConnectionsStudio({
     <div className="stack">
       <SaveError error={error} />
       {error && <Button onClick={load}>Try loading connections again</Button>}
-      <div className="connection-grid">
-        {cards.map((c) => (
-          <section className="connection-card" key={c.id}>
-            <header>
-              <h2>{c.name}</h2>
-              {!health && ["stripe", "qbo", "email"].includes(c.id) ? (
-                <Skeleton />
-              ) : (
-                <span
-                  className={`connection-state ${/needed|paused|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
-                >
-                  {c.state}
-                </span>
-              )}
-            </header>
-            <p>{c.line}</p>
-            <small>{c.detail}</small>
-            <Button onClick={() => setOpen(c.id)}>{c.action}</Button>
+      <p className="studio-description">
+        Services connected to this workspace. Connection status comes from this
+        deployment.
+      </p>
+      <div className="studio-connections-v3">
+        {[
+          { name: "Billing", ids: ["stripe", "qbo"] },
+          { name: "Email", ids: ["email"] },
+          { name: "AI assistants", ids: ["assistants"] },
+          { name: "Imports", ids: ["imports"] },
+        ].map((group) => (
+          <section className="connection-group" key={group.name}>
+            <h2>{group.name}</h2>
+            <div className="connection-grid">
+              {cards
+                .filter((c) => group.ids.includes(c.id))
+                .map((c) => (
+                  <section
+                    className={`connection-card ${/needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
+                    key={c.id}
+                  >
+                    <span className="connection-monogram" aria-hidden="true">
+                      {c.id === "stripe"
+                        ? "S"
+                        : c.id === "qbo"
+                          ? "qb"
+                          : c.id === "assistants"
+                            ? "AI"
+                            : c.name[0]}
+                    </span>
+                    <div>
+                      <h3>{c.name}</h3>
+                      <span className="connection-state">● {c.state}</span>
+                      <p>{c.line}</p>
+                      <small>{c.detail}</small>
+                    </div>
+                    <Button onClick={() => setOpen(c.id)}>{c.action}</Button>
+                  </section>
+                ))}
+            </div>
           </section>
         ))}
       </div>
@@ -2918,9 +2919,7 @@ export function ConnectionsStudio({
           title={cards.find((c) => c.id === open)?.name ?? "Connection"}
           onClose={() => setOpen("")}
         >
-          {open === "reference" ? (
-            <ReferenceDocuments documents={data.documents} run={run} />
-          ) : open === "assistants" ? (
+          {open === "assistants" ? (
             <AssistantConnections data={data} run={run} />
           ) : open === "imports" ? (
             <div className="stack">
@@ -2948,7 +2947,7 @@ export function ConnectionsStudio({
                 your domain’s SPF and DKIM there. The app does not infer DNS
                 verification from the setting alone.
               </p>
-              <a className="btn" href="/studio/workspace#client-links">
+              <a className="btn" href="/studio/workspace?view=email-sending">
                 Open sending domain
               </a>
             </div>
