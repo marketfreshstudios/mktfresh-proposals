@@ -55,6 +55,7 @@ async function fixture() {
 it("manual delivery publishes the same version and plan as email delivery, with no client email or email log", async () => {
   vi.stubEnv("APP_URL", "https://app.example.test");
   const f = await fixture();
+  f.service.clock = () => new Date(f.draft.created_at);
   const before = (await f.repo.get(f.draft.id))!;
   const p = await f.send();
   expect(p.status).toBe("sent");
