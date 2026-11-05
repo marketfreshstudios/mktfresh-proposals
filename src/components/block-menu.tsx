@@ -40,8 +40,18 @@ export function BlockMenu({
     restoreTrigger = useRef(false);
   close.current = onClose;
   const allOptions = blockOptions({ hasPricing, saved, signatureRoles });
+  const optionName = (option: Option) =>
+    variant === "panel"
+      ? option.name === "Text"
+        ? "Paragraph"
+        : option.name === "Pricing table"
+          ? "Pricing / Quote"
+          : option.name
+      : option.name;
   const options = allOptions.filter((o) =>
-    `${o.name} ${o.description}`.toLowerCase().includes(query.toLowerCase()),
+    `${optionName(o)} ${o.name} ${o.description}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   useEffect(() => {
     fallback.current = document.activeElement as HTMLElement;
@@ -317,7 +327,7 @@ export function BlockMenu({
                         disabled={option.disabled}
                         aria-disabled={option.disabled || undefined}
                         tabIndex={i === active ? 0 : -1}
-                        aria-label={option.name}
+                        aria-label={optionName(option)}
                         className={i === active ? "active" : ""}
                         onFocus={() => setActive(i)}
                         onMouseEnter={() => setActive(i)}
@@ -339,7 +349,7 @@ export function BlockMenu({
                           <Icon name={option.icon} />
                         </span>
                         <span>
-                          <strong>{option.name}</strong>
+                          <strong>{optionName(option)}</strong>
                           <small>{option.description}</small>
                         </span>
                       </button>
