@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import { mkdirSync, writeFileSync } from "node:fs";
 const shots = "docs/screenshots/owner-review3";
-test("review3 before evidence", async ({ page }) => {
+test("review3 before evidence", async ({ page }, testInfo) => {
   test.skip(process.env.REVIEW3_BEFORE !== "1", "One-time before evidence");
   mkdirSync(shots, { recursive: true });
   const f = await editorFixture(page);
@@ -31,7 +31,7 @@ test("review3 before evidence", async ({ page }) => {
     }
   }
   writeFileSync(
-    ".data/review3-insets-before.json",
+    testInfo.outputPath("review3-insets-before.json"),
     JSON.stringify(insets, null, 2),
   );
 });
@@ -332,7 +332,7 @@ test("cover sliders use available space, clamp with guidance, and support keyboa
 });
 test("every cover line spacing moves the editor and actual PDF content equally", async ({
   page,
-}) => {
+}, testInfo) => {
   const { defaultCover, coverElements, coverText } =
     await import("../src/lib/cover");
   const { execFileSync } = await import("node:child_process");
@@ -370,7 +370,9 @@ test("every cover line spacing moves the editor and actual PDF content equally",
     await expect(
       page.getByRole("link", { name: "Download preview", exact: true }),
     ).toBeVisible();
-    const file = `.data/cover-spacing-${crypto.randomUUID()}.pdf`;
+    const file = testInfo.outputPath(
+      `cover-spacing-${crypto.randomUUID()}.pdf`,
+    );
     writeFileSync(file, Buffer.from(f.renders.at(-1)!.pdf_base64, "base64"));
     const xml = execFileSync("pdftotext", ["-bbox", file, "-"], {
       encoding: "utf8",
