@@ -45,13 +45,6 @@ export function placeEditorToolbar(
   );
   const scroll = bar.scrollLeft,
     insideScroll = bandScroll?.scrollLeft;
-  const sheet = [...paper.querySelectorAll<HTMLElement>(".page-sheet")]
-    .map((el) => el.getBoundingClientRect())
-    .find((r) => root.top < r.bottom && root.bottom > r.top);
-  if (sheet && width <= sheet.width - 16) {
-    bounds.left = Math.max(bounds.left, sheet.left + 8);
-    bounds.right = Math.min(bounds.right, sheet.right - 8);
-  }
   const result = toolbarPosition({
     bounds,
     anchor: root,

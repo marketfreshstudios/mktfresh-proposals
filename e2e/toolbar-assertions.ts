@@ -13,6 +13,9 @@ export async function attachedBar(bar: Locator, owner: Locator) {
           ?.getBoundingClientRect();
         const ceiling = Math.max(8, region?.top ?? 0);
         return (
+          Math.abs(
+            b.left - Math.max(8, Math.min(a.left, innerWidth - 8 - b.width)),
+          ) <= 1 &&
           b.left >= -1 &&
           b.right <= innerWidth + 1 &&
           b.top >= ceiling - 1 &&

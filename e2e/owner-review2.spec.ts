@@ -55,9 +55,8 @@ test("a tiny logo retains every image action at intrinsic toolbar width", async 
   await expect(bar).toHaveCSS("position", "absolute");
   await expect
     .poll(async () => {
-      const r = (await bar.boundingBox())!,
-        p = (await page.locator(".page-sheet").first().boundingBox())!;
-      return r.x >= p.x && r.x + r.width <= p.x + p.width;
+      const r = (await bar.boundingBox())!;
+      return r.x >= 8 && r.x + r.width <= 1440 - 8;
     })
     .toBe(true);
 });
@@ -175,10 +174,9 @@ test("cover logo pointer drag snaps to center and undo restores its previous pos
   await expect
     .poll(async () => {
       const bar = (await page
-          .getByRole("toolbar", { name: "Image actions" })
-          .boundingBox())!,
-        paper = (await page.locator(".page-sheet").first().boundingBox())!;
-      return bar.x + bar.width <= paper.x + paper.width;
+        .getByRole("toolbar", { name: "Image actions" })
+        .boundingBox())!;
+      return bar.x + bar.width <= 1440 - 8;
     })
     .toBe(true);
   await f.editRemote({
