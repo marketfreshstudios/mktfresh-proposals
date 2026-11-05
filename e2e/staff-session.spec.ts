@@ -179,8 +179,8 @@ test("revoked session keeps editor text, signs in in another tab, and Retry save
     const response = await route.fetch();
     loginBody = await response.json();
     loginStatus = response.status();
-    await route.fulfill({ response });
     finishLogin();
+    await route.fulfill({ response });
   });
   const popupPromise = context.waitForEvent("page");
   await bar.getByRole("link", { name: "Sign in", exact: true }).click();

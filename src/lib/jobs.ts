@@ -525,12 +525,25 @@ export class Worker {
     const failure = jobFailure(job, error, providers);
     // Queue identity persists across manual retries, process restarts and email retries.
     const fingerprint = sha256(job.id + "\n" + error);
+    const assignment =
+      !p.sender && job.id.startsWith(p.id + ":reassigned:")
+        ? (job.payload.email_snapshot as EmailSnapshot)
+        : undefined;
     for (const to of staffRecipients(p))
-      queue(p, "email", `job-alert:${fingerprint}:${to}`, {
-        to,
-        email_template_key: "staff_billing_failed",
-        job_failure: failure,
-      });
+      queue(
+        p,
+        "email",
+        `job-alert:${fingerprint}:${to}`,
+        {
+          to,
+          email_template_key: "staff_billing_failed",
+          job_failure: failure,
+        },
+        undefined,
+        assignment
+          ? { from: assignment.from, reply_to: assignment.reply_to }
+          : undefined,
+      );
   }
   private async attachment(p: Proposal, id: string) {
     const f = p.files.find((x) => x.id === id);
