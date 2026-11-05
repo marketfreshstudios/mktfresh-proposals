@@ -368,7 +368,9 @@ export function StaffApp({
     } else if (section === "settings" && id === "team") {
       title = "Team";
       headerAction = null;
-      content = <TeamStudio data={data} run={run} />;
+      title = "Workspace";
+      subtitle = "How proposals look and who can send and sign them.";
+      content = <WorkspaceStudio data={data} run={run} initial="team" />;
     } else if (section === "settings" && id === "ai") {
       title = "AI assistants";
       subtitle =
@@ -383,7 +385,14 @@ export function StaffApp({
       content = <ActivityStudio data={data} />;
     } else if (section === "settings") {
       headerAction = null;
-      content = <WorkspaceStudio data={data} run={run} />;
+      subtitle = "How proposals look and who can send and sign them.";
+      content = (
+        <WorkspaceStudio
+          data={data}
+          run={run}
+          initial={typeof query.view === "string" ? query.view : undefined}
+        />
+      );
     } else
       content = (
         <Empty

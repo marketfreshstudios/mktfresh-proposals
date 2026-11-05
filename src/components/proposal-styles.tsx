@@ -55,7 +55,11 @@ export function ProposalStyles({
   bandsResetLabel = "Reset to template",
   pageCount = 1,
   bandPages,
+  scope,
+  hidePageMargins = false,
 }: {
+  scope?: "workspace";
+  hidePageMargins?: boolean;
   onResetBands?: () => void | Promise<void>;
   bandsResetLabel?: string;
   headerFooter?: HeaderFooterSettings;
@@ -118,8 +122,9 @@ export function ProposalStyles({
   return (
     <section className="proposal-styles stack" aria-label="Proposal styles">
       <p className="muted style-scope-note">
-        Changes apply to this proposal only. Workspace defaults live in Studio →
-        Workspace.
+        {scope === "workspace"
+          ? "Defaults for new proposals. Sent and signed documents keep their saved styles."
+          : "Changes apply to this proposal only. Workspace defaults live in Studio → Workspace."}
       </p>
       <details className="style-accordion" open={!headerFooter}>
         <Disclosure>Text styles</Disclosure>
@@ -360,7 +365,9 @@ export function ProposalStyles({
         </div>
       </details>
       <details className="style-accordion" open={!headerFooter}>
-        <Disclosure>Page &amp; margins</Disclosure>
+        <Disclosure>
+          {hidePageMargins ? "Density" : "Page & margins"}
+        </Disclosure>
         <div className="style-accordion-body">
           <fieldset className="style-density">
             <legend>Density</legend>
@@ -377,26 +384,28 @@ export function ProposalStyles({
               ))}
             </div>
           </fieldset>
-          <fieldset className="style-fields style-margin-grid">
-            <legend>Page margins (inches)</legend>
-            {(["top", "right", "bottom", "left"] as const).map((side) => (
-              <StyleNumber
-                key={side}
-                name={side[0].toUpperCase() + side.slice(1)}
-                ariaLabel={`Page margin ${side}`}
-                value={styles.layout!.margins[side]}
-                min={0.25}
-                max={2}
-                step={0.05}
-                onChange={(n) =>
-                  onChange({
-                    ...value,
-                    margins: { ...value?.margins, [side]: n },
-                  })
-                }
-              />
-            ))}
-          </fieldset>
+          {!hidePageMargins && (
+            <fieldset className="style-fields style-margin-grid">
+              <legend>Page margins (inches)</legend>
+              {(["top", "right", "bottom", "left"] as const).map((side) => (
+                <StyleNumber
+                  key={side}
+                  name={side[0].toUpperCase() + side.slice(1)}
+                  ariaLabel={`Page margin ${side}`}
+                  value={styles.layout!.margins[side]}
+                  min={0.25}
+                  max={2}
+                  step={0.05}
+                  onChange={(n) =>
+                    onChange({
+                      ...value,
+                      margins: { ...value?.margins, [side]: n },
+                    })
+                  }
+                />
+              ))}
+            </fieldset>
+          )}
         </div>
       </details>
       {headerFooter && onHeaderFooter && (

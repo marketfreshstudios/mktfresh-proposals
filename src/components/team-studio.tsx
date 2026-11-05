@@ -1,4 +1,5 @@
 "use client";
+import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
@@ -89,8 +90,8 @@ export function TeamStudio({
       )}
       <header className="team-heading">
         <p className="muted">
-          Super admins manage access. Staff can view the team and edit their own
-          profile.
+          Super admins manage Studio, billing and the team. Staff draft, edit,
+          send and countersign.
         </p>
         {owner && (
           <Button
@@ -120,14 +121,45 @@ export function TeamStudio({
           </span>
         </div>
         {people.map((person) => (
-          <div role="row" className="team-person" key={person.user_id}>
+          <div
+            role="row"
+            className={`team-person ${person.status === "deactivated" ? "team-person-inactive" : ""}`}
+            key={person.user_id}
+          >
             <div role="cell">
+              <span className="avatar" aria-hidden="true">
+                {person.display_name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join("")}
+              </span>
               <strong>{person.display_name}</strong>
               <small>{person.email}</small>
             </div>
             <div role="cell">
               <span className="team-mobile-label">Role</span>
-              {staffRoleLabel(person.role)}
+              <select
+                aria-label={`Role for ${person.display_name}`}
+                value={person.role}
+                disabled={
+                  !owner ||
+                  (person.user_id === self &&
+                    people.filter(
+                      (p) => p.role === "owner" && p.status === "active",
+                    ).length <= 1)
+                }
+                onChange={(e) =>
+                  void save(
+                    `/api/team/${person.user_id}`,
+                    { action: "role", role: e.target.value },
+                    "Role changed",
+                  )
+                }
+              >
+                <option value="owner">Super admin</option>
+                <option value="member">Staff</option>
+              </select>
             </div>
             <div role="cell">
               <span className="team-mobile-label">Status</span>
@@ -206,21 +238,11 @@ export function TeamStudio({
           </form>
         </section>
       )}
-      <section className="team-recent stack">
-        <Heading>Recent changes</Heading>
-        {!recent.length ? (
-          <p className="muted">Team changes will appear here.</p>
-        ) : (
-          <ol>
-            {recent.map((event) => (
-              <li key={event.id}>
-                <span>{auditText(event)}</span>
-                <small>{date(event.created_at)}</small>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      <p className="team-connections-note">
+        AI assistants like Claude are managed in{" "}
+        <a href="/studio/connections?view=assistants">Connections</a>, not here.
+      </p>
+      <a href="/studio/activity?view=team">Recent changes · Team activity</a>
       {reassign && (
         <ReassignDialog
           from={reassign}
@@ -326,13 +348,22 @@ export function TeamStudio({
                   key={action}
                   disabled={
                     ["deactivate", "remove"].includes(action) &&
-                    dialog.person!.user_id === self
+                    (dialog.person!.user_id === self ||
+                      (action === "remove" &&
+                        data.proposals.some((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        )))
                   }
                   title={
                     ["deactivate", "remove"].includes(action) &&
                     dialog.person!.user_id === self
                       ? "You cannot deactivate or remove yourself"
-                      : undefined
+                      : action === "remove" &&
+                          data.proposals.some((p) =>
+                            unfinishedAssignment(p, dialog.person!.user_id),
+                          )
+                        ? "Reassign proposals first"
+                        : undefined
                   }
                   onClick={() => {
                     if (action === "reassign") {
@@ -356,6 +387,23 @@ export function TeamStudio({
                       } as Record<string, string>
                     )[action]
                   }
+                  {action === "remove" &&
+                    data.proposals.some((p) =>
+                      unfinishedAssignment(p, dialog.person!.user_id),
+                    ) && <small>Reassign proposals first</small>}
+                  {action === "reassign" && (
+                    <small>
+                      {
+                        data.proposals.filter((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        ).length
+                      }{" "}
+                      open proposals
+                    </small>
+                  )}
+                  {action === "deactivate" && (
+                    <small>Blocks sign-in. History is kept.</small>
+                  )}
                 </button>
               ))}
             </div>

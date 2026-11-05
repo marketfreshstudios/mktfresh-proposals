@@ -478,3 +478,287 @@
     margin-top: 24px;
   }
 }
+.studio-workspace-v3 {
+  position: relative;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.workspace-auto-label {
+  position: absolute;
+  right: 0;
+  top: -56px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.workspace-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.workspace-section-list button {
+  border: 0;
+  border-left: 2px solid transparent;
+  background: none;
+  color: var(--ink-muted);
+  padding: 10px 14px;
+  text-align: left;
+  font: 400 14px/20px var(--font-ui);
+  min-height: 40px;
+}
+.workspace-section-list button[aria-current="page"] {
+  border-left-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+.workspace-section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  min-width: 0;
+}
+.workspace-section-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.workspace-section-card h2 {
+  margin: 0;
+  font-size: 19px;
+  line-height: 26px;
+}
+.workspace-section-card > header > span {
+  font-size: 12px;
+}
+.workspace-section-card p {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 21px;
+}
+.workspace-section-card h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.workspace-section-card fieldset {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+.workspace-section-card legend {
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspace-section-card .field {
+  font-size: 13px;
+}
+.workspace-section-card :is(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+.workspace-section-card
+  input:not([type="checkbox"], [type="radio"], [type="color"], [type="file"]),
+.workspace-section-card select {
+  height: 40px;
+}
+.workspace-section-card .field small {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.workspace-control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.workspace-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.workspace-logo-row img {
+  max-width: 100px;
+  max-height: 64px;
+  object-fit: contain;
+}
+.workspace-accent {
+  display: flex;
+  gap: 10px;
+}
+.workspace-accent input[type="color"] {
+  width: 44px;
+  height: 40px;
+  padding: 4px;
+}
+.workspace-accent input:last-child {
+  width: 140px;
+}
+.workspace-switch {
+  padding: 14px 0;
+}
+.workspace-switch small {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 19px;
+}
+.workspace-sample {
+  padding: 16px;
+  background: var(--surface-sunken);
+  border-radius: 10px;
+}
+.workspace-setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border);
+}
+.workspace-setting-row a {
+  font-size: 12px;
+}
+.studio-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.workspace-more {
+  margin-top: 24px;
+}
+.workspace-more > div {
+  padding-top: 20px;
+}
+.workspace-section-card .proposal-styles .style-preview-viewport {
+  max-width: 100%;
+  overflow: hidden;
+}
+.workspace-section-card .team-heading {
+  flex-wrap: wrap;
+}
+.workspace-section-card .team-table-head {
+  display: none;
+}
+.workspace-section-card .team-person {
+  grid-template-columns: minmax(0, 1fr) 134px 120px 44px;
+  gap: 12px;
+  padding: 16px 0;
+}
+.workspace-section-card .team-person > [role="cell"]:nth-child(4) {
+  display: none;
+}
+.workspace-section-card .team-person > [role="cell"]:first-child {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 10px;
+}
+.workspace-section-card .team-person .avatar {
+  grid-row: span 2;
+}
+.workspace-section-card .team-person small {
+  overflow-wrap: anywhere;
+}
+.workspace-section-card .team-person select {
+  width: 100%;
+  font-size: 12px;
+}
+.workspace-section-card .team-person-inactive {
+  opacity: 0.6;
+}
+.team-connections-note {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.workspace-section-card .team-profile-form {
+  display: flex;
+  flex-wrap: wrap;
+}
+.workspace-section-card .team-profile-form .field {
+  flex: 1 1 220px;
+}
+.workspace-section-card .team-profile-form .button-wrap {
+  align-self: end;
+}
+@media (max-width: 1099px) {
+  .studio-workspace-v3 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .workspace-section-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .workspace-section-list button {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 12px;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .workspace-section-list button[aria-current="page"] {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+  .workspace-auto-label {
+    position: static;
+    grid-row: 1;
+    font-size: 12px;
+  }
+  .workspace-section-card {
+    padding: 24px;
+  }
+  .workspace-section-card
+    :is(input:not([type="checkbox"], [type="radio"], [type="color"]), select) {
+    min-height: 44px;
+  }
+  .workspace-section-card .team-person {
+    grid-template-columns: minmax(0, 1fr) 126px 96px 44px;
+    gap: 10px;
+  }
+}
+@media (max-width: 699px) {
+  .workspace-section-card {
+    padding: 18px 16px;
+  }
+  .workspace-control-grid {
+    grid-template-columns: 1fr;
+  }
+  .workspace-setting-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .workspace-section-card .team-person {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .workspace-section-card .team-person > [role="cell"]:first-child {
+    grid-column: 1;
+  }
+  .workspace-section-card .team-person > [role="cell"]:nth-child(2) {
+    grid-column: 1;
+  }
+  .workspace-section-card .team-person > [role="cell"]:nth-child(3) {
+    grid-column: 1;
+  }
+  .workspace-section-card .team-person > [role="cell"]:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .workspace-logo-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .workspace-section-card
+    .proposal-styles
+    :is(.style-fields, .style-colour-controls) {
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
