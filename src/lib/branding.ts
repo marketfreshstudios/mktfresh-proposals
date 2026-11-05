@@ -16,6 +16,10 @@ export function emailHtml(
     message = proposalEmail ? (note ?? proposalEmailNote(text)) : text,
     url = proposalLink(p);
   return emailLayout({
+    poweredBy:
+      s?.show_powered_by !== false
+        ? { origin: new URL(url).origin }
+        : undefined,
     title: p.title,
     bodyHtml: `<p style="margin:0 0 18px;line-height:1.65">${escape(message).replaceAll("\n", "<br>")}</p>`,
     bodyText: message,

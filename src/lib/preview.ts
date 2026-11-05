@@ -55,5 +55,7 @@ export function previewProposal(
 }
 
 export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
-  return publicResult(previewProposal(proposal, settings));
+  return publicResult(previewProposal(proposal, settings), {
+    showPoweredBy: settings.show_powered_by !== false,
+  });
 }

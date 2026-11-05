@@ -188,9 +188,13 @@ async function handleRoute(req: Request, path: string[]) {
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
         rt = await publicRuntime(token);
+      const workspaceBrand = (
+        await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+      )[0];
       const clientResult = (p: import("./model").Proposal) =>
         publicResult(p, {
           qboConnected: rt.worker.providers.qbo instanceof QboProvider,
+          showPoweredBy: workspaceBrand?.show_powered_by !== false,
         });
       if (method === "GET" && action === "brand") {
         const p = await rt.repo.byToken(token);
@@ -210,6 +214,7 @@ async function handleRoute(req: Request, path: string[]) {
           );
         }
         return json({
+          show_powered_by: workspaceBrand?.show_powered_by !== false,
           name: settings?.company_name ?? "Proposal",
 
           contact: {
@@ -766,6 +771,12 @@ async function handleRoute(req: Request, path: string[]) {
               previous?.accent_colour === entity.accent_colour,
             `Accent needs 4.5:1 contrast with white. Try ${accessibleAccent(entity.accent_colour)}.`,
           );
+          if (entity.show_powered_by !== (previous?.show_powered_by ?? true))
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change Yeswell attribution",
+              403,
+            );
           if (entity.sending_domain !== (previous?.sending_domain ?? ""))
             check(
               user.staff_role === "owner",

@@ -187,6 +187,7 @@ export function renderTemplate(
   p: Proposal,
   options: {
     test?: boolean;
+    showPoweredBy?: boolean;
     logo?: string;
     url?: string;
     declineNote?: string;
@@ -275,6 +276,10 @@ export function renderTemplate(
     },
     test: options.test,
     staff: t.staff,
+    poweredBy:
+      !t.staff && (options.showPoweredBy ?? s?.show_powered_by !== false)
+        ? { origin: appOrigin() }
+        : undefined,
   });
   return {
     ...layout,
@@ -310,7 +315,13 @@ export async function prepareEmail(
         typeof j.payload.subject === "string" ? j.payload.subject : t.subject,
       body: plainBody(j.payload.note || "Your proposal is ready to review."),
     };
+  const currentSettings = (
+    await repo.entities<import("./workspace").WorkspaceSettings>(
+      "workspace_settings",
+    )
+  )[0];
   const r = renderTemplate(t, p, {
+    showPoweredBy: currentSettings?.show_powered_by !== false,
     jobFailure: j.payload.job_failure as JobFailure | undefined,
     billingConfirmation: j.payload.billing_confirmation as
       BillingCompletion | undefined,

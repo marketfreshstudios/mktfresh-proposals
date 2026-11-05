@@ -217,6 +217,9 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                 ...Object.fromEntries(f),
                 logo,
                 accent_colour: accent,
+                show_powered_by: owner
+                  ? f.has("show_powered_by")
+                  : s?.show_powered_by !== false,
                 proposal_fonts: { heading, body },
                 proposal_styles: styles,
                 money: { cents: f.get("cents") },
@@ -274,6 +277,22 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                   alt="Workspace logo"
                 />
               )}
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  name="show_powered_by"
+                  defaultChecked={s?.show_powered_by !== false}
+                  disabled={!owner}
+                />
+                <span>
+                  Show 'Powered by Yeswell'
+                  <small>
+                    On client pages and client email footers. Super admins can
+                    change this.
+                  </small>
+                </span>
+              </label>
               <Field label="Workspace name">
                 <input
                   name="company_name"
