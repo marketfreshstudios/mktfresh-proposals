@@ -484,6 +484,10 @@ async function allProposals() {
   return first;
 }
 function Login({ local }: { local: boolean }) {
+  // Server HTML is visible before hydration. Never let the browser submit the
+  // form natively (GET /login) before the credential POST handler is installed.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [resumed, setResumed] = useState(false);
@@ -511,6 +515,7 @@ function Login({ local }: { local: boolean }) {
         )}
         <form
           className="form"
+          method="post"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -550,7 +555,7 @@ function Login({ local }: { local: boolean }) {
               autoComplete="current-password"
             />
           </Field>
-          <Button type="submit" variant="primary" busy={busy}>
+          <Button type="submit" variant="primary" busy={busy} disabled={!ready}>
             Sign in
           </Button>
         </form>
@@ -624,6 +629,7 @@ function NewProposal({ data }: { data: Data }) {
         )}
         <form
           className="form"
+          method="post"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
