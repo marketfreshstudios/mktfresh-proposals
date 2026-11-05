@@ -144,6 +144,7 @@ test("pointer page dragging moves every block, updates real sheets, and page del
     page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
   ).toBeVisible();
   await page.goto("/studio/templates");
+  await page.locator(".studio-template-card").first().click();
   const templatePaper = await ready(page, true);
   const templateFrom = page.getByRole("button", {
       name: "Drag page 1",

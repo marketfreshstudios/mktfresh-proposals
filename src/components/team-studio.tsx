@@ -12,6 +12,17 @@ import {
   type TeamPerson,
   type TeamAudit,
 } from "../lib/team-model";
+const actionLabels: Record<string, string> = {
+  reassign: "Reassign their proposals…",
+  name: "Edit name",
+  role: "Change role",
+  password_set: "Set password",
+  invite_resent: "Resend invite",
+  reset_sent: "Send password reset",
+  deactivate: "Deactivate",
+  reactivate: "Reactivate",
+  remove: "Remove from workspace",
+};
 type Dialog = { person?: TeamPerson; action: string; anchor?: HTMLElement };
 export function TeamStudio({
   data,
@@ -164,7 +175,16 @@ export function TeamStudio({
             <div role="cell">
               <span className="team-mobile-label">Status</span>
               <span className={`team-status team-status-${person.status}`}>
-                {staffStatusLabel(person.status)}
+                {person.user_id === self ? (
+                  "You"
+                ) : person.status === "invited" && person.invited_at ? (
+                  <>
+                    <span>Invite sent {date(person.invited_at)}</span>
+                    <small>Not accepted yet</small>
+                  </>
+                ) : (
+                  staffStatusLabel(person.status)
+                )}
               </span>
             </div>
             <div role="cell">
@@ -346,6 +366,7 @@ export function TeamStudio({
                   type="button"
                   className="btn"
                   key={action}
+                  aria-label={actionLabels[action]}
                   disabled={
                     ["deactivate", "remove"].includes(action) &&
                     (dialog.person!.user_id === self ||
@@ -372,21 +393,7 @@ export function TeamStudio({
                     } else setDialog({ ...dialog, action });
                   }}
                 >
-                  {
-                    (
-                      {
-                        reassign: "Reassign their proposals…",
-                        name: "Edit name",
-                        role: "Change role",
-                        password_set: "Set password",
-                        invite_resent: "Resend invite",
-                        reset_sent: "Send password reset",
-                        deactivate: "Deactivate",
-                        reactivate: "Reactivate",
-                        remove: "Remove from workspace",
-                      } as Record<string, string>
-                    )[action]
-                  }
+                  {actionLabels[action]}
                   {action === "remove" &&
                     data.proposals.some((p) =>
                       unfinishedAssignment(p, dialog.person!.user_id),
@@ -406,6 +413,35 @@ export function TeamStudio({
                   )}
                 </button>
               ))}
+              {dialog.person!.user_id !== self &&
+                data.proposals.some((p) =>
+                  unfinishedAssignment(p, dialog.person!.user_id),
+                ) && (
+                  <div className="team-blocked-work">
+                    <p>
+                      Reassign proposals first. Deactivate is also available;
+                      history is kept.
+                    </p>
+                    <ul>
+                      {data.proposals
+                        .filter((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        )
+                        .map((p) => (
+                          <li key={p.id}>
+                            <a href={`/proposals/${p.id}`}>{p.title}</a>
+                          </li>
+                        ))}
+                    </ul>
+                    <Button
+                      onClick={() =>
+                        setDialog({ ...dialog, action: "deactivate" })
+                      }
+                    >
+                      Deactivate instead
+                    </Button>
+                  </div>
+                )}
             </div>
           ) : (
             <TeamForm

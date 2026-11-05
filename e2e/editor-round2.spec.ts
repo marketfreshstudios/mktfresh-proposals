@@ -443,7 +443,7 @@ test("Workspace and templates save style overrides and show responsive live samp
 }) => {
   const f = await fixture(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/studio/workspace");
+  await page.goto("/studio/workspace?view=styles");
   const styles = page.getByRole("region", {
     name: "Proposal styles",
     exact: true,
@@ -498,9 +498,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     "data-width",
     "phone",
   );
-  await page
-    .getByRole("button", { name: "Save workspace settings", exact: true })
-    .click();
+
   await expect
     .poll(
       async () =>

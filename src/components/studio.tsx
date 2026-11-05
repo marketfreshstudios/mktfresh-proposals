@@ -5,7 +5,6 @@ import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
-import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
@@ -75,24 +74,23 @@ import { HeadingTokens, HeadingElement } from "./editor/heading-tokens";
 import { FieldTextArea, FieldOptions } from "./field-options";
 import { appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
-import type { WorkspaceSettings } from "../lib/workspace";
 import type { Activity } from "../lib/studio";
-import { whiteContrast, accessibleAccent } from "../lib/brand";
-import {
-  curatedFonts,
-  fontCss,
-  fontFamily,
-  type FontChoice,
-  type ProposalFont,
-} from "../lib/proposal-fonts";
+import { fontCss } from "../lib/proposal-fonts";
 import { itemDisplayName, sellableCatalogue } from "../lib/catalogue-display";
 import { intervalSuffix } from "../lib/money";
 import { eventLabel } from "../lib/event-label";
 import { inactiveTemplateItems } from "../lib/template-quote";
-import { api, post, Button, Banner, Field, Empty, Icon } from "./ui";
+import {
+  api,
+  post,
+  Button,
+  Banner,
+  Field,
+  Empty,
+  Icon,
+  Disclosure,
+} from "./ui";
 import { Sheet, Skeleton } from "./foundation";
-import { StoredSignatureEditor } from "./company-signature";
-import { ReferenceDocuments } from "./reference-documents";
 import { Reorder, Sortable } from "./quote-editor";
 import { catalogQuoteItem } from "../lib/quote-model";
 import type { QuoteItem } from "../lib/model";
@@ -183,6 +181,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
   };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") pick(null);
       if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
         e.preventDefault();
         pick(selected ? null : (data.catalog[0]?.id ?? null));
@@ -199,13 +198,15 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         !i.legacy &&
         filter !== "Custom families" &&
         (filter !== "Stripe" || !!i.stripe_lookup_key);
-  const items = data.catalog.filter(
-    (i) =>
-      visible(i) &&
-      `${itemDisplayName(i)} ${i.description}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
+  const items = data.catalog
+    .filter(
+      (i) =>
+        visible(i) &&
+        `${itemDisplayName(i)} ${i.description}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    )
+    .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
   const families = data.families.filter(
     (f) =>
       (filter === "All" ||
@@ -216,7 +217,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
   );
   const item = data.catalog.find((i) => i.id === selected),
     custom = data.families.find((f) => f.id === selected);
-  const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Entered");
+  const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Custom");
   return (
     <div className="studio-products-v3">
       <div className="studio-list-intro">
@@ -289,7 +290,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             </div>
             {items.map((i) => (
               <a
-                className="studio-table-row catalog-row-v3"
+                className="studio-table-row catalog-row catalog-row-v3"
                 href={`?item=${i.id}`}
                 key={i.id}
                 onClick={(e) => {
@@ -311,20 +312,38 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 <span>
                   {(i.sublines ?? [i]).map((s, n) => (
                     <span className="catalog-price" key={n}>
-                      {money(s.amount)}
+                      {money(s.amount, data.settings?.currency)}
                       {intervalSuffix(s.interval)}
                     </span>
                   ))}
                 </span>
                 <span>
                   {i.schedule
-                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount)}/mo`
+                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
                     : "—"}
                   {i.min_term_months && (
                     <small>{i.min_term_months}-month minimum</small>
                   )}
                 </span>
-                <span className="studio-tag">{source(i)}</span>
+                <span>
+                  <span className="studio-tag">{source(i)}</span>
+                  {productMappings(i, data.connections?.qbo ?? null).map(
+                    (m, n) => (
+                      <small
+                        key={n}
+                        title={m.detail}
+                        className={m.warning ? "warning" : ""}
+                      >
+                        {m.label}
+                      </small>
+                    ),
+                  )}
+                </span>
+                <span role="tooltip" className="mapping-tooltip">
+                  {productMappings(i, data.connections?.qbo ?? null)
+                    .map((m) => m.detail)
+                    .join(" ")}
+                </span>
                 <Icon name="chevron-right" />
               </a>
             ))}
@@ -549,37 +568,18 @@ function CatalogItem({
         proposals retain their saved terms.
       </p>
       {[
-        ["name", "Synced name"],
-        ["display_name", "Display name"],
-        ["sku", "SKU"],
-        ["description", "Description"],
-        ["stripe_lookup_key", "Stripe lookup key"],
-        ["qbo_item_ref", "QuickBooks item reference"],
+        ["display_name", "Name on proposals"],
+        ["description", "Description the client sees"],
       ].map(([key, label]) => (
-        <Field
-          key={key}
-          label={
-            key === "display_name"
-              ? "Name on proposals"
-              : key === "description"
-                ? "Description the client sees"
-                : label
-          }
-        >
+        <Field key={key} label={label}>
           <input
             name={key}
-            required={["name", "sku"].includes(key)}
             defaultValue={String(i?.[key as keyof Item] ?? "")}
           />
         </Field>
       ))}
-      <ProductMappingDetails
-        item={i}
-        qboConnected={data.connections?.qbo ?? null}
-      />
-      <p>Display name is app-only. Stripe sync preserves it.</p>
       {i?.stripe_lookup_key && (
-        <p>
+        <p className="muted">
           Synced from Stripe. Change the price there and it updates here.{" "}
           <a
             href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
@@ -610,80 +610,147 @@ function CatalogItem({
           </select>
         </Field>
       </div>
-      <label className="check">
-        <input
-          type="checkbox"
-          name="active"
-          defaultChecked={i?.active ?? true}
-          role="switch"
-        />
-        Active
-      </label>
-      <label className="check">
-        <input
-          type="checkbox"
-          name="legacy"
-          defaultChecked={i?.legacy ?? false}
-        />
-        Legacy · hidden from new quotes
-      </label>
-      <fieldset className="stack">
-        <legend>Plan terms</legend>
-        <Field label="Minimum commitment (months)">
-          <input
-            type="number"
-            min="1"
-            value={minimum}
-            onChange={(e) => setMinimum(e.target.value)}
-          />
-        </Field>
-        <Field label="Paid off after (paid invoices)">
-          <input
-            type="number"
-            min="1"
-            value={count}
-            onChange={(e) => setCount(e.target.value)}
-          />
-        </Field>
-        {count && (
-          <>
-            <Field label="Then continues at (per recurring period)">
+      {i?.schedule && (
+        <section className="studio-product-terms">
+          <h3>Plan terms</h3>
+          <dl>
+            {(i.sublines ?? [i]).map((line, n) => (
+              <div key={n}>
+                <dt>
+                  {line.interval === "one_time"
+                    ? "Kickoff"
+                    : line.interval === "month"
+                      ? "Monthly"
+                      : "Yearly"}
+                </dt>
+                <dd>
+                  {money(line.amount, data.settings?.currency)}
+                  {intervalSuffix(line.interval)}
+                </dd>
+              </div>
+            ))}
+            <div>
+              <dt>Payments to own</dt>
+              <dd>{i.schedule.after_paid_invoices}</dd>
+            </div>
+            <div>
+              <dt>After that</dt>
+              <dd>
+                {money(i.schedule.then.amount, data.settings?.currency)}/mo
+              </dd>
+            </div>
+            {i.min_term_months && (
+              <div>
+                <dt>Minimum term</dt>
+                <dd>{i.min_term_months} months</dd>
+              </div>
+            )}
+          </dl>
+          <p>
+            {String(
+              i.plan_terms?.client_copy ??
+                "Payoff counts paid invoices, not calendar months.",
+            )}
+          </p>
+        </section>
+      )}
+      <details open={!i}>
+        <Disclosure>More product details</Disclosure>
+        <div className="stack">
+          {[
+            ["name", "Synced name"],
+            ["sku", "SKU"],
+            ["stripe_lookup_key", "Stripe lookup key"],
+            ["qbo_item_ref", "QuickBooks item reference"],
+          ].map(([key, label]) => (
+            <Field key={key} label={label}>
               <input
-                type="number"
-                min="0"
-                step=".01"
-                required
-                value={then}
-                onChange={(e) => setThen(e.target.value)}
+                name={key}
+                required={["name", "sku"].includes(key)}
+                defaultValue={String(i?.[key as keyof Item] ?? "")}
               />
             </Field>
-            <Field label="Then Stripe lookup key">
-              <select
-                name="then_lookup_key"
-                required
-                defaultValue={i?.schedule?.then.lookup_key ?? ""}
-              >
-                <option value="">Choose an active recurring item</option>
-                {sellableCatalogue(data.catalog)
-                  .filter((i) => i.interval !== "one_time")
-                  .map((i) => (
-                    <option value={i.stripe_lookup_key ?? ""} key={i.id}>
-                      {itemDisplayName(i)} · {i.stripe_lookup_key}
-                    </option>
-                  ))}
-              </select>
+          ))}
+          <label className="check">
+            <input
+              type="checkbox"
+              name="active"
+              defaultChecked={i?.active ?? true}
+              role="switch"
+            />
+            Active
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              name="legacy"
+              defaultChecked={i?.legacy ?? false}
+            />
+            Legacy · hidden from new quotes
+          </label>
+          <fieldset className="stack">
+            <legend>Plan terms</legend>
+            <Field label="Minimum commitment (months)">
+              <input
+                type="number"
+                min="1"
+                value={minimum}
+                onChange={(e) => setMinimum(e.target.value)}
+              />
             </Field>
-          </>
-        )}
-        <Field label="Additional client copy">
-          <textarea
-            rows={4}
-            value={copy}
-            onChange={(e) => setCopy(e.target.value)}
-            placeholder="Terms the client should see"
-          />
-        </Field>
-      </fieldset>
+            <Field label="Paid off after (paid invoices)">
+              <input
+                type="number"
+                min="1"
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+              />
+            </Field>
+            {count && (
+              <>
+                <Field label="Then continues at (per recurring period)">
+                  <input
+                    type="number"
+                    min="0"
+                    step=".01"
+                    required
+                    value={then}
+                    onChange={(e) => setThen(e.target.value)}
+                  />
+                </Field>
+                <Field label="Then Stripe lookup key">
+                  <select
+                    name="then_lookup_key"
+                    required
+                    defaultValue={i?.schedule?.then.lookup_key ?? ""}
+                  >
+                    <option value="">Choose an active recurring item</option>
+                    {sellableCatalogue(data.catalog)
+                      .filter((i) => i.interval !== "one_time")
+                      .map((i) => (
+                        <option value={i.stripe_lookup_key ?? ""} key={i.id}>
+                          {itemDisplayName(i)} · {i.stripe_lookup_key}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              </>
+            )}
+            <Field label="Additional client copy">
+              <textarea
+                rows={4}
+                value={copy}
+                onChange={(e) => setCopy(e.target.value)}
+                placeholder="Terms the client should see"
+              />
+            </Field>
+          </fieldset>
+        </div>
+      </details>
+      <ProductMappingDetails
+        item={i}
+        qboConnected={data.connections?.qbo ?? null}
+      />
       <section className="client-copy-preview">
         <p className="eyebrow">Client sees</p>
         <strong>{i ? itemDisplayName(i) : "New item"}</strong>

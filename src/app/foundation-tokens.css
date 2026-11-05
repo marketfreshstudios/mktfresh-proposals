@@ -209,3 +209,10 @@
   --focus-ring: #eef3f3;
   --focus-outline: 2px solid #eef3f3;
 }
+/* Studio workspace accent choices (client branding stays workspace-owned). */
+.staff-foundation {
+  --studio-swatch-green: #365c4a;
+  --studio-swatch-blue: #2e4f79;
+  --studio-swatch-rust: #7a3e2d;
+  --studio-swatch-dark: #1c1b18;
+}

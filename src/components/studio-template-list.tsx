@@ -1,8 +1,10 @@
 "use client";
+import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import type { Activity } from "../lib/studio";
 import type { Block } from "../lib/model";
+import { fieldLabel } from "../lib/field-labels";
 import { blockText } from "../lib/editor-document";
 import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
@@ -21,7 +23,7 @@ const blockType = (b: Block) =>
         : "Text";
 function summary(block: Block) {
   return blockText(block).replace(/\{\{([^}]+)\}\}/g, (_, token: string) =>
-    token.replaceAll("_", " ").replaceAll(".", " "),
+    fieldLabel(token),
   );
 }
 export function StudioTemplateList({
@@ -144,7 +146,10 @@ export function StudioTemplateList({
                   key={t.id}
                   href={`/studio/templates/${t.id}`}
                 >
-                  <div className="template-thumbnail" aria-hidden="true">
+                  <div
+                    className="template-thumbnail proposal-typography"
+                    aria-hidden="true"
+                  >
                     <small>{data.settings?.company_name}</small>
                     <strong>{t.name}</strong>
                     <span>Prepared for your client</span>
@@ -203,22 +208,17 @@ export function StudioTemplateList({
         </>
       ) : (
         <>
-          <nav className="studio-filter-chips" aria-label="Block types">
-            {["All", "Text", "List", "Contract clause", "Image"].map((t) => (
-              <button
-                key={t}
-                aria-pressed={type === t}
-                onClick={() => setType(t)}
-              >
-                {t} ·{" "}
-                {
-                  data.library.filter(
-                    (b) => t === "All" || blockType(b.block) === t,
-                  ).length
-                }
-              </button>
-            ))}
-          </nav>
+          <StudioFilters
+            label="Block types"
+            value={type}
+            onChange={setType}
+            options={["All", "Text", "List", "Contract clause", "Image"].map(
+              (t) => ({
+                value: t,
+                label: `${t} · ${data.library.filter((b) => t === "All" || blockType(b.block) === t).length}`,
+              }),
+            )}
+          />
           <div className="studio-data-table saved-block-table">
             <div className="studio-table-head">
               <span>Block</span>

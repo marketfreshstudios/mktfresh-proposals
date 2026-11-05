@@ -2,13 +2,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
-import { whiteContrast } from "../lib/brand";
+import { whiteContrast, accessibleAccent } from "../lib/brand";
 import {
   curatedFonts,
   fontCss,
   type FontChoice,
   type ProposalFont,
 } from "../lib/proposal-fonts";
+import { formatMoney } from "../lib/money";
 import { stripeStatus } from "../lib/studio-v3";
 import { workspaceSections } from "./studio-v3";
 import { api, post, Button, Field, Banner, Disclosure } from "./ui";
@@ -28,7 +29,13 @@ export function WorkspaceStudio({
   initial?: string;
 }) {
   const [section, setSection] = useState(
-    workspaceSections.some(([key]) => key === initial) ? initial : "brand",
+    workspaceSections.some(([key]) => key === initial)
+      ? initial === "brand" &&
+        typeof window !== "undefined" &&
+        workspaceSections.some(([key]) => key === location.hash.slice(1))
+        ? location.hash.slice(1)
+        : initial
+      : "brand",
   );
   const [draft, setDraft] = useState(data.settings!);
   const [fonts, setFonts] = useState<ProposalFont[]>([]),
@@ -50,7 +57,9 @@ export function WorkspaceStudio({
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     flight = useRef<Promise<void> | null>(null),
     model = useRef(draft),
-    mounted = useRef(true);
+    mounted = useRef(true),
+    extras = useRef<Record<string, unknown>>({}),
+    logoFile = useRef<HTMLInputElement>(null);
   const owner = data.user.staff_role === "owner";
   useEffect(() => {
     mounted.current = true;
@@ -65,6 +74,8 @@ export function WorkspaceStudio({
   async function flush() {
     clearTimeout(timer.current);
     if (flight.current) return flight.current;
+    if (!pending.current) return;
+    let didSave = false;
     const task = (async () => {
       while (pending.current) {
         const current = pending.current;
@@ -75,6 +86,11 @@ export function WorkspaceStudio({
             ...current.value,
             ...current.extra,
           });
+          didSave = true;
+          if (
+            current.extra?.default_password === extras.current.default_password
+          )
+            delete extras.current.default_password;
           if (mounted.current)
             setStates((s) => ({
               ...s,
@@ -102,7 +118,7 @@ export function WorkspaceStudio({
     await task;
     flight.current = null;
     if (pending.current) return flush();
-    await run(async () => {}, "Workspace settings saved");
+    if (didSave) await run(async () => {}, "Workspace settings saved");
   }
   function change(
     patch: Partial<WorkspaceSettings>,
@@ -112,7 +128,8 @@ export function WorkspaceStudio({
     const next = { ...model.current, ...patch };
     model.current = next;
     setDraft(next);
-    pending.current = { value: next, section, extra };
+    extras.current = { ...extras.current, ...extra };
+    pending.current = { value: next, section, extra: { ...extras.current } };
     setStates((s) => ({ ...s, [section]: { status: "Unsaved changes" } }));
     clearTimeout(timer.current);
     timer.current = setTimeout(() => void flush(), immediate ? 0 : 600);
@@ -155,7 +172,14 @@ export function WorkspaceStudio({
       </span>
     </label>
   );
-  const signatory = draft.company_signatory;
+  const signatory = draft.company_signatory ?? {
+    user_id: null,
+    name: draft.owner,
+    title: "Owner",
+    email: draft.email,
+    image: null,
+    authorized_user_ids: [],
+  };
   const current = states[section];
   const allFonts = [
     ...new Map(
@@ -215,42 +239,61 @@ export function WorkspaceStudio({
       </select>
     </Field>
   );
+  const contrast = /^#[0-9a-f]{6}$/i.test(draft.accent_colour)
+    ? whiteContrast(draft.accent_colour)
+    : 0;
   const cards: Record<string, ReactNode> = {
     brand: (
       <>
         <p>Shown on client pages, emails and PDFs.</p>
-        {text("Workspace name", "company_name")}
-        <div className="workspace-logo-row">
-          {draft.logo ? (
-            <img src="/api/workspace-logo" alt="Workspace logo" />
-          ) : (
-            <span className="avatar">{draft.company_name.slice(0, 1)}</span>
-          )}
-          <Field label="Logo · PNG, under 750 KB">
-            <input
-              type="file"
-              accept="image/png"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setUploading(true);
-                try {
-                  const result = await post("/api/workspace-logo", {
-                    image: await readData(file),
-                  });
-                  change({ logo: result.path }, true);
-                  setUploadError("");
-                } catch (e) {
-                  setUploadError((e as Error).message);
-                } finally {
-                  setUploading(false);
-                }
-              }}
-            />
-          </Field>
+        <div className="workspace-control-grid workspace-brand-top">
+          {text("Workspace name", "company_name")}
+          <div className="workspace-logo-row">
+            {draft.logo ? (
+              <img src="/api/workspace-logo" alt="Workspace logo" />
+            ) : (
+              <span className="avatar">{draft.company_name.slice(0, 1)}</span>
+            )}
+            <Field label="Logo · PNG, under 750 KB">
+              <input
+                type="file"
+                ref={logoFile}
+                className="sr-only"
+                tabIndex={-1}
+                accept="image/png"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const result = await post("/api/workspace-logo", {
+                      image: await readData(file),
+                    });
+                    change({ logo: result.path }, true);
+                    setUploadError("");
+                  } catch (e) {
+                    setUploadError((e as Error).message);
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+              <Button onClick={() => logoFile.current?.click()}>Replace</Button>
+            </Field>
+          </div>
         </div>
         <Field label="Accent color">
           <div className="workspace-accent">
+            {["#365c4a", "#2e4f79", "#7a3e2d", "#1c1b18"].map((colour, n) => (
+              <button
+                type="button"
+                className={`workspace-swatch workspace-swatch-${n}`}
+                aria-label={`Use accent ${colour}`}
+                aria-pressed={draft.accent_colour.toLowerCase() === colour}
+                key={colour}
+                onClick={() => change({ accent_colour: colour }, true)}
+              />
+            ))}
             <input
               type="color"
               aria-label="Accent color"
@@ -265,16 +308,24 @@ export function WorkspaceStudio({
             />
           </div>
         </Field>
-        <p
-          className={
-            whiteContrast(draft.accent_colour) >= 4.5 ? "success" : "warning"
-          }
-        >
-          {whiteContrast(draft.accent_colour) >= 4.5
+        <p className={contrast >= 4.5 ? "success" : "warning"}>
+          {contrast >= 4.5
             ? "✓ Readable on white"
             : "Needs 4.5:1 contrast on white"}{" "}
-          ({whiteContrast(draft.accent_colour).toFixed(1)}:1)
+          ({contrast.toFixed(1)}:1)
         </p>
+        {contrast > 0 && contrast < 4.5 && (
+          <Button
+            onClick={() =>
+              change(
+                { accent_colour: accessibleAccent(draft.accent_colour) },
+                true,
+              )
+            }
+          >
+            Use {accessibleAccent(draft.accent_colour)} — darker, same hue
+          </Button>
+        )}
         {toggle(
           'Show "Powered by Yeswell"',
           draft.show_powered_by !== false,
@@ -393,9 +444,8 @@ export function WorkspaceStudio({
               One-time fees <span className="studio-tag">QuickBooks</span>
             </h3>
             <p>
-              Project fees, including the Own It Over Time kickoff. Until
-              QuickBooks is connected, staff record the invoice number on the
-              proposal.
+              Project fees and kickoff fees. Until QuickBooks is connected,
+              staff record the invoice number on the proposal.
             </p>
           </div>
           <a href="/studio/connections?view=qbo">
@@ -698,6 +748,7 @@ export function WorkspaceStudio({
         ))}
       </nav>
       <section
+        id={section}
         className="workspace-section-card"
         aria-label={workspaceSections.find(([key]) => key === section)?.[1]}
         onBlur={() => void flush()}
@@ -720,7 +771,11 @@ export function WorkspaceStudio({
             {isStaffSignedOut(current.error) && <StaffSignIn />}
             <Button
               onClick={() => {
-                pending.current = { value: model.current, section };
+                pending.current = {
+                  value: model.current,
+                  section,
+                  extra: { ...extras.current },
+                };
                 void flush();
               }}
             >

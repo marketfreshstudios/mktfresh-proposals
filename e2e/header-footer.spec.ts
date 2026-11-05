@@ -317,6 +317,7 @@ test("new Studio templates start with shared bands and save template switches wi
   });
   await page.setViewportSize({ width: 1920, height: 1200 });
   await page.goto("/studio/templates");
+  await page.locator(".studio-template-card").first().click();
   await page
     .getByRole("button", { name: "+ New template", exact: true })
     .click();

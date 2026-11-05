@@ -90,7 +90,11 @@ async function fixture(page: Page) {
             parts[1],
             request.postDataJSON(),
           );
-      } else if (parts[0] === "proposals") value = { items: [], total: 0 };
+      } else if (parts[0] === "proposals")
+        value = {
+          items: await f.repo.list(),
+          total: (await f.repo.list()).length,
+        };
       else if (parts[0] === "connections")
         value = { stripe: false, qbo: false, email: true, mock: true };
       else if (parts[0] === "workspace-fonts") value = [];
@@ -134,9 +138,8 @@ test("Super admin Team list, invite/resend and set-password acceptance use app e
   await expect(
     page.getByRole("table", { name: "Workspace team" }),
   ).toContainText("Super admin");
-  await expect(page.getByRole("table")).toContainText(
-    "Invited, not accepted yet",
-  );
+  await expect(page.getByRole("table")).toContainText("Invite sent");
+  await expect(page.getByRole("table")).toContainText("Not accepted yet");
   await expect(page.getByRole("table")).toContainText("Deactivated");
   await capture(page, "team-super-admin");
   await page.getByRole("button", { name: "Actions for Alex Morgan" }).click();
@@ -272,14 +275,10 @@ test("expired set-password link explains resend; blocked removal lists work and 
   await f.repo.save(p, p.revision);
   await page.goto("/studio/workspace?view=team");
   await page.getByRole("button", { name: "Actions for Jamie Example" }).click();
-  await page
-    .getByRole("button", { name: "Remove from workspace", exact: true })
-    .click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toContainText("Jamie Example");
-  await dialog
-    .getByRole("button", { name: "Remove from workspace", exact: true })
-    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Remove from workspace", exact: true }),
+  ).toBeDisabled();
   await expect(dialog.getByRole("link", { name: p.title })).toHaveAttribute(
     "href",
     `/proposals/${p.id}`,

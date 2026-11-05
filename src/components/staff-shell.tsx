@@ -33,7 +33,9 @@ export function StaffShell({
   const studioButton = useRef<HTMLButtonElement>(null),
     studioPopover = useRef<HTMLDivElement>(null);
   const current = "/" + path.join("/");
-  const inStudio = path[0] === "studio";
+  const inStudio =
+    path[0] === "studio" &&
+    !(path[2] && ["templates", "blocks", "emails"].includes(path[1]));
   const insideProposal =
     path[0] === "proposals" && !!path[1] && path[1] !== "new";
   useEffect(() => {

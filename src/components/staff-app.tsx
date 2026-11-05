@@ -362,7 +362,12 @@ export function StaffApp({
         <ConnectionsStudio
           data={data}
           run={run}
-          initial={query.view === "reference" ? "reference" : undefined}
+          initial={
+            typeof query.view === "string" &&
+            ["stripe", "qbo", "email"].includes(query.view)
+              ? query.view
+              : undefined
+          }
         />
       );
     } else if (section === "settings" && id === "team") {

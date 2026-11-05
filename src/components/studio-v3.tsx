@@ -1,22 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
-import { api, Icon } from "./ui";
+import { api, post, Icon, ThemeToggle, Button } from "./ui";
 import { studioRoutes } from "../lib/staff-routes";
 import type { EmailTemplate } from "../lib/email-template-content";
 import type { Activity } from "../lib/studio";
-export const workspaceSections = [
-  ["brand", "Brand"],
-  ["fonts", "Proposal fonts"],
-  ["money", "Money"],
-  ["styles", "Proposal styles"],
-  ["billing", "Billing defaults"],
-  ["team", "Team"],
-  ["signatory", "Signatory"],
-  ["client-links", "Client links"],
-  ["email-sending", "Email sending"],
-  ["pricing-references", "Pricing references"],
-] as const;
+export { workspaceSections } from "../lib/studio-v3";
 export function relativeTime(date?: string | null) {
   if (!date) return "Not synced yet";
   const minutes = Math.max(
@@ -67,7 +56,10 @@ export function StudioHome({ data }: { data: Data }) {
       : "Loading latest activity…",
   ];
   return (
-    <nav className="studio-home-list" aria-label="Studio navigation">
+    <nav
+      className="studio-home-list studio-page"
+      aria-label="Studio navigation"
+    >
       {studioRoutes.map(([href, name], n) => (
         <a href={href} key={href}>
           <span>
@@ -79,6 +71,56 @@ export function StudioHome({ data }: { data: Data }) {
           <Icon name="chevron-right" />
         </a>
       ))}
+      <div className="studio-home-account">
+        <span>{data.user.staff_name}</span>
+        <ThemeToggle />
+        <Button
+          onClick={async () => {
+            await post("/api/auth/logout");
+            location.href = "/login";
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
     </nav>
+  );
+}
+
+export function StudioFilters({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="studio-responsive-filters">
+      <nav className="studio-filter-chips" aria-label={label}>
+        {options.map((o) => (
+          <button
+            key={o.value}
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </nav>
+      <label className="field studio-filter-select">
+        {label}
+        <select value={value} onChange={(e) => onChange(e.target.value)}>
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
   );
 }

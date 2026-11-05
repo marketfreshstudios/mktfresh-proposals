@@ -58,3 +58,16 @@ export function stripeStatus(
         ? "Not connected"
         : "Status unavailable";
 }
+
+export const workspaceSections = [
+  ["brand", "Brand"],
+  ["fonts", "Proposal fonts"],
+  ["money", "Money"],
+  ["styles", "Proposal styles"],
+  ["billing", "Billing defaults"],
+  ["team", "Team"],
+  ["signatory", "Signatory"],
+  ["client-links", "Client links"],
+  ["email-sending", "Email sending"],
+  ["pricing-references", "Pricing references"],
+] as const;
