@@ -545,6 +545,9 @@ The owner's no-overlap instruction supersedes the earlier prototype exemption fo
 
 The owner's production review supersedes PR #72's collision placement: desktop/tablet edit bars remain at natural size directly above the selected element. They stick below the editor header while that element is partially scrolled out of view; only popovers flip. Neighbour overlap is permitted; toolbar gaps/background do not intercept pointer clicks and Escape/empty-paper clicks dismiss the selection. Phone keyboard docks remain unchanged.
 
+
+Attached bars use viewport-fixed positioning while retaining their DOM owner. This keeps full-width bars out of canvas scroll geometry and prevents clipping by narrow panels. Bars are ordinary controls; only menus use native popovers. The bar is hidden when its block leaves the visible editor area.
+
 ## Owner review 5 — Blocks and supported signatures
 
 Proposal tools now include Blocks; Studio has the same insert catalogue. Click/keyboard inserts after the selection or at the end of the visible page section, and pointer drag uses a visible insertion line. The gutter/phone + sheet exposes the same choices. Signatures inserts the client/company pair and a normal heading as one history operation. A proposal supports one client and one company signature block; existing roles disable their matching option (and the pair) with an explanation, backed by an insertion guard. No readiness/signing rules change. Divider is a standard rich-text horizontal rule, not a new PagePlan or block schema.

@@ -9,8 +9,6 @@ export function placeEditorToolbar(
 ) {
   if (innerWidth < 700) {
     delete bar.dataset.toolbarPlaced;
-    if (bar.matches(":popover-open")) bar.hidePopover();
-    bar.removeAttribute("popover");
     bar.style.visibility = "";
     return;
   }
@@ -28,16 +26,13 @@ export function placeEditorToolbar(
     top: Math.max(8, region?.top ?? 0),
     bottom: innerHeight - 8,
   };
-  // A top-layer surface keeps natural-width chrome out of the canvas's scroll
-  // geometry and escapes its overflow clip, while retaining DOM/focus ownership.
-  bar.setAttribute("popover", "manual");
+  // Viewport-fixed chrome escapes the canvas clip without becoming a native
+  // popover. Only actual menus use popovers and their focus/teardown behavior.
   if (root.bottom <= bounds.top || root.top >= bounds.bottom) {
     bar.style.visibility = "hidden";
-    if (bar.matches(":popover-open")) bar.hidePopover();
     return;
   }
   bar.style.visibility = "";
-  if (!bar.matches(":popover-open")) bar.showPopover();
   // Measure overflow without temporarily expanding the bar: expansion would
   // reset its horizontal scroll during a pointer click on an end action.
   const box = bar.getBoundingClientRect();

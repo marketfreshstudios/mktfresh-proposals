@@ -259,6 +259,7 @@ test("inline band image uploads, cursor insertion, workspace sources and deletio
       first = band.getByRole("textbox", { name: `${kind} column 1` });
     await first.click();
     await first.press("End");
+    const bandTop = (await band.boundingBox())!.y;
     await band.getByRole("button", { name: "Image", exact: true }).click();
     await page.getByLabel("Upload band image").setInputFiles({
       name: "logo.png",
@@ -267,6 +268,7 @@ test("inline band image uploads, cursor insertion, workspace sources and deletio
     });
     const img = band.locator('[data-image-kind="band"] img');
     await expect(img).toHaveCount(1);
+    expect((await band.boundingBox())!.y).toBeCloseTo(bandTop, 0);
     expect(await img.evaluate((el) => el.getBoundingClientRect().height)).toBe(
       18,
     );

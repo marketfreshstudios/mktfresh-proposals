@@ -139,6 +139,26 @@ export function FieldEditor({
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       handleKeyDown: (view, event) => {
+        // Cover lines and bands are logical single-line fields. On macOS, native
+        // Home/End scroll the canvas; keep these keys within the edited field.
+        if (
+          (imageOptions.current || coverEditor) &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          ["Home", "End"].includes(event.key)
+        ) {
+          event.preventDefault();
+          const pos =
+            event.key === "Home"
+              ? 1
+              : Math.max(1, view.state.doc.content.size - 1);
+          editor?.commands.setTextSelection(
+            event.shiftKey
+              ? { from: view.state.selection.anchor, to: pos }
+              : pos,
+          );
+          return true;
+        }
         if (
           headingEnter.current &&
           event.key === "Enter" &&

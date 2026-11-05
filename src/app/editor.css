@@ -8313,3 +8313,11 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     grid-template-columns: minmax(100px, 1.6fr) repeat(4, minmax(44px, 1fr));
   }
 }
+
+@media (min-width: 700px) {
+  .editor-v2 .editor-document-region,
+  .studio-template-layout .studio-template-main {
+    position: relative;
+    z-index: var(--z-block-controls);
+  }
+}

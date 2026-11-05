@@ -1,3 +1,4 @@
+import { captureReview5 } from "./owner-review5-captures";
 import { expect, test } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 
@@ -164,13 +165,18 @@ for (const width of [1440, 1280, 1024])
     const natural = await bar.evaluate(
       (el) => el.getBoundingClientRect().width,
     );
-    for (const target of [180, 400, 800, 60]) {
+    for (const target of [180, 400, 800, 20]) {
       await owner.evaluate((el, y) => {
         const canvas = el.closest(".editor-document-region")!;
         canvas.scrollTop += el.getBoundingClientRect().top - y;
       }, target);
       await attachedBar(bar, owner);
       expect((await bar.boundingBox())!.width).toBeCloseTo(natural, 0);
+      if (width === 1440)
+        await captureReview5(
+          page,
+          `bar-${target === 180 ? "top" : target === 400 ? "middle" : target === 800 ? "bottom" : "sticky"}-1440`,
+        );
       if (target > 100) {
         const b = (await bar.boundingBox())!,
           a = (await owner.boundingBox())!;
