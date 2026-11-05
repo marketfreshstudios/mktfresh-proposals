@@ -344,3 +344,28 @@ it("a draft assignment notification retains normal retries and emits a final sta
   expect(messages[0].to).toBe(target.email);
   expect(messages[0].subject).toContain("Email delivery needs attention");
 });
+it("immediate handoff delivery drains only its staff job, leaving unrelated client mail alone", async () => {
+  const f = await fixture();
+  await f.service.send(f.draft.id, staff);
+  await f.assign(f.draft.id, true);
+  const p = (await f.repo.get(f.draft.id))!;
+  const assignment = p.jobs.find((j) =>
+    j.id.startsWith(p.id + ":reassigned:"),
+  )!;
+  const mailer = new MockMailer();
+  const worker = new Worker(
+    f.repo,
+    { put: async () => {}, get: async () => new Uint8Array() },
+    mailer,
+    {
+      stripe: new MockBillingProvider("stripe"),
+      qbo: new MockBillingProvider("qbo"),
+    },
+  );
+  await worker.drain(p.id, "email", assignment.id);
+  expect(mailer.sent.size).toBe(1);
+  expect(([...mailer.sent.values()][0] as any).to).toBe(target.email);
+  expect(
+    (await f.repo.get(p.id))!.jobs.find((j) => j.id.includes(":send:"))!.status,
+  ).toBe("pending");
+});
