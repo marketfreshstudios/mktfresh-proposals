@@ -1,3 +1,4 @@
+import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import { shortPrintDiagnostics, type PrintDiagnostic } from "./pdf-diagnostics";
 import { jobFailure } from "./job-presentation";
 import { publishedExpiry, reminderCycle } from "./editor-publication";
@@ -105,6 +106,7 @@ export class Worker {
           const j = p.jobs
             .filter(
               (j) =>
+                (!isAutomaticReminder(j) || automaticRemindersEnabled(p)) &&
                 (!jobId || j.id === jobId) &&
                 (!kind || j.kind === kind) &&
                 j.status !== "done" &&
@@ -254,6 +256,7 @@ export class Worker {
           (publishedExpiry(p) && Date.parse(publishedExpiry(p)!) <= Date.now()))
       )
         return;
+      if (isAutomaticReminder(j) && !automaticRemindersEnabled(p)) return;
       const attachments = payload.file_id
         ? await this.attachment(p, String(payload.file_id))
         : undefined;

@@ -1853,6 +1853,11 @@
   border-radius: 12px;
   background: var(--surface);
 }
+.record-reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .delivery-choice {
   display: flex;
   flex-direction: column;

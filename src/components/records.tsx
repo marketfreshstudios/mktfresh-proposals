@@ -1,5 +1,6 @@
 "use client";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
+import { automaticRemindersEnabled } from "../lib/delivery";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
@@ -1201,7 +1202,13 @@ export function RecordV4({
   onRefresh: () => Promise<void>;
   countersign?: boolean;
 }) {
-  const [share, setShare] = useState(false);
+  const [reminders, setReminders] = useState(automaticRemindersEnabled(p));
+  useEffect(
+    () => setReminders(automaticRemindersEnabled(p)),
+    [p.id, p.automatic_reminders, p.delivery_method],
+  );
+  const [share, setShare] = useState(false),
+    [reminderBusy, setReminderBusy] = useState(false);
   useEffect(() => {
     setShare(
       new URLSearchParams(window.location.search).get("delivery") ===
@@ -1321,6 +1328,52 @@ export function RecordV4({
         </header>
       )}
       <ProposalBadges p={p} />
+      {native && p.token && (
+        <section className="record-reminders">
+          <label className="check">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={reminders}
+              disabled={
+                reminderBusy ||
+                !!p.archived_at ||
+                !!p.signers.length ||
+                !["sent", "viewed"].includes(p.status)
+              }
+              onChange={async (e) => {
+                const enabled = e.target.checked;
+                setReminders(enabled);
+                setReminderBusy(true);
+                setError("");
+                try {
+                  onChanged(
+                    await post<Proposal>(`/api/proposals/${p.id}/reminders`, {
+                      revision: p.revision,
+                      enabled,
+                    }),
+                  );
+                } catch (e) {
+                  setReminders(automaticRemindersEnabled(p));
+                  setError((e as Error).message);
+                } finally {
+                  setReminderBusy(false);
+                }
+              }}
+            />
+            Automatic reminders from the app
+          </label>
+          <small className="muted">
+            {["sent", "viewed"].includes(p.status) &&
+            !p.signers.length &&
+            !p.archived_at
+              ? automaticRemindersEnabled(p)
+                ? "The app can email scheduled reminders. You can still send a reminder yourself at any time."
+                : "Scheduled reminders are off. Send reminder still works when you need it."
+              : "Reminders stop after signing or closing."}
+          </small>
+        </section>
+      )}
       {already && (
         <div role="status" className="notice-toast">
           {already}

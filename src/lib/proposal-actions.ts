@@ -1,4 +1,5 @@
 import {
+  reminderCycle,
   publishedExpiry,
   editableProposal,
   editorialVersion,
@@ -252,7 +253,7 @@ export async function proposalAction(
           subject: `Reminder: ${p.title}`,
           text: `Review your proposal: ${proposalLink(p)}`,
           reminder_day: "manual",
-          version: p.versions.length,
+          version: reminderCycle(p).version,
         },
         timestamp,
       );

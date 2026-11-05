@@ -1,3 +1,4 @@
+import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
   proposalBands,
   HeaderFooterSettingsSchema,
@@ -832,6 +833,60 @@ export class ProposalService {
         );
     });
   }
+  async setAutomaticReminders(
+    id: string,
+    revision: number,
+    enabled: boolean,
+    actor: Actor,
+  ) {
+    check(
+      actor.actor.startsWith("staff:"),
+      "Staff authorization required",
+      403,
+    );
+    return mutate(this.repo, id, (p) => {
+      check(
+        p.revision === revision,
+        "Proposal changed; reload and try again",
+        409,
+      );
+      check(
+        p.source === "native" &&
+          p.token &&
+          !p.archived_at &&
+          ["sent", "viewed"].includes(p.status) &&
+          !p.signers.length,
+        "Automatic reminders are available only for open, unsigned proposals",
+        409,
+      );
+      if (automaticRemindersEnabled(p) === enabled) return;
+      p.automatic_reminders = enabled;
+      if (enabled)
+        for (const j of p.jobs) {
+          if (
+            isAutomaticReminder(j) &&
+            j.status === "done" &&
+            j.payload.version === reminderCycle(p).version &&
+            !p.events.some(
+              (e) =>
+                e.type === "reminder_sent" &&
+                e.metadata.day === j.payload.reminder_day &&
+                e.metadata.version === j.payload.version,
+            )
+          ) {
+            j.status = "pending";
+            j.available_at = this.clock().toISOString();
+          }
+        }
+      event(
+        p,
+        "automatic_reminders_changed",
+        actor,
+        { enabled },
+        this.clock().toISOString(),
+      );
+    });
+  }
   async byToken(token: string, password = "") {
     check(/^[A-Za-z0-9_-]{43}$/.test(token), "Not found", 404);
     const p = await this.repo.byToken(token);
@@ -1104,6 +1159,7 @@ export class ProposalService {
           event(p, "expired", system, {}, now.toISOString());
           return;
         }
+        if (!automaticRemindersEnabled(p)) return;
         const cycle = reminderCycle(p);
         const age = (now.getTime() - Date.parse(cycle.at)) / 86400000;
         for (const day of p.workspace_settings?.reminder_days ?? [3, 7])

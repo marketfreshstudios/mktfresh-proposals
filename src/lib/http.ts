@@ -1080,6 +1080,23 @@ async function handleRoute(req: Request, path: string[]) {
       }
       if (method === "GET" && action === "emails")
         return json(await proposalEmailLog(rt.repo, id));
+      if (method === "POST" && action === "reminders") {
+        const input = z
+          .object({
+            revision: z.number().int().nonnegative(),
+            enabled: z.boolean(),
+          })
+          .strict()
+          .parse(await body(req));
+        return json(
+          await rt.service.setAutomaticReminders(
+            id,
+            input.revision,
+            input.enabled,
+            user,
+          ),
+        );
+      }
       if (method === "POST" && action === "send") {
         const input = req.headers
           .get("content-type")

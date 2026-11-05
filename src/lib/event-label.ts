@@ -20,6 +20,7 @@ export function eventLabel(
       e.metadata.delivery_method === "manual"
         ? `Sent manually by ${e.metadata.actor_name ?? actorName} (link copied, no email from the app)`
         : "Proposal sent",
+    automatic_reminders_changed: `Automatic reminders ${e.metadata.enabled ? "turned on" : "turned off"} by ${actorName}`,
     viewed: "Client opened the proposal",
     quote_changed: "Client updated their choices",
     consent_given:
