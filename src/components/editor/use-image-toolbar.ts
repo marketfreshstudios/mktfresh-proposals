@@ -62,7 +62,7 @@ export function useImageToolbar(
       const bar = toolbar.current;
       if (!bar?.isConnected) return;
       if (innerWidth < 700) {
-        delete bar.dataset.toolbarPlaced;
+        placeEditorToolbar(root, bar);
         for (const key of ["left", "top", "bottom"])
           bar.style.removeProperty(key);
         return;

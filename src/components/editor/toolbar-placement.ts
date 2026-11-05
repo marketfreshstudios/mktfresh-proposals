@@ -9,6 +9,9 @@ export function placeEditorToolbar(
 ) {
   if (innerWidth < 700) {
     delete bar.dataset.toolbarPlaced;
+    if (bar.matches(":popover-open")) bar.hidePopover();
+    bar.removeAttribute("popover");
+    bar.style.visibility = "";
     return;
   }
   const paper = owner.closest<HTMLElement>(
@@ -25,6 +28,16 @@ export function placeEditorToolbar(
     top: Math.max(8, region?.top ?? 0),
     bottom: innerHeight - 8,
   };
+  // A top-layer surface keeps natural-width chrome out of the canvas's scroll
+  // geometry and escapes its overflow clip, while retaining DOM/focus ownership.
+  bar.setAttribute("popover", "manual");
+  if (root.bottom <= bounds.top || root.top >= bounds.bottom) {
+    bar.style.visibility = "hidden";
+    if (bar.matches(":popover-open")) bar.hidePopover();
+    return;
+  }
+  bar.style.visibility = "";
+  if (!bar.matches(":popover-open")) bar.showPopover();
   // Measure overflow without temporarily expanding the bar: expansion would
   // reset its horizontal scroll during a pointer click on an end action.
   const box = bar.getBoundingClientRect();
@@ -53,20 +66,13 @@ export function placeEditorToolbar(
     gap: options.gap,
   });
   bar.dataset.toolbarPlaced = "true";
-  const scale = root.width / (owner.offsetWidth || root.width || 1);
-  bar.style.setProperty(
-    "--toolbar-left",
-    `${(result.left - root.left) / scale}px`,
-  );
-  bar.style.setProperty(
-    "--toolbar-top",
-    `${(result.top - root.top) / scale}px`,
-  );
-  bar.style.setProperty("--toolbar-max-width", `${result.width / scale}px`);
+  bar.style.setProperty("--toolbar-left", `${result.left}px`);
+  bar.style.setProperty("--toolbar-top", `${result.top}px`);
+  bar.style.setProperty("--toolbar-max-width", `${result.width}px`);
   bar.scrollLeft = scroll;
   if (bandScroll && insideScroll !== undefined)
     bandScroll.scrollLeft = insideScroll;
   delete bar.dataset.toolbarNarrow;
   bar.dataset.placement =
-    result.top + box.height <= root.top ? "above" : "below";
+    result.top + box.height <= root.top ? "above" : "sticky";
 }

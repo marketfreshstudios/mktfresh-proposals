@@ -52,7 +52,7 @@ test("a tiny logo retains every image action at intrinsic toolbar width", async 
     expect(r.width).toBeGreaterThanOrEqual(44);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(bar).toHaveCSS("position", "absolute");
+  await expect(bar).toHaveCSS("position", "fixed");
   await expect
     .poll(async () => {
       const r = (await bar.boundingBox())!;

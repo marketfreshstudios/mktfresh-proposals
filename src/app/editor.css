@@ -8222,6 +8222,9 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 /* Owner review 5: attached full-size bars. Only their actual controls take clicks. */
 @media (min-width: 700px) {
   .editor-edit-bar[data-toolbar-placed="true"] {
+    position: fixed !important;
+    margin: 0 !important;
+    transform: none !important;
     width: max-content !important;
     max-width: none !important;
     overflow: visible !important;
