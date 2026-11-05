@@ -140,7 +140,7 @@ Routes. Keep the existing ones and their redirects in `src/lib/staff-routes.ts`:
       - Header and Footer rows with a one-line summary ("Workspace default · logo left, title right") and **Edit**. Edit selects the band on the canvas and opens its edit bar (#59 behavior).
       - Band height, Divider line, and Cover page (Hidden/Shown).
       - The note "Editing the header here makes it unique to this template. Proposals made from it start with this version."
-      - **Reset to workspace default** (outline, full width; confirm with Undo, as today).
+      - **Reset to default** (outline, full width; the existing built-in default with Undo; not "Reset to workspace default" until Phase 2 adds workspace band defaults).
     - Every control in this tab already exists (#58–#66). This is a layout, not new behavior.
 
 ### 5.2 Saved block editor — `09-block-*`
@@ -193,7 +193,7 @@ Routes. Keep the existing ones and their redirects in `src/lib/staff-routes.ts`:
 - Currency select and Cents (Only when needed / Always), with a preview line. Existing setting.
 
 ### 6.4 Proposal styles
-- The existing workspace-default `ProposalStyles` controls, laid out as rows. Then a HEADER & FOOTER group (Header and Footer with summary and **Edit**, Band height, Cover page). The workspace band editors are the existing ones.
+- The existing workspace-default `ProposalStyles` controls, laid out as rows. **No HEADER & FOOTER group in Phase 1.** Workspace-level band defaults don't exist; bands live on templates and proposals only. Owner decision (5 Nov): workspace header/footer defaults and inheritance are deferred to Phase 2.
 - Phase 1 shows only controls that exist today. The prototype's Body size, Page margins and Quote layout are Phase 2 (§10.3), unless a control already exists, in which case show it.
 
 ### 6.5 Billing defaults (owner decision, 5 Nov) — reference `05-ws-Billing-defaults-v2.png` (supersedes `05-ws-Billing-defaults.png`)
@@ -216,7 +216,7 @@ Routes. Keep the existing ones and their redirects in `src/lib/staff-routes.ts`:
 - The company signatory name and title (existing), plus "Can countersign on {name}'s behalf": the list of members with Always/Never (existing delegation rule).
 
 ### 6.8 Client links
-- Links stay valid for (existing default validity, in days; "Never" = indefinite), Workspace timezone, Default password, and Link domain (read-only; §2.11).
+- Links stay valid for (existing default validity, 1–365 days; no "Never" at workspace level, but individual proposals can still be indefinite), Workspace timezone, Default password, and Link domain (read-only; §2.11).
 
 ### 6.9 Email sending
 - Phase 1 rows:
@@ -306,6 +306,9 @@ Routes. Keep the existing ones and their redirects in `src/lib/staff-routes.ts`:
 - Add **Payment methods** for Stripe Checkout (Card; Card + US bank account/ACH), passed to Checkout Sessions. Stripe test mode only until live activation.
 - The routing rule (one-time → QuickBooks, recurring → Stripe) is fixed and is not a setting.
 - A workspace-level "One-time fees via Stripe Checkout" option for white-label workspaces without QuickBooks is **deferred**. Don't build it.
+
+### 10.5 Deferred (not approved yet)
+- Workspace header & footer defaults and their inheritance by templates (owner decision, 5 Nov).
 - Tests: the Checkout session gets the configured methods; existing-subscriber add-items path unchanged.
 
 ---
