@@ -1,4 +1,6 @@
 "use client";
+import { ReassignDialog } from "./reassign-proposal";
+import { canReassign } from "../lib/proposal-owner";
 import { pageGeometry } from "../lib/page-bands";
 import { Disclosure } from "./ui";
 import { DisclosureChevron } from "./disclosure-chevron";
@@ -184,6 +186,7 @@ function QuoteEditorContent({
   documents?: ReferenceDocument[];
 }) {
   const blockFeedback = useBlockFeedback();
+  const [reassignOpen, setReassignOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   useEffect(() => {
     if (linkCopied) {
@@ -2646,7 +2649,29 @@ function QuoteEditorContent({
         content={p.content}
         onChange={(content) => change({ content })}
       />
+      {reassignOpen && (
+        <ReassignDialog
+          proposal={p}
+          onClose={() => setReassignOpen(false)}
+          onChanged={(rows) => {
+            const next = rows[0];
+            if (next) {
+              revision.current = next.revision;
+              latest.current = next;
+              setP(next);
+              onSaved(next);
+            }
+          }}
+        />
+      )}
       <EditorHeader
+        onReassign={
+          user && canReassign(p, user)
+            ? async () => {
+                if (await save()) setReassignOpen(true);
+              }
+            : undefined
+        }
         beforeLeave={() => {
           allowLeave.current = true;
         }}

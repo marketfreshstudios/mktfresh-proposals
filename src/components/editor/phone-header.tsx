@@ -17,6 +17,7 @@ export function PhoneEditorHeader({
   onSections,
   primaryLabel,
   onPrimary,
+  onReassign,
 }: {
   title: string;
   className?: string;
@@ -32,6 +33,7 @@ export function PhoneEditorHeader({
   onSections?(): void;
   primaryLabel?: string;
   onPrimary?(): void;
+  onReassign?(): void;
 }) {
   const [open, setOpen] = useState(false),
     trigger = useRef<HTMLButtonElement>(null);
@@ -94,6 +96,11 @@ export function PhoneEditorHeader({
             aria-label="Editor actions"
             onClick={() => setOpen(false)}
           >
+            {onReassign && (
+              <button type="button" role="menuitem" onClick={onReassign}>
+                Reassign…
+              </button>
+            )}
             {primaryLabel && (
               <button type="button" role="menuitem" onClick={onPrimary}>
                 {primaryLabel}

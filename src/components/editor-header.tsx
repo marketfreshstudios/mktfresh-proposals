@@ -1,4 +1,5 @@
 "use client";
+import { ToolbarPopover } from "./toolbar-popover";
 import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
@@ -66,6 +67,7 @@ export function EditorHeader({
   notLiveReason,
   primaryLabel,
   onPrimary,
+  onReassign,
 }: {
   title: string;
   backLabel: string;
@@ -101,7 +103,10 @@ export function EditorHeader({
   notLiveReason?: string;
   primaryLabel?: string;
   onPrimary?: () => void;
+  onReassign?: () => void;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreTrigger = useRef<HTMLButtonElement>(null);
   const retryAction = isStaffSignedOut(error) ? openStaffSignIn : retry;
   const [leaving, setLeaving] = useState(false);
   const pending = leaving || saving;
@@ -184,6 +189,7 @@ export function EditorHeader({
           primaryLabel !== "Review & send" ? primaryLabel : undefined
         }
         onPrimary={onPrimary}
+        onReassign={onReassign}
       />
     );
   if (!phone && onReviewSend) {
@@ -330,6 +336,41 @@ export function EditorHeader({
           {primaryLabel ??
             (locked ? "Duplicate as new draft" : "Review & send")}
         </EditorButton>
+        {onReassign && (
+          <>
+            <button
+              ref={moreTrigger}
+              type="button"
+              className="editor-header-more"
+              aria-label="More editor actions"
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen(!moreOpen)}
+            >
+              ⋯
+            </button>
+            {moreOpen && (
+              <ToolbarPopover
+                className="phone-editor-menu"
+                trigger={moreTrigger.current}
+                close={() => setMoreOpen(false)}
+              >
+                <div role="menu" aria-label="Editor actions">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      onReassign();
+                    }}
+                  >
+                    Reassign…
+                  </button>
+                </div>
+              </ToolbarPopover>
+            )}
+          </>
+        )}
         {hadAi &&
           (aiPending ? (
             <button

@@ -1,4 +1,6 @@
 "use client";
+import { ReassignDialog } from "./reassign-proposal";
+import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
   jobName,
   jobRecordAnchor,
@@ -124,6 +126,7 @@ export function ProposalMenu({
   showUndo?: boolean;
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
+  const [reassign, setReassign] = useState(false);
   const [open, setOpen] = useState(false),
     [confirm, setConfirm] = useState<ProposalAction | null>(null),
     [busy, setBusy] = useState(false),
@@ -180,6 +183,15 @@ export function ProposalMenu({
       >
         ⋯
       </button>
+      {reassign && (
+        <ReassignDialog
+          proposal={p}
+          onClose={() => setReassign(false)}
+          onChanged={(rows) => {
+            if (rows[0]) onChanged?.(rows[0]);
+          }}
+        />
+      )}
       {undo && (
         <div className="phase4-toast" role="status">
           Proposal archived.{" "}
@@ -262,6 +274,17 @@ export function ProposalMenu({
             </form>
           ) : (
             <nav className="action-menu">
+              {canReassign(p, data.user) && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setReassign(true);
+                  }}
+                >
+                  Reassign…
+                </button>
+              )}
+
               {canCountersign(p, data.user, data.settings) && (
                 <a href={`/proposals/${p.id}?action=countersign`}>
                   Sign — review client-signed document

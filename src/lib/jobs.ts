@@ -90,7 +90,7 @@ export class Worker {
       print_failures?: PrintDiagnostic[];
     }>,
   ) {}
-  async drain(id?: string, kind?: Job["kind"]) {
+  async drain(id?: string, kind?: Job["kind"], jobId?: string) {
     const results = [];
     const deadline = Date.now() + 240000;
     for (const row of await this.repo.list()) {
@@ -105,6 +105,7 @@ export class Worker {
           const j = p.jobs
             .filter(
               (j) =>
+                (!jobId || j.id === jobId) &&
                 (!kind || j.kind === kind) &&
                 j.status !== "done" &&
                 j.status !== "failed" &&

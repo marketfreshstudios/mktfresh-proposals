@@ -22,11 +22,13 @@ export function emailIdentity(p: Proposal) {
 export function staffRecipients(p: Proposal) {
   return [
     ...new Set(
-      p.notification_emails?.length
-        ? p.notification_emails
-        : p.sender
-          ? [p.sender.email]
-          : [p.workspace_settings?.email ?? ""],
+      p.owner?.email
+        ? [p.owner.email]
+        : p.notification_emails?.length
+          ? p.notification_emails
+          : p.sender
+            ? [p.sender.email]
+            : [p.workspace_settings?.email ?? ""],
     ),
   ].filter(Boolean);
 }

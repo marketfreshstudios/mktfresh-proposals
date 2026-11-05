@@ -25,6 +25,7 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  saveReassignments(documents: Proposal[], actor: Actor): Promise<void>;
   saveEmailTemplate<T extends { id: string }>(
     template: T,
     audit: Audit,
@@ -54,6 +55,29 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async saveReassignments(documents: Proposal[], actor: Actor) {
+    for (const p of documents) {
+      const current = this.rows.get(p.id);
+      if (!current || current.revision !== p.revision - 1)
+        throw new AppError(409, "Proposal changed; reload and try again");
+      if ((current.workspace_id ?? this.workspaceId) !== this.workspaceId)
+        throw new AppError(403, "Workspace mismatch");
+    }
+    // No awaits between validation and commit: all-or-nothing like the SQL transaction.
+    for (const p of documents) {
+      this.rows.set(p.id, structuredClone(p));
+      const audit = p.events.at(-1)!;
+      const events = this.catalog.get("workspace_events") ?? new Map();
+      events.set(
+        audit.id,
+        structuredClone({
+          ...audit,
+          metadata: { ...audit.metadata, proposal_id: p.id, title: p.title },
+        }),
+      );
+      this.catalog.set("workspace_events", events);
+    }
+  }
   async saveEmailTemplate<T extends { id: string }>(template: T, audit: Audit) {
     const templates = this.catalog.get("email_templates") ?? new Map();
     const events = this.catalog.get("workspace_events") ?? new Map();
@@ -250,6 +274,15 @@ export class LocalRepository extends MemoryRepository {
     );
     await rename(join(this.dir, "db.tmp"), join(this.dir, "db.json"));
   }
+  override async saveReassignments(documents: Proposal[], actor: Actor) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      await super.saveReassignments(documents, actor);
+      await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
   override async saveEmailTemplate<T extends { id: string }>(
     template: T,
     audit: Audit,
@@ -371,6 +404,18 @@ export class SupabaseRepository implements Repository {
     public db: SupabaseClient,
     public readonly workspaceId = LOCAL_WORKSPACE_ID,
   ) {}
+  async saveReassignments(documents: Proposal[], actor: Actor) {
+    const { error } = await this.db.rpc("reassign_proposals", {
+      target_workspace: this.workspaceId,
+      actor_id: actor.actor.slice(6),
+      documents,
+    });
+    if (error)
+      throw new AppError(
+        error.code === "42501" ? 403 : error.code === "P0002" ? 404 : 409,
+        error.message,
+      );
+  }
   async saveEmailTemplate<T extends { id: string }>(template: T, audit: Audit) {
     const { error } = await this.db.rpc("save_email_template", {
       target_workspace: this.workspaceId,
