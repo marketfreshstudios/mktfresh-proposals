@@ -187,7 +187,10 @@ export async function updateStaffDisplayName(
     throw new AppError(403, "Staff authorization required");
   const display_name = DisplayNameSchema.parse(name);
   if (actor.staff_role !== "owner" && actor.actor !== "staff:" + userId)
-    throw new AppError(403, "Only owners can edit another staff member's name");
+    throw new AppError(
+      403,
+      "Only super admins can edit another staff member's name",
+    );
   const members = await workspaceStaff(actor.workspace_id!);
   if (!members.some((m) => m.user_id === userId))
     throw new AppError(404, "Staff member not found in this workspace");

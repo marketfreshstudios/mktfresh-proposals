@@ -57,7 +57,7 @@ it("team edits preserve email and membership and enforce owner/self and tenant b
       "00000000-0000-4000-8000-000000000099",
       "Other",
     ),
-  ).rejects.toThrow("Only owners");
+  ).rejects.toThrow("Only super admins");
   await expect(
     updateStaffDisplayName(
       { ...actor, staff_role: "owner" },

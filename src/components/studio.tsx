@@ -387,7 +387,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
           <fieldset className="stack" disabled={!owner}>
             <legend className="screen-reader">Signatory and delegates</legend>
             {!owner && (
-              <p>Only an owner can change the signatory or delegates.</p>
+              <p>Only a super admin can change the signatory or delegates.</p>
             )}
             <div className="studio-brand-grid">
               <Field label="Signatory name">
@@ -697,7 +697,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
       <Section
         title="Team"
         id="team"
-        description="Display names appear in emails. Owners can edit everyone; members can edit their own name."
+        description="Display names appear in emails. Super admins can edit everyone; Staff can edit their own name."
       >
         <TeamNames data={data} run={run} />
         <p>
@@ -743,7 +743,7 @@ function TeamNames({ data, run }: { data: Data; run: Runner }) {
           <div>
             <strong>{m.display_name}</strong>
             <small>
-              {m.email} · {m.role === "owner" ? "Owner" : "Member"}
+              {m.email} · {m.role === "owner" ? "Super admin" : "Staff"}
             </small>
           </div>
           <Field label={`Display name for ${m.email}`}>
@@ -3340,7 +3340,7 @@ export function ConnectionsStudio({
               <p>
                 {open === "stripe"
                   ? "Use a Stripe test-mode restricted key in this deployment. Sync only after the test products have been copied."
-                  : "QuickBooks sandbox credentials must be added to the deployment by the owner. Invoices remain in review until then."}
+                  : "QuickBooks sandbox credentials must be added to the deployment by a super admin. Invoices remain in review until then."}
               </p>
               <Button
                 onClick={() =>

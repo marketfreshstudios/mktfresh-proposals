@@ -39,7 +39,7 @@ export async function companySignature(
     s = settings.company_signatory;
   check(
     s?.user_id && s.image,
-    "An owner must configure the company signatory and stored signature first",
+    "A super admin must configure the company signatory and stored signature first",
   );
   const id = actor.actor.slice(6);
   check(

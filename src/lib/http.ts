@@ -673,7 +673,7 @@ async function handleRoute(req: Request, path: string[]) {
           if (raw.default_password !== undefined) {
             check(
               user.staff_role === "owner",
-              "Only workspace owners can change the default password",
+              "Only a super admin can change the default password",
               403,
             );
             check(
@@ -697,7 +697,7 @@ async function handleRoute(req: Request, path: string[]) {
           if (entity.sending_domain !== (previous?.sending_domain ?? ""))
             check(
               user.staff_role === "owner",
-              "Only workspace owners can change the verified sending domain",
+              "Only a super admin can change the verified sending domain",
               403,
             );
           if (
@@ -706,7 +706,7 @@ async function handleRoute(req: Request, path: string[]) {
           ) {
             check(
               user.staff_role === "owner",
-              "Only workspace owners can change company signatory settings",
+              "Only a super admin can change company signatory settings",
               403,
             );
             const config = entity.company_signatory;
