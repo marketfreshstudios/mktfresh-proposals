@@ -22,7 +22,7 @@ describe("proposal lifecycle", () => {
   it("sends, views, changes optional pricing, signs and countersigns immutable version", async () => {
     const { repo, service, draft, settings } = await setup();
     let p = await service.send(draft.id, staff);
-    expect(p.token).toHaveLength(43);
+    expect(p.token).toHaveLength(12);
     p = await service.view(p.token!, "", clientActor);
     p = await service.toggle(
       p.token!,

@@ -169,7 +169,7 @@ for (const width of [1440, 375]) {
         await expect(
           page.locator(
             width >= 700
-              ? ".studio-block-card h4 .heading-measure"
+              ? ".studio-block-card h4 .tiptap"
               : ".studio-block-card h4",
           ),
         ).toHaveText("Subheading");
@@ -193,11 +193,11 @@ for (const width of [1440, 375]) {
         .toBeCloseTo(barHeight, 2);
       await frame.locator(".tiptap").fill("#".repeat(level));
       await frame.locator(".tiptap").press("Space");
-      await expect(frame.locator(`h${level + 1} textarea`)).toBeFocused();
+      await expect(frame.locator(`h${level + 1} .tiptap`)).toBeFocused();
       await expect(bar.locator(".text-style-label")).toHaveText(
         width < 700 ? `H${level}` : `Heading ${level}`,
       );
-      await frame.locator("textarea").fill(`Level ${level}`);
+      await frame.locator(".tiptap").fill(`Level ${level}`);
       await expect
         .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
         .toBe(level);
@@ -214,9 +214,7 @@ for (const width of [1440, 375]) {
       getSelection()!.addRange(range);
     });
     await frame.locator(".tiptap").pressSequentially("## ");
-    await expect(frame.locator("h3 textarea")).toHaveValue(
-      "A retained sentence",
-    );
+    await expect(frame.locator("h3 .tiptap")).toHaveText("A retained sentence");
     await expect
       .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
       .toBe(2);
@@ -556,8 +554,8 @@ test("Workspace and templates save style overrides and show responsive live samp
   await paragraph.click();
   await paragraph.locator(".tiptap").fill("###");
   await paragraph.locator(".tiptap").press("Space");
-  await expect(paragraph.locator("textarea")).toBeFocused();
-  await paragraph.locator("textarea").fill("Template detail");
+  await expect(paragraph.locator(".tiptap")).toBeFocused();
+  await paragraph.locator(".tiptap").fill("Template detail");
   await expect(
     page
       .getByRole("toolbar", {

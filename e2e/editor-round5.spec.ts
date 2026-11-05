@@ -159,12 +159,12 @@ test("pointer page dragging moves every block, updates real sheets, and page del
   });
   await page.mouse.up();
   await expect(
-    templatePaper.locator(".studio-block-card h2 .heading-measure").first(),
+    templatePaper.locator(".studio-block-card h2 .tiptap").first(),
   ).toHaveText("Second section");
   await ready(page, true);
   await page.keyboard.press("Control+z");
   await expect(
-    templatePaper.locator(".studio-block-card h2 .heading-measure").first(),
+    templatePaper.locator(".studio-block-card h2 .tiptap").first(),
   ).toHaveText("First section");
   await ready(page, true);
 });

@@ -136,9 +136,17 @@ test("Enter pushes a bottom heading to its next sheet within the next animation 
         JSON.parse((await paper.getAttribute("data-pagination"))!).pages,
     )
     .toBe(1);
-  const input = heading.locator("textarea");
+  const input = heading.locator(".tiptap");
   await input.focus();
-  await input.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(0, 0));
+  await input.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(true);
+    const selection = getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
   await input.press("Enter");
   const result = await paper.evaluate(
     (root) =>

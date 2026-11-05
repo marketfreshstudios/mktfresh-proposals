@@ -400,9 +400,9 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .getByRole("dialog", { name: "Add a block" })
       .getByRole("menuitem", { name: "Heading 1", exact: true })
       .click();
-    await expect(page.locator(".document-heading:focus")).toHaveValue(
-      "New section",
-    );
+    await expect(
+      page.locator(".document-heading-edit .tiptap:focus"),
+    ).toHaveText("New section");
     // Bulk review only clears content review. It writes one event with the listed sections.
     const prior = active.events.filter(
       (e) => e.type === "ai_sections_reviewed",

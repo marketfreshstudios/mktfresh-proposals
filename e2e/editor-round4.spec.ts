@@ -321,7 +321,7 @@ test("page add/delete and undo use normal authoring history; templates use the s
     .toBe(2);
   const added = f.active().content.at(-1)!;
   await expect(
-    page.locator(`[data-block-id="block-${added.id}"] textarea`),
+    page.locator(`[data-block-id="block-${added.id}"] .tiptap`),
   ).toBeFocused();
   const bar = page.getByRole("toolbar", {
     name: /^(Document formatting|Text tools|Pricing table tools|Signatures tools|Image tools|Contract tools|Clause tools)$/,

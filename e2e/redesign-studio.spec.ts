@@ -1,3 +1,4 @@
+import { newClientCode } from "../src/lib/client-code";
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import {
@@ -331,6 +332,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     id: crypto.randomUUID(),
   }));
   failure.id = crypto.randomUUID();
+  failure.token = newClientCode();
   failure.title = "A signed proposal with a PDF to retry";
   failure.jobs = [
     {
@@ -352,6 +354,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     id: crypto.randomUUID(),
   }));
   checkout.id = crypto.randomUUID();
+  checkout.token = newClientCode();
   checkout.title = "A signed proposal awaiting payment setup";
   checkout.jobs = [];
   checkout.billing_links = [

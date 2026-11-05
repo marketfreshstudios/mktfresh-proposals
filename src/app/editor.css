@@ -8142,16 +8142,35 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   padding: 8px 12px;
   color: var(--ink-muted);
 }
-.document-reading .document-heading-edit .field-editor,
-.document-reading .document-heading-edit .field-editor-content,
-.document-reading .document-heading-edit .tiptap,
-.document-reading .document-heading-edit .tiptap p {
+:is(
+    .proposal-typography.proposal-typography.document-reading,
+    .proposal-typography.proposal-typography .document-reading
+  )
+  .document-heading-edit
+  :is(.field-editor, .field-editor-content, .tiptap, .tiptap > p) {
   font: inherit;
   line-height: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
   min-height: 0;
   padding: 0;
   margin: 0;
   border: 0;
+}
+.toolbar-popover.inline-size-popover {
+  width: 200px;
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+}
+.inline-size-menu > button {
+  flex: none;
+  width: 100%;
+  height: 44px;
+  min-width: 0;
+  justify-content: flex-start;
+  border-radius: 6px;
+  font: inherit;
 }
 
 @media (max-width: 699px) {

@@ -740,7 +740,7 @@ test("block controls own one block and never move document content on hover, foc
     .getByRole("menuitem", { name: "Heading 1", exact: true })
     .click();
   await expect(templateBlocks).toHaveCount(6);
-  await expect(templateBlocks.nth(1).locator("textarea")).toBeVisible();
+  await expect(templateBlocks.nth(1).locator(".tiptap")).toBeVisible();
   await expect(
     page.getByRole("combobox", { name: "Add block", exact: true }),
   ).toHaveCount(0);

@@ -219,7 +219,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   let r = await request.get(`/api/proposals/${p.id}`, { headers });
   p = await r.json();
   expect(p.quote[0].sublines[0].amount).toBe(275100);
-  expect(p.token).toHaveLength(43);
+  expect(p.token).toHaveLength(12);
   expect(p.sender).toMatchObject({
     display_name: "Alex Sender",
     email: "staff@example.test",
