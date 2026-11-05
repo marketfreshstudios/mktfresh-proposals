@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 
-import { clearNeighbours } from "./toolbar-assertions";
+import { attachedBar } from "./toolbar-assertions";
 
-for (const width of [1440, 1024])
+for (const width of [1440, 1280, 1024])
   for (const separateCover of [true, false])
-    test(`cover, body and band toolbars keep neighbouring text clickable at ${width} (${separateCover ? "separate" : "inline"} cover)`, async ({
+    test(`cover, body and band toolbars stay full-size above the selection at ${width} (${separateCover ? "separate" : "inline"} cover)`, async ({
       page,
     }) => {
       page.setDefaultTimeout(10000);
@@ -47,7 +47,7 @@ for (const width of [1440, 1024])
           exact: true,
         });
         await prepared.click();
-        await clearNeighbours(
+        await attachedBar(
           page.getByRole("toolbar", { name: "Cover text formatting" }),
           page.locator('[data-cover-kind="prepared_for"]'),
         );
@@ -55,17 +55,19 @@ for (const width of [1440, 1024])
           name: "Proposal title",
           exact: true,
         });
-        // A real native click must reach the title from another selected cover line.
+        // The attached bar may cover the line above; Escape dismisses it first.
+        await page.keyboard.press("Escape");
         await title.click();
         await expect(title).toBeFocused();
-        await clearNeighbours(
+        await attachedBar(
           page.getByRole("toolbar", { name: "Cover text formatting" }),
           page.locator('[data-cover-kind="title"]'),
         );
         await page.keyboard.press("Escape");
         const selected = page.locator(`[data-block-id$="${ids[3]}"]`);
         await selected.locator(".tiptap").click();
-        await clearNeighbours(selected.locator(".editor-edit-bar"), selected);
+        await attachedBar(selected.locator(".editor-edit-bar"), selected);
+        await page.keyboard.press("Escape");
         await page.locator(`[data-block-id$="${ids[2]}"] .tiptap`).click();
         await expect(
           page.locator(`[data-block-id$="${ids[2]}"] .tiptap`),
@@ -83,7 +85,7 @@ for (const width of [1440, 1024])
         });
         await column.click();
         await expect(column).toBeFocused();
-        await clearNeighbours(page.locator(".band-edit-bar"), header);
+        await attachedBar(page.locator(".band-edit-bar"), header);
         await page
           .locator(".band-edit-bar")
           .getByRole("button", { name: "Done", exact: true })
@@ -91,7 +93,7 @@ for (const width of [1440, 1024])
       }
     });
 
-test("dense paragraphs keep scrolling toolbar actions and menu focus stable", async ({
+test("dense paragraphs keep full-size toolbar actions and menu focus stable", async ({
   page,
 }) => {
   page.setDefaultTimeout(10000);
@@ -116,7 +118,7 @@ test("dense paragraphs keep scrolling toolbar actions and menu focus stable", as
   await owner.evaluate((el) => el.scrollIntoView({ block: "center" }));
   await owner.locator(".tiptap").click();
   const bar = owner.locator(".editor-edit-bar");
-  await clearNeighbours(bar, owner);
+  await attachedBar(bar, owner);
   for (const name of ["More block actions", "Text style", "Size"]) {
     const button = bar.getByRole("button", { name, exact: true });
     await button.click();
@@ -128,3 +130,51 @@ test("dense paragraphs keep scrolling toolbar actions and menu focus stable", as
     await expect(button).toBeFocused();
   }
 });
+
+for (const width of [1440, 1280, 1024])
+  test(`attached bar stays natural and follows the viewport at ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const id = crypto.randomUUID();
+    const f = await editorFixture(page, false, {
+      content: [
+        { id: crypto.randomUUID(), type: "page_break" },
+        {
+          id,
+          type: "paragraph",
+          text: "The selected paragraph stays attached while scrolling. ".repeat(
+            25,
+          ),
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "paragraph",
+          text: "Following content provides scrolling room. ".repeat(200),
+        },
+      ],
+    });
+    await page.goto(`/proposals/${f.draft.id}`);
+    await expect(
+      page.locator('.editor-page-sheets[data-layout-settled="true"]'),
+    ).toBeVisible();
+    const owner = page.locator(`[data-block-id="block-${id}"]`);
+    await owner.locator(".tiptap").click();
+    const bar = owner.locator(".editor-edit-bar");
+    const natural = await bar.evaluate(
+      (el) => el.getBoundingClientRect().width,
+    );
+    for (const target of [180, 400, 800, 60]) {
+      await owner.evaluate((el, y) => {
+        const canvas = el.closest(".editor-document-region")!;
+        canvas.scrollTop += el.getBoundingClientRect().top - y;
+      }, target);
+      await attachedBar(bar, owner);
+      expect((await bar.boundingBox())!.width).toBeCloseTo(natural, 0);
+      if (target > 100) {
+        const b = (await bar.boundingBox())!,
+          a = (await owner.boundingBox())!;
+        expect(b.y + b.height).toBeLessThanOrEqual(a.y + 1);
+      }
+    }
+  });

@@ -289,6 +289,7 @@ test("cover fields insert at the cursor and hiding its title preserves proposal 
   await expect(client.locator('[data-field="client.first_name"]')).toHaveText(
     "Jane",
   );
+  await page.keyboard.press("Escape");
   const title = f.active().title;
   await page
     .getByRole("textbox", { name: "Proposal title", exact: true })

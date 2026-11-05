@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
-import { clearNeighbours } from "./toolbar-assertions";
+import { attachedBar } from "./toolbar-assertions";
 import { defaultHeaderFooter, bandImages } from "../src/lib/page-bands";
 import type { Block } from "../src/lib/model";
 test.beforeEach(({ page }) => page.setDefaultTimeout(10000));
@@ -139,7 +139,7 @@ test("layout reflow is lossless, fields insert at cursor or last-column end, men
   await expect(band.getByRole("textbox")).toContainText("Three3");
 });
 
-test("band menus are accessible, controls keep 44px hit areas, and bars avoid text at every margin", async ({
+test("band menus are accessible, controls keep 44px hit areas, and bars stay attached at every margin", async ({
   page,
 }) => {
   const { default: AxeBuilder } = await import("@axe-core/playwright");
@@ -149,7 +149,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars avoid te
   const band = await open(page);
   const bar = band.getByRole("toolbar");
   await expect(bar).toHaveCSS("height", "40px");
-  await clearNeighbours(bar, band);
+  await attachedBar(bar, band);
   for (const name of ["Layout", "Insert band field"]) {
     await bar.getByRole("button", { name, exact: true }).click();
     const results = await new AxeBuilder({ page })
@@ -173,11 +173,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars avoid te
     await expect
       .poll(() =>
         bar.evaluate(
-          (el) =>
-            el.getBoundingClientRect().right <=
-            el.closest(".editor-document-region")!.getBoundingClientRect()
-              .right -
-              12,
+          (el) => el.getBoundingClientRect().right <= innerWidth - 8,
         ),
       )
       .toBe(true);
@@ -202,7 +198,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars avoid te
     "data-inside",
     "true",
   );
-  await clearNeighbours(small.getByRole("toolbar"), small);
+  await attachedBar(small.getByRole("toolbar"), small);
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 768, height: 1000 });
   const tablet = bands(page).first();

@@ -540,3 +540,7 @@ Use fixed durable windows: 30 failed token lookups per salted IP hash per 10 min
 ## PR #72 CI follow-up — floating toolbar clearance
 
 The owner's no-overlap instruction supersedes the earlier prototype exemption for floating bars over neighbouring text. Cover, body, image and header/footer toolbars now share a screen-only placement rule: prefer nearby above/below space, avoid editable text, images and visible hit targets, and stay inside the visible sheet. When a dense page leaves no full-width opening, the same actions remain horizontally scrollable in a clear margin. Measuring placement must preserve horizontal scroll. Phone keyboard docks retain their existing behavior. Nothing in this placement path participates in pagination, page geometry, PagePlan persistence or PDF rendering.
+
+## Owner review 5 — attached edit bars
+
+The owner's production review supersedes PR #72's collision placement: desktop/tablet edit bars remain at natural size directly above the selected element. They stick below the editor header while that element is partially scrolled out of view; only popovers flip. Neighbour overlap is permitted; toolbar gaps/background do not intercept pointer clicks and Escape/empty-paper clicks dismiss the selection. Phone keyboard docks remain unchanged.

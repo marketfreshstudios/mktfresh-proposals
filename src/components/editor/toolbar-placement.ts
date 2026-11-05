@@ -2,69 +2,6 @@ import {
   toolbarPosition,
   type ToolbarRect,
 } from "../../lib/editor-toolbar-position";
-const rect = (r: DOMRect): ToolbarRect => ({
-  left: r.left,
-  top: r.top,
-  right: r.right,
-  bottom: r.bottom,
-});
-/** Actual text/image rectangles, excluding all editor chrome and hidden measuring copies. */
-export function toolbarObstacles(
-  paper: HTMLElement,
-  bounds: ToolbarRect,
-  owner?: HTMLElement,
-) {
-  const result: ToolbarRect[] = [];
-  const add = (r: DOMRect) => {
-    if (
-      r.width &&
-      r.height &&
-      r.right > bounds.left &&
-      r.left < bounds.right &&
-      r.bottom > bounds.top &&
-      r.top < bounds.bottom
-    )
-      result.push(rect(r));
-  };
-  const ignored = (el: Element) => {
-    const chrome = el.closest("[data-editor-chrome]");
-    // Bands use this attribute to stay out of body pagination, but their actual
-    // editable content is still a screen obstacle. Nested controls remain chrome.
-    return (
-      !!el.closest('[data-page-measurement],[aria-hidden="true"]') ||
-      (!!chrome && !chrome.matches(".page-band-frame")) ||
-      getComputedStyle(el).visibility !== "visible"
-    );
-  };
-  const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT);
-  let node;
-  while ((node = walker.nextNode())) {
-    const parent = node.parentElement;
-    if (!parent || !node.textContent?.trim() || ignored(parent)) continue;
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    for (const r of range.getClientRects()) add(r);
-  }
-  for (const el of paper.querySelectorAll<HTMLElement>(
-    "img,input,textarea,.signature-pair,.document-signature,.cover-element,.tiptap,[data-page-band],[data-band-frame],.flow-quote-line,summary,.block-content",
-  ))
-    if (!ignored(el)) add(el.getBoundingClientRect());
-  for (const cover of paper.querySelectorAll<HTMLElement>(".document-cover"))
-    if (!cover.contains(owner ?? null) && !ignored(cover))
-      add(cover.getBoundingClientRect());
-  // Hover controls (including an empty cover's Add logo) can sit outside their
-  // zero-height content box. Keep those hit targets clear as well.
-  for (const button of paper.querySelectorAll<HTMLElement>("button"))
-    if (
-      !button.closest(".editor-edit-bar,.toolbar-popover") &&
-      button.checkVisibility({
-        opacityProperty: true,
-        visibilityProperty: true,
-      })
-    )
-      add(button.getBoundingClientRect());
-  return result;
-}
 export function placeEditorToolbar(
   owner: HTMLElement,
   bar: HTMLElement,
@@ -82,41 +19,12 @@ export function placeEditorToolbar(
     .closest<HTMLElement>(".editor-document-region,.studio-template-main")
     ?.getBoundingClientRect();
   const root = owner.getBoundingClientRect();
-  let anchor = root;
-  const selection = document.getSelection();
-  if (selection?.rangeCount && owner.contains(selection.anchorNode)) {
-    const line = [...selection.getRangeAt(0).getClientRects()].find(
-      (r) => r.height && r.bottom > (region?.top ?? 0) && r.top < innerHeight,
-    );
-    if (line) anchor = line;
-  }
-  const sheets = [...paper.querySelectorAll<HTMLElement>(".page-sheet")].map(
-    (el) => el.getBoundingClientRect(),
-  );
-  const y = Math.max(anchor.top, region?.top ?? 0);
-  const sheet =
-    sheets.find((r) => y >= r.top && y < r.bottom) ??
-    sheets.find(
-      (r) =>
-        r.bottom > Math.max(root.top, region?.top ?? 0) &&
-        r.top < Math.min(root.bottom, innerHeight),
-    ) ??
-    paper.getBoundingClientRect();
-  const bounds = {
-    left: Math.max(8, sheet.left + 8, region?.left ?? 0),
-    right: Math.min(
-      innerWidth - 8,
-      sheet.right - 8,
-      (region?.right ?? innerWidth) - 12,
-    ),
-    top: Math.max(8, sheet.top + 8, region?.top ?? 0),
-    bottom: Math.min(innerHeight - 8, sheet.bottom - 8),
+  const bounds: ToolbarRect = {
+    left: 8,
+    right: innerWidth - 8,
+    top: Math.max(8, region?.top ?? 0),
+    bottom: innerHeight - 8,
   };
-  if (
-    bounds.right - bounds.left < 44 ||
-    bounds.bottom - bounds.top < bar.offsetHeight
-  )
-    return;
   // Measure overflow without temporarily expanding the bar: expansion would
   // reset its horizontal scroll during a pointer click on an end action.
   const box = bar.getBoundingClientRect();
@@ -137,15 +45,20 @@ export function placeEditorToolbar(
   );
   const scroll = bar.scrollLeft,
     insideScroll = bandScroll?.scrollLeft;
+  const sheet = [...paper.querySelectorAll<HTMLElement>(".page-sheet")]
+    .map((el) => el.getBoundingClientRect())
+    .find((r) => root.top < r.bottom && root.bottom > r.top);
+  if (sheet && width <= sheet.width - 16) {
+    bounds.left = Math.max(bounds.left, sheet.left + 8);
+    bounds.right = Math.min(bounds.right, sheet.right - 8);
+  }
   const result = toolbarPosition({
     bounds,
-    anchor: { ...rect(anchor), left: root.left },
+    anchor: root,
     width,
     height: box.height,
-    obstacles: toolbarObstacles(paper, bounds, owner),
-    ...options,
+    gap: options.gap,
   });
-  if (!result) return;
   bar.dataset.toolbarPlaced = "true";
   const scale = root.width / (owner.offsetWidth || root.width || 1);
   bar.style.setProperty(
@@ -160,7 +73,7 @@ export function placeEditorToolbar(
   bar.scrollLeft = scroll;
   if (bandScroll && insideScroll !== undefined)
     bandScroll.scrollLeft = insideScroll;
-  bar.dataset.toolbarNarrow = String(result.width < 96);
+  delete bar.dataset.toolbarNarrow;
   bar.dataset.placement =
-    result.top + box.height <= anchor.top ? "above" : "below";
+    result.top + box.height <= root.top ? "above" : "below";
 }

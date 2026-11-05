@@ -8218,3 +8218,22 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   flex: none;
   width: max-content;
 }
+
+/* Owner review 5: attached full-size bars. Only their actual controls take clicks. */
+@media (min-width: 700px) {
+  .editor-edit-bar[data-toolbar-placed="true"] {
+    width: max-content !important;
+    max-width: none !important;
+    overflow: visible !important;
+    pointer-events: none;
+  }
+  .editor-edit-bar[data-toolbar-placed="true"] :is(button, input, select, a) {
+    pointer-events: auto;
+  }
+  .editor-edit-bar[data-toolbar-placed="true"] .band-edit-scroll {
+    overflow: visible;
+  }
+  .editor-edit-bar[data-toolbar-placed="true"]::after {
+    display: none;
+  }
+}
