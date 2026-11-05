@@ -1,4 +1,5 @@
 "use client";
+import { YeswellBrand } from "../yeswell-brand";
 import { useRef, useState } from "react";
 import { ToolbarPopover } from "../toolbar-popover";
 import { useHistoryStatus } from "../editor-history";
@@ -53,6 +54,7 @@ export function PhoneEditorHeader({
       >
         ‹
       </button>
+      {!editingTitle && <YeswellBrand mark />}
       <div className="phone-header-title">
         <strong title={editingTitle ?? title}>{editingTitle ?? title}</strong>
         {!editingTitle && <small role="status">{status}</small>}

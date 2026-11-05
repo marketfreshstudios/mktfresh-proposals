@@ -1,3 +1,11 @@
+import { staffMetadata, staffPageName } from "../../lib/staff-brand";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ screen: string[] }>;
+}) {
+  return staffMetadata(staffPageName((await params).screen));
+}
 import { redirect } from "next/navigation";
 import { legacyStaffRedirect, type StaffQuery } from "../../lib/staff-routes";
 import { StaffApp } from "../../components/staff-app";

@@ -1,4 +1,5 @@
 "use client";
+import { YeswellBrand } from "./yeswell-brand";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
 import {
@@ -488,7 +489,7 @@ function Login({ local }: { local: boolean }) {
     [resumed, setResumed] = useState(false);
   if (resumed)
     return (
-      <main className="login">
+      <main className="login staff-foundation yeswell-auth">
         <div className="card stack">
           <h1>You're signed in</h1>
           <p>
@@ -498,10 +499,11 @@ function Login({ local }: { local: boolean }) {
       </main>
     );
   return (
-    <main className="login">
+    <main className="login staff-foundation yeswell-auth">
       <div className="card stack">
+        <YeswellBrand />
         <h1>Welcome back</h1>
-        <p className="muted">Sign in to your proposal workspace.</p>
+        <p className="muted">Sign in to your Yeswell workspace.</p>
         {error && (
           <Banner tone="danger" title="Unable to sign in">
             {error}

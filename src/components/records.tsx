@@ -716,7 +716,7 @@ export function HomeV4({ data }: { data: Data }) {
           <h1>
             {setup.complete
               ? "Send your first proposal"
-              : `Welcome, ${(data.user.staff_name || "team").split(" ")[0]}. Let’s get ready.`}
+              : `Welcome, ${(data.user.staff_name || "team").split(" ")[0]}. Let’s get ready for Yeswell.`}
           </h1>
           {!setup.complete && (
             <ol className="setup-checklist">

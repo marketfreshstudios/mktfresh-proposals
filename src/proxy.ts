@@ -5,12 +5,22 @@ import { StaffPasswordRequired } from "./lib/staff-access";
 import { staff } from "./lib/auth";
 export function staffPagePath(path: string) {
   return (
-    !/^\/(?:api|login|set-password|p|oauth|mcp|_next|fonts|schemas|\.well-known)(?:\/|$)/.test(
+    !/^\/(?:api|login|set-password|p|oauth|mcp|_next|fonts|brand|schemas|\.well-known)(?:\/|$)/.test(
       path,
     ) &&
-    !["/favicon.ico", "/pdf.worker.min.mjs", "/pdfjs-LICENSE.txt"].includes(
-      path,
-    )
+    ![
+      "/favicon.ico",
+      "/favicon.svg",
+      "/favicon-32.png",
+      "/favicon-16.png",
+      "/apple-touch-icon.png",
+      "/icon-192.png",
+      "/icon-512.png",
+      "/manifest.webmanifest",
+      "/yeswell-social-1200x630.png",
+      "/pdf.worker.min.mjs",
+      "/pdfjs-LICENSE.txt",
+    ].includes(path)
   );
 }
 export async function proxy(request: NextRequest) {

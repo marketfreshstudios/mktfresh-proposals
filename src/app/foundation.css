@@ -4,10 +4,6 @@
   background: var(--surface-page);
   color: var(--ink);
   font: 400 15px/22px var(--font-ui);
-  --accent-soft: color-mix(in oklch, var(--accent) 10%, white);
-}
-[data-theme="dark"] .staff-foundation {
-  --accent-soft: color-mix(in oklch, var(--accent) 30%, #1c1b19);
 }
 .staff-foundation * {
   min-width: 0;
@@ -553,5 +549,91 @@
   }
   .staff-foundation .editor-grid {
     padding-bottom: 84px;
+  }
+}
+
+.yeswell-brand {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 5px;
+}
+.yeswell-brand img {
+  width: 136px;
+  height: auto;
+  display: block;
+}
+.yeswell-brand .yeswell-dark {
+  display: none;
+}
+[data-theme="dark"] .yeswell-brand .yeswell-light {
+  display: none;
+}
+[data-theme="dark"] .yeswell-brand .yeswell-dark {
+  display: block;
+}
+.yeswell-brand.yeswell-mark img {
+  width: 24px;
+  height: 24px;
+}
+.yeswell-tight,
+.staff-mobile-brand {
+  display: none;
+}
+.staff-foundation .sidebar .brand {
+  padding: 4px 2px 14px;
+}
+.staff-foundation .sidebar .brand img {
+  max-height: none;
+}
+.staff-foundation .sidebar nav a.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.staff-foundation .sidebar nav a.active:hover {
+  background: var(--accent-hover);
+}
+.login.yeswell-auth {
+  max-width: none;
+  margin: 0;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.yeswell-auth > .card {
+  width: min(100%, 420px);
+}
+.yeswell-auth .yeswell-brand {
+  align-self: flex-start;
+  margin-bottom: 16px;
+}
+.yeswell-auth .yeswell-brand img {
+  width: 180px;
+}
+@media (min-width: 700px) and (max-width: 1099px) {
+  .yeswell-wide {
+    display: none;
+  }
+  .yeswell-tight {
+    display: block;
+  }
+  .staff-foundation .sidebar .brand {
+    font-size: inherit;
+    padding: 0 0 14px;
+  }
+}
+@media (max-width: 699px) {
+  .staff-mobile-brand {
+    display: block;
+    width: fit-content;
+    margin: 12px 12px 0;
+  }
+  .editor-phone-header .yeswell-brand {
+    padding: 3px;
+  }
+  .editor-phone-header .yeswell-brand img {
+    width: 24px;
+    height: 24px;
   }
 }

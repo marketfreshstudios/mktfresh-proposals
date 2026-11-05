@@ -274,6 +274,7 @@ export function renderTemplate(
           : link),
     },
     test: options.test,
+    staff: t.staff,
   });
   return {
     ...layout,
