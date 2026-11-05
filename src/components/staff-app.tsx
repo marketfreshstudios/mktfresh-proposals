@@ -73,6 +73,7 @@ export type Data = {
     display_name: string;
     email: string;
     role: string;
+    status?: string;
   }[];
   settings: WorkspaceSettings | null;
   proposals: Proposal[];

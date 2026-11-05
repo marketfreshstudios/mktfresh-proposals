@@ -3,6 +3,7 @@ const state = vi.hoisted(() => ({ actor: null as any, fixture: null as any }));
 vi.mock("../src/lib/auth", async (original) => ({
   ...(await original<typeof import("../src/lib/auth")>()),
   staff: async () => state.actor,
+  workspaceStaff: async () => state.fixture.team.list(),
 }));
 vi.mock("../src/lib/runtime", () => ({
   runtime: () => state.fixture,
@@ -125,4 +126,52 @@ it("blocked removal lists unfinished proposals and offers Deactivate without rem
   });
   expect(f.auth.banned.has(id)).toBe(false);
   expect(await f.store.get(id)).toBeTruthy();
+});
+
+it("proposal handoff endpoints enforce ownership and bulk admin permission with current revisions", async () => {
+  const f = state.fixture,
+    id = f.draft.id;
+  state.actor = f.member;
+  const input = {
+    user_id: f.member.actor.slice(6),
+    revision: 0,
+    notify: false,
+  };
+  expect((await call(`proposals/${id}/reassign`, input)).status).toBe(403);
+  expect((await call(`team/${f.admin.actor.slice(6)}/proposals`)).status).toBe(
+    403,
+  );
+  expect(
+    (
+      await call("team/reassign", {
+        user_id: f.member.actor.slice(6),
+        notify: false,
+        from_user_id: f.admin.actor.slice(6),
+        proposals: [{ id, revision: 0 }],
+      })
+    ).status,
+  ).toBe(403);
+  state.actor = f.admin;
+  const response = await call(`proposals/${id}/reassign`, input);
+  expect(response.status).toBe(200);
+  expect((await response.json()).owner.user_id).toBe(f.member.actor.slice(6));
+  state.actor = f.member;
+  expect(
+    (
+      await call(`proposals/${id}/reassign`, {
+        user_id: f.admin.actor.slice(6),
+        revision: 1,
+        notify: false,
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await call(`proposals/${id}/reassign`, { ...input, revision: 1 })).status,
+  ).toBe(403);
+  // GET list filtering uses the current owner, not immutable created_by.
+  const filtered = await handle(
+    new Request("https://app.example.test/api/proposals?owner=mine"),
+    ["proposals"],
+  );
+  expect((await filtered.json()).items).toHaveLength(0);
 });

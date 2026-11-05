@@ -1,4 +1,5 @@
 "use client";
+import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
@@ -25,6 +26,7 @@ export function TeamStudio({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [work, setWork] = useState<{ id: string; title: string }[]>([]);
+  const [reassign, setReassign] = useState<TeamPerson | null>(null);
   const Heading = embedded ? "h3" : "h2";
   const owner = data.user.staff_role === "owner",
     self = data.user.actor.slice(6);
@@ -218,6 +220,22 @@ export function TeamStudio({
           </ol>
         )}
       </section>
+      {reassign && (
+        <ReassignDialog
+          from={reassign}
+          onClose={() => setReassign(null)}
+          onChanged={async () => {
+            setDialog(null);
+            setWork([]);
+            setError("");
+            await load();
+            await run(
+              async () => {},
+              "Proposals reassigned. You can now remove this person when no unfinished work remains.",
+            );
+          }}
+        />
+      )}
       {dialog && (
         <Sheet
           title={
@@ -263,21 +281,32 @@ export function TeamStudio({
                 </ul>
               )}
               {work.length > 0 && dialog.person && (
-                <Button
-                  onClick={() => {
-                    setError("");
-                    setWork([]);
-                    setDialog({ ...dialog, action: "deactivate" });
-                  }}
-                >
-                  Deactivate instead
-                </Button>
+                <div className="actions">
+                  <Button
+                    onClick={() => {
+                      setReassign(dialog.person!);
+                      setDialog(null);
+                    }}
+                  >
+                    Reassign their proposals…
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setError("");
+                      setWork([]);
+                      setDialog({ ...dialog, action: "deactivate" });
+                    }}
+                  >
+                    Deactivate instead
+                  </Button>
+                </div>
               )}
             </Banner>
           )}
           {dialog.action === "menu" ? (
             <div className="action-menu">
               {[
+                "reassign",
                 "name",
                 "role",
                 ...(dialog.person!.user_id !== self ? ["password_set"] : []),
@@ -304,11 +333,17 @@ export function TeamStudio({
                       ? "You cannot deactivate or remove yourself"
                       : undefined
                   }
-                  onClick={() => setDialog({ ...dialog, action })}
+                  onClick={() => {
+                    if (action === "reassign") {
+                      setReassign(dialog.person!);
+                      setDialog(null);
+                    } else setDialog({ ...dialog, action });
+                  }}
                 >
                   {
                     (
                       {
+                        reassign: "Reassign their proposals…",
                         name: "Edit name",
                         role: "Change role",
                         password_set: "Set password",

@@ -103,13 +103,17 @@ export function queue(
   key: string,
   payload: Record<string, unknown>,
   now = new Date().toISOString(),
+  envelope?: { from: string; reply_to: string },
 ) {
   const id = p.id + ":" + key;
   if (!p.jobs.some((j) => j.id === id))
     p.jobs.push({
       id,
       kind,
-      payload: kind === "email" ? { ...payload, ...emailIdentity(p) } : payload,
+      payload:
+        kind === "email"
+          ? { ...payload, ...(envelope ?? emailIdentity(p)) }
+          : payload,
       status: "pending",
       attempts: 0,
       available_at: now,

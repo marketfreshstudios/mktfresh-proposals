@@ -41,6 +41,25 @@ async function route(
       await rt.worker.drain(id);
     });
   }
+  if (
+    response.ok &&
+    request.method === "POST" &&
+    ((path[0] === "proposals" && path[2] === "reassign") ||
+      (path[0] === "team" && path[1] === "reassign"))
+  ) {
+    const rt = appRuntime((await staff(request)).workspace_id);
+    const result = await response.clone().json();
+    const rows = Array.isArray(result) ? result : [result];
+    after(async () => {
+      for (const p of rows)
+        for (const job of p.jobs ?? [])
+          if (
+            job.id.startsWith(p.id + ":reassigned:") &&
+            job.status === "pending"
+          )
+            await rt.worker.drain(p.id, "email", job.id);
+    });
+  }
   return response;
 }
 export { route as GET, route as POST, route as PUT, route as PATCH };

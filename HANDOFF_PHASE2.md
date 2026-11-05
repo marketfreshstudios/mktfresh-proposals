@@ -1070,3 +1070,15 @@ The hosted migration adds membership status/invitation/deactivation fields, forc
 Removal reports linked unfinished sender/unsent-author work and offers Deactivate instead. No reassignment feature or changes to signature delegation, signing, provider billing, readiness or PagePlan. [Implementation, existing permission audit and screenshots](docs/team-management.md). Apply the PR's hosted SQL before merging/deploying, then run and inspect the separate promotion query. No hosted database/user mutation or real email was performed. Local validation is recorded below after the full run; do not wait for GitHub CI or merge automatically.
 
 Final local validation: **392 unit/database tests passed (72 files); the full browser suite passed 201 tests with four optional capture checks skipped (205 total, 14.4 minutes)**. The two Team browser flows also passed three consecutive runs (six passes). TypeScript, formatting, neutrality, the production build and the **328-file API/PDF runtime trace** pass. All 12 curated fonts embed offline. Native Chromium and packaged x86 Linux/Vercel checks pass for old planned, old unplanned and large-band sealing/preview fixtures, including certificates and exact-once completion copies. Requested neutral screenshots are committed. No hosted mutation or real email was performed; apply the hosted SQL and promotion query before merging/deploying. Do not wait for GitHub CI or merge automatically.
+
+## Proposal reassignment — ready for owner review
+
+New branch from merged PR #67 (`589b448`). Record/editor Reassign dialogs, Team bulk handoff and blocked-removal alternative, plus Proposals Owner column/filter. Draft creator history stays intact; unsigned Sent/Viewed handoffs update future sender/contact without republishing; terminal/signed handoffs change only internal ownership/notifications. Audit and optional idempotent staff mail are included.
+
+**Hosted SQL required before merge/deploy:** apply both reassignment migrations in order (full SQL in the PR). No hosted changes were run. Existing Team last-admin, session revocation, signatory delegation and signed evidence rules are preserved. See `docs/proposal-reassignment.md` for rollout and exact behavior.
+
+The staff-session popup regression now synchronizes on the completed server login response rather than a browser response event that can be lost as the popup closes. Its original persistence/auth/cookie assertions remain.
+
+Validation results and requested four screenshots are recorded in the PR. No CI wait or merge is performed.
+
+Reassignment validation: **403 unit/database tests** and **204 browser tests passed** (4 optional capture tests skipped), plus types, formatting, neutral-code check, production build/328-file PDF trace, all curated font embeddings and native PDF-job regression checks. The four requested neutral-data screenshots are in `docs/screenshots/proposal-reassignment/`. The local Supabase advisor could not connect to an unstarted local stack; actual SQL/permissions/rollback/removal tests pass in PGlite. Hosted SQL is still pending owner execution.

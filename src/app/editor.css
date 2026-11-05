@@ -8096,3 +8096,14 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   padding: 0;
   margin: 0;
 }
+
+.editor-header-more {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 20px;
+}

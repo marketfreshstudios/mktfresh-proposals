@@ -1,3 +1,5 @@
+import { proposalOwnerId } from "./proposal-owner";
+import { ReassignmentService } from "./reassignment";
 import { TeamWorkConflict } from "./team";
 import { teamService } from "./team-runtime";
 import { StaffPasswordRequired, validateStaffMembership } from "./staff-access";
@@ -429,6 +431,21 @@ async function handleRoute(req: Request, path: string[]) {
       });
     }
     if (path[0] === "team") {
+      if (path[1] && path[2] === "proposals" && method === "GET")
+        return json(
+          await new ReassignmentService(rt.repo).work(
+            user,
+            uuid.parse(path[1]),
+          ),
+        );
+      if (path[1] === "reassign" && method === "POST") {
+        const result = await new ReassignmentService(rt.repo).reassign(
+          user,
+          await body(req),
+        );
+        return json(result);
+      }
+
       if (method === "GET" && !path[1]) {
         if (process.env.APP_MODE === "local")
           return json({
@@ -880,6 +897,12 @@ async function handleRoute(req: Request, path: string[]) {
         const q = new URL(req.url).searchParams;
         const list = (await rt.repo.list(q.get("q") ?? undefined)).filter(
           (p) =>
+            (!q.get("owner") ||
+              q.get("owner") === "all" ||
+              proposalOwnerId(p) ===
+                (q.get("owner") === "mine"
+                  ? user.actor.slice(6)
+                  : q.get("owner"))) &&
             (!q.get("status") || p.status === q.get("status")) &&
             (!q.get("client") || p.client.id === q.get("client")) &&
             (!q.get("source") || p.source === q.get("source")) &&
@@ -995,6 +1018,24 @@ async function handleRoute(req: Request, path: string[]) {
         const p = await rt.repo.get(id);
         check(p, "Not found", 404);
         return json(await rt.service.forRead(p));
+      }
+      if (method === "POST" && action === "reassign") {
+        const input = z
+          .object({
+            user_id: uuid,
+            revision: z.number().int().nonnegative(),
+            notify: z.boolean().default(true),
+          })
+          .strict()
+          .parse(await body(req));
+        const result = await new ReassignmentService(rt.repo).reassign(user, {
+          user_id: input.user_id,
+          notify: input.notify,
+          proposals: [{ id, revision: input.revision }],
+        });
+        return json(
+          await rt.service.forRead(result[0] ?? (await rt.repo.get(id))!),
+        );
       }
       if (method === "PATCH" && !action) {
         const input = z

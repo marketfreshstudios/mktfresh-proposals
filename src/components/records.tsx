@@ -1,4 +1,6 @@
 "use client";
+import { ReassignDialog } from "./reassign-proposal";
+import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
   jobName,
   jobRecordAnchor,
@@ -124,6 +126,7 @@ export function ProposalMenu({
   showUndo?: boolean;
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
+  const [reassign, setReassign] = useState(false);
   const [open, setOpen] = useState(false),
     [confirm, setConfirm] = useState<ProposalAction | null>(null),
     [busy, setBusy] = useState(false),
@@ -180,6 +183,15 @@ export function ProposalMenu({
       >
         ⋯
       </button>
+      {reassign && (
+        <ReassignDialog
+          proposal={p}
+          onClose={() => setReassign(false)}
+          onChanged={(rows) => {
+            if (rows[0]) onChanged?.(rows[0]);
+          }}
+        />
+      )}
       {undo && (
         <div className="phase4-toast" role="status">
           Proposal archived.{" "}
@@ -262,6 +274,17 @@ export function ProposalMenu({
             </form>
           ) : (
             <nav className="action-menu">
+              {canReassign(p, data.user) && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setReassign(true);
+                  }}
+                >
+                  Reassign…
+                </button>
+              )}
+
               {canCountersign(p, data.user, data.settings) && (
                 <a href={`/proposals/${p.id}?action=countersign`}>
                   Sign — review client-signed document
@@ -354,7 +377,9 @@ export function ProposalRows({
   proposals,
   data,
   onChanged,
+  showOwner = false,
 }: {
+  showOwner?: boolean;
   proposals: Proposal[];
   data: Data;
   onChanged?: (p: Proposal) => void;
@@ -367,9 +392,12 @@ export function ProposalRows({
     );
   return (
     <>
-      <div className={`proposal-rows ${yearly ? "has-yearly" : ""}`}>
+      <div
+        className={`proposal-rows ${yearly ? "has-yearly" : ""} ${showOwner ? "has-owner" : ""}`}
+      >
         <div className="proposal-row-head">
           <span>Proposal</span>
+          {showOwner && <span>Owner</span>}
           <span>Status</span>
           <span className="next-cell">Next</span>
           <span>One-time</span>
@@ -395,6 +423,15 @@ export function ProposalRows({
                   <strong>{p.client.company}</strong>
                   <span>{p.title}</span>
                 </div>
+                {showOwner && (
+                  <span className="proposal-owner" data-label="Owner">
+                    {data.staff.find((m) => m.user_id === proposalOwnerId(p))
+                      ?.display_name ??
+                      p.owner?.display_name ??
+                      p.sender?.display_name ??
+                      "—"}
+                  </span>
+                )}
                 <div className="proposal-status">
                   <ProposalBadges p={p} />
                   <SignLink p={p} data={data} />
@@ -474,7 +511,8 @@ export function ProposalListV4({
   const router = useRouter(),
     [rows, setRows] = useState(data.proposals),
     [view, setView] = useState(initialView || "all"),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [owner, setOwner] = useState("all");
   useEffect(() => {
     const saved = sessionStorage.getItem("proposal-list-return");
     if (saved) {
@@ -489,6 +527,9 @@ export function ProposalListV4({
     .filter(
       (p) =>
         inView(p, view) &&
+        (owner === "all" ||
+          proposalOwnerId(p) ===
+            (owner === "mine" ? data.user.actor.slice(6) : owner)) &&
         `${p.title} ${p.client.company} ${p.client.email} ${p.search_text ?? ""}`
           .toLowerCase()
           .includes(search.toLowerCase()),
@@ -508,6 +549,22 @@ export function ProposalListV4({
   return (
     <div className="phase4-list stack">
       <div className="list-tools">
+        <label className="proposal-owner-filter">
+          Owner
+          <select
+            aria-label="Filter by owner"
+            value={owner}
+            onChange={(e) => setOwner(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="mine">Mine</option>
+            {data.staff.map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.display_name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="search-field">
           <Icon name="search" />
           <span className="sr-only">Search proposals</span>
@@ -546,6 +603,7 @@ export function ProposalListV4({
         ))}
       </nav>
       <ProposalRows
+        showOwner
         proposals={shown}
         data={data}
         onChanged={(next) =>
