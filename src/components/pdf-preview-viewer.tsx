@@ -7,6 +7,7 @@ import type {
 } from "pdfjs-dist";
 import type { PdfPreview } from "../lib/pdf-preview";
 import { Button } from "./ui";
+import { DialogActions } from "./dialog-actions";
 function PdfCanvas({ page, scale }: { page: PDFPageProxy; scale: number }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -102,7 +103,7 @@ export function PdfPreviewViewer({
     >
       <header>
         <strong>Preview — not signed</strong>
-        <div className="pdf-viewer-actions">
+        <DialogActions className="pdf-viewer-actions">
           <Button
             aria-label="Zoom out"
             disabled={scale <= 0.25}
@@ -129,7 +130,7 @@ export function PdfPreviewViewer({
             </a>
           )}
           <Button onClick={close}>Close PDF preview</Button>
-        </div>
+        </DialogActions>
       </header>
       {error ? (
         <p role="alert">{error}</p>

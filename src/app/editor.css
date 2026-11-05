@@ -8321,3 +8321,8 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     z-index: var(--z-block-controls);
   }
 }
+
+.pdf-viewer header .dialog-actions.pdf-viewer-actions {
+  margin-top: 0;
+  width: auto;
+}

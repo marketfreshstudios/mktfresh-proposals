@@ -292,12 +292,27 @@ export function BlockMenu({
     >
       {variant === "menu" && (desktop || phone) && (
         <header className="editor-block-menu-heading">
+          {phone && (
+            <button
+              type="button"
+              aria-label="Close block menu"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          )}
           <strong>
             {anchor?.dataset.insertEdge === "above" ? "Add above" : "Add below"}
           </strong>
-          <button type="button" aria-label="Close block menu" onClick={onClose}>
-            {phone ? "Cancel" : "×"}
-          </button>
+          {!phone && (
+            <button
+              type="button"
+              aria-label="Close block menu"
+              onClick={onClose}
+            >
+              ×
+            </button>
+          )}
         </header>
       )}
       <input
