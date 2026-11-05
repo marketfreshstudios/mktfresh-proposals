@@ -1147,7 +1147,7 @@ Final local validation (November 5, 2026): `npm run typecheck`; `npm test` (435 
 
 ## Manual delivery contact — owner follow-up after PR #73
 
-Manual Review & send hides From and replaces To with Client contact (company, actual recipient name/email, shared copy icon, “Signs the proposal and receives the signed copy.”). Edit client opens the same shared modal used by Clients → Edit, with its existing fields/validation and Cancel-left/Save-right actions. It preserves current hidden client notes/provider metadata and keeps delivery, sender selection, subject/note and password state in the editor. Email mode retains its existing form. Contact-copy feedback now uses the existing shared top-layer toast so it remains visible over phone/tablet sheets; controls have 44px targets.
+Manual Review & send hides From and replaces To with Client contact (company, actual recipient name/email, shared copy icon). Edit client opens the same shared modal used by Clients → Edit, with its existing fields/validation and Cancel-left/Save-right actions. It preserves current hidden client notes/provider metadata and keeps delivery, sender selection, subject/note and password state in the editor. Email mode retains its existing form. Contact-copy feedback now uses the existing shared top-layer toast so it remains visible over phone/tablet sheets; controls have 44px targets.
 
 Owner confirmed that saving a client must update that client and every unsigned native proposal for the same client, from either edit location. Signed/frozen and imported historical records remain unchanged. The new transaction uses proposal revisions and row locks, preserves explicitly linked Stripe customers, and rolls back all contact/proposal updates on a concurrent signature or revision conflict. Sent/viewed changes reuse the existing readiness-checked publication path and same link; prior versions, PagePlans and email logs are preserved, and the contact edit queues no email. The connector retains its existing client-only/draft-only limits.
 
@@ -1157,3 +1157,10 @@ The actual proposal recipient historically came from its creation-time `proposal
 
 
 Final local validation (November 5, 2026): types; all 439 unit tests across 88 files; formatting; neutral-code checks; production build and 330-file PDF runtime trace; curated-font PDF embedding; real PDF job regressions; and the full browser suite (233 passed, 4 skipped, 15.8 minutes). The new contact checks pass at 1440, 768 and 375, including clipboard writes, feedback visible above sheets, 44px targets, validation, state preservation, a differing copied recipient, and preservation of hidden client notes. Requested screenshots were inspected. No CI wait or hosted SQL execution.
+
+
+## Manual delivery — contact hint removal
+
+Owner follow-up after PR #74: removed the explanatory hint from the manual Client contact box at every width. Contact details, Copy, Edit client and delivery behavior are unchanged. Updated the responsive assertion and documentation; the new 1440px screenshot is `docs/screenshots/manual-delivery-contact/hint-removed-1440.png`.
+
+Local validation (November 5, 2026): affected browser tests (6 passed); types; all 439 unit tests across 88 files; formatting; neutral-code checks; production build and PDF runtime trace; curated-font PDF embedding; real PDF job regressions; full browser suite (233 passed, 4 skipped, 15.7 minutes). No hosted SQL or migration is needed. CI is not awaited.

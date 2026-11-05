@@ -1704,7 +1704,6 @@ function QuoteEditorContent({
             <span>{p.client.email}</span>
             <CopyContactButton kind="email" value={p.client.email} />
           </div>
-          <small>Signs the proposal and receives the signed copy.</small>
         </section>
       ) : (
         <>
