@@ -1897,3 +1897,25 @@ summary::-webkit-details-marker {
 details[open] > summary > .disclosure-marker > .disclosure-chevron {
   transform: rotate(90deg);
 }
+
+/* Shared dialog order, including phone: secondary left, forward right. */
+:is(dialog, [role="dialog"], .band-use-shared-confirm)
+  .dialog-actions.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 16px;
+}
+:is(dialog, [role="dialog"], .band-use-shared-confirm)
+  .dialog-actions
+  > .button-wrap {
+  flex: none;
+}
+:is(dialog, [role="dialog"], .band-use-shared-confirm)
+  .dialog-actions
+  :is(button, a.btn) {
+  min-height: 44px;
+}

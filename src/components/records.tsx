@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
 import { automaticRemindersEnabled } from "../lib/delivery";
 import { ReassignDialog } from "./reassign-proposal";
@@ -269,12 +270,12 @@ export function ProposalMenu({
               >
                 <textarea name="note" maxLength={4000} />
               </Field>
-              <div className="actions">
+              <DialogActions>
                 <Button onClick={() => setConfirm(null)}>Cancel</Button>
                 <Button busy={busy} type="submit" variant="primary">
                   Confirm
                 </Button>
-              </div>
+              </DialogActions>
             </form>
           ) : (
             <nav className="action-menu">
@@ -1159,28 +1160,33 @@ export function CountersignSheet({
                     company signature.
                   </label>
                 </section>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  busy={busy}
-                  disabled={
-                    stale ||
-                    !consent ||
-                    (delegated && !authorized) ||
-                    !canCountersign(p, data.user, data.settings)
-                  }
-                  note={
-                    stale
-                      ? "Reload and review before signing."
-                      : !canCountersign(p, data.user, data.settings)
-                        ? "Your staff account is not authorized."
-                        : !consent || (delegated && !authorized)
-                          ? "Confirm the required authorization and consent above."
-                          : undefined
-                  }
-                >
-                  Countersign as {s.name}
-                </Button>
+                <DialogActions>
+                  <Button disabled={busy} onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    busy={busy}
+                    disabled={
+                      stale ||
+                      !consent ||
+                      (delegated && !authorized) ||
+                      !canCountersign(p, data.user, data.settings)
+                    }
+                    note={
+                      stale
+                        ? "Reload and review before signing."
+                        : !canCountersign(p, data.user, data.settings)
+                          ? "Your staff account is not authorized."
+                          : !consent || (delegated && !authorized)
+                            ? "Confirm the required authorization and consent above."
+                            : undefined
+                    }
+                  >
+                    Countersign as {s.name}
+                  </Button>
+                </DialogActions>
               </form>
             )}
           </>
@@ -1311,7 +1317,7 @@ export function RecordV4({
       )}
       <div className="record-toolbar">
         <a href={returnUrl}>← Back to proposals</a>
-        <div className="actions">
+        <DialogActions>
           {native && (
             <a
               className="btn"
@@ -1358,7 +1364,7 @@ export function RecordV4({
             onChanged={onChanged}
             showEdit={false}
           />
-        </div>
+        </DialogActions>
       </div>
       {p.token && (
         <header className="record-link-header">
@@ -1472,7 +1478,7 @@ export function RecordV4({
                     : "The timeline below keeps the record of what happened."}
           </p>
         </div>
-        <div className="actions">
+        <DialogActions>
           {signature && <SignLink p={p} data={data} />}
           <Button onClick={() => setDocument(true)}>View document</Button>
           {["sent", "viewed"].includes(p.status) && (
@@ -1492,7 +1498,7 @@ export function RecordV4({
               Send reminder
             </Button>
           )}
-        </div>
+        </DialogActions>
       </section>
       <ol className="lifecycle" aria-label="Proposal lifecycle">
         {[
@@ -2007,7 +2013,7 @@ export function ClientsV4({
             {client.title && ` · ${client.title}`}
           </p>
         </div>
-        <div className="actions">
+        <DialogActions>
           <a
             className="btn primary"
             href={`/proposals?new=1&client=${client.id}`}
@@ -2031,7 +2037,7 @@ export function ClientsV4({
               Has {count} proposals — archive them or keep the client
             </small>
           )}
-        </div>
+        </DialogActions>
       </header>
       {error && (
         <Banner tone="danger" title="Client action failed">
@@ -2169,12 +2175,12 @@ export function ClientsV4({
                         </div>
                       </dl>
                       {candidate.id === billing.linked_id ? (
-                        <div className="actions">
+                        <DialogActions>
                           <span className="pill success">Linked</span>
                           <Button onClick={() => setLinkChoice(null)}>
                             Unlink customer
                           </Button>
-                        </div>
+                        </DialogActions>
                       ) : (
                         <Button onClick={() => setLinkChoice(candidate.id)}>
                           {billing.linked_id
@@ -2235,7 +2241,7 @@ export function ClientsV4({
                   ` · Next period ends ${readableDate(billing.next_invoice)}`}
               </small>
             </div>
-            <div className="actions">
+            <DialogActions>
               {billing.stripe_url && (
                 <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
                   Open Stripe ↗
@@ -2248,7 +2254,7 @@ export function ClientsV4({
               ) : (
                 <span>QuickBooks: not linked</span>
               )}
-            </div>
+            </DialogActions>
           </>
         )}
       </section>
@@ -2322,7 +2328,7 @@ export function ClientsV4({
                 {error}
               </Banner>
             )}
-            <div className="actions">
+            <DialogActions>
               <Button disabled={busy} onClick={() => setLinkChoice(undefined)}>
                 Cancel
               </Button>
@@ -2348,7 +2354,7 @@ export function ClientsV4({
               >
                 {linkChoice ? "Confirm link" : "Confirm unlink"}
               </Button>
-            </div>
+            </DialogActions>
           </div>
         </Sheet>
       )}
@@ -2399,9 +2405,14 @@ export function ClientsV4({
               Only enter a QuickBooks ID after checking this client’s identity.
               Choose a Stripe customer in How they’re billed.
             </p>
-            <Button type="submit" variant="primary" busy={busy}>
-              Save client
-            </Button>
+            <DialogActions>
+              <Button disabled={busy} onClick={() => setEditClient(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" busy={busy}>
+                Save client
+              </Button>
+            </DialogActions>
           </form>
         </Sheet>
       )}
@@ -2422,7 +2433,7 @@ export function ClientsV4({
                 {error}
               </Banner>
             )}
-            <div className="actions">
+            <DialogActions>
               <Button disabled={busy} onClick={() => setConfirm(false)}>
                 Keep client
               </Button>
@@ -2444,7 +2455,7 @@ export function ClientsV4({
               >
                 Delete {client.company}
               </Button>
-            </div>
+            </DialogActions>
           </div>
         </Sheet>
       )}

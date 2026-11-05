@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
 import { pairSignatureNodes } from "./signature-pair";
 import { DocumentTotals } from "./document-totals";
@@ -1179,7 +1180,7 @@ function NewClientFlow({
                           onChange={(e) => setDeclineNote(e.target.value)}
                         />
                       </label>
-                      <div className="actions">
+                      <DialogActions>
                         <Button
                           variant="danger"
                           disabled={preview || busy}
@@ -1206,7 +1207,7 @@ function NewClientFlow({
                         <Button onClick={() => setDeclining(false)}>
                           Go back
                         </Button>
-                      </div>
+                      </DialogActions>
                     </section>
                   ) : (
                     <Button

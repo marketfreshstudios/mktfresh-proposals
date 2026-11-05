@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { staffErrorMessage } from "./staff-sign-in";
 import { ClientContactFields, clientFormValues } from "./client-contact-fields";
 import { useState } from "react";
@@ -128,9 +129,14 @@ export function CreateClientModal({
           </Button>
         )}
         <ClientContactFields />
-        <Button type="submit" variant="primary" busy={busy}>
-          Create client
-        </Button>
+        <DialogActions>
+          <Button onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" busy={busy}>
+            Create client
+          </Button>
+        </DialogActions>
       </form>
     </Sheet>
   );

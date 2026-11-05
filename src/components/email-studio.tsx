@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
 import { useEffect, useRef, useState } from "react";
 import type { Data } from "./staff-app";
@@ -333,7 +334,7 @@ function EmailEditor({
           <p className="muted">
             Pricing fields are optional and are not included in the defaults.
           </p>
-          <div className="actions">
+          <DialogActions>
             {editable && (
               <Button
                 variant="primary"
@@ -369,7 +370,7 @@ function EmailEditor({
             >
               Send me a test
             </Button>
-          </div>
+          </DialogActions>
           <p className="muted">
             Tests go only to you: {data.user.staff_email}. No client is
             contacted.
@@ -461,7 +462,7 @@ function EmailEditor({
             Reset “{form.name}” to the default? This replaces its saved subject,
             body and button label. Emails already sent keep their saved copy.
           </p>
-          <div className="actions">
+          <DialogActions>
             <Button onClick={() => setReset(false)}>Keep my edits</Button>
             <Button
               variant="danger"
@@ -486,7 +487,7 @@ function EmailEditor({
             >
               Reset email template
             </Button>
-          </div>
+          </DialogActions>
         </Sheet>
       )}
     </div>

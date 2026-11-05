@@ -548,3 +548,7 @@ The owner's production review supersedes PR #72's collision placement: desktop/t
 ## Owner review 5 — Blocks and supported signatures
 
 Proposal tools now include Blocks; Studio has the same insert catalogue. Click/keyboard inserts after the selection or at the end of the visible page section, and pointer drag uses a visible insertion line. The gutter/phone + sheet exposes the same choices. Signatures inserts the client/company pair and a normal heading as one history operation. A proposal supports one client and one company signature block; existing roles disable their matching option (and the pair) with an explanation, backed by an insertion guard. No readiness/signing rules change. Divider is a standard rich-text horizontal rule, not a new PagePlan or block schema.
+
+## Owner review 5 — dialog actions
+
+Shared DialogActions orders the DOM as well as the visual group: backwards/secondary actions left, forward/destructive actions right, right-aligned with an 8px gap. Phone uses the same order with wrapping rather than reversing keyboard order. Destructive confirmations initially focus Cancel; Enter in an input cannot implicitly confirm destruction. Native browser confirmations for failed-save navigation and style reset are now app confirmations using the same actions. Menu commands, toolbar formatting and non-confirmation navigation retain their own order.

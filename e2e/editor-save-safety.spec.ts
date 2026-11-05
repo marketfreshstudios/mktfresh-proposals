@@ -236,14 +236,14 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
       exact: true,
     }),
   ).toBeVisible();
-  const dialog = page.waitForEvent("dialog");
-  const leaving = page
+  await page
     .getByRole("button", { name: "Back to proposals", exact: true })
     .click();
-  const confirm = await dialog;
-  expect(confirm.message()).toContain("could not be saved");
-  await confirm.dismiss();
-  await leaving;
+  const confirm = page.getByRole("dialog", { name: "Leave the editor?" });
+  await expect(confirm).toContainText("could not be saved");
+  await confirm
+    .getByRole("button", { name: "Keep editing", exact: true })
+    .click();
   await expect(page).toHaveURL(new RegExp(`/proposals/${f.draft.id}$`));
   fail = false;
   await page

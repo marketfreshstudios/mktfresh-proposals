@@ -1,4 +1,5 @@
 "use client";
+import { confirmDialog } from "./dialog-actions";
 import { SpacingInput } from "./editor/spacing-input";
 import {
   boundedBandSettings,
@@ -295,8 +296,13 @@ export function ProposalStyles({
             <Button
               type="button"
               className="style-reset"
-              onClick={() => {
-                if (confirm(`${resetLabel}?`))
+              onClick={async () => {
+                if (
+                  await confirmDialog({
+                    title: `${resetLabel}?`,
+                    confirmLabel: resetLabel,
+                  })
+                )
                   (onReset ?? (() => onChange({})))();
               }}
             >

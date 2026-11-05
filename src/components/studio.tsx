@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
@@ -329,7 +330,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                 />
               </Field>
               <Field label="Accent">
-                <div className="actions">
+                <DialogActions>
                   <input
                     type="color"
                     aria-label="Accent color"
@@ -337,7 +338,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                     onChange={(e) => setAccent(e.target.value)}
                   />
                   <code>{accent}</code>
-                </div>
+                </DialogActions>
               </Field>
               <p
                 className={contrast < 4.5 ? "danger" : "success"}
@@ -755,7 +756,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
     .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
   return (
     <div className="stack studio-catalog">
-      <div className="actions">
+      <DialogActions>
         <Button
           onClick={() =>
             run(
@@ -768,7 +769,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         </Button>
         <Button onClick={() => setFamily(true)}>+ Custom family</Button>
         <Button onClick={() => setSelected(null)}>+ Item</Button>
-      </div>
+      </DialogActions>
       <p>
         List prices are the values you set in Stripe. Enter each amount on a
         proposal; the app never suggests a price.
@@ -942,9 +943,14 @@ function FamilyForm({ run, close }: { run: Runner; close: () => void }) {
         <input name="name" minLength={3} required />
       </Field>
       <SaveError error={save.error} />
-      <Button type="submit" busy={save.busy}>
-        Create in Stripe test mode
-      </Button>
+      <DialogActions>
+        <Button onClick={close} disabled={save.busy}>
+          Cancel
+        </Button>
+        <Button type="submit" busy={save.busy}>
+          Create in Stripe test mode
+        </Button>
+      </DialogActions>
     </form>
   );
 }
@@ -2956,7 +2962,7 @@ function BlockPanel({
             />
             Draft wording · warn before sending
           </label>
-          <div className="actions">
+          <DialogActions>
             <Button
               disabled={clause === 0}
               onClick={() => {
@@ -2996,7 +3002,7 @@ function BlockPanel({
             >
               Remove clause
             </Button>
-          </div>
+          </DialogActions>
         </>
       )}
       <Button
@@ -3157,7 +3163,7 @@ function TemplateDefaults({
                 ))}
             </select>
           </Field>
-          <div className="actions">
+          <DialogActions>
             <Button
               disabled={n === 0}
               onClick={() => {
@@ -3179,7 +3185,7 @@ function TemplateDefaults({
             >
               Remove item
             </Button>
-          </div>
+          </DialogActions>
         </div>
       ))}
       <Field label="Add product default">

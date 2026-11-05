@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { useEffect, useState } from "react";
 import type { Proposal } from "../lib/model";
 import { Button, Field } from "./ui";
@@ -88,11 +89,11 @@ export function ManualDeliveryConfirmation({
         </p>
         <CopyClientLink token={p.token!} appUrl={appUrl} label="Copy" />
         {p.password_hash && <p>They'll also need the password you set.</p>}
-        <div className="actions">
+        <DialogActions>
           <Button variant="primary" onClick={onClose}>
             Done
           </Button>
-        </div>
+        </DialogActions>
       </div>
     </Sheet>
   );

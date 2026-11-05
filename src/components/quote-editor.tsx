@@ -1,4 +1,5 @@
 "use client";
+import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
@@ -1784,7 +1785,7 @@ function QuoteEditorContent({
         {settings?.sending_domain || "the workspace’s verified domain"}.
       </small>
       <footer className="send-panel-footer">
-        <div className="actions">
+        <DialogActions>
           <Button
             onClick={async () => {
               if (await save())
@@ -1811,7 +1812,7 @@ function QuoteEditorContent({
               ? "Publish client link"
               : `Send to ${p.client.first_name || "client"}`}
           </Button>
-        </div>
+        </DialogActions>
         <p className="send-blocked-reason" role="status">
           {offline
             ? "Reconnect to send"
