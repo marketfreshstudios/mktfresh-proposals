@@ -170,10 +170,17 @@ test("revoked session keeps editor text, signs in in another tab, and Retry save
     ),
   ).toBe(true);
   let loginBody!: unknown;
+  let loginStatus: number | undefined;
+  let finishLogin!: () => void;
+  const loginHandled = new Promise<void>((resolve) => {
+    finishLogin = resolve;
+  });
   await context.route("**/api/auth/login", async (route) => {
     const response = await route.fetch();
     loginBody = await response.json();
+    loginStatus = response.status();
     await route.fulfill({ response });
+    finishLogin();
   });
   const popupPromise = context.waitForEvent("page");
   await bar.getByRole("link", { name: "Sign in", exact: true }).click();
@@ -181,11 +188,12 @@ test("revoked session keeps editor text, signs in in another tab, and Retry save
   await popup.getByLabel("Email address").fill("staff@example.test");
   await popup.getByLabel("Password", { exact: true }).fill("fixture-password");
   const closed = popup.waitForEvent("close");
-  const loggedIn = popup.waitForResponse((r) =>
-    r.url().endsWith("/api/auth/login"),
-  );
   await popup.getByRole("button", { name: "Sign in", exact: true }).click();
-  expect((await loggedIn).status()).toBe(200);
+  // The sign-in page closes itself immediately after fetch resolves. Waiting
+  // for its browser response event races tab destruction on slower CI runners.
+  // Observe the completed intercepted server response, then the actual close.
+  await loginHandled;
+  expect(loginStatus).toBe(200);
   expect(loginBody).toEqual({ authenticated: true });
   await closed;
   await expect(text).toHaveText("These local edits must survive sign-in.");
