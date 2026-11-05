@@ -148,23 +148,7 @@ export async function activity(repo: Repository): Promise<Activity[]> {
     b.created_at.localeCompare(a.created_at),
   );
 }
-export function activityCsv(rows: Activity[]) {
-  const cell = (value: unknown) => {
-    const text = String(value ?? "");
-    return (
-      '"' +
-      (/^(?:\s*[=+@-]|[\t\r\n])/.test(text) ? "'" : "") +
-      text.replaceAll('"', '""') +
-      '"'
-    );
-  };
-  return [
-    ["When", "Who", "Event", "Detail", "IP"],
-    ...rows.map((e) => [e.created_at, e.actor, e.type, e.detail, e.ip]),
-  ]
-    .map((r) => r.map(cell).join(","))
-    .join("\r\n");
-}
+export { activityCsv } from "./studio-activity";
 
 /** Resolve and validate every level, including uploaded fonts owned by this workspace. */
 export async function validateStyles(
