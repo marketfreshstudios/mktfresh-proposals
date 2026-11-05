@@ -1847,6 +1847,12 @@
 .client-link-control > p {
   flex-basis: 100%;
 }
+.record-link-header {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
 .delivery-choice {
   display: flex;
   flex-direction: column;

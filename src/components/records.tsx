@@ -1,5 +1,5 @@
 "use client";
-import { ManualDeliveryConfirmation } from "./client-link";
+import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
@@ -275,6 +275,14 @@ export function ProposalMenu({
             </form>
           ) : (
             <nav className="action-menu">
+              {p.token && (
+                <CopyClientLink
+                  menu
+                  token={p.token}
+                  appUrl={data.app_url}
+                  label="Copy client link"
+                />
+              )}
               {canReassign(p, data.user) && (
                 <button
                   onClick={() => {
@@ -1307,6 +1315,11 @@ export function RecordV4({
           <ProposalMenu p={p} data={data} onChanged={onChanged} />
         </div>
       </div>
+      {p.token && (
+        <header className="record-link-header">
+          <CopyClientLink token={p.token} appUrl={data.app_url} />
+        </header>
+      )}
       <ProposalBadges p={p} />
       {already && (
         <div role="status" className="notice-toast">
