@@ -520,3 +520,7 @@ Yeswell is the staff product, separate from each workspace's proposal identity. 
 ## Owner review 4 — stable short links
 
 New first publications use twelve case-sensitive CSPRNG characters from an unambiguous 57-symbol alphabet (~70 bits), with no slug or client name. The existing globally unique token column/index is reused; uniqueness conflicts retry generation. Existing long tokens are accepted unchanged, and publishing, renaming or reopening never rotates an established token. No hosted SQL is needed. Token-protection clarification is tracked in PR #72.
+
+## Owner review 4 — visible record editing
+
+The record header puts Edit beside Preview as client for editable unsigned native proposals, including phone/tablet. Locked signed native records show Duplicate as new draft in that position; they do not offer an Edit action. The record menu omits Edit, while list-row menus retain their existing shortcut. Archived unsigned records remain read-only until unarchived.
