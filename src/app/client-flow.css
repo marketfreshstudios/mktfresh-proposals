@@ -988,6 +988,9 @@ label.flow-quote-line {
   height: 14px;
   opacity: 0.7;
 }
-[data-theme="dark"] .client-flow .powered-by-yeswell img {
-  filter: invert(1);
+
+@media print {
+  .client-flow .powered-by-yeswell {
+    display: none;
+  }
 }

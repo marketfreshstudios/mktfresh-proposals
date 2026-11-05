@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 export function staffMetadata(page: string): Metadata {
   return {
+    ...(process.env.APP_URL
+      ? { metadataBase: new URL(process.env.APP_URL) }
+      : {}),
     title: `${page} · Yeswell`,
     description:
       "Yeswell — proposals, signatures and client approvals for your workspace.",

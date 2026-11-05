@@ -1,4 +1,5 @@
 "use client";
+import { staffPageName } from "../lib/staff-brand";
 import { YeswellBrand } from "./yeswell-brand";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
@@ -185,6 +186,10 @@ export function StaffApp({
       setLoading(false);
     }
   }
+  useEffect(() => {
+    if (section !== "billing")
+      document.title = `${p?.title ?? staffPageName(path)} · Yeswell`;
+  }, [section, p?.title, path.join("/")]);
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
   }, [section, id, action]);
@@ -487,7 +492,11 @@ function Login({ local }: { local: boolean }) {
   // Server HTML is visible before hydration. Never let the browser submit the
   // form natively (GET /login) before the credential POST handler is installed.
   const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
+    setReady(true);
+  }, []);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [resumed, setResumed] = useState(false);
@@ -629,7 +638,6 @@ function NewProposal({ data }: { data: Data }) {
         )}
         <form
           className="form"
-          method="post"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);

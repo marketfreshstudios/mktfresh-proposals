@@ -331,7 +331,7 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
   ).toHaveCSS("height", "38px");
   await expect(
     panel.getByRole("button", { name: "Send to Jane", exact: true }),
-  ).toHaveCSS("background-color", "rgb(28, 27, 24)");
+  ).toHaveCSS("background-color", "rgb(19, 48, 58)");
   const darkBorders = await panel
     .locator("input:not([type=checkbox],[type=radio]),select,textarea")
     .evaluateAll((inputs) =>

@@ -184,6 +184,10 @@
 .staff-foundation .btn.primary:hover {
   background: var(--accent-hover);
 }
+.staff-foundation .btn.primary:active {
+  background: var(--accent-pressed);
+  border-color: var(--accent-pressed);
+}
 .staff-foundation input,
 .staff-foundation select,
 .staff-foundation textarea {
@@ -436,7 +440,7 @@
     border-radius: 10px;
   }
   .staff-foundation .bottom-tabs .active {
-    color: var(--accent-text);
+    color: var(--accent);
     background: var(--accent-soft);
   }
   .staff-foundation .bottom-tabs .bottom-new {
@@ -619,6 +623,7 @@
     display: block;
   }
   .staff-foundation .sidebar .brand {
+    display: block;
     font-size: inherit;
     padding: 0 0 14px;
   }

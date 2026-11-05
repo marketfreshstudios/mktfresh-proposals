@@ -464,7 +464,11 @@ test("client completion: exact charges, one contact footer, reading width, email
         await page.setContent(
           `<html data-theme="${theme}"><head><style>body{margin:0;padding:16px;background:${theme === "dark" ? "#131311" : "#f3f0ea"};font:14px Arial}header{color:${theme === "dark" ? "white" : "#222"};margin:0 auto 16px;max-width:600px}</style></head><body><header>${kind === "proposal-email" ? "Proposal email" : "Reminder email"} · HTML preview</header>${html}</body></html>`,
         );
-        await expect(page.getByRole("link")).toHaveCount(1);
+        await expect(page.getByRole("link")).toHaveCount(2);
+        await expect(
+          page.getByRole("link", { name: "Powered by Yeswell", exact: true }),
+        ).toHaveAttribute("href", "https://yeswell.co");
+        await expect(page.locator(".email-cta")).toHaveCount(1);
         await expect(
           page.getByRole("link", { name: "View proposal", exact: true }),
         ).toBeVisible();

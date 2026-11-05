@@ -4,7 +4,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ screen: string[] }>;
 }) {
-  return staffMetadata(staffPageName((await params).screen));
+  const { screen } = await params;
+  return screen[0] === "billing"
+    ? { title: "Billing setup" }
+    : staffMetadata(staffPageName(screen));
 }
 import { redirect } from "next/navigation";
 import { legacyStaffRedirect, type StaffQuery } from "../../lib/staff-routes";

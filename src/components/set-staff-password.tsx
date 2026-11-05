@@ -8,6 +8,8 @@ export function SetStaffPassword() {
     [busy, setBusy] = useState(false),
     [show, setShow] = useState(false);
   useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
     const p = new URLSearchParams(location.hash.slice(1));
     if (p.has("token_hash")) {
       setLink({

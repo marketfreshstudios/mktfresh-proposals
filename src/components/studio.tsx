@@ -287,6 +287,7 @@ export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
                 />
                 <span>
                   Show 'Powered by Yeswell'
+                  <br />
                   <small>
                     On client pages and client email footers. Super admins can
                     change this.
