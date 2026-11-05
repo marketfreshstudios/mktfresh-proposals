@@ -33,6 +33,7 @@ export function StaffShell({
   const studioButton = useRef<HTMLButtonElement>(null),
     studioPopover = useRef<HTMLDivElement>(null);
   const current = "/" + path.join("/");
+  const inStudio = path[0] === "studio";
   const insideProposal =
     path[0] === "proposals" && !!path[1] && path[1] !== "new";
   useEffect(() => {
@@ -67,7 +68,7 @@ export function StaffShell({
   return (
     <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
       <div
-        className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""}`}
+        className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""} ${inStudio ? "studio-v3-shell" : ""}`}
       >
         <a className="skip-link" href="#workspace-content">
           Skip to content
@@ -81,6 +82,16 @@ export function StaffShell({
               <YeswellBrand mark />
             </span>
           </a>
+          <div className="workspace-label">
+            {settings?.logo ? (
+              <img src="/api/workspace-logo" alt="" />
+            ) : (
+              <span className="avatar">
+                {settings?.company_name.slice(0, 1) ?? "W"}
+              </span>
+            )}
+            <strong>{settings?.company_name ?? "Workspace"}</strong>
+          </div>
           <button
             className="btn primary shell-new"
             onClick={onNew}
@@ -140,6 +151,33 @@ export function StaffShell({
             >
               <YeswellBrand mark />
             </a>
+          )}
+          {inStudio && (
+            <>
+              <div className="studio-tablet-header">
+                <a href="/" aria-label="Yeswell home">
+                  <YeswellBrand />
+                </a>
+                <span>{settings?.company_name ?? "Workspace"}</span>
+                <span className="avatar">{name.slice(0, 1)}</span>
+              </div>
+              <nav className="studio-area-chips" aria-label="Studio areas">
+                {studioRoutes.map(([href, label]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    aria-current={current.startsWith(href) ? "page" : undefined}
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
+              {path[1] && (
+                <a className="studio-back" href="/studio">
+                  ‹ Studio
+                </a>
+              )}
+            </>
           )}
           {children}
         </main>

@@ -47,6 +47,7 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
   if (section === "studio") {
     const mapping: Record<string, string> = {
       templates: query.view === "blocks" ? "library" : "templates",
+      blocks: "library",
       catalog: "catalogue",
       products: "catalogue",
       emails: "emails",

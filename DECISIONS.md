@@ -570,3 +570,9 @@ There is no separate alternate-recipient selection model: proposals historically
 ## Manual delivery — remove the contact hint
 
 Owner follow-up after PR #74: the manual Review & send Client contact box shows the contact details, copy action and Edit client, with no explanatory hint line at any width. No other behavior changes.
+
+## Studio v3 Phase 1 — scope and owner corrections
+
+The Studio v3 build spec takes precedence over its prototype and older Studio docs. Phase 1 PR 1 rebuilds Studio shell/list pages and existing Workspace settings; template/saved-block editors and the email editor remain the existing editors for the following PRs. Phase 2 controls stay hidden.
+
+Owner clarification: **Workspace header & footer defaults + inheritance are deferred to Phase 2.** Workspace Proposal styles exposes only the existing workspace style controls, with no band group. Template bands retain their existing built-in “Reset to default” behavior (including in PR 2); there is no workspace band reset. Workspace default link validity remains the existing 1–365 days. Spec §6.8's “Never” was incorrect; individual proposals can still be indefinite.

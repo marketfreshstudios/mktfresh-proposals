@@ -1,6 +1,7 @@
 "use client";
 import { staffPageName } from "../lib/staff-brand";
 import { YeswellBrand } from "./yeswell-brand";
+import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
 import {
@@ -255,26 +256,7 @@ export function StaffApp({
   if (data) {
     if (section === "studio") {
       title = "Studio";
-      content = (
-        <nav className="studio-page" aria-label="Studio navigation">
-          {studioRoutes.map(([href, label]) => (
-            <a key={href} href={href}>
-              <Icon name="studio" />
-              {label}
-              <span aria-hidden="true">→</span>
-            </a>
-          ))}
-          <ThemeToggle />
-          <Button
-            onClick={async () => {
-              await post("/api/auth/logout");
-              location.href = "/login";
-            }}
-          >
-            Sign out
-          </Button>
-        </nav>
-      );
+      content = <StudioHome data={data} />;
     } else if (section === "") {
       title = "Home";
       subtitle = new Date().toLocaleDateString(undefined, {

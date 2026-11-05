@@ -1,0 +1,158 @@
+/* Studio v3 uses the staff foundation tokens; document/editor styles stay scoped. */
+.workspace-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.workspace-label img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.workspace-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-tablet-header,
+.studio-area-chips,
+.studio-back {
+  display: none;
+}
+.studio-v3-shell .page-header {
+  padding-top: 34px;
+}
+.studio-v3-shell .page-body {
+  max-width: 1400px;
+}
+.studio-v3-shell .sidebar .shell-new {
+  display: none;
+}
+.studio-home-list {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.studio-home-list > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  min-height: 76px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.studio-home-list > a:last-child {
+  border: 0;
+}
+.studio-home-list strong,
+.studio-home-list small {
+  display: block;
+}
+.studio-home-list small {
+  color: var(--ink-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.studio-home-list a:hover {
+  background: var(--row-hover);
+  text-decoration: none;
+}
+@media (min-width: 700px) and (max-width: 1099px) {
+  .studio-v3-shell .sidebar {
+    display: none;
+  }
+  .studio-v3-shell .workspace {
+    margin: 0;
+    width: 100%;
+    padding-bottom: 84px;
+  }
+  .studio-v3-shell .staff-mobile-brand {
+    display: none;
+  }
+  .studio-tablet-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .studio-tablet-header > a {
+    width: 112px;
+  }
+  .studio-tablet-header .yeswell-logo {
+    width: 112px;
+  }
+  .studio-tablet-header > .avatar {
+    margin-left: auto;
+  }
+  .studio-area-chips {
+    display: flex;
+    gap: 8px;
+    overflow: auto;
+    padding: 12px 24px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .studio-area-chips a {
+    flex: none;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .studio-area-chips a[aria-current="page"] {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+  }
+  .studio-v3-shell .bottom-tabs {
+    display: flex;
+  }
+  .studio-v3-shell .page-header,
+  .studio-v3-shell .page-body {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+@media (max-width: 699px) {
+  .studio-v3-shell .staff-mobile-brand {
+    display: none;
+  }
+  .studio-back {
+    display: block;
+    margin: 16px 16px 0;
+    min-height: 44px;
+    line-height: 44px;
+  }
+  .studio-v3-shell .page-header {
+    padding: 18px 16px;
+  }
+  .studio-v3-shell .page-body {
+    padding: 0 16px 100px;
+  }
+  .studio-v3-shell .page-header h1 {
+    font-size: 30px;
+  }
+  .studio-v3-shell .btn {
+    min-height: 44px;
+  }
+  .studio-home-list > a {
+    padding: 16px;
+  }
+  .studio-home-list small {
+    line-height: 18px;
+  }
+}
