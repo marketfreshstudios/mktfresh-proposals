@@ -1182,7 +1182,9 @@ function TemplatesStudioContent({
       id?: string;
       name: string;
       block: Block;
-    } | null>(null),
+    } | null>(
+      blocksOnly ? (data.library.find((b) => b.id === selected) ?? null) : null,
+    ),
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),

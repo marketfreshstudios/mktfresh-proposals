@@ -1,6 +1,7 @@
 "use client";
 import { staffPageName } from "../lib/staff-brand";
 import { YeswellBrand } from "./yeswell-brand";
+import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
@@ -340,10 +341,18 @@ export function StaffApp({
       content = <EmailsStudio data={data} id={id} />;
     } else if (section === "templates") {
       headerAction = null;
-      content = <TemplatesStudio data={data} selected={id} run={run} />;
+      content = id ? (
+        <TemplatesStudio data={data} selected={id} run={run} />
+      ) : (
+        <StudioTemplateList data={data} />
+      );
     } else if (section === "library") {
       headerAction = null;
-      content = <TemplatesStudio data={data} run={run} blocksOnly />;
+      content = id ? (
+        <TemplatesStudio data={data} selected={id} run={run} blocksOnly />
+      ) : (
+        <StudioTemplateList data={data} blocks />
+      );
     } else if (section === "imports") {
       headerAction = null;
       content = <ConnectionsStudio data={data} run={run} initial="imports" />;
