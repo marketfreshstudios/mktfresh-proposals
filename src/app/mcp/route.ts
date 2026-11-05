@@ -30,11 +30,18 @@ async function handler(req: Request) {
     if (process.env.APP_MODE !== "local") {
       const { data, error } = await supabase()
         .from("staff_users")
-        .select("user_id")
+        .select("user_id,status,password_change_required")
         .eq("user_id", auth.user_id)
         .eq("workspace_id", auth.actor.workspace_id)
         .maybeSingle();
-      check(data && !error, "Staff access revoked", 401);
+      check(
+        data &&
+          !error &&
+          (data.status ?? "active") === "active" &&
+          !data.password_change_required,
+        "Staff access revoked",
+        401,
+      );
     }
     const server = new Server(
       { name: "proposal-drafting", version: "2.0.0" },

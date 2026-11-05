@@ -1,3 +1,7 @@
+import { TeamWorkConflict } from "./team";
+import { teamService } from "./team-runtime";
+import { StaffPasswordRequired, validateStaffMembership } from "./staff-access";
+import { setStaffPassword } from "./staff-password";
 import {
   StaffSessionExpired,
   setStaffCookies,
@@ -140,8 +144,23 @@ async function handleRoute(req: Request, path: string[]) {
         .object({ email: z.email(), password: z.string().min(1).max(200) })
         .parse(await body(req));
       const session = await login(input.email, input.password);
-      const response = json({ authenticated: true });
+      const membership = await validateStaffMembership(
+        session.user,
+        session.access_token,
+        { passwordChange: true },
+      );
+      const response = json({
+        authenticated: true,
+        ...(membership.password_change_required
+          ? { password_change_required: true }
+          : {}),
+      });
       return setStaffCookies(response, session);
+    }
+    if (path[0] === "auth" && path[1] === "set-password" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      const session = await setStaffPassword(req, await body(req));
+      return setStaffCookies(json({ authenticated: true }), session);
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
       const rt = runtime(uuid.parse(path[2]));
@@ -409,21 +428,57 @@ async function handleRoute(req: Request, path: string[]) {
         mock: process.env.APP_MODE === "local",
       });
     }
-    if (path[0] === "team" && path[1] && method === "POST") {
-      const input = z
-        .object({ display_name: z.string() })
-        .strict()
-        .parse(await body(req));
-      const updated = await updateStaffDisplayName(
-        user,
-        uuid.parse(path[1]),
-        input.display_name,
-      );
-      await workspaceEvent(rt.repo, user, "team_updated", {
-        user_id: path[1],
-        name: input.display_name,
-      });
-      return json(updated);
+    if (path[0] === "team") {
+      if (method === "GET" && !path[1]) {
+        if (process.env.APP_MODE === "local")
+          return json({
+            members: (await workspaceStaff(user.workspace_id)).map((m) => ({
+              ...m,
+              workspace_id: user.workspace_id,
+              status: "active",
+              last_sign_in_at: null,
+            })),
+            recent: [],
+          });
+        const team = teamService(user.workspace_id);
+        return json({
+          members: await team.list(),
+          recent: await team.store.audit(),
+        });
+      }
+      if (method === "POST" && path[1] === "invite")
+        return json(
+          await teamService(user.workspace_id).invite(user, await body(req)),
+          201,
+        );
+      if (method === "POST" && path[1]) {
+        const input = await body(req),
+          id = uuid.parse(path[1]);
+        if (
+          process.env.APP_MODE === "local" &&
+          typeof input.display_name === "string" &&
+          (!input.action || input.action === "name")
+        ) {
+          const updated = await updateStaffDisplayName(
+            user,
+            id,
+            input.display_name,
+          );
+          await workspaceEvent(rt.repo, user, "team_updated", {
+            user_id: id,
+            name: input.display_name,
+          });
+          return json(updated);
+        }
+        return json(
+          await teamService(user.workspace_id).change(
+            user,
+            id,
+            input.action ? input : { action: "name", ...input },
+          ),
+        );
+      }
+      throw new AppError(405, "Team action unavailable");
     }
     if (path[0] === "workspace-logo") {
       if (method === "POST") {
@@ -1104,13 +1159,18 @@ async function handleRoute(req: Request, path: string[]) {
     }
     throw new AppError(404, "Route not found");
   } catch (e) {
+    if (e instanceof TeamWorkConflict)
+      return json({ error: e.message, unfinished_proposals: e.proposals }, 409);
     if (e instanceof DuplicateClient)
       return json({ error: e.message, existing_client: e.existing }, 409);
     if (e instanceof AppError)
       return json(
         {
           error: e.message,
-          ...(e instanceof StaffSessionExpired ? { code: e.code } : {}),
+          ...(e instanceof StaffSessionExpired ||
+          e instanceof StaffPasswordRequired
+            ? { code: e.code }
+            : {}),
         },
         e.status,
       );

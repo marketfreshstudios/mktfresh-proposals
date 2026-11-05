@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { staffRequestHeaders, withStaffCookies } from "./lib/staff-session";
 import { AppError } from "./lib/model";
+import { StaffPasswordRequired } from "./lib/staff-access";
 import { staff } from "./lib/auth";
 export function staffPagePath(path: string) {
   return (
-    !/^\/(?:api|login|p|oauth|mcp|_next|fonts|schemas|\.well-known)(?:\/|$)/.test(
+    !/^\/(?:api|login|set-password|p|oauth|mcp|_next|fonts|schemas|\.well-known)(?:\/|$)/.test(
       path,
     ) &&
     !["/favicon.ico", "/pdf.worker.min.mjs", "/pdfjs-LICENSE.txt"].includes(
@@ -25,8 +26,11 @@ export async function proxy(request: NextRequest) {
     return withStaffCookies(request, response);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 503;
-    if (page && status === 401) {
-      const url = new URL("/login", request.url);
+    if (page && (status === 401 || error instanceof StaffPasswordRequired)) {
+      const url = new URL(
+        error instanceof StaffPasswordRequired ? "/set-password" : "/login",
+        request.url,
+      );
       url.searchParams.set(
         "next",
         request.nextUrl.pathname + request.nextUrl.search,
@@ -39,7 +43,11 @@ export async function proxy(request: NextRequest) {
       request,
       NextResponse.json(
         {
-          ...(status === 401 ? { code: "STAFF_SIGNED_OUT" } : {}),
+          ...(status === 401
+            ? { code: "STAFF_SIGNED_OUT" }
+            : error instanceof StaffPasswordRequired
+              ? { code: error.code }
+              : {}),
           error:
             status === 401
               ? "Staff authorization required"
@@ -54,7 +62,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
-    "/((?!api(?:/|$)|login(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
+    "/((?!api(?:/|$)|login(?:/|$)|set-password(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
     "/api/proposals/:path*",
     "/api/clients/:path*",
     "/api/pricing_items/:path*",

@@ -1,4 +1,5 @@
 "use client";
+import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
 import {
   connectionStatus,
@@ -164,6 +165,13 @@ export function StaffApp({
       if (["proposals", "archives"].includes(section) && id && id !== "new")
         setP(await api(`/api/proposals/${id}`));
     } catch (e) {
+      if (
+        e instanceof ApiError &&
+        e.message.includes("Choose a new password")
+      ) {
+        location.href = "/set-password";
+        return;
+      }
       if (e instanceof ApiError && e.status === 401 && !data) {
         location.href =
           "/login?next=" +
@@ -370,7 +378,7 @@ export function StaffApp({
     } else if (section === "settings" && id === "team") {
       title = "Team";
       headerAction = null;
-      content = <WorkspaceStudio data={data} run={run} />;
+      content = <TeamStudio data={data} run={run} />;
     } else if (section === "settings" && id === "ai") {
       title = "AI assistants";
       subtitle =
@@ -513,10 +521,14 @@ function Login({ local }: { local: boolean }) {
             setBusy(true);
             const f = new FormData(e.currentTarget);
             try {
-              await post("/api/auth/login", {
+              const result = await post("/api/auth/login", {
                 email: f.get("email"),
                 password: f.get("password"),
               });
+              if (result.password_change_required) {
+                location.href = "/set-password";
+                return;
+              }
               if (new URL(location.href).searchParams.get("resume") === "1") {
                 setResumed(true);
                 window.close();

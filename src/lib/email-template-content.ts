@@ -2,6 +2,9 @@ import { z } from "zod";
 import { check, type Proposal, type RichText } from "./model";
 import { escape, variables } from "./presentation";
 export const emailFields = {
+  "team.name": "Team member name",
+  "team.email": "Team member email",
+  "team.role": "Team member role",
   "job.name": "Job name",
   "job.summary": "Job failure summary",
   "client.first_name": "Client first name",
@@ -155,9 +158,30 @@ export const emailDefaults = [
     "Review proposal",
     true,
   ),
+  def(
+    "team_invite",
+    "Team invite",
+    "You're invited to {{workspace.name}}",
+    "Hi {{team.name}},\n\n{{sender.name}} invited you to {{workspace.name}} as {{team.role}}. Choose your password to get started.\n\nIf this link has expired, ask your admin to resend the invitation.",
+    "Set your password",
+    true,
+  ),
+  def(
+    "team_password_reset",
+    "Team password reset",
+    "Reset your password for {{workspace.name}}",
+    "Hi {{team.name}},\n\n{{sender.name}} sent you a password reset for {{workspace.name}}. Choose a new password using the button below.\n\nIf this link has expired, ask your admin to resend it.",
+    "Set your password",
+    true,
+  ),
 ];
 export function editableEmail(t: { staff: boolean; key: string }) {
-  return !t.staff || t.key === "staff_billing_failed";
+  return (
+    !t.staff ||
+    ["staff_billing_failed", "team_invite", "team_password_reset"].includes(
+      t.key,
+    )
+  );
 }
 export const oldJobEmailDefault = {
   subject: "Billing needs attention: {{proposal.title}}",
@@ -180,6 +204,9 @@ export function emailValues(p: Proposal) {
       all[k] ??
         (
           {
+            "team.name": "Jamie Example",
+            "team.email": "staff@example.test",
+            "team.role": "Staff",
             "job.name": "Signed PDF and certificate",
             "job.summary":
               "Signed PDF and certificate could not finish. Retry the PDF job from the proposal record.",

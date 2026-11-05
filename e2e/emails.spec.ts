@@ -192,7 +192,14 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
         await expect(
           page.getByRole("textbox", { name: "Primary button label" }),
         ).toHaveValue(template.button_label);
-        if (template.staff && template.key !== "staff_billing_failed") {
+        if (
+          template.staff &&
+          ![
+            "staff_billing_failed",
+            "team_invite",
+            "team_password_reset",
+          ].includes(template.key)
+        ) {
           await expect(
             page.getByRole("textbox", { name: "Subject", exact: true }),
           ).toHaveAttribute("readonly", "");

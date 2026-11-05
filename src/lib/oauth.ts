@@ -12,6 +12,7 @@ export class OAuthServer {
     public issuer: string,
     private redirects: string[],
     private clock = () => Date.now(),
+    private memberActive?: (workspace: string, userId: string) => Promise<void>,
   ) {
     const u = new URL(issuer);
     check(
@@ -123,6 +124,7 @@ export class OAuthServer {
     return target.toString();
   }
   private async issue(grant: OAuthRecord) {
+    await this.memberActive?.(grant.workspace_id, grant.data.user_id);
     const access = token(),
       refresh = token();
     await this.store.put({
@@ -227,6 +229,7 @@ export class OAuthServer {
       "Connector revoked",
       401,
     );
+    await this.memberActive?.(grant.workspace_id, grant.data.user_id);
     await this.store.touch(grant.id, new Date(this.clock()).toISOString());
     return {
       actor: {

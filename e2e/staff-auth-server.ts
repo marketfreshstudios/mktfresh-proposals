@@ -115,6 +115,10 @@ const server = createServer(async (req, res) => {
     if (s.refresh === body.refresh_token) rotate(s);
     return json(pair(s));
   }
+  if (url.pathname === "/rest/v1/rpc/staff_session_exists") {
+    const session = sessions.get(body.target_session);
+    return json(!!session && !session.revoked && body.target_user === user.id);
+  }
   const token = (req.headers.authorization ?? "").replace(/^Bearer /, ""),
     s = access.get(token);
   if (url.pathname === "/auth/v1/user")

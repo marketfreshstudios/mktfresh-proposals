@@ -84,6 +84,12 @@ export async function saveEmailTemplate(
 ) {
   check(actor.actor.startsWith("staff:"), "Staff authorization required", 403);
   const d = definition(key);
+  if (key.startsWith("team_"))
+    check(
+      actor.staff_role === "owner",
+      "Only a super admin can edit team emails",
+      403,
+    );
   check(editableEmail(d), "Staff notifications are read-only", 403);
   const data = reset ? d : validateTemplate(input);
   const previous = (await emailTemplates(repo)).find((t) => t.key === key);
