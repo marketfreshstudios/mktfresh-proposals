@@ -349,12 +349,17 @@ export function paginateBrowser(
         ? pair!.getBoundingClientRect().height
         : el.getBoundingClientRect().height;
       const full = pageContentHeight(styles, hf, page);
-      const next = blocks
+      const nextBlock = blocks
         .slice(i + 1)
-        .find((v) => v.b.type !== "page_break")?.el;
+        .find((v) => v.b.type !== "page_break");
+      const next = nextBlock?.el;
       const orphan =
         b.type === "heading" && next
-          ? (lines(next)[Math.min(1, lines(next).length - 1)]?.bottom ??
+          ? (next.closest(".signature-pair")?.getBoundingClientRect().bottom ??
+              (nextBlock?.b.type === "signature_block"
+                ? next.getBoundingClientRect().bottom
+                : undefined) ??
+              lines(next)[Math.min(1, lines(next).length - 1)]?.bottom ??
               next.getBoundingClientRect().top + 24) -
             el.getBoundingClientRect().bottom
           : 0;

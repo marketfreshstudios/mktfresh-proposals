@@ -1,3 +1,4 @@
+import { withSignatureHeadings } from "./signature-headings";
 import { validClientToken, newClientCode } from "./client-code";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
@@ -288,8 +289,13 @@ export class ProposalService {
       first_viewed_at: null,
       client_signed_at: null,
       completed_at: null,
+      signature_heading_defaulted: true,
       content: reviewBlocks(
-        withoutTitleHeading(input.content ?? structuredClone(template.content)),
+        withSignatureHeadings(
+          withoutTitleHeading(
+            input.content ?? structuredClone(template.content),
+          ),
+        ),
         actor.actor.startsWith("ai:"),
       ),
       quote: prepareQuote(
@@ -348,6 +354,23 @@ export class ProposalService {
     return withDraftSettings(p, settings);
   }
   async forRead(p: Proposal) {
+    if (
+      p.status === "draft" &&
+      !p.signature_heading_defaulted &&
+      !p.signers.length
+    ) {
+      p = await mutate(this.repo, p.id, (row) => {
+        if (
+          row.status !== "draft" ||
+          row.signature_heading_defaulted ||
+          row.signers.length
+        )
+          return;
+        row.content = withSignatureHeadings(row.content);
+        row.signature_heading_defaulted = true;
+        delete row.pagination;
+      });
+    }
     p = {
       ...p,
       header_footer: proposalBands(p.header_footer),

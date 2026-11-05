@@ -1,4 +1,5 @@
 "use client";
+import { withSignatureHeadings } from "../lib/signature-headings";
 import { ReassignDialog } from "./reassign-proposal";
 import { canReassign } from "../lib/proposal-owner";
 import { pageGeometry } from "../lib/page-bands";
@@ -2608,7 +2609,10 @@ function QuoteEditorContent({
       index = insertAt ?? p.content.length;
     next.splice(index, replaceEmpty ? 1 : 0, { ...block, id });
     setReplaceEmpty(false);
-    change({ content: next });
+    change({
+      content:
+        block.type === "signature_block" ? withSignatureHeadings(next) : next,
+    });
     setInsertAt(null);
     const ss = contentSections(next),
       sn = ss.findIndex((s) => s.indices.includes(index));

@@ -524,3 +524,7 @@ New first publications use twelve case-sensitive CSPRNG characters from an unamb
 ## Owner review 4 — visible record editing
 
 The record header puts Edit beside Preview as client for editable unsigned native proposals, including phone/tablet. Locked signed native records show Duplicate as new draft in that position; they do not offer an Edit action. The record menu omits Edit, while list-row menus retain their existing shortcut. Archived unsigned records remain read-only until unarchived.
+
+## Owner review 4 — signature heading defaults
+
+New proposals (including assistant drafts) and templates start with an editable Signatures heading before an unheaded signature run. Signature insertion adds the heading and signature in the same history step. Existing drafts/templates receive the default once, tracked in their existing JSON; subsequent explicit removals stay removed. Published and frozen content is never normalized. No hosted SQL is required.

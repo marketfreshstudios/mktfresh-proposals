@@ -1,3 +1,4 @@
+import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
 import { ReassignmentService } from "./reassignment";
 import { TeamWorkConflict } from "./team";
@@ -713,6 +714,15 @@ async function handleRoute(req: Request, path: string[]) {
       const table = path[0] as EntityTable;
       if (method === "GET") {
         const entities = await rt.repo.entities<Record<string, unknown>>(table);
+        if (table === "templates")
+          for (const e of entities) {
+            if (!e.signature_heading_defaulted) {
+              e.content = withSignatureHeadings(e.content as Block[]);
+              e.signature_heading_defaulted = true;
+              delete e.pagination;
+              await rt.repo.put("templates", e as any);
+            }
+          }
         return json(
           table === "workspace_settings"
             ? entities.map((e) => ({
@@ -857,6 +867,7 @@ async function handleRoute(req: Request, path: string[]) {
                 )
                 .max(100),
               active: z.boolean(),
+              signature_heading_defaulted: z.boolean().optional(),
               header_footer: TemplateBandsSchema.default(defaultTemplateBands),
               cover: CoverSchema.default(() => loadedCover()),
               style_overrides: StyleOverridesSchema.optional(),
@@ -867,6 +878,15 @@ async function handleRoute(req: Request, path: string[]) {
             contentAfterCover(entity.content as Block[]),
             false,
           );
+          const previousTemplate = (
+            await rt.repo.entities<import("./model").Template>("templates")
+          ).find((t) => t.id === entity.id);
+          if (
+            !entity.signature_heading_defaulted &&
+            !previousTemplate?.signature_heading_defaulted
+          )
+            entity.content = withSignatureHeadings(entity.content as Block[]);
+          entity.signature_heading_defaulted = true;
           entity.cover = loadedCover(entity.cover);
           await validateStyles(
             rt.repo,

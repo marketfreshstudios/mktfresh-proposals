@@ -1,4 +1,5 @@
 "use client";
+import { withSignatureHeadings } from "../lib/signature-headings";
 import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
@@ -1448,7 +1449,9 @@ function TemplatesStudioContent({
       ...structuredClone(block),
       id: crypto.randomUUID(),
     });
-    patch(next);
+    patch(
+      block.type === "signature_block" ? withSignatureHeadings(next) : next,
+    );
     setInsertAt(null);
     setIndex(null);
     focusInserted(

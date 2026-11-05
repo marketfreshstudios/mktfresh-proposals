@@ -145,6 +145,7 @@ export type RichText = {
   attrs?: { path?: string; src?: string; alt?: string; height?: number };
 };
 export type Template = {
+  signature_heading_defaulted?: boolean;
   header_footer?: TemplateBands;
   cover?: Cover;
   pagination?: import("./page-plan").PagePlan;
@@ -271,6 +272,7 @@ export type Job = {
   last_error?: string;
 };
 export type Proposal = {
+  signature_heading_defaulted?: boolean;
   header_footer?: HeaderFooterSettings;
   cover?: Cover;
   published_state?: import("./editor-publication").PublishedState;
