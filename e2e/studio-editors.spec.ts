@@ -165,7 +165,10 @@ test("Plain contract clauses edit and insert fields without inert rich-text cont
       exact: true,
     })
     .click();
-  await expect(text).toHaveValue("Plain terms for {{client.company}}");
+  await expect(text).toContainText("Plain terms for Client company");
+  await expect(text.locator('[data-field="client.company"]')).toHaveClass(
+    /field-chip/,
+  );
   await expect(text).toBeFocused();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect

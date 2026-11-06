@@ -411,3 +411,42 @@ test("email editor references, accessible panels, save failure recovery and lega
   expect(rect!.x + rect!.width).toBeLessThanOrEqual(375);
   await shot(page, "saved-block-phone-bar-375");
 });
+
+test("email fields use the shared highlight in both Names and Values; the sent renderer is plain", async ({
+  page,
+}) => {
+  const f = await emailEditorFixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/studio/emails/proposal_sent");
+  const subject = page.getByRole("textbox", { name: "Subject", exact: true });
+  const body = page.getByRole("textbox", { name: "Email body", exact: true });
+  await body.fill("Hi {{client.first_name}}, from {{workspace.name}}.");
+  await expect(body.locator(".field-chip")).toHaveCount(2);
+  for (const mode of ["Show fields", "Show values"]) {
+    await page.getByRole("button", { name: mode, exact: true }).click();
+    for (const root of [subject, body]) {
+      await expect(root.locator(".field-chip").first()).toHaveCSS(
+        "background-color",
+        "rgb(240, 236, 228)",
+      );
+      await expect(root).not.toContainText("{{");
+    }
+  }
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const stored = (await emailTemplates(f.repo)).find(
+    (t) => t.key === "proposal_sent",
+  )!;
+  const { emailStudioPreview } = await import("../src/lib/email-studio");
+  const preview = (
+    await emailStudioPreview(
+      f.repo,
+      { get: async () => new Uint8Array(), put: async () => {} },
+      staff,
+      "proposal_sent",
+      {},
+    )
+  ).result;
+  expect(JSON.stringify(stored.body)).toContain("client.first_name");
+  expect(preview.html).not.toContain("field-chip");
+  expect(preview.html).not.toContain("{{");
+});

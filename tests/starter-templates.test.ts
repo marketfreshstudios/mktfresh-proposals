@@ -35,8 +35,8 @@ it("six exact starters, order, covers, renumbered terms and both signatures with
     expect(
       coverElements(t.cover!, "A project").filter((x) => x.kind === "logo"),
     ).toHaveLength(1);
-    expect(JSON.stringify(t.cover)).toContain("{{client.full_name}}");
-    expect(JSON.stringify(t.cover)).toContain("{{sender.name}}");
+    expect(JSON.stringify(t.cover)).toContain('"path":"client.full_name"');
+    expect(JSON.stringify(t.cover)).toContain('"path":"sender.name"');
     expect(JSON.stringify(t.cover)).not.toContain(
       "Valid until {{proposal.validity}}",
     );

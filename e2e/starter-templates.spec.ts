@@ -163,7 +163,11 @@ test("Business state autosaves, is available as a field, and readiness links to 
   );
   await page.goto(`/proposals/${changed.id}/edit`);
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
-  await expect(page.getByText("Business state", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator(".field-option-label")
+      .getByText("Business state", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("tab", { name: "Send", exact: true }).click();
   await expect(
     page.getByText("Add business state", { exact: true }),
@@ -178,4 +182,199 @@ test("Business state autosaves, is available as a field, and readiness links to 
     .getByRole("heading", { name: "Overview", exact: true })
     .scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${shots}/readiness-1440.png` });
+});
+
+test("every starter field is highlighted in template and proposal editors, while client and PDF stay plain", async ({
+  page,
+}, testInfo) => {
+  const f = await fixture(page, true);
+  const template = f.templates[1];
+  const tokens = (value: unknown): string[] => {
+    if (typeof value === "string")
+      return [...value.matchAll(/{{\s*([\w.-]+)\s*}}/g)].map((m) => m[1]);
+    if (!value || typeof value !== "object") return [];
+    const n = value as any;
+    if (n.type === "variable") return [n.attrs.path];
+    return Object.values(value).flatMap(tokens);
+  };
+  async function chips(
+    root: import("@playwright/test").Locator,
+    paths: string[],
+  ) {
+    for (const path of new Set(paths))
+      await expect(root.locator(`[data-field="${path}"]`).first()).toHaveClass(
+        /field-chip/,
+      );
+    const all = root.locator(".field-chip");
+    await expect(all.first()).toBeAttached();
+    expect(
+      await all.evaluateAll((els) =>
+        els.every(
+          (el) => getComputedStyle(el).backgroundColor === "rgb(240, 236, 228)",
+        ),
+      ),
+    ).toBe(true);
+  }
+  async function walk(
+    prefix: string,
+    content: typeof template.content,
+    cover: typeof template.cover,
+  ) {
+    const paper = page.locator(
+      prefix === "template" ? ".template-paged-paper" : ".editor-paper",
+    );
+    await expect(paper.locator(".editor-page-sheets")).toHaveAttribute(
+      "data-layout-settled",
+      "true",
+    );
+    for (const b of content) {
+      const paths = tokens(b.content ?? b.text ?? "").concat(tokens(b.clauses));
+      if (!paths.length) continue;
+      await chips(
+        paper.locator(`[data-block-id="${prefix}-${b.id}"]`).first(),
+        paths,
+      );
+    }
+    for (const e of cover?.elements ?? []) {
+      const paths = tokens(e.content);
+      if (paths.length)
+        await chips(
+          paper.locator(`[data-cover-element="${e.id}"]`).first(),
+          paths,
+        );
+    }
+    await chips(paper.locator('[data-band-frame="header"]').first(), [
+      "workspace.name",
+      "proposal.title",
+    ]);
+    const raw = await paper.evaluate((root) => {
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n;
+      const found: string[] = [];
+      while ((n = walk.nextNode()))
+        if (
+          !n.parentElement?.closest(
+            "[data-editor-chrome],style,script,textarea",
+          ) &&
+          /{{\s*[\w.-]+\s*}}/.test(n.textContent ?? "")
+        )
+          found.push(n.textContent!);
+      return found;
+    });
+    expect(raw).toEqual([]);
+    await expect(
+      paper.locator('[data-field="proposal.validity"]').first(),
+    ).toHaveText("Validity sentence");
+    if (
+      content.some(
+        (b) => b.type === "heading" && b.text === "Why {{workspace.name}}",
+      )
+    )
+      await expect(page.locator(".sections-nav")).toContainText(
+        "Why Example Studio",
+      );
+    await expect(page.locator(".sections-nav")).not.toContainText("{{");
+  }
+  for (const starter of f.templates) {
+    await page.goto(`/studio/templates/${starter.id}`);
+    await walk("template", starter.content, starter.cover);
+  }
+  await page.goto(`/studio/templates/${template.id}`);
+  await walk("template", template.content, template.cover);
+  const bandSheet = page.locator(".template-paged-paper .page-sheet").nth(1);
+  await page.setViewportSize({
+    width: 1440,
+    height:
+      Math.ceil(
+        await bandSheet.evaluate((el) => (el as HTMLElement).offsetHeight),
+      ) + 200,
+  });
+  await bandSheet.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator(".template-paged-paper .editor-page-sheets"),
+  ).toHaveAttribute("data-layout-settled", "true");
+  await page.screenshot({ path: `${shots}/highlighted-bands-1440.png` });
+  const { staff } = await import("../tests/helpers");
+  let active = await f.service.create(
+    {
+      client_id: f.draft.client.id,
+      template_id: template.id,
+      title: "Field proof",
+      valid_until: null,
+    },
+    staff,
+  );
+  const choice = active.quote.find((i) => i.pricing_item_id?.endsWith("103"))!;
+  active = await f.service.edit(
+    active.id,
+    {
+      revision: active.revision,
+      quote: active.quote.map((i) => ({
+        ...i,
+        selected: i.id === choice.id,
+        default_selected: i.id === choice.id,
+      })),
+    },
+    staff,
+  );
+  const { previewResult } = await import("../src/lib/preview");
+  await page.route("**/api/proposals/**", async (route) => {
+    const req = route.request();
+    const path = new URL(req.url()).pathname;
+    if (path.endsWith("/preview-logo"))
+      return route.fulfill({ body: f.logo, contentType: "image/png" });
+    if (path.endsWith("/preview"))
+      return route.fulfill({ json: previewResult(active, f.settings) });
+    if (req.method() === "PATCH")
+      active = await f.service.edit(active.id, req.postDataJSON(), staff);
+    return route.fulfill({ json: active });
+  });
+  await page.goto(`/proposals/${active.id}/edit`);
+  await page
+    .locator(".editor-paper details")
+    .evaluateAll((nodes) =>
+      nodes.forEach((n) => ((n as HTMLDetailsElement).open = true)),
+    );
+  await walk("block", active.content, active.cover);
+  // Pasted complete tokens become atoms without waiting for a save/blur.
+  const text = page.locator(
+    `[data-block-id="block-${active.content.find((b) => b.type === "paragraph")!.id}"] .tiptap`,
+  );
+  await text.fill("Typed {{workspace.name}}.");
+  await expect(text.locator('[data-field="workspace.name"]')).toHaveText(
+    "Example Studio",
+  );
+  await page.goto(`/p/${active.id}?preview=1`);
+  await expect(page.locator(".client-flow")).toBeVisible();
+  await expect(
+    page.locator(".client-flow .field-chip,[data-field]"),
+  ).toHaveCount(0);
+  await expect(page.locator(".client-flow")).not.toContainText("{{");
+  await page.setViewportSize({ width: 375, height: 900 });
+  await expect(
+    page.locator(".client-flow .field-chip,[data-field]"),
+  ).toHaveCount(0);
+  await expect(page.locator(".client-flow")).not.toContainText("{{");
+  const { pdfPreview } = await import("../src/lib/pdf-preview");
+  const rendered = await pdfPreview(
+    f.repo,
+    { get: async () => f.logo, put: async () => {} },
+    active,
+    f.settings,
+  );
+  const { writeFile } = await import("node:fs/promises");
+  const { execFileSync } = await import("node:child_process");
+  const pdfPath = testInfo.outputPath("field-proof.pdf");
+  await writeFile(pdfPath, Buffer.from(rendered.pdf_base64, "base64"));
+  const plain = execFileSync("pdftotext", [pdfPath, "-"], {
+    encoding: "utf8",
+  }).replace(/\s+/g, " ");
+  expect(plain).toContain("Why Example Studio");
+  expect(plain).toContain("State of North Carolina");
+  expect(plain).not.toContain("{{");
+  expect(
+    rendered.layout.sheets!.every(
+      (sheet) => !sheet.html.includes("field-chip"),
+    ),
+  ).toBe(true);
 });
