@@ -93,6 +93,17 @@ for (const layout of coverLayouts)
       ]),
     );
     expect(geometry.overflow).toBe(false);
+    if (layout === "split") {
+      await expect(root.locator(".cover-watermark")).toHaveCSS("left", "96px");
+      await expect(root.locator(".cover-watermark-clip")).toHaveCSS(
+        "width",
+        "296px",
+      );
+      await expect(root.locator(".cover-watermark-clip")).toHaveCSS(
+        "overflow",
+        "hidden",
+      );
+    }
     const titleInk = ["bold", "photo"].includes(layout)
       ? "rgb(255, 255, 255)"
       : "rgb(27, 31, 29)";
@@ -237,6 +248,35 @@ test("cover controls preserve history, use palette colors, validate uploads and 
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(`/proposals/${f.draft.id}/edit`);
+  const title = page.getByRole("textbox", {
+    name: "Proposal title",
+    exact: true,
+  });
+  await title.click();
+  const before = (await title.boundingBox())!.y;
+  await page.getByRole("button", { name: "Spacing", exact: true }).click();
+  const below = page.getByRole("spinbutton", {
+    name: "Space below",
+    exact: true,
+  });
+  expect(Number(await below.getAttribute("max"))).toBeGreaterThan(32);
+  await below.fill("32");
+  await expect(
+    page.locator('.editor-paper [data-cover-element="title"]'),
+  ).toHaveCSS("margin-bottom", "32px");
+  await expect
+    .poll(
+      () =>
+        f.active().cover?.elements?.find((e) => e.kind === "title")
+          ?.space_below,
+    )
+    .toBe(32);
+  expect(before - (await title.boundingBox())!.y).toBeCloseTo(32, 0);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect
+    .poll(async () => (await title.boundingBox())!.y)
+    .toBeCloseTo(before, 0);
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await page.locator(".cover-settings-accordion > summary").click();
   const settings = page.locator(".cover-settings");

@@ -61,6 +61,52 @@ type Props = {
   highlightFields?: boolean;
   onCover?: (cover: Cover) => void;
 };
+function coverOccupiedSpace(cover: HTMLElement, available: number) {
+  const outerHeight = (element: Element) => {
+    const style = getComputedStyle(element);
+    return (
+      element.getBoundingClientRect().height +
+      (parseFloat(style.marginTop) || 0) +
+      (parseFloat(style.marginBottom) || 0)
+    );
+  };
+  // New covers use a flexible main group to place the title. Its unused
+  // space is available for line spacing; the group's full height isn't text.
+  const main = cover.querySelector<HTMLElement>(".cover-main-group");
+  if (main && cover.dataset.coverLayout !== "custom") {
+    const style = getComputedStyle(main),
+      after = getComputedStyle(main, "::after"),
+      children = Array.from(main.children),
+      occupied =
+        children.reduce((sum, child) => sum + outerHeight(child), 0) +
+        Math.max(0, children.length - 1) * (parseFloat(style.rowGap) || 0) +
+        (after.display !== "none" && after.content !== "none"
+          ? (parseFloat(after.height) || 0) +
+            (parseFloat(after.marginTop) || 0) +
+            (parseFloat(after.marginBottom) || 0)
+          : 0);
+    let free =
+      main.getBoundingClientRect().height -
+      (parseFloat(style.paddingTop) || 0) -
+      (parseFloat(style.paddingBottom) || 0) -
+      occupied;
+    if (cover.dataset.coverLayout === "split") {
+      const side = [".cover-brand-group", ".cover-meta-group"].reduce(
+        (sum, selector) => {
+          const group = cover.querySelector(selector);
+          return sum + (group ? outerHeight(group) : 0);
+        },
+        0,
+      );
+      free = Math.min(free, available - side - 24);
+    }
+    return available - Math.max(0, free);
+  }
+  return Array.from(cover.children).reduce(
+    (sum, child) => sum + outerHeight(child),
+    0,
+  );
+}
 function Spacing({
   element,
   update,
@@ -73,18 +119,7 @@ function Spacing({
   const computed = node ? getComputedStyle(node) : undefined;
   const cover = node?.closest<HTMLElement>(".document-cover"),
     available = Number(cover?.dataset.contentHeight ?? 912),
-    used = cover
-      ? Array.from(cover.children).reduce((sum, child) => {
-          const c = child as HTMLElement,
-            s = getComputedStyle(c);
-          return (
-            sum +
-            c.getBoundingClientRect().height +
-            (parseFloat(s.marginTop) || 0) +
-            (parseFloat(s.marginBottom) || 0)
-          );
-        }, 0)
-      : 0,
+    used = cover ? coverOccupiedSpace(cover, available) : 0,
     // DOM margins still describe the preceding render. Replace this line's
     // measured spacing with its current model before deriving either limit.
     // This also updates the other slider immediately when one side changes.
