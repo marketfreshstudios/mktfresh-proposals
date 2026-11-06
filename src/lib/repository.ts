@@ -26,6 +26,7 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  removeSavedBlock(id: string): Promise<boolean>;
   saveReassignments(documents: Proposal[], actor: Actor): Promise<void>;
   saveEmailTemplate<T extends { id: string }>(
     template: T,
@@ -60,6 +61,13 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async removeSavedBlock(id: string) {
+    const row = this.catalog.get("content_library")?.get(id) as
+      { workspace_id?: string } | undefined;
+    if (!row || (row.workspace_id && row.workspace_id !== this.workspaceId))
+      return false;
+    return this.catalog.get("content_library")!.delete(id);
+  }
   async saveReassignments(documents: Proposal[], actor: Actor) {
     for (const p of documents) {
       const current = this.rows.get(p.id);
@@ -455,6 +463,16 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async removeSavedBlock(id: string) {
+    await this.ready;
+    const operation = this.tail.then(async () => {
+      const removed = await super.removeSavedBlock(id);
+      if (removed) await this.persist();
+      return removed;
+    });
+    this.tail = operation.catch(() => {});
+    return operation;
+  }
   override async put<T extends { id: string }>(t: EntityTable, e: T) {
     await this.ready;
     const run = this.tail.then(async () => {
@@ -654,6 +672,16 @@ export class SupabaseRepository implements Repository {
       .eq("workspace_id", this.workspaceId)
       .eq("id", document.id)
       .eq("data->>refresh_id", attempt)
+      .select("id");
+    if (error) throw error;
+    return !!data?.length;
+  }
+  async removeSavedBlock(id: string) {
+    const { data, error } = await this.db
+      .from("content_library")
+      .delete()
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", id)
       .select("id");
     if (error) throw error;
     return !!data?.length;
