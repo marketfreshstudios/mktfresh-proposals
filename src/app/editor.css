@@ -8846,3 +8846,76 @@ body:has(.studio-v3-editor) {
 .studio-v3-editor .editor-edit-bar {
   opacity: 1;
 }
+
+/* Studio keeps primary formatting and Field visible above phone keyboards.
+   Less-used block commands retain their existing handlers in More. */
+@media (max-width: 699px) {
+  .editor-edit-bar[data-compact-phone="true"] {
+    height: 96px;
+    min-height: 96px;
+    overflow: visible;
+    padding-right: 48px;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-format-target {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-formatting {
+    height: 88px;
+    min-height: 88px;
+    opacity: 1;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-content: start;
+    row-gap: 4px;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-formatting > .edit-divider {
+    display: none;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-style-control {
+    display: flex;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-style-control,
+  .editor-edit-bar[data-compact-phone="true"] .inline-size-control {
+    order: 2;
+  }
+  .editor-edit-bar[data-compact-phone="true"]
+    > button[aria-label="More block actions"] {
+    position: absolute;
+    right: 4px;
+    top: 2px;
+    color: white;
+  }
+  .editor-edit-bar[data-compact-phone="true"]::after {
+    display: none;
+  }
+  .editor-edit-bar[data-compact-phone="true"] .edit-style-control button {
+    width: auto;
+    min-width: 56px;
+  }
+  .editor-edit-bar[data-compact-phone="true"]
+    button[aria-label="Insert field"] {
+    color: white;
+  }
+}
+
+/* Studio phone action overflow reuses the shared block commands. */
+.studio-phone-block-actions {
+  display: grid;
+}
+.studio-phone-block-actions .block-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.studio-phone-block-actions .block-action .sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  clip: auto;
+  overflow: visible;
+}

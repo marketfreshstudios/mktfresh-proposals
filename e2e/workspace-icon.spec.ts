@@ -11,10 +11,13 @@ import { setup } from "../tests/helpers";
 const headers = { Authorization: "Bearer e2e-staff-secret-only" };
 const shots = "docs/screenshots/workspace-icon";
 async function capture(page: Page, name: string) {
-  if (process.env.WORKSPACE_ICON_CAPTURE === "1") {
-    mkdirSync(shots, { recursive: true });
+  const emailCapture =
+    process.env.STUDIO_EMAIL_CAPTURE === "1" && /^brand-filled-/.test(name);
+  if (process.env.WORKSPACE_ICON_CAPTURE === "1" || emailCapture) {
+    const dir = emailCapture ? "docs/screenshots/studio-v3-email" : shots;
+    mkdirSync(dir, { recursive: true });
     await page.screenshot({
-      path: `${shots}/${name}.png`,
+      path: `${dir}/${name}.png`,
       animations: "disabled",
     });
   }
@@ -156,9 +159,11 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
     .setInputFiles({
       name: "Wide logo.png",
       mimeType: "image/png",
-      buffer: await sharp({
-        create: { width: 360, height: 100, channels: 4, background: "#365c4a" },
-      })
+      buffer: await sharp(
+        Buffer.from(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="100"><rect width="80" height="80" y="10" rx="16" fill="#365c4a"/><text x="40" y="67" text-anchor="middle" font-family="Arial" font-weight="700" font-size="48" fill="white">E</text><text x="96" y="61" font-family="Arial" font-weight="700" font-size="29" fill="#13303a">Example Studio</text></svg>',
+        ),
+      )
         .png()
         .toBuffer(),
     });
@@ -168,6 +173,36 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   await expect(
     page.locator(".workspace-section-card [role=status]"),
   ).toHaveText("Saved");
+  const assets = page.locator(".workspace-brand-assets .workspace-logo-row");
+  const boxes = await assets.evaluateAll((nodes) =>
+    nodes.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width };
+    }),
+  );
+  expect(boxes[0].y).toBe(boxes[1].y);
+  expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThanOrEqual(1);
+  await expect(assets.first().locator("img")).toHaveCSS("height", "48px");
+  await expect(assets.last().locator("img")).toHaveCSS("width", "64px");
+  for (const asset of await assets.all()) {
+    const frame = await asset.boundingBox();
+    const file = await asset.locator(".workspace-logo-file").boundingBox();
+    expect(file!.y).toBeGreaterThanOrEqual(frame!.y + 12);
+    expect(file!.y + file!.height).toBeLessThanOrEqual(
+      frame!.y + frame!.height - 12,
+    );
+  }
+  const banner = await page
+    .locator(".banner")
+    .filter({ hasText: "Workspace settings saved" })
+    .boundingBox();
+  const meta = await page.locator(".workspace-auto-label").boundingBox();
+  expect(
+    banner!.x + banner!.width - meta!.x - meta!.width,
+  ).toBeGreaterThanOrEqual(16);
+  expect(
+    Math.abs(meta!.y + meta!.height / 2 - banner!.y - banner!.height / 2),
+  ).toBeLessThanOrEqual(1);
   await capture(page, "brand-filled-1440");
   await capture(page, "sidebar-icon-1440");
   const violations = await new AxeBuilder({ page }).analyze();
@@ -176,6 +211,14 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   await expect(
     page.locator(".tablet-workspace-label img.workspace-mark"),
   ).toBeVisible();
+  const stacked = await assets.evaluateAll((nodes) =>
+    nodes.map((el) => el.getBoundingClientRect().y),
+  );
+  expect(stacked[1]).toBeGreaterThan(stacked[0]);
+  await page
+    .locator(".workspace-brand-assets")
+    .evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await capture(page, "brand-filled-768");
   await capture(page, "tablet-icon-768");
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto("/studio");

@@ -434,7 +434,7 @@ export function FieldEditor({
   const formatting = (
     <FormattingControls
       edit={!!toolbar && layout.desktop && !inlineControls}
-      compact={layout.compact}
+      compact={layout.compact && !layout.compactPhone}
       independent={standalone}
       textStyle={
         onTextStyle

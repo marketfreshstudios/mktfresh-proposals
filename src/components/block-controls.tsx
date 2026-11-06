@@ -80,6 +80,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     hasPopover = useHasEditorPopover();
   const [config, setConfig] = useState<{
     compact: boolean;
+    compactPhone?: boolean;
     map: Record<string, string>;
     onField?: () => void;
     locked?: boolean;
@@ -195,6 +196,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       <ControlLayout.Provider
         value={{
           ...config,
+          compactPhone: !!config.compactPhone,
           desktop: true,
           phone: !desktop,
           locked: !!config.locked,
@@ -326,6 +328,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
 const ControlConfig = createContext<
   | ((v: {
       compact: boolean;
+      compactPhone?: boolean;
       map: Record<string, string>;
       onField?: () => void;
       locked?: boolean;
@@ -334,12 +337,14 @@ const ControlConfig = createContext<
 >(null);
 export function EditorControlConfig({
   compact,
+  compactPhone = false,
   map,
   onField,
   locked = false,
 }: {
   locked?: boolean;
   compact: boolean;
+  compactPhone?: boolean;
   map: Record<string, string>;
   onField?: () => void;
 }) {
@@ -349,11 +354,12 @@ export function EditorControlConfig({
   useEffect(() => {
     configure?.({
       compact,
+      compactPhone,
       map,
       locked,
       onField: onField ? () => latest.current?.() : undefined,
     });
-  }, [compact, JSON.stringify(map), !!onField, locked]);
+  }, [compact, compactPhone, JSON.stringify(map), !!onField, locked]);
   return null;
 }
 export function BlockAction({

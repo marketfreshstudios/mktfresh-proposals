@@ -14,29 +14,70 @@
 }
 .workspace-brand-assets {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .workspace-brand-assets .workspace-logo-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   height: auto;
-  min-height: 76px;
+  min-height: 216px;
   margin-top: 0;
-  padding: 12px;
-  align-items: center;
+  padding: 16px;
   gap: 12px;
+}
+.workspace-logo-heading label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.workspace-logo-heading p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.workspace-brand-assets .workspace-logo-preview {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.workspace-brand-assets .workspace-logo-preview img {
+  height: 48px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+.workspace-brand-assets .workspace-icon-row .workspace-logo-preview img,
+.workspace-brand-assets .workspace-logo-empty {
+  width: 64px;
+  height: 64px;
 }
 .workspace-brand-assets .workspace-logo-label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
+  flex: none;
 }
-.workspace-brand-assets .workspace-logo-label > label {
-  grid-column: 1 / -1;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
+.workspace-brand-assets .workspace-logo-label .workspace-logo-file {
+  position: static;
+  font-weight: 400;
+  align-self: center;
 }
 .workspace-brand-assets .workspace-logo-row .btn {
   min-height: 44px;
+}
+.workspace-brand-assets > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+@media (min-width: 1024px) {
+  .workspace-brand-assets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .workspace-logo-actions {
   display: flex;
@@ -533,8 +574,11 @@
 }
 .workspace-auto-label {
   position: absolute;
-  right: 0;
-  top: -56px;
+  right: 16px;
+  top: -58px;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
   color: var(--ink-muted);
   font-size: 12px;
 }
