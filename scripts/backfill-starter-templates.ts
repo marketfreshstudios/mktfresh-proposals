@@ -1,7 +1,12 @@
 import { runtime } from "../src/lib/runtime";
 import { supabase } from "../src/lib/repository";
 import { LOCAL_WORKSPACE_ID } from "../src/lib/workspace";
-import { starterTemplates } from "../seed/starter-templates";
+import { starterClauseAudit } from "../seed/starter-audit";
+import {
+  starterTemplates,
+  starterCatalogProducts,
+  starterOrder,
+} from "../seed/starter-templates";
 import type { Item, Template } from "../src/lib/model";
 // Workspace 1 only; this script is an owner-run backfill, never an app startup action.
 const rt = runtime(LOCAL_WORKSPACE_ID);
@@ -17,10 +22,22 @@ const missing = templates.filter(
 console.log(
   `${missing.length} starter templates to add; existing starters will be kept. The old sample will be hidden, not deleted.`,
 );
-for (const t of templates)
+for (const [index, t] of templates.entries()) {
+  const products = starterCatalogProducts(starterOrder[index], catalog);
+  const issues = products.filter((p) => p.issue);
   console.log(
-    `${t.name}: ${t.default_items?.length ?? 0} default quote items${["website-design-build", "website-care-hosting", "local-visibility-seo", "website-ai-audit"].includes(t.starter_key!) && !t.default_items?.length ? " (catalog items missing; quote left empty)" : ""}`,
+    `${t.name}: ${t.default_items?.length ?? 0} default quote items${issues.length ? " (quote left empty)" : ""}`,
   );
+  for (const p of products)
+    console.log(
+      `  ${p.sku}: ${p.item?.id ?? "not found"}${p.issue ? ` — ${p.issue}` : ""}`,
+    );
+}
+console.log("Existing clause 4.4 audit (read-only; no content is rewritten):");
+const audit = starterClauseAudit(existing, await rt.repo.list(), catalog);
+if (audit.length) console.table(audit);
+else
+  console.log("No clause 4.4 found in existing templates/proposals/versions.");
 if (!process.argv.includes("--confirm"))
   console.log("Dry run. Add --confirm to apply.");
 else if (process.env.APP_MODE === "local") {

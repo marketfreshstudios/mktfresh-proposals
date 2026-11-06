@@ -12,7 +12,7 @@ export function starterId(workspace: string, key: string) {
   const hash = createHash("md5").update(`${workspace}:${key}`).digest("hex");
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-8${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
-// Kept byte-for-byte with the original sample's clause body and predicate.
+// Original sample wording; new starters resolve its predicate to the actual catalog item.
 export const paymentPlanClause = {
   id: "payment-plan",
   heading: "4.4 Own It Over Time",
@@ -23,12 +23,50 @@ export const paymentPlanClause = {
   },
   draft: true,
 };
+const starterProducts: Record<number, { sku: string; seed: number }[]> = {
+  1: [
+    { sku: "build", seed: 101 },
+    { sku: "oiot-monthly-175", seed: 103 },
+    { sku: "hosted-essentials-25", seed: 104 },
+  ],
+  2: [
+    { sku: "care-lite-49", seed: 105 },
+    { sku: "care-standard-85", seed: 106 },
+    { sku: "care-pro-149", seed: 107 },
+  ],
+  3: [
+    { sku: "retainer-core-295", seed: 109 },
+    { sku: "retainer-growth-495", seed: 110 },
+  ],
+  4: [{ sku: "audit", seed: 100 }],
+};
+/** SKU is authoritative, including inactive matches. IDs support older seeded catalogs. */
+export function starterCatalogProducts(number: number, catalog: Item[]) {
+  return (starterProducts[number] ?? []).map(({ sku, seed }) => {
+    const fallback = `00000000-0000-4000-8000-${String(seed).padStart(12, "0")}`;
+    const item =
+      catalog.find((i) => i.sku === sku) ??
+      catalog.find((i) => i.id === fallback);
+    return {
+      sku,
+      item,
+      issue: !item
+        ? "missing"
+        : !item.active || item.legacy
+          ? "inactive"
+          : null,
+    };
+  });
+}
 export function starterTemplates(
   workspace: string,
   options: { marketfresh?: boolean; catalog?: Item[] } = {},
 ): Template[] {
   return starterOrder.map((number, order) => {
     const source = copy.templates.find((t) => t.number === number)!;
+    const products = options.marketfresh
+      ? starterCatalogProducts(number, options.catalog ?? [])
+      : [];
     const id = starterId(workspace, source.key);
     const coverLine = (
       kind: CoverElement["kind"],
@@ -70,8 +108,13 @@ export function starterTemplates(
         };
       },
     );
-    if (options.marketfresh && number === 1)
-      clauses.splice(4, 0, structuredClone(paymentPlanClause));
+    if (options.marketfresh && number === 1) {
+      const clause = structuredClone(paymentPlanClause);
+      // Missing products leave the quote empty; retain the original conditional wording.
+      clause.show_when.pricing_item_id =
+        products[1]?.item?.id ?? clause.show_when.pricing_item_id;
+      clauses.splice(4, 0, clause);
+    }
     content.push(
       { type: "page_break" },
       { type: "contract", text: "Terms", clauses },
@@ -88,37 +131,22 @@ export function starterTemplates(
       }
     }
     content.forEach((b, index) => (b.id = starterId(id, `block-${index}`)));
-    const ids = (numbers: number[]) =>
-      numbers.map(
-        (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
-      );
-    const wanted = options.marketfresh
-      ? ids(
-          number === 1
-            ? [101, 103, 104]
-            : number === 2
-              ? [105, 106, 107]
-              : number === 3
-                ? [109, 110]
-                : number === 4
-                  ? [100]
-                  : [],
-        )
-      : [];
-    const catalog = options.catalog ?? [];
-    // A missing member leaves the complete choice group empty; never guess a replacement.
-    const complete = wanted.every((id) =>
-      catalog.some((i) => i.id === id && i.active),
-    );
+    // A missing/inactive member leaves the entire template quote empty.
+    const complete = products.every((p) => !p.issue);
     const default_items = complete
-      ? wanted.map((itemId, index) => {
-          const item = catalog.find((i) => i.id === itemId)!;
+      ? products.map(({ item: product }, index) => {
+          const item = product!;
           const quote = catalogQuoteItem(
             item,
             index,
             starterId(id, `quote-${index}`),
             [],
           );
+          // Kickoff is proposal-specific: staff add a separately priced Custom line.
+          if (number === 1 && index === 1)
+            quote.sublines = quote.sublines.filter(
+              (s) => s.interval !== "one_time",
+            );
           const choice =
             (number === 1 && index < 2) || number === 2 || number === 3;
           const checked = number === 1 ? index === 0 : number === 4;
