@@ -21,7 +21,7 @@ Codex has not run hosted SQL or either script against hosted data.
 
 ## PR B — owner action
 
-After PR A's SQL, run [`20261106203920_cover_layout_defaults.sql`](../supabase/migrations/20261106203920_cover_layout_defaults.sql). **Hosted SQL is required for the future-workspace seed payload only.** Cover and palette settings are optional JSON, with no new columns or storage policy. The SQL does not rewrite existing rows.
+**Deploy PR B first**, then, after PR A's SQL has been applied, run [`20261106203920_cover_layout_defaults.sql`](../supabase/migrations/20261106203920_cover_layout_defaults.sql). **Hosted SQL is required for the future-workspace seed payload only.** Cover and palette settings are optional JSON, with no new columns or storage policy. The SQL does not rewrite existing rows. Do not create new workspaces between applying the new payload and deploying its matching app; the required order is app deploy → SQL → optional starter dry run/confirmation.
 
 After deploying the matching app, use the same dry-run and `--confirm` commands above to opt unchanged MarketFresh starters into Editorial. The script now recognizes either the complete unchanged PR #83 seed or PR A seed; it never derives a baseline from the new layout. Any edit to content, quote, name, availability, bands or cover protects the whole starter. The existing service-only atomic comparison protects against edits between the dry run and confirmation. Existing custom covers and every existing proposal/published version remain unchanged.
 
