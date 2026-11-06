@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Centered cover</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 816px; height: 1056px; box-sizing: border-box; background: #F6F4EF; color: #1B1F1D; font-family: 'DM Sans', sans-serif; padding: 56px; display: flex;">
+<div style="flex-grow: 1; border: 1px solid #D9D5CB; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 72px 56px 56px; text-align: center;">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.04em; color: {{accent}};">example<span style="color: #1B1F1D; font-weight: 500;">studio</span></span>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
+<span style="font-size: 13px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: {{accent}};">Website proposal</span>
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 56px; line-height: 1.06; letter-spacing: -0.025em; max-width: 560px;">A new website for Harbor &amp; Pine Dental</h1>
+<div style="width: 48px; height: 3px; background: {{accent}};"></div>
+<p style="margin: 0; font-size: 17px; line-height: 1.5; color: #3E4542;">Prepared for Jamie Rivera<br>Harbor &amp; Pine Dental</p>
+</div>
+<div style="font-size: 13px; line-height: 1.6; color: #5E6662;">Alex Morgan · Example Studio<br>November 6, 2026 · Valid until December 6, 2026</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5D50","options":["#2F5D50","#1F4E79","#B5532E","#1B1F1D"]},"$preview":{"width":816,"height":1056}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#2F5D50' };
+}
+}
+</script>
+</body>
+</html>

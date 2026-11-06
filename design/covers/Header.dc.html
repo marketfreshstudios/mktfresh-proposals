@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Page header fix</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 816px; height: 520px; box-sizing: border-box; background: #FFFFFF; font-family: 'DM Sans', sans-serif; color: #1B1F1D; padding: 40px 72px 0; display: flex; flex-direction: column;">
+<div style="display: flex; justify-content: space-between; align-items: center; height: 32px; border-bottom: 1px solid #DCDFDD; padding-bottom: 12px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<div style="width: 24px; height: 24px; border-radius: 6px; background: {{accent}}; color: #FFFFFF; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">E</div>
+<span style="font-size: 12px; color: #5E6662;">Logo only, by default</span>
+</div>
+<span style="font-size: 12px; color: #5E6662;">A new website for Harbor &amp; Pine Dental</span>
+</div>
+<div style="height: 40px;"></div>
+<h2 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 34px;">Overview</h2>
+<p style="margin: 16px 0 0; font-size: 16px; line-height: 1.6;">Hi Jamie, thanks for walking us through where Harbor &amp; Pine Dental is today. The body always starts below the header's reserved space on every page, so a heading can never slide under the rule.</p>
+<div style="margin-top: 32px; display: flex; gap: 16px;">
+<div style="flex: 1; background: #F2F1EE; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.5;"><strong>Default header:</strong> logo if the workspace has one, otherwise the workspace name. Never both by default.</div>
+<div style="flex: 1; background: #F2F1EE; border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.5;"><strong>Staff can still add both</strong> in Styles › Header &amp; footer. Right side: proposal title.</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5D50","options":["#2F5D50","#1F4E79","#B5532E","#1B1F1D"]},"$preview":{"width":816,"height":520}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#2F5D50' };
+}
+}
+</script>
+</body>
+</html>
