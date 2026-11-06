@@ -1022,7 +1022,7 @@ async function handleRoute(req: Request, path: string[]) {
               active: z.boolean(),
               signature_heading_defaulted: z.boolean().optional(),
               header_footer: TemplateBandsSchema.default(defaultTemplateBands),
-              cover: CoverSchema.default(() => defaultCover(true)),
+              cover: CoverSchema.optional(),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
             })
@@ -1047,7 +1047,11 @@ async function handleRoute(req: Request, path: string[]) {
           )
             entity.content = withSignatureHeadings(entity.content as Block[]);
           entity.signature_heading_defaulted = true;
-          entity.cover = loadedCover(entity.cover);
+          entity.cover = entity.cover
+            ? loadedCover(entity.cover)
+            : previousTemplate
+              ? loadedCover(previousTemplate.cover)
+              : defaultCover(true);
           await validateStyles(
             rt.repo,
             (

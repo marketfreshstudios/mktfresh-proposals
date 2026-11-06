@@ -243,10 +243,13 @@ test("every starter field is highlighted in template and proposal editors, while
           paths,
         );
     }
-    await chips(paper.locator('[data-band-frame="header"]').first(), [
-      "workspace.name",
-      "proposal.title",
-    ]);
+    const header = paper.locator('[data-band-frame="header"]').first();
+    await chips(header, ["proposal.title"]);
+    // Owner-approved default: an uploaded wide logo replaces the name field.
+    await expect(header.locator("img")).toBeVisible();
+    await expect(header.locator('[data-field="workspace.name"]')).toHaveCount(
+      0,
+    );
     const raw = await paper.evaluate((root) => {
       const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
       let n;

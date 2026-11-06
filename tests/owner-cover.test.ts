@@ -43,7 +43,7 @@ it("manual and AI creates start content on page 2, and AI edits cannot put scope
       },
       actor,
     );
-    expect(p.cover).toEqual(defaultCover(true));
+    expect(p.cover).toEqual(defaultCover());
     expect(p.content.map((b) => b.type)).toEqual(["page_break", "paragraph"]);
     if (actor.actor.startsWith("ai:")) {
       const edited = await f.service.edit(

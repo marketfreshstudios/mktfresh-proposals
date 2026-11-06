@@ -14,7 +14,6 @@ import {
 import {
   CoverSchema,
   loadedCover,
-  defaultCover,
   contentAfterCover,
   type Cover,
 } from "./cover";
@@ -312,7 +311,7 @@ export class ProposalService {
 
       header_footer: proposalBands(template.header_footer),
       template_style_overrides: structuredClone(template.style_overrides ?? {}),
-      cover: template.cover ? loadedCover(template.cover) : defaultCover(true),
+      cover: loadedCover(template.cover),
       creation_warnings: defaults.warnings,
       brief: input.brief,
       ai_unreviewed: actor.actor.startsWith("ai:"),
