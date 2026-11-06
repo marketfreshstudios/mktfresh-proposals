@@ -1,64 +1,45 @@
 "use client";
-import { useLayoutEffect, useRef } from "react";
-import { FieldTextArea } from "../field-options";
-import { SourceParagraph } from "../page-spacers";
-/** The measured reading layer stays plain text; only the input overlay is editor chrome. */
+import { FieldEditor } from "../field-editor";
+import { plainEditorText } from "../../lib/editor-fields";
+import type { RichText } from "../../lib/model";
+/** Field atoms are an editing adapter; contract bodies are still plain strings. */
 export function PlainClauseText({
   value,
   onChange,
   map,
   label,
+  multiline = true,
 }: {
   value: string;
   onChange: (value: string) => void;
   map: Record<string, string>;
   label: string;
+  multiline?: boolean;
 }) {
-  const root = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const reading = root.current?.querySelector<HTMLElement>(
-        ".plain-clause-reading p",
-      ),
-      input = root.current?.querySelector<HTMLTextAreaElement>("textarea");
-    if (!reading || !input) return;
-    // Paragraph metrics can differ from the surrounding contract. Match the
-    // overlay to the reading layer without adding to measured document height.
-    const sync = () => {
-      const style = getComputedStyle(reading);
-      for (const property of [
-        "font-family",
-        "font-size",
-        "font-weight",
-        "font-style",
-        "line-height",
-        "letter-spacing",
-        "text-transform",
-        "text-align",
-        "color",
-      ])
-        input.style.setProperty(property, style.getPropertyValue(property));
-    };
-    sync();
-    const resize = new ResizeObserver(sync);
-    resize.observe(reading);
-    return () => resize.disconnect();
-  });
+  const valueNode: RichText = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: value
+          .split("\n")
+          .flatMap((line, n) => [
+            ...(n ? [{ type: "hardBreak" }] : []),
+            ...(line ? [{ type: "text", text: line }] : []),
+          ]),
+      },
+    ],
+  };
   return (
-    <div className="plain-clause-text" ref={root}>
-      <div className="plain-clause-reading">
-        <SourceParagraph
-          text={value.replace(
-            /{{\s*([\w.-]+)\s*}}/g,
-            (_, path) => map[path] ?? `{{${path}}}`,
-          )}
-        />
-      </div>
-      <FieldTextArea
-        data-editor-chrome
-        className="plain-clause-input"
-        aria-label={label}
-        value={value}
-        onValue={onChange}
+    <div className="plain-clause-text plain-clause-reading">
+      <FieldEditor
+        label={label}
+        plainText
+        multilinePlainText={multiline}
+        value={valueNode}
+        map={map}
+        showNames={false}
+        onChange={(node) => onChange(plainEditorText(node))}
       />
     </div>
   );

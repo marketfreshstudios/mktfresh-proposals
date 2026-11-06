@@ -9,6 +9,7 @@ import "./block-controls.css";
 import "./emails.css";
 import "./editor.css";
 import "./studio-v3.css";
+import "./editor-fields.css";
 export default function RootLayout({
   children,
 }: {

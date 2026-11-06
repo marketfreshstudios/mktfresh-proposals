@@ -1,3 +1,4 @@
+import { fieldNodes, editorFieldValue } from "./editor-fields";
 import { inlineSizeHtml } from "./inline-font-size";
 import {
   coverElementCss,
@@ -13,17 +14,28 @@ export function coverInlineHtml(
   map: Record<string, string>,
   print = false,
 ): string {
+  return coverNodeHtml(
+    print ? node : fieldNodes({ type: "paragraph", content: [node] }),
+    map,
+    print,
+  );
+}
+function coverNodeHtml(
+  node: RichText,
+  map: Record<string, string>,
+  print: boolean,
+): string {
   let value =
     node.type === "variable"
       ? print
         ? escape(map[node.attrs?.path ?? ""] ?? "")
-        : `<span class="field-chip" data-field="${escape(node.attrs?.path ?? "")}">${escape(map[node.attrs?.path ?? ""] ?? "")}</span>`
+        : `<span class="field-chip" data-field="${escape(node.attrs?.path ?? "")}">${escape(editorFieldValue(node.attrs?.path ?? "", map))}</span>`
       : node.type === "text"
         ? escape(resolve(node.text ?? "", map))
         : node.type === "hardBreak"
           ? "<br>"
           : (node.content ?? [])
-              .map((n) => coverInlineHtml(n, map, print))
+              .map((n) => coverNodeHtml(n, map, print))
               .join(node.type === "doc" ? "<br>" : "");
   for (const mark of node.marks ?? [])
     if (["bold", "italic", "underline"].includes(mark.type)) {

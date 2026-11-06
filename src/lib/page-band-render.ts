@@ -1,3 +1,4 @@
+import { editorFieldValue } from "./editor-fields";
 import { inlineSizeHtml } from "./inline-font-size";
 import type { RichText } from "./model";
 import { escape } from "./presentation";
@@ -27,7 +28,6 @@ export const pageBandCss = `
 .page-band em .field-chip{font-style:italic}
 .page-band p,.page-band ul,.page-band ol{display:inline;font:inherit;margin:0;padding:0;letter-spacing:inherit;line-height:16px}
 .page-band ul,.page-band ol{padding-left:16px}
-.page-band .field-chip{background:#F0ECE4;border-radius:4px;padding:0 4px;color:#3E3B35;font:inherit;font-weight:500;font-size:12px;line-height:16px}
 @media print{.page-band{font-kerning:none}.page-band .band-field{background:none;border:0;padding:0}}
 `.replaceAll(
   ".page-band",
@@ -74,7 +74,7 @@ export function pageBandHtml({
   const field = (path: string) =>
     print
       ? escape(map[path] ?? "")
-      : `<span class="field-chip" data-field="${escape(path)}">${escape(map[path] ?? "")}</span>`;
+      : `<span class="field-chip" data-field="${escape(path)}">${escape(editorFieldValue(path, map))}</span>`;
   const text = (value: string) =>
     value
       .split(/({{\s*[\w.-]+\s*}})/g)

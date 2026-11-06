@@ -1,4 +1,5 @@
 "use client";
+import { editorFieldParts } from "../lib/editor-fields";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -97,7 +98,37 @@ export function pageSpacers(values: () => Record<string, string>) {
   });
 }
 /** Plain clause text shares visual-only spacers with rich text; stored strings never gain nodes. */
-export function SourceParagraph({ text }: { text: string }) {
+export function SourceParagraph({
+  text,
+  map,
+}: {
+  text: string;
+  map?: Record<string, string>;
+}) {
+  const fields = map ? editorFieldParts(text, map) : [{ value: text }];
+  const resolved = fields.map((part) => part.value).join("");
+  const paint = (from: number, to: number) => {
+    let offset = 0;
+    return fields.map((part, n) => {
+      const begin = offset;
+      offset += part.value.length;
+      const value = part.value.slice(
+        Math.max(0, from - begin),
+        Math.max(0, to - begin),
+      );
+      return !value ? null : "path" in part ? (
+        <span
+          key={`${from}-${n}`}
+          className="field-chip"
+          data-field={part.path}
+        >
+          {value}
+        </span>
+      ) : (
+        value
+      );
+    });
+  };
   const root = useRef<HTMLParagraphElement>(null),
     [spacers, setSpacers] = useState<SourceSpacer[]>([]);
   // Parent pagination commits cached spacers in its layout effect. Register
@@ -114,7 +145,7 @@ export function SourceParagraph({ text }: { text: string }) {
   for (const space of [...spacers].sort((a, b) => a.offset - b.offset)) {
     const at = space.offset;
     parts.push(
-      text.slice(start, at),
+      paint(start, at),
       <span
         key={space.offset}
         className="pdf-source-spacer"
@@ -125,7 +156,7 @@ export function SourceParagraph({ text }: { text: string }) {
     );
     start = at;
   }
-  parts.push(text.slice(start));
+  parts.push(paint(start, resolved.length));
   return (
     <p ref={root} data-source-text style={{ whiteSpace: "pre-wrap" }}>
       {parts}

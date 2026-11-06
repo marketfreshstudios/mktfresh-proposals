@@ -1472,6 +1472,7 @@ function FlowingDocument({
       id="proposal-document"
     >
       <DocumentCover
+        highlightFields={false}
         logo={logo}
         cover={p.cover}
         map={p.variables}

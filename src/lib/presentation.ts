@@ -128,9 +128,7 @@ function rich(node: RichText, map: Record<string, string>, depth = 0): string {
   if (node.type === "text" || node.type === "variable") {
     let s =
       node.type === "variable"
-        ? resolve("{{" + (node.attrs?.path ?? "") + "}}", map)
-          ? `<span class="field-chip">${escapedResolved("{{" + (node.attrs?.path ?? "") + "}}", map)}</span>`
-          : ""
+        ? escapedResolved("{{" + (node.attrs?.path ?? "") + "}}", map)
         : escapedResolved(node.text ?? "", map);
     for (const m of node.marks ?? []) {
       if (["bold", "italic", "underline"].includes(m.type))

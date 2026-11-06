@@ -1,4 +1,5 @@
 "use client";
+import { fieldNodes, editorFieldValue } from "../lib/editor-fields";
 import { ListMarkerSizes } from "./list-marker-sizes";
 import { InlineFontSize, registerInlineEditor } from "./inline-font-size";
 import {
@@ -25,38 +26,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useLayoutEffect, useRef, useState, useId } from "react";
 import type { RichText } from "../lib/model";
 import { Button } from "./ui";
-/** Draft-only editing adapter. Historical content is never passed through this. */
-export function fieldNodes(node: RichText): RichText {
-  if (node.type === "doc" && !node.content?.length)
-    return { ...node, content: [{ type: "paragraph" }] };
-  return {
-    ...node,
-    ...(node.content
-      ? {
-          content: node.content.flatMap((n) => {
-            if (n.type !== "text") return [fieldNodes(n)];
-            const out: RichText[] = [];
-            let last = 0;
-            for (const m of (n.text ?? "").matchAll(
-              /\{\{\s*([\w.-]+)\s*\}\}/g,
-            )) {
-              if (m.index! > last)
-                out.push({ ...n, text: n.text!.slice(last, m.index) });
-              out.push({
-                type: "variable",
-                attrs: { path: m[1] },
-                ...(n.marks ? { marks: n.marks } : {}),
-              });
-              last = m.index! + m[0].length;
-            }
-            if (last < (n.text ?? "").length)
-              out.push({ ...n, text: n.text!.slice(last) });
-            return out;
-          }),
-        }
-      : {}),
-  };
-}
+export { fieldNodes } from "../lib/editor-fields";
 export function FieldEditor({
   value,
   onChange,
@@ -79,6 +49,7 @@ export function FieldEditor({
   onHeadingStartEnter,
   readOnly = false,
   plainText = false,
+  multilinePlainText = false,
   fieldLabels,
   pickerMap,
   formattingMode,
@@ -86,6 +57,7 @@ export function FieldEditor({
 }: {
   readOnly?: boolean;
   plainText?: boolean;
+  multilinePlainText?: boolean;
   fieldLabels?: Record<string, string>;
   pickerMap?: Record<string, string>;
   formattingMode?: "email";
@@ -156,6 +128,7 @@ export function FieldEditor({
       handleKeyDown: (view, event) => {
         if (plainText && event.key === "Enter") {
           event.preventDefault();
+          if (multilinePlainText) editor?.commands.setHardBreak();
           return true;
         }
         // Cover lines and bands are logical single-line fields. On macOS, native
@@ -210,6 +183,49 @@ export function FieldEditor({
         : {},
     },
     extensions: [
+      Extension.create({
+        name: "typedFieldTokens",
+        addProseMirrorPlugins() {
+          return [
+            new Plugin({
+              appendTransaction(transactions, _old, state) {
+                if (!transactions.some((t) => t.docChanged)) return null;
+                const matches: {
+                  from: number;
+                  to: number;
+                  path: string;
+                  marks: any;
+                }[] = [];
+                state.doc.descendants((node, pos) => {
+                  if (node.isText)
+                    for (const m of (node.text ?? "").matchAll(
+                      /{{\s*([\w.-]+)\s*}}/g,
+                    ))
+                      matches.push({
+                        from: pos + m.index!,
+                        to: pos + m.index! + m[0].length,
+                        path: m[1],
+                        marks: node.marks,
+                      });
+                });
+                if (!matches.length) return null;
+                const tr = state.tr;
+                for (const m of matches.reverse())
+                  tr.replaceWith(
+                    m.from,
+                    m.to,
+                    state.schema.nodes.variable.create(
+                      { path: m.path },
+                      null,
+                      m.marks,
+                    ),
+                  );
+                return tr;
+              },
+            }),
+          ];
+        },
+      }),
       ListMarkerSizes,
       ...(!plainText
         ? [
@@ -294,9 +310,12 @@ export function FieldEditor({
             const paint = () => {
               const path = String(current.attrs.path);
               dom.dataset.field = path;
-              dom.textContent = names.current
-                ? (labels.current?.[path] ?? `{{${path}}}`)
-                : values.current[path] || `{{${path}}}`;
+              dom.textContent = editorFieldValue(
+                path,
+                values.current,
+                names.current,
+                labels.current,
+              );
             };
             painters.current.add(paint);
             paint();
@@ -322,10 +341,12 @@ export function FieldEditor({
             "data-field": node.attrs.path,
             class: "field-chip",
           }),
-          names.current
-            ? (labels.current?.[String(node.attrs.path)] ??
-              `{{${node.attrs.path}}}`)
-            : values.current[node.attrs.path] || `{{${node.attrs.path}}}`,
+          editorFieldValue(
+            String(node.attrs.path),
+            values.current,
+            names.current,
+            labels.current,
+          ),
         ],
       }),
     ],

@@ -1,4 +1,5 @@
 "use client";
+import { resolvedEditorText } from "../../lib/editor-fields";
 import { bandPages, resolvedBandPages } from "../../lib/band-overrides";
 import type { HeaderFooterSettings } from "../../lib/page-bands";
 import type { Block } from "../../lib/model";
@@ -56,6 +57,7 @@ function blockLabel(block: Block) {
 }
 export function SectionsNav({
   content,
+  map = {},
   pagination,
   onChange,
   onMove,
@@ -67,6 +69,7 @@ export function SectionsNav({
 }: {
   currentSectionId?: string | null;
   headerFooter?: HeaderFooterSettings;
+  map?: Record<string, string>;
   content: Block[];
   pagination?: BrowserPages | null;
   onChange: (v: Block[]) => void;
@@ -75,6 +78,7 @@ export function SectionsNav({
   measure?: (content: Block[]) => BrowserPages;
   onPage?: (page: number) => void;
 }) {
+  const display = (value: string) => resolvedEditorText(value, map);
   const pages = computedPages(content, pagination),
     feedback = useBlockFeedback();
   const selected = useBlockSelection().selected;
@@ -251,7 +255,7 @@ export function SectionsNav({
                   <Sortable
                     key={s.id}
                     id={`section:${s.id}`}
-                    label={`section ${s.title}`}
+                    label={`section ${display(s.title)}`}
                   >
                     <SectionRow
                       label={
@@ -260,12 +264,12 @@ export function SectionsNav({
                           "signature_block",
                           "contract",
                         ].includes(s.blocks[0]?.type)
-                          ? blockLabel(s.blocks[0])
-                          : s.title
+                          ? display(blockLabel(s.blocks[0]))
+                          : display(s.title)
                       }
                       current={currentSectionId === s.id}
                       pending={s.pending}
-                      title={s.title}
+                      title={display(s.title)}
                       onClick={() => onFocus(s.id)}
                     />
                     {s.blocks
@@ -274,7 +278,7 @@ export function SectionsNav({
                         <SectionRow
                           key={b.id}
                           subheading
-                          label={b.text || "Untitled subheading"}
+                          label={display(b.text || "Untitled subheading")}
                           current={currentSectionId === b.id}
                           onClick={() => onFocus(b.id!)}
                         />
@@ -289,7 +293,7 @@ export function SectionsNav({
                     <SectionRow
                       className="outline-block"
                       key={b.id}
-                      label={blockLabel(b)}
+                      label={display(blockLabel(b))}
                       current={
                         selected === `block-${b.id}` ||
                         selected === `template-${b.id}`
@@ -302,7 +306,7 @@ export function SectionsNav({
                 p.continuing && (
                   <SectionRow
                     className="outline-continuing"
-                    label={`${p.continuing.title} (continued)`}
+                    label={`${display(p.continuing.title)} (continued)`}
                     onClick={() => onPage?.(p.number)}
                   />
                 )}

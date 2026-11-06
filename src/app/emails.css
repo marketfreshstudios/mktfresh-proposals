@@ -433,20 +433,6 @@
 .studio-email-editor .email-rendered .tiptap p:empty::after {
   content: "\a0";
 }
-.studio-email-editor .field-chip {
-  font: inherit;
-  background: var(--surface-sunken);
-  color: var(--ink);
-  border-radius: 4px;
-  padding-inline: 3px;
-}
-.studio-email-editor .email-preview-frame[data-values="true"] .field-chip {
-  background: transparent;
-  color: inherit;
-  box-shadow: none;
-  border: 0;
-  padding: 0;
-}
 .studio-email-editor .email-button-edit {
   display: block;
 }
