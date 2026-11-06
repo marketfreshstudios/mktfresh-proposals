@@ -10,6 +10,7 @@ export function SpacingInput({
   max,
   ariaLabel = label,
   inputStep = "any",
+  unit = "px",
 }: {
   label: string;
   value: number;
@@ -19,6 +20,7 @@ export function SpacingInput({
   step?: number;
   ariaLabel?: string;
   inputStep?: number | "any";
+  unit?: string;
 }) {
   const id = useId(),
     history = useEditorHistory(),
@@ -93,12 +95,13 @@ export function SpacingInput({
             }}
             onBlur={() => setRaw(String(value))}
           />
-          <span aria-hidden="true">px</span>
+          <span aria-hidden="true">{unit}</span>
         </span>
       </div>
       {clamped && (
         <small id={`${id}-limit`} role="status">
-          Max {limit} px on this page
+          Max {limit} {unit}
+          {unit === "px" ? " on this page" : ""}
         </small>
       )}
     </div>

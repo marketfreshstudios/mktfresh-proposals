@@ -1,4 +1,7 @@
 "use client";
+import { CoverSettings } from "./cover-settings";
+import { BrandPalettePicker } from "./brand-palette-picker";
+import type { Cover } from "../lib/cover";
 import { confirmDialog } from "./dialog-actions";
 import { SpacingInput } from "./editor/spacing-input";
 import {
@@ -57,7 +60,11 @@ export function ProposalStyles({
   bandPages,
   scope,
   hidePageMargins = false,
+  cover,
+  onCover,
 }: {
+  cover?: Cover;
+  onCover?: (cover: Cover) => void;
   scope?: "workspace" | "template";
   hidePageMargins?: boolean;
   onResetBands?: () => void | Promise<void>;
@@ -121,6 +128,9 @@ export function ProposalStyles({
   );
   return (
     <section className="proposal-styles stack" aria-label="Proposal styles">
+      {onCover && (
+        <CoverSettings value={cover} onChange={onCover} settings={settings} />
+      )}
       <p className="muted style-scope-note">
         {scope === "workspace"
           ? "Defaults for new proposals. Sent and signed documents keep their saved styles."
@@ -188,6 +198,11 @@ export function ProposalStyles({
           </div>
           <fieldset className="style-colors">
             <legend>Color</legend>
+            <BrandPalettePicker
+              settings={settings}
+              value={styleColour(selected.colour, settings?.accent_colour)}
+              onChange={(colour) => patch({ colour })}
+            />
             <div role="group" aria-label="Color choices">
               {(["ink", "accent", "custom"] as const).map((colour) => (
                 <button

@@ -1457,6 +1457,8 @@ function QuoteEditorContent({
         />
       ) : tab === "Styles" ? (
         <ProposalStyles
+          cover={p.cover}
+          onCover={(cover) => change({ cover })}
           settings={p.workspace_settings}
           headerFooter={bands}
           bandPages={
@@ -2611,6 +2613,17 @@ function QuoteEditorContent({
                           1,
                         ).content.height
                       }
+                      paperInsets={
+                        pageGeometry(
+                          resolveStyles(
+                            p.workspace_settings,
+                            p.template_style_overrides,
+                            p.style_overrides,
+                          ),
+                          p.header_footer,
+                          1,
+                        ).margins
+                      }
                       title={p.title}
                       cover={p.cover}
                       map={map}
@@ -2622,6 +2635,7 @@ function QuoteEditorContent({
                           ? p.workspace_settings?.company_name
                           : undefined
                       }
+                      accent={p.workspace_settings?.accent_colour}
                       logoIcon={
                         p.workspace_settings?.logo_icon
                           ? `/api/workspace-icon?size=128&v=${encodeURIComponent(p.workspace_settings!.logo_icon!.path)}`
