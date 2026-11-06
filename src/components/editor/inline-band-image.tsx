@@ -1,4 +1,5 @@
 "use client";
+import { brandIconHeight } from "../../lib/workspace-brand";
 import { Node, mergeAttributes, type Editor } from "@tiptap/core";
 import {
   NodeViewWrapper,
@@ -111,7 +112,7 @@ function BandImageView({
   return (
     <NodeViewWrapper
       as="span"
-      className="band-inline-image"
+      className={`band-inline-image ${name ? "band-brand-lockup" : ""}`}
       contentEditable={false}
     >
       <SelectableImage
@@ -119,7 +120,9 @@ function BandImageView({
         value={{
           src: node.attrs.src,
           alt: node.attrs.alt,
-          height: node.attrs.height,
+          height: name
+            ? brandIconHeight("band", node.attrs.height)
+            : node.attrs.height,
         }}
         source={source}
         maxHeight={options.maxHeight}

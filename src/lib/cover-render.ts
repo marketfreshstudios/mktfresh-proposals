@@ -4,7 +4,7 @@ import {
   coverLayoutStyle,
   coverLayoutCss,
 } from "./cover-graphics";
-import { coverBrand } from "./workspace-brand";
+import { brandIconHeight, coverBrand } from "./workspace-brand";
 import { fieldNodes, editorFieldValue } from "./editor-fields";
 import { inlineSizeHtml } from "./inline-font-size";
 import {
@@ -86,11 +86,14 @@ export function editableCoverHtml(
             ? `<div class="cover-logo cover-element" data-cover-element="${escape(e.id)}" style="${style}${e.x === undefined ? "" : "text-align:left;"}"><img src="${escape(src)}" alt="${escape(cover.logo_alt ?? "Company logo")}" data-image-height="${cover.logo_height ?? 60}" ${e.x === undefined ? "" : `data-image-x="${e.x}"`} style="display:inline-block;height:${cover.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto;${e.x === undefined ? "" : `margin-left:${e.x}px;`}"></div>`
             : "";
 
+        const imageHeight = brand.name
+          ? brandIconHeight("cover", cover.logo_height)
+          : (cover.logo_height ?? 60);
         const image = src
-          ? `<img src="${escape(src)}" alt="${escape(cover.logo_alt ?? "Company logo")}" data-image-height="${cover.logo_height ?? 60}" style="display:inline-block;vertical-align:middle;height:${cover.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto;${e.x === undefined ? "" : `margin-left:${e.x}px;`}">`
+          ? `<img src="${escape(src)}" alt="${escape(cover.logo_alt ?? "Company logo")}" data-image-height="${imageHeight}" style="display:inline-block;vertical-align:middle;height:${imageHeight}px;max-height:none;max-width:100%;width:auto;${e.x === undefined ? "" : `margin-left:${e.x}px;`}">`
           : "";
         return image || brand.name
-          ? `<div class="cover-logo cover-element" data-cover-element="${escape(e.id)}" data-brand="${!!brand.name}" style="${style}">${image}${brand.name ? `<span class="cover-brand-name">${escape(brand.name)}</span>` : ""}</div>`
+          ? `<div class="cover-logo cover-element" data-cover-element="${escape(e.id)}" data-brand="${!!brand.name}" style="${style}justify-content:${e.x !== undefined || !e.align || e.align === "left" ? "flex-start" : e.align === "center" ? "center" : "flex-end"};">${image}${brand.name ? `<span class="cover-brand-name">${escape(brand.name)}</span>` : ""}</div>`
           : "";
       }
       const html = coverInlineHtml(
@@ -129,5 +132,5 @@ export function editableCoverHtml(
       .join("")
   );
 }
-export const coverBrandCss = `.cover-brand-name{display:inline-block;vertical-align:middle;font:600 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);margin-left:8px}.cover-logo[data-brand=true] .document-image{display:inline-block;vertical-align:middle}`;
+export const coverBrandCss = `.cover-logo[data-brand=true]:has(img){display:flex!important;align-items:center;gap:10px}.cover-logo[data-brand=true]>.document-image{flex:none}.cover-logo[data-brand=true] .cover-brand-name{margin-left:0;min-width:0}.cover-brand-name{display:inline-block;vertical-align:middle;font:600 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);margin-left:8px}.cover-logo[data-brand=true] .document-image{display:inline-block;vertical-align:middle}`;
 export const coverElementsCss = `.cover-text-line{min-height:18px;font:500 12px/1.5 "Instrument Sans",sans-serif;margin:10px 0}.print-cover:has(>.cover-element){display:flex;flex-direction:column;align-items:stretch}.cover-element{position:relative;flex:none}.cover-logo{width:100%;max-width:none;line-height:0}.cover-element .field-chip{font:inherit}${coverBrandCss}${coverLayoutCss}`;

@@ -9,7 +9,7 @@ import {
   coverLayoutStyle,
   resolveCoverGraphics,
 } from "../lib/cover-graphics";
-import { coverBrand } from "../lib/workspace-brand";
+import { brandIconHeight, coverBrand } from "../lib/workspace-brand";
 import { useHasEditorPopover } from "./editor-popovers";
 import { FontSizePicker } from "./inline-font-size";
 import {
@@ -846,9 +846,15 @@ function CoverLogo({
   const x = position?.x ?? e.x,
     align = position?.align ?? e.align;
   const style: CSSProperties = {
-    marginLeft: x !== undefined ? x : align === "left" ? 0 : "auto",
-    marginRight: x === undefined && align === "center" ? "auto" : 0,
-    display: "block",
+    marginLeft: name
+      ? (x ?? 0)
+      : x !== undefined
+        ? x
+        : align === "left"
+          ? 0
+          : "auto",
+    marginRight: !name && x === undefined && align === "center" ? "auto" : 0,
+    display: name ? "inline-block" : "block",
     width: "max-content",
     maxWidth: "100%",
   };
@@ -858,7 +864,16 @@ function CoverLogo({
       origin = event.clientX,
       start = img.getBoundingClientRect(),
       column = root.current!.getBoundingClientRect(),
-      max = Math.max(0, column.width - start.width);
+      max = Math.max(
+        0,
+        column.width -
+          start.width -
+          (name
+            ? (root
+                .current!.querySelector(".cover-brand-name")
+                ?.getBoundingClientRect().width ?? 0) + 10
+            : 0),
+      );
     let next: { x: number; align?: "left" | "center" | "right" } | null = null;
     const move = (ev: PointerEvent) => {
       if (Math.abs(ev.clientX - origin) < 4 && !next) return;
@@ -903,7 +918,16 @@ function CoverLogo({
       data-cover-element={e.id}
       data-brand={!!name}
       data-cover-selected={selected}
-      style={{ ...elementStyle(e), textAlign: src ? "left" : align }}
+      style={{
+        ...elementStyle(e),
+        textAlign: src ? "left" : align,
+        justifyContent:
+          x !== undefined || align === "left" || !align
+            ? "flex-start"
+            : align === "right"
+              ? "flex-end"
+              : "center",
+      }}
       onPointerDownCapture={drag}
     >
       {src && (
@@ -912,7 +936,9 @@ function CoverLogo({
           value={{
             src: value.logo || "workspace-logo",
             alt: value.logo_alt ?? "Company logo",
-            height: value.logo_height ?? 60,
+            height: name
+              ? brandIconHeight("cover", value.logo_height)
+              : (value.logo_height ?? 60),
             align: e.align,
           }}
           source={src}
