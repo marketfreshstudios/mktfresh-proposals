@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
+import { BrandPalettePicker } from "./brand-palette-picker";
 import { businessStates } from "../lib/business-state";
 import { whiteContrast, accessibleAccent } from "../lib/brand";
 import {
@@ -43,6 +44,7 @@ export function WorkspaceStudio({
     [licensed, setLicensed] = useState(false),
     [uploading, setUploading] = useState(false),
     [uploadError, setUploadError] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [logoMeta, setLogoMeta] = useState<{
     name: string;
     size: number;
@@ -314,6 +316,7 @@ export function WorkspaceStudio({
                     const result = await post("/api/workspace-logo", {
                       image: await readData(file),
                     });
+                    setSuggestions(result.palette_suggestions ?? []);
                     setLogoMeta({ name: file.name, size: file.size });
                     change({ logo: result.path }, true);
                     setUploadError("");
@@ -417,8 +420,9 @@ export function WorkspaceStudio({
             </div>
           </div>
           <p className="muted workspace-logo-requirements">
-            PNG only, under 750 KB. Logo icon: square, at least 128 × 128
-            pixels.
+            PNG only, under 750 KB. Logo icon: square, at least 1024×1024 for
+            cover graphics. Smaller icons (at least 128×128) still work in
+            navigation and browser tabs.
           </p>
           {!owner && (
             <p className="muted">
@@ -464,6 +468,145 @@ export function WorkspaceStudio({
             Use {accessibleAccent(draft.accent_colour)} — darker, same hue
           </Button>
         )}
+        <section className="workspace-palette" aria-label="Brand palette">
+          <h3>Brand palette</h3>
+          <p className="muted">
+            Accent color is your primary brand color. Add up to four more
+            colors.
+          </p>
+          <BrandPalettePicker
+            settings={draft}
+            value={draft.accent_colour}
+            onChange={(color) => change({ accent_colour: color }, true)}
+            disabled={!owner}
+          />
+          {(draft.brand_palette ?? []).map((color, index) => (
+            <div className="palette-edit-row" key={index}>
+              <input
+                type="color"
+                aria-label={`Brand color ${index + 2}`}
+                value={color}
+                disabled={!owner}
+                onChange={(e) =>
+                  change(
+                    {
+                      brand_palette: (draft.brand_palette ?? []).map((c, n) =>
+                        n === index ? e.target.value : c,
+                      ),
+                    },
+                    true,
+                  )
+                }
+              />
+              <code>{color}</code>
+              <Button
+                variant="ghost"
+                disabled={!owner}
+                onClick={() =>
+                  change(
+                    {
+                      brand_palette: draft.brand_palette?.filter(
+                        (_, n) => n !== index,
+                      ),
+                    },
+                    true,
+                  )
+                }
+              >
+                Remove color
+              </Button>
+            </div>
+          ))}
+          <Button
+            variant="secondary"
+            disabled={!owner || (draft.brand_palette?.length ?? 0) >= 4}
+            onClick={() =>
+              change(
+                { brand_palette: [...(draft.brand_palette ?? []), "#2e4f79"] },
+                true,
+              )
+            }
+          >
+            Add color
+          </Button>
+          <Button
+            variant="ghost"
+            disabled={!owner || !draft.logo}
+            onClick={async () => {
+              try {
+                setSuggestions(
+                  (await api<{ colors: string[] }>("/api/workspace-palette"))
+                    .colors,
+                );
+              } catch (e) {
+                setUploadError((e as Error).message);
+              }
+            }}
+          >
+            Suggest colors from logo
+          </Button>
+          {!!suggestions.length && (
+            <div className="palette-suggestions">
+              <h4>Suggested from your logo</h4>
+              <p className="muted">
+                Suggestions never replace saved colors. Edit, accept or discard
+                them.
+              </p>
+              {suggestions.map((color, index) => (
+                <div className="palette-edit-row" key={index}>
+                  <input
+                    type="color"
+                    aria-label={`Suggested color ${index + 1}`}
+                    value={color}
+                    disabled={!owner}
+                    onChange={(e) =>
+                      setSuggestions(
+                        suggestions.map((c, n) =>
+                          n === index ? e.target.value : c,
+                        ),
+                      )
+                    }
+                  />
+                  <code>{color}</code>
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      !owner ||
+                      (draft.brand_palette?.length ?? 0) >= 4 ||
+                      [
+                        draft.accent_colour,
+                        ...(draft.brand_palette ?? []),
+                      ].includes(color)
+                    }
+                    onClick={() => {
+                      change(
+                        {
+                          brand_palette: [
+                            ...(draft.brand_palette ?? []),
+                            color,
+                          ],
+                        },
+                        true,
+                      );
+                      setSuggestions(suggestions.filter((_, n) => n !== index));
+                    }}
+                  >
+                    Accept color
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={!owner}
+                    onClick={() =>
+                      setSuggestions(suggestions.filter((_, n) => n !== index))
+                    }
+                  >
+                    Discard
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
         {toggle(
           'Show "Powered by Yeswell"',
           draft.show_powered_by !== false,

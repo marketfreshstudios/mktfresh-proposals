@@ -117,6 +117,81 @@ it("stores and serves exact PNG favicon/Apple sizes, and retains original file m
     ),
   ).rejects.toThrow("Invalid icon size");
 });
+it("retains a high-resolution original for cover graphics without changing navigation variants", async () => {
+  const bytes = await png(1024);
+  const icon = await uploadWorkspaceIcon(
+    state.fixture.storage,
+    state.fixture.repo.workspaceId,
+    { image: data(bytes) },
+  );
+  expect(icon).toMatchObject({ width: 1024, height: 1024 });
+  expect(
+    await readWorkspaceIcon(
+      state.fixture.storage,
+      state.fixture.repo.workspaceId,
+      icon,
+      "original",
+    ),
+  ).toEqual(bytes);
+  expect(
+    (
+      await sharp(
+        await readWorkspaceIcon(
+          state.fixture.storage,
+          state.fixture.repo.workspaceId,
+          icon,
+          128,
+        ),
+      ).metadata()
+    ).width,
+  ).toBe(128);
+  await expect(
+    readWorkspaceIcon(
+      state.fixture.storage,
+      crypto.randomUUID(),
+      icon,
+      "original",
+    ),
+  ).rejects.toThrow("belong to this workspace");
+});
+it("only a super admin can save palette colors; suggesting colors never changes the saved palette", async () => {
+  const { settings, repo } = state.fixture;
+  state.actor = { ...state.actor, staff_role: "member" };
+  expect(
+    (
+      await call("workspace_settings", {
+        ...settings,
+        brand_palette: ["#2f5d50"],
+      })
+    ).status,
+  ).toBe(403);
+  expect(
+    (await repo.entities("workspace_settings"))[0].brand_palette,
+  ).toBeUndefined();
+  state.actor = { ...state.actor, staff_role: "owner" };
+  expect(
+    (
+      await call("workspace_settings", {
+        ...settings,
+        brand_palette: ["#2f5d50"],
+      })
+    ).status,
+  ).toBe(201);
+  const bytes = await png(128, 128, "#b5532e"),
+    path = `${repo.workspaceId}/logo.png`;
+  files.set(path, bytes);
+  await repo.put("workspace_settings", {
+    ...settings,
+    logo: path,
+    brand_palette: ["#2f5d50"],
+  });
+  const response = await call("workspace-palette");
+  expect(response.status).toBe(200);
+  expect((await response.json()).colors).toContain("#b5532e");
+  expect((await repo.entities("workspace_settings"))[0].brand_palette).toEqual([
+    "#2f5d50",
+  ]);
+});
 it("only Super admins upload, replace or remove; members can read and save unrelated settings", async () => {
   const input = { image: data(await png()), name: "Icon.png" };
   state.actor.staff_role = "member";
