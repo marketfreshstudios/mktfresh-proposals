@@ -45,7 +45,10 @@ export function starterTemplates(
     );
     const content: Block[] = [{ type: "page_break" }];
     for (const block of blocks) {
-      if (block.type === "heading" && block.text === "Investment")
+      if (
+        block.type === "heading" &&
+        (block.text === "Investment" || block.text === "Why {{workspace.name}}")
+      )
         content.push({ type: "page_break" });
       // The pricing marker is specification notation, not client-facing copy.
       if (
