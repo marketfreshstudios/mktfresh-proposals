@@ -273,17 +273,22 @@ export function WorkspaceStudio({
         </div>
         <div className="workspace-brand-assets">
           <div className="workspace-logo-row">
-            {draft.logo ? (
-              <img src="/api/workspace-logo" alt="Workspace logo" />
-            ) : (
-              <span className="workspace-logo-empty" aria-hidden="true">
-                {draft.company_name.slice(0, 1)}
-              </span>
-            )}
+            <div className="workspace-logo-heading">
+              <label htmlFor="workspace-logo-upload">Logo</label>
+              <p className="muted">
+                Used on covers, client pages, emails and PDFs
+              </p>
+            </div>
+            <div className="workspace-logo-preview">
+              {draft.logo ? (
+                <img src="/api/workspace-logo" alt="Workspace logo" />
+              ) : (
+                <span className="workspace-logo-empty" aria-hidden="true">
+                  {draft.company_name.slice(0, 1)}
+                </span>
+              )}
+            </div>
             <div className="workspace-logo-label">
-              <label htmlFor="workspace-logo-upload">
-                Logo · used on covers, client pages, emails and PDFs
-              </label>
               <span className="workspace-logo-file">
                 {draft.logo
                   ? logoMeta
@@ -294,6 +299,7 @@ export function WorkspaceStudio({
               <input
                 type="file"
                 id="workspace-logo-upload"
+                aria-label="Logo · used on covers, client pages, emails and PDFs"
                 ref={logoFile}
                 className="sr-only"
                 tabIndex={-1}
@@ -327,21 +333,26 @@ export function WorkspaceStudio({
             </div>
           </div>
           <div className="workspace-logo-row workspace-icon-row">
-            {draft.logo_icon ? (
-              <img
-                src={`/api/workspace-icon?size=128&v=${encodeURIComponent(draft.logo_icon.path)}`}
-                alt="Workspace logo icon"
-              />
-            ) : (
-              <span className="workspace-logo-empty" aria-hidden="true">
-                {draft.company_name.slice(0, 1)}
-              </span>
-            )}
+            <div className="workspace-logo-heading">
+              <label htmlFor="workspace-icon-upload">Logo icon</label>
+              <p className="muted">
+                Square, shown next to your workspace name and as the browser-tab
+                icon on client pages
+              </p>
+            </div>
+            <div className="workspace-logo-preview">
+              {draft.logo_icon ? (
+                <img
+                  src={`/api/workspace-icon?size=128&v=${encodeURIComponent(draft.logo_icon.path)}`}
+                  alt="Workspace logo icon"
+                />
+              ) : (
+                <span className="workspace-logo-empty" aria-hidden="true">
+                  {draft.company_name.slice(0, 1)}
+                </span>
+              )}
+            </div>
             <div className="workspace-logo-label">
-              <label htmlFor="workspace-icon-upload">
-                Logo icon · square, shown next to your workspace name and as the
-                browser-tab icon on client pages
-              </label>
               <span className="workspace-logo-file">
                 {draft.logo_icon
                   ? `${draft.logo_icon.name} · ${Math.max(1, Math.round(draft.logo_icon.size / 1024))} KB`
@@ -349,6 +360,7 @@ export function WorkspaceStudio({
               </span>
               <input
                 id="workspace-icon-upload"
+                aria-label="Logo icon · square, shown next to your workspace name and as the browser-tab icon on client pages"
                 type="file"
                 ref={iconFile}
                 className="sr-only"

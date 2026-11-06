@@ -248,9 +248,11 @@ export const InlineFontSize = Mark.create({
 export function FontSizePicker({
   editor,
   maxSize,
+  inline = false,
 }: {
   editor: Editor | null;
   maxSize?: number;
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     trigger = useRef<HTMLButtonElement>(null),
@@ -285,6 +287,49 @@ export function FontSizePicker({
       editor.view.focus();
     }
   };
+  const options = (
+    <div
+      className="inline-size-menu"
+      ref={menu}
+      role="menu"
+      aria-label="Font size"
+      onMouseDown={(e) => e.preventDefault()}
+      onKeyDown={(e) => {
+        const buttons = [
+          ...e.currentTarget.querySelectorAll<HTMLButtonElement>(
+            "button:not(:disabled)",
+          ),
+        ];
+        const n = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        if (["ArrowDown", "ArrowUp"].includes(e.key)) {
+          e.preventDefault();
+          buttons[
+            (n + (e.key === "ArrowDown" ? 1 : -1) + buttons.length) %
+              buttons.length
+          ]?.focus();
+        }
+      }}
+    >
+      {[null, ...INLINE_FONT_SIZES].map((size) => (
+        <button
+          key={size ?? "default"}
+          type="button"
+          role="menuitemradio"
+          aria-checked={value === size}
+          disabled={size !== null && maxSize !== undefined && size > maxSize}
+          onClick={() => choose(size)}
+        >
+          {size === null ? "Default" : `${size} px`}
+        </button>
+      ))}
+      {maxSize !== undefined && (
+        <p>
+          Maximum {maxSize} px in this band. Choose a taller band for larger
+          text.
+        </p>
+      )}
+    </div>
+  );
   return (
     <span className="inline-size-control" data-editor-chrome>
       <button
@@ -293,7 +338,7 @@ export function FontSizePicker({
         disabled={!editor}
         aria-label="Size"
         title="Size"
-        aria-haspopup="menu"
+        aria-haspopup={inline ? undefined : "menu"}
         aria-expanded={open}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
@@ -307,63 +352,22 @@ export function FontSizePicker({
         Size <span>{value ?? "Default"}</span>
         <Icon name="chevron-down" className="disclosure-icon" />
       </button>
-      {open && (
-        <ToolbarPopover
-          className="inline-size-popover"
-          trigger={trigger.current}
-          close={() => setOpen(false)}
-          onEscape={() => {
-            setOpen(false);
-            trigger.current?.focus();
-          }}
-        >
-          <div
-            className="inline-size-menu"
-            ref={menu}
-            role="menu"
-            aria-label="Font size"
-            onMouseDown={(e) => e.preventDefault()}
-            onKeyDown={(e) => {
-              const buttons = [
-                ...e.currentTarget.querySelectorAll<HTMLButtonElement>(
-                  "button:not(:disabled)",
-                ),
-              ];
-              let n = buttons.indexOf(
-                document.activeElement as HTMLButtonElement,
-              );
-              if (["ArrowDown", "ArrowUp"].includes(e.key)) {
-                e.preventDefault();
-                buttons[
-                  (n + (e.key === "ArrowDown" ? 1 : -1) + buttons.length) %
-                    buttons.length
-                ]?.focus();
-              }
+      {open &&
+        (inline ? (
+          options
+        ) : (
+          <ToolbarPopover
+            className="inline-size-popover"
+            trigger={trigger.current}
+            close={() => setOpen(false)}
+            onEscape={() => {
+              setOpen(false);
+              trigger.current?.focus();
             }}
           >
-            {[null, ...INLINE_FONT_SIZES].map((size) => (
-              <button
-                key={size ?? "default"}
-                type="button"
-                role="menuitemradio"
-                aria-checked={value === size}
-                disabled={
-                  size !== null && maxSize !== undefined && size > maxSize
-                }
-                onClick={() => choose(size)}
-              >
-                {size === null ? "Default" : `${size} px`}
-              </button>
-            ))}
-            {maxSize !== undefined && (
-              <p>
-                Maximum {maxSize} px in this band. Choose a taller band for
-                larger text.
-              </p>
-            )}
-          </div>
-        </ToolbarPopover>
-      )}
+            {options}
+          </ToolbarPopover>
+        ))}
     </span>
   );
 }

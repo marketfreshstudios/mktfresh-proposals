@@ -43,7 +43,7 @@ test("Studio template shell autosaves and reuses Quote, Fields, Blocks and Style
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/studio/templates/${f.template.id}`);
   await expect(
-    page.getByRole("tab", { name: "Default quote", exact: true }),
+    page.getByRole("tab", { name: "Quote", exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("Template name", { exact: true })
@@ -280,13 +280,13 @@ test("Studio editors evidence and responsive tools", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/studio/templates/${f.template.id}`);
   for (const [tab, file] of [
-    ["Default quote", "template-quote"],
+    ["Quote", "template-quote"],
     ["Fields", "template-fields"],
     ["Blocks", "template-blocks"],
     ["Styles", "template-styles"],
   ]) {
     await page.getByRole("tab", { name: tab, exact: true }).click();
-    if (tab === "Default quote")
+    if (tab === "Quote")
       await page.locator(".quote-row-toggle").first().click();
     await shot(file);
     if (tab === "Blocks") {

@@ -43,7 +43,7 @@ function label(node: ReactElement<any>) {
 export function EditBar(
   props:
     | {
-        variant: "cover";
+        variant: "cover" | "email";
         children: ReactNode;
         frame: RefObject<HTMLElement | null>;
       }
@@ -67,14 +67,16 @@ export function EditBar(
         plainText?: boolean;
       },
 ) {
-  if (props.variant === "cover") return <CoverEditBar {...props} />;
+  if (props.variant === "cover" || props.variant === "email")
+    return <CoverEditBar {...props} />;
   if (props.variant === "band") return <BandEditBar {...props} />;
-  return <BlockEditBar {...props} />;
+  return "tools" in props ? <BlockEditBar {...props} /> : null;
 }
 function CoverEditBar({
   children,
   frame,
-}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" }>) {
+  variant,
+}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" | "email" }>) {
   const bar = useRef<HTMLSpanElement>(null);
   useImageToolbar(frame, bar, true);
   useEffect(() => {
@@ -97,9 +99,13 @@ function CoverEditBar({
       <span
         ref={bar}
         data-editor-chrome
-        className="editor-edit-bar image-edit-bar cover-edit-bar"
+        className={`editor-edit-bar image-edit-bar ${variant === "email" ? "email-edit-bar" : "cover-edit-bar"}`}
         role="toolbar"
-        aria-label="Cover text formatting"
+        aria-label={
+          variant === "email"
+            ? "Email body formatting"
+            : "Cover text formatting"
+        }
         onMouseDown={(e) => {
           if ((e.target as Element).closest("button")) e.preventDefault();
         }}
@@ -230,6 +236,7 @@ function BlockEditBar({
     };
   }, [layout.phone]);
   const text = ["paragraph", "heading"].includes(blockType),
+    phoneActions = layout.phone && layout.compactPhone,
     all = actions(tools),
     up = all.find((n) => /move.*up/i.test(label(n))),
     down = all.find((n) => /move.*down/i.test(label(n))),
@@ -339,8 +346,9 @@ function BlockEditBar({
         className="editor-edit-bar rich-toolbar"
         role="toolbar"
         aria-label={text ? "Text tools" : `${objectLabel} tools`}
-        data-compact={layout.compact}
+        data-compact={layout.compact && !layout.compactPhone}
         data-dock={layout.phone ? "keyboard" : "float"}
+        data-compact-phone={phoneActions || undefined}
         onMouseDown={(e) => {
           if ((e.target as Element).closest("button")) e.preventDefault();
         }}
@@ -404,7 +412,7 @@ function BlockEditBar({
             {!fields?.owner && (
               <FormattingControls
                 edit
-                compact={layout.compact}
+                compact={layout.compact && !layout.compactPhone}
                 textStyle={fields?.textStyle ?? null}
                 onField={(el) => {
                   setFieldTrigger(el);
@@ -425,29 +433,33 @@ function BlockEditBar({
             <span className="edit-divider" />
           </>
         )}
-        {up}
-        {down}
-        {prohibited || !duplicate ? (
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            aria-label="Duplicate block"
-            title={
-              blockType === "pricing_table"
-                ? "Only one pricing table per proposal"
-                : blockType === "signature_block"
-                  ? "Only one signatures block per proposal"
-                  : "This block cannot be duplicated"
-            }
-          >
-            <EditorIcon name="duplicate" />
-          </button>
-        ) : (
-          duplicate
+        {!phoneActions && up}
+        {!phoneActions && down}
+        {!phoneActions && (
+          <>
+            {prohibited || !duplicate ? (
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                aria-label="Duplicate block"
+                title={
+                  blockType === "pricing_table"
+                    ? "Only one pricing table per proposal"
+                    : blockType === "signature_block"
+                      ? "Only one signatures block per proposal"
+                      : "This block cannot be duplicated"
+                }
+              >
+                <EditorIcon name="duplicate" />
+              </button>
+            ) : (
+              duplicate
+            )}
+            {save}
+          </>
         )}
-        {save}
-        {(page || extras.length > 0) && (
+        {(phoneActions || page || extras.length > 0) && (
           <button
             type="button"
             aria-label="More block actions"
@@ -460,12 +472,13 @@ function BlockEditBar({
             ⋯
           </button>
         )}
-        {remove}
+        {!phoneActions && remove}
       </div>
       {more && (
         <ToolbarPopover
           trigger={trigger.current}
           className="edit-dark-menu edit-more-menu"
+          visualViewport={phoneActions}
           close={() => setMore(false)}
         >
           <div
@@ -499,6 +512,32 @@ function BlockEditBar({
             }}
           >
             <BlockActionPresentation.Provider value="menu">
+              {phoneActions && (
+                <div className="studio-phone-block-actions">
+                  {up}
+                  {down}
+                  {prohibited ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled
+                      aria-disabled="true"
+                      aria-label="Duplicate block"
+                      title={
+                        blockType === "pricing_table"
+                          ? "Only one pricing table per proposal"
+                          : "Only one signatures block per proposal"
+                      }
+                    >
+                      Duplicate block
+                    </button>
+                  ) : (
+                    duplicate
+                  )}
+                  {save}
+                  {remove}
+                </div>
+              )}
               <PageBreakAction block={id} menu />
               {extras}
             </BlockActionPresentation.Provider>

@@ -11,6 +11,7 @@ export const ControlLayout = createContext({
   phone: false,
   locked: false,
   compact: false,
+  compactPhone: false,
   map: {} as Record<string, string>,
   onField: undefined as undefined | (() => void),
 });

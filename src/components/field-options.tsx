@@ -18,7 +18,9 @@ export function FieldOptions({
   onInsert,
   search = true,
   variant = "panel",
+  labels,
 }: {
+  labels?: Record<string, string>;
   map: Record<string, string>;
   onInsert: (path: string) => void;
   search?: boolean;
@@ -26,7 +28,9 @@ export function FieldOptions({
 }) {
   const [query, setQuery] = useState("");
   const keys = Object.keys(map).filter((path) =>
-    `${fieldLabel(path)} ${path}`.toLowerCase().includes(query.toLowerCase()),
+    `${labels?.[path] ?? fieldLabel(path)} ${path}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   return (
     <div className={`field-options field-options-${variant}`}>
@@ -47,8 +51,22 @@ export function FieldOptions({
           />
         </div>
       )}
-      {["Client", "Proposal", "Sender & workspace", "Totals"].map((group) => {
-        const items = keys.filter((path) => fieldGroup(path) === group);
+      {[
+        "Team",
+        "Job",
+        "Client",
+        "Proposal",
+        "Sender & workspace",
+        "Totals",
+      ].map((group) => {
+        const items = keys.filter(
+          (path) =>
+            (path.startsWith("team.")
+              ? "Team"
+              : path.startsWith("job.")
+                ? "Job"
+                : fieldGroup(path)) === group,
+        );
         return items.length ? (
           <section key={group} className="field-option-group">
             <h3>{group}</h3>
@@ -59,14 +77,17 @@ export function FieldOptions({
                 data-field-insert
                 key={path}
                 onClick={() => onInsert(path)}
-                aria-label={`${fieldLabel(path)} — {{${path}}}`}
+                aria-label={
+                  labels ? undefined : `${fieldLabel(path)} — {{${path}}}`
+                }
               >
                 <span className="field-option-label">
-                  {variant === "panel"
-                    ? fieldLabel(path)
-                        .replace(/^(Client|Proposal) /, "")
-                        .replace(/^./, (c) => c.toUpperCase())
-                    : fieldLabel(path)}
+                  {labels?.[path] ??
+                    (variant === "panel"
+                      ? fieldLabel(path)
+                          .replace(/^(Client|Proposal) /, "")
+                          .replace(/^./, (c) => c.toUpperCase())
+                      : fieldLabel(path))}
                 </span>
                 <code title={`{{${path}}}`}>{`{{${path}}}`}</code>
                 <span

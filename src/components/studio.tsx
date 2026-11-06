@@ -839,7 +839,7 @@ function TemplatesStudioContent({
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
-    [tab, setTab] = useState<string>(blocksOnly ? "Fields" : "Default quote"),
+    [tab, setTab] = useState<string>(blocksOnly ? "Fields" : "Quote"),
     [expandedDefault, setExpandedDefault] = useState<string | null>(null),
     [defaultDetails, setDefaultDetails] = useState<string | null>(null),
     [previewOpen, setPreviewOpen] = useState(false),
@@ -1461,7 +1461,7 @@ function TemplatesStudioContent({
   );
   const panelTabs =
     mode === "templates"
-      ? ["Default quote", "Fields", "Blocks", "Styles"]
+      ? ["Quote", "Fields", "Blocks", "Styles"]
       : ["Fields", "Details"];
   const panelBody =
     tab === "Fields" ? (
@@ -1567,6 +1567,7 @@ function TemplatesStudioContent({
     >
       {blockDrop.line}
       <EditorControlConfig
+        compactPhone
         compact={templatePanels.compact}
         map={map}
         onField={
@@ -1933,7 +1934,7 @@ function TemplatesStudioContent({
                                 <button
                                   type="button"
                                   title="Edit quote"
-                                  onClick={() => openTab("Default quote")}
+                                  onClick={() => openTab("Quote")}
                                 >
                                   Edit quote
                                 </button>

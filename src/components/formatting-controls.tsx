@@ -19,7 +19,9 @@ export function FormattingControls({
   textStyle,
   edit = false,
   compact = false,
+  mode,
 }: {
+  mode?: "email" | "extras";
   editor?: Editor | null;
   onLink?: (trigger: HTMLElement) => void;
   onField?: (trigger: HTMLElement) => void;
@@ -80,6 +82,26 @@ export function FormattingControls({
       )}
     </button>
   );
+  if (mode === "extras")
+    return (
+      <div className="email-extra-formatting">
+        <button
+          type="button"
+          disabled={controller ? !canUndo : !editor?.can().undo()}
+          onClick={() => command(false)}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          disabled={controller ? !canRedo : !editor?.can().redo()}
+          onClick={() => command(true)}
+        >
+          Redo
+        </button>
+        <FontSizePicker editor={editor} inline />
+      </div>
+    );
   if (edit) {
     const item = (
       label: string,
@@ -103,16 +125,24 @@ export function FormattingControls({
     );
     return (
       <div data-editor-chrome className="edit-formatting rich-toolbar">
-        <TextStylePicker
-          value={textStyle ?? null}
-          edit
-          compact={compact}
-          listKind={
-            marks?.bullet ? "bullet" : marks?.ordered ? "numbered" : undefined
-          }
-        />
-        <FontSizePicker editor={editor} />
-        <span className="edit-divider" />
+        {mode !== "email" && (
+          <>
+            <TextStylePicker
+              value={textStyle ?? null}
+              edit
+              compact={compact}
+              listKind={
+                marks?.bullet
+                  ? "bullet"
+                  : marks?.ordered
+                    ? "numbered"
+                    : undefined
+              }
+            />
+            <FontSizePicker editor={editor} />
+            <span className="edit-divider" />
+          </>
+        )}
         {item(
           "Bold",
           () => editor?.chain().focus().toggleBold().run(),
@@ -139,7 +169,7 @@ export function FormattingControls({
         {item(
           "Numbered list",
           () => editor?.chain().focus().toggleOrderedList().run(),
-          <EditorIcon name="list-numbered" />,
+          <EditorIcon name="list-numbered" symbol={mode === "email"} />,
           !editor,
           marks?.ordered,
         )}
