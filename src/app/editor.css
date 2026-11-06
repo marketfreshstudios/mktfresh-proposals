@@ -8505,7 +8505,7 @@ body:has(.studio-v3-editor) {
   background: var(--surface-sunken);
   white-space: nowrap;
 }
-.studio-v3-editor > .studio-template-main {
+.studio-v3-editor.studio-template-layout > .studio-template-main {
   padding: 28px 24px 64px;
   overflow: auto;
   min-width: 0;
@@ -8803,7 +8803,7 @@ body:has(.studio-v3-editor) {
   .studio-v3-editor > :is(.editor-outline, .editor-sidepanel) {
     display: none;
   }
-  .studio-v3-editor > .studio-template-main {
+  .studio-v3-editor.studio-template-layout > .studio-template-main {
     height: calc(100dvh - 52px);
     padding: 16px 12px 100px;
     overflow: auto;

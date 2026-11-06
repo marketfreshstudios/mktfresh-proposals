@@ -110,6 +110,29 @@ for (const width of [1440, 375]) {
     page,
   }) => {
     const f = await fixture(page);
+    if (width < 700) {
+      // The focused Studio shell does not scroll the window. Give its phone
+      // section genuine document overflow instead of relying on an old offset.
+      const content = f
+        .current()
+        .content.map((block) =>
+          block.id === f.text
+            ? {
+                ...block,
+                text: "A paragraph long enough to scroll the document. ".repeat(
+                  80,
+                ),
+                content: undefined,
+              }
+            : block,
+        );
+      await f.service.edit(
+        f.draft.id,
+        { revision: f.current().revision, content },
+        staff,
+      );
+      await f.repo.put("templates", { ...f.template, content });
+    }
     await openDocument(page, width, f.draft.id);
     const menu = page.getByRole("dialog", { name: "Add a block", exact: true });
     for (const kind of ["proposal", "template"]) {
@@ -141,7 +164,7 @@ for (const width of [1440, 375]) {
       await expect(menu).toHaveCount(0);
       await page.setViewportSize({ width, height: 600 });
       await open();
-      await block.evaluate((el) => {
+      const movement = await block.evaluate((el) => {
         let canvas: HTMLElement | null = el.parentElement;
         while (
           canvas &&
@@ -151,11 +174,11 @@ for (const width of [1440, 375]) {
           )
         )
           canvas = canvas.parentElement;
-        (canvas ?? window).scrollBy(
-          0,
-          (canvas?.scrollTop ?? scrollY) > 0 ? -64 : 64,
-        );
+        const before = canvas?.scrollTop ?? scrollY;
+        (canvas ?? window).scrollBy(0, before > 0 ? -64 : 64);
+        return (canvas?.scrollTop ?? scrollY) - before;
       });
+      expect(Math.abs(movement)).toBeGreaterThan(0);
       await expect(menu).toHaveCount(0);
       await open();
       await menu.getByRole("searchbox").fill("Heading 3");
