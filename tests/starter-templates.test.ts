@@ -119,6 +119,12 @@ it("workspace creation trigger seeds six; backfill is idempotent, atomic and pre
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        "supabase/migrations/20261106203920_cover_layout_defaults.sql",
+        "utf8",
+      ),
+    );
     await db.query("insert into workspaces values ($1)", [workspace]);
     const rows = await db.query<{ data: Template }>(
       "select data from templates order by (data->>'starter_order')::int",

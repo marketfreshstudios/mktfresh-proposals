@@ -3,6 +3,7 @@ import { setup } from "./helpers";
 import { starterBrandUpdates } from "../seed/starter-brand-updates";
 import { starterTemplates } from "../seed/starter-templates";
 import oldBands from "../seed/starter-bands-v83.json";
+import previousCovers from "../seed/starter-covers-pr-a.json";
 import { defaultHeaderFooter } from "../src/lib/page-bands";
 import { pageBandHtml } from "../src/lib/page-band-render";
 import { coverBrand } from "../src/lib/workspace-brand";
@@ -86,6 +87,9 @@ it("opt-in updates only complete unchanged starter seeds and preserves every oth
   });
   const old = current.map((t) => {
     const v = structuredClone(t);
+    v.cover = structuredClone(
+      previousCovers[t.starter_key as keyof typeof previousCovers],
+    ) as Template["cover"];
     v.header_footer = oldBands as Template["header_footer"];
     delete v.cover!.logo_mode;
     return v;
@@ -109,6 +113,21 @@ it("opt-in updates only complete unchanged starter seeds and preserves every oth
       (r) => !r.eligible,
     ),
   ).toBe(true);
+  const fromPrA = current.map((t) => ({
+    ...structuredClone(t),
+    cover: structuredClone(
+      previousCovers[t.starter_key as keyof typeof previousCovers],
+    ) as Template["cover"],
+  }));
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, fromPrA).every(
+      (r) => r.eligible,
+    ),
+  ).toBe(true);
+  fromPrA[0].cover!.eyebrow = "An owner's edit";
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, fromPrA)[0].eligible,
+  ).toBe(false);
 });
 it("hosted updater compares the entire expected row and cannot overwrite a concurrent edit", async () => {
   const { PGlite } = await import("@electric-sql/pglite");
