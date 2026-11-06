@@ -244,7 +244,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     ).toContain(`Proposal-${chosen.id}`);
   }
   await page.getByRole("button", { name: "Brand", exact: true }).click();
-  await page.getByLabel("Accent color", { exact: true }).fill("#aaddcc");
+  await page.getByLabel("Accent hex", { exact: true }).fill("#aaddcc");
   await expect(page.getByText(/Needs 4.5:1 contrast on white/)).toBeVisible();
   await page.getByRole("button", { name: /darker, same hue/ }).click();
   await expect(

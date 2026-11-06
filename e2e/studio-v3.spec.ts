@@ -538,4 +538,45 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
       .boundingBox(),
     button = await connected.getByRole("button").boundingBox();
   expect(button!.x).toBeGreaterThan(monogram!.x + monogram!.width);
+  // Positive configured states are healthy regardless of capitalization; disconnected stays neutral/amber.
+  await page.route("**/api/connections", (route) =>
+    route.fulfill({
+      json: { stripe: true, qbo: true, email: true, mock: false, mode: "test" },
+    }),
+  );
+  await page.route("**/api/assistants", (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: crypto.randomUUID(),
+          name: "Claude",
+          revoked: false,
+          last_used: new Date().toISOString(),
+        },
+      ],
+    }),
+  );
+  await page.reload();
+  const qbo = page
+    .locator(".connection-card")
+    .filter({
+      has: page.getByRole("heading", { name: "QuickBooks", exact: true }),
+    });
+  await expect(qbo.locator(".connection-state")).toContainText(
+    "Sandbox configured",
+  );
+  await expect(qbo.locator(".connection-state")).toHaveCSS(
+    "color",
+    "rgb(20, 107, 63)",
+  );
+  const claude = page
+    .locator(".connection-card")
+    .filter({
+      has: page.getByRole("heading", { name: "Claude", exact: true }),
+    });
+  await expect(claude.locator(".connection-state")).toContainText("Connected");
+  await expect(claude.locator(".connection-state")).toHaveCSS(
+    "color",
+    "rgb(20, 107, 63)",
+  );
 });

@@ -2992,7 +2992,7 @@ export function ConnectionsStudio({
                       <div className="connection-title">
                         <h3>{c.name}</h3>
                         <span
-                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /Connected|Configured|Verified|Imported/.test(c.state) ? "success" : "warning"}`}
+                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /^(Connected|Configured|Verified|Imported|Sandbox configured)\b/i.test(c.state) ? "success" : "warning"}`}
                         >
                           ● {c.state}
                         </span>
