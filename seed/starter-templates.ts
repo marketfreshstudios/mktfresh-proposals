@@ -169,6 +169,7 @@ export function starterTemplates(
       signature_heading_defaulted: true,
       header_footer: defaultTemplateBands(),
       cover: {
+        logo_mode: "brand",
         workspace: "{{workspace.name}}",
         eyebrow: source.eyebrow,
         byline: "{{proposal.validity}}",
