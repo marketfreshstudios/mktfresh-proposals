@@ -1,4 +1,9 @@
 import { limitClientLink } from "./client-link-limits";
+import {
+  uploadWorkspaceIcon,
+  readWorkspaceIcon,
+  workspaceIconPath,
+} from "./workspace-icon";
 import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
 import { ReassignmentService } from "./reassignment";
@@ -213,6 +218,19 @@ async function handleRoute(req: Request, path: string[]) {
         const p = await rt.repo.byToken(token);
         check(p, "Not found", 404);
         const settings = p.workspace_settings;
+        if (path[3] === "icon") {
+          return new Response(
+            Buffer.from(
+              await readWorkspaceIcon(
+                rt.storage,
+                rt.repo.workspaceId,
+                workspaceBrand?.logo_icon,
+                Number(new URL(req.url).searchParams.get("size") ?? 32),
+              ),
+            ),
+            { headers: { ...headers, "Content-Type": "image/png" } },
+          );
+        }
         if (path[3] === "logo") {
           check(
             settings &&
@@ -227,6 +245,9 @@ async function handleRoute(req: Request, path: string[]) {
           );
         }
         return json({
+          logo_icon: workspaceBrand?.logo_icon
+            ? sha256(workspaceBrand.logo_icon.path).slice(0, 16)
+            : null,
           show_powered_by: workspaceBrand?.show_powered_by !== false,
           name: settings?.company_name ?? "Proposal",
 
@@ -523,8 +544,45 @@ async function handleRoute(req: Request, path: string[]) {
       }
       throw new AppError(405, "Team action unavailable");
     }
+    if (path[0] === "workspace-icon") {
+      if (method === "POST") {
+        check(
+          user.staff_role === "owner",
+          "Only a super admin can change the logo icon",
+          403,
+        );
+        return json({
+          icon: await uploadWorkspaceIcon(
+            rt.storage,
+            rt.repo.workspaceId,
+            await body(req),
+          ),
+        });
+      }
+      if (method === "GET") {
+        const settings = (
+          await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+        )[0];
+        return new Response(
+          Buffer.from(
+            await readWorkspaceIcon(
+              rt.storage,
+              rt.repo.workspaceId,
+              settings?.logo_icon,
+              Number(new URL(req.url).searchParams.get("size") ?? 128),
+            ),
+          ),
+          { headers: { ...headers, "Content-Type": "image/png" } },
+        );
+      }
+    }
     if (path[0] === "workspace-logo") {
       if (method === "POST") {
+        check(
+          user.staff_role === "owner",
+          "Only a super admin can change the workspace logo",
+          403,
+        );
         const input = await body(req);
         check(
           /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(input.image ?? ""),
@@ -794,6 +852,29 @@ async function handleRoute(req: Request, path: string[]) {
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          if (
+            JSON.stringify(entity.logo_icon ?? null) !==
+            JSON.stringify(previous?.logo_icon ?? null)
+          ) {
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change the logo icon",
+              403,
+            );
+            if (entity.logo_icon) {
+              workspaceIconPath(
+                entity.logo_icon.path,
+                rt.repo.workspaceId,
+                128,
+              );
+              await readWorkspaceIcon(
+                rt.storage,
+                rt.repo.workspaceId,
+                entity.logo_icon,
+                128,
+              );
+            }
+          }
           entity.default_password_hash =
             previous?.default_password_hash ?? null;
           if (raw.default_password !== undefined) {
@@ -1083,7 +1164,16 @@ async function handleRoute(req: Request, path: string[]) {
             headers: { ...headers, "Content-Type": "image/png" },
           });
         }
-        return json(previewResult(p, settings));
+        const preview = previewResult(p, settings);
+        return json({
+          ...preview,
+          company: {
+            ...preview.company,
+            logo_icon: settings.logo_icon
+              ? sha256(settings.logo_icon.path).slice(0, 16)
+              : null,
+          },
+        });
       }
       if (method === "GET" && !action) {
         const p = await rt.repo.get(id);

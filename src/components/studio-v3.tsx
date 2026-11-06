@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import { api, Icon } from "./ui";
 import { StudioAccount } from "./studio-account";
+import { WorkspaceMark } from "./workspace-mark";
 import { studioRoutes } from "../lib/staff-routes";
 import type { EmailTemplate } from "../lib/email-template-content";
 import type { Activity } from "../lib/studio";
@@ -76,7 +77,15 @@ export function StudioHome({ data }: { data: Data }) {
         ))}
       </nav>
       <div className="studio-phone-account">
-        <StudioAccount name={data.user.staff_name ?? "Staff"} label="Account" />
+        <StudioAccount
+          name={data.user.staff_name ?? "Staff"}
+          label="Account"
+          mark={
+            data.settings?.logo_icon ? (
+              <WorkspaceMark settings={data.settings} />
+            ) : undefined
+          }
+        />
         <p className="muted">
           Templates and Products work best on a larger screen, but they open and
           can be edited here.

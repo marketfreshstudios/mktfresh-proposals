@@ -1,5 +1,6 @@
 "use client";
 import { StudioAccount } from "./studio-account";
+import { WorkspaceMark } from "./workspace-mark";
 import { YeswellBrand } from "./yeswell-brand";
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
@@ -90,13 +91,7 @@ export function StaffShell({
             </span>
           </a>
           <div className="workspace-label">
-            {settings?.logo ? (
-              <img src="/api/workspace-logo" alt="" />
-            ) : (
-              <span className="avatar">
-                {settings?.company_name.slice(0, 1) ?? "W"}
-              </span>
-            )}
+            <WorkspaceMark settings={settings} />
             <strong>{settings?.company_name ?? "Workspace"}</strong>
           </div>
           <button
@@ -171,7 +166,10 @@ export function StaffShell({
                 <a href="/" aria-label="Yeswell home">
                   <YeswellBrand />
                 </a>
-                <span>{settings?.company_name ?? "Workspace"}</span>
+                <span className="tablet-workspace-label">
+                  <WorkspaceMark settings={settings} />
+                  {settings?.company_name ?? "Workspace"}
+                </span>
                 <StudioAccount
                   name={name}
                   email={email}

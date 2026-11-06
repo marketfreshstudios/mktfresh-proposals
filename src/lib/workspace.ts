@@ -34,6 +34,15 @@ export const WorkspaceSettingsSchema = z.object({
   phone: z.string().max(100),
   address: z.string().max(2000),
   logo: z.string().nullable(),
+  logo_icon: z
+    .object({
+      path: z.string().max(300),
+      name: z.string().trim().min(1).max(255),
+      size: z.number().int().positive().max(749999),
+    })
+    .strict()
+    .nullable()
+    .optional(),
   accent_colour: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   sending_domain: z
     .string()
