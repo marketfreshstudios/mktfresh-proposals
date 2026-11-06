@@ -1,3 +1,5 @@
+import { businessState, businessStateUrl } from "./business-state";
+import type { WorkspaceSettings } from "./workspace";
 import type { Item, Template } from "./model";
 export type ConnectionStatus = {
   stripe: boolean;
@@ -18,6 +20,7 @@ export function connectionStatus(value: unknown): ConnectionStatus | null {
   return value as ConnectionStatus;
 }
 export function workspaceSetup(data: {
+  settings?: WorkspaceSettings | null;
   connections?: ConnectionStatus | null;
   catalog: Item[];
   templates: Template[];
@@ -78,6 +81,15 @@ export function workspaceSetup(data: {
         : "Not connected",
       href: "/studio/connections?view=assistants",
       action: "Connect an assistant",
+      required: true,
+    },
+    {
+      id: "business-state",
+      label: "Business state",
+      complete: !!businessState(data.settings ?? undefined),
+      detail: businessState(data.settings ?? undefined) || "Not set",
+      href: businessStateUrl,
+      action: "Add business state",
       required: true,
     },
     {

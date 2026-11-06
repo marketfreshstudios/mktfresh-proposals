@@ -1,3 +1,4 @@
+import { businessState } from "./business-state";
 import { hasInlineFontSize, inlineSizeHtml } from "./inline-font-size";
 import { formattedAddress } from "./client-contact";
 import { readableDate } from "./validity";
@@ -83,6 +84,7 @@ export function variables(p: Proposal, quote = p.quote) {
       .filter(Boolean)
       .join(" "),
     "workspace.name": p.workspace_settings?.company_name ?? "",
+    "workspace.state": businessState(p.workspace_settings),
     "sender.name": p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
   });
   for (const raw of quoteSublines(quote)) {

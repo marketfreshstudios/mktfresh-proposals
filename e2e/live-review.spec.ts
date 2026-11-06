@@ -185,7 +185,13 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       if (path[0] === "auth")
         value = {
           user: staff,
-          settings,
+          settings: {
+            ...settings,
+            business_state:
+              setupMode === "complete"
+                ? { name: "North Carolina", other: "" }
+                : undefined,
+          },
           staff: members,
           app_url: "http://127.0.0.1:3100",
           signatory_version: signatoryVersion(settings),
@@ -485,12 +491,15 @@ test("Live review: customer, contacts, setup, shared controls, products and font
           ).toBeVisible();
           await expect(page.locator(".setup-checklist")).toHaveCount(0);
         } else {
-          await expect(page.locator(".setup-checklist li")).toHaveCount(5);
+          await expect(page.locator(".setup-checklist li")).toHaveCount(6);
           await expect(
             page.locator('.setup-checklist li[data-complete="true"] .btn'),
           ).toHaveCount(0);
           await expect(page.locator(".setup-checklist")).toContainText(
             "one-time items invoice manually",
+          );
+          await expect(page.locator(".setup-checklist")).toContainText(
+            "Business state",
           );
           if (mode === "partial")
             await expect(page.locator(".setup-checklist")).toContainText(

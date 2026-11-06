@@ -96,6 +96,7 @@ it("Home uses real setup status and treats the disconnected QuickBooks/manual pa
   );
   const complete = workspaceSetup({
     ...base,
+    settings: { business_state: { name: "New York", other: "" } } as any,
     connections: { ...base.connections, stripe: true },
     catalog: [item()],
     templates,

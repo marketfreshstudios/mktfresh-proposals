@@ -869,6 +869,15 @@ async function handleRoute(req: Request, path: string[]) {
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
           if (
+            JSON.stringify(entity.business_state ?? null) !==
+            JSON.stringify(previous?.business_state ?? null)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change Business state",
+              403,
+            );
+          if (
             JSON.stringify(entity.logo_icon ?? null) !==
             JSON.stringify(previous?.logo_icon ?? null)
           ) {

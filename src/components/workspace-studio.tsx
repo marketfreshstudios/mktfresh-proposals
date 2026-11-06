@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
+import { businessStates } from "../lib/business-state";
 import { whiteContrast, accessibleAccent } from "../lib/brand";
 import {
   curatedFonts,
@@ -475,13 +476,57 @@ export function WorkspaceStudio({
             Only a super admin can change Yeswell attribution.
           </p>
         )}
-        <details>
+        <details
+          open={
+            (typeof location !== "undefined" &&
+              location.hash === "#workspace-business-state") ||
+            undefined
+          }
+        >
           <Disclosure>Workspace contact details</Disclosure>
           <div className="stack">
             {text("Owner contact name", "owner")}
             {text("Contact email", "email", "email")}
             {text("Phone", "phone")}
             {text("Address", "address")}
+            <Field label="Business state">
+              <select
+                id="workspace-business-state"
+                disabled={!owner}
+                value={draft.business_state?.name ?? ""}
+                onChange={(e) =>
+                  change(
+                    {
+                      business_state: {
+                        name: e.target.value as any,
+                        other: draft.business_state?.other ?? "",
+                      },
+                    },
+                    true,
+                  )
+                }
+              >
+                <option value="">Choose your business state</option>
+                {businessStates.map((state) => (
+                  <option key={state}>{state}</option>
+                ))}
+                <option value="other">Other / outside the US</option>
+              </select>
+            </Field>
+            {draft.business_state?.name === "other" && (
+              <Field label="State or region">
+                <input
+                  disabled={!owner}
+                  maxLength={200}
+                  value={draft.business_state.other}
+                  onChange={(e) =>
+                    change({
+                      business_state: { name: "other", other: e.target.value },
+                    })
+                  }
+                />
+              </Field>
+            )}
           </div>
         </details>
       </>
