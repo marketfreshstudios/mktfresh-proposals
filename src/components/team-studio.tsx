@@ -371,7 +371,7 @@ export function TeamStudio({
               ].map((action) => (
                 <button
                   type="button"
-                  className="btn"
+                  className={`btn ${action === "remove" ? "team-remove-action" : ""}`}
                   key={action}
                   aria-label={actionLabels[action]}
                   disabled={

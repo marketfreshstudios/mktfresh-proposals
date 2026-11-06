@@ -576,3 +576,45 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
     "rgb(20, 107, 63)",
   );
 });
+
+test("Studio carry-over provider pills, unwrapped status and guarded danger removal", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/studio/workspace?view=billing");
+  await expect(
+    page.locator(".workspace-setting-row .studio-tag-stripe"),
+  ).toHaveText("Stripe");
+  await expect(
+    page.locator(".workspace-setting-row .studio-tag-qbo"),
+  ).toHaveCSS("color", "rgb(20, 107, 63)");
+  await expect(page.locator(".workspace-setting-row>a").first()).toHaveCSS(
+    "white-space",
+    "nowrap",
+  );
+  await expect(
+    page.getByText(
+      "Project fees, including the Own It Over Time kickoff. Until QuickBooks is connected, staff record the invoice number on the proposal.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  const person = f.members.find((m) => m.display_name === "Jamie Example")!;
+  const proposal = (await f.repo.list())[0];
+  proposal.owner = {
+    user_id: person.user_id,
+    display_name: person.display_name,
+    email: person.email,
+  };
+  proposal.created_by = `staff:${person.user_id}`;
+  await f.repo.save(proposal, proposal.revision);
+  await page.goto("/studio/workspace?view=team");
+  await page.getByRole("button", { name: "Actions for Jamie Example" }).click();
+  const remove = page.getByRole("button", {
+    name: "Remove from workspace",
+    exact: true,
+  });
+  await expect(remove).toBeDisabled();
+  await expect(remove).toContainText("Reassign proposals first");
+  await expect(remove).toHaveCSS("color", "rgb(163, 38, 30)");
+});

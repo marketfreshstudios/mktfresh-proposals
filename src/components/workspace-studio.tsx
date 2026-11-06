@@ -454,7 +454,8 @@ export function WorkspaceStudio({
         <div className="workspace-setting-row">
           <div>
             <h3>
-              Recurring services <span className="studio-tag">Stripe</span>
+              Recurring services{" "}
+              <span className="studio-tag studio-tag-stripe">Stripe</span>
             </h3>
             <p>
               Hosting, care and other monthly or yearly services. New clients
@@ -472,11 +473,13 @@ export function WorkspaceStudio({
         <div className="workspace-setting-row">
           <div>
             <h3>
-              One-time fees <span className="studio-tag">QuickBooks</span>
+              One-time fees{" "}
+              <span className="studio-tag studio-tag-qbo">QuickBooks</span>
             </h3>
             <p>
-              Project fees and kickoff fees. Until QuickBooks is connected,
-              staff record the invoice number on the proposal.
+              Project fees, including the Own It Over Time kickoff. Until
+              QuickBooks is connected, staff record the invoice number on the
+              proposal.
             </p>
           </div>
           <a href="/studio/connections?view=qbo">

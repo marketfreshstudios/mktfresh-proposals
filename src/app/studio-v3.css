@@ -1924,3 +1924,25 @@
   background: var(--row-hover);
   text-decoration: none;
 }
+
+/* Studio owner carry-over: provider badges and destructive Team action. */
+.studio-tag-stripe {
+  color: var(--ai);
+  background: var(--ai-soft);
+  border-color: transparent;
+}
+.studio-tag-qbo {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: transparent;
+}
+.workspace-setting-row > a {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.action-menu .team-remove-action {
+  color: var(--danger);
+}
+.action-menu .team-remove-action small {
+  color: var(--ink-muted);
+}
