@@ -104,6 +104,7 @@ export function WorkspaceStudio({
     pending: Object.values(states).some(
       (s) => s.status === "Saving…" || s.status === "Unsaved changes",
     ),
+    hasPendingWork: () => !!pending.current || !!flight.current,
     flush,
   });
   async function flush(): Promise<boolean> {

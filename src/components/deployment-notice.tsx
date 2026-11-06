@@ -9,7 +9,14 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
     [busy, setBusy] = useState(false),
     [failed, setFailed] = useState(false),
     { prepare, blocked, revision } = useReloadSafety(),
-    snooze = useRef(0);
+    snooze = useRef(0),
+    mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     if (!blocked) setFailed(false);
   }, [blocked, revision]);
@@ -109,8 +116,12 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
           disabled={busy || blocked || failed}
           onClick={async () => {
             setBusy(true);
+            const from = location.href;
             try {
-              if (await prepare()) location.reload();
+              const ready = await prepare();
+              // Navigation or unmount during a save cancels the old reload intent.
+              if (!mounted.current || location.href !== from) return;
+              if (ready) location.reload();
               else setFailed(true);
             } finally {
               setBusy(false);

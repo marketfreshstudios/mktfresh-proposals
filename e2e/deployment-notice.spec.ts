@@ -66,12 +66,20 @@ test("visible staff tabs detect builds, poll every five minutes, snooze thirty m
     .getByRole("button", { name: "Later", exact: true })
     .click();
   await expect(notice(page)).toHaveCount(0);
-  const now = await page.evaluate(() => Date.now());
-  await page.clock.setSystemTime(now + 1799999);
+  const until = await page.evaluate(() =>
+    Number(
+      sessionStorage.getItem(
+        Object.keys(sessionStorage).find((k) =>
+          k.startsWith("yeswell-update-later:"),
+        )!,
+      ),
+    ),
+  );
+  await page.clock.setFixedTime(until - 1);
   await focus(page);
   await expect.poll(f.checks).toBeGreaterThan(hidden + 1);
   await expect(notice(page)).toHaveCount(0);
-  await page.clock.setSystemTime(now + 1800001);
+  await page.clock.setFixedTime(until + 1);
   await focus(page);
   await expect(notice(page)).toBeVisible();
 });

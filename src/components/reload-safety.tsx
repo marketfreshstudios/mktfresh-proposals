@@ -8,11 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-type Guard = {
-  blocked?: boolean;
-  pending?: boolean;
-  flush?: () => Promise<boolean>;
-};
+import { prepareReload, type ReloadGuard as Guard } from "../lib/reload-safety";
 const Safety = createContext<{
   register: (key: symbol, guard: { current: Guard }) => () => void;
   changed: () => void;
@@ -35,19 +31,10 @@ export function ReloadSafetyProvider({ children }: { children: ReactNode }) {
     },
     [changed],
   );
-  const prepare = useCallback(async () => {
-    const blocked = () =>
-      [...guards.current.values()].some((g) => g.current.blocked);
-    if (blocked()) return false;
-    for (const guard of [...guards.current.values()]) {
-      try {
-        if (guard.current.flush && !(await guard.current.flush())) return false;
-      } catch {
-        return false;
-      }
-    }
-    return !blocked();
-  }, []);
+  const prepare = useCallback(
+    () => prepareReload(() => [...guards.current.values()]),
+    [],
+  );
   return (
     <Safety.Provider
       value={{

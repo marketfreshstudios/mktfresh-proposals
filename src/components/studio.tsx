@@ -1122,6 +1122,10 @@ function TemplatesStudioContent({
   useReloadGuard({
     blocked: !!templateRecovery || !!templateError,
     pending: templateDirty || templateBusy,
+    hasPendingWork: () =>
+      !!resourceRef.current.value &&
+      savedModels.current.get(resourceRef.current.key) !==
+        serialise(resourceRef.current.value),
     flush: saveTemplate,
   });
   const autoSaveKey = serialise(mode === "templates" ? draft : null);
