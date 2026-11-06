@@ -67,6 +67,10 @@ it("legacy/custom covers retain their exact data and plain rendering, while new 
 it("graphics respect icon resolution, crop, opacity, and independent background selection", () => {
   for (const layout of ["editorial", "split"] as const) {
     const c = applyCoverLayout(defaultCover(), layout);
+    expect(coverPresentation(c)).toMatchObject({
+      opacity: layout === "split" ? 0.12 : 0.08,
+      size: layout === "split" ? 420 : 480,
+    });
     expect(coverPresentation(c, "#2f5d50", 128, true).graphic).toBe(
       layout === "editorial" ? "ring" : "orbits",
     );
@@ -80,6 +84,9 @@ it("graphics respect icon resolution, crop, opacity, and independent background 
       opacity: 0.3,
       size: 700,
     };
+    expect(
+      coverPresentation({ ...c, background: { type: "solid" } }).opacity,
+    ).toBe(0.12);
     const html = coverDecorationHtml(c);
     expect(html).toContain("opacity:0.3");
     expect(html).toContain("width:700px");

@@ -90,6 +90,9 @@ export function CoverSettings({
   const color = b.color ?? settings?.accent_colour ?? "#365c4a",
     elements = coverElements(cover, ""),
     appearance = coverPresentation(cover, settings?.accent_colour),
+    usesColor =
+      ["split", "bold", "photo"].includes(layout) ||
+      ["solid", "waves", "orbits", "ring", "dots", "corners"].includes(b.type),
     text =
       layout === "split" && !appearance.backdrop
         ? appearance.panelText
@@ -142,26 +145,30 @@ export function CoverSettings({
                 ))}
               </select>
             </Field>
-            <Field label="Cover color">
-              <BrandPalettePicker
-                settings={settings}
-                value={color}
-                onChange={(color) => change({ color })}
-              />
-              <input
-                aria-label="Custom cover color"
-                type="color"
-                value={color}
-                onChange={(e) => change({ color: e.target.value })}
-              />
-              <span className="muted">
-                {text === "#ffffff" ? "White" : "Ink"} text on{" "}
-                {layout === "split" && !appearance.backdrop
-                  ? "the panel"
-                  : "the cover"}{" "}
-                · AA contrast
-              </span>
-            </Field>
+            {usesColor && (
+              <Field
+                label={layout === "split" ? "Panel color" : "Background color"}
+              >
+                <BrandPalettePicker
+                  settings={settings}
+                  value={color}
+                  onChange={(color) => change({ color })}
+                />
+                <input
+                  aria-label="Custom cover color"
+                  type="color"
+                  value={color}
+                  onChange={(e) => change({ color: e.target.value })}
+                />
+                <span className="muted">
+                  {text === "#ffffff" ? "White" : "Ink"} text on{" "}
+                  {layout === "split" && !appearance.backdrop
+                    ? "the panel"
+                    : "the cover"}{" "}
+                  · AA contrast
+                </span>
+              </Field>
+            )}
             {b.type === "image" && (
               <>
                 <input
@@ -342,9 +349,7 @@ export function CoverSettings({
                 <SpacingInput
                   label="Opacity (%)"
                   unit="%"
-                  value={
-                    (b.opacity ?? (layout === "split" ? 0.12 : 0.08)) * 100
-                  }
+                  value={appearance.opacity * 100}
                   max={40}
                   onChange={(opacity) => change({ opacity: opacity / 100 })}
                 />
@@ -352,7 +357,7 @@ export function CoverSettings({
                   label="Size (px)"
                   min={300}
                   max={700}
-                  value={b.size ?? (layout === "split" ? 420 : 480)}
+                  value={appearance.size}
                   onChange={(size) => change({ size })}
                 />
               </>

@@ -69,7 +69,7 @@ export function coverPresentation(
     text: coverImageBackdrop(cover) ? "#ffffff" : coverTextColor(base),
     panelText: coverTextColor(color),
     graphic,
-    opacity: b.opacity ?? (layout === "split" ? 0.12 : 0.08),
+    opacity: b.opacity ?? (layout === "split" || filled ? 0.12 : 0.08),
     size: b.size ?? (layout === "split" ? 420 : 480),
   };
 }
@@ -112,7 +112,7 @@ export const coverLayoutCss = `
 [data-cover-layout]:not([data-cover-layout=custom]){position:relative;isolation:isolate;min-height:var(--cover-content-height,912px);height:var(--cover-content-height,912px);margin:0!important;padding:var(--cover-padding,0)!important;gap:0!important;display:flex!important;flex-direction:column;align-items:stretch!important;color:var(--cover-text);box-sizing:border-box}
 .cover-decoration{position:absolute;inset:calc(-1*var(--cover-inset-top,72px)) calc(-1*var(--cover-inset-right,72px)) calc(-1*var(--cover-inset-bottom,72px)) calc(-1*var(--cover-inset-left,72px));overflow:hidden;background:var(--cover-base);z-index:-1;pointer-events:none}
 .cover-decoration>svg,.cover-background-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-height:none!important;max-width:none!important}
-.cover-panel{display:none}.cover-watermark-clip{position:absolute;inset:0;overflow:hidden;pointer-events:none}.cover-watermark{position:absolute;right:-150px;top:-150px;overflow:hidden;pointer-events:none}.cover-watermark>img,.cover-watermark>svg{width:100%;height:100%;object-fit:contain;max-height:none!important;max-width:none!important}
+.cover-panel{display:none}.cover-watermark-clip{position:absolute;inset:0;overflow:hidden;pointer-events:none}.cover-watermark{position:absolute;background:transparent;border:0;right:-150px;top:-150px;overflow:visible;pointer-events:none}.cover-watermark>img,.cover-watermark>svg{width:100%;height:100%;object-fit:contain;background:transparent;border:0;border-radius:0;max-height:none!important;max-width:none!important}
 .cover-brand-group,.cover-main-group,.cover-meta-group{position:relative;min-width:0}
 .cover-main-group{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:72px}
 .cover-main-group:after{content:"";display:block;width:72px;height:4px;background:var(--cover-color);margin-top:36px}
