@@ -161,7 +161,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   });
   // Real saved image path: draw in Workspace, save, reload, then open the countersign sheet.
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/studio/workspace");
+  await page.goto("/studio/workspace?view=signatory");
   const canvas = page.getByLabel("Draw stored company signature");
   await canvas.scrollIntoViewIfNeeded();
   const box = (await canvas.boundingBox())!;
@@ -183,23 +183,30 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await page
     .getByRole("button", { name: "Use drawn signature", exact: true })
     .click();
+  await expect
+    .poll(() => settings.company_signatory?.image?.length ?? 0)
+    .toBeGreaterThan(1000);
+  await page.getByRole("button", { name: "Client links", exact: true }).click();
   await page.getByLabel("Default link validity (days)").fill("45");
-  await page
-    .getByRole("button", { name: "Save workspace settings", exact: true })
-    .click();
+  await page.getByLabel("Default link validity (days)").blur();
+
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Save workspace settings", exact: true }),
-  ).toBeEnabled();
+    page.locator(".workspace-section-card [role=status]"),
+  ).toHaveText("Saved");
   expect(settings.default_validity_days).toBe(45);
   expect(settings.company_signatory!.image!.length).toBeGreaterThan(1000);
   await page.reload();
+  await page.getByRole("button", { name: "Signatory", exact: true }).click();
   await expect(page.getByAltText("Stored company signature")).toHaveAttribute(
     "src",
     settings.company_signatory!.image!,
   );
+  await page
+    .getByRole("button", { name: "Proposal fonts", exact: true })
+    .click();
   const raw = await readFile("public/fonts/InstrumentSans-Variable.woff2");
   await page
     .getByRole("checkbox", {
@@ -213,18 +220,17 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       mimeType: "font/woff2",
       buffer: raw,
     });
+  await expect.poll(() => typeof settings.proposal_fonts?.body).toBe("object");
   await expect(
-    page.getByRole("radio", { name: "Aa Studio Sans" }).last(),
-  ).toBeChecked();
-  await page
-    .getByRole("button", { name: "Save workspace settings", exact: true })
-    .click();
+    page.getByRole("combobox", { name: "Body text", exact: true }),
+  ).toHaveValue((settings.proposal_fonts!.body as any).id);
+
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Save workspace settings", exact: true }),
-  ).toBeEnabled();
+    page.locator(".workspace-section-card [role=status]"),
+  ).toHaveText("Saved");
   expect(typeof settings.proposal_fonts?.body).toBe("object");
   const chosen = settings.proposal_fonts!.body;
   if (typeof chosen !== "string") {
@@ -237,14 +243,13 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         .evaluate((el) => getComputedStyle(el).fontFamily),
     ).toContain(`Proposal-${chosen.id}`);
   }
-  await page.getByLabel("Accent color").fill("#aaddcc");
-  await expect(
-    page.getByRole("button", { name: "Save workspace settings", exact: true }),
-  ).toBeDisabled();
+  await page.getByRole("button", { name: "Brand", exact: true }).click();
+  await page.getByLabel("Accent hex", { exact: true }).fill("#aaddcc");
+  await expect(page.getByText(/Needs 4.5:1 contrast on white/)).toBeVisible();
   await page.getByRole("button", { name: /darker, same hue/ }).click();
   await expect(
-    page.getByRole("button", { name: "Save workspace settings", exact: true }),
-  ).toBeEnabled();
+    page.locator(".workspace-section-card [role=status]"),
+  ).toHaveText("Saved");
   await page.goto("/proposals?new=1");
   await page
     .getByLabel("Title", { exact: true })
@@ -272,9 +277,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   ).toBe(720);
   await page.keyboard.press("Escape");
   await page.goto("/studio/templates");
-  await page
-    .getByRole("button", { name: "+ New template", exact: true })
-    .click();
+  await page.getByRole("button", { name: "New template", exact: true }).click();
   await page
     .getByLabel("Template name", { exact: true })
     .fill("Keep this template selected");
@@ -428,6 +431,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
             expect(ratio).toBeGreaterThanOrEqual(4.5);
         }
         if (name === "templates") {
+          await page.locator(".studio-template-card").first().click();
           const clause = page
             .getByRole("group", { name: /^Template clause/ })
             .last();
@@ -458,12 +462,24 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
             .filter({ hasText: "Over Time" })
             .first()
             .click();
-          await expect(page.getByRole("dialog")).toBeVisible();
+          await expect(page.locator(".studio-product-detail")).toBeVisible();
           await capture("catalog-terms", "7b", width, theme);
           await page.keyboard.press("Escape");
         }
         if (name === "workspace") {
           for (const section of ["fonts", "client-links", "team"]) {
+            await page
+              .getByRole("navigation", { name: "Workspace sections" })
+              .getByRole("button", {
+                name:
+                  section === "fonts"
+                    ? "Proposal fonts"
+                    : section === "client-links"
+                      ? "Client links"
+                      : "Team",
+                exact: true,
+              })
+              .click();
             await page.locator(`#${section}`).scrollIntoViewIfNeeded();
             await capture(`workspace-${section}`, "7d", width, theme);
           }

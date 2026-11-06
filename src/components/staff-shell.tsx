@@ -1,4 +1,5 @@
 "use client";
+import { StudioAccount } from "./studio-account";
 import { YeswellBrand } from "./yeswell-brand";
 import type { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
@@ -29,10 +30,17 @@ export function StaffShell({
   onSignout: () => void;
   children: ReactNode;
 }) {
+  useEffect(() => {
+    document.documentElement.dataset.theme =
+      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
+  }, []);
   const [studio, setStudio] = useState(false);
   const studioButton = useRef<HTMLButtonElement>(null),
     studioPopover = useRef<HTMLDivElement>(null);
   const current = "/" + path.join("/");
+  const inStudio =
+    path[0] === "studio" &&
+    !(path[2] && ["templates", "blocks", "emails"].includes(path[1]));
   const insideProposal =
     path[0] === "proposals" && !!path[1] && path[1] !== "new";
   useEffect(() => {
@@ -67,7 +75,7 @@ export function StaffShell({
   return (
     <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
       <div
-        className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""}`}
+        className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""} ${inStudio ? "studio-v3-shell" : ""}`}
       >
         <a className="skip-link" href="#workspace-content">
           Skip to content
@@ -81,6 +89,16 @@ export function StaffShell({
               <YeswellBrand mark />
             </span>
           </a>
+          <div className="workspace-label">
+            {settings?.logo ? (
+              <img src="/api/workspace-logo" alt="" />
+            ) : (
+              <span className="avatar">
+                {settings?.company_name.slice(0, 1) ?? "W"}
+              </span>
+            )}
+            <strong>{settings?.company_name ?? "Workspace"}</strong>
+          </div>
           <button
             className="btn primary shell-new"
             onClick={onNew}
@@ -116,19 +134,25 @@ export function StaffShell({
               <Icon name="studio" />
               <span>Studio</span>
             </button>
-            <div className="shell-person">
-              <span className="avatar" aria-hidden="true">
-                {name.slice(0, 1) || "U"}
-              </span>
-              <span>
-                {name}
-                <small>{email}</small>
-              </span>
-            </div>
-            <ThemeToggle />
-            <button className="btn ghost sign-out" onClick={onSignout}>
-              Sign out
-            </button>
+            {inStudio ? (
+              <StudioAccount name={name} email={email} onSignout={onSignout} />
+            ) : (
+              <>
+                <div className="shell-person">
+                  <span className="avatar" aria-hidden="true">
+                    {name.slice(0, 1) || "U"}
+                  </span>
+                  <span>
+                    {name}
+                    <small>{email}</small>
+                  </span>
+                </div>
+                <ThemeToggle />
+                <button className="btn ghost sign-out" onClick={onSignout}>
+                  Sign out
+                </button>
+              </>
+            )}
           </footer>
         </aside>
         <main className="workspace" id="workspace-content" tabIndex={-1}>
@@ -140,6 +164,37 @@ export function StaffShell({
             >
               <YeswellBrand mark />
             </a>
+          )}
+          {inStudio && (
+            <>
+              <div className="studio-tablet-header">
+                <a href="/" aria-label="Yeswell home">
+                  <YeswellBrand />
+                </a>
+                <span>{settings?.company_name ?? "Workspace"}</span>
+                <StudioAccount
+                  name={name}
+                  email={email}
+                  onSignout={onSignout}
+                />
+              </div>
+              <nav className="studio-area-chips" aria-label="Studio areas">
+                {studioRoutes.map(([href, label]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    aria-current={current.startsWith(href) ? "page" : undefined}
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
+              {path[1] && (
+                <a className="studio-back" href="/studio">
+                  ‹ Studio
+                </a>
+              )}
+            </>
           )}
           {children}
         </main>

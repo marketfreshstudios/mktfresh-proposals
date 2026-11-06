@@ -8,6 +8,7 @@ import "./review-polish.css";
 import "./block-controls.css";
 import "./emails.css";
 import "./editor.css";
+import "./studio-v3.css";
 export default function RootLayout({
   children,
 }: {

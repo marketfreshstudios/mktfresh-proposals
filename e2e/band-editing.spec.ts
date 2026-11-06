@@ -405,6 +405,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/templates");
+  await page.locator(".studio-template-card").first().click();
   const band = await open(page);
   await band
     .getByRole("textbox", { name: "header column 2" })

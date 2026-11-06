@@ -99,7 +99,7 @@ test("template creation stays reachable with collapsed Pages at desktop, tablet 
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/studio/templates");
     const create = page.getByRole("button", {
-      name: "+ New template",
+      name: "New template",
       exact: true,
     });
     await expect(create).toBeVisible();
@@ -365,6 +365,7 @@ test("page add/delete and undo use normal authoring history; templates use the s
     )
     .toBe(2);
   await page.goto("/studio/templates");
+  await page.locator(".studio-template-card").first().click();
   await expect(
     page.getByRole("navigation", { name: "Sections", exact: true }),
   ).toBeVisible();

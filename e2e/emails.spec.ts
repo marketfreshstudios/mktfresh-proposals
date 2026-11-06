@@ -159,17 +159,24 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       await page.setViewportSize({ width, height: 1000 });
       await page.goto("/studio/emails");
       await expect(
-        page.getByRole("heading", { name: "Client emails", exact: true }),
+        page.getByRole("tab", { name: "Client emails · 8", exact: true }),
       ).toBeVisible();
-      await expect(page.locator(".email-list-row")).toHaveCount(17);
+      await expect(page.locator(".email-list-row")).toHaveCount(8);
+      await page
+        .getByRole("tab", { name: "Staff notifications · 9", exact: true })
+        .click();
+      await expect(page.locator(".email-list-row")).toHaveCount(9);
+      await page
+        .getByRole("tab", { name: "Client emails · 8", exact: true })
+        .click();
       await shot("emails-list", width, theme);
       if (width === 768) {
-        await page.getByRole("button", { name: "Studio", exact: true }).click();
         await expect(
-          page.getByRole("link", { name: "Emails", exact: true }),
+          page
+            .getByRole("navigation", { name: "Studio areas" })
+            .getByRole("link", { name: "Emails", exact: true }),
         ).toBeVisible();
         await shot("studio-navigation", width, theme);
-        await page.keyboard.press("Escape");
       }
       if (width === 375) {
         await page.goto("/studio");

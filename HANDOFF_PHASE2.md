@@ -54,31 +54,31 @@
 
 Store local values only in the ignored repository-root `.env.local`. Set hosted secrets only in this new Vercel project's server environment. No `NEXT_PUBLIC_*` secret variables.
 
-| Variable | Value/source |
-|---|---|
-| `APP_MODE` | `local` for mock development; `supabase` for hosted/private database operation. |
-| `DATA_DIR` | Local data folder, default `.data`; not used as hosted persistence. |
-| `APP_URL` | Canonical origin, loopback in development or owner-configured HTTPS domain. |
-| `DEV_STAFF_TOKEN` | Long random local-only login token; never deploy it. |
-| `SUPABASE_URL` | New project's API URL from its settings. |
-| `SUPABASE_ANON_KEY` | New project's anon key, used server-side for password authentication. |
-| `SUPABASE_SERVICE_ROLE_KEY` | New project's server-only service-role key. Never expose it in browser code. |
-| `STORAGE_BUCKET` | `proposal-files`, private bucket created by migration. |
-| `CRON_SECRET` | Generate a strong random secret; Vercel cron supplies it as bearer authorization. |
-| `RESEND_API_KEY` | Sending-only key for the verified domain. Local mode always uses mock email. Sender identity is chosen from Team at send; the owner sets the already-verified sending domain in workspace Settings. |
-| `BILLING_MODE` | Default `mock`; explicit `test` enables available test adapters for workspace 1. Missing hosted providers remain needs-review, not simulated success. |
-| `STRIPE_SECRET_KEY` | Owner-provided `rk_test_…` restricted key (or `sk_test_…`). Constructor and request code refuse every other prefix. Shell `STRIPE_KEY` is never read. |
-| `STRIPE_WEBHOOK_SECRET` | Local: signing secret printed by `stripe listen` configured for the test account. Hosted: signing secret for this app's test webhook endpoint. These differ. |
-| `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET` | Intuit app's Development credentials. |
-| `QBO_REFRESH_TOKEN` | Initial token obtained by owner authorization of a sandbox company; subsequent rotations are encrypted in the workspace database. |
-| `QBO_REALM_ID` | Numeric sandbox company ID from that grant. |
-| `QBO_ENVIRONMENT` | Must be `sandbox`. Production is refused. |
-| `INTEGRATION_ENCRYPTION_KEY` | Generate 32 cryptographically random bytes encoded as base64. Keep it stable/backed up; rotating it requires re-encrypting stored QBO tokens. |
-| `OAUTH_ISSUER` | Exact canonical app origin. MCP resource is `<origin>/mcp`. |
-| `OAUTH_REDIRECT_URIS` | Optional comma-separated additional exact Claude/ChatGPT callback URIs; no wildcards. Built-in stable callbacks are documented in `docs/ai-connector.md`. |
-| `CHROMIUM_EXECUTABLE_PATH` | Optional trusted local browser executable; leave unset on Vercel to use bundled Chromium. |
-| `PROPOSIFY_PROFILE` | Local dedicated exporter browser profile, default `.data/proposify-profile`; STOP 2 only. |
-| `PROPOSIFY_BASE_URL` | Owner's Proposify account URL; STOP 2 only. |
+| Variable                             | Value/source                                                                                                                                                                                        |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_MODE`                           | `local` for mock development; `supabase` for hosted/private database operation.                                                                                                                     |
+| `DATA_DIR`                           | Local data folder, default `.data`; not used as hosted persistence.                                                                                                                                 |
+| `APP_URL`                            | Canonical origin, loopback in development or owner-configured HTTPS domain.                                                                                                                         |
+| `DEV_STAFF_TOKEN`                    | Long random local-only login token; never deploy it.                                                                                                                                                |
+| `SUPABASE_URL`                       | New project's API URL from its settings.                                                                                                                                                            |
+| `SUPABASE_ANON_KEY`                  | New project's anon key, used server-side for password authentication.                                                                                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY`          | New project's server-only service-role key. Never expose it in browser code.                                                                                                                        |
+| `STORAGE_BUCKET`                     | `proposal-files`, private bucket created by migration.                                                                                                                                              |
+| `CRON_SECRET`                        | Generate a strong random secret; Vercel cron supplies it as bearer authorization.                                                                                                                   |
+| `RESEND_API_KEY`                     | Sending-only key for the verified domain. Local mode always uses mock email. Sender identity is chosen from Team at send; the owner sets the already-verified sending domain in workspace Settings. |
+| `BILLING_MODE`                       | Default `mock`; explicit `test` enables available test adapters for workspace 1. Missing hosted providers remain needs-review, not simulated success.                                               |
+| `STRIPE_SECRET_KEY`                  | Owner-provided `rk_test_…` restricted key (or `sk_test_…`). Constructor and request code refuse every other prefix. Shell `STRIPE_KEY` is never read.                                               |
+| `STRIPE_WEBHOOK_SECRET`              | Local: signing secret printed by `stripe listen` configured for the test account. Hosted: signing secret for this app's test webhook endpoint. These differ.                                        |
+| `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET` | Intuit app's Development credentials.                                                                                                                                                               |
+| `QBO_REFRESH_TOKEN`                  | Initial token obtained by owner authorization of a sandbox company; subsequent rotations are encrypted in the workspace database.                                                                   |
+| `QBO_REALM_ID`                       | Numeric sandbox company ID from that grant.                                                                                                                                                         |
+| `QBO_ENVIRONMENT`                    | Must be `sandbox`. Production is refused.                                                                                                                                                           |
+| `INTEGRATION_ENCRYPTION_KEY`         | Generate 32 cryptographically random bytes encoded as base64. Keep it stable/backed up; rotating it requires re-encrypting stored QBO tokens.                                                       |
+| `OAUTH_ISSUER`                       | Exact canonical app origin. MCP resource is `<origin>/mcp`.                                                                                                                                         |
+| `OAUTH_REDIRECT_URIS`                | Optional comma-separated additional exact Claude/ChatGPT callback URIs; no wildcards. Built-in stable callbacks are documented in `docs/ai-connector.md`.                                           |
+| `CHROMIUM_EXECUTABLE_PATH`           | Optional trusted local browser executable; leave unset on Vercel to use bundled Chromium.                                                                                                           |
+| `PROPOSIFY_PROFILE`                  | Local dedicated exporter browser profile, default `.data/proposify-profile`; STOP 2 only.                                                                                                           |
+| `PROPOSIFY_BASE_URL`                 | Owner's Proposify account URL; STOP 2 only.                                                                                                                                                         |
 
 Never use the live `STRIPE_KEY` in the shell or anything in the owner's Stripe/webhook folder. The app neither reads nor falls back to them.
 
@@ -113,7 +113,6 @@ See [DECISIONS.md](DECISIONS.md) for the complete rationale and official connect
 
 **STOP 1. Do not create resources, use live credentials, activate billing, or start the real Proposify import without the owner's next instruction.**
 
-
 ## Review corrections — 29 October 2026
 
 - D2 adds new items with no proration and updates only `metadata.plan` / `metadata.plan_items` on the existing subscription. It never changes the existing description, collection method, due-day setting, proposal metadata or existing items. Regression tests assert the exact update payload.
@@ -123,38 +122,35 @@ See [DECISIONS.md](DECISIONS.md) for the complete rationale and official connect
 - Validation: 40 unit/database tests, three browser tests, type checks, production build, neutrality and formatting. Browser assertions cover one totals group, hidden absent-yearly totals, both signature blocks, typed final signatures and the last document line scrolling above the sticky bar at both widths/themes. Affected screenshots were regenerated.
 - Actual Stripe checks are authorized only after these fixes merge. `scripts/verify-stripe-catalogue.ts` reads only the explicitly selected repository `.env.local`, validates the test prefix before every request, sets `BILLING_MODE=test`, syncs read-only and stops on missing required lookup keys. No catalogue price creation is permitted. QuickBooks remains pending credentials.
 
-
 ## Initial post-merge Stripe check — superseded by current-key results below
 
 Review fixes merged in [PR #6](https://github.com/marketfreshstudios/mktfresh-proposals/pull/6), commit `50b013d`, after both CI runs passed. The screenshot test was corrected to click the optional checkbox and assert the revision warning, since that warning replaces the checkbox. All 40 unit/database tests and three browser tests pass; typecheck, build and neutrality checks pass. Affected screenshots are committed in `docs/screenshots/`.
 
 The actual provider run started at **17:32:45 UTC**, after the merge, with `BILLING_MODE=test` and API version `2024-06-20`. It read only `STRIPE_SECRET_KEY` from the original repository's ignored `.env.local`. The test-key prefix guard passed before the run and before the request. No shell `STRIPE_KEY`, external credential file or CLI account credentials were read.
 
-| Check | Result |
-|---|---|
-| Test-key guard | Passed; secret value withheld. |
-| Read-only catalogue sync | Passed: `GET /v1/prices` returned HTTP 200; 41 recurring catalogue entries imported locally. One page exhausted the result. No live-mode objects returned. |
-| `hosted-standard-100` | Present, active: $100/month. |
-| `oiot-monthly-175` | Present, active: $175/month. |
-| `storage-30gb-60` | Retired 15 October; illustrative example only. The initial gate incorrectly required it and stopped (exit 2). Use `hosting-upgrade-60`, already present; do not copy the retired price. |
-| Restricted-key permission errors | None on the catalogue read. Write/Checkout/schedule permissions remain untested. |
-| Legacy exclusion / pagination | Pending actual test data: no imported entries were flagged legacy and only one page was returned. Keys containing `legacy` are not by themselves the required metadata flag; review those test prices' metadata separately; no catalogue copy is required. Mock tests cover these paths. |
-| D2 existing working-card customer | Not run: stopped at the missing-catalogue gate. |
-| D3 new customer / completed Checkout | Not run: stopped at the missing-catalogue gate. |
-| Own It Over Time schedule | Not run: stopped at the missing-catalogue gate. |
-| $2,000/month Custom Retainer | Not run: stopped at the missing-catalogue gate. |
-| Webhook delivery | Pending. Stripe CLI 1.53.1 is available, but `stripe listen` was not started after the required stop. `STRIPE_WEBHOOK_SECRET` remains unset. Use the explicit repository test key when resuming, not a saved CLI account. |
-| QuickBooks sandbox | Pending: credentials do not exist. |
+| Check                                | Result                                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test-key guard                       | Passed; secret value withheld.                                                                                                                                                                                                                                                           |
+| Read-only catalogue sync             | Passed: `GET /v1/prices` returned HTTP 200; 41 recurring catalogue entries imported locally. One page exhausted the result. No live-mode objects returned.                                                                                                                               |
+| `hosted-standard-100`                | Present, active: $100/month.                                                                                                                                                                                                                                                             |
+| `oiot-monthly-175`                   | Present, active: $175/month.                                                                                                                                                                                                                                                             |
+| `storage-30gb-60`                    | Retired 15 October; illustrative example only. The initial gate incorrectly required it and stopped (exit 2). Use `hosting-upgrade-60`, already present; do not copy the retired price.                                                                                                  |
+| Restricted-key permission errors     | None on the catalogue read. Write/Checkout/schedule permissions remain untested.                                                                                                                                                                                                         |
+| Legacy exclusion / pagination        | Pending actual test data: no imported entries were flagged legacy and only one page was returned. Keys containing `legacy` are not by themselves the required metadata flag; review those test prices' metadata separately; no catalogue copy is required. Mock tests cover these paths. |
+| D2 existing working-card customer    | Not run: stopped at the missing-catalogue gate.                                                                                                                                                                                                                                          |
+| D3 new customer / completed Checkout | Not run: stopped at the missing-catalogue gate.                                                                                                                                                                                                                                          |
+| Own It Over Time schedule            | Not run: stopped at the missing-catalogue gate.                                                                                                                                                                                                                                          |
+| $2,000/month Custom Retainer         | Not run: stopped at the missing-catalogue gate.                                                                                                                                                                                                                                          |
+| Webhook delivery                     | Pending. Stripe CLI 1.53.1 is available, but `stripe listen` was not started after the required stop. `STRIPE_WEBHOOK_SECRET` remains unset. Use the explicit repository test key when resuming, not a saved CLI account.                                                                |
+| QuickBooks sandbox                   | Pending: credentials do not exist.                                                                                                                                                                                                                                                       |
 
 **Zero Stripe writes:** no customers, subscriptions, products, catalogue prices or webhook endpoints were created. The sanitized local result is `.data/stripe-review/catalogue-check.json` in the review checkout (ignored, no secret values). Work was performed in `mktfresh-proposals-review` to preserve unrelated untracked duplicate files in the original checkout.
 
 Owner correction: use `hosting-upgrade-60`; no catalogue copying is required. The initial run stopped without writes. The authorized continuation reran `BILLING_MODE=test node --import tsx scripts/verify-stripe-catalogue.ts <original-repository>/.env.local` and completed the core scenarios reported below.
 
-
 ## Current-key correction — merged in PR #8
 
 The owner confirmed that `storage-30gb-60` was retired on 15 October and used only as an illustrative CSV example. The catalogue gate and provider regression fixtures now use `hosting-upgrade-60`. The earlier missing-key stop was caused by this incorrect acceptance prerequisite, not a missing required catalogue price. The correction merged as `4d2c233` after both CI runs passed. The corrected gate and authorized test-mode scenarios then ran successfully, with the webhook limitation below.
-
 
 ## Actual Stripe results after current-key correction — 29 October 2026
 
@@ -162,15 +158,15 @@ The owner confirmed that `storage-30gb-60` was retired on 15 October and used on
 
 Every actual run re-read only `STRIPE_SECRET_KEY` from this repository's ignored `.env.local`, required a `sk_test_`/`rk_test_` prefix before proceeding, and used `BILLING_MODE=test`. The HTTP adapter rechecked the prefix on every request and pinned **2024-06-20**. All created customer/subscription objects were test-mode; no live key, shell `STRIPE_KEY`, saved CLI credential file or external Stripe folder was used.
 
-| Scenario | Actual result |
-|---|---|
-| Catalogue gate, 18:00 UTC | **Passed.** 41 recurring prices imported. `hosted-standard-100`, `hosting-upgrade-60`, and `oiot-monthly-175` all resolved uniquely through the lookup-key API filter. No permission errors. |
-| D2, 18:01 UTC | **Passed.** Created a dedicated test customer with Stripe's test Visa payment method and a $100/month baseline subscription. Added `hosting-upgrade-60` as a separate item, total $160/month, no Checkout. Readback preserved original item, description, collection method and unrelated metadata. `plan=multi`, `plan_items=hosted-standard-100,hosting-upgrade-60`. Repeating the same provider action produced no duplicate item. |
-| D3, 18:01–18:02 UTC | **Passed for Checkout and subscription creation.** Created a new dedicated test customer and customer-bound Checkout. Completed Stripe's Sandbox form with the 4242 test card. API readback confirmed `status=complete`, `payment_status=paid`, same customer, active subscription, expected plan and proposal description. Webhook application/replay is separately pending below. |
-| Own It Over Time, 18:02 UTC | **Passed for initial subscription/schedule creation.** A separate $175/month subscription was created for the D2 test customer; the original subscription was not reused. Stripe accepted two phases: `oiot-monthly-175` with entered 18-month minimum/30-payment terms, then `hosted-standard-100` at $100/month with its own plan metadata; `end_behavior=release`. Initial phase runs 29 October 2026 to 29 April 2029. No test-clock advancement was performed, so paid/unpaid invoice progression and the eventual phase transition remain unverified. |
-| Custom Retainer, 18:03 UTC | **Passed for actual billing.** No active Custom Retainer family existed, so the application created one generic, service-named test product tagged `custom_family=true` after its duplicate-name scan. Created a $2,000/month test subscription with inline `price_data` on that family. Readback confirmed amount 200000 cents, monthly interval, family product, null lookup key, `plan=custom:<family-id>`, and proposal description. No catalogue price or per-client product was created. |
-| Stripe CLI / webhook forwarding | CLI 1.53.1 `whoami` authenticated using the explicit repository test key and `/dev/null` config; reported test key available, live key unavailable. **`stripe listen` failed:** restricted key lacks **Debugging Tools Write (`stripecli_session_write`)**. Listener exited 1 before receiving events. No webhook signing secret was generated or saved; no hosted webhook endpoint was created. |
-| QuickBooks | **Pending:** no sandbox credentials; no QuickBooks requests. |
+| Scenario                        | Actual result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalogue gate, 18:00 UTC       | **Passed.** 41 recurring prices imported. `hosted-standard-100`, `hosting-upgrade-60`, and `oiot-monthly-175` all resolved uniquely through the lookup-key API filter. No permission errors.                                                                                                                                                                                                                                                                                                                                                                |
+| D2, 18:01 UTC                   | **Passed.** Created a dedicated test customer with Stripe's test Visa payment method and a $100/month baseline subscription. Added `hosting-upgrade-60` as a separate item, total $160/month, no Checkout. Readback preserved original item, description, collection method and unrelated metadata. `plan=multi`, `plan_items=hosted-standard-100,hosting-upgrade-60`. Repeating the same provider action produced no duplicate item.                                                                                                                       |
+| D3, 18:01–18:02 UTC             | **Passed for Checkout and subscription creation.** Created a new dedicated test customer and customer-bound Checkout. Completed Stripe's Sandbox form with the 4242 test card. API readback confirmed `status=complete`, `payment_status=paid`, same customer, active subscription, expected plan and proposal description. Webhook application/replay is separately pending below.                                                                                                                                                                         |
+| Own It Over Time, 18:02 UTC     | **Passed for initial subscription/schedule creation.** A separate $175/month subscription was created for the D2 test customer; the original subscription was not reused. Stripe accepted two phases: `oiot-monthly-175` with entered 18-month minimum/30-payment terms, then `hosted-standard-100` at $100/month with its own plan metadata; `end_behavior=release`. Initial phase runs 29 October 2026 to 29 April 2029. No test-clock advancement was performed, so paid/unpaid invoice progression and the eventual phase transition remain unverified. |
+| Custom Retainer, 18:03 UTC      | **Passed for actual billing.** No active Custom Retainer family existed, so the application created one generic, service-named test product tagged `custom_family=true` after its duplicate-name scan. Created a $2,000/month test subscription with inline `price_data` on that family. Readback confirmed amount 200000 cents, monthly interval, family product, null lookup key, `plan=custom:<family-id>`, and proposal description. No catalogue price or per-client product was created.                                                              |
+| Stripe CLI / webhook forwarding | CLI 1.53.1 `whoami` authenticated using the explicit repository test key and `/dev/null` config; reported test key available, live key unavailable. **`stripe listen` failed:** restricted key lacks **Debugging Tools Write (`stripecli_session_write`)**. Listener exited 1 before receiving events. No webhook signing secret was generated or saved; no hosted webhook endpoint was created.                                                                                                                                                            |
+| QuickBooks                      | **Pending:** no sandbox credentials; no QuickBooks requests.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 These are actual provider-adapter checks plus an actual hosted Stripe Checkout test. They do **not** certify the complete signed-proposal → live webhook → email/PDF flow. Existing end-to-end UI/PDF checks use mocked billing. D2 notification delivery, signed webhook verification/replay, Checkout abandonment/error recovery, yearly/mixed-interval scenarios, send-invoice behavior, paid-invoice/test-clock schedule progression, and custom-retainer signed PDF scope remain in the acceptance backlog above.
 
@@ -182,7 +178,6 @@ Test objects retained for inspection (not cancelled or deleted):
 - Custom Retainer product `prod_VX1iT46oNV26LR`; subscription `sub_1UVxfDCyTuAwrO6j4ILDBWhG`.
 
 Sanitized results and request statuses are committed in `docs/stripe-test-results-2026-10-29.json`. Detailed local journals and Checkout screenshots remain ignored under `.data/stripe-acceptance/` in the review checkout. No Stripe provider request failed in the four core billing scenarios; the only permission failure was starting the CLI listener. **Stopped after recording results. At that point webhooks required the test-key CLI permission. The owner subsequently granted it; see the latest verification below. QuickBooks remains pending.**
-
 
 ## Webhook and test-clock continuation — 29 October 2026
 
@@ -203,7 +198,6 @@ The initial runner expected collection after a short advance and stopped on the 
 
 Because the incoming CLI snapshots are rejected before application job processing, this run tests Stripe's execution of the application's initially configured schedule. It does not certify the webhook-driven schedule recalculation path for unpaid/failed invoices. That remains a separate pending test.
 
-
 ### Test-clock result — passed
 
 - **Exactly 30 distinct, automatically paid invoices at $175**, followed by **invoice 31 automatically paid at $100**. Total test payments: **$5,350**. No manual invoice finalization/payment or catalogue writes occurred.
@@ -223,7 +217,6 @@ The clock is left frozen after the first $100 payment; no further advances or ca
 
 **Stopped.** Local forwarding was stopped and its temporary signing-secret file removed. Remaining webhook work requires a delivery path that emits snapshot payloads at **2024-06-20**; the shared account default and the app's version guard remain unchanged. Failed-payment recalculation/replay remains pending. QuickBooks remains pending credentials.
 
-
 ## Single company signatory — 29 October 2026
 
 Every new company counter-signature uses the workspace's designated name, title and stored PNG signature. The actual authenticated staff member remains the actor. Delegated signing requires the additional exact checkbox text, stored verbatim with the signature and counter-sign event: `I'm authorized to sign on behalf of [signatory] for [company].` Staff audit and the sealed PDF audit show the applier's name, email, user ID, timestamp, IP and authorization text. Client signature blocks show the designated identity; the PDF audit contains the actor evidence. AI signing remains forbidden.
@@ -241,7 +234,6 @@ Production commit `f9ad4ba` exposed an eager dependency chain: the API imported 
 The worker now dynamically imports the renderer only inside a PDF job, within the existing failure/retry handling. Auth, email and billing can run with the renderer unavailable. The renderer uses an explicit `playwright-core` dependency with `@sparticuz/chromium`'s executable and arguments on Vercel; local rendering still uses the installed development browser. Next externalizes both renderer packages and explicitly traces their runtime files, Chromium Brotli assets, and document fonts into the API function.
 
 Added regression tests that make renderer/browser imports throw, then load the actual API route and verify an auth response, email delivery, retryable PDF failure and continued billing. Restoring the old static import was checked to make the guard fail. `npm run build` now runs `check:pdf-trace`: it inspects the actual API trace and copies only traced dependencies to an isolated directory. On Linux it cold-starts the packaged serverless Chromium under `VERCEL=1` and generates a PDF with the bundled document font. No credentials are passed to this smoke process. Local checks: 47 unit/database tests, four browser tests, typecheck, format, neutrality and production build. Linux serverless smoke runs in CI before merge. The owner will verify live Vercel logs after main automatically deploys; this is not a claim of live production acceptance.
-
 
 ## Canonical links and staff email senders — 29 October 2026
 
@@ -314,6 +306,7 @@ Validation: 113 unit/database tests, eight browser tests, typecheck, format, neu
 Read design/redesign/CODEX_BRIEF.md and its full spec, served design/redesign locally and opened all eight Redesign 0X .dc.html files. Applied the brief's precedence and limited this PR to Foundation.
 
 Implemented:
+
 - Supplied theme/type/space tokens scoped to staff chrome; Instrument Sans variable WOFF2 self-hosted with OFL/source attribution. Source Serif 4 and IBM Plex Mono retained. Focus ring 2px/2px, reduced motion, accessible sheets and loading skeleton primitives.
 - Responsive shell: 232px sidebar ≥1100px, 64px labelled icon rail ≥700px, five phone slots below 700px. Phone proposal routes hide the global tabs; the current draft editor's Preview / Review & send actions remain available at the bottom.
 - Home / Proposals / Clients, global New proposal sheet with N shortcut, Studio menu and canonical Studio routes. Server redirects preserve access from old routes. Draft /proposals/:id opens the current editor; existing send, evidence, archive and countersign workflows are adapted to query views. Full feature layouts are deferred.
@@ -337,6 +330,7 @@ Stop: Phase 1 only. Submit one PR, leave it open for Jonathan's review, and do n
 Built the client-flow phase from design/redesign/CODEX_BRIEF.md and spec §7 after Foundation PR #24 merged. Served and opened Redesign 01, 05 and 08; compared the rendered frames, not just their source. This is one PR for review, left unmerged.
 
 Changes:
+
 - New sends/re-sends save client_flow_version: 2 on the Version JSON. Unmarked earlier sent/signed versions keep the original client and signature renderer/styles; no old evidence is rewritten. Draft previews use the new flow locally.
 - Review → Sign → conditional Billing progress, branded header, page outline, optional checkbox rows with whole-row targets, live separate totals, 340px desktop choices panel and measured phone/tablet sticky-bar padding. One-time and Monthly are always visible; Yearly appears when a yearly item exists. New UI reads the snapshotted cents preference; white document paper remains white in both themes.
 - Sign step order: acceptance summary/terms and actual contract Read link → editable prefilled name/title and fixed email/date → Draw/Type signature → exact full consent/checkbox → Sign proposal. Optional client title can now be saved on a contact; unknown titles remain blank/editable. Draw defaults on touch, Type on mouse; tabs support keyboard arrows. Every disabled action explains why.
@@ -358,6 +352,7 @@ Stop: Phase 2 only. Leave the PR open for owner review and do not start Phase 3.
 Built Phase 3 from design/redesign/CODEX_BRIEF.md and spec §§5/6/8, after PR #25. This is one PR for review; leave it unmerged and stop before Phase 4.
 
 Changes:
+
 - Draft quote items own ordered sub-lines, separate one-time/monthly/yearly amounts and provider mappings, optional/default selection, linked alternatives, and generic catalogue terms/schedules. Required items are always included. Sortable cards support pointer and keyboard movement, including whole groups and options within groups. Catalogue choices are active, alphabetized, and exclude items already present.
 - `20261030055549_draft_quote_items_v3.sql` converts stored **drafts only** one old line → one item → one sub-line, preserving identities, entered amounts, quantities, intervals, mappings and terms. It appends a system migration event under the existing revision check and is idempotent. Sent/viewed/signed/completed/closed states and every version row remain unchanged. The pure read adapter handles both old flat generations without mutating or hashing its inputs. The database test installs an additional trigger that rejects any version UPDATE/DELETE during this migration.
 - Client alternatives use radio groups, independent optionals use checkboxes, and required items have no selection control. Choices update totals, field values and conditional contract clauses together. Signature requires exactly one choice per group, freezes the visible clauses, and resolves selected item IDs/sub-lines **before** queueing billing. The billing worker validates again; QBO, existing-subscriber and Checkout adapters continue to receive their established flat line DTOs. New PDF quotes render each item name once above its sub-lines and show the chosen alternative; the old flat HTML renderer is retained unchanged.
@@ -563,7 +558,6 @@ Page measurement is isolated from editing: unresolved draft fields suspend only 
 
 **STOP after this PR for review.** No hosted acceptance or QuickBooks sandbox verification was performed.
 
-
 ## Editor follow-up after merged PR #38 — 1 November 2026
 
 Started from main `c8152fb` on `codex/editor-controls-followup`. The owner additions for click-outside and Fields are included in this same follow-up PR.
@@ -580,9 +574,7 @@ Evidence: [124-capture review gallery](docs/screenshots/editor-followup/index.ht
 
 No migrations or hosted/provider operations. QuickBooks and existing owner acceptance checks remain pending. **Stop after this PR for review.**
 
-
 CI found a Linux-only wrapping discrepancy in the first follow-up run: ProseMirror's `break-spaces` rule put a trailing space on an additional line at the narrower editing width. An isolated, credential-free copy of this exact revision reproduced it in the official Playwright Linux image. The document editor now uses `pre-wrap`, preserving editable whitespace while matching client wrapping. The original 2px geometry assertion is retained; failure output includes typography/whitespace diagnostics. Action and insertion controls also have explicit native tooltips. The three final editor/controls/field-insertion browser checks pass on both macOS and Linux; the full 238-test unit/database suite and production build/API tracing also pass after the fix. The corrected revision is handed back with GitHub CI pending, per Jonathan’s updated workflow; the earlier CI failure is superseded by this fix.
-
 
 ## PR #39 phone Fields focus regression — 1 November 2026
 
@@ -593,7 +585,6 @@ The Fields sheet explicitly closes its captured native dialog and dispatches ins
 The original phone assertion now checks the rendered field and persisted text as well as focus. The delayed-visibility regression also checks selection replacement, native close completion, no insertion while hidden, and subsequent typing immediately after the inserted field. Screenshot evidence for this test is opt-in (`CAPTURE_EDITOR_EVIDENCE=1`); no captures or galleries were generated or updated for this fix. No hosted/provider actions.
 
 Validation for this focus fix: 238 unit/database tests across 38 files, TypeScript, formatting, neutrality, production build/API tracing (327 files), the focused macOS browser test and three consecutive focused Linux runs all pass. The delayed-visibility check fails against the pre-fix implementation, confirming it exercises the race. GitHub CI is not awaited; PR #39 stays open for Jonathan’s review.
-
 
 ## Editor polish: layers, formatting, undo and insertion — 1 November 2026
 
@@ -609,7 +600,6 @@ No screenshots/gallery updates, migrations, hosted/provider actions or signed-ve
 Validation: **242 unit/database tests across 39 files**, formatting, TypeScript and neutrality pass. Four focused macOS browser suites pass (history/menu/layers, existing hover/focus/no-movement, editor/document geometry and pagination, field selection/focus). Targeted Linux history and field checks pass, including the document-switch guard. The final layer rerun also confirms the Save hit target and clicking delete Undo while a native dialog is open. Native production build and API renderer tracing pass (**327 files**).
 
 A supplemental ARM Linux container compiled the production app, but the existing serverless PDF smoke binary is x86-only and could not launch in that ARM environment. The native trace check passes; the unchanged x86 GitHub runner remains responsible for that serverless launch smoke. No check was weakened. Screenshots/galleries were not generated. CI is not awaited; Jonathan will monitor it and test the live site.
-
 
 ## PR #41 follow-up — shared formatting rows
 
@@ -738,7 +728,6 @@ Five new browser tests inject editor-only font metric differences and check ever
 
 Final validation: the unfiltered full local suite passes **all 61 browser tests across 29 files (8.5 minutes)**. **283 unit/database tests across 47 files**, TypeScript, formatting and neutrality pass. The production build and API/PDF runtime dependency trace pass (**327 files**). The run includes the retained exact-alignment, no-movement/no-text-overlap, signing, client, Emails, Studio, sender, navigation, record and cursor-restoration checks. No timeouts were raised or forced clicks introduced. No migration, hosted/provider operations, stored content/hash changes or galleries; stop after opening the PR without waiting for CI.
 
-
 ## Pagination rework — browser owns page breaks
 
 - Proposal and template editors measure the actual Letter-width browser document on the next animation frame after typing/Enter/paste, block/section/page/quote changes, styles/density/margins/fonts, images and resize. All sheets render from this live measure. The server alignment/fallback loop and Updating pages indicator are gone. Phone single-section editing keeps its existing presentation and uses an inert Letter measure for the complete document.
@@ -758,7 +747,6 @@ Proposal and template headers now share a bordered back button, plain title and 
 Automated coverage includes real concurrent edits, local-text retention, and typing after the conflict followed by direct restore; metadata-only measurement/font/resize changes and an old metadata-only cache producing no revision or suggestion; one content save per restored plan; send's atomic plan/revision checks; waiting before exit; failed-save confirmation/retry; offline storage; and both editors' open/collapsed icon geometry. The previous block-controls recovery check now creates a genuine conflict and its API fixture returns 409 correctly. Sender fixtures accept the revision/page-plan contract, and the full signing flow awaits a successful send response rather than an already-matching editor URL.
 
 Validation: the full unfiltered `npm run test:e2e` passes all **67 browser tests** (9.0 minutes). `npm test` passes **291 tests in 48 files**. TypeScript, formatting, neutral-code checks and the production build pass; the API/PDF runtime trace checks all **327 files**. All 12 curated font families embed successfully in headings and body. No galleries, migrations, hosted changes or credentials. Hand back PR #48 after push without waiting for GitHub CI.
-
 
 ## Editor v2 — PR 1 shell (PR #51)
 
@@ -988,7 +976,6 @@ CLIENT_SHEETS_CPU_RATE=4 npx playwright test e2e/client-page-sheets.spec.ts --gr
 
 Final verification: **331 unit/database tests passed; the full browser suite passed 164 tests with 3 optional capture tests skipped (167 total, 12.5 minutes)**. TypeScript, formatting, neutrality and the production build pass; the API/PDF runtime trace verifies all 328 files. The final throttled run passed all 10 checks (five repetitions of each case). Push to PR #61 without waiting for GitHub CI. Providers remained mocked; no hosted resources or live credentials were used.
 
-
 ## Staff session refresh priority fix — 4 November 2026
 
 Confirmed the one-hour failure: login kept only the access token with `expires_in` as the cookie lifetime; no refresh token was stored, so Proxy rejected later writes while the open editor retained local edits.
@@ -1014,7 +1001,6 @@ Evidence and implementation notes: [requested 1440px screenshots, 375px touch re
 
 Final local validation: **350 unit/database tests passed (63 files); the full browser suite passed 174 tests with three optional capture checks skipped (177 total, 13.3 minutes)**. TypeScript, formatting, the neutral-code guard, offline embedding of all 12 curated fonts, the production build and the API/PDF runtime trace (**328 files**) passed. Margin-distance/switch combinations agree between canonical editor and actual PDF; tall images remain capped and frozen-plan, signing, conflict-recovery and staff-session tests pass. PR #63 is handed back for owner review without waiting for CI.
 
-
 ## Owner review 2 — PR #64: editable covers and independent band stacks
 
 Started from merged PR #63 (`7ebd1c7`) on `codex/owner-review-cover-spacing`. Separate implementation commits cover disclosures, image toolbar placement, independent controls, shared geometry and the editable cover. Owner decisions and the rich-title clarification are in `design/header-footer/DECISIONS.md` §9, superseding §8's fixed content-space rule.
@@ -1028,7 +1014,6 @@ Header and Footer have independent distance, fixed content height, space by line
 The [requested screenshots and actual PDF](docs/owner-review2.md) use neutral local fixtures. Poppler-rendered PDF pages were visually inspected. Physical **iOS Safari / Android Chrome software-keyboard docking, touch resizing and logo dragging** remain manual checks. All provider activity used local/mock fixtures; no live credential or hosted resource was used. Hand back PR #64 after local checks without waiting for GitHub CI or merging it.
 
 Final local validation: **354 unit/database tests passed (64 files); the full browser suite passed 181 tests with three optional capture tests skipped (184 total, 13.9 minutes)**. TypeScript, formatting, neutrality and offline embedding of all 12 curated fonts pass. The new owner-review checks and the existing frozen-plan, hash, signing, conflict-recovery, staff-session and client-choice checks pass. The production build passes, including the API/PDF runtime trace (**328 files**). Requested screenshots and the real preview PDF are committed for review; physical mobile-device checks remain listed above.
-
 
 ## Sealed PDF reliability and job alerts — 4 November 2026
 
@@ -1059,7 +1044,6 @@ The full run also exposed a desktop/phone toolbar remount gap. Image/cover actio
 Final local validation: **372 unit/database tests passed (67 files); the full browser suite passed 199 tests with four optional capture checks skipped (203 total, 14.4 minutes)**. TypeScript, formatting, neutrality and the production build pass, including the **328-file API/PDF runtime trace**. Existing signing, frozen-break/hash, conflict recovery, staff-session and client-choice checks pass. Requested screenshots are committed; physical mobile keyboard/touch behavior remains a manual check. Hand back without waiting for GitHub CI or merging.
 
 CI follow-up: PDF spacing fixtures and the optional before-capture JSON now use Playwright's per-test output directory instead of assuming `.data/` exists. The audit found no other new test with that dependency. All 11 owner-review browser tests pass with `.data` temporarily absent (one optional capture skipped); the directory was not recreated, and local data was restored afterward. TypeScript and formatting pass. Assertions are unchanged.
-
 
 ## Team management — PR #67 (2026-11-04)
 
@@ -1141,9 +1125,7 @@ List marker sizing uses actual first-line font metrics (largest when mixed), wit
 
 No hosted SQL or new credentials are needed. Short links/rate limits, billing, signing and PagePlan format remain unchanged. Requested screenshots use neutral fixtures only. Final full-suite results follow below.
 
-
 Final local validation (November 5, 2026): `npm run typecheck`; `npm test` (435 tests, 87 files); `npm run format:check`; `npm run check:neutral`; `npm run build` including the 330-file PDF runtime trace; `npm run verify:fonts`; `npm run verify:pdf-jobs` (pre-band planned/unplanned and large-band fixtures); and the full `npm run test:e2e` (229 passed, 4 skipped). The corrected cover-cursor and live image-toolbar resize tests pass within that full run. Requested screenshots and actual PDF page images were inspected. No CI wait or merge.
-
 
 ## Manual delivery contact — owner follow-up after PR #73
 
@@ -1155,12 +1137,30 @@ Owner confirmed that saving a client must update that client and every unsigned 
 
 The actual proposal recipient historically came from its creation-time `proposal.client` copy, with no alternate-contact picker. The manual card/modal show that actual copy, including if it differs from the current primary client; saving synchronizes the client and unsigned copies under the owner’s confirmed rule. Details and requested 1440/375 captures are in `docs/manual-delivery-contact.md`. Final full-suite results follow after validation.
 
-
 Final local validation (November 5, 2026): types; all 439 unit tests across 88 files; formatting; neutral-code checks; production build and 330-file PDF runtime trace; curated-font PDF embedding; real PDF job regressions; and the full browser suite (233 passed, 4 skipped, 15.8 minutes). The new contact checks pass at 1440, 768 and 375, including clipboard writes, feedback visible above sheets, 44px targets, validation, state preservation, a differing copied recipient, and preservation of hidden client notes. Requested screenshots were inspected. No CI wait or hosted SQL execution.
-
 
 ## Manual delivery — contact hint removal
 
 Owner follow-up after PR #74: removed the explanatory hint from the manual Client contact box at every width. Contact details, Copy, Edit client and delivery behavior are unchanged. Updated the responsive assertion and documentation; the new 1440px screenshot is `docs/screenshots/manual-delivery-contact/hint-removed-1440.png`.
 
 Local validation (November 5, 2026): affected browser tests (6 passed); types; all 439 unit tests across 88 files; formatting; neutral-code checks; production build and PDF runtime trace; curated-font PDF embedding; real PDF job regressions; full browser suite (233 passed, 4 skipped, 15.7 minutes). No hosted SQL or migration is needed. CI is not awaited.
+
+## Studio v3 — Phase 1 PR 1: shell and list pages
+
+Implemented the Studio v3 shell (desktop workspace label, tablet area chips and phone status rows), Templates/Saved blocks lists, stage-grouped Emails lists with nine staff emails, Products/detail, grouped Connections, all ten Workspace sections and grouped/filterable Activity. Existing editors open from the lists and remain for the next PRs. Workspace settings autosave in order (text after 600ms idle/blur), retain typed values on failure and offer Retry; existing Team/profile/invite/reset/password/reassignment actions and guards remain. Pricing references moved to Workspace, with the old Connections location redirecting. Stripe status displays the deployment mode. Team Activity/CSV reads the existing audit in workspace-scoped pages rather than truncating at the recent-40 limit; the normal Team recent read stays unchanged.
+
+Owner decisions: no workspace header/footer defaults or inheritance in Phase 1; defer them to Phase 2. Template bands keep built-in Reset to default in PR 2. Workspace validity stays 1–365 days; individual proposals still support indefinite validity. Phase 2 controls stay hidden. Existing advanced billing settings and contact/consent/profile controls remain accessible. Signing, readiness, PagePlan, billing routing, frozen/sealed documents, short links/rate limits and proposal editor behavior are unchanged.
+
+Final local validation (November 5, 2026): types; all 445 unit tests across 89 files; formatting; neutral-code checks; production build and 330-file PDF runtime trace; curated-font PDF embedding; real PDF-job regressions; the full browser suite (237 passed, 4 existing skips, 15.8 minutes). Final Studio-specific checks also passed (4 tests), including autosave recovery, protected controls, routes, nine staff emails/groups, every Workspace section at narrow widths, no horizontal scroll, 44px controls and axe. Existing editor regressions enter through the new lists/section navigation; the template-creation mock now persists its record and retains the original assertions.
+
+The 26 refreshed local-fixture captures, paired with their reference renders, are indexed in `docs/screenshots/studio-v3-phase1/COMPARISONS.md`: desktop lists/details and all Workspace sections, a dark page, tablet Team, and phone Studio/Emails. See `docs/studio-v3-phase1.md` for scope and implementation details. **No hosted SQL or migration is needed.** No hosted resources or credentials changed. PR is handed back after local checks; CI is not awaited and no merge is performed.
+
+### PR #77 owner-review follow-up
+
+Addressed all 23 presentation corrections on the same Studio branch. Desktop selection is tinted, tablet selection remains Ink, Studio links are Ink and states use green/amber/neutral semantics. Searches have placeholders with hidden labels; templates use singular/usage/short-date copy and divided Saved-block previews. Email fields are chips and stage labels sit beside groups; staff status distinguishes read-only/default/edited. Product rows show client descriptions, single source pills and one-line multi-part prices; synced detail prices are display-only and Used in is last. Connections are horizontal in the requested two-column/left-column groups.
+
+Workspace descriptions, session-only save indicators, dashed logo field, inline contrast note, circular swatches and attribution switch were corrected. Team uses status-before-role, ghost action buttons and Invite, with the existing profile compact below the list. Account now holds Dark mode and Sign out across desktop, tablet and phone Studio; theme persistence is initialized independently of menu mounting. Phone Studio is one divided list with the larger-screen note. Tablet content padding includes the fixed bar plus safe area, checked at the bottom of Team using a viewport capture.
+
+All comparison captures were refreshed; the reference index now includes the Super admin Team menu, dark Workspace Brand and Connections, plus the scrolled-bottom 768 Team viewport. No hosted SQL or behavior change to signing, billing, readiness, PagePlan, proposal editing or Team permissions.
+
+Follow-up final validation (November 5, 2026): **445 unit tests passed; the full browser suite passed (237 passed, 4 existing skips, 15.8 minutes)**. Studio-specific checks passed (4), and Studio plus the older Workspace contrast regression passed (5). Types, formatting, neutral checks and the production build / 330-file PDF trace passed. The old contrast test's removed color-picker selector now targets Accent hex; all warning/correction assertions remain unchanged. Added coverage for green sandbox-configured QuickBooks and connected Claude, alongside neutral unconnected AI. No assertions were weakened or tests disabled. All 26 refreshed reference pairs exist. No hosted SQL; CI is not awaited.

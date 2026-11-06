@@ -507,56 +507,57 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         page.getByRole("heading", { name: "Products", exact: true }),
       ).toBeVisible();
       await expect(page.locator(".catalog-row")).toHaveCount(4);
-      await alignedControls();
       await expect(
-        page.locator(".catalog-row").filter({ hasText: "Design project" }),
-      ).toContainText("Invoice manually");
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Consulting session" }),
-      ).toContainText("QuickBooks");
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Support plan" }),
-      ).toContainText("Needs Stripe price");
-      const mapped = page
-        .locator(".catalog-row")
-        .filter({ hasText: "Managed hosting" });
-      await mapped.focus();
-
-      await expect(mapped.locator(".mapping-tooltip")).toBeVisible();
+        page.getByRole("searchbox", { name: "Search products", exact: true }),
+      ).toHaveCSS("height", "44px");
+      for (const [name, mapping] of [
+        ["Design project", "Invoice manually"],
+        ["Consulting session", "QuickBooks"],
+        ["Support plan", "Needs Stripe price"],
+        ["Managed hosting", "Stripe"],
+      ]) {
+        const row = page.locator(".catalog-row").filter({ hasText: name });
+        await expect(row.locator(".studio-tag")).toHaveCount(1);
+        await row.click();
+        await page.getByText("More product details", { exact: true }).click();
+        await expect(
+          page.locator(".studio-product-detail .product-mapping-details"),
+        ).toContainText(mapping);
+        await page.keyboard.press("Escape");
+      }
       await capture("products-and-mapping", "7b", width, theme);
       await page
         .locator(".catalog-row")
         .filter({ hasText: "Design project" })
         .click();
+      await page.getByText("More product details", { exact: true }).click();
       await expect(
-        page.getByRole("dialog").locator(".product-mapping-details"),
+        page.locator(".studio-product-detail .product-mapping-details"),
       ).toContainText("Invoice manually");
       await page
-        .getByRole("dialog")
-        .locator(".product-mapping-details")
+        .locator(".studio-product-detail .product-mapping-details")
         .scrollIntoViewIfNeeded();
       await capture("product-detail-manual", "7b", width, theme);
       await page.keyboard.press("Escape");
       qbo = true;
       await page.reload();
-      await expect(
-        page.locator(".catalog-row").filter({ hasText: "Design project" }),
-      ).toContainText("Needs QuickBooks item");
+
       await page
         .locator(".catalog-row")
         .filter({ hasText: "Design project" })
         .click();
+      await page.getByText("More product details", { exact: true }).click();
       await expect(
-        page.getByRole("dialog").locator(".product-mapping-details"),
+        page.locator(".studio-product-detail .product-mapping-details"),
       ).toContainText("Needs QuickBooks item");
       await page
-        .getByRole("dialog")
-        .locator(".product-mapping-details")
+        .locator(".studio-product-detail .product-mapping-details")
         .scrollIntoViewIfNeeded();
       await capture("product-detail-qbo-warning", "7b", width, theme);
       await page.keyboard.press("Escape");
       qbo = false;
       await page.goto("/studio/templates");
+      await page.locator(".studio-template-card").first().click();
       await expect(
         page.getByLabel("Template name", { exact: true }),
       ).toBeVisible();
@@ -579,28 +580,35 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         width,
         theme,
       );
-      await page.goto("/studio/workspace");
-      await expect(page.locator("#fonts")).toBeVisible();
-      await page.locator("#fonts").scrollIntoViewIfNeeded();
-      await alignedControls();
+      await page.goto("/studio/workspace?view=fonts");
+      await expect(
+        page.getByRole("combobox", { name: "Headings", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("combobox", { name: "Headings", exact: true }),
+      ).toBeVisible();
       for (const f of curatedFonts) {
         await expect(
-          page.getByRole("radio", { name: `Aa ${f.name}`, exact: true }),
-        ).toHaveCount(2);
-        expect(
-          await page
-            .locator(".font-name")
-            .filter({ hasText: `Aa ${f.name}` })
-            .first()
-            .evaluate((el) => getComputedStyle(el).fontFamily),
-        ).toContain(f.family.split(",")[0].replaceAll('"', ""));
+          page
+            .getByRole("combobox", { name: "Headings", exact: true })
+            .getByRole("option", { name: f.name, exact: true }),
+        ).toHaveCount(1);
+        await expect(
+          page
+            .getByRole("combobox", { name: "Body text", exact: true })
+            .getByRole("option", { name: f.name, exact: true }),
+        ).toHaveCount(1);
       }
       await expect(
-        page.getByRole("group", { name: "Headings · Serif", exact: true }),
-      ).toBeVisible();
+        page
+          .getByRole("combobox", { name: "Headings", exact: true })
+          .locator('optgroup[label="Serif"]'),
+      ).toHaveCount(1);
       await expect(
-        page.getByRole("group", { name: "Body text · Sans", exact: true }),
-      ).toBeVisible();
+        page
+          .getByRole("combobox", { name: "Body text", exact: true })
+          .locator('optgroup[label="Sans"]'),
+      ).toHaveCount(1);
       // Full picker capture covers both grouped lists, including the upload/licence adjacency.
       await capture("workspace-fonts", "7d", width, theme, true);
       const licence = page.getByRole("checkbox", {

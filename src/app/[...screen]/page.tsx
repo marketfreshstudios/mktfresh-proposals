@@ -20,12 +20,19 @@ export default async function Page({
   searchParams: Promise<StaffQuery>;
 }) {
   const { screen } = await params;
+  const query = await searchParams;
+  if (
+    screen[0] === "studio" &&
+    screen[1] === "connections" &&
+    query.view === "reference"
+  )
+    redirect("/studio/workspace?view=pricing-references");
   const destination = legacyStaffRedirect(screen);
   if (destination) redirect(destination);
   return (
     <StaffApp
       path={screen}
-      query={await searchParams}
+      query={query}
       local={
         process.env.APP_MODE === "local" &&
         process.env.NODE_ENV !== "production" &&

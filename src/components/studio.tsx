@@ -1,9 +1,10 @@
 "use client";
+import { stripeStatus } from "../lib/studio-v3";
+import { relativeTime } from "./studio-v3";
 import { DialogActions } from "./dialog-actions";
 import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
-import { TeamStudio } from "./team-studio";
 import { pageGeometry } from "../lib/page-bands";
 import { SelectableImage } from "./editor/selectable-image";
 import { isStaffSignedOut, StaffSignIn } from "./staff-sign-in";
@@ -73,24 +74,23 @@ import { HeadingTokens, HeadingElement } from "./editor/heading-tokens";
 import { FieldTextArea, FieldOptions } from "./field-options";
 import { appendField } from "../lib/editor-document";
 import type { Block, Item, Template } from "../lib/model";
-import type { WorkspaceSettings } from "../lib/workspace";
 import type { Activity } from "../lib/studio";
-import { whiteContrast, accessibleAccent } from "../lib/brand";
-import {
-  curatedFonts,
-  fontCss,
-  fontFamily,
-  type FontChoice,
-  type ProposalFont,
-} from "../lib/proposal-fonts";
+import { fontCss } from "../lib/proposal-fonts";
 import { itemDisplayName, sellableCatalogue } from "../lib/catalogue-display";
 import { intervalSuffix } from "../lib/money";
 import { eventLabel } from "../lib/event-label";
 import { inactiveTemplateItems } from "../lib/template-quote";
-import { api, post, Button, Banner, Field, Empty, Icon } from "./ui";
+import {
+  api,
+  post,
+  Button,
+  Banner,
+  Field,
+  Empty,
+  Icon,
+  Disclosure,
+} from "./ui";
 import { Sheet, Skeleton } from "./foundation";
-import { StoredSignatureEditor } from "./company-signature";
-import { ReferenceDocuments } from "./reference-documents";
 import { Reorder, Sortable } from "./quote-editor";
 import { catalogQuoteItem } from "../lib/quote-model";
 import type { QuoteItem } from "../lib/model";
@@ -150,760 +150,313 @@ function Section({
     </section>
   );
 }
-export function WorkspaceStudio({ data, run }: { data: Data; run: Runner }) {
-  const s = data.settings;
-  const [styles, setStyles] = useState<StyleOverrides>(
-    s?.proposal_styles ?? {},
-  );
-  const [accent, setAccent] = useState(s?.accent_colour ?? "#245547"),
-    [logo, setLogo] = useState(s?.logo ?? null),
-    [image, setImage] = useState(s?.company_signatory?.image ?? null),
-    [allowed, setAllowed] = useState(
-      s?.company_signatory?.authorized_user_ids ?? [],
-    );
-  const [heading, setHeading] = useState<FontChoice>(
-      s?.proposal_fonts?.heading ?? "serif",
-    ),
-    [body, setBody] = useState<FontChoice>(s?.proposal_fonts?.body ?? "serif"),
-    [fonts, setFonts] = useState<ProposalFont[]>([]),
-    [licensed, setLicensed] = useState(false),
-    [uploadError, setUploadError] = useState(""),
-    [passwordEnabled, setPasswordEnabled] = useState(
-      s?.default_password_enabled ?? false,
-    );
-  const [logoPreview, setLogoPreview] = useState(""),
-    [uploading, setUploading] = useState(false);
-  const owner = data.user.staff_role === "owner",
-    save = useSave(run),
-    contrast = whiteContrast(accent);
-  useEffect(() => {
-    api<ProposalFont[]>("/api/workspace-fonts")
-      .then(setFonts)
-      .catch((e) => setUploadError(e.message));
-  }, []);
-  const allFonts = [
-    ...new Map(
-      [
-        ...fonts,
-        ...[heading, body].filter(
-          (f): f is ProposalFont => typeof f !== "string",
-        ),
-      ].map((f) => [f.id, f]),
-    ).values(),
-  ];
-  return (
-    <div className="studio-workspace stack">
-      <nav className="studio-tabs" aria-label="Workspace sections">
-        {[
-          "Brand",
-          "Money",
-          "Team",
-          "Signatory",
-          "Fonts",
-          "Proposal styles",
-          "Client links",
-        ].map((t) => (
-          <a href={`#${t.toLowerCase().replaceAll(" ", "-")}`} key={t}>
-            {t}
-          </a>
-        ))}
-      </nav>
-      <form
-        className="stack"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const form = e.currentTarget;
-          const f = new FormData(form);
-          const saved = await save.save(
-            () =>
-              post("/api/workspace_settings", {
-                ...s,
-                ...Object.fromEntries(f),
-                logo,
-                accent_colour: accent,
-                show_powered_by: owner
-                  ? f.has("show_powered_by")
-                  : s?.show_powered_by !== false,
-                proposal_fonts: { heading, body },
-                proposal_styles: styles,
-                money: { cents: f.get("cents") },
-                default_validity_days: Number(f.get("default_validity_days")),
-                reminder_days: String(f.get("reminder_days"))
-                  .split(",")
-                  .filter((n) => n.trim())
-                  .map(Number),
-                qbo_custom_item_ref: f.get("qbo_custom_item_ref") || null,
-                ...(owner
-                  ? {
-                      default_password: !passwordEnabled
-                        ? null
-                        : f.get("default_password") || undefined,
-                      company_signatory: {
-                        ...s?.company_signatory,
-                        name: f.get("signatory_name"),
-                        title: f.get("signatory_title"),
-                        user_id: f.get("signatory_user_id") || null,
-                        email:
-                          data.staff.find(
-                            (m) => m.user_id === f.get("signatory_user_id"),
-                          )?.email ?? s?.email,
-                        image,
-                        authorized_user_ids: allowed,
-                      },
-                    }
-                  : {}),
-              }),
-            "Workspace settings saved",
-          );
-          if (saved) {
-            const password = form.querySelector<HTMLInputElement>(
-              'input[name="default_password"]',
-            );
-            if (password) password.value = "";
-            form
-              .querySelectorAll<HTMLInputElement>('input[type="file"]')
-              .forEach((input) => (input.value = ""));
-            setLicensed(false);
-          }
-        }}
-      >
-        <Section
-          title="Brand"
-          id="brand"
-          description="Your identity on proposals, client links and sealed copies."
-        >
-          <div className="studio-brand-grid">
-            <div className="stack">
-              {logo && (
-                <img
-                  className="workspace-logo-preview"
-                  src={logoPreview || "/api/workspace-logo"}
-                  alt="Workspace logo"
-                />
-              )}
-              <label className="check-row">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  name="show_powered_by"
-                  defaultChecked={s?.show_powered_by !== false}
-                  disabled={!owner}
-                />
-                <span>
-                  Show 'Powered by Yeswell'
-                  <br />
-                  <small>
-                    On client pages and client email footers. Super admins can
-                    change this.
-                  </small>
-                </span>
-              </label>
-              <Field label="Workspace name">
-                <input
-                  name="company_name"
-                  defaultValue={s?.company_name}
-                  required
-                />
-              </Field>
-              <Field label="Logo · PNG, under 750 KB">
-                <input
-                  type="file"
-                  accept="image/png"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setUploading(true);
-                    try {
-                      const image = await readData(file);
-                      const result = await post("/api/workspace-logo", {
-                        image,
-                      });
-                      setLogoPreview(image);
-                      setLogo(result.path);
-                      setUploadError("");
-                    } catch (e) {
-                      setUploadError(String(e));
-                    } finally {
-                      setUploading(false);
-                    }
-                  }}
-                />
-              </Field>
-              <Field label="Accent">
-                <DialogActions>
-                  <input
-                    type="color"
-                    aria-label="Accent color"
-                    value={accent}
-                    onChange={(e) => setAccent(e.target.value)}
-                  />
-                  <code>{accent}</code>
-                </DialogActions>
-              </Field>
-              <p
-                className={contrast < 4.5 ? "danger" : "success"}
-                aria-live="polite"
-              >
-                {contrast.toFixed(2)}:1 with white text ·{" "}
-                {contrast >= 4.5 ? "Readable" : "Needs at least 4.5:1"}
-              </p>
-              {contrast < 4.5 && (
-                <Button onClick={() => setAccent(accessibleAccent(accent))}>
-                  Use {accessibleAccent(accent)} — darker, same hue
-                </Button>
-              )}
-            </div>
-            <div className="stack">
-              {[
-                ["owner", "Owner contact name"],
-                ["email", "Contact email"],
-                ["phone", "Phone"],
-                ["address", "Address"],
-              ].map(([key, label]) => (
-                <Field label={label} key={key}>
-                  <input
-                    name={key}
-                    defaultValue={String(
-                      s?.[key as keyof WorkspaceSettings] ?? "",
-                    )}
-                    required={key === "email"}
-                    type={key === "email" ? "email" : "text"}
-                  />
-                </Field>
-              ))}
-            </div>
-          </div>
-        </Section>
-        <Section title="Money" id="money">
-          <Field label="Currency">
-            <select name="currency" defaultValue={s?.currency ?? "USD"}>
-              {["USD", "CAD", "GBP", "EUR", "AUD"].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
-          <fieldset className="studio-radio">
-            <legend>Cents</legend>
-            {[
-              ["auto", "Only when needed · $500 · $49.50"],
-              ["always", "Always show cents · $500.00"],
-            ].map(([value, label]) => (
-              <label key={value}>
-                <input
-                  type="radio"
-                  name="cents"
-                  value={value}
-                  defaultChecked={(s?.money?.cents ?? "auto") === value}
-                />
-                {label}
-              </label>
-            ))}
-          </fieldset>
-          <p>
-            Applies to new sends. Signed proposals keep their saved currency and
-            formatting.
-          </p>
-        </Section>
-        <Section
-          title="Company signatory"
-          id="signatory"
-          description="Every company signature presents as this person. The audit records who applied it."
-        >
-          <fieldset className="stack" disabled={!owner}>
-            <legend className="screen-reader">Signatory and delegates</legend>
-            {!owner && (
-              <p>Only a super admin can change the signatory or delegates.</p>
-            )}
-            <div className="studio-brand-grid">
-              <Field label="Signatory name">
-                <input
-                  name="signatory_name"
-                  defaultValue={s?.company_signatory?.name ?? s?.owner}
-                  required
-                />
-              </Field>
-              <Field label="Signatory title">
-                <input
-                  name="signatory_title"
-                  defaultValue={s?.company_signatory?.title ?? "Owner"}
-                  required
-                />
-              </Field>
-            </div>
-            <Field label="Signatory staff account">
-              <select
-                name="signatory_user_id"
-                defaultValue={s?.company_signatory?.user_id ?? ""}
-              >
-                <option value="">Choose a staff account</option>
-                {data.staff.map((m) => (
-                  <option value={m.user_id} key={m.user_id}>
-                    {m.display_name} · {m.email}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <StoredSignatureEditor value={image} onChange={setImage} />
-            <h3>Who may apply this signature</h3>
-            {data.staff.map((m) => (
-              <label className="check" key={m.user_id}>
-                <input
-                  type="checkbox"
-                  checked={allowed.includes(m.user_id)}
-                  onChange={(e) =>
-                    setAllowed(
-                      e.target.checked
-                        ? [...allowed, m.user_id]
-                        : allowed.filter((id) => id !== m.user_id),
-                    )
-                  }
-                />
-                {m.display_name} · {m.email}
-              </label>
-            ))}
-          </fieldset>
-          <Field label="Electronic signature consent">
-            <textarea
-              name="consent_text"
-              rows={4}
-              minLength={20}
-              required
-              defaultValue={s?.consent_text}
-            />
-          </Field>
-        </Section>
-        <Section
-          title="Proposal styles"
-          id="proposal-styles"
-          description="Defaults for new proposals. Sent and signed documents keep their saved styles."
-        >
-          <ProposalStyles
-            settings={
-              {
-                ...s,
-                accent_colour: accent,
-                proposal_fonts: { heading, body },
-                proposal_styles: {},
-              } as WorkspaceSettings
-            }
-            value={styles}
-            availableFonts={allFonts}
-            onChange={setStyles}
-          />
-        </Section>
-        <Section
-          title="Proposal fonts"
-          id="fonts"
-          description="Used in the document, client page and sealed PDF. Buttons, totals and forms stay in the product font."
-        >
-          <style>{fontCss({ proposal_fonts: { heading, body } })}</style>
-          <div className="studio-brand-grid">
-            {[
-              ["Headings", heading, setHeading],
-              ["Body text", body, setBody],
-            ].map(([label, value, set]) => (
-              <fieldset className="font-choices" key={label as string}>
-                <legend>{label as string}</legend>
-                {["Serif", "Sans", "Monospace", "Uploaded"].map((category) => {
-                  const options =
-                    category === "Uploaded"
-                      ? allFonts.map((f) => ({
-                          value: f as FontChoice,
-                          name: f.name,
-                        }))
-                      : curatedFonts
-                          .filter((f) => f.category === category)
-                          .map((f) => ({
-                            value: f.id as FontChoice,
-                            name: f.name,
-                          }));
-                  return options.length ? (
-                    <div
-                      className="font-category"
-                      role="group"
-                      aria-label={`${label} · ${category}`}
-                      key={category}
-                    >
-                      <h4>{category}</h4>
-                      {options.map((f) => (
-                        <label
-                          key={
-                            typeof f.value === "string" ? f.value : f.value.id
-                          }
-                        >
-                          <input
-                            type="radio"
-                            name={
-                              label === "Headings"
-                                ? "font_heading_choice"
-                                : "font_body_choice"
-                            }
-                            checked={
-                              (typeof value === "string"
-                                ? value
-                                : (value as ProposalFont).id) ===
-                              (typeof f.value === "string"
-                                ? f.value
-                                : f.value.id)
-                            }
-                            onChange={() =>
-                              (set as (f: FontChoice) => void)(f.value)
-                            }
-                          />
-                          <span
-                            className="font-name"
-                            style={{ fontFamily: fontFamily(f.value) }}
-                          >
-                            Aa {f.name}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : null;
-                })}
-              </fieldset>
-            ))}
-          </div>
-          <Field label="Upload a font file · WOFF2 or TTF, under 1 MB">
-            <input
-              type="file"
-              accept=".woff2,.ttf"
-              disabled={!licensed}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setUploading(true);
-                try {
-                  const f = await post<ProposalFont>("/api/workspace-fonts", {
-                    name: file.name.replace(/\.(woff2|ttf)$/i, ""),
-                    data: await readData(file),
-                    licensed,
-                  });
-                  setFonts([...fonts, f]);
-                  setBody(f);
-                  setUploadError("");
-                } catch (e) {
-                  setUploadError(String(e));
-                } finally {
-                  setUploading(false);
-                }
-              }}
-            />
-          </Field>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={licensed}
-              onChange={(e) => setLicensed(e.target.checked)}
-            />
-            I confirm this font is licensed for PDF embedding.
-          </label>
-
-          <article className="paper proposal-typography font-preview">
-            <small>PREVIEW · PHONE WIDTH</small>
-            <h1>A proposal for your next chapter</h1>
-            <h2>Overview</h2>
-            <p>
-              Thank you for sharing your plans. This proposal sets out the work,
-              the investment and the next steps.
-            </p>
-            <p className="font-preview-chrome">
-              The forms and totals stay easy to read.
-            </p>
-          </article>
-        </Section>
-        <Section title="Client links" id="client-links">
-          <div className="studio-brand-grid">
-            <Field label="Default link validity (days)">
-              <input
-                name="default_validity_days"
-                type="number"
-                min="1"
-                max="365"
-                required
-                defaultValue={s?.default_validity_days ?? 30}
-              />
-            </Field>
-            <Field label="Workspace timezone">
-              <input
-                name="timezone"
-                required
-                defaultValue={s?.timezone ?? "America/New_York"}
-              />
-            </Field>
-          </div>
-          <p>
-            New proposals expire at the end of the selected day in this
-            timezone. Clear a proposal’s date to make it indefinite.
-          </p>
-          <Field label="Reminders · days after sending, comma separated">
-            <input
-              name="reminder_days"
-              defaultValue={s?.reminder_days.join(", ") ?? "3, 7"}
-            />
-          </Field>
-          <label className="check">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={passwordEnabled}
-              disabled={!owner}
-              onChange={(e) => setPasswordEnabled(e.target.checked)}
-            />
-            Password by default
-          </label>
-          {passwordEnabled && (
-            <Field
-              label={
-                s?.default_password_enabled
-                  ? "Replace default password (leave blank to keep it)"
-                  : "Default password"
-              }
-            >
-              <input
-                name="default_password"
-                type="password"
-                minLength={8}
-                maxLength={200}
-                required={!s?.default_password_enabled}
-                autoComplete="new-password"
-                disabled={!owner}
-              />
-            </Field>
-          )}
-          <Field label="Verified sending domain">
-            <input
-              name="sending_domain"
-              readOnly={!owner}
-              defaultValue={s?.sending_domain}
-            />
-          </Field>
-          <p>
-            Use a domain already verified in your email provider. Replies go to
-            the selected staff sender.
-          </p>
-        </Section>
-        <Section title="Billing defaults">
-          <Field label="Collection method">
-            <select
-              name="collection_method"
-              defaultValue={s?.collection_method ?? "charge_automatically"}
-            >
-              <option value="charge_automatically">
-                Charge saved payment method
-              </option>
-              <option value="send_invoice">Send invoice</option>
-            </select>
-          </Field>
-          <Field label="QuickBooks custom services item reference">
-            <input
-              name="qbo_custom_item_ref"
-              defaultValue={s?.qbo_custom_item_ref ?? ""}
-            />
-          </Field>
-        </Section>
-        {uploadError && (
-          <Banner tone="warning" title="Upload needs attention">
-            {uploadError} Choose the file again to retry.
-          </Banner>
-        )}
-        <SaveError error={save.error} />
-        <div className="studio-save">
-          <Button
-            type="submit"
-            variant="primary"
-            busy={save.busy || uploading}
-            disabled={contrast < 4.5}
-          >
-            Save workspace settings
-          </Button>
-        </div>
-      </form>
-      <Section
-        title="Team"
-        id="team"
-        description="Display names appear in emails. Super admins can edit everyone; Staff can edit their own name."
-      >
-        <TeamStudio data={data} run={run} embedded />
-      </Section>
-    </div>
-  );
-}
-async function readData(file: File) {
-  if (file.size > 1000000) throw new Error("Choose a file under 1 MB.");
-  return new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () =>
-      reject(new Error("The file could not be read. Choose it again."));
-    r.readAsDataURL(file);
-  });
-}
+export { WorkspaceStudio } from "./workspace-studio";
 export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
-  const [selected, setSelected] = useState<Item | null | undefined>(undefined),
+  const [selected, setSelected] = useState<string | null>(() =>
+      typeof window !== "undefined"
+        ? new URLSearchParams(location.search).get("item")
+        : null,
+    ),
     [query, setQuery] = useState(""),
-    [inactive, setInactive] = useState(false),
-    [family, setFamily] = useState(false);
+    [filter, setFilter] = useState("All"),
+    [family, setFamily] = useState(false),
+    [adding, setAdding] = useState(false),
+    [synced, setSynced] = useState<string | null>(null);
   const money = useMoney();
+  useEffect(() => {
+    api<Activity[]>("/api/workspace_events")
+      .then((events) =>
+        setSynced(
+          events.find((e) => e.type === "catalog_synced")?.created_at ?? null,
+        ),
+      )
+      .catch(() => {});
+  }, []);
+  const pick = (id: string | null) => {
+    setSelected(id);
+    const url = new URL(location.href);
+    if (id) url.searchParams.set("item", id);
+    else url.searchParams.delete("item");
+    history.replaceState(null, "", url);
+  };
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") pick(null);
+      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+        e.preventDefault();
+        pick(selected ? null : (data.catalog[0]?.id ?? null));
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [selected, data.catalog]);
+  const choices = ["All", "Stripe", "Custom families", "Archived"];
+  const visible = (i: Item) =>
+    filter === "Archived"
+      ? !i.active || i.legacy
+      : i.active &&
+        !i.legacy &&
+        filter !== "Custom families" &&
+        (filter !== "Stripe" || !!i.stripe_lookup_key);
   const items = data.catalog
     .filter(
       (i) =>
-        (inactive || (i.active && !i.legacy)) &&
-        `${itemDisplayName(i)} ${i.sku}`
+        visible(i) &&
+        `${itemDisplayName(i)} ${i.description}`
           .toLowerCase()
           .includes(query.toLowerCase()),
     )
     .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
+  const families = data.families.filter(
+    (f) =>
+      (filter === "All" ||
+        filter === "Custom families" ||
+        (filter === "Archived" && !f.active)) &&
+      (filter === "Archived" ? !f.active : f.active) &&
+      f.name.toLowerCase().includes(query.toLowerCase()),
+  );
+  const item = data.catalog.find((i) => i.id === selected),
+    custom = data.families.find((f) => f.id === selected);
+  const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Custom");
   return (
-    <div className="stack studio-catalog">
-      <DialogActions>
+    <div className="studio-products-v3">
+      <div className="studio-list-intro">
+        <p>
+          Services you can add to a quote. Stripe products keep their Stripe
+          price; custom families are priced on each proposal.
+        </p>
+        <Button variant="primary" onClick={() => setFamily(true)}>
+          New custom family
+        </Button>
+      </div>
+      <div className="studio-sync-meta">
+        <span
+          className={data.connections?.stripe ? "success" : "warning"}
+          aria-hidden="true"
+        >
+          ●
+        </span>{" "}
+        {data.connections?.stripe
+          ? `Synced with Stripe · ${data.connections.mode === "live" ? "live" : "test"} mode`
+          : stripeStatus(data.connections)}{" "}
+        · {synced ? relativeTime(synced) : "No recorded sync yet"} ·{" "}
         <Button
           onClick={() =>
-            run(
-              () => post("/api/catalog-sync/stripe"),
-              "Stripe test products synced",
-            )
+            run(async () => {
+              const result = await post("/api/catalog-sync/stripe");
+              setSynced(result.synced_at);
+            }, "Products synced")
           }
         >
-          Sync now · Stripe test
+          Sync now
         </Button>
-        <Button onClick={() => setFamily(true)}>+ Custom family</Button>
-        <Button onClick={() => setSelected(null)}>+ Item</Button>
-      </DialogActions>
-      <p>
-        List prices are the values you set in Stripe. Enter each amount on a
-        proposal; the app never suggests a price.
-      </p>
-      <TemplateWarnings templates={data.templates} catalog={data.catalog} />
-      <div className="studio-filters">
-        <Field label="Search products">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} />
-        </Field>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={inactive}
-            onChange={(e) => setInactive(e.target.checked)}
-          />
-          Include inactive and legacy
-        </label>
       </div>
-      {items.length ? (
-        <div className="catalog-table">
-          <div className="catalog-heading">
-            <span>Item</span>
-            <span>List price</span>
-            <span>Source</span>
-            <span>Terms</span>
-            <span>Accounting</span>
-          </div>
-          {items.map((i) => (
+      <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+      <div className="studio-list-tools">
+        <nav className="studio-filter-chips" aria-label="Product types">
+          {choices.map((c) => (
             <button
-              className="catalog-row"
-              key={i.id}
-              aria-describedby={`mapping-${i.id}`}
-              onClick={() => setSelected(i)}
+              key={c}
+              aria-pressed={filter === c}
+              onClick={() => setFilter(c)}
             >
-              <span>
-                <strong>{itemDisplayName(i)}</strong>
-                <small>
-                  {i.sku}
-                  {!i.active ? " · Inactive" : i.legacy ? " · Legacy" : ""}
-                </small>
-              </span>
-              <span>
-                {(i.sublines ?? [i]).map((s, n) => (
-                  <span className="catalog-price" key={n}>
-                    {money(s.amount)}
-                    {intervalSuffix(s.interval)}
-                  </span>
-                ))}
-              </span>
-              <span>{i.stripe_lookup_key ? "Stripe" : "Entered"}</span>
-              <span>
-                {i.min_term_months
-                  ? `${i.min_term_months}-month minimum`
-                  : i.interval === "one_time"
-                    ? "One-time"
-                    : "Month to month"}
-                {i.schedule && (
-                  <small>
-                    After {i.schedule.after_paid_invoices} paid invoices ·{" "}
-                    {money(i.schedule.then.amount)}
-                    {intervalSuffix(i.interval)}
-                  </small>
-                )}
-              </span>
-              <span className="product-mapping" id={`mapping-${i.id}`}>
-                {productMappings(i, data.connections?.qbo ?? null).map(
-                  (state, n) => (
-                    <span
-                      key={n}
-                      className={
-                        state.warning
-                          ? "mapping-state warning"
-                          : "mapping-state"
-                      }
-                      title={state.detail}
-                    >
-                      {state.label}
-                    </span>
-                  ),
-                )}
-                <span role="tooltip" className="mapping-tooltip">
-                  {productMappings(i, data.connections?.qbo ?? null).map(
-                    (state, n) => (
-                      <span key={n}>
-                        {state.detail}
-                        <br />
-                      </span>
-                    ),
-                  )}
-                </span>
-              </span>
+              {c} ·{" "}
+              {c === "Custom families"
+                ? data.families.filter((f) => f.active).length
+                : c === "Archived"
+                  ? data.catalog.filter((i) => !i.active || i.legacy).length
+                  : data.catalog.filter(
+                      (i) =>
+                        i.active &&
+                        !i.legacy &&
+                        (c !== "Stripe" || i.stripe_lookup_key),
+                    ).length +
+                    (c === "All"
+                      ? data.families.filter((f) => f.active).length
+                      : 0)}
             </button>
           ))}
-        </div>
-      ) : (
-        <Empty
-          title={query ? "No matching items" : "Your products start here"}
-          action={
-            <Button onClick={() => setQuery("")}>
-              {query ? "Clear search" : "Show inactive items"}
-            </Button>
-          }
-        >
-          Sync your Stripe test products or add an item.
-        </Empty>
-      )}
-      <section className="studio-section">
-        <h2>Custom families</h2>
-        {data.families.length ? (
-          data.families.map((f) => (
-            <div className="row" key={f.id}>
-              <strong>{f.name}</strong>
-              <span>
-                {f.active ? "Active" : "Inactive"} · Amount entered per proposal
-              </span>
+        </nav>
+        <label className="field studio-search">
+          <span className="sr-only">Search products</span>
+          <input
+            type="search"
+            placeholder="Search products"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+      </div>
+      <div
+        className={`studio-products-layout ${selected ? "with-detail" : ""}`}
+      >
+        <div>
+          <div className="studio-data-table product-table">
+            <div className="studio-table-head">
+              <span>Product</span>
+              <span>Price</span>
+              <span>Plan terms</span>
+              <span>Source</span>
             </div>
-          ))
-        ) : (
-          <p>
-            No custom families yet. Use a service name, never a client name.
-          </p>
+            {items.map((i) => (
+              <a
+                className="studio-table-row catalog-row catalog-row-v3"
+                href={`?item=${i.id}`}
+                key={i.id}
+                onClick={(e) => {
+                  if (
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    e.button === 0
+                  ) {
+                    e.preventDefault();
+                    pick(i.id);
+                  }
+                }}
+              >
+                <span>
+                  <strong>{itemDisplayName(i)}</strong>
+                  <small>{i.description}</small>
+                </span>
+                <span>
+                  <span className="catalog-price">
+                    {(i.sublines ?? [i])
+                      .map(
+                        (s) =>
+                          `${money(s.amount, data.settings?.currency)}${intervalSuffix(s.interval)}`,
+                      )
+                      .join(" + ")}
+                  </span>
+                </span>
+                <span>
+                  {i.schedule
+                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
+                    : "—"}
+                  {i.min_term_months && (
+                    <small>{i.min_term_months}-month minimum</small>
+                  )}
+                </span>
+                <span>
+                  <span
+                    className={`studio-tag ${source(i) === "Stripe" ? "studio-tag-stripe" : ""}`}
+                  >
+                    {source(i)}
+                  </span>
+                </span>
+              </a>
+            ))}
+            {families.map((f) => (
+              <a
+                className="studio-table-row"
+                href={`?item=${f.id}`}
+                key={f.id}
+                onClick={(e) => {
+                  if (
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    e.button === 0
+                  ) {
+                    e.preventDefault();
+                    pick(f.id);
+                  }
+                }}
+              >
+                <strong>{f.name}</strong>
+                <span>Entered per proposal</span>
+                <span>—</span>
+                <span className="studio-tag">Custom</span>
+              </a>
+            ))}
+          </div>
+          {!items.length && !families.length && (
+            <Empty
+              title={
+                query ? "No matching products" : "Your products start here"
+              }
+            >
+              Sync your Stripe products or create a custom family.
+            </Empty>
+          )}
+          <Button onClick={() => setAdding(true)}>Add one-time product</Button>
+        </div>
+        {(item || custom) && (
+          <aside className="studio-product-detail" aria-label="Product details">
+            <header>
+              <h2>{item ? itemDisplayName(item) : custom!.name}</h2>
+              <button
+                aria-label="Close product details"
+                className="btn"
+                onClick={() => pick(null)}
+              >
+                <Icon name="chevron-right" />
+              </button>
+            </header>
+            {item ? (
+              <>
+                <CatalogItem
+                  key={item.id}
+                  item={item}
+                  data={data}
+                  run={run}
+                  close={() => pick(null)}
+                />
+                <section className="studio-product-used">
+                  {" "}
+                  <h3>Used in</h3>
+                  <p>
+                    {data.templates
+                      .filter(
+                        (t) =>
+                          t.default_quote.some(
+                            (l) => l.pricing_item_id === item.id,
+                          ) ||
+                          t.default_items?.some(
+                            (q) => q.pricing_item_id === item.id,
+                          ),
+                      )
+                      .map((t) => t.name)
+                      .join(" · ") || "No templates"}{" "}
+                    ·{" "}
+                    {
+                      data.proposals.filter(
+                        (p) =>
+                          ![
+                            "completed",
+                            "declined",
+                            "expired",
+                            "archived",
+                          ].includes(p.status) &&
+                          p.quote.some((q) => q.pricing_item_id === item.id),
+                      ).length
+                    }{" "}
+                    open proposals
+                  </p>
+                </section>
+              </>
+            ) : (
+              <>
+                <span className="studio-tag">Custom family</span>
+                <Field label="Family name">
+                  <input readOnly value={custom!.name} />
+                </Field>
+                <p>
+                  Entered per proposal. Use this family for a custom scope and
+                  the agreed price; the app never sets prices.
+                </p>
+              </>
+            )}
+          </aside>
         )}
-      </section>
-      {selected !== undefined && (
-        <Sheet
-          title={selected ? itemDisplayName(selected) : "New product"}
-          onClose={() => setSelected(undefined)}
-        >
+      </div>
+      {adding && (
+        <Sheet title="New product" onClose={() => setAdding(false)}>
           <CatalogItem
-            key={selected?.id ?? "new"}
-            item={selected}
+            item={null}
             data={data}
             run={run}
-            close={() => setSelected(undefined)}
+            close={() => setAdding(false)}
           />
         </Sheet>
       )}
@@ -1016,132 +569,219 @@ function CatalogItem({
         proposals retain their saved terms.
       </p>
       {[
-        ["name", "Synced name"],
-        ["display_name", "Display name"],
-        ["sku", "SKU"],
-        ["description", "Description"],
-        ["stripe_lookup_key", "Stripe lookup key"],
-        ["qbo_item_ref", "QuickBooks item reference"],
+        ["display_name", "Name on proposals"],
+        ["description", "Description the client sees"],
       ].map(([key, label]) => (
         <Field key={key} label={label}>
           <input
             name={key}
-            required={["name", "sku"].includes(key)}
             defaultValue={String(i?.[key as keyof Item] ?? "")}
           />
         </Field>
       ))}
-      <ProductMappingDetails
-        item={i}
-        qboConnected={data.connections?.qbo ?? null}
-      />
-      <p>Display name is app-only. Stripe sync preserves it.</p>
-      <div className="studio-brand-grid">
-        <Field label="List price">
-          <input
-            name="price"
-            type="number"
-            step=".01"
-            min="0"
-            required
-            defaultValue={(i?.amount ?? 0) / 100}
-          />
-        </Field>
-        <Field label="Interval">
-          <select name="interval" defaultValue={i?.interval ?? "one_time"}>
-            <option value="one_time">One-time</option>
-            <option value="month">Monthly</option>
-            <option value="year">Yearly</option>
-          </select>
-        </Field>
-      </div>
-      <label className="check">
-        <input
-          type="checkbox"
-          name="active"
-          defaultChecked={i?.active ?? true}
-          role="switch"
-        />
-        Active
-      </label>
-      <label className="check">
-        <input
-          type="checkbox"
-          name="legacy"
-          defaultChecked={i?.legacy ?? false}
-        />
-        Legacy · hidden from new quotes
-      </label>
-      <fieldset className="stack">
-        <legend>Plan terms</legend>
-        <Field label="Minimum commitment (months)">
-          <input
-            type="number"
-            min="1"
-            value={minimum}
-            onChange={(e) => setMinimum(e.target.value)}
-          />
-        </Field>
-        <Field label="Paid off after (paid invoices)">
-          <input
-            type="number"
-            min="1"
-            value={count}
-            onChange={(e) => setCount(e.target.value)}
-          />
-        </Field>
-        {count && (
-          <>
-            <Field label="Then continues at (per recurring period)">
+      {i?.stripe_lookup_key ? (
+        <div className="studio-price-field">
+          <label>Price</label>
+          <div className="studio-readonly-price">
+            <strong>
+              {(i.sublines ?? [i])
+                .map(
+                  (line) =>
+                    `${money(line.amount, data.settings?.currency)}${intervalSuffix(line.interval)}`,
+                )
+                .join(" + ")}
+            </strong>
+            <a
+              href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
+              target="_blank"
+              rel="noopener"
+            >
+              Edit in Stripe ↗
+            </a>
+          </div>
+          <small className="muted">
+            Synced from Stripe. Change the price there and it updates here.
+          </small>
+          <input type="hidden" name="price" value={i.amount / 100} />
+          <input type="hidden" name="interval" value={i.interval} />
+        </div>
+      ) : (
+        <div className="studio-brand-grid">
+          <Field label="List price">
+            <input
+              name="price"
+              readOnly={!!i?.stripe_lookup_key}
+              type="number"
+              step=".01"
+              min="0"
+              required
+              defaultValue={(i?.amount ?? 0) / 100}
+            />
+          </Field>
+          <Field label="Interval">
+            <select name="interval" defaultValue={i?.interval ?? "one_time"}>
+              <option value="one_time">One-time</option>
+              <option value="month">Monthly</option>
+              <option value="year">Yearly</option>
+            </select>
+          </Field>
+        </div>
+      )}
+      {i?.schedule && (
+        <section className="studio-product-terms">
+          <h3>Plan terms</h3>
+          <dl>
+            {(i.sublines ?? [i]).map((line, n) => (
+              <div key={n}>
+                <dt>
+                  {line.interval === "one_time"
+                    ? "Kickoff"
+                    : line.interval === "month"
+                      ? "Monthly"
+                      : "Yearly"}
+                </dt>
+                <dd>
+                  {money(line.amount, data.settings?.currency)}
+                  {intervalSuffix(line.interval)}
+                </dd>
+              </div>
+            ))}
+            <div>
+              <dt>Payments to own</dt>
+              <dd>{i.schedule.after_paid_invoices}</dd>
+            </div>
+            <div>
+              <dt>After that</dt>
+              <dd>
+                {money(i.schedule.then.amount, data.settings?.currency)}/mo
+              </dd>
+            </div>
+            {i.min_term_months && (
+              <div>
+                <dt>Minimum term</dt>
+                <dd>{i.min_term_months} months</dd>
+              </div>
+            )}
+          </dl>
+          <p>
+            {String(
+              i.plan_terms?.client_copy ??
+                "Payoff counts paid invoices, not calendar months.",
+            )}
+          </p>
+        </section>
+      )}
+      <details open={!i}>
+        <Disclosure>More product details</Disclosure>
+        <div className="stack">
+          {[
+            ["name", "Synced name"],
+            ["sku", "SKU"],
+            ["stripe_lookup_key", "Stripe lookup key"],
+            ["qbo_item_ref", "QuickBooks item reference"],
+          ].map(([key, label]) => (
+            <Field key={key} label={label}>
               <input
-                type="number"
-                min="0"
-                step=".01"
-                required
-                value={then}
-                onChange={(e) => setThen(e.target.value)}
+                name={key}
+                required={["name", "sku"].includes(key)}
+                defaultValue={String(i?.[key as keyof Item] ?? "")}
               />
             </Field>
-            <Field label="Then Stripe lookup key">
-              <select
-                name="then_lookup_key"
-                required
-                defaultValue={i?.schedule?.then.lookup_key ?? ""}
-              >
-                <option value="">Choose an active recurring item</option>
-                {sellableCatalogue(data.catalog)
-                  .filter((i) => i.interval !== "one_time")
-                  .map((i) => (
-                    <option value={i.stripe_lookup_key ?? ""} key={i.id}>
-                      {itemDisplayName(i)} · {i.stripe_lookup_key}
-                    </option>
-                  ))}
-              </select>
+          ))}
+          <label className="check">
+            <input
+              type="checkbox"
+              name="active"
+              defaultChecked={i?.active ?? true}
+              role="switch"
+            />
+            Active
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              name="legacy"
+              defaultChecked={i?.legacy ?? false}
+            />
+            Legacy · hidden from new quotes
+          </label>
+          <fieldset className="stack">
+            <legend>Plan terms</legend>
+            <Field label="Minimum commitment (months)">
+              <input
+                type="number"
+                min="1"
+                value={minimum}
+                onChange={(e) => setMinimum(e.target.value)}
+              />
             </Field>
-          </>
-        )}
-        <Field label="Additional client copy">
-          <textarea
-            rows={4}
-            value={copy}
-            onChange={(e) => setCopy(e.target.value)}
-            placeholder="Terms the client should see"
+            <Field label="Paid off after (paid invoices)">
+              <input
+                type="number"
+                min="1"
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+              />
+            </Field>
+            {count && (
+              <>
+                <Field label="Then continues at (per recurring period)">
+                  <input
+                    type="number"
+                    min="0"
+                    step=".01"
+                    required
+                    value={then}
+                    onChange={(e) => setThen(e.target.value)}
+                  />
+                </Field>
+                <Field label="Then Stripe lookup key">
+                  <select
+                    name="then_lookup_key"
+                    required
+                    defaultValue={i?.schedule?.then.lookup_key ?? ""}
+                  >
+                    <option value="">Choose an active recurring item</option>
+                    {sellableCatalogue(data.catalog)
+                      .filter((i) => i.interval !== "one_time")
+                      .map((i) => (
+                        <option value={i.stripe_lookup_key ?? ""} key={i.id}>
+                          {itemDisplayName(i)} · {i.stripe_lookup_key}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              </>
+            )}
+            <Field label="Additional client copy">
+              <textarea
+                rows={4}
+                value={copy}
+                onChange={(e) => setCopy(e.target.value)}
+                placeholder="Terms the client should see"
+              />
+            </Field>
+          </fieldset>
+          <ProductMappingDetails
+            item={i}
+            qboConnected={data.connections?.qbo ?? null}
           />
-        </Field>
-      </fieldset>
-      <section className="client-copy-preview">
-        <p className="eyebrow">Client sees</p>
-        <strong>{i ? itemDisplayName(i) : "New item"}</strong>
-        {minimum && <p>{minimum}-month minimum commitment.</p>}
-        {count && (
-          <p>
-            After {count} paid invoices:{" "}
-            {money(Math.round(Number(then || 0) * 100))} per recurring period.
-          </p>
-        )}
-        {copy && <p>{copy}</p>}
-        <small>Payoff counts paid invoices, not calendar months.</small>
-      </section>
+          <section className="client-copy-preview">
+            <p className="eyebrow">Client sees</p>
+            <strong>{i ? itemDisplayName(i) : "New item"}</strong>
+            {minimum && <p>{minimum}-month minimum commitment.</p>}
+            {count && (
+              <p>
+                After {count} paid invoices:{" "}
+                {money(Math.round(Number(then || 0) * 100))} per recurring
+                period.
+              </p>
+            )}
+            {copy && <p>{copy}</p>}
+            <small>Payoff counts paid invoices, not calendar months.</small>
+          </section>
+        </div>
+      </details>
       <SaveError error={save.error} />
       <DialogActions>
         <Button onClick={close} disabled={save.busy}>
@@ -1182,7 +822,9 @@ function TemplatesStudioContent({
       id?: string;
       name: string;
       block: Block;
-    } | null>(null),
+    } | null>(
+      blocksOnly ? (data.library.find((b) => b.id === selected) ?? null) : null,
+    ),
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
@@ -3235,6 +2877,7 @@ export function ConnectionsStudio({
       qbo: boolean;
       email: boolean;
       mock: boolean;
+      mode?: "test" | "live" | "mock";
     } | null>(null),
     [error, setError] = useState(""),
     [open, setOpen] = useState(initial ?? "");
@@ -3251,20 +2894,17 @@ export function ConnectionsStudio({
         !a.last_used || Date.now() - Date.parse(a.last_used) > 7 * 86400000,
     ),
     imports = data.proposals.filter((p) => p.source === "proposify_import"),
-    missing = imports.filter((p) => !p.files.some((f) => f.kind === "import")),
-    references = data.documents,
-    referenceError = references.some((d) => d.fetch_error);
+    missing = imports.filter((p) => !p.files.some((f) => f.kind === "import"));
   const cards = [
     {
       id: "stripe",
       name: "Stripe",
-      state: health?.stripe
-        ? "Test mode configured"
-        : health?.mock
-          ? "Mock mode"
-          : "Not connected",
+      state: stripeStatus(health),
       line: "Recurring billing, Checkout for new clients and product sync.",
-      detail: "Test mode only. No live billing is enabled.",
+      detail:
+        health?.mode === "live"
+          ? "Live Stripe billing configured."
+          : "Stripe test mode; no live charges.",
       action: "Settings",
     },
     {
@@ -3277,7 +2917,7 @@ export function ConnectionsStudio({
     },
     {
       id: "email",
-      name: "Email",
+      name: "Email sending",
       state:
         health?.email && data.settings?.sending_domain
           ? "Configured"
@@ -3289,30 +2929,13 @@ export function ConnectionsStudio({
       action: "Settings",
     },
     {
-      id: "reference",
-      name: "Pricing reference",
-      state: referenceError
-        ? "Refresh needs attention"
-        : references.length
-          ? "Up to date"
-          : "Add a reference",
-      line: referenceError
-        ? "The last good version stays available while the refresh needs attention."
-        : "Your pricing playbook beside the editor. Read-only; the app never sets prices.",
-      detail: references
-        .map(
-          (d) =>
-            `${d.version || "No version yet"}${d.last_success_at ? ` · last success ${new Date(d.last_success_at).toLocaleString()}` : ""}`,
-        )
-        .join(" · "),
-      action: "Open",
-    },
-    {
       id: "assistants",
-      name: "AI assistants",
-      state: stale ? "Drafts paused" : `${connected.length} connected`,
+      name: connected.some((a) => /claude/i.test(a.name))
+        ? "Claude"
+        : "AI assistants",
+      state: connected.length ? "Connected" : "Not connected",
       line: stale
-        ? "An assistant has not connected recently. You can still write proposals by hand."
+        ? "An assistant has not connected recently. Manage its grant to reconnect."
         : "Assistants read reference data and create drafts. A person always reviews, sends and signs.",
       detail:
         connected.map((a) => a.name).join(", ") || "No assistants connected",
@@ -3335,24 +2958,52 @@ export function ConnectionsStudio({
     <div className="stack">
       <SaveError error={error} />
       {error && <Button onClick={load}>Try loading connections again</Button>}
-      <div className="connection-grid">
-        {cards.map((c) => (
-          <section className="connection-card" key={c.id}>
-            <header>
-              <h2>{c.name}</h2>
-              {!health && ["stripe", "qbo", "email"].includes(c.id) ? (
-                <Skeleton />
-              ) : (
-                <span
-                  className={`connection-state ${/needed|paused|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
-                >
-                  {c.state}
-                </span>
-              )}
-            </header>
-            <p>{c.line}</p>
-            <small>{c.detail}</small>
-            <Button onClick={() => setOpen(c.id)}>{c.action}</Button>
+      <p className="studio-description">
+        Payments, invoicing, email delivery, AI assistants and imports. Each one
+        shows if it's healthy and offers one fix when it isn't.
+      </p>
+      <div className="studio-connections-v3">
+        {[
+          { name: "Billing", ids: ["stripe", "qbo"] },
+          { name: "Email", ids: ["email"] },
+          { name: "AI assistants", ids: ["assistants"] },
+          { name: "Imports", ids: ["imports"] },
+        ].map((group) => (
+          <section className="connection-group" key={group.name}>
+            <h2>{group.name}</h2>
+            <div className="connection-grid">
+              {cards
+                .filter((c) => group.ids.includes(c.id))
+                .map((c) => (
+                  <section
+                    className={`connection-card ${c.id !== "assistants" && /needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
+                    key={c.id}
+                  >
+                    <span className="connection-monogram" aria-hidden="true">
+                      {c.id === "stripe"
+                        ? "S"
+                        : c.id === "qbo"
+                          ? "qb"
+                          : c.id === "assistants"
+                            ? "AI"
+                            : c.name[0]}
+                    </span>
+                    <div>
+                      <div className="connection-title">
+                        <h3>{c.name}</h3>
+                        <span
+                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /^(Connected|Configured|Verified|Imported|Sandbox configured)\b/i.test(c.state) ? "success" : "warning"}`}
+                        >
+                          ● {c.state}
+                        </span>
+                      </div>
+                      <p>{c.line}</p>
+                      <small>{c.detail}</small>
+                    </div>
+                    <Button onClick={() => setOpen(c.id)}>{c.action}</Button>
+                  </section>
+                ))}
+            </div>
           </section>
         ))}
       </div>
@@ -3361,9 +3012,7 @@ export function ConnectionsStudio({
           title={cards.find((c) => c.id === open)?.name ?? "Connection"}
           onClose={() => setOpen("")}
         >
-          {open === "reference" ? (
-            <ReferenceDocuments documents={data.documents} run={run} />
-          ) : open === "assistants" ? (
+          {open === "assistants" ? (
             <AssistantConnections data={data} run={run} />
           ) : open === "imports" ? (
             <div className="stack">
@@ -3391,7 +3040,7 @@ export function ConnectionsStudio({
                 your domain’s SPF and DKIM there. The app does not infer DNS
                 verification from the setting alone.
               </p>
-              <a className="btn" href="/studio/workspace#client-links">
+              <a className="btn" href="/studio/workspace?view=email-sending">
                 Open sending domain
               </a>
             </div>
@@ -3475,157 +3124,7 @@ function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
     </div>
   );
 }
-export function ActivityStudio({ data }: { data: Data }) {
-  const [rows, setRows] = useState<Activity[] | null>(null),
-    [error, setError] = useState(""),
-    [actor, setActor] = useState(""),
-    [type, setType] = useState(""),
-    [period, setPeriod] = useState("30");
-  const load = () => {
-    setError("");
-    api<Activity[]>("/api/workspace_events")
-      .then(setRows)
-      .catch((e) => setError(e.message));
-  };
-  useEffect(load, []);
-  const since = period
-    ? new Date(Date.now() - Number(period) * 86400000).toISOString()
-    : "";
-  const filtered =
-    rows?.filter(
-      (e) =>
-        (!actor || e.actor === actor) &&
-        (!type || e.type === type) &&
-        (!since || e.created_at >= since),
-    ) ?? [];
-  const name = (a: string) =>
-    a.startsWith("staff:")
-      ? (data.staff.find((m) => m.user_id === a.slice(6))?.display_name ??
-        "Staff member")
-      : a.startsWith("ai:")
-        ? (data.assistants.find((m) => m.id === a.slice(3))?.name ??
-          "Assistant")
-        : a === "client"
-          ? "Client"
-          : "System";
-  const query = new URLSearchParams({ format: "csv", actor, type, since });
-  return (
-    <div className="stack">
-      <div className="studio-filters">
-        <Field label="Who">
-          <select value={actor} onChange={(e) => setActor(e.target.value)}>
-            <option value="">Anyone</option>
-            {[...new Set(rows?.map((e) => e.actor))].map((a) => (
-              <option key={a} value={a}>
-                {name(a)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Event type">
-          <select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">All events</option>
-            {[...new Set(rows?.map((e) => e.type))].sort().map((t) => (
-              <option key={t} value={t}>
-                {eventLabel({ type: t, actor: "", metadata: {} })}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="When">
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="30">Last 30 days</option>
-            <option value="7">Last 7 days</option>
-            <option value="">All time</option>
-          </select>
-        </Field>
-        <a className="btn" href={`/api/workspace_events?${query}`}>
-          Export CSV
-        </a>
-      </div>
-      {error ? (
-        <Banner
-          tone="danger"
-          title="Activity could not be loaded"
-          action={<Button onClick={load}>Try again</Button>}
-        >
-          {error}
-        </Banner>
-      ) : rows === null ? (
-        <Skeleton />
-      ) : filtered.length ? (
-        <div className="activity-table">
-          <div className="activity-heading">
-            <span>When</span>
-            <span>Who</span>
-            <span>Event</span>
-            <span>Detail</span>
-            <span>IP</span>
-          </div>
-          {filtered.map((e) => (
-            <article
-              className={`activity-row ${e.proposal_id ? "clickable-row" : ""}`}
-              key={e.id}
-            >
-              <time>
-                {new Date(e.created_at).toLocaleString("en-US", {
-                  timeZone: data.settings?.timezone ?? "UTC",
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </time>
-              <span>{name(e.actor)}</span>
-              <span>
-                <strong>{eventLabel(e, name(e.actor))}</strong>
-                <code>{e.type}</code>
-              </span>
-              {e.proposal_id ? (
-                <a
-                  className="activity-primary-link"
-                  href={`/proposals/${e.proposal_id}`}
-                >
-                  {e.detail}
-                </a>
-              ) : (
-                <span>{e.detail}</span>
-              )}
-              <code>
-                {e.ip || (e.actor.startsWith("ai:") ? "Connector" : "—")}
-              </code>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <Empty
-          title={
-            rows.length
-              ? "No activity matches these filters"
-              : "No workspace activity yet"
-          }
-          action={
-            rows.length ? (
-              <Button
-                onClick={() => {
-                  setActor("");
-                  setType("");
-                  setPeriod("");
-                }}
-              >
-                Clear filters
-              </Button>
-            ) : (
-              <a href="/proposals?new=1">New proposal</a>
-            )
-          }
-        >
-          Proposal and Studio changes will appear here.
-        </Empty>
-      )}
-    </div>
-  );
-}
+export { ActivityStudio } from "./studio-activity";
 
 function ProductMappingDetails({
   item,

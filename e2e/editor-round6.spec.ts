@@ -222,6 +222,7 @@ test("sidebar shells stay fixed, arrows retain their size, and every sheet is pa
     ]);
   }
   await page.goto("/studio/templates");
+  await page.locator(".studio-template-card").first().click();
   await ready(page, true);
   const templateSheets = page.locator(".template-paged-paper .page-sheet");
   expect(await templateSheets.count()).toBeGreaterThan(10);

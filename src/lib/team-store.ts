@@ -9,7 +9,7 @@ import {
 export interface TeamStore {
   get(id: string): Promise<StaffMember | null>;
   list(): Promise<StaffMember[]>;
-  audit(): Promise<TeamAudit[]>;
+  audit(all?: boolean): Promise<TeamAudit[]>;
   change(
     actor: Actor,
     id: string,
@@ -41,15 +41,24 @@ export class SupabaseTeamStore implements TeamStore {
     if (error) throw new AppError(503, "Unable to load team membership");
     return data.map((x) => StaffMemberSchema.parse(x));
   }
-  async audit() {
-    const { data, error } = await this.db
-      .from("team_audit")
-      .select("*")
-      .eq("workspace_id", this.workspaceId)
-      .order("created_at", { ascending: false })
-      .limit(40);
-    if (error) throw new AppError(503, "Unable to load recent team changes");
-    return data as TeamAudit[];
+  async audit(all = false) {
+    const rows: TeamAudit[] = [];
+    const pageSize = 500;
+    do {
+      let query = this.db
+        .from("team_audit")
+        .select("*")
+        .eq("workspace_id", this.workspaceId)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+      const { data, error } = await (all
+        ? query.range(rows.length, rows.length + pageSize - 1)
+        : query.limit(40));
+      if (error) throw new AppError(503, "Unable to load recent team changes");
+      rows.push(...(data as TeamAudit[]));
+      if (!all || data.length < pageSize) break;
+    } while (true);
+    return rows;
   }
   async change(
     actor: Actor,

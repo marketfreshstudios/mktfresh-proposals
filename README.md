@@ -4,6 +4,8 @@ White-label proposal workspace with staff authoring, client signing, required co
 
 Branding, client attribution and the unchanged domain plan are documented in [Yeswell identity](docs/yeswell-brand.md). MarketFresh Studios is workspace 1.
 
+Studio shell, lists, Workspace autosave and the Phase 1 scope decisions are documented in [Studio v3](docs/studio-v3-phase1.md). Existing template, saved-block and email editors remain in use for the next redesign PRs.
+
 ## Local development
 
 Requires Node 24 and npm. Docker is only needed for Supabase integration verification.

@@ -446,6 +446,12 @@ async function handleRoute(req: Request, path: string[]) {
         qbo: rt.worker.providers.qbo instanceof QboProvider,
         email: !!process.env.RESEND_API_KEY,
         mock: process.env.APP_MODE === "local",
+        mode:
+          process.env.BILLING_MODE === "live"
+            ? "live"
+            : process.env.BILLING_MODE === "mock"
+              ? "mock"
+              : "test",
       });
     }
     if (path[0] === "team") {
@@ -478,7 +484,9 @@ async function handleRoute(req: Request, path: string[]) {
         const team = teamService(user.workspace_id);
         return json({
           members: await team.list(),
-          recent: await team.store.audit(),
+          recent: await team.store.audit(
+            new URL(req.url).searchParams.get("history") === "all",
+          ),
         });
       }
       if (method === "POST" && path[1] === "invite")
@@ -578,9 +586,15 @@ async function handleRoute(req: Request, path: string[]) {
           "Stripe test credentials required",
           503,
         );
-        return json(
-          await syncStripeCatalog(rt.repo, rt.worker.providers.stripe.api),
+        const result = await syncStripeCatalog(
+          rt.repo,
+          rt.worker.providers.stripe.api,
         );
+        await workspaceEvent(rt.repo, user, "catalog_synced", {
+          provider: "stripe",
+          ...result,
+        });
+        return json(result);
       }
       check(
         provider === "qbo" && rt.worker.providers.qbo instanceof QboProvider,

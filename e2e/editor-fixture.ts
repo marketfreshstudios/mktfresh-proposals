@@ -135,6 +135,9 @@ export async function editorFixture(
         } else if (parts[2] === "preview")
           value = previewResult(active, f.settings);
         else value = parts[1] ? active : { items: [active], total: 1 };
+      } else if (parts[0] === "templates" && req.method() === "POST") {
+        value = req.postDataJSON();
+        await f.repo.put("templates", value as any);
       } else if (parts[0] === "clients" && req.method() === "POST") {
         value = await f.service.updateClient(req.postDataJSON(), staff);
         active = await f.service.forRead((await f.repo.get(active.id))!);

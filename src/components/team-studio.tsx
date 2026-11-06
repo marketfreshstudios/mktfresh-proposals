@@ -1,4 +1,5 @@
 "use client";
+import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
@@ -11,6 +12,17 @@ import {
   type TeamPerson,
   type TeamAudit,
 } from "../lib/team-model";
+const actionLabels: Record<string, string> = {
+  reassign: "Reassign their proposals…",
+  name: "Edit name",
+  role: "Change role",
+  password_set: "Set password",
+  invite_resent: "Resend invite",
+  reset_sent: "Send password reset",
+  deactivate: "Deactivate",
+  reactivate: "Reactivate",
+  remove: "Remove from workspace",
+};
 type Dialog = { person?: TeamPerson; action: string; anchor?: HTMLElement };
 export function TeamStudio({
   data,
@@ -89,8 +101,8 @@ export function TeamStudio({
       )}
       <header className="team-heading">
         <p className="muted">
-          Super admins manage access. Staff can view the team and edit their own
-          profile.
+          Super admins manage Studio, billing and the team. Staff draft, edit,
+          send and countersign.
         </p>
         {owner && (
           <Button
@@ -100,7 +112,7 @@ export function TeamStudio({
               setDialog({ action: "invite" });
             }}
           >
-            Invite user
+            Invite
           </Button>
         )}
       </header>
@@ -120,19 +132,65 @@ export function TeamStudio({
           </span>
         </div>
         {people.map((person) => (
-          <div role="row" className="team-person" key={person.user_id}>
+          <div
+            role="row"
+            className={`team-person ${person.status === "deactivated" ? "team-person-inactive" : ""}`}
+            key={person.user_id}
+          >
             <div role="cell">
+              <span className="avatar" aria-hidden="true">
+                {person.display_name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join("")}
+              </span>
               <strong>{person.display_name}</strong>
               <small>{person.email}</small>
             </div>
             <div role="cell">
               <span className="team-mobile-label">Role</span>
-              {staffRoleLabel(person.role)}
+              <select
+                aria-label={`Role for ${person.display_name}`}
+                value={person.role}
+                disabled={
+                  !owner ||
+                  (person.user_id === self &&
+                    people.filter(
+                      (p) => p.role === "owner" && p.status === "active",
+                    ).length <= 1)
+                }
+                onChange={(e) =>
+                  void save(
+                    `/api/team/${person.user_id}`,
+                    { action: "role", role: e.target.value },
+                    "Role changed",
+                  )
+                }
+              >
+                <option value="owner">Super admin</option>
+                <option value="member">Staff</option>
+              </select>
             </div>
             <div role="cell">
               <span className="team-mobile-label">Status</span>
-              <span className={`team-status team-status-${person.status}`}>
-                {staffStatusLabel(person.status)}
+              <span
+                className={`team-status team-status-${person.user_id === self ? "self" : person.status}`}
+              >
+                {person.user_id === self ? (
+                  "You"
+                ) : person.status === "invited" && person.invited_at ? (
+                  <>
+                    <span
+                      title={`Invited ${date(person.invited_at)} · Not accepted yet`}
+                    >
+                      Invite sent
+                      <span className="sr-only"> · Not accepted yet</span>
+                    </span>
+                  </>
+                ) : (
+                  staffStatusLabel(person.status)
+                )}
               </span>
             </div>
             <div role="cell">
@@ -151,6 +209,7 @@ export function TeamStudio({
             <div role="cell">
               {owner && (
                 <Button
+                  variant="ghost"
                   aria-label={`Actions for ${person.display_name}`}
                   onClick={(e) => {
                     setError("");
@@ -206,21 +265,11 @@ export function TeamStudio({
           </form>
         </section>
       )}
-      <section className="team-recent stack">
-        <Heading>Recent changes</Heading>
-        {!recent.length ? (
-          <p className="muted">Team changes will appear here.</p>
-        ) : (
-          <ol>
-            {recent.map((event) => (
-              <li key={event.id}>
-                <span>{auditText(event)}</span>
-                <small>{date(event.created_at)}</small>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      <p className="team-connections-note">
+        AI assistants like Claude are managed in{" "}
+        <a href="/studio/connections?view=assistants">Connections</a>, not here.
+      </p>
+      <a href="/studio/activity?view=team">Recent changes · Team activity</a>
       {reassign && (
         <ReassignDialog
           from={reassign}
@@ -324,15 +373,25 @@ export function TeamStudio({
                   type="button"
                   className="btn"
                   key={action}
+                  aria-label={actionLabels[action]}
                   disabled={
                     ["deactivate", "remove"].includes(action) &&
-                    dialog.person!.user_id === self
+                    (dialog.person!.user_id === self ||
+                      (action === "remove" &&
+                        data.proposals.some((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        )))
                   }
                   title={
                     ["deactivate", "remove"].includes(action) &&
                     dialog.person!.user_id === self
                       ? "You cannot deactivate or remove yourself"
-                      : undefined
+                      : action === "remove" &&
+                          data.proposals.some((p) =>
+                            unfinishedAssignment(p, dialog.person!.user_id),
+                          )
+                        ? "Reassign proposals first"
+                        : undefined
                   }
                   onClick={() => {
                     if (action === "reassign") {
@@ -341,23 +400,55 @@ export function TeamStudio({
                     } else setDialog({ ...dialog, action });
                   }}
                 >
-                  {
-                    (
+                  {actionLabels[action]}
+                  {action === "remove" &&
+                    data.proposals.some((p) =>
+                      unfinishedAssignment(p, dialog.person!.user_id),
+                    ) && <small>Reassign proposals first</small>}
+                  {action === "reassign" && (
+                    <small>
                       {
-                        reassign: "Reassign their proposals…",
-                        name: "Edit name",
-                        role: "Change role",
-                        password_set: "Set password",
-                        invite_resent: "Resend invite",
-                        reset_sent: "Send password reset",
-                        deactivate: "Deactivate",
-                        reactivate: "Reactivate",
-                        remove: "Remove from workspace",
-                      } as Record<string, string>
-                    )[action]
-                  }
+                        data.proposals.filter((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        ).length
+                      }{" "}
+                      open proposals
+                    </small>
+                  )}
+                  {action === "deactivate" && (
+                    <small>Blocks sign-in. History is kept.</small>
+                  )}
                 </button>
               ))}
+              {dialog.person!.user_id !== self &&
+                data.proposals.some((p) =>
+                  unfinishedAssignment(p, dialog.person!.user_id),
+                ) && (
+                  <div className="team-blocked-work">
+                    <p>
+                      Reassign proposals first. Deactivate is also available;
+                      history is kept.
+                    </p>
+                    <ul>
+                      {data.proposals
+                        .filter((p) =>
+                          unfinishedAssignment(p, dialog.person!.user_id),
+                        )
+                        .map((p) => (
+                          <li key={p.id}>
+                            <a href={`/proposals/${p.id}`}>{p.title}</a>
+                          </li>
+                        ))}
+                    </ul>
+                    <Button
+                      onClick={() =>
+                        setDialog({ ...dialog, action: "deactivate" })
+                      }
+                    >
+                      Deactivate instead
+                    </Button>
+                  </div>
+                )}
             </div>
           ) : (
             <TeamForm

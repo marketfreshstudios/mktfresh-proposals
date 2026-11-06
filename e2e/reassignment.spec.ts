@@ -157,13 +157,12 @@ test("Team bulk reassignment unblocks removal; Staff cannot hand off others' wor
   const f = await fixture(page);
   await page.goto("/studio/workspace?view=team");
   await page.getByRole("button", { name: "Actions for Jamie Example" }).click();
-  await page
-    .getByRole("button", { name: "Remove from workspace", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Remove from workspace", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText("unfinished proposals");
+  await expect(
+    page.getByRole("button", { name: "Remove from workspace", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Reassign proposals first",
+  );
   await page
     .getByRole("button", { name: "Reassign their proposals…", exact: true })
     .click();

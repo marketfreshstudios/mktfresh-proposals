@@ -1,6 +1,8 @@
 "use client";
 import { staffPageName } from "../lib/staff-brand";
 import { YeswellBrand } from "./yeswell-brand";
+import { StudioTemplateList } from "./studio-template-list";
+import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
 import {
@@ -255,26 +257,7 @@ export function StaffApp({
   if (data) {
     if (section === "studio") {
       title = "Studio";
-      content = (
-        <nav className="studio-page" aria-label="Studio navigation">
-          {studioRoutes.map(([href, label]) => (
-            <a key={href} href={href}>
-              <Icon name="studio" />
-              {label}
-              <span aria-hidden="true">→</span>
-            </a>
-          ))}
-          <ThemeToggle />
-          <Button
-            onClick={async () => {
-              await post("/api/auth/logout");
-              location.href = "/login";
-            }}
-          >
-            Sign out
-          </Button>
-        </nav>
-      );
+      content = <StudioHome data={data} />;
     } else if (section === "") {
       title = "Home";
       subtitle = new Date().toLocaleDateString(undefined, {
@@ -358,10 +341,18 @@ export function StaffApp({
       content = <EmailsStudio data={data} id={id} />;
     } else if (section === "templates") {
       headerAction = null;
-      content = <TemplatesStudio data={data} selected={id} run={run} />;
+      content = id ? (
+        <TemplatesStudio data={data} selected={id} run={run} />
+      ) : (
+        <StudioTemplateList data={data} />
+      );
     } else if (section === "library") {
       headerAction = null;
-      content = <TemplatesStudio data={data} run={run} blocksOnly />;
+      content = id ? (
+        <TemplatesStudio data={data} selected={id} run={run} blocksOnly />
+      ) : (
+        <StudioTemplateList data={data} blocks />
+      );
     } else if (section === "imports") {
       headerAction = null;
       content = <ConnectionsStudio data={data} run={run} initial="imports" />;
@@ -371,13 +362,20 @@ export function StaffApp({
         <ConnectionsStudio
           data={data}
           run={run}
-          initial={query.view === "reference" ? "reference" : undefined}
+          initial={
+            typeof query.view === "string" &&
+            ["stripe", "qbo", "email"].includes(query.view)
+              ? query.view
+              : undefined
+          }
         />
       );
     } else if (section === "settings" && id === "team") {
       title = "Team";
       headerAction = null;
-      content = <TeamStudio data={data} run={run} />;
+      title = "Workspace";
+      subtitle = "How proposals look and who can send and sign them.";
+      content = <WorkspaceStudio data={data} run={run} initial="team" />;
     } else if (section === "settings" && id === "ai") {
       title = "AI assistants";
       subtitle =
@@ -392,7 +390,14 @@ export function StaffApp({
       content = <ActivityStudio data={data} />;
     } else if (section === "settings") {
       headerAction = null;
-      content = <WorkspaceStudio data={data} run={run} />;
+      subtitle = "How proposals look and who can send and sign them.";
+      content = (
+        <WorkspaceStudio
+          data={data}
+          run={run}
+          initial={typeof query.view === "string" ? query.view : undefined}
+        />
+      );
     } else
       content = (
         <Empty

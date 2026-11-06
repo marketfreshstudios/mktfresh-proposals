@@ -147,6 +147,16 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         );
         if (width >= 700 && ["editor", "send"].includes(name)) {
           await expect(page.locator(".sidebar")).toBeHidden();
+        } else if (
+          width >= 700 &&
+          width < 1100 &&
+          url.startsWith("/studio") &&
+          name !== "template"
+        ) {
+          await expect(page.locator(".sidebar")).toBeHidden();
+          await expect(
+            page.getByRole("navigation", { name: "Studio areas" }),
+          ).toBeVisible();
         } else if (width >= 700) {
           await expect(page.locator(".sidebar")).toBeVisible();
           await expect(page.locator(".sidebar")).toHaveCSS(
@@ -261,7 +271,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   await page.keyboard.press("Escape");
   await page.goto("/studio/products");
   await page
-    .getByRole("textbox", { name: "Search products", exact: true })
+    .getByRole("searchbox", { name: "Search products", exact: true })
     .fill("n");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto("/proposals/new");
