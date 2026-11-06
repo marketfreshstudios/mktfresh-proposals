@@ -44,6 +44,7 @@ type Props = {
   logo?: string;
   cover?: Cover;
   map?: Record<string, string>;
+  highlightFields?: boolean;
   onCover?: (cover: Cover) => void;
 };
 function Spacing({
@@ -138,6 +139,7 @@ export function DocumentCover({
   logo,
   cover,
   map = {},
+  highlightFields = true,
   onCover,
 }: Props) {
   const value = cover ?? defaultCover(),
@@ -448,6 +450,7 @@ export function DocumentCover({
             element={e}
             content={content}
             map={resolvedMap}
+            highlightFields={highlightFields}
             editable={editable || (e.kind === "title" && !!onTitle)}
             selected={selected === e.id}
             select={() => choose(e.id)}
@@ -466,6 +469,7 @@ function CoverText({
   content,
   map,
   editable,
+  highlightFields,
   selected,
   select,
   update,
@@ -477,6 +481,7 @@ function CoverText({
   content: RichText;
   map: Record<string, string>;
   editable: boolean;
+  highlightFields: boolean;
   selected: boolean;
   select: () => void;
   update: (patch: Partial<CoverElement>, text?: RichText) => void;
@@ -617,7 +622,9 @@ function CoverText({
         />
       ) : (
         <span
-          dangerouslySetInnerHTML={{ __html: coverInlineHtml(content, map) }}
+          dangerouslySetInnerHTML={{
+            __html: coverInlineHtml(content, map, !highlightFields),
+          }}
         />
       )}
       {controls}

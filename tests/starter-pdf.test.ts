@@ -1,0 +1,89 @@
+import { chooseItem } from "../src/lib/quote-model";
+import { starterLogo } from "./starter-logo";
+import { expect, it } from "vitest";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { PDFDocument } from "pdf-lib";
+import { setup } from "./helpers";
+import { starterTemplates } from "../seed/starter-templates";
+import { authoringPreview } from "../src/lib/authoring-preview";
+import { pdfPreview } from "../src/lib/pdf-preview";
+import { templateDefaultQuote } from "../src/lib/template-quote";
+import type { Item } from "../src/lib/model";
+it("all starters render their exact cover, legal fields and conditional 4.4 through the existing real PDF pipeline", async () => {
+  const f = await setup();
+  const dir = await mkdtemp(join(tmpdir(), "starter-pdfs-"));
+  try {
+    const catalog = await f.repo.entities<Item>("pricing_items");
+    const settings = {
+      ...f.settings,
+      business_state: { name: "North Carolina" as const, other: "" },
+      logo: `${f.repo.workspaceId}/logo.png`,
+    };
+    const logo = await starterLogo();
+    for (const t of starterTemplates(f.repo.workspaceId, {
+      marketfresh: true,
+      catalog,
+    })) {
+      const p = authoringPreview(
+        { ...t, quote: templateDefaultQuote(t, catalog).quote },
+        settings,
+        f.repo.workspaceId,
+      );
+      const result = await pdfPreview(
+        f.repo,
+        { get: async () => logo, put: async () => {} },
+        p,
+        settings,
+      );
+      const bytes = Buffer.from(result.pdf_base64, "base64");
+      const pdf = await PDFDocument.load(bytes);
+      expect(pdf.getPageCount(), t.name).toBeGreaterThanOrEqual(5);
+      expect(pdf.getPageCount(), t.name).toBeLessThanOrEqual(8);
+      const path = join(dir, `${t.starter_key}.pdf`);
+      await writeFile(path, bytes);
+      const content = execFileSync("pdftotext", ["-layout", path, "-"], {
+        encoding: "utf8",
+      });
+      const pages = content.split("\f");
+      expect(pages[0]).toContain("Prepared for Client, Client company");
+      expect(pages[0]).toContain(
+        `Prepared by ${settings.owner}, Example Studio`,
+      );
+      expect(content).toContain("State of North Carolina");
+      expect(content).toContain("Signatures");
+      expect(content.includes("18 monthly payments")).toBe(false);
+      if (t.starter_key === "website-design-build") {
+        const alternative = p.quote.find(
+          (i) => i.pricing_item_id === "00000000-0000-4000-8000-000000000103",
+        )!;
+        const selected = await pdfPreview(
+          f.repo,
+          { get: async () => logo, put: async () => {} },
+          {
+            ...p,
+            quote: chooseItem(p.quote, alternative.id, true).map((i) => ({
+              ...i,
+              default_selected: !!i.selected,
+            })),
+          },
+          settings,
+        );
+        const selectedPath = join(dir, "website-with-payment-plan.pdf");
+        await writeFile(
+          selectedPath,
+          Buffer.from(selected.pdf_base64, "base64"),
+        );
+        expect(
+          execFileSync("pdftotext", [selectedPath, "-"], {
+            encoding: "utf8",
+          }).replace(/\s+/g, " "),
+        ).toContain("18 monthly payments");
+      }
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}, 60000);

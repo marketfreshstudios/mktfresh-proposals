@@ -146,6 +146,9 @@ export type RichText = {
   attrs?: { path?: string; src?: string; alt?: string; height?: number };
 };
 export type Template = {
+  description?: string;
+  starter_key?: string;
+  starter_order?: number;
   signature_heading_defaulted?: boolean;
   header_footer?: TemplateBands;
   cover?: Cover;

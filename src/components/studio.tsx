@@ -1,4 +1,5 @@
 "use client";
+import { resolvedEditorText } from "../lib/editor-fields";
 import { PlainClauseText } from "./editor/plain-clause-text";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { ToolsPanel } from "./editor/tools-panel";
@@ -35,7 +36,6 @@ import { useManagedPopover } from "./editor-popovers";
 import { paginateBrowser } from "./browser-pagination";
 import { type BrowserPages, PagedPaper } from "./paged-paper";
 import { DocumentPagination } from "./document-pagination";
-import { SourceParagraph } from "./page-spacers";
 import { SectionsNav } from "./editor/sections-nav";
 import { useEditorPanels } from "./use-editor-panels";
 import { useTemplatePreview } from "./use-template-preview";
@@ -1357,6 +1357,7 @@ function TemplatesStudioContent({
       {mode === "templates" && draft && (
         <>
           <SectionsNav
+            map={map}
             currentSectionId={
               contentSections(content).find((section) =>
                 section.indices.some(
@@ -2261,7 +2262,12 @@ function TemplatesStudioContent({
                                 />
                               ) : b.type === "contract" ? (
                                 <h2>
-                                  {b.text || "Statement of Work & Contract"}
+                                  <HeadingTokens
+                                    text={
+                                      b.text || "Statement of Work & Contract"
+                                    }
+                                    map={map}
+                                  />
                                 </h2>
                               ) : b.type === "pricing_table" ? (
                                 <div
@@ -2279,6 +2285,11 @@ function TemplatesStudioContent({
                                   dangerouslySetInnerHTML={{
                                     __html: templateTextPreview(b, map),
                                   }}
+                                />
+                              ) : b.type === "variable" ? (
+                                <HeadingTokens
+                                  text={`{{${b.path ?? ""}}}`}
+                                  map={map}
                                 />
                               ) : (
                                 <strong>{blockName(b)}</strong>
@@ -2448,7 +2459,12 @@ function TemplatesStudioContent({
                                             )
                                           }
                                         >
-                                          <h3>{c.heading}</h3>
+                                          <h3>
+                                            <HeadingTokens
+                                              text={c.heading}
+                                              map={map}
+                                            />
+                                          </h3>
                                           {c.show_when && (
                                             <small>
                                               Shown when ·{" "}
@@ -2721,9 +2737,12 @@ function BlockPanel({
     <div className="stack">
       <h2>Contract clauses</h2>
       <Field label="Contract title">
-        <input
+        <PlainClauseText
+          label="Contract title"
           value={b.text ?? ""}
-          onChange={(e) => onChange({ ...b, text: e.target.value })}
+          map={map}
+          multiline={false}
+          onChange={(text) => onChange({ ...b, text })}
         />
       </Field>
       <Field label="Clause">
@@ -2733,7 +2752,7 @@ function BlockPanel({
         >
           {b.clauses?.map((c, n) => (
             <option value={n} key={c.id}>
-              {c.heading}
+              {resolvedEditorText(c.heading, map)}
             </option>
           ))}
         </select>
@@ -2741,16 +2760,20 @@ function BlockPanel({
       {c && (
         <>
           <Field label="Clause heading">
-            <input
+            <PlainClauseText
+              label="Clause heading"
               value={c.heading}
-              onChange={(e) => update({ heading: e.target.value })}
+              map={map}
+              multiline={false}
+              onChange={(heading) => update({ heading })}
             />
           </Field>
           <Field label="Clause body">
-            <FieldTextArea
-              rows={7}
+            <PlainClauseText
+              label="Clause body"
               value={c.body}
-              onValue={(body) => update({ body })}
+              map={map}
+              onChange={(body) => update({ body })}
             />
           </Field>
           <fieldset className="studio-radio">

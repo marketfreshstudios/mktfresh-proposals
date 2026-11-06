@@ -822,7 +822,11 @@ async function handleRoute(req: Request, path: string[]) {
       const table = path[0] as EntityTable;
       if (method === "GET") {
         const entities = await rt.repo.entities<Record<string, unknown>>(table);
-        if (table === "templates")
+        if (table === "templates") {
+          entities.sort(
+            (a, b) =>
+              Number(a.starter_order ?? 999) - Number(b.starter_order ?? 999),
+          );
           for (const e of entities) {
             if (!e.signature_heading_defaulted) {
               e.content = withSignatureHeadings(e.content as Block[]);
@@ -831,6 +835,7 @@ async function handleRoute(req: Request, path: string[]) {
               await rt.repo.put("templates", e as any);
             }
           }
+        }
         return json(
           table === "workspace_settings"
             ? entities.map((e) => ({
@@ -863,6 +868,15 @@ async function handleRoute(req: Request, path: string[]) {
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          if (
+            JSON.stringify(entity.business_state ?? null) !==
+            JSON.stringify(previous?.business_state ?? null)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change Business state",
+              403,
+            );
           if (
             JSON.stringify(entity.logo_icon ?? null) !==
             JSON.stringify(previous?.logo_icon ?? null)
@@ -985,6 +999,9 @@ async function handleRoute(req: Request, path: string[]) {
             .object({
               id: uuid,
               name: z.string().min(1).max(200),
+              description: z.string().max(1000).optional(),
+              starter_key: z.string().max(100).optional(),
+              starter_order: z.number().int().min(0).max(5).optional(),
               content: z.array(z.record(z.string(), z.unknown())).max(300),
               default_items: QuoteSchema.optional(),
               default_quote: z
@@ -1013,6 +1030,12 @@ async function handleRoute(req: Request, path: string[]) {
           const previousTemplate = (
             await rt.repo.entities<import("./model").Template>("templates")
           ).find((t) => t.id === savedTemplateId);
+          delete entity.starter_key;
+          delete entity.starter_order;
+          if (previousTemplate?.starter_key) {
+            entity.starter_key = previousTemplate.starter_key;
+            entity.starter_order = previousTemplate.starter_order;
+          }
           if (
             !entity.signature_heading_defaulted &&
             !previousTemplate?.signature_heading_defaulted

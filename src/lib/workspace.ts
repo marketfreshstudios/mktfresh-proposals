@@ -1,4 +1,5 @@
 import { StyleOverridesSchema } from "./proposal-styles";
+import { BusinessStateSchema } from "./business-state";
 import { fontChoice } from "./proposal-fonts";
 import { z } from "zod";
 export const LOCAL_WORKSPACE_ID = "00000000-0000-4000-8000-000000000001";
@@ -27,6 +28,7 @@ export const WorkspaceSettingsSchema = z.object({
   default_password_enabled: z.boolean().optional(),
   money: z.object({ cents: z.enum(["auto", "always"]) }).optional(),
   show_powered_by: z.boolean().default(true),
+  business_state: BusinessStateSchema.optional(),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
   company_signatory: CompanySignatorySchema.nullable().optional(),

@@ -1,3 +1,5 @@
+import { businessStateError } from "./business-state";
+import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
 import { pendingSections } from "./ai-review";
@@ -10,7 +12,7 @@ export function readiness(
   now = new Date(),
   confirmAiReview = false,
 ) {
-  const errors: string[] = [],
+  const errors: string[] = authoringErrors(p),
     warnings: string[] = [];
   if (p.archived_at) errors.push("Unarchive this proposal before sending");
   if (p.valid_until && Date.parse(p.valid_until) <= now.getTime())
@@ -136,7 +138,12 @@ export function readiness(
   try {
     renderBlocks(p.content, p.quote, variables(p), p.currency);
   } catch (e) {
-    errors.push(e instanceof Error ? e.message : "Invalid proposal content");
+    const message = e instanceof Error ? e.message : "Invalid proposal content";
+    if (
+      message !== "Unresolved variable: workspace.state" ||
+      !errors.includes(businessStateError)
+    )
+      errors.push(message);
   }
   return { ready: !errors.length, errors, warnings };
 }

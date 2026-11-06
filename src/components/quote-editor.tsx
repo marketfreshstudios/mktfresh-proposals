@@ -1,4 +1,6 @@
 "use client";
+import { resolvedEditorText } from "../lib/editor-fields";
+import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
@@ -26,6 +28,7 @@ import { SectionsPanel } from "./editor/sections-panel";
 import { ReadOnlyRegion } from "./editor/read-only-region";
 import { EditorNotice } from "./editor/editor-notice";
 import { EditorButton } from "./editor/editor-button";
+import { PlainClauseText } from "./editor/plain-clause-text";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { printView } from "../lib/print-view";
 import { PageBreakController } from "./page-break-action";
@@ -991,6 +994,9 @@ function QuoteEditorContent({
                 <p>
                   <strong>Needs attention.</strong> {e}
                 </p>
+                {e === businessStateError && (
+                  <a href={businessStateUrl}>Add business state</a>
+                )}
                 {e === "Choose which Stripe customer this client is" && (
                   <a href={`/clients/${p.client.id}#stripe-customers`}>
                     Choose Stripe customer
@@ -1324,6 +1330,7 @@ function QuoteEditorContent({
   const outline = (
     <>
       <SectionsNav
+        map={map}
         headerFooter={bands}
         currentSectionId={currentSectionId}
         content={p.content}
@@ -1821,7 +1828,12 @@ function QuoteEditorContent({
             </div>
           ) : b.type === "contract" ? (
             <div className="contract-editor">
-              <h2>{b.text || "Statement of Work & Contract"}</h2>
+              <h2>
+                <HeadingTokens
+                  text={b.text || "Statement of Work & Contract"}
+                  map={map}
+                />
+              </h2>
               {b.contract_edited && (
                 <p className="warning">Contract edited for this proposal.</p>
               )}
@@ -1955,18 +1967,10 @@ function QuoteEditorContent({
                         <details open={panels.printMode || undefined}>
                           <Disclosure>
                             <h3>
-                              {c.heading.replace(
-                                /{{\s*([\w.-]+)\s*}}/g,
-                                (_, key) => map[key] ?? key,
-                              )}
+                              <HeadingTokens text={c.heading} map={map} />
                             </h3>
                           </Disclosure>
-                          <SourceParagraph
-                            text={c.body.replace(
-                              /{{\s*([\w.-]+)\s*}}/g,
-                              (_, key) => map[key] ?? key,
-                            )}
-                          />
+                          <SourceParagraph text={c.body} map={map} />
                         </details>
                       </BlockFrame>
                     </Sortable>
@@ -2076,7 +2080,7 @@ function QuoteEditorContent({
               )}
             </>
           ) : b.type === "variable" ? (
-            <span className="field-chip">{map[b.path ?? ""]}</span>
+            <HeadingTokens text={`{{${b.path ?? ""}}}`} map={map} />
           ) : (
             <div className="editor-page-break" data-explicit-break>
               Page break
@@ -2756,7 +2760,7 @@ function QuoteEditorContent({
                 >
                   {b.clauses!.map((clause, k) => (
                     <option key={clause.id} value={k}>
-                      {clause.heading}
+                      {resolvedEditorText(clause.heading, map)}
                       {clause.show_when &&
                       !items.some(
                         (i) =>
@@ -2771,15 +2775,20 @@ function QuoteEditorContent({
                 </select>
               </Field>
               <Field label="Clause heading">
-                <input
+                <PlainClauseText
+                  label="Clause heading"
                   value={c.heading}
-                  onChange={(e) => patch({ heading: e.target.value })}
+                  map={map}
+                  multiline={false}
+                  onChange={(heading) => patch({ heading })}
                 />
               </Field>
               <Field label="Clause body">
-                <textarea
+                <PlainClauseText
+                  label="Clause body"
                   value={c.body}
-                  onChange={(e) => patch({ body: e.target.value })}
+                  map={map}
+                  onChange={(body) => patch({ body })}
                 />
               </Field>
               <Field label="Show when">
