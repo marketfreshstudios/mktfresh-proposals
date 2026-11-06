@@ -113,19 +113,17 @@ for (const width of [1440, 375]) {
     if (width < 700) {
       // The focused Studio shell does not scroll the window. Give its phone
       // section genuine document overflow instead of relying on an old offset.
-      const content = f
-        .current()
-        .content.map((block) =>
-          block.id === f.text
-            ? {
-                ...block,
-                text: "A paragraph long enough to scroll the document. ".repeat(
-                  80,
-                ),
-                content: undefined,
-              }
-            : block,
-        );
+      const content = f.current().content.map((block) =>
+        block.id === f.text
+          ? {
+              ...block,
+              text: "A paragraph long enough to scroll the document. ".repeat(
+                80,
+              ),
+              content: undefined,
+            }
+          : block,
+      );
       await f.service.edit(
         f.draft.id,
         { revision: f.current().revision, content },

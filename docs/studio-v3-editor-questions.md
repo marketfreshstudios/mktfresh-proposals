@@ -1,9 +1,9 @@
-# Studio v3 Phase 1 PR 2 — clarification before editor changes
+# Studio v3 Phase 1 PR 2 — resolved owner decisions
 
-Base: merged main `5ba1058`. Spec takes precedence over the prototype. No Phase 2 linking/Used in or workspace band inheritance will be added. Existing band controls and built-in Reset to default remain.
+Base: merged main `5ba1058`. Spec takes precedence over the prototype. Phase 2 linking/Used in and workspace band inheritance remain deferred. Existing template band controls and built-in Reset to default remain.
 
-1. Template saving: the existing editor saves manually, but the specified header has a save state and no Save action. Proposal: template-only 600ms autosave with the existing serialized save/recovery flow; saved blocks keep their explicit Save. Confirm this rather than silently removing the only save action.
-2. Compatible saved-block type conversion is not defined. Proposal: Text ↔ bulleted/numbered List through the existing lossless text-style converter (headings remain text); Contract and Image stay their current type, since converting them would discard structure/image data. Confirm the intended set.
-3. The new template layout omits the existing Active template control; saved blocks have no stored creation timestamp/author. Proposal: keep Active template at the bottom of Styles; use existing audit data for edit metadata and show “Creation details not recorded” for existing blocks without a creation record, rather than inventing one or adding fields. Confirm these placements/fallbacks.
-
-The independent Billing defaults/Team polish is implemented first. The requested exact kickoff sentence is display copy only; the neutral-code check exempts that exact sentence in that one component, while still rejecting workspace-specific logic elsewhere.
+- Templates autosave after 600ms through the serialized save/recovery flow. Undo/redo survives autosaves. Saved blocks retain explicit Save.
+- Safe saved-block conversions: Text ↔ bulleted/numbered List, preserving fields and marks. Contract and Image retain their type, with “This block type can't be changed”.
+- “Available for new proposals” lives in the template header menu. Off means “Hidden from new proposals” in the editor and list. Metadata only displays existing records; missing creation evidence is omitted.
+- Contract clauses remain plain strings in Phase 1. Their editor offers plain-text editing, field insertion and existing clause operations. Rich contract clause formatting is deferred; no data or renderer changes.
+- Billing defaults uses the owner's exact kickoff sentence as display copy only. No product-specific billing logic was added. Team removal retains its reassignment guard.
