@@ -1,4 +1,5 @@
 "use client";
+import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
@@ -991,6 +992,9 @@ function QuoteEditorContent({
                 <p>
                   <strong>Needs attention.</strong> {e}
                 </p>
+                {e === businessStateError && (
+                  <a href={businessStateUrl}>Add business state</a>
+                )}
                 {e === "Choose which Stripe customer this client is" && (
                   <a href={`/clients/${p.client.id}#stripe-customers`}>
                     Choose Stripe customer

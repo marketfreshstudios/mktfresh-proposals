@@ -1,3 +1,4 @@
+import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
 import { pendingSections } from "./ai-review";
@@ -10,7 +11,7 @@ export function readiness(
   now = new Date(),
   confirmAiReview = false,
 ) {
-  const errors: string[] = [],
+  const errors: string[] = authoringErrors(p),
     warnings: string[] = [];
   if (p.archived_at) errors.push("Unarchive this proposal before sending");
   if (p.valid_until && Date.parse(p.valid_until) <= now.getTime())
