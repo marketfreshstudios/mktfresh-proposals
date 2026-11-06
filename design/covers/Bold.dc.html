@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Full colour cover</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 816px; height: 1056px; box-sizing: border-box; background: {{accent}}; color: #FFFFFF; font-family: 'DM Sans', sans-serif; padding: 72px; display: flex; flex-direction: column; position: relative; overflow: hidden;">
+<svg width="816" height="1056" viewBox="0 0 816 1056" style="position: absolute; left: 0; top: 0; opacity: 0.12;" aria-hidden="true">
+<g fill="none" stroke="#FFFFFF" stroke-width="1.25">
+<path d="M-40 640 C 160 560, 320 720, 520 640 S 860 560, 900 600"></path>
+<path d="M-40 680 C 160 600, 320 760, 520 680 S 860 600, 900 640"></path>
+<path d="M-40 720 C 160 640, 320 800, 520 720 S 860 640, 900 680"></path>
+<path d="M-40 760 C 160 680, 320 840, 520 760 S 860 680, 900 720"></path>
+<path d="M-40 800 C 160 720, 320 880, 520 800 S 860 720, 900 760"></path>
+<path d="M-40 840 C 160 760, 320 920, 520 840 S 860 760, 900 800"></path>
+<path d="M-40 880 C 160 800, 320 960, 520 880 S 860 800, 900 840"></path>
+<path d="M-40 920 C 160 840, 320 1000, 520 920 S 860 840, 900 880"></path>
+<path d="M-40 960 C 160 880, 320 1040, 520 960 S 860 880, 900 920"></path>
+<path d="M-40 1000 C 160 920, 320 1080, 520 1000 S 860 920, 900 960"></path>
+</g>
+</svg>
+<div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.04em; color: #FFFFFF;">example<span style="font-weight: 500; opacity: 0.85;">studio</span></span>
+<span style="font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.85;">Website proposal</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; position: relative; padding-bottom: 120px;">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 76px; line-height: 1.0; letter-spacing: -0.03em; max-width: 640px;">A new website for Harbor &amp; Pine Dental</h1>
+<p style="margin: 32px 0 0; font-size: 18px; line-height: 1.5; opacity: 0.9;">Prepared for Jamie Rivera, Harbor &amp; Pine Dental</p>
+</div>
+<div style="display: flex; gap: 48px; position: relative; font-size: 14px; line-height: 1.4;">
+<div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75;">Prepared by</span><span>Alex Morgan</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75;">Date</span><span>November 6, 2026</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75;">Valid until</span><span>December 6, 2026</span></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5D50","options":["#2F5D50","#1F4E79","#B5532E","#1B1F1D"]},"$preview":{"width":816,"height":1056}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#2F5D50' };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Default cover backgrounds</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1712px; height: 1056px; box-sizing: border-box; background: #F2F1EE; font-family: 'DM Sans', sans-serif; color: #1B1F1D; padding: 56px 64px; display: flex; flex-direction: column; gap: 28px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700;">Cover backgrounds</h1>
+<p style="margin: 0; font-size: 15px; color: #5E6662;">Six built-in patterns, each drawn in the workspace accent colour. Plus: any solid colour, or upload a photo or finished cover design (PNG/JPG, 2550×3300 recommended).</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px;">
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: #FFFFFF; border: 1px solid #DCDFDD; border-radius: 6px;"></div>
+<span style="font-size: 14px; font-weight: 600;">Plain</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">White page</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: #FFFFFF; border: 1px solid #DCDFDD; border-radius: 6px; position: relative; overflow: hidden;">
+<div style="position: absolute; right: -60px; top: -60px; width: 190px; height: 190px; border-radius: 50%; border: 26px solid {{accent}}; opacity: 0.1;"></div>
+</div>
+<span style="font-size: 14px; font-weight: 600;">Ring</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">Corner ring (layout 1 default)</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: {{accent}}; border-radius: 6px; overflow: hidden;">
+<svg width="100%" height="336" viewBox="0 0 220 336" preserveAspectRatio="none" aria-hidden="true">
+<g fill="none" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="1">
+<path d="M-10 200 C 50 175, 90 225, 150 200 S 230 175, 240 190"></path><path d="M-10 214 C 50 189, 90 239, 150 214 S 230 189, 240 204"></path><path d="M-10 228 C 50 203, 90 253, 150 228 S 230 203, 240 218"></path><path d="M-10 242 C 50 217, 90 267, 150 242 S 230 217, 240 232"></path><path d="M-10 256 C 50 231, 90 281, 150 256 S 230 231, 240 246"></path><path d="M-10 270 C 50 245, 90 295, 150 270 S 230 245, 240 260"></path><path d="M-10 284 C 50 259, 90 309, 150 284 S 230 259, 240 274"></path><path d="M-10 298 C 50 273, 90 323, 150 298 S 230 273, 240 288"></path><path d="M-10 312 C 50 287, 90 337, 150 312 S 230 287, 240 302"></path>
+</g>
+</svg>
+</div>
+<span style="font-size: 14px; font-weight: 600;">Waves</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">Accent fill, flowing lines</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: #FFFFFF; border: 1px solid #DCDFDD; border-radius: 6px; overflow: hidden;">
+<svg width="100%" height="336" viewBox="0 0 220 336" aria-hidden="true">
+<defs><pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="{{accent}}" fill-opacity="0.22"></circle></pattern></defs>
+<rect x="0" y="0" width="220" height="336" fill="url(#dots)"></rect>
+</svg>
+</div>
+<span style="font-size: 14px; font-weight: 600;">Dot grid</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">Light, technical</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: {{accent}}; border-radius: 6px; overflow: hidden;">
+<svg width="100%" height="336" viewBox="0 0 220 336" aria-hidden="true">
+<g fill="none" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="1"><circle cx="220" cy="270" r="30"></circle><circle cx="220" cy="270" r="55"></circle><circle cx="220" cy="270" r="80"></circle><circle cx="220" cy="270" r="105"></circle><circle cx="220" cy="270" r="130"></circle><circle cx="220" cy="270" r="155"></circle></g>
+</svg>
+</div>
+<span style="font-size: 14px; font-weight: 600;">Orbits</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">Accent fill, rings (layout 2 panel)</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 336px; background: #F6F4EF; border-radius: 6px; overflow: hidden;">
+<svg width="100%" height="336" viewBox="0 0 220 336" aria-hidden="true">
+<g fill="{{accent}}"><polygon points="140,0 220,0 220,80" fill-opacity="0.9"></polygon><polygon points="100,0 140,0 220,80 220,120" fill-opacity="0.18"></polygon><polygon points="0,290 0,336 46,336" fill-opacity="0.9"></polygon></g>
+</svg>
+</div>
+<span style="font-size: 14px; font-weight: 600;">Corners</span><span style="font-size: 13px; color: #5E6662; margin-top: -6px;">Warm paper, accent corners</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 8px;">
+<div style="background: #FFFFFF; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 15px; font-weight: 600;">Solid colour</span>
+<span style="font-size: 14px; line-height: 1.5; color: #3E4542;">Any colour. Text switches to white or ink automatically so it always passes contrast (4.5:1).</span>
+<div style="display: flex; gap: 10px; margin-top: 6px;">
+<div style="width: 36px; height: 36px; border-radius: 50%; background: {{accent}};"></div><div style="width: 36px; height: 36px; border-radius: 50%; background: #1B1F1D;"></div><div style="width: 36px; height: 36px; border-radius: 50%; background: #F6F4EF; border: 1px solid #D9D5CB;"></div><div style="width: 36px; height: 36px; border-radius: 50%; background: #1F4E79;"></div>
+</div>
+</div>
+<div style="background: #FFFFFF; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 15px; font-weight: 600;">Upload a photo</span>
+<span style="font-size: 14px; line-height: 1.5; color: #3E4542;">Fills the top of layout 4 or the whole page with a dark scrim behind the text. Focal point picker so faces aren't cropped.</span>
+</div>
+<div style="background: #FFFFFF; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 15px; font-weight: 600;">Upload a finished design</span>
+<span style="font-size: 14px; line-height: 1.5; color: #3E4542;">A full-page cover made in Canva, Express or Figma. Text elements can be hidden so only fields you keep sit on top.</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5D50","options":["#2F5D50","#1F4E79","#B5532E","#1B1F1D"]},"$preview":{"width":1712,"height":1056}}'>
+class Component extends DCLogic {
+renderVals() {
+return { accent: this.props.accent ?? '#2F5D50' };
+}
+}
+</script>
+</body>
+</html>

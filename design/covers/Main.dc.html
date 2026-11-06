@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editorial cover</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 816px; height: 1056px; box-sizing: border-box; background: #FFFFFF; color: #1B1F1D; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; padding: 72px 72px 64px; position: relative; overflow: hidden;">
+<div style="position: absolute; right: -150px; top: -150px; width: 480px; height: 480px; border-radius: 108px; background: {{accent}}; opacity: {{markOpacity}}; color: #FFFFFF; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 300px; display: flex; align-items: center; justify-content: center;" aria-hidden="true">E</div>
+<div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: -0.04em; color: {{accent}};">example<span style="color: #1B1F1D; font-weight: 500;">studio</span></span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 72px;">
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: {{accent}}; margin-bottom: 20px;">Website proposal</div>
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 64px; line-height: 1.04; letter-spacing: -0.025em; max-width: 600px;">A new website for Harbor &amp; Pine Dental</h1>
+<div style="width: 72px; height: 4px; background: {{accent}}; margin-top: 36px;"></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; border-top: 1px solid #DCDFDD; padding-top: 24px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E6662;">Prepared for</span>
+<span style="font-size: 14px; line-height: 1.4;">Jamie Rivera<br>Harbor &amp; Pine Dental</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E6662;">Prepared by</span>
+<span style="font-size: 14px; line-height: 1.4;">Alex Morgan<br>Example Studio</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E6662;">Date</span>
+<span style="font-size: 14px; line-height: 1.4;">November 6, 2026</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E6662;">Valid until</span>
+<span style="font-size: 14px; line-height: 1.4;">December 6, 2026</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5D50","options":["#2F5D50","#1F4E79","#B5532E","#1B1F1D"]},"markOpacity":{"editor":"range","default":8,"min":0,"max":40,"step":1,"unit":"%"},"$preview":{"width":816,"height":1056}}'>
+class Component extends DCLogic {
+renderVals() {
+const accent = this.props.accent ?? '#2F5D50';
+return { accent, markOpacity: (this.props.markOpacity ?? 8) / 100 };
+}
+}
+</script>
+</body>
+</html>
