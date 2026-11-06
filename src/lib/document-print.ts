@@ -1,3 +1,4 @@
+import { coverLayoutStyle } from "./cover-graphics";
 import { editableCoverHtml, coverElementsCss } from "./cover-render";
 import { defaultCover } from "./cover";
 import { pageGeometry, type HeaderFooterSettings } from "./page-bands";
@@ -23,9 +24,9 @@ export function printPageCss(
       const g = pageGeometry(styles, hf, page);
       return `--print-content-height:${g.content.height}px;--print-sheet-height:${fullPage ? g.height : g.frameHeight}px;height:${fullPage ? g.height : g.frameHeight}px;padding:${fullPage ? g.margins.top : 0}px 0 ${fullPage ? g.margins.bottom : 0}px;position:relative;overflow:visible;`;
     };
-    return `@page{size:Letter;margin:${fullPage ? "0" : `${p.top}in ${p.right}in ${p.bottom}in ${p.left}in`}}.print-root{width:${m.contentWidth}px;margin-left:${fullPage ? p.left * 96 : 0}px;--print-sheet-height:${fullPage ? m.height : m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
+    return `@page{size:Letter;margin:${fullPage ? "0" : `${p.top}in ${p.right}in ${p.bottom}in ${p.left}in`}}.print-root{--cover-inset-top:${hf ? pageGeometry(styles, hf, 1).margins.top : p.top * 96}px;--cover-inset-bottom:${hf ? pageGeometry(styles, hf, 1).margins.bottom : p.bottom * 96}px;--cover-inset-left:${p.left * 96}px;--cover-inset-right:${p.right * 96}px;width:${m.contentWidth}px;margin-left:${fullPage ? p.left * 96 : 0}px;--print-sheet-height:${fullPage ? m.height : m.contentHeight}px}.print-sheet{${css(2)}}.print-sheet:first-child{${css(1)}}`;
   }
-  return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
+  return `@page{size:Letter;margin:${p.top}in ${p.right}in ${p.bottom}in ${p.left}in}.print-root{--cover-inset-top:${hf ? pageGeometry(styles, hf, 1).margins.top : p.top * 96}px;--cover-inset-bottom:${hf ? pageGeometry(styles, hf, 1).margins.bottom : p.bottom * 96}px;--cover-inset-left:${p.left * 96}px;--cover-inset-right:${p.right * 96}px;width:${m.contentWidth}px;--print-content-height:${m.contentHeight}px}.print-sheet{height:${m.contentHeight}px}`;
 }
 /** Letter page metrics are shared with both the editor's print measure and the PDF job. */
 export const printCss = `
@@ -50,6 +51,7 @@ export function printContent(input: {
   signatureBlocks?: Partial<Record<"client" | "company", string>>;
   logo?: string;
   logoIcon?: string;
+  accent?: string;
   workspace?: string;
   signatory?: { name: string; title: string } | null;
   currentLayout?: boolean;
@@ -84,7 +86,7 @@ export function printContent(input: {
   const cover = input.legacyCover
     ? oldCover
     : presentation.elements || presentation.logo_mode === "brand"
-      ? `<header class="print-cover" data-print-block="cover">${editableCoverHtml(presentation, input.title, map, input.logo, input.logoIcon)}</header>`
+      ? `<header class="print-cover" data-print-block="cover" data-cover-layout="${presentation.layout ?? "custom"}" data-cover-finished="${!!presentation.background?.finished}" style="${coverLayoutStyle(presentation, input.accent)}--cover-content-height:var(--print-content-height,912px)">${editableCoverHtml(presentation, input.title, map, input.logo, input.logoIcon, input.accent)}</header>`
       : `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" data-image-height="${presentation.logo_height ?? 60}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)

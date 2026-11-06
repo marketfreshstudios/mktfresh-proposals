@@ -1,3 +1,4 @@
+import { coverLayoutCss } from "../lib/cover-graphics";
 import { coverBrandCss } from "../lib/cover-render";
 import "./globals.css";
 import "./foundation.css";
@@ -11,6 +12,7 @@ import "./emails.css";
 import "./editor.css";
 import "./studio-v3.css";
 import "./editor-fields.css";
+import "./covers.css";
 export default function RootLayout({
   children,
 }: {
@@ -19,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <style>{coverBrandCss}</style>
+        <style>{coverBrandCss + coverLayoutCss}</style>
       </head>
       <body>{children}</body>
     </html>

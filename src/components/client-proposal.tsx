@@ -1493,6 +1493,7 @@ function FlowingDocument({
         highlightFields={false}
         logo={logo}
         logoIcon={logoIcon}
+        accent={p.company.accent_colour}
         cover={p.cover}
         map={p.variables}
         title={p.title}

@@ -38,6 +38,7 @@ export async function uploadWorkspaceIcon(
   const sharp = (await import("sharp")).default;
   const path = `${workspace}/${sha256(bytes)}.png`;
   let variants: Buffer[];
+  let dimensions: { width: number; height: number } | undefined;
   try {
     const image = sharp(bytes, {
       limitInputPixels: 16777216,
@@ -52,6 +53,7 @@ export async function uploadWorkspaceIcon(
       meta.width === meta.height && meta.width >= 128,
       "Logo icon must be square and at least 128 × 128 pixels",
     );
+    dimensions = { width: meta.width!, height: meta.height! };
     variants = await Promise.all(
       iconSizes.map((size) =>
         image.clone().resize(size, size).png().toBuffer(),
@@ -71,6 +73,7 @@ export async function uploadWorkspaceIcon(
     ),
   );
   return {
+    ...dimensions,
     path,
     name:
       typeof input.name === "string"
@@ -83,8 +86,12 @@ export async function readWorkspaceIcon(
   storage: Storage,
   workspace: string,
   icon: WorkspaceSettings["logo_icon"],
-  size: number,
+  size: number | "original",
 ) {
   check(icon, "Icon unavailable", 404);
+  if (size === "original") {
+    workspaceIconPath(icon.path, workspace, 128);
+    return storage.get(icon.path);
+  }
   return storage.get(workspaceIconPath(icon.path, workspace, size));
 }

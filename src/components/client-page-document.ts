@@ -1,3 +1,4 @@
+import { resolveCoverGraphics } from "../lib/cover-graphics";
 import { sizeListMarkers } from "../lib/list-markers";
 import { fitStoredImages } from "../lib/image-size";
 import {
@@ -65,6 +66,7 @@ export function clientDocumentHtml(
     pagination: plan,
     logo,
     logoIcon,
+    accent: p.company.accent_colour,
     workspace: p.company.name,
     signatory: {
       name: p.company.signatory_name ?? "",
@@ -106,6 +108,7 @@ export function paginateClientDocument(
         if (items[index]) card.dataset.clientItemId = items[index].id;
       },
     );
+  resolveCoverGraphics(root);
   fitStoredImages(root);
   sizeListMarkers(root);
   if (plan) applyPagePlan(root, plan);
@@ -158,6 +161,7 @@ export function paginateClientDocument(
         );
     }
   });
+  resolveCoverGraphics(root);
   fitStoredImages(root);
   return { root, sheets, plan };
 }

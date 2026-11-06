@@ -1,3 +1,4 @@
+import { extractBrandPalette, validateCoverImage } from "./brand-palette";
 import { limitClientLink } from "./client-link-limits";
 import {
   uploadWorkspaceIcon,
@@ -106,6 +107,10 @@ const headers = {
 };
 export function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers });
+}
+function iconRequestSize(req: Request, fallback: number): number | "original" {
+  const raw = new URL(req.url).searchParams.get("size");
+  return raw === "original" ? "original" : Number(raw ?? fallback);
 }
 async function body(req: Request) {
   const text = await req.text();
@@ -230,7 +235,7 @@ async function handleRoute(req: Request, path: string[]) {
                 rt.storage,
                 rt.repo.workspaceId,
                 workspaceBrand?.logo_icon,
-                Number(new URL(req.url).searchParams.get("size") ?? 32),
+                iconRequestSize(req, 32),
               ),
             ),
             { headers: { ...headers, "Content-Type": "image/png" } },
@@ -585,12 +590,26 @@ async function handleRoute(req: Request, path: string[]) {
               rt.storage,
               rt.repo.workspaceId,
               settings?.logo_icon,
-              Number(new URL(req.url).searchParams.get("size") ?? 128),
+              iconRequestSize(req, 128),
             ),
           ),
           { headers: { ...headers, "Content-Type": "image/png" } },
         );
       }
+    }
+    if (path[0] === "cover-image" && method === "POST")
+      return json(await validateCoverImage((await body(req)).image));
+    if (path[0] === "workspace-palette" && method === "GET") {
+      const settings = (
+        await rt.repo.entities<WorkspaceSettings>("workspace_settings")
+      )[0];
+      check(
+        settings?.logo && settings.logo.startsWith(rt.repo.workspaceId + "/"),
+        "Upload a logo first",
+      );
+      return json({
+        colors: await extractBrandPalette(await rt.storage.get(settings.logo)),
+      });
     }
     if (path[0] === "workspace-logo") {
       if (method === "POST") {
@@ -612,7 +631,10 @@ async function handleRoute(req: Request, path: string[]) {
         );
         const path = rt.repo.workspaceId + "/" + sha256(bytes) + ".png";
         await rt.storage.put(path, bytes);
-        return json({ path });
+        return json({
+          path,
+          palette_suggestions: await extractBrandPalette(bytes),
+        });
       }
       if (method === "GET") {
         const settings = (
@@ -873,6 +895,15 @@ async function handleRoute(req: Request, path: string[]) {
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          if (
+            JSON.stringify(entity.brand_palette ?? []) !==
+            JSON.stringify(previous?.brand_palette ?? [])
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change the brand palette",
+              403,
+            );
           if (
             JSON.stringify(entity.business_state ?? null) !==
             JSON.stringify(previous?.business_state ?? null)

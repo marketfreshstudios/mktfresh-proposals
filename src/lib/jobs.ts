@@ -435,8 +435,8 @@ export class Worker {
             }),
           ),
           logoIcon:
-            !renderSettings?.logo &&
-            usesWorkspaceBrand(v) &&
+            ((v.cover?.layout && v.cover.layout !== "custom") ||
+              (!renderSettings?.logo && usesWorkspaceBrand(v))) &&
             renderSettings?.logo_icon
               ? "data:image/png;base64," +
                 Buffer.from(

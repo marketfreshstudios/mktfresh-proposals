@@ -1,4 +1,10 @@
 "use client";
+import { coverGroups, visibleCoverElement } from "../lib/cover-layout";
+import {
+  coverDecorationHtml,
+  coverLayoutStyle,
+  resolveCoverGraphics,
+} from "../lib/cover-graphics";
 import { coverBrand } from "../lib/workspace-brand";
 import { useHasEditorPopover } from "./editor-popovers";
 import { FontSizePicker } from "./inline-font-size";
@@ -35,6 +41,7 @@ import { Icon } from "./ui";
 import type { RichText } from "../lib/model";
 type Props = {
   contentHeight?: number;
+  paperInsets?: { top: number; bottom: number };
   title: string;
   company: string;
   sender: string;
@@ -44,6 +51,7 @@ type Props = {
   workspace?: string;
   logo?: string;
   logoIcon?: string;
+  accent?: string;
   cover?: Cover;
   map?: Record<string, string>;
   highlightFields?: boolean;
@@ -131,6 +139,7 @@ function elementStyle(e: CoverElement): CSSProperties {
 }
 export function DocumentCover({
   contentHeight = 912,
+  paperInsets,
   title,
   company,
   sender,
@@ -140,6 +149,7 @@ export function DocumentCover({
   workspace,
   logo,
   logoIcon,
+  accent,
   cover,
   map = {},
   highlightFields = true,
@@ -174,6 +184,9 @@ export function DocumentCover({
     "workspace.name": workspace ?? "",
     "client.company": company,
     "sender.name": sender,
+    "proposal.valid_until": validUntil
+      ? readableDate(validUntil, timezone)
+      : "",
     "proposal.validity": validUntil
       ? `Valid until ${readableDate(validUntil, timezone)}`
       : "",
@@ -318,10 +331,44 @@ export function DocumentCover({
       map["workspace.name"] ?? workspace ?? "",
     ),
     src = brand.src;
+  const layout = value.layout && value.layout !== "custom";
+  const arranged = (nodes: React.ReactNode[]) => {
+    if (!layout) return nodes;
+    return coverGroups(elements, value.layout).map((group, n) => (
+      <div
+        key={n}
+        className={
+          ["cover-brand-group", "cover-main-group", "cover-meta-group"][n]
+        }
+      >
+        {group.map((e) => nodes[elements.indexOf(e)])}
+      </div>
+    ));
+  };
   return (
     <header
       ref={root}
       className="document-cover"
+      data-cover-layout={value.layout}
+      data-cover-finished={value.background?.finished}
+      style={
+        layout
+          ? ({
+              ...Object.fromEntries(
+                coverLayoutStyle(value, accent)
+                  .split(";")
+                  .filter(Boolean)
+                  .map((v) => v.split(":")),
+              ),
+              "--cover-content-height": `${contentHeight}px`,
+              "--cover-inset-top": `${paperInsets?.top ?? 72}px`,
+              "--cover-inset-bottom": `${paperInsets?.bottom ?? 72}px`,
+              "--cover-inset-left": "var(--editor-sheet-left,72px)",
+              "--cover-inset-right": "var(--editor-sheet-right,72px)",
+            } as CSSProperties)
+          : undefined
+      }
+      onLoadCapture={() => root.current && resolveCoverGraphics(root.current)}
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) select(null);
       }}
@@ -334,144 +381,158 @@ export function DocumentCover({
         }
       }}
     >
-      {elements.map((e) => {
-        if (e.hidden) return null;
-        if (e.kind === "logo")
+      {layout && (
+        <div
+          className="cover-art"
+          dangerouslySetInnerHTML={{
+            __html: coverDecorationHtml(
+              value,
+              accent,
+              logoIcon?.replace("size=128", "size=original"),
+            ),
+          }}
+        />
+      )}
+      {arranged(
+        elements.map((e) => {
+          if (!visibleCoverElement(e, value, resolvedMap)) return null;
+          if (e.kind === "logo")
+            return (
+              <CoverLogo
+                key={e.id}
+                element={e}
+                value={value}
+                src={src}
+                name={brand.name}
+                highlightFields={highlightFields}
+                editable={editable}
+                selected={selected === e.id}
+                select={() => choose(e.id)}
+                deselect={() =>
+                  select((current) => (current === e.id ? null : current))
+                }
+                update={(patch) => change(e.id, patch)}
+                onCover={onCover}
+                alignAll={alignAll}
+              >
+                {editable && (
+                  <div className="cover-logo-controls" data-editor-chrome>
+                    <button
+                      type="button"
+                      ref={logoTrigger}
+                      aria-label="Edit cover logo"
+                      onClick={() => setLogoMenu(!logoMenu)}
+                    >
+                      {src ? "Edit logo" : "Add logo"}
+                    </button>
+                    {logoMenu && (
+                      <ToolbarPopover
+                        className="cover-logo-menu"
+                        avoid={root.current?.querySelector<HTMLElement>("h1")}
+                        trigger={logoTrigger.current}
+                        close={() => setLogoMenu(false)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => logoInput.current?.click()}
+                        >
+                          Upload logo
+                        </button>
+                        <input
+                          ref={logoInput}
+                          hidden
+                          type="file"
+                          aria-label="Replace cover logo"
+                          accept="image/png,image/jpeg"
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 700000) {
+                              setLogoError("Choose a PNG or JPEG under 700 KB");
+                              return;
+                            }
+                            const data = await new Promise<string>((ok) => {
+                              const reader = new FileReader();
+                              reader.onload = () => ok(String(reader.result));
+                              reader.onerror = () => ok("");
+                              reader.readAsDataURL(file);
+                            });
+                            const parsed = CoverSchema.safeParse({
+                              ...value,
+                              logo: data,
+                            });
+                            if (!parsed.success) {
+                              setLogoError("Choose a valid PNG or JPEG image");
+                              return;
+                            }
+                            onCover?.(parsed.data);
+                            setLogoMenu(false);
+                            setLogoError("");
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onCover?.({ ...value, logo: null });
+                            select(null);
+                            setLogoMenu(false);
+                          }}
+                        >
+                          Remove logo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = { ...value };
+                            delete next.logo;
+                            onCover?.(next);
+                            setLogoMenu(false);
+                          }}
+                        >
+                          Use workspace logo
+                        </button>
+                        {logoError && <p role="alert">{logoError}</p>}
+                      </ToolbarPopover>
+                    )}
+                  </div>
+                )}
+              </CoverLogo>
+            );
+          const content =
+            e.content ??
+            coverText(
+              e.kind === "title"
+                ? title
+                : e.kind === "extra"
+                  ? ""
+                  : (value[e.kind] ?? ""),
+            );
+          if (
+            e.kind !== "title" &&
+            e.kind !== "extra" &&
+            !coverInlineHtml(content, resolvedMap, true)
+              .replace(/<[^>]*>/g, "")
+              .trim()
+          )
+            return null;
           return (
-            <CoverLogo
+            <CoverText
               key={e.id}
               element={e}
-              value={value}
-              src={src}
-              name={brand.name}
+              content={content}
+              map={resolvedMap}
               highlightFields={highlightFields}
-              editable={editable}
+              editable={editable || (e.kind === "title" && !!onTitle)}
               selected={selected === e.id}
               select={() => choose(e.id)}
-              deselect={() =>
-                select((current) => (current === e.id ? null : current))
-              }
-              update={(patch) => change(e.id, patch)}
-              onCover={onCover}
+              update={(patch, text) => change(e.id, patch, text)}
+              add={() => add(e.id)}
+              remove={() => remove(e.id)}
               alignAll={alignAll}
-            >
-              {editable && (
-                <div className="cover-logo-controls" data-editor-chrome>
-                  <button
-                    type="button"
-                    ref={logoTrigger}
-                    aria-label="Edit cover logo"
-                    onClick={() => setLogoMenu(!logoMenu)}
-                  >
-                    {src ? "Edit logo" : "Add logo"}
-                  </button>
-                  {logoMenu && (
-                    <ToolbarPopover
-                      className="cover-logo-menu"
-                      avoid={root.current?.querySelector<HTMLElement>("h1")}
-                      trigger={logoTrigger.current}
-                      close={() => setLogoMenu(false)}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => logoInput.current?.click()}
-                      >
-                        Upload logo
-                      </button>
-                      <input
-                        ref={logoInput}
-                        hidden
-                        type="file"
-                        aria-label="Replace cover logo"
-                        accept="image/png,image/jpeg"
-                        onChange={async (event) => {
-                          const file = event.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 700000) {
-                            setLogoError("Choose a PNG or JPEG under 700 KB");
-                            return;
-                          }
-                          const data = await new Promise<string>((ok) => {
-                            const reader = new FileReader();
-                            reader.onload = () => ok(String(reader.result));
-                            reader.onerror = () => ok("");
-                            reader.readAsDataURL(file);
-                          });
-                          const parsed = CoverSchema.safeParse({
-                            ...value,
-                            logo: data,
-                          });
-                          if (!parsed.success) {
-                            setLogoError("Choose a valid PNG or JPEG image");
-                            return;
-                          }
-                          onCover?.(parsed.data);
-                          setLogoMenu(false);
-                          setLogoError("");
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onCover?.({ ...value, logo: null });
-                          select(null);
-                          setLogoMenu(false);
-                        }}
-                      >
-                        Remove logo
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = { ...value };
-                          delete next.logo;
-                          onCover?.(next);
-                          setLogoMenu(false);
-                        }}
-                      >
-                        Use workspace logo
-                      </button>
-                      {logoError && <p role="alert">{logoError}</p>}
-                    </ToolbarPopover>
-                  )}
-                </div>
-              )}
-            </CoverLogo>
+            />
           );
-        const content =
-          e.content ??
-          coverText(
-            e.kind === "title"
-              ? title
-              : e.kind === "extra"
-                ? ""
-                : (value[e.kind] ?? ""),
-          );
-        if (
-          e.kind !== "title" &&
-          e.kind !== "extra" &&
-          !coverInlineHtml(content, resolvedMap, true)
-            .replace(/<[^>]*>/g, "")
-            .trim()
-        )
-          return null;
-        return (
-          <CoverText
-            key={e.id}
-            element={e}
-            content={content}
-            map={resolvedMap}
-            highlightFields={highlightFields}
-            editable={editable || (e.kind === "title" && !!onTitle)}
-            selected={selected === e.id}
-            select={() => choose(e.id)}
-            update={(patch, text) => change(e.id, patch, text)}
-            add={() => add(e.id)}
-            remove={() => remove(e.id)}
-            alignAll={alignAll}
-          />
-        );
-      })}
+        }),
+      )}
     </header>
   );
 }
@@ -614,6 +675,14 @@ function CoverText({
         }
       }}
     >
+      {e.label !== undefined && (
+        <span
+          className="cover-meta-label"
+          dangerouslySetInnerHTML={{
+            __html: coverInlineHtml(coverText(e.label), map, !highlightFields),
+          }}
+        />
+      )}
       {editable ? (
         <FieldEditor
           value={content}
@@ -794,7 +863,7 @@ function CoverLogo({
       data-cover-element={e.id}
       data-brand={!!name}
       data-cover-selected={selected}
-      style={{ ...elementStyle(e), textAlign: "left" }}
+      style={{ ...elementStyle(e), textAlign: src ? "left" : align }}
       onPointerDownCapture={drag}
     >
       {src && (

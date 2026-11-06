@@ -1,3 +1,6 @@
+import { fieldNodes } from "./editor-fields";
+import { defaultCoverBackground } from "./cover-background";
+import { CoverBackgroundSchema } from "./cover-background";
 import { FontSizeMarkSchema } from "./inline-font-size";
 import { z } from "zod";
 import type { RichText } from "./model";
@@ -33,6 +36,10 @@ const CoverTextNode: z.ZodType<RichText> = z.lazy(() =>
 export const CoverElementSchema = z
   .object({
     id: z.string().min(1).max(100),
+    label: z.string().max(100).optional(),
+    meta: z
+      .enum(["prepared_for", "prepared_by", "date", "valid_until"])
+      .optional(),
     kind: z.enum([
       "logo",
       "workspace",
@@ -58,6 +65,10 @@ export const CoverSchema = z
     eyebrow: z.string().max(2000),
     byline: z.string().max(4000),
     prepared_for: z.string().max(2000).optional(),
+    layout: z
+      .enum(["custom", "editorial", "split", "bold", "photo", "centered"])
+      .optional(),
+    background: CoverBackgroundSchema.optional(),
     logo_mode: z.literal("brand").optional(),
     logo_height: z.number().min(16).max(1056).optional(),
     logo_alt: z.string().max(300).optional(),
@@ -120,13 +131,109 @@ export function coverPlainText(node: RichText): string {
 export function coverElementCss(e: CoverElement) {
   return `text-align:${e.align};${e.space_above === undefined ? "" : `margin-top:${e.space_above}px;`}${e.space_below === undefined ? "" : `margin-bottom:${e.space_below}px;padding-bottom:0;`}`;
 }
-export const defaultCover = (brand = false): Cover => ({
-  ...(brand ? { logo_mode: "brand" as const } : {}),
-  workspace: brand ? "" : "{{workspace.name}}",
-  eyebrow: "",
-  prepared_for: "Prepared for {{client.company}}",
-  byline: "{{proposal.validity}}",
-});
+export const defaultCover = (brand = false): Cover => {
+  const base: Cover = {
+    ...(brand ? { logo_mode: "brand" as const } : {}),
+    workspace: brand ? "" : "{{workspace.name}}",
+    eyebrow: "",
+    prepared_for: "Prepared for {{client.company}}",
+    byline: "{{proposal.validity}}",
+  };
+  return brand ? applyCoverLayout(base, "editorial") : base;
+};
+export function applyCoverLayout(
+  cover: Cover,
+  layout: Exclude<NonNullable<Cover["layout"]>, "custom">,
+): Cover {
+  const elements = coverElements(cover, "").map((e) => structuredClone(e));
+  for (const e of elements) {
+    e.align = layout === "centered" ? "center" : "left";
+    delete e.x;
+    if (
+      e.kind === "workspace" &&
+      (!e.content ||
+        ["", "{{workspace.name}}"].includes(coverPlainText(e.content)))
+    )
+      e.hidden = true;
+    if (e.kind === "logo" || e.kind === "title") continue;
+    let text =
+      e.content ?? coverText(e.kind === "extra" ? "" : (cover[e.kind] ?? ""));
+    const plain = coverPlainText(text).trim();
+    if (e.kind === "prepared_for") {
+      e.label ??= "Prepared for";
+      e.meta = "prepared_for";
+    } else if (
+      plain === "{{proposal.validity}}" ||
+      plain === "{{proposal.valid_until}}"
+    ) {
+      e.kind = "extra";
+      e.meta = "valid_until";
+      e.label ??= "Valid until";
+      text = coverText("{{proposal.valid_until}}");
+    } else if (e.id === "date" || plain === "{{proposal.date}}") {
+      e.label ??= "Date";
+      e.meta = "date";
+    } else if (e.kind === "byline") {
+      e.label ??= "Prepared by";
+      e.meta = "prepared_by";
+    }
+    let first = true;
+    const strip = (
+      n: import("./model").RichText,
+    ): import("./model").RichText => ({
+      ...n,
+      ...(n.type === "text" && first
+        ? ((first = false),
+          {
+            text: (n.text ?? "").replace(
+              e.kind === "prepared_for"
+                ? /^Prepared for\s*/i
+                : e.kind === "byline"
+                  ? /^(?:Prepared by|From)\s*/i
+                  : /$^/,
+              "",
+            ),
+          })
+        : {}),
+      ...(n.content ? { content: n.content.map(strip) } : {}),
+    });
+    e.content = fieldNodes(strip(text));
+  }
+  const extra = (
+    id: string,
+    label: string,
+    text: string,
+    meta: NonNullable<CoverElement["meta"]>,
+  ) => {
+    if (elements.some((e) => e.meta === meta)) return;
+    let key = id;
+    while (elements.some((e) => e.id === key)) key += "-1";
+    elements.push({
+      id: key,
+      kind: "extra",
+      align: "left",
+      label,
+      meta,
+      content: fieldNodes(coverText(text)),
+    });
+  };
+  extra(
+    "prepared-by",
+    "Prepared by",
+    "{{sender.name}}, {{workspace.name}}",
+    "prepared_by",
+  );
+  extra("date", "Date", "{{proposal.date}}", "date");
+  extra("validity", "Valid until", "{{proposal.valid_until}}", "valid_until");
+  return {
+    ...cover,
+    logo_mode: "brand",
+    layout,
+    logo_height: cover.logo_height ?? (layout === "split" ? 22 : 26),
+    background: defaultCoverBackground(layout),
+    elements,
+  };
+}
 
 export function loadedCover(value?: Cover): Cover {
   if (!value) return defaultCover();
