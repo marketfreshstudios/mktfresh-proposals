@@ -201,11 +201,15 @@ test("template phone uses the shared unscaled sheets and keyboard edit bar", asy
   await paper.locator(".block-frame .tiptap").first().click();
   await expect(page.locator(".editor-edit-bar")).toHaveCSS("position", "fixed");
   await expect(page.locator(".template-cover").first()).not.toBeVisible();
+  await page
+    .getByRole("button", { name: "More block actions", exact: true })
+    .click();
   const remove = page
-    .locator(".editor-edit-bar")
-    .getByRole("button", { name: "Delete block", exact: true });
+    .locator(".edit-more-menu:popover-open")
+    .getByRole("menuitem", { name: "Delete block", exact: true });
   await remove.scrollIntoViewIfNeeded();
   await remove.click({ trial: true });
+  await page.keyboard.press("Escape");
   await page
     .getByRole("button", { name: "Done editing template section", exact: true })
     .click();

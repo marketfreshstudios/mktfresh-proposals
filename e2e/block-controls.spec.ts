@@ -472,9 +472,21 @@ test("block controls own one block and never move document content on hover, foc
         }
         await shot(`${editor}-after`, width, theme);
         if (width !== 768) {
-          await paragraph
-            .getByRole("button", { name: "Save for reuse", exact: true })
-            .click();
+          const phoneTemplate = editor === "template" && width === 375;
+          const action = async (name: string) => {
+            if (!phoneTemplate)
+              return paragraph.getByRole("button", { name, exact: true });
+            const menu = page.locator(".edit-more-menu:popover-open");
+            if (!(await menu.isVisible()))
+              await page
+                .getByRole("button", {
+                  name: "More block actions",
+                  exact: true,
+                })
+                .click();
+            return menu.getByRole("menuitem", { name, exact: true });
+          };
+          await (await action("Save for reuse")).click();
           const dialog = page.getByRole("dialog", {
             name: "Save for reuse",
             exact: true,
@@ -508,21 +520,17 @@ test("block controls own one block and never move document content on hover, foc
               .getByRole("status")
               .filter({ hasText: "Saved to Templates & blocks" }),
           ).toBeVisible();
-          await expect(
-            paragraph.getByRole("button", {
-              name: "Save for reuse",
-              exact: true,
-            }),
-          ).toHaveAttribute("title", "Saved as Reusable scope");
+          await expect(await action("Save for reuse")).toHaveAttribute(
+            "title",
+            "Saved as Reusable scope",
+          );
           await expect(
             page.getByRole("link", { name: "View", exact: true }),
           ).toHaveAttribute("href", "/studio/templates?view=blocks");
           await expect(paragraph).toHaveAttribute("data-selected", "true");
           await shot(`${editor}-reuse-success`, width, theme);
           const id = await paragraph.getAttribute("data-block-id");
-          await paragraph
-            .getByRole("button", { name: "Delete block", exact: true })
-            .click();
+          await (await action("Delete block")).click();
           await expect(page.locator(`[data-block-id="${id}"]`)).toHaveCount(0);
           await expect(
             page.getByRole("status").filter({ hasText: "Block deleted" }),

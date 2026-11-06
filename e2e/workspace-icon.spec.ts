@@ -16,6 +16,12 @@ async function capture(page: Page, name: string) {
   if (process.env.WORKSPACE_ICON_CAPTURE === "1" || emailCapture) {
     const dir = emailCapture ? "docs/screenshots/studio-v3-email" : shots;
     mkdirSync(dir, { recursive: true });
+    if (emailCapture && name === "brand-filled-768")
+      await page
+        .locator(".workspace-brand-assets")
+        .evaluate((el) =>
+          el.scrollIntoView({ block: "center", behavior: "instant" }),
+        );
     await page.screenshot({
       path: `${dir}/${name}.png`,
       animations: "disabled",

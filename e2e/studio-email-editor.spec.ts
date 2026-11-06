@@ -12,6 +12,10 @@ test.use({ actionTimeout: 10000 });
 const dir = "docs/screenshots/studio-v3-email";
 async function shot(page: Page, name: string) {
   if (process.env.STUDIO_EMAIL_CAPTURE === "1") {
+    if (name === "email-dark-1440")
+      await expect(
+        page.getByRole("searchbox", { name: "Search fields" }),
+      ).toHaveCSS("background-color", "rgb(28, 27, 25)");
     mkdirSync(dir, { recursive: true });
     await page.screenshot({
       path: `${dir}/${name}.png`,
