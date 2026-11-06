@@ -241,6 +241,30 @@ test("dirty explicit email edits and unsaved proposal edits cannot silently relo
   ).toBeDisabled();
   await expect(paragraph).toContainText("Kept proposal text");
 });
+test("an unrelated failed test email does not block reloading a fully saved editor", async ({
+  page,
+}) => {
+  const f = await buildFixture(page, true);
+  await page.route("**/api/email-templates/proposal_sent/test", (r) =>
+    r.fulfill({ status: 503, json: { error: "Test delivery unavailable" } }),
+  );
+  await page.goto("/studio/emails/proposal_sent");
+  f.update();
+  await focus(page);
+  await expect(notice(page)).toBeVisible();
+  await page
+    .getByRole("button", { name: "Send me a test", exact: true })
+    .click();
+  await expect(
+    page.getByText("Test delivery unavailable", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    notice(page).getByRole("button", { name: "Reload", exact: true }),
+  ).toBeEnabled();
+  await expect(notice(page).getByText("Save your changes first.")).toHaveCount(
+    0,
+  );
+});
 for (const width of [1440, 375])
   for (const theme of ["light", "dark"])
     test(`notice is accessible and clear of phone navigation at ${width} ${theme}`, async ({

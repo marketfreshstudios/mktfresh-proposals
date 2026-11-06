@@ -715,14 +715,7 @@ function QuoteEditorContent({
     return flight;
   }
   useReloadGuard({
-    blocked:
-      dirty ||
-      saving ||
-      stale ||
-      !!error ||
-      !!recovery ||
-      reviewBusy ||
-      sending,
+    blocked: dirty || saving || stale || !!recovery || reviewBusy || sending,
   });
   useEffect(() => {
     if (!dirty || saving || stale || error || offline || reviewBusy || sending)

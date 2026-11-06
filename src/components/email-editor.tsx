@@ -119,7 +119,7 @@ function InlineEmailEditor({
     pickerMap = Object.fromEntries(
       Object.keys(allowed).map((k) => [k, values[k] ?? ""]),
     );
-  useReloadGuard({ blocked: dirty || busy || !!error });
+  useReloadGuard({ blocked: dirty || busy });
   const history = useSessionHistory<Draft>(
     `email:${template.key}`,
     setForm,
