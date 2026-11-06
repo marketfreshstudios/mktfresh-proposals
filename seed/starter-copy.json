@@ -1,0 +1,121 @@
+{
+  "templates": [
+    {
+      "number": 1,
+      "key": "website-design-build",
+      "name": "Website design & build",
+      "description": "A new website, with Own It Now or Own It Over Time and an optional care plan.",
+      "eyebrow": "Website proposal",
+      "title": "A new website for {{client.company}}",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, thanks for walking us through where {{client.company}} is today. Here's what we heard: [two or three sentences on their current site and what's not working, in their words].\n\nThis proposal covers a new website built to [main outcome, e.g. turn more visitors into calls], plus the options for owning and caring for it.\n\n# Goals\n\n- [Goal 1, e.g. more booked calls from the website]\n- [Goal 2, e.g. a site the team can update without help]\n- [Goal 3, e.g. show up in local and AI search]\n\n# What's included\n\n- Discovery call and site plan (pages, content and calls to action)\n- Custom design for desktop, tablet and phone\n- Build of up to [number] pages: [list pages]\n- On-page SEO basics: titles, descriptions, headings, image alt text, sitemap\n- Speed, security and accessibility checks before launch\n- Forms connected to [email or CRM]\n- Launch, redirects from old pages, and 30 days of fixes after launch\n- A short training video on editing your site\n\nNot included: [e.g. copywriting beyond [number] pages, photography, paid ads]. We're happy to quote these separately.\n\n# Timeline and what we need from you\n\n- **Discovery and plan** · Weeks 1–2 · We need: Logins, brand files, goals\n- **Design** · Weeks 3–4 · We need: Feedback within 3 business days\n- **Build and content** · Weeks 5–7 · We need: Final text and photos\n- **Review and launch** · Weeks 8 · We need: Final sign-off\n\nThe timeline starts once the proposal is signed and the kickoff payment is received.\n\n# Why {{workspace.name}}\n\n[Two or three sentences on why you're the right fit for this client.]\n\n[Case study: client, the problem, what you did, the result with a number.]\n\n# Investment\n\n(pricing_table)\n\nOwn It Now is paid as a one-time project fee. Own It Over Time is a smaller kickoff payment followed by monthly payments; the site becomes yours after the final payment (see Terms).\n\n# Next steps\n\n1. Choose your options above and sign below.\n2. We'll send the kickoff invoice and any monthly setup.\n3. We'll book your discovery call within two business days.",
+      "clauses": [1, 2, 3, 4, 5, 6, 7, 8, 10, 11]
+    },
+    {
+      "number": 2,
+      "key": "website-care-hosting",
+      "name": "Website care & hosting plan",
+      "description": "Monthly hosting, updates and support, with three plans to choose from.",
+      "eyebrow": "Care plan proposal",
+      "title": "Keeping {{client.company}}'s website fast, safe and current",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, your website works hard for {{client.company}}. This plan keeps it that way, so you never have to think about hosting, updates or backups. [One sentence on their site and any current issue, e.g. slow load times or an outdated plugin.]\n\n# What every plan includes\n\n- Managed hosting with SSL\n- Software and plugin updates, tested before they go live\n- Daily backups with [number]-day retention\n- Uptime and security monitoring\n- A monthly summary of what we did\n\n# Choosing a plan\n\n[One sentence per plan on who it suits, e.g. Care Lite for sites that rarely change; Care Standard adds [number] hours of edits a month; Care Pro adds priority support and [extras].]\n\n# Getting started\n\nWe move your site within [number] business days of signing. We need: hosting and domain logins, and a contact for urgent issues.\n\n# Why {{workspace.name}}\n\n[One or two sentences, plus one short example of a problem you caught or fixed for a care client.]\n\n# Investment\n\n(pricing_table)\n\nPlans are billed monthly and can be cancelled with 30 days' notice.\n\n# Next steps\n\n1. Choose a plan and sign below.\n2. You'll get a secure link to set up monthly billing.\n3. We'll schedule the move and confirm when it's done.",
+      "clauses": [1, 2, 3, 6, 7, 8, 9, 10, 11]
+    },
+    {
+      "number": 3,
+      "key": "local-visibility-seo",
+      "name": "Local visibility (SEO) retainer",
+      "description": "A monthly local search plan for businesses that serve a nearby area.",
+      "eyebrow": "Local visibility proposal",
+      "title": "Helping customers find {{client.company}}",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, when people near you search for [their service], [competitor or \"other businesses\"] show up first today. [One or two findings from a quick check, e.g. Google Business Profile incomplete, few reviews, missing service pages.]\n\n# Goals\n\n- Appear in the local map results for [main search terms] in [area]\n- More calls and direction requests from search\n- Accurate listings everywhere customers look, including AI assistants\n\n# What we do each month\n\n- Google Business Profile updates and posts\n- Listings and citation clean-up\n- Review requests and response guidance\n- [Number] new or improved service or location pages\n- A monthly report: rankings, calls, direction requests and what we'll do next\n\n# What to expect\n\nLocal search builds over time. Most clients see early movement in [60–90 days] and steadier results after [six months]. We can't promise specific rankings; anyone who does is guessing.\n\n# What we need from you\n\nAccess to your Google Business Profile and website, and a quick monthly check-in.\n\n# Why {{workspace.name}}\n\n[Case study: a local business, starting point, result with a number.]\n\n# Investment\n\n(pricing_table)\n\nBilled monthly; cancel with 30 days' notice.\n\n# Next steps\n\n1. Choose a plan and sign below.\n2. You'll get a secure link to set up monthly billing.\n3. We'll book a kickoff call and start with your Google Business Profile.",
+      "clauses": [1, 2, 3, 6, 7, 8, 9, 10, 11]
+    },
+    {
+      "number": 4,
+      "key": "website-ai-audit",
+      "name": "Website & AI search readiness audit",
+      "description": "A short, one-time review with a ranked list of fixes.",
+      "eyebrow": "Audit proposal",
+      "title": "How {{client.company}} shows up online, and what to fix first",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, before investing in a new site or ongoing marketing, it helps to know exactly where you stand. This audit gives you a clear, ranked list of fixes.\n\n# What we review\n\n- Website speed, mobile experience and accessibility basics\n- Search visibility for [main search terms]\n- How AI assistants describe {{client.company}} today\n- Google Business Profile and key listings\n- Contact paths: forms, calls to action, tracking\n\n# What you get\n\nA written report and a 45-minute call within [10] business days, with every fix ranked by impact and effort. You can do the fixes yourself, with us, or with anyone else.\n\n# Investment\n\n(pricing_table)\n\nPaid as a one-time project fee.\n\n# Next steps\n\n1. Sign below.\n2. We'll send the invoice and ask for read-only access.\n3. We'll book the results call.",
+      "clauses": [1, 2, 3, 4, 7, 8, 10, 11]
+    },
+    {
+      "number": 5,
+      "key": "monthly-marketing",
+      "name": "Monthly marketing retainer",
+      "description": "A general monthly retainer with goals, deliverables and a 90-day plan.",
+      "eyebrow": "Marketing proposal",
+      "title": "A marketing plan for {{client.company}}",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, [two or three sentences on where {{client.company}} is now and what they told you they want].\n\n# Goals and how we'll measure them\n\n- **[e.g. More qualified leads]** · Measure: [Form fills and calls] · Target by [month]: [Number]\n- **[Goal 2]** · Measure: [Measure] · Target by [month]: [Number]\n\n# What's included each month\n\n- [Service 1 and quantity, e.g. 4 social posts a week]\n- [Service 2]\n- [Service 3]\n- Monthly report and a 30-minute review call\n\n# The first 90 days\n\n1. Month 1: [setup, audit, plan]\n2. Month 2: [launch]\n3. Month 3: [review results and adjust]\n\n# What we need from you\n\n[Approvals within X days, brand assets, access.]\n\n# Why {{workspace.name}}\n\n[Fit, plus one case study with a number.]\n\n# Investment\n\n(pricing_table)\n\nBilled monthly; cancel with 30 days' notice after the first [3] months.\n\n# Next steps\n\n1. Review the plan and sign below.\n2. You'll get a secure link to set up monthly billing.\n3. We'll book the kickoff call.",
+      "clauses": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]
+    },
+    {
+      "number": 6,
+      "key": "general-project",
+      "name": "General project proposal",
+      "description": "An all-purpose proposal for any one-off project.",
+      "eyebrow": "Project proposal",
+      "title": "{{proposal.title}}",
+      "markdown": "# Overview\n\nHi {{client.first_name}}, [the problem or opportunity in two or three sentences, in the client's words].\n\n# Goals\n\n- [Goal 1, measurable where possible]\n- [Goal 2]\n- [Goal 3]\n\n# Scope and deliverables\n\n- [Deliverable 1]\n- [Deliverable 2]\n- [Deliverable 3]\n\nNot included: [what's out of scope].\n\n# Timeline and what we need from you\n\n- **[Phase 1]** · Dates: [Dates] · We need: [Client responsibilities]\n- **[Phase 2]** · Dates: [Dates] · We need: [Client responsibilities]\n\n# Why {{workspace.name}}\n\n[Fit, plus one case study with a number.]\n\n# Investment\n\n(pricing_table)\n\n# Next steps\n\n1. Review and choose your options.\n2. Sign below.\n3. [What happens next and when.]",
+      "clauses": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    }
+  ],
+  "clauses": [
+    {
+      "number": 1,
+      "heading": "Scope of work",
+      "body": "We'll deliver the work described in this proposal. Anything not listed is out of scope. If you'd like to change the scope, we'll agree the change and any cost in writing before we start it."
+    },
+    {
+      "number": 2,
+      "heading": "Your responsibilities",
+      "body": "You'll give us the content, access and feedback we need on time. If something we need is late, the timeline moves by the same amount."
+    },
+    {
+      "number": 3,
+      "heading": "Payment",
+      "body": "One-time fees are invoiced and due within 14 days. Recurring fees are billed monthly in advance. If a payment is more than 15 days late, we may pause work until it's paid."
+    },
+    {
+      "number": 4,
+      "heading": "Timeline and delays",
+      "body": "Dates in this proposal are estimates. Neither of us is responsible for delays caused by things outside our reasonable control."
+    },
+    {
+      "number": 5,
+      "heading": "Ownership",
+      "body": "Once you've paid in full, you own the finished work we create for you. We keep the right to use our general tools, methods and know-how, and we may show the work in our portfolio unless you ask us not to."
+    },
+    {
+      "number": 6,
+      "heading": "Third-party services",
+      "body": "Hosting, domains, plugins and other services from other companies have their own terms and fees. We're not responsible for their outages or changes."
+    },
+    {
+      "number": 7,
+      "heading": "Confidentiality",
+      "body": "We'll each keep the other's private business information private, and use it only for this work."
+    },
+    {
+      "number": 8,
+      "heading": "Warranty and liability",
+      "body": "We'll fix defects in our work that you report within 30 days of delivery, at no charge. Apart from that, our total liability under this agreement is limited to the fees you paid us in the 3 months before the claim."
+    },
+    {
+      "number": 9,
+      "heading": "Term and cancellation",
+      "body": "Monthly services continue month to month until either of us cancels with 30 days' written notice. Fees already paid aren't refunded."
+    },
+    {
+      "number": 10,
+      "heading": "Governing law",
+      "body": "This agreement is governed by the laws of the State of {{workspace.state}}."
+    },
+    {
+      "number": 11,
+      "heading": "Entire agreement",
+      "body": "This signed proposal is the whole agreement between us about this work and replaces earlier discussions."
+    }
+  ]
+}

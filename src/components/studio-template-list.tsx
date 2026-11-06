@@ -144,9 +144,18 @@ export function StudioTemplateList({
       {!blocks ? (
         <>
           <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+          {data.templates.some((t) => t.starter_key) && (
+            <p className="muted">
+              Starter terms are a starting point, not legal advice. Have an
+              attorney review them before you use them.
+            </p>
+          )}
           <style>{fontCss(data.settings)}</style>
           <div className="studio-template-grid">
-            {data.templates
+            {[...data.templates]
+              .sort(
+                (a, b) => (a.starter_order ?? 999) - (b.starter_order ?? 999),
+              )
               .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
               .map((t) => (
                 <a
@@ -167,6 +176,7 @@ export function StudioTemplateList({
                   </div>
                   <div>
                     <strong>{t.name}</strong>
+                    {t.description && <p>{t.description}</p>}
                     {!t.active && (
                       <span className="studio-hidden-pill">
                         Hidden from new proposals
