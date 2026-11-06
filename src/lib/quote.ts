@@ -1,3 +1,4 @@
+import { businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
@@ -137,7 +138,12 @@ export function readiness(
   try {
     renderBlocks(p.content, p.quote, variables(p), p.currency);
   } catch (e) {
-    errors.push(e instanceof Error ? e.message : "Invalid proposal content");
+    const message = e instanceof Error ? e.message : "Invalid proposal content";
+    if (
+      message !== "Unresolved variable: workspace.state" ||
+      !errors.includes(businessStateError)
+    )
+      errors.push(message);
   }
   return { ready: !errors.length, errors, warnings };
 }
