@@ -618,6 +618,7 @@ function InlineEmailEditor({
         <ToolbarPopover
           trigger={more}
           className="edit-dark-menu block-popover email-format-more"
+          visualViewport={device === "sheet"}
           close={() => setMore(null)}
         >
           <FormattingControls mode="extras" editor={editor} />

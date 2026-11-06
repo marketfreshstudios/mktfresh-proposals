@@ -478,6 +478,7 @@ function BlockEditBar({
         <ToolbarPopover
           trigger={trigger.current}
           className="edit-dark-menu edit-more-menu"
+          visualViewport={phoneActions}
           close={() => setMore(false)}
         >
           <div

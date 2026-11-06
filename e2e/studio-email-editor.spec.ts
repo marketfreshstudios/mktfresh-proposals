@@ -267,6 +267,14 @@ test("phone docking, trapped tools sheets and tablet drawer keep Field visible",
       return Math.round(r!.y + r!.height);
     })
     .toBe(600);
+  await bar
+    .getByRole("button", { name: "More formatting", exact: true })
+    .click();
+  const more = page.locator(".email-format-more:popover-open");
+  await expect(more).toBeVisible();
+  const menuBox = await more.boundingBox();
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(600);
+  await page.keyboard.press("Escape");
   const b = await field.boundingBox();
   expect(b).not.toBeNull();
   expect(b!.x).toBeGreaterThanOrEqual(0);
