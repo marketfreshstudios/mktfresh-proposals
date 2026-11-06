@@ -307,13 +307,13 @@ test("proposal and template headers share save states and centred fixed-size pan
     await expect(page.locator(".editor-document-header")).toBeVisible();
     await expect(
       page.getByRole("button", {
-        name: proposal ? "Back to proposals" : "Back to studio",
+        name: proposal ? "Back to proposals" : "Back to templates",
         exact: true,
       }),
     ).toBeVisible();
     for (const container of proposal
       ? [".editor-outline", ".editor-sidepanel"]
-      : [".studio-template-list", ".studio-inspector"]) {
+      : [".studio-template-list", ".editor-sidepanel"]) {
       const arrow = page.locator(`${container} .sidebar-arrow`).first();
       const expanded = await centred(arrow);
       await arrow.click();
@@ -328,18 +328,18 @@ test("proposal and template headers share save states and centred fixed-size pan
       });
       await name.fill("A changed template");
       await expect(page.locator(".editor-save-status")).toHaveText(
-        "Unsaved changes",
+        "Edited · not saved",
       );
       // The fixture owns this write too; page plans never write a template alone.
       await page.route("**/api/templates", async (route) => {
         if (route.request().method() !== "POST") return route.fallback();
         await route.fulfill({ json: route.request().postDataJSON() });
       });
-      await page
-        .getByRole("button", { name: "Save template", exact: true })
-        .click();
+      await expect(
+        page.locator(".template-editor-header .editor-save-status"),
+      ).toHaveText("Saved · changes apply to new proposals");
       await expect(page.locator(".editor-save-status")).toHaveText(
-        /^(All changes saved|Draft · Saved)$/,
+        "Saved · changes apply to new proposals",
       );
       await expect(page.locator(".editor-save-status")).toHaveAttribute(
         "title",

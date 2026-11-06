@@ -727,6 +727,19 @@ async function handleRoute(req: Request, path: string[]) {
       await rt.repo.deleteClient(uuid.parse(path[1]), user);
       return json({ deleted: true });
     }
+    if (method === "DELETE" && path[0] === "content_library" && path[1]) {
+      const id = uuid.parse(path[1]);
+      const item = (
+        await rt.repo.entities<{ id: string; name: string }>("content_library")
+      ).find((v) => v.id === id);
+      check(item, "Saved block not found", 404);
+      check(await rt.repo.removeSavedBlock(id), "Saved block not found", 404);
+      await workspaceEvent(rt.repo, user, "content_library_deleted", {
+        name: item.name,
+        entity_id: id,
+      });
+      return json({ deleted: true });
+    }
     if (
       [
         "clients",

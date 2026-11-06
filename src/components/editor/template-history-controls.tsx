@@ -4,7 +4,9 @@ import { useHistoryStatus } from "../editor-history";
 import { ToolbarPopover } from "../toolbar-popover";
 import { EditorIcon } from "./editor-icon";
 /** Retains the same history handlers; phone commands live in the More menu. */
-export function TemplateHistoryControls() {
+export function TemplateHistoryControls({
+  inline = false,
+}: { inline?: boolean } = {}) {
   const history = useHistoryStatus();
   const [mac, setMac] = useState(false),
     [phone, setPhone] = useState(false),
@@ -37,7 +39,7 @@ export function TemplateHistoryControls() {
       run: () => history.controller?.redo(),
     },
   ];
-  if (phone)
+  if (phone && !inline)
     return (
       <div className="template-history-phone" data-editor-chrome>
         <button

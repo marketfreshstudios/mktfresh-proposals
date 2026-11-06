@@ -16,14 +16,16 @@ const glyphs = {
   Styles: "Aa",
   Send: "➝",
 };
-export function PanelRail({
+export function PanelRail<T extends string = EditorTab>({
   onTab,
   onToggle,
   totals,
+  tabs = editorTabs as unknown as readonly T[],
 }: {
-  onTab: (tab: EditorTab) => void;
+  onTab: (tab: T) => void;
   onToggle: () => void;
   totals: string;
+  tabs?: readonly T[];
 }) {
   return (
     <>
@@ -38,7 +40,7 @@ export function PanelRail({
           <PanelChevron direction="left" double />
         </button>
       </div>
-      {editorTabs.map((tab) => (
+      {tabs.map((tab) => (
         <button
           type="button"
           key={tab}
@@ -48,7 +50,9 @@ export function PanelRail({
           title={tab}
           onClick={() => onTab(tab)}
         >
-          <span aria-hidden="true">{glyphs[tab]}</span>
+          <span aria-hidden="true">
+            {glyphs[tab as EditorTab] ?? (tab === "Default quote" ? "$" : "⋯")}
+          </span>
           <small>{tab}</small>
         </button>
       ))}
@@ -58,12 +62,16 @@ export function PanelRail({
     </>
   );
 }
-export function PanelTabs({
+export function PanelTabs<T extends string = EditorTab>({
   tab,
   onTab,
+  tabs = editorTabs as unknown as readonly T[],
+  label = "Proposal tools",
 }: {
-  tab: EditorTab;
-  onTab: (tab: EditorTab) => void;
+  tab: T;
+  onTab: (tab: T) => void;
+  tabs?: readonly T[];
+  label?: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
   return (
@@ -71,7 +79,7 @@ export function PanelTabs({
       ref={root}
       className="editor-tabs"
       role="tablist"
-      aria-label="Proposal tools"
+      aria-label={label}
       onKeyDown={(event) => {
         const delta =
           event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
@@ -81,16 +89,15 @@ export function PanelTabs({
           event.key === "Home"
             ? 0
             : event.key === "End"
-              ? editorTabs.length - 1
-              : (editorTabs.indexOf(tab) + delta + editorTabs.length) %
-                editorTabs.length;
-        onTab(editorTabs[index]);
+              ? tabs.length - 1
+              : (tabs.indexOf(tab) + delta + tabs.length) % tabs.length;
+        onTab(tabs[index]);
         root.current
           ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
           [index].focus();
       }}
     >
-      {editorTabs.map((value) => (
+      {tabs.map((value) => (
         <button
           type="button"
           data-preserve-block-selection={value === "Blocks" ? "" : undefined}
@@ -107,7 +114,7 @@ export function PanelTabs({
     </div>
   );
 }
-export function ToolsPanel({
+export function ToolsPanel<T extends string = EditorTab>({
   tab,
   open,
   mode,
@@ -116,12 +123,20 @@ export function ToolsPanel({
   onToggle,
   onCloseComplete,
   children,
+  tabs = editorTabs as unknown as readonly T[],
+  label = "Proposal tools",
+  phoneDock = true,
+  actions,
 }: {
-  tab: EditorTab;
+  tab: T;
   open: boolean;
   mode: "docked" | "drawer" | "sheet";
   totals: string;
-  onTab: (tab: EditorTab) => void;
+  onTab: (tab: T) => void;
+  tabs?: readonly T[];
+  label?: string;
+  phoneDock?: boolean;
+  actions?: ReactNode;
   onToggle: () => void;
   onCloseComplete?: () => void;
   children: ReactNode;
@@ -157,7 +172,7 @@ export function ToolsPanel({
         <div className="editor-sheet-grabber" aria-hidden="true" />
       )}
       <div className="editor-tools-header">
-        <PanelTabs tab={tab} onTab={onTab} />
+        <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
         {mode === "sheet" && (
           <button type="button" onClick={close}>
             Done
@@ -171,6 +186,7 @@ export function ToolsPanel({
         className="editor-tab-content"
       >
         {children}
+        {actions}
       </div>
       <button
         type="button"
@@ -186,38 +202,47 @@ export function ToolsPanel({
   return (
     <>
       {mode === "sheet" ? (
-        <nav className="editor-phone-dock" aria-label="Proposal tools">
-          {editorTabs.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onTab(value)}
-              aria-label={`Open ${value}`}
-            >
-              <span aria-hidden="true">
-                {value === "Quote" ? totals : glyphs[value]}
-              </span>
-              <small>{value}</small>
-            </button>
-          ))}
-        </nav>
+        phoneDock && (
+          <nav className="editor-phone-dock" aria-label={label}>
+            {tabs.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onTab(value)}
+                aria-label={`Open ${value}`}
+              >
+                <span aria-hidden="true">
+                  {value === "Quote"
+                    ? totals
+                    : (glyphs[value as EditorTab] ?? "⋯")}
+                </span>
+                <small>{value}</small>
+              </button>
+            ))}
+          </nav>
+        )
       ) : (
         <aside
           className={`editor-sidepanel editor-v2-panel ${mode === "docked" && open ? "" : "sidebar-rail"}`}
-          aria-label="Proposal tools"
+          aria-label={label}
           aria-hidden={mode !== "docked" && open ? true : undefined}
         >
           {mode === "docked" && open ? (
             content
           ) : (
-            <PanelRail totals={totals} onTab={onTab} onToggle={onToggle} />
+            <PanelRail
+              totals={totals}
+              onTab={onTab}
+              onToggle={onToggle}
+              tabs={tabs}
+            />
           )}
         </aside>
       )}
       {mode !== "docked" && open && (
         <dialog
           ref={dialog}
-          aria-label="Proposal tools"
+          aria-label={label}
           className={`${mode === "sheet" ? "editor-v2-sheet" : "editor-v2-drawer"} tools-sheet`}
           onClose={(event) => {
             if (event.currentTarget.open) return;

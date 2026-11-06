@@ -19,6 +19,32 @@ export function inactiveTemplateItems(
       : [];
   });
 }
+/** Authoring preserves inactive rows; only draft creation/preview filters them. */
+export function templateAuthoringItems(template: Template, catalog: Item[]) {
+  return (
+    template.default_items ??
+    template.default_quote.flatMap((q, n) => {
+      const item = catalog.find((i) => i.id === q.pricing_item_id);
+      if (!item) return [];
+      const value = catalogQuoteItem(
+        item,
+        n,
+        item.id,
+        item.sublines?.map((s) => s.id) ?? [item.id],
+      );
+      return [
+        {
+          ...value,
+          optional: q.optional,
+          default_selected: q.selected,
+          selected: q.selected,
+          sublines: value.sublines.map((s) => ({ ...s, qty: q.qty })),
+        },
+      ];
+    })
+  );
+}
+
 export function templateDefaultQuote(template: Template, catalog: Item[]) {
   const unavailable = inactiveTemplateItems(template, catalog);
   if (template.default_items)

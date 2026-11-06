@@ -367,6 +367,20 @@ export function BlockMenu({
                           <strong>{optionName(option)}</strong>
                           <small>{option.description}</small>
                         </span>
+                        {variant === "panel" &&
+                          option.group === "Saved blocks" && (
+                            <>
+                              <span className="saved-block-insert-caption">
+                                Insert
+                              </span>
+                              <span
+                                className="saved-block-drag-cue"
+                                aria-hidden="true"
+                              >
+                                ⋮⋮
+                              </span>
+                            </>
+                          )}
                       </button>
                     ),
                 )}

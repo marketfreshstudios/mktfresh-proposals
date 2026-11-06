@@ -145,7 +145,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
           "background-color",
           theme === "light" ? "rgb(243, 240, 234)" : "rgb(19, 19, 17)",
         );
-        if (width >= 700 && ["editor", "send"].includes(name)) {
+        if (width >= 700 && ["editor", "send", "template"].includes(name)) {
           await expect(page.locator(".sidebar")).toBeHidden();
         } else if (
           width >= 700 &&
@@ -166,6 +166,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         } else {
           await expect(page.locator(".sidebar")).toBeHidden();
           const inside = [
+            "template",
             "editor",
             "send",
             "record",

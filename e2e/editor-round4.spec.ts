@@ -103,20 +103,25 @@ test("template creation stays reachable with collapsed Pages at desktop, tablet 
       exact: true,
     });
     await expect(create).toBeVisible();
+    if (width >= 1100) {
+      await expect(page.locator(".sidebar")).toBeVisible();
+      await expect(page.locator(".sidebar")).toHaveCSS("width", "232px");
+    } else if (width >= 700) {
+      await expect(page.locator(".sidebar")).toBeHidden();
+      await expect(
+        page.getByRole("navigation", { name: "Studio areas", exact: true }),
+      ).toBeVisible();
+    }
     await create.click();
+    await expect(
+      page.getByRole("button", { name: "Back to templates", exact: true }),
+    ).toBeVisible();
     const name = page.getByRole("textbox", {
       name: "Template name",
       exact: true,
     });
     await expect(name).toHaveValue("Untitled template");
     await name.fill(`New template at ${width}`);
-    if (width >= 700) {
-      await expect(page.locator(".sidebar")).toBeVisible();
-      await expect(page.locator(".sidebar")).toHaveCSS(
-        "width",
-        width >= 1100 ? "232px" : "64px",
-      );
-    }
   }
 });
 

@@ -105,3 +105,28 @@ it("staff creation skips inactive and missing defaults while preserving active d
     inactiveTemplateItems(template, await repo.entities<Item>("pricing_items")),
   ).toHaveLength(2);
 });
+it.each([false, true])(
+  "template authoring keeps inactive defaults without changing draft filtering (items=%s)",
+  async (modern) => {
+    const { repo, template, item } = await inactiveDefault();
+    const catalog = await repo.entities<Item>("pricing_items");
+    const { templateAuthoringItems, templateDefaultQuote } =
+      await import("../src/lib/template-quote");
+    const authored = templateAuthoringItems(template, catalog);
+    if (modern) {
+      template.default_items = authored;
+      template.default_quote = [];
+    }
+    const rows = templateAuthoringItems(template, catalog);
+    expect(rows.some((row) => row.pricing_item_id === item.id)).toBe(true);
+    expect(rows).toEqual(authored);
+    expect(
+      templateDefaultQuote(template, catalog).quote.some(
+        (row) => row.pricing_item_id === item.id,
+      ),
+    ).toBe(false);
+    expect(templateDefaultQuote(template, catalog).warnings).toEqual([
+      expect.stringContaining(item.name),
+    ]);
+  },
+);

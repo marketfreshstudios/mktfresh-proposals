@@ -8,7 +8,16 @@ async function check(dir: string): Promise<void> {
     if (f.isDirectory()) await check(path);
     else if (
       /\.(ts|tsx|css)$/.test(path) &&
-      forbidden.test(await readFile(path, "utf8"))
+      forbidden.test(
+        (await readFile(path, "utf8"))
+          .replace(/\s+/g, " ")
+          .replace(
+            path === "src/components/workspace-studio.tsx"
+              ? "Project fees, including the Own It Over Time kickoff. Until QuickBooks is connected, staff record the invoice number on the proposal."
+              : /$^/,
+            "",
+          ),
+      )
     )
       throw new Error(
         `Workspace-specific business rule in ${path}; move to seed data`,

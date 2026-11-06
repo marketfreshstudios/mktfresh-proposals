@@ -317,10 +317,8 @@ test("new Studio templates start with shared bands and save template switches wi
   });
   await page.setViewportSize({ width: 1920, height: 1200 });
   await page.goto("/studio/templates");
-  await page.locator(".studio-template-card").first().click();
-  await page
-    .getByRole("button", { name: "+ New template", exact: true })
-    .click();
+  await page.getByRole("button", { name: "New template", exact: true }).click();
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const styles = page.locator(".proposal-styles");
   await expect(
     styles.getByRole("switch", { name: "Header", exact: true }),
@@ -331,9 +329,9 @@ test("new Studio templates start with shared bands and save template switches wi
   await styles
     .getByRole("switch", { name: "Footer show on cover", exact: true })
     .check();
-  await page
-    .getByRole("button", { name: "Save template", exact: true })
-    .click();
+  await expect(
+    page.locator(".template-editor-header .editor-save-status"),
+  ).toHaveText("Saved · changes apply to new proposals");
   await expect
     .poll(() => saved?.header_footer?.headerSpacing.showOnCover)
     .toBe(true);

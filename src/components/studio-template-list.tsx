@@ -167,6 +167,11 @@ export function StudioTemplateList({
                   </div>
                   <div>
                     <strong>{t.name}</strong>
+                    {!t.active && (
+                      <span className="studio-hidden-pill">
+                        Hidden from new proposals
+                      </span>
+                    )}
                     <small>
                       {
                         t.content.filter(

@@ -564,16 +564,16 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       const input = await page
         .getByLabel("Template name", { exact: true })
         .boundingBox();
-      const save = await page
-        .getByRole("button", { name: "Save template", exact: true })
-        .boundingBox();
-      expect(input!.height).toBe(44);
-      expect(save!.height).toBe(44);
-      if (width >= 768)
-        expect(
-          Math.abs(input!.y + input!.height - save!.y - save!.height),
-        ).toBeLessThanOrEqual(2);
+      // Template saving is automatic; the new inline name belongs to the header.
+      expect(input!.height).toBe(width < 700 ? 44 : 36);
+      await expect(
+        page.getByRole("button", { name: "Save template", exact: true }),
+      ).toHaveCount(0);
+      await page
+        .getByRole("button", { name: "More editor actions", exact: true })
+        .click();
       await alignedControls();
+      await page.keyboard.press("Escape");
       await capture(
         "template-inline-controls",
         width === 768 ? "7f" : "7a",

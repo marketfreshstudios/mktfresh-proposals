@@ -281,9 +281,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await page
     .getByLabel("Template name", { exact: true })
     .fill("Keep this template selected");
-  await page
-    .getByRole("button", { name: "Save template", exact: true })
-    .click();
+  await expect(
+    page.locator(".template-editor-header .editor-save-status"),
+  ).toHaveText("Saved · changes apply to new proposals");
   await expect(page.getByText("Template saved", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Template name", { exact: true })).toHaveValue(
     "Keep this template selected",

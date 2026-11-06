@@ -211,10 +211,12 @@ test("template phone uses the shared unscaled sheets and keyboard edit bar", asy
     .click();
   await expect(page.locator(".template-cover").first()).toBeVisible();
   await page
-    .getByRole("button", { name: "More template actions", exact: true })
+    .getByRole("button", { name: "More editor actions", exact: true })
     .click();
   await expect(
-    page.getByRole("menuitem", { name: "Undo", exact: true }),
+    page
+      .getByRole("dialog", { name: "Template tools", exact: true })
+      .getByRole("button", { name: "Undo", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
 });

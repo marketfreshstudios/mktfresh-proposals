@@ -8373,3 +8373,476 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .manual-client-contact > header button:hover {
   text-decoration: underline;
 }
+
+/* Studio v3 editor surfaces reuse editor controls, sheets and panel components. */
+body:has(.studio-v3-editor) {
+  overflow: hidden;
+}
+.staff-foundation:has(.studio-v3-editor) > :is(.sidebar, .bottom-tabs) {
+  display: none;
+}
+.staff-foundation:has(.studio-v3-editor) > .workspace {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.studio-v3-editor.studio-template-layout {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  height: 100dvh;
+  padding-top: 56px;
+  gap: 0;
+  overflow: hidden;
+  background: var(--surface-page);
+  z-index: var(--z-document);
+}
+.studio-v3-editor .template-editor-header {
+  position: fixed;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 56px;
+  min-height: 56px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  z-index: var(--z-editor-header);
+  font: 500 13px/18px var(--font-ui);
+}
+.studio-v3-editor .editor-header-identity {
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 12px;
+}
+.studio-v3-editor .editor-header-identity > .button-wrap {
+  flex: none;
+}
+.studio-v3-editor .editor-header-identity > .button-wrap .btn {
+  border: 0;
+  background: transparent;
+  padding-inline: 0 12px;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 13px;
+}
+.studio-v3-editor .editor-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: visible;
+  max-width: 360px;
+}
+.studio-v3-editor .studio-inline-name {
+  min-height: 36px;
+  width: 220px;
+  min-width: 100px;
+  max-width: 100%;
+  padding: 4px 0;
+  height: 36px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: 600 14px/20px var(--font-ui);
+  text-overflow: ellipsis;
+}
+.studio-v3-editor .studio-inline-name:focus {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+.studio-v3-editor .editor-save-status {
+  position: static;
+  transform: none;
+  margin: 0;
+  flex: 0 1 auto;
+  font-size: 11px;
+  min-width: 0;
+}
+.studio-v3-editor .editor-save-status :is(span, button) {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.studio-v3-editor .editor-save-status svg {
+  width: 10px;
+  height: 10px;
+}
+.studio-v3-editor .editor-header-actions {
+  margin-left: auto;
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+}
+.studio-v3-editor .template-editor-header .btn {
+  min-height: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  font: 600 13px/18px var(--font-ui);
+  padding: 0 16px;
+  white-space: nowrap;
+}
+.studio-editor-more {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font-size: 20px;
+}
+.studio-hidden-pill,
+.studio-type-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font: 600 11px/16px var(--font-ui);
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+  white-space: nowrap;
+}
+.studio-v3-editor.studio-template-layout > .studio-template-main {
+  padding: 28px 24px 64px;
+  overflow: auto;
+  min-width: 0;
+  height: calc(100dvh - 56px);
+  max-height: none;
+  background: var(--surface-page);
+}
+.studio-v3-editor > :is(.editor-outline, .editor-sidepanel) {
+  position: relative;
+  top: auto;
+  height: calc(100dvh - 56px);
+  min-width: 0;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.studio-v3-editor > .editor-outline {
+  border-right: 1px solid var(--border);
+  background: var(--surface-page);
+}
+.studio-v3-editor > .editor-sidepanel {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+.studio-v3-editor .editor-tab-content {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.studio-v3-editor .editor-sidebar-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+.studio-v3-editor .template-page-viewport {
+  min-width: 0;
+}
+.studio-v3-editor .studio-template-list > .editor-sidebar-header {
+  flex: none;
+}
+.studio-v3-editor .template-style-panel {
+  display: grid;
+  gap: 20px;
+}
+.template-fonts-row > h3,
+.template-band-heading > h3 {
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font: 600 11px/16px var(--font-ui);
+  margin: 8px 0 12px;
+}
+.template-fonts-row > div {
+  position: relative;
+  padding: 10px 68px 10px 0;
+  border-top: 1px solid var(--border);
+  font: 500 13px/18px var(--font-ui);
+}
+.template-fonts-row small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.template-fonts-row button {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  min-height: 44px;
+  font: 600 12px var(--font-ui);
+}
+.template-band-heading p {
+  font: 400 12px/18px var(--font-ui);
+  color: var(--ink-muted);
+  margin: 0;
+}
+.studio-template-actions {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 13px/20px var(--font-ui);
+  box-shadow: var(--shadow-md);
+}
+.studio-template-actions .check {
+  min-height: 44px;
+}
+.saved-block-caption,
+.saved-block-footer {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--ink-muted);
+  font: 400 12px/18px var(--font-ui);
+}
+.studio-saved-block-editor .studio-blocks {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 640px;
+  min-height: 320px;
+  padding: 64px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 0;
+  border-radius: 4px;
+  box-shadow:
+    0 1px 3px rgba(20, 18, 14, 0.08),
+    0 14px 32px rgba(20, 18, 14, 0.08);
+}
+.studio-saved-block-editor .template-cover {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+.studio-saved-block-editor .studio-block-card {
+  background: transparent;
+  border: 0;
+  color: var(--paper-ink);
+}
+.studio-saved-block-editor .block-open {
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  text-align: left;
+  border: 0;
+  background: none;
+  width: 100%;
+}
+.studio-saved-block-editor .block-open > small {
+  display: none;
+}
+.saved-block-details > p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+.saved-block-details .btn.danger {
+  width: 100%;
+  color: var(--danger);
+  background: none;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-pill);
+}
+.saved-block-details > .button-wrap {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.studio-phone-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.saved-block-insert-caption {
+  margin-left: auto;
+  font: 600 12px var(--font-ui);
+  color: var(--ink);
+}
+.saved-block-drag-cue {
+  color: var(--ink-muted);
+  font-size: 18px;
+}
+.plain-clause-text {
+  position: relative;
+}
+.plain-clause-text .plain-clause-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  resize: none;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: var(--paper);
+  opacity: 0;
+}
+.plain-clause-text:focus-within .plain-clause-input {
+  opacity: 1;
+}
+.plain-clause-text:focus-within .plain-clause-reading {
+  opacity: 0;
+}
+.studio-v3-editor .clause-open {
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+@media (max-width: 1179px) and (min-width: 700px) {
+  .studio-v3-editor .studio-inline-name {
+    width: 150px;
+  }
+  .studio-v3-editor .editor-save-status {
+    max-width: 190px;
+  }
+  .studio-v3-editor .template-editor-header {
+    gap: 8px;
+  }
+  .studio-v3-editor .studio-hidden-pill {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+@media (max-width: 699px) {
+  .studio-v3-editor.studio-template-layout {
+    display: block;
+    padding-top: 52px;
+  }
+  .studio-v3-editor .template-editor-header {
+    height: 52px;
+    min-height: 52px;
+    padding: 0 8px;
+    gap: 8px;
+  }
+  .studio-v3-editor .editor-header-identity {
+    flex: 1;
+    max-width: calc(100% - 112px);
+  }
+  .studio-v3-editor .editor-header-identity > .button-wrap .btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    min-height: 44px;
+    font-size: 0;
+    border: 0;
+  }
+  .studio-v3-editor .editor-header-identity .panel-chevron {
+    width: 14px;
+    height: 14px;
+  }
+  .studio-v3-editor .editor-header-title {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    padding-bottom: 0;
+  }
+  .studio-v3-editor .studio-inline-name {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    padding-bottom: 14px;
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .studio-v3-editor .studio-type-pill {
+    display: none;
+  }
+  .studio-v3-editor .editor-save-status {
+    position: absolute;
+    left: 64px;
+    top: 27px;
+    max-width: calc(100% - 180px);
+    padding: 0;
+    background: transparent;
+    border: 0;
+    height: 18px;
+    font-size: 10px;
+  }
+  .studio-v3-editor .editor-save-status svg {
+    display: none;
+  }
+  .studio-v3-editor .template-editor-header .studio-desktop-action {
+    display: none;
+  }
+  .studio-v3-editor .studio-editor-more {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .studio-v3-editor .template-editor-header .btn.primary {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 16px;
+  }
+  .studio-v3-editor .editor-header-actions {
+    gap: 0;
+  }
+  .studio-v3-editor .studio-hidden-pill {
+    display: none;
+  }
+  .studio-v3-editor > :is(.editor-outline, .editor-sidepanel) {
+    display: none;
+  }
+  .studio-v3-editor.studio-template-layout > .studio-template-main {
+    height: calc(100dvh - 52px);
+    padding: 16px 12px 100px;
+    overflow: auto;
+  }
+  .studio-saved-block-editor .studio-blocks {
+    min-height: 240px;
+    padding: 28px 20px;
+  }
+  .studio-saved-block-editor .studio-template-main {
+    gap: 16px;
+  }
+  .studio-phone-menu-actions .template-history-controls button {
+    width: 44px;
+    height: 44px;
+  }
+}
+.studio-saved-block-editor .editor-save-status[data-state="dirty"] {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+.studio-v3-editor .editor-header-actions {
+  flex-wrap: nowrap;
+}
+.studio-v3-editor .studio-blocks .field-chip {
+  background: #f0ece4;
+  border-radius: 4px;
+  box-shadow:
+    2px 0 #f0ece4,
+    -2px 0 #f0ece4;
+}
+
+.staff-foundation:has(.studio-v3-editor) .staff-mobile-brand {
+  display: none;
+}
+.studio-v3-editor .plain-clause-reading p:empty {
+  min-height: 1lh;
+}
+/* Studio's selected toolbar is outside the FieldEditor, so the legacy
+   focus-within fade must not make its active controls translucent. */
+.studio-v3-editor .editor-edit-bar {
+  opacity: 1;
+}

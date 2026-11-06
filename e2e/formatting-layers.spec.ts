@@ -82,6 +82,9 @@ test("formatting rows stay above content and every button is reachable in all ed
             path[1],
             req.postDataJSON(),
           );
+      } else if (path[0] === "templates" && req.method() === "POST") {
+        value = req.postDataJSON();
+        await repo.put("templates", value as any);
       } else if (path[0] === "connections")
         value = { stripe: true, qbo: false, email: false, mock: true };
       else value = await repo.entities(path[0] as any);
@@ -137,11 +140,25 @@ test("formatting rows stay above content and every button is reachable in all ed
         const more = page.getByRole("button", {
           name: name.startsWith("proposal")
             ? "More editor actions"
-            : "More template actions",
+            : "More editor actions",
           exact: true,
         });
         await more.click();
-        await page.getByRole("menuitem", { name: action, exact: true }).click();
+        if (name.startsWith("template")) {
+          const sheet = page.getByRole("dialog", {
+            name: "Template tools",
+            exact: true,
+          });
+          await sheet
+            .getByRole("button", { name: action, exact: true })
+            .click();
+          await sheet
+            .getByRole("button", { name: "Done", exact: true })
+            .click();
+        } else
+          await page
+            .getByRole("menuitem", { name: action, exact: true })
+            .click();
         continue;
       }
       await (
@@ -189,7 +206,9 @@ test("formatting rows stay above content and every button is reachable in all ed
         widthIsPhone()
       ) {
         const sheet = page.getByRole("dialog", {
-          name: name.startsWith("proposal") ? "Proposal tools" : "Fields",
+          name: name.startsWith("proposal")
+            ? "Proposal tools"
+            : "Template tools",
           exact: true,
         });
         await expect(sheet).toBeVisible();
@@ -282,6 +301,9 @@ test("formatting rows stay above content and every button is reachable in all ed
       pinned,
       `template inline ${width}`,
     );
+    await expect(
+      page.locator(".template-editor-header .editor-save-status"),
+    ).toHaveText("Saved · changes apply to new proposals");
   }
   expect(errors).toEqual([]);
 });
