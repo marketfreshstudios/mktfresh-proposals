@@ -1,4 +1,50 @@
 /* Studio v3 uses the staff foundation tokens; document/editor styles stay scoped. */
+.workspace-mark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  object-fit: contain;
+  border-radius: 5px;
+}
+.tablet-workspace-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.workspace-brand-assets {
+  display: grid;
+  gap: 16px;
+}
+.workspace-brand-assets .workspace-logo-row {
+  height: auto;
+  min-height: 76px;
+  margin-top: 0;
+  padding: 12px;
+  align-items: center;
+  gap: 12px;
+}
+.workspace-brand-assets .workspace-logo-label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+}
+.workspace-brand-assets .workspace-logo-label > label {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.workspace-brand-assets .workspace-logo-row .btn {
+  min-height: 44px;
+}
+.workspace-logo-actions {
+  display: flex;
+  gap: 8px;
+}
+.workspace-logo-requirements {
+  font-size: 12px;
+}
 .workspace-label {
   display: flex;
   align-items: center;

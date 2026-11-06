@@ -7,11 +7,13 @@ export function StudioAccount({
   email,
   onSignout,
   label,
+  mark,
 }: {
   name: string;
   email?: string;
   onSignout?: () => void;
   label?: string;
+  mark?: React.ReactNode;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   return (
@@ -23,15 +25,17 @@ export function StudioAccount({
         aria-expanded={!!anchor}
         onClick={(e) => setAnchor(e.currentTarget)}
       >
-        <span
-          className="avatar"
-          aria-hidden="true"
-          data-initials={name
-            .split(" ")
-            .map((n) => n[0])
-            .slice(0, 2)
-            .join("")}
-        />
+        {mark ?? (
+          <span
+            className="avatar"
+            aria-hidden="true"
+            data-initials={name
+              .split(" ")
+              .map((n) => n[0])
+              .slice(0, 2)
+              .join("")}
+          />
+        )}
         <span>{label ?? name}</span>
       </button>
       {anchor && (

@@ -36,6 +36,7 @@ import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
 import { PoweredByYeswell } from "./powered-by-yeswell";
+import { ClientWorkspaceIcon } from "./client-workspace-icon";
 import type { BillingLine } from "../lib/model";
 import type { publicResult } from "../lib/service";
 import { QuoteItemBody } from "./quote-item-body";
@@ -50,6 +51,7 @@ type Brand = {
   email: string;
   show_powered_by?: boolean;
   logo?: string | null;
+  logo_icon?: string | null;
   accent_colour?: string;
   contact?: { name: string; email: string };
   ended?: string | null;
@@ -109,12 +111,19 @@ export function ClientProposal({
       </div>
     );
   return (
-    <NewClientFlow
-      token={token}
-      preview={preview}
-      brand={route.brand}
-      initial={route.initial}
-    />
+    <>
+      <ClientWorkspaceIcon
+        token={token}
+        version={route.brand.logo_icon}
+        preview={preview}
+      />
+      <NewClientFlow
+        token={token}
+        preview={preview}
+        brand={route.brand}
+        initial={route.initial}
+      />
+    </>
   );
 }
 function NewClientFlow({

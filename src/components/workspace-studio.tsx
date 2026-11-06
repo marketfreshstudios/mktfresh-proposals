@@ -80,7 +80,8 @@ export function WorkspaceStudio({
     model = useRef(draft),
     mounted = useRef(true),
     extras = useRef<Record<string, unknown>>({}),
-    logoFile = useRef<HTMLInputElement>(null);
+    logoFile = useRef<HTMLInputElement>(null),
+    iconFile = useRef<HTMLInputElement>(null);
   const owner = data.user.staff_role === "owner";
   useEffect(() => {
     mounted.current = true;
@@ -269,6 +270,8 @@ export function WorkspaceStudio({
         <p>Shown on client pages, emails and PDFs.</p>
         <div className="workspace-control-grid workspace-brand-top">
           {text("Workspace name", "company_name")}
+        </div>
+        <div className="workspace-brand-assets">
           <div className="workspace-logo-row">
             {draft.logo ? (
               <img src="/api/workspace-logo" alt="Workspace logo" />
@@ -277,8 +280,10 @@ export function WorkspaceStudio({
                 {draft.company_name.slice(0, 1)}
               </span>
             )}
-            <label className="workspace-logo-label">
-              <span>Logo · PNG, under 750 KB</span>
+            <div className="workspace-logo-label">
+              <label htmlFor="workspace-logo-upload">
+                Logo · used on covers, client pages, emails and PDFs
+              </label>
               <span className="workspace-logo-file">
                 {draft.logo
                   ? logoMeta
@@ -288,10 +293,12 @@ export function WorkspaceStudio({
               </span>
               <input
                 type="file"
+                id="workspace-logo-upload"
                 ref={logoFile}
                 className="sr-only"
                 tabIndex={-1}
                 accept="image/png"
+                disabled={!owner || uploading}
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -310,11 +317,101 @@ export function WorkspaceStudio({
                   }
                 }}
               />
-              <Button variant="ghost" onClick={() => logoFile.current?.click()}>
+              <Button
+                variant="ghost"
+                disabled={!owner || uploading}
+                onClick={() => logoFile.current?.click()}
+              >
                 {draft.logo ? "Replace" : "Upload logo"}
               </Button>
-            </label>
+            </div>
           </div>
+          <div className="workspace-logo-row workspace-icon-row">
+            {draft.logo_icon ? (
+              <img
+                src={`/api/workspace-icon?size=128&v=${encodeURIComponent(draft.logo_icon.path)}`}
+                alt="Workspace logo icon"
+              />
+            ) : (
+              <span className="workspace-logo-empty" aria-hidden="true">
+                {draft.company_name.slice(0, 1)}
+              </span>
+            )}
+            <div className="workspace-logo-label">
+              <label htmlFor="workspace-icon-upload">
+                Logo icon · square, shown next to your workspace name and as the
+                browser-tab icon on client pages
+              </label>
+              <span className="workspace-logo-file">
+                {draft.logo_icon
+                  ? `${draft.logo_icon.name} · ${Math.max(1, Math.round(draft.logo_icon.size / 1024))} KB`
+                  : "No logo icon uploaded"}
+              </span>
+              <input
+                id="workspace-icon-upload"
+                type="file"
+                ref={iconFile}
+                className="sr-only"
+                tabIndex={-1}
+                accept="image/png"
+                disabled={!owner || uploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    if (file.type !== "image/png")
+                      throw new Error(
+                        "PNG icon required (SVG is not supported)",
+                      );
+                    if (file.size >= 750000)
+                      throw new Error("Logo icon must be under 750 KB");
+                    const result = await post("/api/workspace-icon", {
+                      image: await readData(file),
+                      name: file.name,
+                    });
+                    change({ logo_icon: result.icon }, true);
+                    setUploadError("");
+                  } catch (error) {
+                    setUploadError((error as Error).message);
+                  } finally {
+                    setUploading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <div className="workspace-logo-actions">
+                <Button
+                  variant="ghost"
+                  disabled={!owner || uploading}
+                  onClick={() => iconFile.current?.click()}
+                >
+                  {draft.logo_icon ? "Replace" : "Upload logo icon"}
+                </Button>
+                {draft.logo_icon && (
+                  <Button
+                    variant="ghost"
+                    disabled={!owner || uploading}
+                    onClick={() => {
+                      change({ logo_icon: null }, true);
+                      setUploadError("");
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <p className="muted workspace-logo-requirements">
+            PNG only, under 750 KB. Logo icon: square, at least 128 × 128
+            pixels.
+          </p>
+          {!owner && (
+            <p className="muted">
+              Only a super admin can change workspace logos.
+            </p>
+          )}
         </div>
         <Field label="Accent color">
           <div className="workspace-accent">
