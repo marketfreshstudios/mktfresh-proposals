@@ -446,25 +446,19 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     .getByRole("status")
     .filter({ hasText: "Block deleted" });
   await expect(oldToast).toBeVisible();
-  if (
-    !(await page
-      .locator(".template-link")
-      .filter({ hasText: "Other document" })
-      .isVisible())
-  )
-    await page
-      .getByRole("button", {
-        name: /^Expand (Pages|Sections) sidebar$/,
-        exact: true,
-      })
-      .click();
   await page
-    .locator(".template-link")
+    .getByRole("button", { name: "Back to templates", exact: true })
+    .click();
+  await page
+    .locator(".studio-template-card")
     .filter({ hasText: "Other document" })
     .click();
-  await oldToast.getByRole("button", { name: "Undo", exact: true }).click();
+  // Navigation unmounts the old document and its toast; its Undo cannot target this resource.
+  await expect(oldToast).toHaveCount(0);
   await expect(page.locator(".studio-block-card")).toHaveCount(1);
-  await expect(page.locator(".studio-block-card")).toContainText("Text");
+  await expect(page.locator(".studio-block-card")).toContainText(
+    "Keep this document",
+  );
   await expect(
     page
       .locator(

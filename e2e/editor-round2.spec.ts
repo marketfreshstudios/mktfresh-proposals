@@ -540,9 +540,9 @@ test("Workspace and templates save style overrides and show responsive live samp
   await templateStyles
     .getByRole("spinbutton", { name: "Heading 3 size (px)", exact: true })
     .fill("23");
-  await page
-    .getByRole("button", { name: "Save template", exact: true })
-    .click();
+  await expect(
+    page.locator(".template-editor-header .editor-save-status"),
+  ).toHaveText("Saved · changes apply to new proposals");
   await expect
     .poll(
       async () =>
@@ -565,9 +565,9 @@ test("Workspace and templates save style overrides and show responsive live samp
       })
       .locator(".text-style-label"),
   ).toHaveText("Heading 3");
-  await page
-    .getByRole("button", { name: "Save template", exact: true })
-    .click();
+  await expect(
+    page.locator(".template-editor-header .editor-save-status"),
+  ).toHaveText("Saved · changes apply to new proposals");
   await expect
     .poll(
       async () =>

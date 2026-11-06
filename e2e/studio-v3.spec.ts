@@ -599,6 +599,13 @@ test("Studio carry-over provider pills, unwrapped status and guarded danger remo
       { exact: true },
     ),
   ).toBeVisible();
+  if (process.env.STUDIO_EDITORS_CAPTURE === "1") {
+    mkdirSync("docs/screenshots/studio-v3-editors", { recursive: true });
+    await page.screenshot({
+      path: "docs/screenshots/studio-v3-editors/billing-defaults.png",
+      animations: "disabled",
+    });
+  }
   const person = f.members.find((m) => m.display_name === "Jamie Example")!;
   const proposal = (await f.repo.list())[0];
   proposal.owner = {
@@ -617,4 +624,9 @@ test("Studio carry-over provider pills, unwrapped status and guarded danger remo
   await expect(remove).toBeDisabled();
   await expect(remove).toContainText("Reassign proposals first");
   await expect(remove).toHaveCSS("color", "rgb(163, 38, 30)");
+  if (process.env.STUDIO_EDITORS_CAPTURE === "1")
+    await page.screenshot({
+      path: "docs/screenshots/studio-v3-editors/team-menu.png",
+      animations: "disabled",
+    });
 });

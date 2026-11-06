@@ -228,12 +228,14 @@ test("sidebar shells stay fixed, arrows retain their size, and every sheet is pa
   expect(await templateSheets.count()).toBeGreaterThan(10);
   for (const sheet of await templateSheets.all())
     await expect(sheet).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  for (const shellName of [".studio-template-list", ".studio-inspector"]) {
+  for (const shellName of [".studio-template-list", ".editor-sidepanel"]) {
     const shell = page.locator(shellName),
       arrow = shell.locator(".sidebar-arrow"),
       before = (await arrow.boundingBox())!;
     await expect(shell).toHaveCSS("overflow-y", "hidden");
-    const scroll = shell.locator(":scope > .editor-sidebar-scroll");
+    const scroll = shell.locator(
+      ":scope > .editor-sidebar-scroll, :scope > .editor-tab-content",
+    );
     await scroll.evaluate((el) => (el.scrollTop = el.scrollHeight));
     expect((await arrow.boundingBox())!.y).toBeCloseTo(before.y, 0);
     await arrow.click();

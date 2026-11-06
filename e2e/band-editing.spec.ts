@@ -415,9 +415,9 @@ test("Studio edits shared template bands with history, and proposals inherit the
   await expect(bands(page).last()).not.toContainText("Template shared note");
   await page.getByRole("button", { name: "Redo", exact: true }).first().click();
   await expect(bands(page).last()).toContainText("Template shared note");
-  await page
-    .getByRole("button", { name: "Save template", exact: true })
-    .click();
+  await expect(
+    page.locator(".template-editor-header .editor-save-status"),
+  ).toHaveText("Saved · changes apply to new proposals");
   await expect
     .poll(
       () =>
@@ -434,6 +434,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
     staff,
   );
   expect(created.header_footer?.shared).toEqual(saved.header_footer.shared);
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const reset = page.locator(".band-reset");
   await expect(reset).toContainText("Restores the built-in header and footer.");
   await reset
@@ -447,8 +448,10 @@ test("Studio edits shared template bands with history, and proposals inherit the
     .click();
   await expect(bands(page).first()).toContainText("Template shared note");
   await page
-    .getByRole("button", { name: "+ New template", exact: true })
+    .getByRole("button", { name: "Back to templates", exact: true })
     .click();
+  await page.getByRole("button", { name: "New template", exact: true }).click();
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const settings = page.locator(".band-settings");
   await expect(
     settings.getByRole("button", { name: "Edit shared header", exact: true }),
