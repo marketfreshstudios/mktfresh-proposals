@@ -1,3 +1,4 @@
+import { coverBrandCss } from "../lib/cover-render";
 import "./globals.css";
 import "./foundation.css";
 import "./client-flow.css";
@@ -17,6 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <style>{coverBrandCss}</style>
+      </head>
       <body>{children}</body>
     </html>
   );

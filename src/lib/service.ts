@@ -1343,12 +1343,16 @@ export function publicResult(
           signatory_name: p.workspace_settings.company_signatory?.name,
           signatory_title: p.workspace_settings.company_signatory?.title,
           logo: p.workspace_settings.logo,
+          logo_icon: p.workspace_settings.logo_icon
+            ? sha256(p.workspace_settings.logo_icon.path).slice(0, 16)
+            : null,
           accent_colour: p.workspace_settings.accent_colour,
           email: p.workspace_settings.email,
         }
       : {
           name: v.variables_resolved["company.name"] ?? "",
           logo: null,
+          logo_icon: null,
           accent_colour: "#365C4A",
           email: "",
         },

@@ -60,7 +60,7 @@ const NodeSchema: z.ZodType<RichText> = z.lazy(() =>
         .object({
           src: z
             .union([
-              z.literal("workspace-logo"),
+              z.enum(["workspace-logo", "workspace-brand"]),
               z
                 .string()
                 .max(1000000)
@@ -98,7 +98,7 @@ export const BandSchema = z
     image: z
       .object({
         src: z.union([
-          z.literal("workspace-logo"),
+          z.enum(["workspace-logo", "workspace-brand"]),
           z
             .string()
             .max(1000000)
@@ -267,8 +267,8 @@ export function defaultTemplateBands(): TemplateBands {
     shared: {
       header: {
         layout: "half",
-        slots: [slot("{{workspace.name}}"), slot("{{proposal.title}}")],
-        image: { src: "workspace-logo", alt: "Workspace logo", slot: 0 },
+        slots: [slot(""), slot("{{proposal.title}}")],
+        image: { src: "workspace-brand", alt: "Workspace logo", slot: 0 },
       },
       footer: {
         layout: "half",

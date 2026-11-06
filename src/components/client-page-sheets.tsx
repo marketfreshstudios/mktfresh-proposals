@@ -53,6 +53,7 @@ export function restoreClientPosition(root: ParentNode, position?: Position) {
 export function ClientPageSheets({
   proposal: p,
   logo,
+  logoIcon,
   busy = false,
   frozen = false,
   onToggle,
@@ -61,6 +62,7 @@ export function ClientPageSheets({
 }: {
   proposal: PublicProposal;
   logo?: string;
+  logoIcon?: string;
   busy?: boolean;
   frozen?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
@@ -69,7 +71,7 @@ export function ClientPageSheets({
 }) {
   const host = useRef<HTMLElement>(null);
   const projection = useMemo(() => {
-    const html = clientDocumentHtml(p, logo),
+    const html = clientDocumentHtml(p, logo, undefined, logoIcon),
       css = clientDocumentCss(p);
     // Response revisions/status and busy changes do not change the document.
     return {
@@ -82,12 +84,14 @@ export function ClientPageSheets({
         p.pagination,
         p.variables,
         logo,
+        logoIcon,
       ]),
     };
-  }, [p, logo]);
+  }, [p, logo, logoIcon]);
   const latest = useRef({
     p,
     logo,
+    logoIcon,
     projection,
     busy,
     frozen,
@@ -98,6 +102,7 @@ export function ClientPageSheets({
   latest.current = {
     p,
     logo,
+    logoIcon,
     projection,
     busy,
     frozen,
@@ -296,7 +301,13 @@ export function ClientPageSheets({
         return;
       }
       try {
-        const output = paginateClientDocument(stage, current.p, current.logo);
+        const output = paginateClientDocument(
+          stage,
+          current.p,
+          current.logo,
+          undefined,
+          current.logoIcon,
+        );
         const position = view && captureClientPosition(view);
         // A pricing block may span several sheets. Keep the active control's
         // position rather than scrolling to that block's first fragment.

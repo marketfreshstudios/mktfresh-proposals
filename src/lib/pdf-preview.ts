@@ -1,3 +1,4 @@
+import { usesWorkspaceBrand } from "./workspace-brand";
 import type { Proposal } from "./model";
 import { check } from "./model";
 import type { Repository } from "./repository";
@@ -94,6 +95,15 @@ export async function pdfPreview(
         settings: renderSettings,
         fonts,
         logo,
+        logoIcon:
+          !renderSettings.logo &&
+          usesWorkspaceBrand(v) &&
+          renderSettings.logo_icon
+            ? "data:image/png;base64," +
+              Buffer.from(
+                await storage.get(renderSettings.logo_icon.path),
+              ).toString("base64")
+            : undefined,
         document: { id: p.id, title: p.title },
       },
       { preview: true },

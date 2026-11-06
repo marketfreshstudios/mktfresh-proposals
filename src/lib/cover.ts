@@ -58,6 +58,7 @@ export const CoverSchema = z
     eyebrow: z.string().max(2000),
     byline: z.string().max(4000),
     prepared_for: z.string().max(2000).optional(),
+    logo_mode: z.literal("brand").optional(),
     logo_height: z.number().min(16).max(1056).optional(),
     logo_alt: z.string().max(300).optional(),
     elements: z
@@ -119,8 +120,9 @@ export function coverPlainText(node: RichText): string {
 export function coverElementCss(e: CoverElement) {
   return `text-align:${e.align};${e.space_above === undefined ? "" : `margin-top:${e.space_above}px;`}${e.space_below === undefined ? "" : `margin-bottom:${e.space_below}px;padding-bottom:0;`}`;
 }
-export const defaultCover = (): Cover => ({
-  workspace: "{{workspace.name}}",
+export const defaultCover = (brand = false): Cover => ({
+  ...(brand ? { logo_mode: "brand" as const } : {}),
+  workspace: brand ? "" : "{{workspace.name}}",
   eyebrow: "",
   prepared_for: "Prepared for {{client.company}}",
   byline: "{{proposal.validity}}",

@@ -22,6 +22,7 @@ export const pageBandCss = `
 .page-band[data-page-band=footer]{padding-top:var(--band-space-by-line,6px)}
 .page-band[data-page-band=footer][data-divider=true]{border-top:1px solid #E3DED4}
 .page-band .band-slot{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;height:100%}
+.page-band .band-brand-name{vertical-align:middle;margin-left:8px}
 .page-band .band-slot-content{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .page-band .band-slot img{display:inline-block;vertical-align:middle;max-height:var(--band-image-max,18px);max-width:100%;width:auto;object-fit:contain;flex-shrink:0;margin:0}
 .page-band strong .field-chip{font-weight:700}
@@ -41,6 +42,7 @@ export function pageBandHtml({
   values,
   styles,
   logo,
+  logoIcon,
   print = false,
   band: override,
   inContent = false,
@@ -54,6 +56,7 @@ export function pageBandHtml({
   values: Record<string, string>;
   styles?: ResolvedStyles;
   logo?: string;
+  logoIcon?: string;
   print?: boolean;
 }) {
   if (
@@ -104,10 +107,21 @@ export function pageBandHtml({
       return s;
     }
     if (n.type === "image") {
-      const src = n.attrs?.src === "workspace-logo" ? logo : n.attrs?.src;
-      return src
-        ? `<img src="${escape(src)}" alt="${escape(n.attrs?.alt ?? "")}" data-image-height="${n.attrs?.height ?? 18}" style="height:${n.attrs?.height ?? 18}px">`
-        : "";
+      const auto = n.attrs?.src === "workspace-brand";
+      const src = auto
+        ? logo || logoIcon
+        : n.attrs?.src === "workspace-logo"
+          ? logo
+          : n.attrs?.src;
+      const name =
+        auto && !logo
+          ? `<span class="band-brand-name">${field("workspace.name")}</span>`
+          : "";
+      return (
+        (src
+          ? `<img src="${escape(src)}" alt="${escape(n.attrs?.alt ?? "")}" data-image-height="${n.attrs?.height ?? 18}" style="height:${n.attrs?.height ?? 18}px">`
+          : "") + name
+      );
     }
     if (n.type === "hardBreak") return "<br>";
     const tag = (

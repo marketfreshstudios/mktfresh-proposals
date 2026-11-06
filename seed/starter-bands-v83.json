@@ -1,0 +1,99 @@
+{
+  "showHeader": true,
+  "showFooter": true,
+  "showOnCover": false,
+  "distanceIn": 0.3,
+  "divider": true,
+  "shared": {
+    "header": {
+      "layout": "half",
+      "slots": [
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "image",
+                  "attrs": {
+                    "src": "workspace-logo",
+                    "alt": "Workspace logo",
+                    "height": 18
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "{{workspace.name}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{{proposal.title}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "footer": {
+      "layout": "half",
+      "slots": [
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for {{client.company}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Page {{page.number}} of {{page.count}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "headerSpacing": {
+    "distanceIn": 0.3,
+    "heightIn": 0.25,
+    "spaceByLine": 6,
+    "spaceToContent": 8,
+    "divider": true,
+    "showOnCover": false
+  },
+  "footerSpacing": {
+    "distanceIn": 0.3,
+    "heightIn": 0.25,
+    "spaceByLine": 6,
+    "spaceToContent": 8,
+    "divider": true,
+    "showOnCover": false
+  }
+}

@@ -47,6 +47,7 @@ export function PagedPaper({
   allowOverrides = true,
   values = {},
   logo,
+  logoIcon,
 }: {
   onHeaderFooter?: (hf: HeaderFooterSettings) => void;
   onBandReflow?: (
@@ -57,6 +58,7 @@ export function PagedPaper({
   headerFooter?: HeaderFooterSettings;
   values?: Record<string, string>;
   logo?: string;
+  logoIcon?: string;
   paper: RefObject<HTMLElement | null>;
   content: Block[];
   styles: ResolvedStyles;
@@ -611,6 +613,7 @@ export function PagedPaper({
                   values={values}
                   styles={styles}
                   logo={logo}
+                  logoIcon={logoIcon}
                 />
               ))}
             </PageSheet>

@@ -73,6 +73,17 @@ export function projectPageSheets(
   let pageTop = 0,
     previousFrame: HTMLElement | null = null;
   const y = (el: Element) => el.getBoundingClientRect().top - origin;
+  // Replacing a small collapsed margin with a page-sized margin can consume
+  // the cover's trailing margin. Correct against the actual DOM position rather
+  // than assuming margins add linearly; this only projects an existing break.
+  const placeAt = (el: HTMLElement, top: number) => {
+    let value = (parseFloat(getComputedStyle(el).marginTop) || 0) + top - y(el);
+    el.dataset.layoutSpace = "true";
+    el.style.setProperty("margin-top", `${value}px`, "important");
+    value += top - y(el);
+    el.style.setProperty("margin-top", `${value}px`, "important");
+    return value;
+  };
   const frameFor = (s: PageStart) =>
     clone.querySelector<HTMLElement>(
       `[data-block-id="block-${CSS.escape(s.block)}"],[data-block-id="template-${CSS.escape(s.block)}"]`,
@@ -166,15 +177,13 @@ export function projectPageSheets(
         const moved = point.node;
         const margin = parseFloat(getComputedStyle(moved).marginTop) || 0;
         finish(y(moved) - margin);
-        const height =
-          margin +
+        const height = placeAt(
+          moved,
           pageTop +
-          (hf
-            ? pageGeometry(styles, hf, boxes.length + 1).content.y
-            : topPadding) -
-          y(moved);
-        moved.dataset.layoutSpace = "true";
-        moved.style.setProperty("margin-top", `${height}px`, "important");
+            (hf
+              ? pageGeometry(styles, hf, boxes.length + 1).content.y
+              : topPadding),
+        );
         const host = moved.closest<HTMLElement>(".field-editor");
         if (host)
           spaces.set(host, [
@@ -253,15 +262,13 @@ export function projectPageSheets(
                   : topPadding)
             : y(moved) - margin,
         );
-        const value =
-          margin +
+        placeAt(
+          moved,
           pageTop +
-          (hf
-            ? pageGeometry(styles, hf, boxes.length + 1).content.y
-            : topPadding) -
-          y(moved);
-        moved.dataset.layoutSpace = "true";
-        moved.style.setProperty("margin-top", `${value}px`, "important");
+            (hf
+              ? pageGeometry(styles, hf, boxes.length + 1).content.y
+              : topPadding),
+        );
         previousFrame = moved;
       }
     }

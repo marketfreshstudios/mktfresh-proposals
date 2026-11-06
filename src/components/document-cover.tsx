@@ -1,4 +1,5 @@
 "use client";
+import { coverBrand } from "../lib/workspace-brand";
 import { useHasEditorPopover } from "./editor-popovers";
 import { FontSizePicker } from "./inline-font-size";
 import {
@@ -42,6 +43,7 @@ type Props = {
   onTitle?: (title: string) => void;
   workspace?: string;
   logo?: string;
+  logoIcon?: string;
   cover?: Cover;
   map?: Record<string, string>;
   highlightFields?: boolean;
@@ -137,6 +139,7 @@ export function DocumentCover({
   onTitle,
   workspace,
   logo,
+  logoIcon,
   cover,
   map = {},
   highlightFields = true,
@@ -308,7 +311,13 @@ export function DocumentCover({
       ...value,
       elements: elements.map((e) => ({ ...e, align, x: undefined })),
     });
-  const src = value.logo === null ? undefined : value.logo || logo;
+  const brand = coverBrand(
+      value,
+      logo,
+      logoIcon,
+      map["workspace.name"] ?? workspace ?? "",
+    ),
+    src = brand.src;
   return (
     <header
       ref={root}
@@ -334,6 +343,8 @@ export function DocumentCover({
               element={e}
               value={value}
               src={src}
+              name={brand.name}
+              highlightFields={highlightFields}
               editable={editable}
               selected={selected === e.id}
               select={() => choose(e.id)}
@@ -692,6 +703,8 @@ function CoverLogo({
   element: e,
   value,
   src,
+  name,
+  highlightFields,
   editable,
   selected,
   select,
@@ -704,6 +717,8 @@ function CoverLogo({
   element: CoverElement;
   value: Cover;
   src?: string;
+  name?: string;
+  highlightFields: boolean;
   editable: boolean;
   selected: boolean;
   select: () => void;
@@ -777,6 +792,7 @@ function CoverLogo({
       ref={root}
       className="cover-logo cover-element"
       data-cover-element={e.id}
+      data-brand={!!name}
       data-cover-selected={selected}
       style={{ ...elementStyle(e), textAlign: "left" }}
       onPointerDownCapture={drag}
@@ -826,6 +842,16 @@ function CoverLogo({
             </button>
           }
         />
+      )}
+      {name && (
+        <span className="cover-brand-name">
+          <span
+            className={highlightFields ? "field-chip" : undefined}
+            data-field={highlightFields ? "workspace.name" : undefined}
+          >
+            {name}
+          </span>
+        </span>
       )}
       {position?.align && (
         <span
