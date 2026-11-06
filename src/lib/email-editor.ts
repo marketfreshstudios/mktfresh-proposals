@@ -50,9 +50,20 @@ export function emailIsDefault(
     }
     return { ...n, ...(n.content ? { content: children } : {}) };
   }
+  // JSONB may reorder keys. This is a UI equality check, never a version hash.
+  const bodyKey = (body: RichText) =>
+    JSON.stringify(normalized(body), (_key, value) =>
+      value && typeof value === "object" && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.entries(value).sort(([a], [b]) =>
+              a < b ? -1 : a > b ? 1 : 0,
+            ),
+          )
+        : value,
+    );
   return (
     t.subject === d.subject &&
     t.button_label === d.button_label &&
-    JSON.stringify(normalized(t.body)) === JSON.stringify(normalized(d.body))
+    bodyKey(t.body) === bodyKey(d.body)
   );
 }

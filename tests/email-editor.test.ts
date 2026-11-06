@@ -50,6 +50,23 @@ describe("Studio email editor presentation", () => {
       "secure proposal",
     );
   });
+  it("recognizes defaults after JSONB key reordering and token-to-chip conversion", () => {
+    const t = structuredClone(emailDefaults[0]);
+    const reordered = JSON.parse(
+      JSON.stringify(t.body, (_key, value) =>
+        value && typeof value === "object" && !Array.isArray(value)
+          ? Object.fromEntries(Object.entries(value).reverse())
+          : value,
+      ),
+    );
+    expect(emailIsDefault({ ...t, body: reordered })).toBe(true);
+    t.body.content![0].content = [
+      { type: "text", text: "Hi " },
+      { type: "variable", attrs: { path: "client.first_name" } },
+      { type: "text", text: "," },
+    ];
+    expect(emailIsDefault(t)).toBe(true);
+  });
   it("keeps old email URLs working", () => {
     expect(legacyStaffRedirect(["emails", "proposal_sent"])).toBe(
       "/studio/emails/proposal_sent",
