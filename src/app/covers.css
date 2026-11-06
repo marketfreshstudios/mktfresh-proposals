@@ -69,10 +69,46 @@
   min-height: 44px;
   margin: 8px 0;
 }
-.palette-edit-row input[type="color"] {
-  width: 48px;
+.brand-color-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.brand-color-swatch {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.brand-color-field input[type="color"] {
+  width: 44px;
   height: 44px;
   padding: 4px;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.brand-color-field input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.brand-color-field input[type="color"]::-webkit-color-swatch {
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+.brand-color-field input[type="color"]::-moz-color-swatch {
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+.brand-color-hex {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 600 12px/1.4 var(--font-ui);
+}
+.brand-color-hex input {
+  width: 120px;
+  font: 400 14px/1.4 var(--font-ui);
 }
 .workspace-palette {
   margin-block: 24px;

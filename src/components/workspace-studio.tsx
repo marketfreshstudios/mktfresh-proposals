@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
-import { BrandPalettePicker } from "./brand-palette-picker";
+import { BrandColorField } from "./brand-color-field";
 import { businessStates } from "../lib/business-state";
 import { whiteContrast, accessibleAccent } from "../lib/brand";
 import {
@@ -45,6 +45,7 @@ export function WorkspaceStudio({
     [uploading, setUploading] = useState(false),
     [uploadError, setUploadError] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string>();
   const [logoMeta, setLogoMeta] = useState<{
     name: string;
     size: number;
@@ -284,7 +285,10 @@ export function WorkspaceStudio({
             </div>
             <div className="workspace-logo-preview">
               {draft.logo ? (
-                <img src="/api/workspace-logo" alt="Workspace logo" />
+                <img
+                  src={logoPreview ?? "/api/workspace-logo"}
+                  alt="Workspace logo"
+                />
               ) : (
                 <span className="workspace-logo-empty" aria-hidden="true">
                   {draft.company_name.slice(0, 1)}
@@ -313,9 +317,9 @@ export function WorkspaceStudio({
                   if (!file) return;
                   setUploading(true);
                   try {
-                    const result = await post("/api/workspace-logo", {
-                      image: await readData(file),
-                    });
+                    const image = await readData(file);
+                    const result = await post("/api/workspace-logo", { image });
+                    setLogoPreview(image);
                     setSuggestions(result.palette_suggestions ?? []);
                     setLogoMeta({ name: file.name, size: file.size });
                     change({ logo: result.path }, true);
@@ -430,22 +434,18 @@ export function WorkspaceStudio({
             </p>
           )}
         </div>
-        <Field label="Accent color">
-          <div className="workspace-accent">
-            {["#365c4a", "#2e4f79", "#7a3e2d", "#1c1b18"].map((colour, n) => (
-              <button
-                type="button"
-                className={`workspace-swatch workspace-swatch-${n}`}
-                aria-label={`Use accent ${colour}`}
-                aria-pressed={draft.accent_colour.toLowerCase() === colour}
-                key={colour}
-                onClick={() => change({ accent_colour: colour }, true)}
-              />
-            ))}
-            <input
-              aria-label="Accent hex"
+        <section className="workspace-palette" aria-label="Brand colors">
+          <h3>Brand colors</h3>
+          <p className="muted">Primary plus up to four more colors.</p>
+          <div className="palette-edit-row">
+            <BrandColorField
+              label="Primary"
+              hexLabel="Accent hex"
               value={draft.accent_colour}
-              onChange={(e) => change({ accent_colour: e.target.value })}
+              disabled={!owner}
+              onChange={(color, immediate) =>
+                change({ accent_colour: color }, immediate)
+              }
               onBlur={() => void flush()}
             />
             <p className={contrast >= 4.5 ? "success" : "warning"}>
@@ -455,50 +455,37 @@ export function WorkspaceStudio({
               ({contrast.toFixed(1)}:1)
             </p>
           </div>
-        </Field>
-        {contrast > 0 && contrast < 4.5 && (
-          <Button
-            onClick={() =>
-              change(
-                { accent_colour: accessibleAccent(draft.accent_colour) },
-                true,
-              )
-            }
-          >
-            Use {accessibleAccent(draft.accent_colour)} — darker, same hue
-          </Button>
-        )}
-        <section className="workspace-palette" aria-label="Brand palette">
-          <h3>Brand palette</h3>
-          <p className="muted">
-            Accent color is your primary brand color. Add up to four more
-            colors.
-          </p>
-          <BrandPalettePicker
-            settings={draft}
-            value={draft.accent_colour}
-            onChange={(color) => change({ accent_colour: color }, true)}
-            disabled={!owner}
-          />
+          {contrast > 0 && contrast < 4.5 && (
+            <Button
+              disabled={!owner}
+              onClick={() =>
+                change(
+                  { accent_colour: accessibleAccent(draft.accent_colour) },
+                  true,
+                )
+              }
+            >
+              Use {accessibleAccent(draft.accent_colour)} — darker, same hue
+            </Button>
+          )}
           {(draft.brand_palette ?? []).map((color, index) => (
             <div className="palette-edit-row" key={index}>
-              <input
-                type="color"
-                aria-label={`Brand color ${index + 2}`}
+              <BrandColorField
+                label={`Brand color ${index + 2}`}
                 value={color}
                 disabled={!owner}
-                onChange={(e) =>
+                onChange={(color, immediate) =>
                   change(
                     {
                       brand_palette: (draft.brand_palette ?? []).map((c, n) =>
-                        n === index ? e.target.value : c,
+                        n === index ? color : c,
                       ),
                     },
-                    true,
+                    immediate,
                   )
                 }
+                onBlur={() => void flush()}
               />
-              <code>{color}</code>
               <Button
                 variant="ghost"
                 disabled={!owner}
@@ -554,20 +541,16 @@ export function WorkspaceStudio({
               </p>
               {suggestions.map((color, index) => (
                 <div className="palette-edit-row" key={index}>
-                  <input
-                    type="color"
-                    aria-label={`Suggested color ${index + 1}`}
+                  <BrandColorField
+                    label={`Suggested color ${index + 1}`}
                     value={color}
                     disabled={!owner}
-                    onChange={(e) =>
+                    onChange={(color) =>
                       setSuggestions(
-                        suggestions.map((c, n) =>
-                          n === index ? e.target.value : c,
-                        ),
+                        suggestions.map((c, n) => (n === index ? color : c)),
                       )
                     }
                   />
-                  <code>{color}</code>
                   <Button
                     variant="secondary"
                     disabled={

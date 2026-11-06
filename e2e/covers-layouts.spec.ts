@@ -93,6 +93,29 @@ for (const layout of coverLayouts)
       ]),
     );
     expect(geometry.overflow).toBe(false);
+    if (layout === "editorial" || layout === "split") {
+      const mark = root.locator(".cover-watermark");
+      await expect(mark).toHaveCSS(
+        "opacity",
+        layout === "split" ? "0.12" : "0.08",
+      );
+      await expect(mark).toHaveCSS(
+        "width",
+        layout === "split" ? "420px" : "480px",
+      );
+      const crop = await mark.evaluate((el) => {
+        const a = el.getBoundingClientRect(),
+          b = el.parentElement!.getBoundingClientRect();
+        return {
+          top: a.top - b.top,
+          right: a.right - b.right,
+          bottom: a.bottom - b.bottom,
+        };
+      });
+      expect(crop.right).toBeGreaterThan(100);
+      if (layout === "editorial") expect(crop.top).toBe(-150);
+      else expect(crop.bottom).toBe(90);
+    }
     if (layout === "split") {
       await expect(root.locator(".cover-watermark")).toHaveCSS("left", "96px");
       await expect(root.locator(".cover-watermark-clip")).toHaveCSS(
@@ -281,8 +304,14 @@ test("cover controls preserve history, use palette colors, validate uploads and 
   await page.locator(".cover-settings-accordion > summary").click();
   const settings = page.locator(".cover-settings");
   await expect(
-    settings.getByText("Ink text on the cover · AA contrast", { exact: true }),
-  ).toBeVisible();
+    settings.getByText("Background color", { exact: true }),
+  ).toHaveCount(0);
+  await expect(settings.getByLabel("Opacity (%)", { exact: true })).toHaveValue(
+    "8",
+  );
+  await expect(settings.getByLabel("Size (px)", { exact: true })).toHaveValue(
+    "480",
+  );
   await expect(
     settings.getByText(
       "Upload a 1024×1024 or larger icon to use it as the cover graphic",
@@ -313,6 +342,9 @@ test("cover controls preserve history, use palette colors, validate uploads and 
   await settings
     .getByLabel("Cover background", { exact: true })
     .selectOption("solid");
+  await expect(
+    settings.getByText("Background color", { exact: true }),
+  ).toBeVisible();
   await settings
     .getByRole("button", { name: "Use brand color #ffeeaa" })
     .click();
@@ -357,11 +389,14 @@ test("cover controls preserve history, use palette colors, validate uploads and 
     "70% 50%",
   );
   await expect.poll(() => f.active().cover?.background?.focal?.x).toBe(70);
-  currentIcon = await sharp({
-    create: { width: 1024, height: 1024, channels: 4, background: "#7722aa" },
-  })
+  currentIcon = await sharp(
+    Buffer.from(
+      '<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg"><path fill="#2f5d50" d="M128 160Q128 96 192 96H832V288H352V416H736V608H352V736H832V928H192Q128 928 128 864Z"/></svg>',
+    ),
+  )
     .png()
     .toBuffer();
+  expect((await sharp(currentIcon).ensureAlpha().raw().toBuffer())[3]).toBe(0);
   f.settings.logo_icon = {
     ...f.settings.logo_icon!,
     width: 1024,
@@ -372,7 +407,7 @@ test("cover controls preserve history, use palette colors, validate uploads and 
   await f.editRemote({
     cover: {
       ...f.active().cover!,
-      background: { type: "plain", graphic: "auto", opacity: 0.25, size: 600 },
+      background: { type: "plain", graphic: "auto" },
     },
   });
   await page.reload();
@@ -387,6 +422,11 @@ test("cover controls preserve history, use palette colors, validate uploads and 
     "overflow",
     "hidden",
   );
+  const mark = page.locator(".editor-paper .cover-watermark");
+  await expect(mark).toHaveCSS("opacity", "0.08");
+  await expect(mark).toHaveCSS("width", "480px");
+  await expect(mark).toHaveCSS("right", "-150px");
+  await expect(mark).toHaveCSS("top", "-150px");
   if (process.env.CAPTURE_COVERS) {
     await page.getByRole("tab", { name: "Styles", exact: true }).click();
     const accordion = page.locator(".cover-settings-accordion");
@@ -413,12 +453,16 @@ test("cover controls preserve history, use palette colors, validate uploads and 
     path,
     raster,
   ]);
-  const pixel = await sharp(raster + ".png")
-    .extract({ left: 780, top: 30, width: 1, height: 1 })
-    .removeAlpha()
-    .raw()
-    .toBuffer();
-  expect(pixel[2]).toBeGreaterThan(pixel[1]); // Purple icon, not the green Ring fallback.
+  const pixel = async (top: number) =>
+    sharp(raster + ".png")
+      .extract({ left: 780, top, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+  expect([...(await pixel(30))]).toEqual([255, 255, 255]); // Transparent gap in the E mark.
+  const ink = await pixel(80);
+  expect(ink[1]).toBeGreaterThan(ink[0]);
+  expect(ink[0]).toBeLessThan(250); // The actual mark prints at the default 8%.
 });
 
 test("Brand suggests logo colors for explicit acceptance and keeps saved colors until accepted", async ({
@@ -440,16 +484,11 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
     data: settings,
   });
   expect(prepared.ok(), await prepared.text()).toBe(true);
-  const logo = await sharp({
-    create: { width: 240, height: 80, channels: 4, background: "#2f5d50" },
-  })
-    .composite([
-      {
-        input: Buffer.from(
-          '<svg width="240" height="80"><rect x="120" width="120" height="80" fill="#b5532e"/></svg>',
-        ),
-      },
-    ])
+  const logo = await sharp(
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="96"><path d="M8 8H72V28H28V38H64V58H28V68H72V88H8Z" fill="#2f5d50"/><text x="88" y="65" font-family="Arial,sans-serif" font-weight="700" font-size="44" fill="#b5532e">Example Studio</text></svg>',
+    ),
+  )
     .png()
     .toBuffer();
   try {
@@ -460,7 +499,39 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
       mimeType: "image/png",
       buffer: logo,
     });
+    await expect(
+      page.getByRole("region", { name: "Brand colors", exact: true }),
+    ).toHaveCount(1);
+    await expect(
+      page.getByRole("heading", { name: "Brand palette", exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("Primary", { exact: true })).toHaveCount(1);
+    await expect(page.getByLabel("Accent hex", { exact: true })).toHaveValue(
+      original.accent_colour,
+    );
+    await expect(
+      page.getByLabel("Brand color 2 hex", { exact: true }),
+    ).toHaveValue(palette[0]);
+    await page.getByLabel("Brand color 2 hex", { exact: true }).fill("#335577");
+    await page.getByLabel("Brand color 2 hex", { exact: true }).blur();
+    await expect
+      .poll(
+        async () =>
+          (
+            await (
+              await request.get("/api/workspace_settings", { headers })
+            ).json()
+          )[0].brand_palette,
+      )
+      .toEqual(["#335577"]);
     await expect(page.getByText("Suggested from your logo")).toBeVisible();
+    await expect
+      .poll(() =>
+        page
+          .getByRole("img", { name: "Workspace logo", exact: true })
+          .evaluate((el) => (el as HTMLImageElement).naturalWidth),
+      )
+      .toBe(480);
     await expect
       .poll(
         async () =>
@@ -474,7 +545,7 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
     const before = (
       await (await request.get("/api/workspace_settings", { headers })).json()
     )[0];
-    expect(before.brand_palette).toEqual(palette);
+    expect(before.brand_palette).toEqual(["#335577"]);
     expect(before.accent_colour).toBe(original.accent_colour);
     await page
       .getByRole("button", { name: "Accept color", exact: true })
