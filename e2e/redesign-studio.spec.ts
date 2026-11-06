@@ -444,7 +444,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
           ).toBeVisible();
           await expect(
             page.getByRole("textbox", { name: "Clause heading", exact: true }),
-          ).toHaveValue("4.4 Own It Over Time");
+          ).toHaveText("4.4 Own It Over Time");
           await expect(
             page.getByRole("radio", { name: "Only when…", exact: true }),
           ).toBeChecked();

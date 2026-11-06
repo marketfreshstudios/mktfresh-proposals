@@ -215,7 +215,7 @@ test("text style conversions preserve chips; formatting retains selection and fo
   await bar.getByRole("button", { name: "Text style", exact: true }).click();
   await page.getByRole("menuitemradio", { name: /Heading 2/ }).click();
   await expect(frame.locator(".tiptap")).toHaveText(
-    "Hello {{client.name}}, a useful proposal for your team.",
+    "Hello Client Name, a useful proposal for your team.",
   );
   await bar.getByRole("button", { name: "Text style", exact: true }).click();
   await page.getByRole("menuitemradio", { name: /Paragraph/ }).click();
@@ -230,7 +230,7 @@ test("text style conversions preserve chips; formatting retains selection and fo
   await expect(input.locator("strong")).toContainText("Hello");
   await input.press("Alt+Digit2");
   await expect(frame.locator(".tiptap")).toHaveText(
-    "Hello {{client.name}}, a useful proposal for your team.",
+    "Hello Client Name, a useful proposal for your team.",
   );
   await expect(frame.locator("h3")).toBeVisible();
 });

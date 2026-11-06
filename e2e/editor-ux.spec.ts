@@ -355,7 +355,7 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
       .selectOption("1");
     await expect(
       page.getByRole("textbox", { name: "Clause body", exact: true }),
-    ).toHaveValue("Only applies when that product is selected.");
+    ).toHaveText("Only applies when that product is selected.");
     await page.keyboard.press("Escape");
     // The complete option card is a labelled touch target, not only its small radio.
     await page

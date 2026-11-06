@@ -165,7 +165,7 @@ test("Plain contract clauses edit and insert fields without inert rich-text cont
       exact: true,
     })
     .click();
-  await expect(text).toContainText("Plain terms for Client company");
+  await expect(text).toHaveText("Plain terms for Client company");
   await expect(text.locator('[data-field="client.company"]')).toHaveClass(
     /field-chip/,
   );
