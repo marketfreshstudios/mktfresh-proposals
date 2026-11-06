@@ -557,11 +557,9 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
     }),
   );
   await page.reload();
-  const qbo = page
-    .locator(".connection-card")
-    .filter({
-      has: page.getByRole("heading", { name: "QuickBooks", exact: true }),
-    });
+  const qbo = page.locator(".connection-card").filter({
+    has: page.getByRole("heading", { name: "QuickBooks", exact: true }),
+  });
   await expect(qbo.locator(".connection-state")).toContainText(
     "Sandbox configured",
   );
@@ -569,11 +567,9 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
     "color",
     "rgb(20, 107, 63)",
   );
-  const claude = page
-    .locator(".connection-card")
-    .filter({
-      has: page.getByRole("heading", { name: "Claude", exact: true }),
-    });
+  const claude = page.locator(".connection-card").filter({
+    has: page.getByRole("heading", { name: "Claude", exact: true }),
+  });
   await expect(claude.locator(".connection-state")).toContainText("Connected");
   await expect(claude.locator(".connection-state")).toHaveCSS(
     "color",

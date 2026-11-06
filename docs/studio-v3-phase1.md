@@ -10,7 +10,7 @@ Source: `design/studio-v3/specs/studio-v3.md` (spec before prototype before olde
 
 ## Implementation
 
-- Desktop: Yeswell shell and static workspace label; tablet: Studio chips and bottom navigation; phone: six area rows with real counts/status, plus the existing theme/sign-out actions.
+- Desktop: Yeswell shell and static workspace label; tablet: Studio chips and bottom navigation; phone: six area rows with real counts/status, plus an Account menu for theme/sign-out actions and a grouped phone list.
 - Templates: static first-page cards, search, usage counts from proposals, recent saved blocks. Saved blocks: type filters and table, no Used in column. New `/studio/blocks/:id` opens the existing block editor. Existing routes and redirects remain.
 - Emails: client/staff tabs and delivery-stage groups. Exactly nine staff emails; the job failure template is listed once. Default wording and every email editor remain unchanged.
 - Products: filter/search table, canonical `?item=` detail panel, existing custom-family creation and product/plan controls. Synced prices are read-only; Stripe links use the configured mode and lookup-key search (price IDs are deliberately not persisted). A successful existing catalogue sync records its timestamp as workspace activity. Prices are not computed or suggested.
@@ -29,4 +29,12 @@ All captures use local mock data. The [side-by-side reference index](screenshots
 
 **No hosted SQL, migration, credentials or resource changes are needed.** Signing, readiness, billing routing, PagePlan, sealed files, short links/rate limits and proposal editor behavior are unchanged. CI is not awaited; no merge is performed.
 
-Final local results (November 5, 2026): 444 unit tests across 89 files; full browser suite 236 passed / 4 skipped (15.8 minutes); final Studio-specific run 3 passed. Types, formatting, neutral checks, production build / 330-file PDF trace, font embedding and real PDF-job checks passed. All 23 comparison images were checked for presence and representative desktop, tablet, phone and dark captures were visually inspected.
+Final local results (November 5, 2026): 445 unit tests across 89 files; full browser suite 237 passed / 4 existing skips (15.8 minutes); final Studio-specific run 4 passed. Types, formatting, neutral checks, production build / 330-file PDF trace, font embedding and real PDF-job checks passed. All 26 refreshed comparison images were checked for presence and representative desktop, tablet, phone and dark captures were visually inspected.
+
+## Owner-review corrections on PR #77
+
+All 23 review details are applied. The refreshed comparisons include the Super admin Team action menu, dark Brand and Connections, and a **viewport** capture of 768 Team scrolled to its bottom. Your profile stays compact beneath Team; menu actions and permissions are unchanged. Dark mode and Sign out moved into Account (desktop user row, tablet avatar, phone Account row), and shell theme initialization preserves the saved theme without opening the menu.
+
+Studio statuses use success/warning/neutral tokens and links use Ink. Synced product prices and intervals are shown as read-only display text, app-priced inputs stay available, and mapping details remain accessible in More product details. Subject chips are a list reading layer; stored email wording is unchanged. Saved appears only after a session save, never by default. No hosted SQL.
+
+Owner-review final validation: 445 unit tests; 237 browser tests passed / 4 existing skips (15.8 minutes); Studio + the older Workspace contrast regression 5 passed; types, formatting, neutral checks and production build / 330-file PDF trace passed. The older contrast test now targets the retained hex input instead of the deliberately removed native color picker, with every contrast assertion unchanged. Connected Claude and sandbox-configured QuickBooks are covered as green states; disconnected AI is neutral. No tests were disabled or assertions weakened.

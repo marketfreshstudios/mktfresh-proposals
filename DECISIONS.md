@@ -42,6 +42,7 @@
 Verified official sources: https://developers.openai.com/plugins/build/auth ; https://developers.openai.com/api/docs/guides/custom-mcp-server ; https://claude.com/docs/connectors/building ; https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp .
 
 Use authenticated Streamable HTTP with protected-resource metadata, authorization-server discovery, PKCE S256, dynamic registration, short-lived audience-bound access tokens and rotating refresh tokens. ChatGPT requires S256 discovery and supports DCR; its stable callback is `https://chatgpt.com/connector_platform_oauth_redirect` when issuer responses are supported, with connector-specific callbacks otherwise. Claude supports DCR and the 2025-11-25 authorization spec; allow its exact `https://claude.ai/api/mcp/auth_callback`. Configure additional exact callback URIs explicitly; no wildcard redirects. Claude's published identity/CIMD is optional: choose Register automatically with this implementation. Remote connector setup requires a public HTTPS endpoint and therefore real Claude/ChatGPT account connection checks await owner deployment. Local protocol, OAuth, capability-denial and workflow tests do not claim actual hosted-client acceptance.
+
 - OAuth protocol registrations contain only public client metadata and are stored under workspace 1 as the issuer registry. Authorization codes, grants and tokens use the actual staff workspace. No OAuth record is readable directly by staff/anonymous database roles; the assistants screen receives sanitized grant metadata only. Authorization code consumption and refresh-token use are atomic database operations; no tokens are stored in plaintext.
 - The connector uses the official MCP TypeScript SDK with stateless Streamable HTTP, JSON responses and bounded text results. AI capabilities are checked in the tool dispatcher and sensitive proposal services; staff REST endpoints do not recognize connector tokens. Markdown supports a deliberately bounded subset and rejects unsupported scope text rather than silently dropping it.
 
@@ -69,7 +70,6 @@ The 29 October review supersedes the earlier instruction to update every touched
 
 - Owner-granted CLI/Test Clocks permissions were verified in the continuation. A new isolated clock confirmed 30 automatically paid $175 invoices and then a paid $100 hosted-standard-100 invoice. The local CLI now forwards real signed events but renders them at account-default 2019-12-03; the app correctly refuses them before jobs because it requires 2024-06-20. Installed CLI rejects a listen --api-version override. Kept account defaults and verification guards unchanged; recorded webhook processing/replay as blocked rather than rewriting events. The successful schedule simulation tests Stripe execution of the initially configured schedule; failed-payment webhook recalculation remains unverified.
 
-
 ## Designated company signatory
 
 - Only workspace owners configure the signatory's staff identity, display name/title, stored PNG and explicit signing allowlist. The selected identity and all allowed users must belong to that workspace; its email is derived from Auth, not submitted display data. Owners must also be on the allowlist to sign.
@@ -78,7 +78,6 @@ The 29 October review supersedes the earlier instruction to update every touched
 - Settings use existing workspace JSON; signer evidence uses existing proposal/signer JSON. No migration is necessary. New seeds suggest Jonathan Garces / Owner but intentionally leave the signature image, linked staff identity and allowed staff unset. Existing workspaces require explicit owner setup. PNG upload or canvas drawing is supported; invalid/oversize images are rejected.
 
 - PDF rendering is a lazy job-only dependency. Module-load failures are recorded as retryable PDF job failures, rather than preventing API initialization. Vercel uses `playwright-core` plus the packaged `@sparticuz/chromium` executable, following the [maintainer's Playwright example](https://github.com/Sparticuz/chromium#usage-with-playwright). Explicit API output tracing includes runtime package assets and fonts; the build verifies the trace and Linux CI generates a PDF from the isolated traced package set with Vercel environment detection enabled.
-
 
 ## Canonical links and staff senders
 
@@ -252,7 +251,6 @@ References: [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfi
 
 - Draft print measurement failures (including unresolved fields) must never crash or disable authoring. Show an unavailable preview, clear obsolete guides and retry after edits; discard stale asynchronous measurements. Scroll helpers honor reduced motion.
 
-
 ## Editor controls and field insertion follow-up — 1 November 2026
 
 - This branch starts at main `c8152fb` (merged PR #38); the PR includes only the follow-up. Jonathan's later review takes precedence over frames 2a/2c/2f/7a where it changes controls or fields. Leave this PR open for review.
@@ -268,11 +266,9 @@ References: [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfi
 
 Owner workflow update (1 November 2026): open/update PRs as soon as local checks pass and hand them back without waiting for GitHub CI; Jonathan monitors CI and reports failures. Future UI-only changes default to 1440px and 375px light screenshots unless the owner asks for more. Explicit capture requirements for the current follow-up remain in place.
 
-
 PR #39 phone field insertion (1 November 2026): modal teardown and section visibility are lifecycle conditions, not frame-count delays. Close the native sheet before dispatching insertion, wait for a mounted/visible/non-inert editor after React commits, then insert and focus without Tiptap's extra focus RAF. Observer work is cancelled on completion/unmount. Keep the existing test timeouts; simulate delayed section visibility and native trigger focus restoration to exercise the failure deterministically.
 
 Owner workflow supersedes earlier screenshot defaults: Jonathan manually tests the live site. Do not generate screenshot galleries or comparison evidence unless the specific request asks for them. Keep automated tests, open/update PRs after local checks pass and hand them back without waiting for GitHub CI.
-
 
 ## Editor layering, formatting and session history — 1 November 2026
 
@@ -284,7 +280,6 @@ Owner workflow supersedes earlier screenshot defaults: Jonathan manually tests t
 - Existing focused browser tests capture galleries only when `CAPTURE_EDITOR_EVIDENCE=1`; this request generates no screenshots or comparison galleries.
 
 A hit-test regression identified quote-row drag handles overlapping a selected preceding block’s Save action. Quote handles have their own sub-layer (5), below block actions/selection (10) and the selected block’s handle (11), all below formatting (20). Hover/drag behavior is retained without intercepting the selected rail. Toasts follow the currently open modal host and are re-promoted on layer changes so native modal inertness cannot disable Undo.
-
 
 PR #41 formatting reuse fix: inline formatting owns an auto-height layout row, with editable content in the next row. A higher paint layer is insufficient when a legacy 44px toolbar allows wrapped controls to spill into text. Shared selectors apply the same token scale to inline and pinned variants, rather than patching only the Emails screen. Reserved-height and real hit-target/click tests cover 1440px and 375px; existing plain-text clause editors remain plain text. No timeout/tolerance increases or forced clicks.
 
@@ -358,7 +353,6 @@ PR #44 CI follow-up: global navigation remains owned by the staff shell, includi
 - Regression coverage deliberately changes only editor font spacing/line height, leaving the server PDF unchanged. It verifies full sheet count, grown surfaces, covered blocks/cards, page-boundary anchors, intact choice groups/signatures, the approximate note and font-load recovery. Content-box overlap checks exclude harmless shared borders and signature padding, preserving the existing Chromium exact-alignment checks. Short heading/paragraph controls are checked at 1440 and 375 in both editors, including phone section and full-document modes.
 - No migration, provider operations, credentials, PDF-sealing changes or galleries. Hand back the one PR after the full local browser suite, without waiting for GitHub CI.
 
-
 ## Live browser pagination — editor source of truth
 
 - Browser Range line boxes at resolved Letter geometry now determine break points on one animation frame, independently of the server and its font rasterizer. The measure runs on an inert same-width copy with UI/spacer nodes excluded; only visual decorations and page surfaces change. Paragraphs/lists can split at source text offsets. Empty paragraph anchors and clause newline streams retain their source meaning. Fitting pricing tables, cards/groups and signatures move whole; headings retain the following line.
@@ -374,7 +368,6 @@ PR #44 CI follow-up: global navigation remains owned by the staff shell, includi
 - Proposal saves share one pending request and drain any newer content edits in order. The explicit Back to proposals button waits for that work, and asks before leaving after failure. Escape never navigates. The template editor shares the header/back/status pattern and saves pending template edits before leaving; its existing explicit Save template action remains available. Neither editor treats page measurement as an edit.
 - The shared header keeps the plain document title beside a bordered back button, with an icon/status pill, last-save tooltip, error retry and offline/device feedback. Both sidebars use an SVG chevron in the same fixed square in open and collapsed states, independently of font baselines.
 - Conflict tests use an actual second service session and preserve HTTP 409 in fixtures. They check local rich text (including continued typing after 409), server text, suggestion survival, recomputed source positions and exact revision/write counts. The signing test awaits the successful send response, not an editor URL that already matched. No timeout increase, screenshot galleries, migrations, hosted operations or provider credentials are involved.
-
 
 ## Editor v2 shell — PR 1 (2 November 2026)
 
@@ -463,7 +456,6 @@ The owner clarified that “Shared on N pages” counts only actual visible shar
 - Public document data includes the published bands and only `plan_terms.client_copy` as a separate client-visible string map. Internal plan/billing metadata stays private.
 - Shared page counts use one helper: `1 page` / `N pages`; one-page change descriptions say `Changes show on this page only`.
 
-
 ## Staff session lifetime and recovery — 4 November 2026
 
 Keep Supabase access and rotating refresh credentials server-only in HttpOnly cookies, with a 30-day sliding browser inactivity lifetime. Access cookies cover `/`; refresh cookies cover `/api`. Both use SameSite=Lax and production Secure. The proxy forwards refreshed request cookies to the handler and response cookies to the browser, avoiding the one-hour access-token failure. Staff membership is rechecked; bearer tokens do not borrow browser refresh credentials. Local DEV and AI OAuth sessions retain their own behavior.
@@ -474,7 +466,6 @@ Unrefreshable editor sessions keep their existing local recovery/autosave state.
 
 Reference: [Supabase session rotation and reuse](https://supabase.com/docs/guides/auth/sessions), [server-side request/response cookie refresh](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
 
-
 ## 4 November 2026 — sealed PDF failures and actionable staff alerts
 
 - The owner classified TEST 2's two historical Printing failed errors as transient after its original payload rendered successfully and attempt 3 completed. The exact internal cause is unconfirmed; do not claim a proven margin, font, resource-pressure or certificate defect. Persist future diagnostics in Evidence in addition to runtime logs.
@@ -482,7 +473,6 @@ Reference: [Supabase session rotation and reuse](https://supabase.com/docs/guide
 - Validate Letter print dimensions, then allow one fresh-target retry only for Chromium's opaque print protocol failure. Keep the already laid-out HTML, frozen breaks and hashes. Existing persisted job retries remain available after that bound.
 - Notify staff at terminal failure or a decision, deduplicated by job/error/recipient, with job-specific copy. Preserve raw Evidence and immutable sent-email snapshots. The existing staff_billing_failed template key becomes the editable Job needs attention template; migrate only unchanged defaults, preserving custom copy. Other staff templates remain read-only.
 - Production verification was read-only: the existing sealed PDF/certificate and frozen hash verify; one client completion email and one staff completion notification are logged. No hosted retry or send was performed.
-
 
 ## Team management — 4 November 2026 (PR #67)
 
@@ -545,7 +535,6 @@ The owner's no-overlap instruction supersedes the earlier prototype exemption fo
 
 The owner's production review supersedes PR #72's collision placement: desktop/tablet edit bars remain at natural size directly above the selected element. They stick below the editor header while that element is partially scrolled out of view; only popovers flip. Neighbour overlap is permitted; toolbar gaps/background do not intercept pointer clicks and Escape/empty-paper clicks dismiss the selection. Phone keyboard docks remain unchanged.
 
-
 Attached bars use viewport-fixed positioning while retaining their DOM owner. This keeps full-width bars out of canvas scroll geometry and prevents clipping by narrow panels. Bars are ordinary controls; only menus use native popovers. The bar is hidden when its block leaves the visible editor area.
 
 ## Owner review 5 — Blocks and supported signatures
@@ -559,7 +548,6 @@ Shared DialogActions orders the DOM as well as the visual group: backwards/secon
 ## Owner review 5 — list marker typography
 
 List marker sizing follows each item's actual first-line boxes: a uniform size is used as-is, mixed first-line text uses its largest size, and nested items are independent. Marker font size, proportional line height and the gap adjoining a larger item use one shared DOM calculation in editable decorations, canonical browser pagination, client flowing/sheet projections and Chromium print. These are display decorations, never document JSON, revision or undo entries. The next unchanged item keeps its default marker/font size. PagePlan format and signing rules stay unchanged.
-
 
 ## Manual delivery — client contact and unsigned proposal propagation
 
@@ -578,3 +566,17 @@ The Studio v3 build spec takes precedence over its prototype and older Studio do
 Owner clarification: **Workspace header & footer defaults + inheritance are deferred to Phase 2.** Workspace Proposal styles exposes only the existing workspace style controls, with no band group. Template bands retain their existing built-in “Reset to default” behavior (including in PR 2); there is no workspace band reset. Workspace default link validity remains the existing 1–365 days. Spec §6.8's “Never” was incorrect; individual proposals can still be indefinite.
 
 Studio v3 implementation: shared staff tokens and existing dialogs/editors are reused. Workspace text saves after 600ms idle/blur; queued saves drain in order, failures keep the local value, and the retry retains pending default-password changes. Billing defaults expose fixed routing and real deployment mode; advanced existing collection/item settings remain behind More billing settings. Pricing references move to Workspace with a redirect from their former Connections URL. Team capabilities/server checks stay intact; blocked removal points to reassignment or deactivation. Activity reads the existing workspace-scoped Team audit in pages (rather than silently stopping at the recent-40 limit), and CSV uses the current filters. No schema or hosted SQL change. Missing historical edit metadata shows Default. Generic project/kickoff copy avoids embedding a seed service name in application code.
+
+### Studio v3 — PR #77 owner review
+
+Studio navigation uses a soft selected surface with Ink text on desktop; only the selected tablet chip is Ink-filled. Studio text links use Ink. Status colors have semantic meaning: healthy states are success green, setup/invitation states warning amber, and an unconnected AI assistant neutral. Clay is reserved for accents, not status.
+
+The sidebar footer is just the user row; Account holds Dark mode and Sign out. The same menu is available from the tablet avatar and phone Studio Account row. Theme initialization belongs to the shell so closing the menu cannot prevent the saved theme from loading. Phone Studio is one divided list with the requested larger-screen note; fixed bottom navigation is included in content padding with the safe area.
+
+Workspace descriptions sit immediately below their title; Saved is a session save result, never a permanent default or a Billing defaults badge. Team keeps **Your profile** as a compact block immediately beneath the list. All invite, password, role, reassign, activation and removal handlers and permissions remain unchanged; Invited rows display Invite sent, with acceptance detail retained for assistive technology and in the tooltip. Super admin menu actions remain available.
+
+Templates use correct singular/usage copy and short editing dates; Saved blocks use plain divided preview rows without Used in. Email list subjects paint existing field tokens as friendly chips, with stage labels beside their grouped rows. Staff notifications are explicitly Read-only except the existing editable job/team templates. No template wording changes.
+
+Product rows show only the client description, a single Stripe/Custom source pill and compact joined prices. Billing mapping remains in product details. Synced products display a read-only price and Stripe link instead of editable List price/Interval inputs; app-priced products retain those existing controls. Used in is last. Connections use horizontal cards with accurate mode and state; a connected Claude grant is named Claude. No schema, price-setting, routing or provider changes.
+
+Connection status matching recognizes positive configured states (including “Sandbox configured”) without case sensitivity; “Not connected” remains a warning, with the explicit neutral AI-empty exception. Browser coverage checks the actual healthy color for QuickBooks and connected Claude. The old Workspace contrast regression now uses the retained hex control, with its original assertions.
