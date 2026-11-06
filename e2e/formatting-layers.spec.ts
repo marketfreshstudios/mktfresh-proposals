@@ -132,6 +132,17 @@ test("formatting rows stay above content and every button is reachable in all ed
         `${name}: content must start below formatting`,
       ).toBeGreaterThanOrEqual(0);
     for (const action of ["Undo", "Redo"]) {
+      if (name.startsWith("Emails")) {
+        await bar
+          .getByRole("button", { name: "More formatting", exact: true })
+          .click();
+        await page
+          .locator(".email-format-more:popover-open")
+          .getByRole("button", { name: action, exact: true })
+          .click();
+        await page.keyboard.press("Escape");
+        continue;
+      }
       const local = bar.getByRole("button", { name: action, exact: true });
       if (
         (page.viewportSize()?.width ?? 1440) < 700 &&
@@ -200,6 +211,15 @@ test("formatting rows stay above content and every button is reachable in all ed
       });
       expect(hit.own, `${name} ${label}: ${JSON.stringify(hit)}`).toBe(true);
       await button.click();
+      if (label === "Insert field" && name.startsWith("Emails")) {
+        const scope = widthIsPhone()
+          ? page.getByRole("dialog", { name: "Email tools", exact: true })
+          : page.locator(".editor-sidepanel");
+        await scope.locator(".field-option").first().click();
+        if (widthIsPhone()) await expect(scope).toHaveCount(0);
+        await body.click();
+        continue;
+      }
       if (
         label === "Insert field" &&
         (name.startsWith("proposal") || name.startsWith("template")) &&
@@ -250,7 +270,7 @@ test("formatting rows stay above content and every button is reachable in all ed
     await page.goto("/studio/emails/proposal_sent");
     await check(
       page.getByRole("textbox", { name: "Email body", exact: true }),
-      page.locator(".email-edit-fields .rich-toolbar"),
+      page.getByRole("toolbar", { name: "Email body formatting" }),
       `Emails ${width}`,
     );
     await page.goto(`/proposals/${current.id}`);

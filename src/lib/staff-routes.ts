@@ -15,6 +15,8 @@ export function legacyStaffRedirect(path: string[]) {
       (path.length > 2 ? "/" + path.slice(2).join("/") : "")
     );
   if (section === "dashboard") return "/";
+  if (section === "emails")
+    return "/studio/emails" + (id ? "/" + path.slice(1).join("/") : "");
   if (section === "proposals" && id === "new") return "/proposals?new=1";
   if (section === "proposals" && id && action) {
     if (action === "edit") return `/proposals/${id}?action=edit`;

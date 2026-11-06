@@ -175,6 +175,7 @@
   --opacity-frozen: 0.7;
   /* One application layer scale; keep editor controls below both pinned bars. */
   --z-document: 0;
+  --editor-selection-outline: #9db3a8;
   --z-quote-controls: 5;
   --z-block-controls: 10;
   --z-block-handle: 11;

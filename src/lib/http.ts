@@ -411,14 +411,25 @@ async function handleRoute(req: Request, path: string[]) {
         return json(await emailTemplates(rt.repo));
       const key = path[1];
       if (method === "POST" && path[2] === "preview") {
-        const { result, values, logo_error } = await emailStudioPreview(
+        const { result, values, logo_error, p } = await emailStudioPreview(
           rt.repo,
           rt.storage,
           user,
           key,
           await body(req),
         );
-        return json({ ...result, values, logo_error });
+        return json({
+          ...result,
+          values,
+          logo_error,
+          context: {
+            client_name: `${p.client.first_name} ${p.client.last_name}`.trim(),
+            client_email: p.client.email,
+            sender_name: p.sender?.display_name ?? "",
+            sender_email: p.sender?.email ?? "",
+            workspace_name: p.workspace_settings?.company_name ?? "",
+          },
+        });
       }
       if (method === "POST" && path[2] === "test")
         return json(

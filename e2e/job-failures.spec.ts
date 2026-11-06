@@ -143,9 +143,7 @@ test("final PDF failure highlights its Retry row; one clear editable staff alert
   await page
     .getByRole("textbox", { name: "Email body" })
     .fill("Please review {{job.summary}}");
-  await page
-    .getByRole("button", { name: "Save email template", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     page.getByText(
       "Email template saved. Future emails will use this version.",

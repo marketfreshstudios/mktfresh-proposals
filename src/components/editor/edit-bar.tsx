@@ -43,7 +43,7 @@ function label(node: ReactElement<any>) {
 export function EditBar(
   props:
     | {
-        variant: "cover";
+        variant: "cover" | "email";
         children: ReactNode;
         frame: RefObject<HTMLElement | null>;
       }
@@ -67,14 +67,16 @@ export function EditBar(
         plainText?: boolean;
       },
 ) {
-  if (props.variant === "cover") return <CoverEditBar {...props} />;
+  if (props.variant === "cover" || props.variant === "email")
+    return <CoverEditBar {...props} />;
   if (props.variant === "band") return <BandEditBar {...props} />;
-  return <BlockEditBar {...props} />;
+  return "tools" in props ? <BlockEditBar {...props} /> : null;
 }
 function CoverEditBar({
   children,
   frame,
-}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" }>) {
+  variant,
+}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" | "email" }>) {
   const bar = useRef<HTMLSpanElement>(null);
   useImageToolbar(frame, bar, true);
   useEffect(() => {
@@ -97,9 +99,13 @@ function CoverEditBar({
       <span
         ref={bar}
         data-editor-chrome
-        className="editor-edit-bar image-edit-bar cover-edit-bar"
+        className={`editor-edit-bar image-edit-bar ${variant === "email" ? "email-edit-bar" : "cover-edit-bar"}`}
         role="toolbar"
-        aria-label="Cover text formatting"
+        aria-label={
+          variant === "email"
+            ? "Email body formatting"
+            : "Cover text formatting"
+        }
         onMouseDown={(e) => {
           if ((e.target as Element).closest("button")) e.preventDefault();
         }}
@@ -506,7 +512,7 @@ function BlockEditBar({
           >
             <BlockActionPresentation.Provider value="menu">
               {phoneActions && (
-                <>
+                <div className="studio-phone-block-actions">
                   {up}
                   {down}
                   {prohibited ? (
@@ -529,7 +535,7 @@ function BlockEditBar({
                   )}
                   {save}
                   {remove}
-                </>
+                </div>
               )}
               <PageBreakAction block={id} menu />
               {extras}

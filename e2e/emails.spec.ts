@@ -119,25 +119,13 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   }[] = [];
   async function shot(state: string, width: number, theme: string) {
     await page.evaluate(() => document.fonts.ready);
-    if (await page.locator('iframe[title="Email preview"]').count()) {
-      const emailBody = page
-        .frameLocator('iframe[title="Email preview"]')
-        .locator("body");
-      await expect(emailBody.locator("h1")).toBeVisible();
-      if (state === "editor-live-preview") {
-        await expect(emailBody).toHaveCSS(
+    if (await page.locator(".email-rendered").count()) {
+      await expect(page.locator(".email-rendered h1")).toBeVisible();
+      if (state === "editor-live-preview")
+        await expect(page.locator(".email-rendered")).toHaveCSS(
           "background-color",
           theme === "dark" ? "rgb(22, 22, 20)" : "rgb(243, 241, 235)",
         );
-        await page.evaluate(
-          () =>
-            new Promise<void>((resolve) =>
-              requestAnimationFrame(() =>
-                requestAnimationFrame(() => resolve()),
-              ),
-            ),
-        );
-      }
     }
     expect(
       await page.evaluate(
@@ -192,7 +180,13 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
         await expect(
           page.getByRole("heading", { name: template.name, exact: true }),
         ).toBeVisible();
-        const frame = page.frameLocator('iframe[title="Email preview"]');
+        if (
+          (await page
+            .getByRole("button", { name: "Dark", exact: true })
+            .getAttribute("aria-pressed")) !== String(theme === "dark")
+        )
+          await page.getByRole("button", { name: "Dark", exact: true }).click();
+        const frame = page.locator(".email-rendered");
         await expect(frame.locator("h1")).toHaveText(
           template.key === "team_invite"
             ? "You're invited"
@@ -215,10 +209,10 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
         ) {
           await expect(
             page.getByRole("textbox", { name: "Subject", exact: true }),
-          ).toHaveAttribute("readonly", "");
+          ).toHaveAttribute("contenteditable", "false");
           await expect(
             page.getByRole("button", {
-              name: "Save email template",
+              name: "Save",
               exact: true,
             }),
           ).toHaveCount(0);
@@ -228,7 +222,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
           ).toBeEditable();
           await expect(
             page.getByRole("button", {
-              name: "Save email template",
+              name: "Save",
               exact: true,
             }),
           ).toHaveCount(1);
@@ -239,7 +233,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
         await shot(`editor-${template.key}`, width, theme);
         if (template.key === "proposal_sent") {
           await page
-            .locator(".email-preview-section")
+            .locator(".email-editor-main")
             .evaluate((el) => el.scrollIntoView({ block: "start" }));
           await shot("editor-live-preview", width, theme);
         }
@@ -251,32 +245,34 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   const subject = page.getByRole("textbox", { name: "Subject", exact: true }),
     body = page.getByRole("textbox", { name: "Email body", exact: true });
   await subject.fill("Hello friend");
-  await subject.evaluate((el) =>
-    (el as HTMLInputElement).setSelectionRange(6, 12),
-  );
-  await subject.dispatchEvent("select");
+  await subject.evaluate((el) => {
+    const range = document.createRange();
+    range.setStart(el.querySelector("p")!.firstChild!, 6);
+    range.setEnd(el.querySelector("p")!.firstChild!, 12);
+    const selection = getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
   await page
-    .getByRole("button", { name: "Insert field in subject", exact: true })
-    .click();
-  await page
-    .locator(".subject-field-menu")
     .getByRole("searchbox", { name: "Search fields" })
     .fill("first name");
   await page
-    .locator(".subject-field-menu")
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
-      exact: true,
+      name: /^Client first name \{\{client\.first_name\}\}/,
     })
     .click();
-  await expect(subject).toHaveValue("Hello {{client.first_name}}");
+  await expect(subject).toHaveText("Hello Client first name");
+  await expect(subject.locator('[data-field="client.first_name"]')).toHaveCount(
+    1,
+  );
   await expect(subject).toBeFocused();
   await subject.fill("{{client.frist_name}}");
   await expect(
     page.getByRole("alert").filter({ hasText: "Check this email" }),
   ).toContainText("Unknown email field: client.frist_name");
   await expect(
-    page.getByRole("button", { name: "Save email template", exact: true }),
+    page.getByRole("button", { name: "Save", exact: true }),
   ).toBeDisabled();
   await subject.fill("A personal proposal for {{client.company}}");
   await body.fill("Hi {{client.first_name}}, here is the scope we agreed.");
@@ -294,7 +290,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
     "href",
     "https://example.test/about",
   );
-  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Bulleted list", exact: true })
+    .click();
   await expect(body.locator("ul li")).toHaveCount(1);
   await page
     .getByRole("button", { name: "Numbered list", exact: true })
@@ -302,14 +300,13 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await expect(body.locator("ol li").first()).toBeVisible();
   await page.getByRole("button", { name: "Insert field", exact: true }).click();
   await page
-    .locator(".field-picker")
+    .locator(".editor-sidepanel")
     .getByRole("searchbox", { name: "Search fields" })
     .fill("workspace.name");
   await page
-    .locator(".field-picker")
+    .locator(".editor-sidepanel")
     .getByRole("button", {
-      name: "Workspace name — {{workspace.name}}",
-      exact: true,
+      name: /^Workspace name \{\{workspace\.name\}\}/,
     })
     .click();
   await expect(body.locator('[data-field="workspace.name"]')).toHaveCount(1);
@@ -318,28 +315,29 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await page
     .getByRole("textbox", { name: "Primary button label" })
     .fill("Read your proposal");
-  await page
-    .getByRole("button", { name: "Save email template", exact: true })
-    .click();
-  await expect(page.locator(".email-notice")).toContainText(
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(".block-feedback-toast")).toContainText(
     "Email template saved",
   );
-  const frame = page.frameLocator('iframe[title="Email preview"]');
-  await expect(frame.locator("a.email-cta")).toHaveText("Read your proposal");
+  const frame = page.locator(".email-rendered");
+  await expect(frame.locator("a.email-cta input")).toHaveValue(
+    "Read your proposal",
+  );
   await page
     .getByRole("button", { name: "Send me a test", exact: true })
     .click();
-  await expect(page.locator(".email-notice")).toContainText(
+  await expect(page.locator(".block-feedback-toast")).toContainText(
     "Test captured for staff@example.test",
   );
   expect(
     [...mailer.sent.values()].every((m: any) => m.to === staff.staff_email),
   ).toBe(true);
+  await page.getByRole("button", { name: "Show values", exact: true }).click();
   await page
     .getByRole("combobox", { name: "Preview data", exact: true })
     .selectOption(draft.id);
   await expect(frame.locator("h1")).toHaveText(draft.title);
-  await expect(page.locator(".email-preview-subject")).toContainText(
+  await expect(page.locator(".email-subject")).toContainText(
     draft.client.company,
   );
   await shot("editor-real-data-and-test", 1440, "dark");
@@ -398,7 +396,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await page
     .getByRole("button", { name: "Reset email template", exact: true })
     .click();
-  await expect(page.locator(".email-notice")).toContainText("reset to default");
+  await expect(page.locator(".block-feedback-toast")).toContainText(
+    "reset to default",
+  );
   expect(
     (await activity(repo)).some((e) => e.type === "email_template_saved"),
   ).toBe(true);

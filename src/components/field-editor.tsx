@@ -77,7 +77,19 @@ export function FieldEditor({
   maxLength,
   textLevel = 0,
   onHeadingStartEnter,
+  readOnly = false,
+  plainText = false,
+  fieldLabels,
+  pickerMap,
+  formattingMode,
+  onEditor,
 }: {
+  readOnly?: boolean;
+  plainText?: boolean;
+  fieldLabels?: Record<string, string>;
+  pickerMap?: Record<string, string>;
+  formattingMode?: "email";
+  onEditor?: (editor: import("@tiptap/core").Editor | null) => void;
   textLevel?: TextLevel;
   onHeadingStartEnter?: () => void;
   maxLength?: number;
@@ -115,6 +127,8 @@ export function FieldEditor({
   levelRef.current = textLevel;
   const editorId = useId();
   const [sizeError, setSizeError] = useState("");
+  const labels = useRef(fieldLabels);
+  labels.current = fieldLabels;
   const inlineHistory = useRef(history);
   inlineHistory.current = history;
   allowLinks = allowLinks || !!toolbar;
@@ -136,9 +150,14 @@ export function FieldEditor({
   imageOptions.current = bandImage;
   const editor: import("@tiptap/core").Editor | null = useEditor({
     immediatelyRender: false,
+    editable: !readOnly,
     autofocus: autoFocus ? "end" : false,
     editorProps: {
       handleKeyDown: (view, event) => {
+        if (plainText && event.key === "Enter") {
+          event.preventDefault();
+          return true;
+        }
         // Cover lines and bands are logical single-line fields. On macOS, native
         // Home/End scroll the canvas; keep these keys within the edited field.
         if (
@@ -185,19 +204,24 @@ export function FieldEditor({
             role: "textbox",
             "aria-label": label,
             "aria-multiline": "true",
+            ...(readOnly ? { "aria-readonly": "true" } : {}),
             ...(domId ? { id: domId } : {}),
           }
         : {},
     },
     extensions: [
       ListMarkerSizes,
-      InlineFontSize.configure({
-        maxSize: () =>
-          imageOptions.current
-            ? Math.floor((imageOptions.current.maxHeight * 12) / 16)
-            : undefined,
-        refused: setSizeError,
-      }),
+      ...(!plainText
+        ? [
+            InlineFontSize.configure({
+              maxSize: () =>
+                imageOptions.current
+                  ? Math.floor((imageOptions.current.maxHeight * 12) / 16)
+                  : undefined,
+              refused: setSizeError,
+            }),
+          ]
+        : []),
       ...(maxLength
         ? [
             Extension.create({
@@ -228,6 +252,15 @@ export function FieldEditor({
         : []),
       pageSpacers(() => values.current),
       StarterKit.configure({
+        ...(plainText
+          ? {
+              bold: false,
+              italic: false,
+              bulletList: false,
+              orderedList: false,
+              listItem: false,
+            }
+          : {}),
         trailingNode: false,
         undoRedo: history && !standalone ? false : undefined,
         heading: false,
@@ -236,13 +269,14 @@ export function FieldEditor({
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,
-        link: allowLinks
-          ? {
-              openOnClick: false,
-              autolink: false,
-              protocols: ["https", "mailto"],
-            }
-          : false,
+        link:
+          allowLinks && !plainText
+            ? {
+                openOnClick: false,
+                autolink: false,
+                protocols: ["https", "mailto"],
+              }
+            : false,
       }),
       Node.create({
         name: "variable",
@@ -261,7 +295,7 @@ export function FieldEditor({
               const path = String(current.attrs.path);
               dom.dataset.field = path;
               dom.textContent = names.current
-                ? `{{${path}}}`
+                ? (labels.current?.[path] ?? `{{${path}}}`)
                 : values.current[path] || `{{${path}}}`;
             };
             painters.current.add(paint);
@@ -289,7 +323,8 @@ export function FieldEditor({
             class: "field-chip",
           }),
           names.current
-            ? `{{${node.attrs.path}}}`
+            ? (labels.current?.[String(node.attrs.path)] ??
+              `{{${node.attrs.path}}}`)
             : values.current[node.attrs.path] || `{{${node.attrs.path}}}`,
         ],
       }),
@@ -330,8 +365,8 @@ export function FieldEditor({
         : undefined,
     [editor],
   );
-  const bandOwner = useRef(bandEditor ?? coverEditor);
-  bandOwner.current = bandEditor ?? coverEditor;
+  const bandOwner = useRef(bandEditor ?? coverEditor ?? onEditor);
+  bandOwner.current = bandEditor ?? coverEditor ?? onEditor;
   useEffect(() => {
     bandOwner.current?.(editor);
     return () => bandOwner.current?.(null);
@@ -368,20 +403,20 @@ export function FieldEditor({
     afterVisible(editor.view.dom, apply);
   }
   useEffect(() => {
-    if (!editor || !toolbar) return;
+    if (!editor || !toolbar || readOnly) return;
     const block =
       root.current?.closest<HTMLElement>(".block-frame")?.dataset.blockId ??
       null;
     return toolbar.register(editorId, {
       block,
-      rich: true,
+      rich: !plainText,
       textStyle: () => ({
         value: levelRef.current,
         change: (level) => styleChange.current?.(level),
       }),
       insert: insertField,
     });
-  }, [editor, editorId, !!toolbar]);
+  }, [editor, editorId, !!toolbar, readOnly, plainText]);
   useEffect(() => {
     const next = fieldNodes(value);
     if (
@@ -431,8 +466,9 @@ export function FieldEditor({
     el.addEventListener("editor-source-spacers", receive);
     return () => el.removeEventListener("editor-source-spacers", receive);
   }, [editor]);
-  const formatting = (
+  const formatting = plainText ? null : (
     <FormattingControls
+      mode={formattingMode}
       edit={!!toolbar && layout.desktop && !inlineControls}
       compact={layout.compact && !layout.compactPhone}
       independent={standalone}
@@ -511,7 +547,8 @@ export function FieldEditor({
         >
           <FieldOptions
             variant="menu"
-            map={map}
+            map={pickerMap ?? map}
+            labels={fieldLabels}
             onInsert={(path) => insertField(path)}
           />
         </ToolbarPopover>
@@ -523,11 +560,13 @@ export function FieldEditor({
       className={`field-editor ${toolbar === undefined ? "field-editor-inline" : "field-editor-external"}`}
       data-history-independent={standalone || undefined}
       ref={root}
-      onFocusCapture={() => toolbar?.remember(editorId)}
-      onPointerDownCapture={() => toolbar?.remember(editorId)}
+      onFocusCapture={() => !readOnly && toolbar?.remember(editorId)}
+      onPointerDownCapture={() => !readOnly && toolbar?.remember(editorId)}
       onKeyDown={(e) => {
         if (
           toolbar &&
+          !readOnly &&
+          !plainText &&
           layout.desktop &&
           (e.metaKey || e.ctrlKey) &&
           e.key.toLowerCase() === "k"
@@ -576,7 +615,11 @@ export function FieldEditor({
         }
       }}
     >
-      {bandEditor || coverEditor ? null : toolbar === undefined ||
+      {readOnly ? null : plainText ? (
+        picker ? (
+          controls
+        ) : null
+      ) : bandEditor || coverEditor ? null : toolbar === undefined ||
         inlineControls ? (
         <div
           data-editor-chrome
