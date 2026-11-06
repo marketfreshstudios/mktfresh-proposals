@@ -55,6 +55,7 @@ export function PageBand(props: Props) {
     values,
     styles,
     logo,
+    logoIcon,
     onChange,
     source = "shared",
     band: resolved,
@@ -216,7 +217,7 @@ export function PageBand(props: Props) {
     setTrigger(el);
     setMenu(menu === which ? null : which);
   };
-  const map = {
+  const map: Record<string, string> = {
     ...values,
     "page.number": String(page),
     "page.count": String(pageCount),
@@ -228,7 +229,12 @@ export function PageBand(props: Props) {
   const insertImage = async (src: string, alt: string) => {
     const e = active();
     if (!e) return;
-    const resource = src === "workspace-logo" ? logo : src;
+    const resource =
+      src === "workspace-brand"
+        ? logo || logoIcon
+        : src === "workspace-logo"
+          ? logo
+          : src;
     let ratio = 1;
     if (resource) {
       const image = new Image();
@@ -427,6 +433,8 @@ export function PageBand(props: Props) {
                     key: id,
                     slot: n,
                     logo,
+                    logoIcon,
+                    workspaceName: map["workspace.name"],
                     maxHeight: geometry.bandLimits[kind].imageHeight,
                     move: moveImage,
                   }}

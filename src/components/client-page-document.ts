@@ -22,6 +22,7 @@ export function clientDocumentHtml(
   p: PublicProposal,
   logo?: string,
   plan = p.pagination,
+  logoIcon?: string,
 ) {
   const signatures = Object.fromEntries(
     p.signers.map((s) => [
@@ -63,6 +64,7 @@ export function clientDocumentHtml(
     styles: p.resolved_styles,
     pagination: plan,
     logo,
+    logoIcon,
     workspace: p.company.name,
     signatory: {
       name: p.company.signatory_name ?? "",
@@ -82,8 +84,9 @@ export function paginateClientDocument(
   p: PublicProposal,
   logo?: string,
   plan = p.pagination,
+  logoIcon?: string,
 ) {
-  stage.innerHTML = clientDocumentHtml(p, logo, plan);
+  stage.innerHTML = clientDocumentHtml(p, logo, plan, logoIcon);
   let root = stage.querySelector<HTMLElement>(".print-root")!;
   // No nested main landmark inside the client flow's existing main.
   const neutral = stage.ownerDocument.createElement("div");
@@ -143,6 +146,7 @@ export function paginateClientDocument(
         values: p.variables,
         styles: p.resolved_styles,
         logo,
+        logoIcon,
         print: true,
         inContent: true,
         band: bindings[n]?.[kind].value,

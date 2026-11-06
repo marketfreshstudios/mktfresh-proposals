@@ -1,3 +1,4 @@
+import { usesWorkspaceBrand } from "./workspace-brand";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import { shortPrintDiagnostics, type PrintDiagnostic } from "./pdf-diagnostics";
 import { jobFailure } from "./job-presentation";
@@ -433,6 +434,15 @@ export class Worker {
               };
             }),
           ),
+          logoIcon:
+            !renderSettings?.logo &&
+            usesWorkspaceBrand(v) &&
+            renderSettings?.logo_icon
+              ? "data:image/png;base64," +
+                Buffer.from(
+                  await this.storage.get(renderSettings.logo_icon.path),
+                ).toString("base64")
+              : undefined,
           logo: renderSettings?.logo
             ? "data:image/png;base64," +
               Buffer.from(await this.storage.get(renderSettings.logo)).toString(

@@ -1832,6 +1832,11 @@ function TemplatesStudioContent({
                             : undefined
                         }
                         values={map}
+                        logoIcon={
+                          data.settings?.logo_icon
+                            ? `/api/workspace-icon?size=128&v=${encodeURIComponent(data.settings!.logo_icon!.path)}`
+                            : undefined
+                        }
                         logo={
                           data.settings?.logo
                             ? "/api/workspace-logo"
@@ -1883,6 +1888,11 @@ function TemplatesStudioContent({
                               : undefined
                           }
                           workspace={data.settings?.company_name}
+                          logoIcon={
+                            data.settings?.logo_icon
+                              ? `/api/workspace-icon?size=128&v=${encodeURIComponent(data.settings!.logo_icon!.path)}`
+                              : undefined
+                          }
                           logo={
                             data.settings?.logo
                               ? "/api/workspace-logo"

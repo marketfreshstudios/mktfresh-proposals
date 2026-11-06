@@ -33,7 +33,7 @@ it("strict schemas enforce column counts, image slots and embedded/default image
       .bandHeightIn,
   ).toBeUndefined();
   expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
-    "workspace-logo",
+    "workspace-brand",
   );
   expect(() =>
     HeaderFooterSettingsSchema.parse({ ...hf, unknown: true }),
@@ -257,7 +257,7 @@ it("band text is inert, resolves page values locally and reuses the current work
   expect(next).not.toContain("<script>");
   expect(next).toContain("field-chip");
   expect(bandImages(hf.shared.header)[0]?.node.attrs?.src).toBe(
-    "workspace-logo",
+    "workspace-brand",
   );
 });
 

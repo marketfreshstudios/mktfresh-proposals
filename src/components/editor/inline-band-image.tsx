@@ -11,6 +11,8 @@ export type BandImageOptions = {
   key: string;
   slot: number;
   logo?: string;
+  logoIcon?: string;
+  workspaceName?: string;
   maxHeight: number;
   move: (fromSlot: number, from: number, toSlot: number, to: number) => void;
 };
@@ -77,6 +79,27 @@ function BandImageView({
   const options = (
     extension.options.settings as MutableRefObject<BandImageOptions>
   ).current;
+  const auto = node.attrs.src === "workspace-brand";
+  const source = auto
+    ? options.logo || options.logoIcon
+    : node.attrs.src === "workspace-logo"
+      ? options.logo
+      : node.attrs.src;
+  const name = auto && !options.logo ? options.workspaceName : "";
+  if (!source)
+    return (
+      <NodeViewWrapper
+        as="span"
+        className="band-inline-image"
+        contentEditable={false}
+      >
+        {name && (
+          <span className="field-chip" data-field="workspace.name">
+            {name}
+          </span>
+        )}
+      </NodeViewWrapper>
+    );
   if (node.attrs.src === "workspace-logo" && !options.logo)
     return (
       <NodeViewWrapper
@@ -98,9 +121,7 @@ function BandImageView({
           alt: node.attrs.alt,
           height: node.attrs.height,
         }}
-        source={
-          node.attrs.src === "workspace-logo" ? options.logo : node.attrs.src
-        }
+        source={source}
         maxHeight={options.maxHeight}
         maximumHeight={() => extension.options.settings.current.maxHeight}
         externalSelected={selected}
@@ -137,6 +158,14 @@ function BandImageView({
         }}
         onDelete={deleteNode}
       />
+      {name && (
+        <span
+          className="band-brand-name field-chip"
+          data-field="workspace.name"
+        >
+          {name}
+        </span>
+      )}
     </NodeViewWrapper>
   );
 }
@@ -161,7 +190,7 @@ export const InlineBandImage = Node.create<{
     {
       tag: "img[data-band-image]",
       getAttrs: (el) =>
-        /^(workspace-logo|data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+)$/.test(
+        /^(workspace-logo|workspace-brand|data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+)$/.test(
           el.getAttribute("src") ?? "",
         )
           ? null

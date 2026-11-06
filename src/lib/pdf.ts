@@ -43,6 +43,7 @@ export async function sealedPdf(
     settings?: WorkspaceSettings;
     document?: { id: string; title: string };
     logo?: string;
+    logoIcon?: string;
     fonts?: (ProposalFont & { data: string })[];
   },
   options?: { preview?: boolean },
@@ -223,6 +224,7 @@ export async function sealedPdf(
               signers.map((s) => [s.role, signedBlock(s)]),
             ),
             logo: brand?.logo,
+            logoIcon: brand?.logoIcon,
             signatory: brand?.settings?.company_signatory,
             currentLayout: !!version.resolved_styles?.layout,
             planned: !!version.pagination,
@@ -347,6 +349,7 @@ export async function sealedPdf(
               values: version.variables_resolved,
               styles: version.resolved_styles,
               logo: brand?.logo,
+              logoIcon: brand?.logoIcon,
               print: true,
             }),
           )

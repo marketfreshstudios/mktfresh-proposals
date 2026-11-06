@@ -23,7 +23,12 @@ import {
   TemplateBandsSchema,
   defaultTemplateBands,
 } from "./page-bands";
-import { CoverSchema, loadedCover, contentAfterCover } from "./cover";
+import {
+  CoverSchema,
+  loadedCover,
+  defaultCover,
+  contentAfterCover,
+} from "./cover";
 import { publishedExpiry } from "./editor-publication";
 import { PagePlanSchema } from "./page-plan";
 import { authoringPreview } from "./authoring-preview";
@@ -1017,7 +1022,7 @@ async function handleRoute(req: Request, path: string[]) {
               active: z.boolean(),
               signature_heading_defaulted: z.boolean().optional(),
               header_footer: TemplateBandsSchema.default(defaultTemplateBands),
-              cover: CoverSchema.default(() => loadedCover()),
+              cover: CoverSchema.default(() => defaultCover(true)),
               style_overrides: StyleOverridesSchema.optional(),
               pagination: PagePlanSchema.optional(),
             })

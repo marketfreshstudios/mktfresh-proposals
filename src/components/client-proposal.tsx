@@ -999,6 +999,13 @@ function NewClientFlow({
                 </div>
                 {showCopy && (
                   <FlowDocument
+                    logoIcon={
+                      p.company.logo_icon
+                        ? preview
+                          ? `/api/workspace-icon?size=128&v=${p.company.logo_icon}`
+                          : `/api/public/${token}/brand/icon?size=128&v=${p.company.logo_icon}`
+                        : undefined
+                    }
                     forceFlowing={phone}
                     workspaceLogo={
                       p.company.logo
@@ -1116,6 +1123,13 @@ function NewClientFlow({
             ) : (
               <>
                 <FlowDocument
+                  logoIcon={
+                    p.company.logo_icon
+                      ? preview
+                        ? `/api/workspace-icon?size=128&v=${p.company.logo_icon}`
+                        : `/api/public/${token}/brand/icon?size=128&v=${p.company.logo_icon}`
+                      : undefined
+                  }
                   forceFlowing={phone}
                   workspaceLogo={
                     p.company.logo
@@ -1377,6 +1391,7 @@ function SeparateInvoice({
 function FlowDocument(props: {
   logo?: string;
   workspaceLogo?: string;
+  logoIcon?: string;
   forceFlowing?: boolean;
   proposal: PublicProposal;
   frozen?: boolean;
@@ -1415,6 +1430,7 @@ function FlowDocument(props: {
     <>
       <ClientPrint
         proposal={props.proposal}
+        logoIcon={props.logoIcon}
         logo={props.workspaceLogo ?? props.logo}
       />
       {desktop && !layoutFailed ? (
@@ -1432,12 +1448,14 @@ function FlowDocument(props: {
 }
 function FlowingDocument({
   logo,
+  logoIcon,
   proposal: p,
   frozen = false,
   busy = false,
   onToggle,
 }: {
   logo?: string;
+  logoIcon?: string;
   proposal: PublicProposal;
   frozen?: boolean;
   busy?: boolean;
@@ -1474,6 +1492,7 @@ function FlowingDocument({
       <DocumentCover
         highlightFields={false}
         logo={logo}
+        logoIcon={logoIcon}
         cover={p.cover}
         map={p.variables}
         title={p.title}

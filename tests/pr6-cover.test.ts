@@ -6,7 +6,7 @@ import { publicResult } from "../src/lib/service";
 import { printContent } from "../src/lib/document-print";
 it("new drafts inherit template covers and cover edits publish on the same token and freeze with the signed hash", async () => {
   const f = await setup();
-  expect(f.draft.cover).toEqual(defaultCover());
+  expect(f.draft.cover).toEqual(defaultCover(true));
   expect(f.draft.content[0].type).toBe("page_break");
   const t = (await f.repo.entities<any>("templates"))[0];
   t.cover = {

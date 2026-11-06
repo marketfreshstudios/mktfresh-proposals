@@ -10,9 +10,11 @@ import type { PublicProposal } from "./client-proposal";
 export function ClientPrint({
   proposal: p,
   logo,
+  logoIcon,
 }: {
   proposal: PublicProposal;
   logo?: string;
+  logoIcon?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null),
     [mounted, setMounted] = useState(false);
@@ -20,12 +22,12 @@ export function ClientPrint({
   useLayoutEffect(() => {
     if (!ref.current || !p.pagination) return;
     try {
-      paginateClientDocument(ref.current, p, logo);
+      paginateClientDocument(ref.current, p, logo, undefined, logoIcon);
     } catch {
       // A print-only failure must never prevent reading or signing.
       ref.current.dataset.printError = "true";
     }
-  }, [p, mounted, logo]);
+  }, [p, mounted, logo, logoIcon]);
   if (!mounted || !p.pagination) return null;
   return createPortal(
     <div className="client-print-projection">

@@ -2558,6 +2558,11 @@ function QuoteEditorContent({
                         : undefined
                     }
                     values={map}
+                    logoIcon={
+                      p.workspace_settings?.logo_icon
+                        ? `/api/workspace-icon?size=128&v=${encodeURIComponent(p.workspace_settings!.logo_icon!.path)}`
+                        : undefined
+                    }
                     logo={
                       p.workspace_settings?.logo
                         ? `/api/proposals/${p.id}/preview-logo`
@@ -2615,6 +2620,11 @@ function QuoteEditorContent({
                       workspace={
                         panels.printMode
                           ? p.workspace_settings?.company_name
+                          : undefined
+                      }
+                      logoIcon={
+                        p.workspace_settings?.logo_icon
+                          ? `/api/workspace-icon?size=128&v=${encodeURIComponent(p.workspace_settings!.logo_icon!.path)}`
                           : undefined
                       }
                       logo={

@@ -49,6 +49,7 @@ export function printContent(input: {
   signatures?: string;
   signatureBlocks?: Partial<Record<"client" | "company", string>>;
   logo?: string;
+  logoIcon?: string;
   workspace?: string;
   signatory?: { name: string; title: string } | null;
   currentLayout?: boolean;
@@ -82,8 +83,8 @@ export function printContent(input: {
   const oldCover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
   const cover = input.legacyCover
     ? oldCover
-    : presentation.elements
-      ? `<header class="print-cover" data-print-block="cover">${editableCoverHtml(presentation, input.title, map, input.logo)}</header>`
+    : presentation.elements || presentation.logo_mode === "brand"
+      ? `<header class="print-cover" data-print-block="cover">${editableCoverHtml(presentation, input.title, map, input.logo, input.logoIcon)}</header>`
       : `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" data-image-height="${presentation.logo_height ?? 60}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)
