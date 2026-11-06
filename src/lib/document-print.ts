@@ -1,4 +1,5 @@
 import { coverLayoutStyle } from "./cover-graphics";
+import { coverImageBackdrop } from "./cover-layout";
 import { editableCoverHtml, coverElementsCss } from "./cover-render";
 import { defaultCover } from "./cover";
 import { pageGeometry, type HeaderFooterSettings } from "./page-bands";
@@ -86,7 +87,7 @@ export function printContent(input: {
   const cover = input.legacyCover
     ? oldCover
     : presentation.elements || presentation.logo_mode === "brand"
-      ? `<header class="print-cover" data-print-block="cover" data-cover-layout="${presentation.layout ?? "custom"}" data-cover-finished="${!!presentation.background?.finished}" style="${coverLayoutStyle(presentation, input.accent)}--cover-content-height:var(--print-content-height,912px)">${editableCoverHtml(presentation, input.title, map, input.logo, input.logoIcon, input.accent)}</header>`
+      ? `<header class="print-cover" data-print-block="cover" data-cover-layout="${presentation.layout ?? "custom"}" data-cover-finished="${!!presentation.background?.finished}" ${coverImageBackdrop(presentation) ? 'data-cover-backdrop="true"' : ""} style="${coverLayoutStyle(presentation, input.accent)}--cover-content-height:var(--print-content-height,912px)">${editableCoverHtml(presentation, input.title, map, input.logo, input.logoIcon, input.accent)}</header>`
       : `<header class="print-cover" data-print-block="cover">${src ? `<img src="${escape(src)}" alt="${escape(presentation.logo_alt ?? "Company logo")}" data-image-height="${presentation.logo_height ?? 60}" style="height:${presentation.logo_height ?? 60}px;max-height:none;max-width:100%;width:auto">` : ""}${line("workspace", "print-workspace")}${line("eyebrow", "eyebrow")}<h1>${escape(input.title)}</h1>${line("prepared_for", "prepared-for")}${line("byline", "byline")}</header>`;
   const spaces = input.styles
     ? documentSpacing(input.content, input.styles)

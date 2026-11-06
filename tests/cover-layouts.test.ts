@@ -90,6 +90,24 @@ it("graphics respect icon resolution, crop, opacity, and independent background 
   for (const pattern of ["ring", "waves", "dots", "orbits", "corners"])
     expect(coverGraphicSvg(pattern, "#285c50", true)).toContain("<svg");
 });
+it("full-page uploaded images get a readable text surface, while Photo keeps its brand band", () => {
+  const c = applyCoverLayout(defaultCover(), "editorial");
+  c.background = { type: "image", image: "data:image/png;base64,AAAA" };
+  expect(coverPresentation(c)).toMatchObject({
+    backdrop: true,
+    text: "#ffffff",
+  });
+  expect(coverPresentation({ ...c, layout: "photo" })).toMatchObject({
+    backdrop: false,
+  });
+  expect(
+    coverPresentation({
+      ...c,
+      layout: "photo",
+      background: { ...c.background, finished: true },
+    }),
+  ).toMatchObject({ backdrop: true, text: "#ffffff" });
+});
 it.each(["#ffffff", "#000000", "#777777", "#2f5d50", "#b5532e", "#ffee00"])(
   "background %s picks AA text",
   (color) => {

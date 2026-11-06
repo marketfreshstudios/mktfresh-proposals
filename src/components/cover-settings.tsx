@@ -14,9 +14,9 @@ import {
   coverLayoutNames,
   defaultCoverBackground,
   coverPatterns,
-  coverTextColor,
 } from "../lib/cover-layout";
 import type { WorkspaceSettings } from "../lib/workspace";
+import { coverPresentation } from "../lib/cover-graphics";
 const names = {
   plain: "Plain",
   ring: "Ring",
@@ -88,7 +88,12 @@ export function CoverSettings({
     }
   };
   const color = b.color ?? settings?.accent_colour ?? "#365c4a",
-    elements = coverElements(cover, "");
+    elements = coverElements(cover, ""),
+    appearance = coverPresentation(cover, settings?.accent_colour),
+    text =
+      layout === "split" && !appearance.backdrop
+        ? appearance.panelText
+        : appearance.text;
   return (
     <details className="style-accordion cover-settings-accordion">
       <Disclosure>Cover</Disclosure>
@@ -150,8 +155,11 @@ export function CoverSettings({
                 onChange={(e) => change({ color: e.target.value })}
               />
               <span className="muted">
-                {coverTextColor(color) === "#ffffff" ? "White" : "Ink"} text on
-                this background · AA contrast
+                {text === "#ffffff" ? "White" : "Ink"} text on{" "}
+                {layout === "split" && !appearance.backdrop
+                  ? "the panel"
+                  : "the cover"}{" "}
+                · AA contrast
               </span>
             </Field>
             {b.type === "image" && (

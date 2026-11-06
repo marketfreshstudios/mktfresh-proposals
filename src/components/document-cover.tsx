@@ -1,5 +1,9 @@
 "use client";
-import { coverGroups, visibleCoverElement } from "../lib/cover-layout";
+import {
+  coverGroups,
+  visibleCoverElement,
+  coverImageBackdrop,
+} from "../lib/cover-layout";
 import {
   coverDecorationHtml,
   coverLayoutStyle,
@@ -351,6 +355,7 @@ export function DocumentCover({
       className="document-cover"
       data-cover-layout={value.layout}
       data-cover-finished={value.background?.finished}
+      data-cover-backdrop={coverImageBackdrop(value) || undefined}
       style={
         layout
           ? ({

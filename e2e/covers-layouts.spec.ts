@@ -117,7 +117,7 @@ for (const layout of coverLayouts)
       html = html
         .replace(/<script\b[\s\S]*?<\/script>/g, "")
         .replace(/{{accent}}/g, "#2f5d50")
-        .replace(/{{markOpacity}}/g, "8%");
+        .replace(/{{markOpacity}}/g, layout === "split" ? "12%" : "8%");
       await page.route("http://cover-reference.test/", (r) =>
         r.fulfill({ contentType: "text/html", body: html }),
       );
@@ -241,6 +241,9 @@ test("cover controls preserve history, use palette colors, validate uploads and 
   await page.locator(".cover-settings-accordion > summary").click();
   const settings = page.locator(".cover-settings");
   await expect(
+    settings.getByText("Ink text on the cover · AA contrast", { exact: true }),
+  ).toBeVisible();
+  await expect(
     settings.getByText(
       "Upload a 1024×1024 or larger icon to use it as the cover graphic",
     ),
@@ -296,6 +299,14 @@ test("cover controls preserve history, use palette colors, validate uploads and 
       buffer: small,
     });
   await settings.getByRole("checkbox", { name: /finished/i }).check();
+  await expect(page.locator(".editor-paper .document-cover")).toHaveAttribute(
+    "data-cover-backdrop",
+    "true",
+  );
+  await expect(page.locator(".editor-paper h1")).toHaveCSS(
+    "color",
+    "rgb(255, 255, 255)",
+  );
   await expect(page.locator(".editor-paper .document-cover")).toHaveAttribute(
     "data-cover-finished",
     "true",

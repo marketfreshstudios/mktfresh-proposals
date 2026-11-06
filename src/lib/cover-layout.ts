@@ -24,6 +24,15 @@ export function coverTextColor(color: string) {
       ? "#1b1f1d"
       : "#000000";
 }
+/** A photo behind text needs a stable contrast surface; the Photo layout has its own brand band. */
+export function coverImageBackdrop(cover: Cover) {
+  return (
+    !!cover.layout &&
+    cover.layout !== "custom" &&
+    cover.background?.type === "image" &&
+    (cover.layout !== "photo" || !!cover.background.finished)
+  );
+}
 export function coverMeta(e: CoverElement) {
   return (
     e.label !== undefined ||
