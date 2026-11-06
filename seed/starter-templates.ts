@@ -1,3 +1,4 @@
+import { fieldNodes } from "../src/lib/editor-fields";
 import { createHash } from "node:crypto";
 import copy from "./starter-copy.json" with { type: "json" };
 import { markdownBlocks } from "../src/lib/markdown";
@@ -37,7 +38,7 @@ export function starterTemplates(
       id: key,
       kind,
       align: "left",
-      ...(text === undefined ? {} : { content: coverText(text) }),
+      ...(text === undefined ? {} : { content: fieldNodes(coverText(text)) }),
     });
     const blocks = markdownBlocks(
       source.markdown,
@@ -79,6 +80,13 @@ export function starterTemplates(
       { type: "signature_block", role: "client" },
       { type: "signature_block", role: "company" },
     );
+    for (const b of content) {
+      if (b.content) b.content = fieldNodes(b.content);
+      if (b.type === "heading" && /{{/.test(b.text ?? "")) {
+        b.content = fieldNodes(coverText(b.text!));
+        b.rich_heading = true;
+      }
+    }
     content.forEach((b, index) => (b.id = starterId(id, `block-${index}`)));
     const ids = (numbers: number[]) =>
       numbers.map(
