@@ -38,12 +38,18 @@ export const WorkspaceSettingsSchema = z.object({
   logo: z.string().nullable(),
   logo_icon: z
     .object({
+      width: z.number().int().min(128).max(4096).optional(),
+      height: z.number().int().min(128).max(4096).optional(),
       path: z.string().max(300),
       name: z.string().trim().min(1).max(255),
       size: z.number().int().positive().max(749999),
     })
     .strict()
     .nullable()
+    .optional(),
+  brand_palette: z
+    .array(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+    .max(4)
     .optional(),
   accent_colour: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   sending_domain: z

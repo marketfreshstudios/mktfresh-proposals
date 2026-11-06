@@ -1,3 +1,4 @@
+import { resolveCoverGraphics } from "./cover-graphics";
 import { sizeListMarkers } from "./list-markers";
 import {
   PdfPrintError,
@@ -225,6 +226,7 @@ export async function sealedPdf(
             ),
             logo: brand?.logo,
             logoIcon: brand?.logoIcon,
+            accent: brand?.settings?.accent_colour,
             signatory: brand?.settings?.company_signatory,
             currentLayout: !!version.resolved_styles?.layout,
             planned: !!version.pagination,
@@ -242,6 +244,7 @@ export async function sealedPdf(
         images.map((img) => (img as HTMLImageElement).decode().catch(() => {})),
       );
     });
+    await page.locator(".print-root").evaluate(resolveCoverGraphics);
     await page.locator(".print-root").evaluate(fitStoredImages);
     await page.evaluate(
       `(() => {const __name = value => value; return (${sizeListMarkers.toString()})(document.querySelector(".print-root"));})()`,

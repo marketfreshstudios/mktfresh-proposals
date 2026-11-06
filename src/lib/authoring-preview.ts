@@ -16,6 +16,7 @@ export function authoringPreview(
   workspace: string,
 ): Proposal {
   const date = "2026-01-01T12:00:00.000Z";
+  const newCover = input.cover?.layout && input.cover.layout !== "custom";
   return {
     id: input.id,
     revision: 0,
@@ -38,7 +39,11 @@ export function authoringPreview(
     status: "draft",
     token: null,
     password_hash: null,
-    valid_until: null,
+    valid_until: newCover
+      ? new Date(
+          Date.parse(date) + (settings.default_validity_days ?? 30) * 86400000,
+        ).toISOString()
+      : null,
     currency: settings.currency ?? "USD",
     source: "native",
     proposify_id: null,

@@ -1,3 +1,9 @@
+import { coverGroups, visibleCoverElement } from "./cover-layout";
+import {
+  coverDecorationHtml,
+  coverLayoutStyle,
+  coverLayoutCss,
+} from "./cover-graphics";
 import { coverBrand } from "./workspace-brand";
 import { fieldNodes, editorFieldValue } from "./editor-fields";
 import { inlineSizeHtml } from "./inline-font-size";
@@ -65,11 +71,13 @@ export function editableCoverHtml(
   map: Record<string, string>,
   logo?: string,
   logoIcon?: string,
+  accent?: string,
 ) {
   const brand = coverBrand(cover, logo, logoIcon, map["workspace.name"]),
     src = brand.src;
-  return coverElements(cover, title)
-    .filter((e) => !e.hidden)
+  const elements = coverElements(cover, title);
+  const nodes = elements
+    .filter((e) => visibleCoverElement(e, cover, map))
     .map((e) => {
       const style = coverElementCss(e);
       if (e.kind === "logo") {
@@ -99,9 +107,27 @@ export function editableCoverHtml(
       );
       if (!html.replace(/<[^>]*>/g, "").trim() && e.kind !== "extra") return "";
       const tag = e.kind === "title" ? "h1" : "div";
-      return `<${tag} class="cover-element ${e.kind === "title" ? "" : "cover-text-line"} ${coverLineClass(e)}" data-cover-element="${escape(e.id)}" style="${style}">${html || "<br>"}</${tag}>`;
-    })
-    .join("");
+      const label =
+        cover.layout && cover.layout !== "custom" && e.label !== undefined
+          ? `<span class="cover-meta-label">${coverInlineHtml(coverText(e.label), map, true)}</span>`
+          : "";
+      return `<${tag} class="cover-element ${e.kind === "title" ? "" : "cover-text-line"} ${coverLineClass(e)}" data-cover-element="${escape(e.id)}" data-cover-kind="${e.kind}" style="${style}">${label}${html || "<br>"}</${tag}>`;
+    });
+  if (!cover.layout || cover.layout === "custom") return nodes.join("");
+  const visible = elements.filter((e) => visibleCoverElement(e, cover, map));
+  return (
+    coverDecorationHtml(
+      cover,
+      accent,
+      logoIcon?.replace("size=128", "size=original"),
+    ) +
+    coverGroups(visible, cover.layout)
+      .map(
+        (group, n) =>
+          `<div class="${["cover-brand-group", "cover-main-group", "cover-meta-group"][n]}">${group.map((e) => nodes[visible.indexOf(e)]).join("")}</div>`,
+      )
+      .join("")
+  );
 }
 export const coverBrandCss = `.cover-brand-name{display:inline-block;vertical-align:middle;font:600 22px/1.3 var(--font-ui,"Instrument Sans",sans-serif);margin-left:8px}.cover-logo[data-brand=true] .document-image{display:inline-block;vertical-align:middle}`;
-export const coverElementsCss = `.cover-text-line{min-height:18px;font:500 12px/1.5 "Instrument Sans",sans-serif;margin:10px 0}.print-cover:has(>.cover-element){display:flex;flex-direction:column;align-items:stretch}.cover-element{position:relative;flex:none}.cover-logo{width:100%;max-width:none;line-height:0}.cover-element .field-chip{font:inherit}${coverBrandCss}`;
+export const coverElementsCss = `.cover-text-line{min-height:18px;font:500 12px/1.5 "Instrument Sans",sans-serif;margin:10px 0}.print-cover:has(>.cover-element){display:flex;flex-direction:column;align-items:stretch}.cover-element{position:relative;flex:none}.cover-logo{width:100%;max-width:none;line-height:0}.cover-element .field-chip{font:inherit}${coverBrandCss}${coverLayoutCss}`;

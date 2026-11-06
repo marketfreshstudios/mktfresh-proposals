@@ -1440,6 +1440,8 @@ function TemplatesStudioContent({
         </div>
       </section>
       <ProposalStyles
+        cover={draft.cover}
+        onCover={(cover) => editDraft({ ...draft, cover })}
         scope="template"
         settings={data.settings}
         headerFooter={proposalBands(draft.header_footer)}
@@ -1879,6 +1881,18 @@ function TemplatesStudioContent({
                               1,
                             ).content.height
                           }
+                          paperInsets={
+                            pageGeometry(
+                              resolveStyles(
+                                data.settings,
+                                draft?.style_overrides,
+                              ),
+                              draft?.header_footer
+                                ? proposalBands(draft.header_footer)
+                                : undefined,
+                              1,
+                            ).margins
+                          }
                           title="Proposal title"
                           cover={draft?.cover}
                           map={map}
@@ -1888,6 +1902,7 @@ function TemplatesStudioContent({
                               : undefined
                           }
                           workspace={data.settings?.company_name}
+                          accent={data.settings?.accent_colour}
                           logoIcon={
                             data.settings?.logo_icon
                               ? `/api/workspace-icon?size=128&v=${encodeURIComponent(data.settings!.logo_icon!.path)}`

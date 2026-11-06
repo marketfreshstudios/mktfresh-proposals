@@ -1,0 +1,1020 @@
+{
+  "general-project": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Project proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Project proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.title"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "website-design-build": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Website proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Website proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "A new website for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "website-care-hosting": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Care plan proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Care plan proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Keeping "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "'s website fast, safe and current"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "local-visibility-seo": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Local visibility proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Local visibility proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Helping customers find "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "website-ai-audit": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Audit proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Audit proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "How "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " shows up online, and what to fix first"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "monthly-marketing": {
+    "logo_mode": "brand",
+    "workspace": "{{workspace.name}}",
+    "eyebrow": "Marketing proposal",
+    "byline": "{{proposal.validity}}",
+    "elements": [
+      {
+        "id": "logo",
+        "kind": "logo",
+        "align": "left"
+      },
+      {
+        "id": "eyebrow",
+        "kind": "eyebrow",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Marketing proposal"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "title",
+        "kind": "title",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "A marketing plan for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "prepared_for",
+        "kind": "prepared_for",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared for "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.full_name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "client.company"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "byline",
+        "kind": "byline",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Prepared by "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "sender.name"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": ", "
+                },
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "workspace.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.date"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "validity",
+        "kind": "extra",
+        "align": "left",
+        "content": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "variable",
+                  "attrs": {
+                    "path": "proposal.validity"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -236,6 +236,14 @@ test("every starter field is highlighted in template and proposal editors, while
       );
     }
     for (const e of cover?.elements ?? []) {
+      if (
+        e.hidden ||
+        (cover?.layout &&
+          cover.layout !== "custom" &&
+          e.meta === "valid_until" &&
+          prefix !== "template")
+      )
+        continue;
       const paths = tokens(e.content);
       if (paths.length)
         await chips(
@@ -265,9 +273,21 @@ test("every starter field is highlighted in template and proposal editors, while
       return found;
     });
     expect(raw).toEqual([]);
-    await expect(
-      paper.locator('[data-field="proposal.validity"]').first(),
-    ).toHaveText("Validity sentence");
+    if (cover?.layout && cover.layout !== "custom") {
+      // Owner-approved new layouts use a date-only slot and hide it when indefinite.
+      if (prefix === "template")
+        await expect(
+          paper.locator('[data-field="proposal.valid_until"]').first(),
+        ).toHaveText("January 31, 2026");
+      else
+        await expect(
+          paper.locator('.document-cover [data-field="proposal.valid_until"]'),
+        ).toHaveCount(0);
+    } else {
+      await expect(
+        paper.locator('[data-field="proposal.validity"]').first(),
+      ).toHaveText("Validity sentence");
+    }
     if (
       content.some(
         (b) => b.type === "heading" && b.text === "Why {{workspace.name}}",

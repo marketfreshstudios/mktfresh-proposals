@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
+import { BrandColorField } from "./brand-color-field";
 import { businessStates } from "../lib/business-state";
 import { whiteContrast, accessibleAccent } from "../lib/brand";
 import {
@@ -43,6 +44,8 @@ export function WorkspaceStudio({
     [licensed, setLicensed] = useState(false),
     [uploading, setUploading] = useState(false),
     [uploadError, setUploadError] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string>();
   const [logoMeta, setLogoMeta] = useState<{
     name: string;
     size: number;
@@ -282,7 +285,10 @@ export function WorkspaceStudio({
             </div>
             <div className="workspace-logo-preview">
               {draft.logo ? (
-                <img src="/api/workspace-logo" alt="Workspace logo" />
+                <img
+                  src={logoPreview ?? "/api/workspace-logo"}
+                  alt="Workspace logo"
+                />
               ) : (
                 <span className="workspace-logo-empty" aria-hidden="true">
                   {draft.company_name.slice(0, 1)}
@@ -311,9 +317,10 @@ export function WorkspaceStudio({
                   if (!file) return;
                   setUploading(true);
                   try {
-                    const result = await post("/api/workspace-logo", {
-                      image: await readData(file),
-                    });
+                    const image = await readData(file);
+                    const result = await post("/api/workspace-logo", { image });
+                    setLogoPreview(image);
+                    setSuggestions(result.palette_suggestions ?? []);
                     setLogoMeta({ name: file.name, size: file.size });
                     change({ logo: result.path }, true);
                     setUploadError("");
@@ -417,8 +424,9 @@ export function WorkspaceStudio({
             </div>
           </div>
           <p className="muted workspace-logo-requirements">
-            PNG only, under 750 KB. Logo icon: square, at least 128 × 128
-            pixels.
+            PNG only, under 750 KB. Logo icon: square, at least 1024×1024 for
+            cover graphics. Smaller icons (at least 128×128) still work in
+            navigation and browser tabs.
           </p>
           {!owner && (
             <p className="muted">
@@ -426,22 +434,18 @@ export function WorkspaceStudio({
             </p>
           )}
         </div>
-        <Field label="Accent color">
-          <div className="workspace-accent">
-            {["#365c4a", "#2e4f79", "#7a3e2d", "#1c1b18"].map((colour, n) => (
-              <button
-                type="button"
-                className={`workspace-swatch workspace-swatch-${n}`}
-                aria-label={`Use accent ${colour}`}
-                aria-pressed={draft.accent_colour.toLowerCase() === colour}
-                key={colour}
-                onClick={() => change({ accent_colour: colour }, true)}
-              />
-            ))}
-            <input
-              aria-label="Accent hex"
+        <section className="workspace-palette" aria-label="Brand colors">
+          <h3>Brand colors</h3>
+          <p className="muted">Primary plus up to four more colors.</p>
+          <div className="palette-edit-row">
+            <BrandColorField
+              label="Primary"
+              hexLabel="Accent hex"
               value={draft.accent_colour}
-              onChange={(e) => change({ accent_colour: e.target.value })}
+              disabled={!owner}
+              onChange={(color, immediate) =>
+                change({ accent_colour: color }, immediate)
+              }
               onBlur={() => void flush()}
             />
             <p className={contrast >= 4.5 ? "success" : "warning"}>
@@ -451,19 +455,141 @@ export function WorkspaceStudio({
               ({contrast.toFixed(1)}:1)
             </p>
           </div>
-        </Field>
-        {contrast > 0 && contrast < 4.5 && (
+          {contrast > 0 && contrast < 4.5 && (
+            <Button
+              disabled={!owner}
+              onClick={() =>
+                change(
+                  { accent_colour: accessibleAccent(draft.accent_colour) },
+                  true,
+                )
+              }
+            >
+              Use {accessibleAccent(draft.accent_colour)} — darker, same hue
+            </Button>
+          )}
+          {(draft.brand_palette ?? []).map((color, index) => (
+            <div className="palette-edit-row" key={index}>
+              <BrandColorField
+                label={`Brand color ${index + 2}`}
+                value={color}
+                disabled={!owner}
+                onChange={(color, immediate) =>
+                  change(
+                    {
+                      brand_palette: (draft.brand_palette ?? []).map((c, n) =>
+                        n === index ? color : c,
+                      ),
+                    },
+                    immediate,
+                  )
+                }
+                onBlur={() => void flush()}
+              />
+              <Button
+                variant="ghost"
+                disabled={!owner}
+                onClick={() =>
+                  change(
+                    {
+                      brand_palette: draft.brand_palette?.filter(
+                        (_, n) => n !== index,
+                      ),
+                    },
+                    true,
+                  )
+                }
+              >
+                Remove color
+              </Button>
+            </div>
+          ))}
           <Button
+            variant="secondary"
+            disabled={!owner || (draft.brand_palette?.length ?? 0) >= 4}
             onClick={() =>
               change(
-                { accent_colour: accessibleAccent(draft.accent_colour) },
+                { brand_palette: [...(draft.brand_palette ?? []), "#2e4f79"] },
                 true,
               )
             }
           >
-            Use {accessibleAccent(draft.accent_colour)} — darker, same hue
+            Add color
           </Button>
-        )}
+          <Button
+            variant="ghost"
+            disabled={!owner || !draft.logo}
+            onClick={async () => {
+              try {
+                setSuggestions(
+                  (await api<{ colors: string[] }>("/api/workspace-palette"))
+                    .colors,
+                );
+              } catch (e) {
+                setUploadError((e as Error).message);
+              }
+            }}
+          >
+            Suggest colors from logo
+          </Button>
+          {!!suggestions.length && (
+            <div className="palette-suggestions">
+              <h4>Suggested from your logo</h4>
+              <p className="muted">
+                Suggestions never replace saved colors. Edit, accept or discard
+                them.
+              </p>
+              {suggestions.map((color, index) => (
+                <div className="palette-edit-row" key={index}>
+                  <BrandColorField
+                    label={`Suggested color ${index + 1}`}
+                    value={color}
+                    disabled={!owner}
+                    onChange={(color) =>
+                      setSuggestions(
+                        suggestions.map((c, n) => (n === index ? color : c)),
+                      )
+                    }
+                  />
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      !owner ||
+                      (draft.brand_palette?.length ?? 0) >= 4 ||
+                      [
+                        draft.accent_colour,
+                        ...(draft.brand_palette ?? []),
+                      ].includes(color)
+                    }
+                    onClick={() => {
+                      change(
+                        {
+                          brand_palette: [
+                            ...(draft.brand_palette ?? []),
+                            color,
+                          ],
+                        },
+                        true,
+                      );
+                      setSuggestions(suggestions.filter((_, n) => n !== index));
+                    }}
+                  >
+                    Accept color
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={!owner}
+                    onClick={() =>
+                      setSuggestions(suggestions.filter((_, n) => n !== index))
+                    }
+                  >
+                    Discard
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
         {toggle(
           'Show "Powered by Yeswell"',
           draft.show_powered_by !== false,

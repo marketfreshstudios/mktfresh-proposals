@@ -48,10 +48,17 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
         encoding: "utf8",
       });
       const pages = content.split("\f");
-      expect(pages[0]).toContain("Prepared for Client, Client company");
-      expect(pages[0]).toContain(
-        `Prepared by ${settings.owner}, Example Studio`,
+      // New layouts separate the editable label from its value in columns.
+      const coverText = execFileSync(
+        "pdftotext",
+        ["-raw", "-f", "1", "-l", "1", path, "-"],
+        { encoding: "utf8" },
+      ).replace(/\s+/g, "");
+      expect(coverText).toContain("PREPAREDFORClient,Clientcompany");
+      expect(coverText).toContain(
+        `PREPAREDBY${settings.owner.replace(/\s+/g, "")},ExampleStudio`,
       );
+      expect(coverText).toContain("VALIDUNTILJanuary31,2026");
       expect(content).toContain("State of North Carolina");
       expect(content).toContain("Signatures");
       expect(content.includes("18 monthly payments")).toBe(false);

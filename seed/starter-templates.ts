@@ -2,7 +2,11 @@ import { fieldNodes } from "../src/lib/editor-fields";
 import { createHash } from "node:crypto";
 import copy from "./starter-copy.json" with { type: "json" };
 import { markdownBlocks } from "../src/lib/markdown";
-import { coverText, type CoverElement } from "../src/lib/cover";
+import {
+  coverText,
+  applyCoverLayout,
+  type CoverElement,
+} from "../src/lib/cover";
 import { defaultTemplateBands } from "../src/lib/page-bands";
 import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
@@ -168,27 +172,30 @@ export function starterTemplates(
       active: true,
       signature_heading_defaulted: true,
       header_footer: defaultTemplateBands(),
-      cover: {
-        logo_mode: "brand",
-        workspace: "{{workspace.name}}",
-        eyebrow: source.eyebrow,
-        byline: "{{proposal.validity}}",
-        elements: [
-          coverLine("logo"),
-          coverLine("eyebrow", source.eyebrow),
-          coverLine("title", source.title),
-          coverLine(
-            "prepared_for",
-            "Prepared for {{client.full_name}}, {{client.company}}",
-          ),
-          coverLine(
-            "byline",
-            "Prepared by {{sender.name}}, {{workspace.name}}",
-          ),
-          coverLine("extra", "{{proposal.date}}", "date"),
-          coverLine("extra", "{{proposal.validity}}", "validity"),
-        ],
-      },
+      cover: applyCoverLayout(
+        {
+          logo_mode: "brand",
+          workspace: "{{workspace.name}}",
+          eyebrow: source.eyebrow,
+          byline: "{{proposal.validity}}",
+          elements: [
+            coverLine("logo"),
+            coverLine("eyebrow", source.eyebrow),
+            coverLine("title", source.title),
+            coverLine(
+              "prepared_for",
+              "Prepared for {{client.full_name}}, {{client.company}}",
+            ),
+            coverLine(
+              "byline",
+              "Prepared by {{sender.name}}, {{workspace.name}}",
+            ),
+            coverLine("extra", "{{proposal.date}}", "date"),
+            coverLine("extra", "{{proposal.validity}}", "validity"),
+          ],
+        },
+        "editorial",
+      ),
       content,
       default_quote: [],
       default_items,
