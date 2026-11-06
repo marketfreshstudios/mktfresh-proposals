@@ -6,7 +6,7 @@ import { SectionsPanel } from "./editor/sections-panel";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { ToolbarPopover } from "./toolbar-popover";
 import { convertSavedBlockType, savedBlockType } from "../lib/saved-block-type";
-import { templateDefaultQuote } from "../lib/template-quote";
+import { templateAuthoringItems } from "../lib/template-quote";
 import { studioDate } from "../lib/studio-v3";
 import { curatedFonts } from "../lib/proposal-fonts";
 import { confirmDialog } from "./dialog-actions";
@@ -1186,7 +1186,7 @@ function TemplatesStudioContent({
   const eventAuthor = (e: Activity) =>
     data.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ??
     "Staff";
-  const defaults = draft ? templateDefaultQuote(draft, data.catalog).quote : [];
+  const defaults = draft ? templateAuthoringItems(draft, data.catalog) : [];
   function changeDefaults(next: QuoteItem[]) {
     editDraft({
       ...model.current.draft!,
@@ -1537,6 +1537,7 @@ function TemplatesStudioContent({
         <TemplateWarnings templates={[draft!]} catalog={data.catalog} />
         <QuoteItemsPanel
           items={defaults}
+          totalsItems={templatePreview.quote}
           catalog={data.catalog}
           families={data.families}
           currency={data.settings?.currency ?? "USD"}

@@ -16,6 +16,7 @@ const uid = () => crypto.randomUUID();
 /** One quote panel for proposals and template defaults; callers own history and persistence. */
 export function QuoteItemsPanel({
   items,
+  totalsItems = items,
   catalog,
   families,
   currency,
@@ -29,6 +30,7 @@ export function QuoteItemsPanel({
   intro,
 }: {
   items: QuoteItem[];
+  totalsItems?: QuoteItem[];
   catalog: Item[];
   families: { id: string; name: string; active: boolean }[];
   currency: string;
@@ -42,7 +44,7 @@ export function QuoteItemsPanel({
   intro?: string;
 }) {
   const money = useMoney(),
-    range = quoteRange(items),
+    range = quoteRange(totalsItems),
     setItems = onChange;
   function updateItem(id: string, update: Partial<QuoteItem>) {
     setItems(items.map((i) => (i.id === id ? { ...i, ...update } : i)));
@@ -612,13 +614,15 @@ export function QuoteItemsPanel({
       </div>
       <footer>
         <p className="eyebrow">Client sees by default</p>
-        <Totals lines={items} currency={currency} />
+        <Totals lines={totalsItems} currency={currency} />
         <p className="muted">
           Across all choices · {money(range.min.one_time_total, currency)}–
           {money(range.max.one_time_total, currency)} one-time ·{" "}
           {money(range.min.monthly_total, currency)}–
           {money(range.max.monthly_total, currency)}/mo
-          {items.some((i) => i.sublines.some((s) => s.interval === "year")) &&
+          {totalsItems.some((i) =>
+            i.sublines.some((s) => s.interval === "year"),
+          ) &&
             ` · ${money(range.min.yearly_total, currency)}–${money(range.max.yearly_total, currency)}/yr`}
         </p>
       </footer>
