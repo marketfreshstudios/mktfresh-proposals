@@ -1,4 +1,5 @@
 "use client";
+import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
@@ -97,10 +98,21 @@ export function WorkspaceStudio({
       clearTimeout(timer.current);
     };
   }, []);
-  async function flush() {
+  const saveFailed = useRef(false);
+  useReloadGuard({
+    blocked: Object.values(states).some((s) => !!s.error),
+    pending: Object.values(states).some(
+      (s) => s.status === "Saving…" || s.status === "Unsaved changes",
+    ),
+    flush,
+  });
+  async function flush(): Promise<boolean> {
     clearTimeout(timer.current);
-    if (flight.current) return flight.current;
-    if (!pending.current) return;
+    if (flight.current) {
+      await flight.current;
+      return pending.current ? flush() : !saveFailed.current;
+    }
+    if (!pending.current) return !saveFailed.current;
     let didSave = false;
     const task = (async () => {
       while (pending.current) {
@@ -113,6 +125,7 @@ export function WorkspaceStudio({
             ...current.extra,
           });
           didSave = true;
+          saveFailed.current = false;
           if (
             current.extra?.default_password === extras.current.default_password
           )
@@ -129,6 +142,7 @@ export function WorkspaceStudio({
             }));
           // Reload shared app data only after draining, without replacing this form's local values.
         } catch (e) {
+          saveFailed.current = true;
           if (mounted.current)
             setStates((s) => ({
               ...s,
@@ -145,6 +159,7 @@ export function WorkspaceStudio({
     flight.current = null;
     if (pending.current) return flush();
     if (didSave) await run(async () => {}, "Workspace settings saved");
+    return !saveFailed.current;
   }
   function change(
     patch: Partial<WorkspaceSettings>,

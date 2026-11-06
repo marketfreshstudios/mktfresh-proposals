@@ -1,4 +1,5 @@
 "use client";
+import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { PlainClauseText } from "./editor/plain-clause-text";
 import { QuoteItemsPanel } from "./quote-items-panel";
@@ -1118,6 +1119,11 @@ function TemplatesStudioContent({
     });
     return flight;
   }
+  useReloadGuard({
+    blocked: !!templateRecovery || !!templateError,
+    pending: templateDirty || templateBusy,
+    flush: saveTemplate,
+  });
   const autoSaveKey = serialise(mode === "templates" ? draft : null);
   useEffect(() => {
     if (

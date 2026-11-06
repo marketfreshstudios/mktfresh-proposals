@@ -1,4 +1,5 @@
 "use client";
+import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import type { Data } from "./staff-app";
@@ -118,6 +119,7 @@ function InlineEmailEditor({
     pickerMap = Object.fromEntries(
       Object.keys(allowed).map((k) => [k, values[k] ?? ""]),
     );
+  useReloadGuard({ blocked: dirty || busy || !!error });
   const history = useSessionHistory<Draft>(
     `email:${template.key}`,
     setForm,
