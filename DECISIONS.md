@@ -604,3 +604,7 @@ Studio email editing remains explicit Save, with inline subject/body/button edit
 Owner carry-over d: Workspace Brand places Logo and Logo icon in equal columns from 1024px, stacked below. Titles sit above muted usage text; wide previews are 48px tall and icon previews 64px square. Keep dashed boxes, file metadata, actions, validation, autosave and the shared hint. No storage/schema change. Template and saved-block phone bars use a second row for style/size and More for secondary block actions; the labelled Field stays visible. Proposal editor behavior remains unchanged.
 
 Email default/reset state compares content independent of JSON object-key order, so stored JSONB and field-chip representations don't make an unchanged default appear edited. This is a presentation comparison only; publication/version hashing and server validation are unchanged.
+
+## Starter proposal templates — specification checkpoint
+
+The owner-approved `design/templates/starter-templates.md` governs wording and detailed section order; creation order is General first, then templates 1–5 (6, 1, 2, 3, 4, 5). Existing proposals/frozen versions remain unchanged, and the hosted MarketFresh backfill is owner-run only. Before implementation, the request's stop-and-ask checkpoint applies to the missing table block, the cover's validity sentence mismatch, and the MarketFresh-only clause 4.4 condition in new workspaces. Evidence and options are recorded in `docs/starter-template-questions.md`; decisions are pending.
