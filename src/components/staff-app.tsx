@@ -693,7 +693,15 @@ function NewProposal({ data }: { data: Data }) {
             />
           </Field>
           <Field label="Template">
-            <select name="template" required>
+            <select
+              name="template"
+              required
+              defaultValue={
+                typeof window !== "undefined"
+                  ? (new URL(location.href).searchParams.get("template") ?? "")
+                  : ""
+              }
+            >
               <option value="">Choose a template</option>
               {data.templates
                 .filter((t) => t.active)

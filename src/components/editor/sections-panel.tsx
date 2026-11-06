@@ -7,7 +7,9 @@ export function SectionsPanel({
   onToggle,
   children,
   onCloseComplete,
+  className = "",
 }: {
+  className?: string;
   open: boolean;
   mode: "docked" | "drawer";
   onToggle: () => void;
@@ -40,7 +42,7 @@ export function SectionsPanel({
   return (
     <>
       <aside
-        className={`editor-outline editor-v2-sections ${open && mode === "docked" ? "" : "sidebar-rail"}`}
+        className={`editor-outline editor-v2-sections ${open && mode === "docked" ? "" : "sidebar-rail"} ${className}`}
         aria-label="Sections panel"
       >
         {open && mode === "docked" ? (

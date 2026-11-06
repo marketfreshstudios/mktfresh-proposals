@@ -1,4 +1,15 @@
 "use client";
+import { PlainClauseText } from "./editor/plain-clause-text";
+import { QuoteItemsPanel } from "./quote-items-panel";
+import { ToolsPanel } from "./editor/tools-panel";
+import { SectionsPanel } from "./editor/sections-panel";
+import { PdfPreviewViewer } from "./pdf-preview-viewer";
+import { ToolbarPopover } from "./toolbar-popover";
+import { convertSavedBlockType, savedBlockType } from "../lib/saved-block-type";
+import { templateDefaultQuote } from "../lib/template-quote";
+import { studioDate } from "../lib/studio-v3";
+import { curatedFonts } from "../lib/proposal-fonts";
+import { confirmDialog } from "./dialog-actions";
 import { stripeStatus } from "../lib/studio-v3";
 import { relativeTime } from "./studio-v3";
 import { DialogActions } from "./dialog-actions";
@@ -828,7 +839,12 @@ function TemplatesStudioContent({
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
-    [blocksTab, setBlocksTab] = useState(false),
+    [tab, setTab] = useState<string>(blocksOnly ? "Fields" : "Default quote"),
+    [expandedDefault, setExpandedDefault] = useState<string | null>(null),
+    [defaultDetails, setDefaultDetails] = useState<string | null>(null),
+    [previewOpen, setPreviewOpen] = useState(false),
+    [moreAnchor, setMoreAnchor] = useState<HTMLButtonElement | null>(null),
+    [events, setEvents] = useState<Activity[]>([]),
     [mobile, setMobile] = useState(false),
     [insertAt, setInsertAt] = useState<number | null>(null),
     [replaceEmpty, setReplaceEmpty] = useState(false);
@@ -892,7 +908,24 @@ function TemplatesStudioContent({
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
     );
   };
-  const templatePanels = useEditorPanels(data.user.actor, templatePaper, true);
+  const templatePanels = useEditorPanels(
+    data.user.actor,
+    templatePaper,
+    true,
+    true,
+  );
+  function openTab(value: string) {
+    setTab(value);
+    setMoreAnchor(null);
+    if (templatePanels.phone || !templatePanels.canRight)
+      setTemplateToolsOpen(true);
+    else if (!templatePanels.right) templatePanels.toggle("right");
+  }
+  useEffect(() => {
+    api<Activity[]>("/api/workspace_events")
+      .then(setEvents)
+      .catch(() => {});
+  }, []);
   const phoneSection = templatePanels.phone
     ? contentSections(content).find((s) =>
         s.indices.some(
@@ -933,12 +966,19 @@ function TemplatesStudioContent({
     return () => window.removeEventListener("keydown", key);
   }, [templatePanels.canLeft, templatePanels.canRight]);
   const templatePreview = useTemplatePreview(
-    draft,
+    draft
+      ? { ...draft, pagination: browserPages?.plan ?? draft.pagination }
+      : null,
     data.catalog,
     mode === "templates",
     data.settings,
   );
-  const templateStyles = resolveStyles(data.settings, draft?.style_overrides);
+  const previewRef = useRef(templatePreview);
+  previewRef.current = templatePreview;
+  const templateStyles = resolveStyles(
+    data.settings,
+    mode === "templates" ? draft?.style_overrides : undefined,
+  );
   const blockSpaces = documentSpacing(content, templateStyles);
   const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
@@ -1078,8 +1118,131 @@ function TemplatesStudioContent({
     });
     return flight;
   }
+  const autoSaveKey = serialise(mode === "templates" ? draft : null);
+  useEffect(() => {
+    if (
+      mode !== "templates" ||
+      !templateDirty ||
+      templateRecovery ||
+      templateError ||
+      templateOffline ||
+      !draft?.name.trim()
+    )
+      return;
+    const timer = setTimeout(() => void saveTemplate(), 600);
+    return () => clearTimeout(timer);
+  }, [
+    autoSaveKey,
+    mode,
+    templateDirty,
+    templateRecovery,
+    templateError,
+    templateOffline,
+  ]);
+  async function duplicateSaved() {
+    if (!model.current.saved) return;
+    const value = model.current.saved,
+      id = crypto.randomUUID();
+    try {
+      await post("/api/content_library", {
+        id,
+        name: `${value.name} copy`,
+        block: duplicateBlock(value.block),
+      });
+      allowLeave.current = true;
+      location.assign(`/studio/blocks/${id}`);
+    } catch (e) {
+      blockFeedback.error((e as Error).message);
+    }
+  }
+  async function deleteSaved() {
+    const value = model.current.saved;
+    if (!value?.id) return;
+    if (
+      !(await confirmDialog({
+        title: `Delete block “${value.name}”?`,
+        description:
+          "Removes it from Saved blocks. Copies already in templates and proposals stay as they are.",
+        confirmLabel: "Delete block",
+        cancelLabel: "Cancel",
+        destructive: true,
+      }))
+    )
+      return;
+    try {
+      await api(`/api/content_library/${value.id}`, { method: "DELETE" });
+      allowLeave.current = true;
+      location.assign("/studio/templates?view=blocks");
+    } catch (e) {
+      blockFeedback.error((e as Error).message);
+    }
+  }
+  const edited = events.find((e) => e.metadata.entity_id === saved?.id),
+    created = events.find(
+      (e) =>
+        e.metadata.entity_id === saved?.id &&
+        e.type === "content_library_created",
+    );
+  const eventAuthor = (e: Activity) =>
+    data.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ??
+    "Staff";
+  const defaults = draft ? templateDefaultQuote(draft, data.catalog).quote : [];
+  function changeDefaults(next: QuoteItem[]) {
+    editDraft({
+      ...model.current.draft!,
+      default_quote: [],
+      default_items: next.map((item, order) => ({
+        ...item,
+        order,
+        selected: !item.optional || item.default_selected,
+      })),
+    });
+  }
+  function addDefault(item?: Item) {
+    const id = crypto.randomUUID();
+    changeDefaults([
+      ...defaults,
+      item
+        ? catalogQuoteItem(
+            item,
+            defaults.length,
+            id,
+            Array.from({ length: item.sublines?.length ?? 1 }, () =>
+              crypto.randomUUID(),
+            ),
+          )
+        : {
+            id,
+            order: defaults.length,
+            name: "Custom item",
+            description: "",
+            source: "custom",
+            pricing_item_id: null,
+            custom_family_id: null,
+            sublines: [
+              {
+                id: crypto.randomUUID(),
+                amount: 0,
+                list_amount: null,
+                interval: "one_time",
+                qty: 1,
+                stripe_lookup_key: null,
+                qbo_item_ref: null,
+              },
+            ],
+            optional: false,
+            default_selected: true,
+            choice_group_id: null,
+            min_term_months: null,
+            schedule: null,
+            plan_terms: null,
+          },
+    ]);
+    setExpandedDefault(id);
+  }
   const patch = (next: Block[]) => {
-    if (mode === "blocks" && saved) editSaved({ ...saved, block: next[0] });
+    if (mode === "blocks" && saved && next[0])
+      editSaved({ ...saved, block: next[0] });
     else if (draft) editDraft({ ...draft, content: next });
   };
   const move = (operation: (content: Block[]) => Block[]) =>
@@ -1191,79 +1354,15 @@ function TemplatesStudioContent({
     ) : null;
   const templateSidebar = (
     <>
-      <div
-        className="studio-tabs"
-        role="tablist"
-        aria-label="Templates and saved blocks"
-      >
-        {["templates", "blocks"].map((m) => (
-          <button
-            role="tab"
-            aria-selected={mode === m}
-            key={m}
-            onClick={() => {
-              setMode(m);
-              setIndex(null);
-            }}
-          >
-            {m === "templates" ? "Templates" : "Saved blocks"}
-          </button>
-        ))}
-      </div>
-      {mode === "templates" ? (
-        data.templates.length ? (
-          data.templates.map((t) => (
-            <button
-              className={`template-link ${draft?.id === t.id ? "active" : ""}`}
-              key={t.id}
-              onClick={() => {
-                setDraft(structuredClone(t));
-                setTemplateListOpen(false);
-                setIndex(null);
-              }}
-            >
-              <strong>{t.name}</strong>
-              <small>
-                {t.content.length} blocks ·{" "}
-                {data.proposals.filter((p) => p.template_id === t.id).length}{" "}
-                proposals{!t.active ? " · Inactive" : ""}
-                {inactiveTemplateItems(t, data.catalog).length
-                  ? " · Defaults need review"
-                  : ""}
-              </small>
-            </button>
-          ))
-        ) : (
-          <p>No templates yet. Create your first reusable proposal.</p>
-        )
-      ) : data.library.length ? (
-        data.library.map((b) => (
-          <button
-            key={b.id}
-            className={`template-link ${saved?.id === b.id ? "active" : ""}`}
-            onClick={() => {
-              setSaved(structuredClone(b));
-              setIndex(0);
-            }}
-          >
-            <strong>{b.name}</strong>
-            <small>{blockName(b.block)}</small>
-          </button>
-        ))
-      ) : (
-        <p>No saved blocks yet. Save a block from a template to reuse it.</p>
-      )}
       {mode === "templates" && draft && (
         <>
-          <p className="eyebrow">Sections</p>
           <SectionsNav
             currentSectionId={
-              index === null
-                ? null
-                : content
-                    .slice(0, index + 1)
-                    .filter((b) => b.type === "heading")
-                    .at(-1)?.id
+              contentSections(content).find((section) =>
+                section.indices.some(
+                  (n) => `template-${content[n].id}` === selection.selected,
+                ),
+              )?.id ?? null
             }
             content={content}
             onMove={move}
@@ -1291,12 +1390,12 @@ function TemplatesStudioContent({
                 return;
               }
               const n = content.findIndex((b) => b.id === id);
-              if (templateListOpen) {
-                setTemplateListOpen(false);
-                requestAnimationFrame(() => {
-                  if (n >= 0) setIndex(n);
-                });
-              } else if (n >= 0) setIndex(n);
+              if (templateListOpen) setTemplateListOpen(false);
+              if (n >= 0)
+                focusInserted(
+                  `template-${content[n].id}`,
+                  ["paragraph", "heading"].includes(content[n].type),
+                );
               requestAnimationFrame(() =>
                 document
                   .querySelector(`[data-block-id="template-${CSS.escape(id)}"]`)
@@ -1308,10 +1407,39 @@ function TemplatesStudioContent({
       )}
     </>
   );
-  const templateTools =
-    inspector ??
-    (draft && (
+  const templateTools = draft && (
+    <div className="template-style-panel">
+      <section className="template-fonts-row">
+        <h3>Fonts</h3>
+        <div>
+          <strong>
+            {[templateStyles.title.font, templateStyles.body.font]
+              .map((f) =>
+                typeof f === "string"
+                  ? (curatedFonts.find((v) => v.id === f)?.name ?? f)
+                  : f.name,
+              )
+              .join(" · ")}
+          </strong>
+          <small>From Workspace › Proposal fonts</small>
+          <button
+            type="button"
+            onClick={() => {
+              const panel = document.querySelector(".template-style-panel");
+              const accordion =
+                panel?.querySelector<HTMLDetailsElement>("details");
+              if (accordion) accordion.open = true;
+              panel
+                ?.querySelector<HTMLElement>('select[aria-label$="font"]')
+                ?.focus();
+            }}
+          >
+            Change
+          </button>
+        </div>
+      </section>
       <ProposalStyles
+        scope="template"
         settings={data.settings}
         headerFooter={proposalBands(draft.header_footer)}
         onHeaderFooter={({ overrides: _overrides, ...header_footer }) =>
@@ -1329,14 +1457,112 @@ function TemplatesStudioContent({
         onChange={(style_overrides) => editDraft({ ...draft, style_overrides })}
         resetLabel="Reset to workspace"
       />
-    ));
+    </div>
+  );
+  const panelTabs =
+    mode === "templates"
+      ? ["Default quote", "Fields", "Blocks", "Styles"]
+      : ["Fields", "Details"];
+  const panelBody =
+    tab === "Fields" ? (
+      <FieldOptions
+        map={map}
+        onInsert={(path) => {
+          if (templatePanels.phone || templateToolsOpen) {
+            setTemplateToolsOpen(false);
+            requestAnimationFrame(() => fieldInsertion?.insert(path));
+          } else fieldInsertion?.insert(path);
+        }}
+      />
+    ) : mode === "blocks" && tab === "Details" && saved ? (
+      <div className="saved-block-details stack">
+        <Field label="Name">
+          <input
+            aria-label="Block name"
+            value={saved.name}
+            onChange={(e) => editSaved({ ...saved, name: e.target.value })}
+          />
+        </Field>
+        <Field label="Type">
+          <select
+            disabled={!["paragraph", "heading"].includes(saved.block.type)}
+            value={savedBlockType(saved.block)}
+            onChange={(e) =>
+              editSaved({
+                ...saved,
+                block: convertSavedBlockType(saved.block, e.target.value),
+              })
+            }
+          >
+            {!["paragraph", "heading"].includes(saved.block.type) ? (
+              <option value={savedBlockType(saved.block)}>
+                {savedBlockType(saved.block)}
+              </option>
+            ) : (
+              <>
+                <option>Text</option>
+                <option>Bulleted list</option>
+                <option>Numbered list</option>
+              </>
+            )}
+          </select>
+        </Field>
+        {!["paragraph", "heading"].includes(saved.block.type) && (
+          <p className="muted">This block type can't be changed</p>
+        )}
+        {edited && (
+          <p className="muted">
+            Edited {studioDate(edited.created_at)} · {eventAuthor(edited)}
+          </p>
+        )}
+        {created && (
+          <p className="muted">
+            Created {studioDate(created.created_at)} by {eventAuthor(created)}
+          </p>
+        )}
+        <Button variant="danger" onClick={() => void deleteSaved()}>
+          Delete block
+        </Button>
+        <p>
+          Removes it from Saved blocks. Copies already in templates and
+          proposals stay as they are.
+        </p>
+      </div>
+    ) : tab === "Blocks" ? (
+      templateBlocks
+    ) : tab === "Styles" ? (
+      templateTools
+    ) : mode === "templates" ? (
+      <section id="template-default-quote">
+        <TemplateWarnings templates={[draft!]} catalog={data.catalog} />
+        <QuoteItemsPanel
+          items={defaults}
+          catalog={data.catalog}
+          families={data.families}
+          currency={data.settings?.currency ?? "USD"}
+          onChange={changeDefaults}
+          addItem={addDefault}
+          expandedItem={expandedDefault}
+          setExpandedItem={setExpandedDefault}
+          itemDetails={defaultDetails}
+          setItemDetails={setDefaultDetails}
+          intro="Lines added to every new proposal from this template. Prices are left blank or copied from the catalog; the app never fills them in for you."
+        />
+      </section>
+    ) : null;
+
   return (
     <div
       {...blockDrop.handlers}
       ref={templatePanels.container}
-      className="studio-template-layout"
+      className={`studio-template-layout studio-v3-editor editor-v2 ${mode === "blocks" ? "studio-saved-block-editor" : "studio-template-editor"}`}
       data-template-phone-editing={!!phoneSection}
-      style={{ gridTemplateColumns: templatePanels.columns }}
+      style={{
+        gridTemplateColumns:
+          mode === "blocks"
+            ? `minmax(0,1fr) ${templatePanels.right ? 400 : 64}px`
+            : templatePanels.columns,
+      }}
     >
       {blockDrop.line}
       <EditorControlConfig
@@ -1344,7 +1570,7 @@ function TemplatesStudioContent({
         map={map}
         onField={
           templatePanels.phone || templatePanels.right
-            ? () => setFields(true)
+            ? () => openTab("Fields")
             : undefined
         }
       />
@@ -1353,35 +1579,16 @@ function TemplatesStudioContent({
         onChange={patch}
       />
       {blockFeedback.feedback}
-      <aside
-        className={`studio-template-list ${templatePanels.left ? "" : "sidebar-rail"}`}
-      >
-        <div className="editor-sidebar-header">
-          <button
-            className="sidebar-arrow"
-            aria-label={
-              templatePanels.left
-                ? "Collapse Pages sidebar"
-                : "Expand Pages sidebar"
-            }
-            title="Pages sidebar"
-            onClick={toggleTemplateLeft}
-          >
-            <PanelChevron direction={templatePanels.left ? "left" : "right"} />
-          </button>
-        </div>
-        {templatePanels.left ? (
-          <div className="editor-sidebar-scroll">{templateSidebar}</div>
-        ) : (
-          <button
-            aria-label="Open Pages"
-            title="Pages"
-            onClick={toggleTemplateLeft}
-          >
-            <Icon name="file-lines" />
-          </button>
-        )}
-      </aside>
+      {mode === "templates" && (
+        <SectionsPanel
+          className="studio-template-list"
+          open={templatePanels.canLeft ? templatePanels.left : templateListOpen}
+          mode={templatePanels.canLeft ? "docked" : "drawer"}
+          onToggle={toggleTemplateLeft}
+        >
+          {templateSidebar}
+        </SectionsPanel>
+      )}
       <main className="studio-template-main stack">
         <EditorHeader
           className="template-editor-header"
@@ -1390,8 +1597,52 @@ function TemplatesStudioContent({
               ? (draft?.name ?? "Templates & blocks")
               : (saved?.name ?? "Saved blocks")
           }
-          backLabel="Studio"
-          backHref="/studio"
+          backLabel={mode === "templates" ? "Templates" : "Saved blocks"}
+          backHref={
+            mode === "templates"
+              ? "/studio/templates"
+              : "/studio/templates?view=blocks"
+          }
+          savedLabel={
+            mode === "templates"
+              ? "Saved · changes apply to new proposals"
+              : "Saved"
+          }
+          dirtyLabel="Edited · not saved"
+          titleEditor={
+            <>
+              <input
+                className="studio-inline-name"
+                aria-label={
+                  mode === "templates" ? "Template name" : "Block name"
+                }
+                value={
+                  mode === "templates"
+                    ? (draft?.name ?? "")
+                    : (saved?.name ?? "")
+                }
+                required
+                maxLength={200}
+                onChange={(e) =>
+                  mode === "templates"
+                    ? editDraft({ ...draft!, name: e.target.value })
+                    : editSaved({ ...saved!, name: e.target.value })
+                }
+              />
+              {mode === "blocks" && saved && (
+                <span className="studio-type-pill">
+                  {savedBlockType(saved.block)}
+                </span>
+              )}
+            </>
+          }
+          meta={
+            mode === "templates" && !draft?.active ? (
+              <span className="studio-hidden-pill">
+                Hidden from new proposals
+              </span>
+            ) : null
+          }
           save={saveTemplate}
           dirty={templateDirty}
           saving={templateBusy}
@@ -1403,8 +1654,8 @@ function TemplatesStudioContent({
             allowLeave.current = true;
           }}
         >
-          <TemplateHistoryControls />
-          {phoneSection && (
+          {!templatePanels.phone && <TemplateHistoryControls />}
+          {phoneSection && mode === "templates" && (
             <Button
               aria-label="Done editing template section"
               onClick={() => {
@@ -1415,35 +1666,64 @@ function TemplatesStudioContent({
               Done
             </Button>
           )}
-          <Button
-            onClick={() => {
-              setIndex(null);
-              setTemplateListOpen(false);
-              if (mode === "templates")
-                setDraft({
-                  id: crypto.randomUUID(),
-                  name: "Untitled template",
-                  header_footer: defaultTemplateBands(),
-                  cover: defaultCover(),
-                  active: true,
-                  default_quote: [],
-                  content: contentAfterCover([
-                    { id: crypto.randomUUID(), type: "paragraph", text: "" },
-                  ]),
-                });
-              else
-                setSaved({
-                  name: "Untitled block",
-                  block: {
-                    id: crypto.randomUUID(),
-                    type: "paragraph",
-                    text: "",
-                  },
-                });
-            }}
-          >
-            + New {mode === "templates" ? "template" : "block"}
-          </Button>
+          {(mode === "templates" || templatePanels.phone) && (
+            <button
+              className="studio-editor-more"
+              aria-label="More editor actions"
+              aria-haspopup="dialog"
+              onClick={(e) => {
+                if (templatePanels.phone) {
+                  setTemplateToolsOpen(true);
+                } else setMoreAnchor(e.currentTarget);
+              }}
+            >
+              ⋯
+            </button>
+          )}
+          {mode === "templates" ? (
+            <>
+              <Button
+                className="studio-desktop-action"
+                onClick={() => setPreviewOpen(true)}
+              >
+                Preview
+              </Button>
+              <Button
+                className="studio-desktop-action"
+                variant="primary"
+                disabled={!draft?.active}
+                title={
+                  !draft?.active
+                    ? "Make this template available for new proposals first"
+                    : undefined
+                }
+                onClick={async () => {
+                  if (await saveTemplate()) {
+                    allowLeave.current = true;
+                    location.assign(`/proposals?new=1&template=${draft!.id}`);
+                  }
+                }}
+              >
+                New proposal from this
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                className="studio-desktop-action"
+                onClick={() => void duplicateSaved()}
+              >
+                Duplicate
+              </Button>
+              <Button
+                variant="primary"
+                busy={templateBusy}
+                onClick={() => void saveTemplate()}
+              >
+                Save
+              </Button>
+            </>
+          )}
         </EditorHeader>
         {templateRecovery && (
           <EditorNotice kind="recovered">
@@ -1488,59 +1768,11 @@ function TemplatesStudioContent({
         )}
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
-            <header className="actions">
-              <Field
-                label={mode === "templates" ? "Template name" : "Block name"}
-              >
-                <input
-                  value={mode === "templates" ? draft!.name : saved!.name}
-                  required
-                  onChange={(e) =>
-                    mode === "templates"
-                      ? editDraft({ ...draft!, name: e.target.value })
-                      : editSaved({ ...saved!, name: e.target.value })
-                  }
-                />
-              </Field>
-              {mode === "templates" &&
-                !content.length &&
-                templatePanels.phone && (
-                  <Button
-                    onClick={(e) => {
-                      setInsertAnchor(e.currentTarget);
-                      setInsertAt(0);
-                    }}
-                  >
-                    Add first block
-                  </Button>
-                )}
-              <Button data-field-insert onClick={() => setFields(true)}>
-                Fields
-              </Button>
-              <Button
-                variant="primary"
-                busy={templateBusy}
-                onClick={() => void saveTemplate()}
-              >
-                Save {mode === "templates" ? "template" : "block"}
-              </Button>
-            </header>
-            <p className="muted">
-              Edits apply to new proposals only. Existing agreements keep their
-              saved copy.
-            </p>
-            {mode === "templates" && (
-              <label className="check">
-                <input
-                  role="switch"
-                  type="checkbox"
-                  checked={draft!.active}
-                  onChange={(e) =>
-                    editDraft({ ...draft!, active: e.target.checked })
-                  }
-                />
-                Active template
-              </label>
+            {mode === "blocks" && (
+              <p className="saved-block-caption">
+                Shown as it appears in a proposal. Fields fill in with each
+                client's details.
+              </p>
             )}
             <div className="template-page-viewport">
               <div
@@ -1619,48 +1851,48 @@ function TemplatesStudioContent({
                     >
                       <style>
                         {fontCss(data.settings)}
-                        {styleFontFaces(
-                          resolveStyles(data.settings, draft?.style_overrides),
-                        )}
+                        {styleFontFaces(templateStyles)}
                         {documentStyleCss(
-                          resolveStyles(data.settings, draft?.style_overrides),
+                          templateStyles,
                           data.settings?.accent_colour,
                         )}
                       </style>
-                      <DocumentCover
-                        contentHeight={
-                          pageGeometry(
-                            resolveStyles(
-                              data.settings,
-                              draft?.style_overrides,
-                            ),
-                            draft?.header_footer
-                              ? proposalBands(draft.header_footer)
-                              : undefined,
-                            1,
-                          ).content.height
-                        }
-                        title="Proposal title"
-                        cover={draft?.cover}
-                        map={map}
-                        onCover={
-                          mode === "templates"
-                            ? (cover) => editDraft({ ...draft!, cover })
-                            : undefined
-                        }
-                        workspace={data.settings?.company_name}
-                        logo={
-                          data.settings?.logo
-                            ? "/api/workspace-logo"
-                            : undefined
-                        }
-                        company="Client company"
-                        sender={
-                          data.settings?.owner ||
-                          data.settings?.company_name ||
-                          "Company"
-                        }
-                      />
+                      {mode === "templates" && (
+                        <DocumentCover
+                          contentHeight={
+                            pageGeometry(
+                              resolveStyles(
+                                data.settings,
+                                draft?.style_overrides,
+                              ),
+                              draft?.header_footer
+                                ? proposalBands(draft.header_footer)
+                                : undefined,
+                              1,
+                            ).content.height
+                          }
+                          title="Proposal title"
+                          cover={draft?.cover}
+                          map={map}
+                          onCover={
+                            mode === "templates"
+                              ? (cover) => editDraft({ ...draft!, cover })
+                              : undefined
+                          }
+                          workspace={data.settings?.company_name}
+                          logo={
+                            data.settings?.logo
+                              ? "/api/workspace-logo"
+                              : undefined
+                          }
+                          company="Client company"
+                          sender={
+                            data.settings?.owner ||
+                            data.settings?.company_name ||
+                            "Company"
+                          }
+                        />
+                      )}
                     </div>
                     {mode === "templates" && !content.length && (
                       <button
@@ -1684,6 +1916,7 @@ function TemplatesStudioContent({
                       content.map((b, n) => (
                         <Sortable
                           block
+                          draggable={mode === "templates"}
                           id={String(n)}
                           spaceBefore={blockSpaces[b.id ?? String(n)]}
                           label={`block ${n + 1}`}
@@ -1693,16 +1926,13 @@ function TemplatesStudioContent({
                             id={`template-${b.id ?? n}`}
                             label={`Template block ${n + 1}`}
                             blockType={b.type}
+                            plainText={b.type === "contract"}
                             objectAction={
                               b.type === "pricing_table" ? (
                                 <button
                                   type="button"
                                   title="Edit quote"
-                                  onClick={() =>
-                                    document
-                                      .getElementById("template-default-quote")
-                                      ?.scrollIntoView({ block: "center" })
-                                  }
+                                  onClick={() => openTab("Default quote")}
                                 >
                                   Edit quote
                                 </button>
@@ -1742,40 +1972,7 @@ function TemplatesStudioContent({
                                         j === n ? appendField(v, path) : v,
                                       ),
                                     );
-                                    setIndex(n);
-                                    requestAnimationFrame(() => {
-                                      const host =
-                                        document.querySelector(
-                                          ".studio-inspector",
-                                        ) ??
-                                        document.querySelector(
-                                          "[aria-labelledby].foundation-sheet[open]",
-                                        );
-                                      const text =
-                                        host?.querySelector<HTMLElement>(
-                                          ".tiptap",
-                                        );
-                                      if (text) {
-                                        text.focus();
-                                        const range = document.createRange();
-                                        range.selectNodeContents(text);
-                                        range.collapse(false);
-                                        getSelection()?.removeAllRanges();
-                                        getSelection()?.addRange(range);
-                                        document.dispatchEvent(
-                                          new Event("selectionchange"),
-                                        );
-                                      } else {
-                                        const input = host?.querySelector<
-                                          HTMLInputElement | HTMLTextAreaElement
-                                        >("input,textarea");
-                                        input?.focus();
-                                        input?.setSelectionRange(
-                                          input.value.length,
-                                          input.value.length,
-                                        );
-                                      }
-                                    });
+                                    focusInserted(`template-${b.id}`, true);
                                   }
                                 : undefined
                             }
@@ -1896,8 +2093,6 @@ function TemplatesStudioContent({
                             }
                           >
                             <div
-                              role="button"
-                              tabIndex={0}
                               className="block-open"
                               onClick={() =>
                                 selection.select(`template-${b.id ?? n}`)
@@ -1950,8 +2145,7 @@ function TemplatesStudioContent({
                                     setInsertAt(n);
                                   }}
                                 />
-                              ) : b.type === "heading" &&
-                                !templatePanels.phone ? (
+                              ) : b.type === "heading" ? (
                                 <HeadingElement
                                   level={b.level ?? 1}
                                   className="document-heading-edit"
@@ -2015,26 +2209,28 @@ function TemplatesStudioContent({
                                     )
                                   }
                                   onDelete={() =>
-                                    blockFeedback.remove(
-                                      b,
-                                      () =>
-                                        patch(
-                                          currentContent.current.filter(
-                                            (v) => v.id !== b.id,
-                                          ),
-                                        ),
-                                      () => {
-                                        const next = [
-                                          ...currentContent.current,
-                                        ];
-                                        next.splice(
-                                          Math.min(n, next.length),
-                                          0,
+                                    mode === "blocks"
+                                      ? void deleteSaved()
+                                      : blockFeedback.remove(
                                           b,
-                                        );
-                                        patch(next);
-                                      },
-                                    )
+                                          () =>
+                                            patch(
+                                              currentContent.current.filter(
+                                                (v) => v.id !== b.id,
+                                              ),
+                                            ),
+                                          () => {
+                                            const next = [
+                                              ...currentContent.current,
+                                            ];
+                                            next.splice(
+                                              Math.min(n, next.length),
+                                              0,
+                                              b,
+                                            );
+                                            patch(next);
+                                          },
+                                        )
                                   }
                                 />
                               ) : b.type === "signature_block" ? (
@@ -2122,6 +2318,7 @@ function TemplatesStudioContent({
                                         id={`template-clause-${c.id}`}
                                         label={`Template clause ${k + 1}`}
                                         className="studio-clause-frame"
+                                        plainText
                                         tools={
                                           <>
                                             <BlockAction
@@ -2241,7 +2438,7 @@ function TemplatesStudioContent({
                                           </>
                                         }
                                       >
-                                        <button
+                                        <div
                                           className="clause-open"
                                           onClick={() =>
                                             selection.select(
@@ -2262,13 +2459,35 @@ function TemplatesStudioContent({
                                               selected
                                             </small>
                                           )}
-                                          <SourceParagraph
-                                            text={c.body.replace(
-                                              /{{\s*([\w.-]+)\s*}}/g,
-                                              (_, key) => map[key] ?? key,
-                                            )}
+                                          <PlainClauseText
+                                            label={`Clause ${k + 1} body`}
+                                            value={c.body}
+                                            map={map}
+                                            onChange={(body) =>
+                                              patch(
+                                                currentContent.current.map(
+                                                  (v) =>
+                                                    v.id === b.id
+                                                      ? {
+                                                          ...v,
+                                                          clauses:
+                                                            v.clauses!.map(
+                                                              (clause) =>
+                                                                clause.id ===
+                                                                c.id
+                                                                  ? {
+                                                                      ...clause,
+                                                                      body,
+                                                                    }
+                                                                  : clause,
+                                                            ),
+                                                        }
+                                                      : v,
+                                                ),
+                                              )
+                                            }
                                           />
-                                        </button>
+                                        </div>
                                       </BlockFrame>
                                     </Sortable>
                                   ))}
@@ -2287,27 +2506,11 @@ function TemplatesStudioContent({
                 </Reorder>
               </div>
             </div>
-            {mode === "templates" && (
-              <>
-                <section className="studio-section" id="template-default-quote">
-                  <h2>Default quote</h2>
-                  <TemplateWarnings
-                    templates={[draft!]}
-                    catalog={data.catalog}
-                  />
-                  <TemplateDefaults
-                    template={draft!}
-                    data={data}
-                    onChange={(default_items) =>
-                      editDraft({
-                        ...draft!,
-                        default_items,
-                        default_quote: [],
-                      })
-                    }
-                  />
-                </section>
-              </>
+            {mode === "blocks" && (
+              <p className="saved-block-footer">
+                Sent proposals that aren't signed yet update on the same link
+                when you save them; signed proposals never change.
+              </p>
             )}
           </>
         ) : (
@@ -2322,102 +2525,112 @@ function TemplatesStudioContent({
           </Empty>
         )}
       </main>
-      <aside
-        className={`studio-inspector stack ${templatePanels.right ? "block-owned-dialog" : "sidebar-rail"}`}
-      >
-        <div className="editor-sidebar-header">
-          <button
-            className="sidebar-arrow"
-            aria-label={
-              templatePanels.right
-                ? "Collapse tools sidebar"
-                : "Expand tools sidebar"
-            }
-            title="Tools sidebar"
-            onClick={toggleTemplateRight}
-          >
-            <PanelChevron direction={templatePanels.right ? "right" : "left"} />
-          </button>
-        </div>
-        {templatePanels.right ? (
-          <div className="editor-sidebar-scroll">
-            <div
-              className="editor-tabs"
-              role="tablist"
-              aria-label="Template tools"
-            >
-              <button
-                role="tab"
-                aria-selected={blocksTab}
-                data-preserve-block-selection
-                onClick={() => setBlocksTab(true)}
-              >
-                Blocks
-              </button>
-              <button
-                role="tab"
-                aria-selected={!blocksTab}
-                onClick={() => {
-                  setBlocksTab(false);
-                  setIndex(null);
-                }}
-              >
-                Styles
-              </button>
+      <ToolsPanel
+        tab={tab}
+        tabs={panelTabs}
+        label={mode === "templates" ? "Template tools" : "Block tools"}
+        open={
+          templatePanels.phone || !templatePanels.canRight
+            ? templateToolsOpen
+            : templatePanels.right
+        }
+        mode={templatePanels.phone ? "sheet" : templatePanels.mode}
+        onTab={openTab}
+        onToggle={toggleTemplateRight}
+        totals=""
+        phoneDock={false}
+        actions={
+          templatePanels.phone ? (
+            <div className="studio-phone-menu-actions">
+              <TemplateHistoryControls inline />
+              {mode === "templates" ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      setTemplateToolsOpen(false);
+                      setTemplateListOpen(true);
+                    }}
+                  >
+                    Sections
+                  </Button>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={draft!.active}
+                      onChange={(e) =>
+                        editDraft({ ...draft!, active: e.target.checked })
+                      }
+                    />
+                    Available for new proposals
+                  </label>
+                  <Button
+                    onClick={() => {
+                      setTemplateToolsOpen(false);
+                      setPreviewOpen(true);
+                    }}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    variant="primary"
+                    disabled={!draft?.active}
+                    onClick={async () => {
+                      if (await saveTemplate())
+                        location.assign(
+                          `/proposals?new=1&template=${draft!.id}`,
+                        );
+                    }}
+                  >
+                    New proposal from this
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => void duplicateSaved()}>Duplicate</Button>
+              )}
             </div>
-            {blocksTab ? templateBlocks : templateTools}
-          </div>
-        ) : (
-          <>
-            <button
-              aria-label="Open Blocks"
-              title="Blocks"
-              data-preserve-block-selection
-              onClick={() => {
-                setBlocksTab(true);
-                if (templatePanels.canRight) templatePanels.toggle("right");
-                else setTemplateToolsOpen(true);
-              }}
-            >
-              <Icon name="document" />
-            </button>
-            <button
-              aria-label="Open Fields"
-              title="Fields"
-              onClick={() => setFields(true)}
-            >
-              <Icon name="code" />
-            </button>
-            <button
-              aria-label="Open Styles"
-              title="Styles"
-              onClick={() => {
-                if (templatePanels.canRight) templatePanels.toggle("right");
-                else setTemplateToolsOpen(true);
-              }}
-            >
-              <Icon name="heading" />
-            </button>
-          </>
-        )}
-      </aside>
-      {templateListOpen && (
-        <Sheet title="Pages" onClose={() => setTemplateListOpen(false)}>
-          {templateSidebar}
+          ) : undefined
+        }
+      >
+        {panelBody}
+      </ToolsPanel>
+      {inspector && (
+        <Sheet title="Edit block" onClose={() => setIndex(null)}>
+          {inspector}
         </Sheet>
       )}
-      {!templatePanels.right && (inspector || templateToolsOpen) && (
-        <Sheet
-          title={
-            blocksTab ? "Blocks" : inspector ? "Edit block" : "Template styles"
-          }
-          onClose={() => {
-            setIndex(null);
-            setTemplateToolsOpen(false);
-          }}
+      {moreAnchor && mode === "templates" && (
+        <ToolbarPopover
+          trigger={moreAnchor}
+          className="studio-template-actions"
+          close={() => setMoreAnchor(null)}
         >
-          {blocksTab ? templateBlocks : templateTools}
-        </Sheet>
+          <div role="dialog" aria-label="Template actions">
+            <label className="check">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={draft!.active}
+                onChange={(e) =>
+                  editDraft({ ...draft!, active: e.target.checked })
+                }
+              />
+              Available for new proposals
+            </label>
+          </div>
+        </ToolbarPopover>
+      )}
+      {previewOpen && (
+        <PdfPreviewViewer
+          load={async () => {
+            templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
+            await new Promise<void>((resolve) =>
+              requestAnimationFrame(() => resolve()),
+            );
+            return previewRef.current.ensure();
+          }}
+          close={() => setPreviewOpen(false)}
+        />
       )}
       {insertAt !== null && (
         <BlockMenu
@@ -2532,10 +2745,10 @@ function BlockPanel({
             />
           </Field>
           <Field label="Clause body">
-            <textarea
+            <FieldTextArea
               rows={7}
               value={c.body}
-              onChange={(e) => update({ body: e.target.value })}
+              onValue={(body) => update({ body })}
             />
           </Field>
           <fieldset className="studio-radio">
@@ -2673,193 +2886,6 @@ function BlockPanel({
         + Add clause
       </Button>
       {saveAction}
-    </div>
-  );
-}
-function TemplateDefaults({
-  template: t,
-  data,
-  onChange,
-}: {
-  template: Template;
-  data: Data;
-  onChange: (items: QuoteItem[]) => void;
-}) {
-  const items =
-    t.default_items ??
-    t.default_quote.flatMap((q, n) => {
-      const c = data.catalog.find((i) => i.id === q.pricing_item_id);
-      if (!c) return [];
-      const i = catalogQuoteItem(
-        c,
-        n,
-        c.id,
-        c.sublines?.map((s) => s.id) ?? [c.id],
-      );
-      return [
-        {
-          ...i,
-          optional: q.optional,
-          default_selected: q.selected,
-          selected: q.selected,
-          sublines: i.sublines.map((s) => ({ ...s, qty: q.qty })),
-        },
-      ];
-    });
-  const patch = (id: string, update: Partial<QuoteItem>) =>
-    onChange(items.map((i) => (i.id === id ? { ...i, ...update } : i)));
-  return (
-    <div className="stack">
-      {items.map((i, n) => (
-        <div className="studio-default-item" key={i.id}>
-          <strong>{i.name}</strong>
-          <label className="check">
-            <input
-              type="checkbox"
-              role="switch"
-              checked={i.optional}
-              onChange={(e) =>
-                patch(i.id, {
-                  optional: e.target.checked,
-                  default_selected: true,
-                })
-              }
-            />
-            Optional
-          </label>
-          {i.optional && (
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={i.default_selected}
-                onChange={(e) =>
-                  onChange(
-                    items.map((v) =>
-                      v.id === i.id
-                        ? { ...v, default_selected: e.target.checked }
-                        : i.choice_group_id &&
-                            v.choice_group_id === i.choice_group_id &&
-                            e.target.checked
-                          ? { ...v, default_selected: false }
-                          : v,
-                    ),
-                  )
-                }
-              />
-              Selected for client
-            </label>
-          )}
-          {i.sublines.map((s) => (
-            <Field label={`${s.label || "Sub-line"} quantity`} key={s.id}>
-              <input
-                type="number"
-                min="1"
-                value={s.qty}
-                onChange={(e) =>
-                  patch(i.id, {
-                    sublines: i.sublines.map((v) =>
-                      v.id === s.id ? { ...v, qty: Number(e.target.value) } : v,
-                    ),
-                  })
-                }
-              />
-            </Field>
-          ))}
-          <Field label="Choice group">
-            <select
-              value={
-                i.choice_group_id
-                  ? (items.find(
-                      (v) =>
-                        v.id !== i.id &&
-                        v.choice_group_id === i.choice_group_id,
-                    )?.id ?? "")
-                  : ""
-              }
-              onChange={(e) => {
-                const target = items.find((v) => v.id === e.target.value);
-                const group = target?.choice_group_id ?? crypto.randomUUID();
-                onChange(
-                  items.map((v) =>
-                    v.id === i.id
-                      ? {
-                          ...v,
-                          optional: target ? true : v.optional,
-                          choice_group_id: target ? group : null,
-                          default_selected: target ? false : v.default_selected,
-                        }
-                      : v.id === target?.id
-                        ? {
-                            ...v,
-                            optional: true,
-                            choice_group_id: group,
-                            default_selected: true,
-                          }
-                        : v,
-                  ),
-                );
-              }}
-            >
-              <option value="">Standalone item</option>
-              {items
-                .filter((v) => v.id !== i.id)
-                .map((v) => (
-                  <option key={v.id} value={v.id}>
-                    Choose one with {v.name}
-                  </option>
-                ))}
-            </select>
-          </Field>
-          <DialogActions>
-            <Button
-              disabled={n === 0}
-              onClick={() => {
-                const next = [...items];
-                [next[n - 1], next[n]] = [next[n], next[n - 1]];
-                onChange(next.map((v, order) => ({ ...v, order })));
-              }}
-            >
-              Move item up
-            </Button>
-            <Button
-              onClick={() =>
-                onChange(
-                  items
-                    .filter((v) => v.id !== i.id)
-                    .map((v, order) => ({ ...v, order })),
-                )
-              }
-            >
-              Remove item
-            </Button>
-          </DialogActions>
-        </div>
-      ))}
-      <Field label="Add product default">
-        <select
-          value=""
-          onChange={(e) => {
-            const c = data.catalog.find((i) => i.id === e.target.value);
-            if (c)
-              onChange([
-                ...items,
-                catalogQuoteItem(
-                  c,
-                  items.length,
-                  crypto.randomUUID(),
-                  (c.sublines ?? [c]).map(() => crypto.randomUUID()),
-                ),
-              ]);
-          }}
-        >
-          <option value="">Choose an item</option>
-          {sellableCatalogue(data.catalog).map((i) => (
-            <option value={i.id} key={i.id}>
-              {itemDisplayName(i)}
-            </option>
-          ))}
-        </select>
-      </Field>
     </div>
   );
 }

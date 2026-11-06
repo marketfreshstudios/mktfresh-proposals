@@ -69,7 +69,15 @@ export function EditorHeader({
   primaryLabel,
   onPrimary,
   onReassign,
+  titleEditor,
+  savedLabel,
+  dirtyLabel,
+  meta,
 }: {
+  titleEditor?: ReactNode;
+  savedLabel?: string;
+  dirtyLabel?: string;
+  meta?: ReactNode;
   title: string;
   backLabel: string;
   backHref: string;
@@ -144,8 +152,8 @@ export function EditorHeader({
           ? "Signed out — Sign in"
           : "Couldn't save — Retry"
         : dirty
-          ? "Unsaved changes"
-          : "All changes saved";
+          ? (dirtyLabel ?? "Unsaved changes")
+          : (savedLabel ?? "All changes saved");
   const icon = offline
     ? "declined"
     : error
@@ -418,7 +426,7 @@ export function EditorHeader({
           {backLabel}
         </Button>
         <span className="editor-header-title" title={title}>
-          {title}
+          {titleEditor ?? title}
         </span>
       </div>
       <div
@@ -448,6 +456,7 @@ export function EditorHeader({
           </span>
         )}
       </div>
+      {meta}
       <div className="editor-header-actions">{children}</div>
     </header>
   );

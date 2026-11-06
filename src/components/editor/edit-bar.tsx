@@ -64,6 +64,7 @@ export function EditBar(
         blockType: Block["type"];
         objectAction?: ReactNode;
         variant?: "block";
+        plainText?: boolean;
       },
 ) {
   if (props.variant === "cover") return <CoverEditBar {...props} />;
@@ -187,7 +188,9 @@ function BlockEditBar({
   tools,
   blockType,
   objectAction,
+  plainText = false,
 }: {
+  plainText?: boolean;
   id: string;
   frame: RefObject<HTMLDivElement | null>;
   tools: ReactNode;
@@ -378,7 +381,24 @@ function BlockEditBar({
           }
         }}
       >
-        {text ? (
+        {plainText ? (
+          <>
+            <button
+              type="button"
+              aria-label="Insert field"
+              title="Insert field"
+              onClick={(e) => {
+                setFieldTrigger(e.currentTarget);
+                if (layout.onField) layout.onField();
+                else setPicker(true);
+              }}
+            >
+              <span className="edit-field-label">{"{ } Field"}</span>
+            </button>
+            {settings && <span className="edit-divider" />}
+            {settings}
+          </>
+        ) : text ? (
           <>
             <div className="edit-format-target" ref={fields?.setTarget} />
             {!fields?.owner && (

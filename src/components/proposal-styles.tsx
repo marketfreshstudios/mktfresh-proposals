@@ -58,7 +58,7 @@ export function ProposalStyles({
   scope,
   hidePageMargins = false,
 }: {
-  scope?: "workspace";
+  scope?: "workspace" | "template";
   hidePageMargins?: boolean;
   onResetBands?: () => void | Promise<void>;
   bandsResetLabel?: string;
@@ -124,7 +124,9 @@ export function ProposalStyles({
       <p className="muted style-scope-note">
         {scope === "workspace"
           ? "Defaults for new proposals. Sent and signed documents keep their saved styles."
-          : "Changes apply to this proposal only. Workspace defaults live in Studio → Workspace."}
+          : scope === "template"
+            ? "Changes apply to new proposals made from this template."
+            : "Changes apply to this proposal only. Workspace defaults live in Studio → Workspace."}
       </p>
       <details className="style-accordion" open={!headerFooter}>
         <Disclosure>Text styles</Disclosure>
@@ -408,6 +410,15 @@ export function ProposalStyles({
           )}
         </div>
       </details>
+      {scope === "template" && (
+        <div className="template-band-heading">
+          <h3>Header & footer</h3>
+          <p>
+            Editing the header here makes it unique to this template. Proposals
+            made from it start with this version.
+          </p>
+        </div>
+      )}
       {headerFooter && onHeaderFooter && (
         <BandSettings
           styles={styles}

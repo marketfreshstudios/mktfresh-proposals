@@ -428,7 +428,9 @@ export function BlockFrame({
   blockType = "contract",
   objectAction,
   reviewBusy = false,
+  plainText = false,
 }: {
+  plainText?: boolean;
   id: string;
   label: string;
   children: ReactNode;
@@ -560,6 +562,7 @@ export function BlockFrame({
               tools={tools}
               blockType={blockType}
               objectAction={objectAction}
+              plainText={plainText}
             />
             <GutterInsert
               onAdd={insert}
