@@ -1,6 +1,6 @@
 # Starter proposal templates
 
-Approved by the owner on 6 Nov 2026. This file is the source wording for the six starter templates. Codex: use this wording exactly, turn it into template blocks, and ask in the PR if a block type doesn't exist.
+Approved by the owner on 6 Nov 2026. This file is the source wording for the seven starter templates (Template 7 approved on 7 Nov 2026). Codex: use this wording exactly, turn it into template blocks, and ask in the PR if a block type doesn't exist.
 
 ## Rules for every template
 
@@ -12,7 +12,7 @@ Approved by the owner on 6 Nov 2026. This file is the source wording for the six
 - Case studies stay generic placeholders for now (owner decision); MarketFresh's real ones come later through the connector.
 - The audit fee credit is not built in (owner decision).
 
-## Cover (all six templates)
+## Cover (all seven templates)
 
 Every template opens with the same cover. Only the eyebrow and title change.
 
@@ -342,6 +342,79 @@ Not included: [what's out of scope].
 
 Default quote: none.
 
+## Template 7: Social media management
+
+Description: "A monthly social media plan: content, posting, replies and reporting."
+
+Cover: eyebrow "Social media proposal" · title "A social media plan for {{client.company}}".
+
+**Overview**
+
+Hi {{client.first_name}}, [two or three sentences on where {{client.company}}'s social media is today and what they want from it, in their words].
+
+This proposal covers monthly social media management on [Facebook and Instagram]: we plan, create and post the content, look after comments and messages, and report on what's working.
+
+**Goals**
+
+- Post consistently, so {{client.company}} stays visible to the people who already follow you
+- Grow a local audience that turns into [calls, bookings, visits or sales]
+- Answer comments and messages quickly, so no customer question goes unanswered
+
+**What's included every month**
+
+- A monthly content calendar, sent for your approval before anything is posted
+- Designed graphics, captions and hashtags for every post
+- Scheduling and posting at the times your audience is most active
+- Replies to comments and messages on business days
+- A monthly report: reach, engagement and follower growth, with what we'll try next
+
+Not included unless added: paid ads and ad spend, video shoots, influencer outreach, and platforms not listed above.
+
+**Choosing a plan**
+
+The plans differ by how often we post. [One sentence recommending a plan for this client and why.]
+
+- Starter: 8 posts a month, about 2 a week
+- Growth: 12 posts a month, about 3 a week
+- Pro: 18 posts a month, about 4–5 a week
+- Premium: 24 posts a month, close to daily
+
+Add-ons, added to any plan: LinkedIn [$200] a month, each additional platform [$200] a month, and short-form video (Reels) [$75–150] each.
+
+**What to expect**
+
+Social media builds over time. Most accounts see steadier engagement after [two to three months] of consistent posting. Platforms change how they show posts, so we can't promise a number of followers or likes; we'll show you what's changing every month.
+
+**What we need from you**
+
+- Admin access to your [Facebook and Instagram] accounts
+- Your logo, brand colours and any photos you'd like us to use
+- Approval of each month's calendar within [3] business days. We only post what you've approved, so a late approval moves that month's posts later.
+
+**Why {{workspace.name}}**
+
+[Case study: a business like theirs, where they started, and a result with a number.]
+
+**Investment**
+
+(pricing_table)
+
+Billed monthly. Plans have a [3]-month minimum, then continue month to month until either of us cancels with 30 days' notice.
+
+**Next steps**
+
+1. Choose a plan and sign below.
+2. You'll get a secure link to set up monthly billing.
+3. We'll book a kickoff call, get access to your accounts, and send your first content calendar.
+
+**Terms**: clauses 1, 2, 3, 5, 6, 7, 8, 9, 10, 11 (shared wording).
+
+**Signatures**: client and company.
+
+Default quote: MarketFresh only — Social Media Management Starter, Growth, Pro and Premium resolved by SKU (`social-starter-595`, `social-growth-995`, `social-pro-1650`, `social-premium-2200`) as one choice group, Growth default-selected. Other workspaces: no default quote.
+
+MarketFresh copy: the MarketFresh seed fills the brackets the owner has already decided: platforms "Facebook and Instagram", add-on prices $200 / $200 / $75–150, minimum "3", approval "3" business days. The other brackets stay.
+
 ## Terms clauses (full wording)
 
 No [bracketed guidance] in the terms, so staff don't have to edit them on every proposal; they change the wording in the template instead.
@@ -369,7 +442,7 @@ Contract block, heading "Terms". Number them as shown; a template that leaves a 
 
 ## How they're added
 
-- New workspaces get all six on creation, active, in the order 6, 1, 2, 3, 4, 5 (General first). Default quotes only in the MarketFresh seed.
+- New workspaces get all seven on creation, active, in the order 6, 1, 2, 3, 4, 5, 7 (General first; Social media after Monthly marketing retainer). Default quotes only in the MarketFresh seed.
 - MarketFresh (existing workspace): add the six once, idempotently (keyed by a stable starter key, never by name), never overwriting anything. The old "Website proposal sample" is renamed "Website proposal sample (old)" and hidden from new proposals, not deleted.
 - Readiness: a proposal can't be sent while any text still contains `[bracketed guidance]`; the message names each section to fix. Don't flag brackets inside field chips, links or prices.
 - Templates screen: each starter shows its one-line description.
