@@ -148,6 +148,9 @@ export type RichText = {
 export type Template = {
   description?: string;
   starter_key?: string;
+  source_starter_key?: string;
+  source_starter_name?: string;
+  starter_edited?: boolean;
   starter_order?: number;
   signature_heading_defaulted?: boolean;
   header_footer?: TemplateBands;

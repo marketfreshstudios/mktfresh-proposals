@@ -1,3 +1,8 @@
+import {
+  TemplateInputSchema,
+  libraryTemplates,
+  libraryStarterAction,
+} from "./template-library";
 import { extractBrandPalette, validateCoverImage } from "./brand-palette";
 import { limitClientLink } from "./client-link-limits";
 import {
@@ -835,6 +840,29 @@ async function handleRoute(req: Request, path: string[]) {
       });
       return json({ deleted: true });
     }
+    if (path[0] === "templates" && path[1]) {
+      if (method === "DELETE") {
+        const template = (
+          await rt.repo.entities<import("./model").Template>("templates")
+        ).find((t) => t.id === path[1]);
+        check(
+          !template?.starter_key,
+          "Starters cannot be deleted. Hide from new proposals instead.",
+          403,
+        );
+        throw new AppError(405, "Template deletion unavailable");
+      }
+      if (method === "POST" && path[2])
+        return json(
+          await libraryStarterAction(
+            rt.repo,
+            user,
+            path[1],
+            path[2],
+            await body(req),
+          ),
+        );
+    }
     if (
       [
         "clients",
@@ -847,7 +875,7 @@ async function handleRoute(req: Request, path: string[]) {
     ) {
       const table = path[0] as EntityTable;
       if (method === "GET") {
-        const entities = await rt.repo.entities<Record<string, unknown>>(table);
+        let entities = await rt.repo.entities<Record<string, unknown>>(table);
         if (table === "templates") {
           entities.sort(
             (a, b) =>
@@ -862,6 +890,11 @@ async function handleRoute(req: Request, path: string[]) {
             }
           }
         }
+        if (table === "templates")
+          entities = await libraryTemplates(
+            rt.repo,
+            entities as import("./model").Template[],
+          );
         return json(
           table === "workspace_settings"
             ? entities.map((e) => ({
@@ -1025,33 +1058,15 @@ async function handleRoute(req: Request, path: string[]) {
           return json(client, 201);
         } else if (table === "pricing_items") entity = ItemSchema.parse(raw);
         else if (table === "templates") {
-          entity = z
-            .object({
-              id: uuid,
-              name: z.string().min(1).max(200),
-              description: z.string().max(1000).optional(),
-              starter_key: z.string().max(100).optional(),
-              starter_order: z.number().int().min(0).max(5).optional(),
-              content: z.array(z.record(z.string(), z.unknown())).max(300),
-              default_items: QuoteSchema.optional(),
-              default_quote: z
-                .array(
-                  z.object({
-                    pricing_item_id: uuid,
-                    qty: z.number().int().min(1).max(10000),
-                    optional: z.boolean(),
-                    selected: z.boolean(),
-                  }),
-                )
-                .max(100),
-              active: z.boolean(),
-              signature_heading_defaulted: z.boolean().optional(),
-              header_footer: TemplateBandsSchema.default(defaultTemplateBands),
-              cover: CoverSchema.optional(),
-              style_overrides: StyleOverridesSchema.optional(),
-              pagination: PagePlanSchema.optional(),
-            })
-            .parse(raw);
+          const existing = (
+            await rt.repo.entities<import("./model").Template>("templates")
+          ).find((t) => t.id === raw.id);
+          check(
+            !existing?.starter_key,
+            "This is a Yeswell starter. Make a copy to customize it.",
+            403,
+          );
+          entity = TemplateInputSchema.parse(raw);
           entity.content = reviewBlocks(
             contentAfterCover(entity.content as Block[]),
             false,
@@ -1062,6 +1077,9 @@ async function handleRoute(req: Request, path: string[]) {
           ).find((t) => t.id === savedTemplateId);
           delete entity.starter_key;
           delete entity.starter_order;
+          delete entity.source_starter_key;
+          if (previousTemplate?.source_starter_key)
+            entity.source_starter_key = previousTemplate.source_starter_key;
           if (previousTemplate?.starter_key) {
             entity.starter_key = previousTemplate.starter_key;
             entity.starter_order = previousTemplate.starter_order;

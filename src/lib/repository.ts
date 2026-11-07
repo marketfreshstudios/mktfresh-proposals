@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { sameClientContact, unsignedClientProposal } from "./clients";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
@@ -9,6 +10,7 @@ import {
   type Actor,
   type Client,
   type Audit,
+  type Template,
 } from "./model";
 export type EntityTable =
   | "email_templates"
@@ -26,6 +28,11 @@ export type EntityTable =
   | "provider_actions";
 export interface Repository {
   readonly workspaceId: string;
+  replaceStarter(
+    expected: Template,
+    replacement: Template,
+    audit: Audit,
+  ): Promise<boolean>;
   removeSavedBlock(id: string): Promise<boolean>;
   saveReassignments(documents: Proposal[], actor: Actor): Promise<void>;
   saveEmailTemplate<T extends { id: string }>(
@@ -61,6 +68,31 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async replaceStarter(
+    expected: Template,
+    replacement: Template,
+    audit: Audit,
+  ) {
+    const current = this.catalog.get("templates")?.get(expected.id) as
+      Template | undefined;
+    if (
+      !current?.starter_key ||
+      current.starter_key !== replacement.starter_key ||
+      replacement.id !== expected.id ||
+      !isDeepStrictEqual(
+        JSON.parse(JSON.stringify(current)),
+        JSON.parse(JSON.stringify(expected)),
+      )
+    )
+      return false;
+    this.catalog
+      .get("templates")!
+      .set(expected.id, structuredClone(replacement));
+    if (!this.catalog.has("workspace_events"))
+      this.catalog.set("workspace_events", new Map());
+    this.catalog.get("workspace_events")!.set(audit.id, structuredClone(audit));
+    return true;
+  }
   async removeSavedBlock(id: string) {
     const row = this.catalog.get("content_library")?.get(id) as
       { workspace_id?: string } | undefined;
@@ -463,6 +495,20 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async replaceStarter(
+    expected: Template,
+    replacement: Template,
+    audit: Audit,
+  ) {
+    await this.ready;
+    const operation = this.tail.then(async () => {
+      const changed = await super.replaceStarter(expected, replacement, audit);
+      if (changed) await this.persist();
+      return changed;
+    });
+    this.tail = operation.catch(() => {});
+    return operation;
+  }
   override async removeSavedBlock(id: string) {
     await this.ready;
     const operation = this.tail.then(async () => {
@@ -675,6 +721,21 @@ export class SupabaseRepository implements Repository {
       .select("id");
     if (error) throw error;
     return !!data?.length;
+  }
+  async replaceStarter(
+    expected: Template,
+    replacement: Template,
+    audit: Audit,
+  ) {
+    const { data, error } = await this.db.rpc("replace_library_starter", {
+      p_workspace: this.workspaceId,
+      p_id: expected.id,
+      p_expected: expected,
+      p_replacement: replacement,
+      p_event: audit,
+    });
+    if (error) throw error;
+    return data === true;
   }
   async removeSavedBlock(id: string) {
     const { data, error } = await this.db
