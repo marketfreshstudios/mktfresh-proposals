@@ -1,4 +1,5 @@
 import { oauthServer } from "../../../lib/oauth-runtime";
+import { MCP_SCOPES } from "../../../lib/oauth";
 export async function GET(
   req: Request,
   context: { params: Promise<{ metadata: string }> },
@@ -10,7 +11,7 @@ export async function GET(
     return Response.json({
       resource: s.resource,
       authorization_servers: [s.issuer],
-      scopes_supported: ["proposals:read", "proposals:draft"],
+      scopes_supported: MCP_SCOPES,
       bearer_methods_supported: ["header"],
     });
   return new Response(null, { status: 404 });
