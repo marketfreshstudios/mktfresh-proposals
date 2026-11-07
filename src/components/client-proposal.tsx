@@ -1,4 +1,5 @@
 "use client";
+import { accessibleAccent } from "../lib/brand";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
@@ -447,10 +448,9 @@ function NewClientFlow({
         {
           "--accent": brand.accent_colour ?? "#365C4A",
           "--client-accent": brand.accent_colour ?? "#365C4A",
-          "--client-accent-text":
-            accentText(brand.accent_colour ?? "#365C4A") === "#000000"
-              ? `color-mix(in srgb, ${brand.accent_colour ?? "#365C4A"} 45%, black)`
-              : (brand.accent_colour ?? "#365C4A"),
+          "--client-accent-text": accessibleAccent(
+            brand.accent_colour ?? "#365C4A",
+          ),
           "--on-accent": accentText(brand.accent_colour ?? "#365C4A"),
         } as React.CSSProperties
       }

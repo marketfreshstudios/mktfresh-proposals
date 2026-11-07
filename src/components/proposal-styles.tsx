@@ -1,6 +1,6 @@
 "use client";
 import { CoverSettings } from "./cover-settings";
-import { BrandPalettePicker } from "./brand-palette-picker";
+import { ColorPicker } from "./color-picker";
 import type { Cover } from "../lib/cover";
 import { confirmDialog } from "./dialog-actions";
 import { SpacingInput } from "./editor/spacing-input";
@@ -198,11 +198,6 @@ export function ProposalStyles({
           </div>
           <fieldset className="style-colors">
             <legend>Color</legend>
-            <BrandPalettePicker
-              settings={settings}
-              value={styleColour(selected.colour, settings?.accent_colour)}
-              onChange={(colour) => patch({ colour })}
-            />
             <div role="group" aria-label="Color choices">
               {(["ink", "accent", "custom"] as const).map((colour) => (
                 <button
@@ -247,14 +242,15 @@ export function ProposalStyles({
             </div>
           </fieldset>
           {selected.colour.startsWith("#") && (
-            <label className="field">
-              Custom color
-              <input
-                type="color"
+            <div className="field">
+              <span>Custom color</span>
+              <ColorPicker
+                label="Custom"
                 value={selected.colour}
-                onChange={(e) => patch({ colour: e.target.value })}
+                settings={settings}
+                onChange={(colour) => patch({ colour })}
               />
-            </label>
+            </div>
           )}
           <p
             className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
@@ -262,7 +258,7 @@ export function ProposalStyles({
           >
             {contrast.toFixed(2)}:1 against white paper
             {contrast < 4.5
-              ? " — choose at least 4.5:1 to save"
+              ? " — small text uses a darker readable shade"
               : " · Passes contrast"}
           </p>
           <div className="style-spacing-grid">

@@ -1,3 +1,4 @@
+import { accessibleAccent } from "./brand";
 import type { Cover } from "./cover";
 import { escape } from "./presentation";
 import {
@@ -106,7 +107,7 @@ export function coverDecorationHtml(
 }
 export function coverLayoutStyle(cover: Cover, accent?: string) {
   const p = coverPresentation(cover, accent);
-  return `--cover-color:${p.color};--cover-text:${p.text};--cover-panel-text:${p.panelText};${cover.layout && cover.layout !== "custom" ? `color:${p.text};` : ""}`;
+  return `--cover-small-accent:${accessibleAccent(p.color)};--cover-color:${p.color};--cover-text:${p.text};--cover-panel-text:${p.panelText};${cover.layout && cover.layout !== "custom" ? `color:${p.text};` : ""}`;
 }
 export const coverLayoutCss = `
 [data-cover-layout]:not([data-cover-layout=custom]){position:relative;isolation:isolate;min-height:var(--cover-content-height,912px);height:var(--cover-content-height,912px);margin:0!important;padding:var(--cover-padding,0)!important;gap:0!important;display:flex!important;flex-direction:column;align-items:stretch!important;color:var(--cover-text);box-sizing:border-box}
@@ -121,7 +122,7 @@ export const coverLayoutCss = `
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-element :is(.field-editor,.field-editor-content,.tiptap,.tiptap>p){font:inherit!important;color:inherit!important;line-height:inherit!important;text-transform:inherit!important;letter-spacing:inherit!important}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-text-line{font:400 14px/1.4 var(--proposal-body,"Source Serif 4",serif);margin:0;color:inherit}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-title-line,[data-cover-layout]:not([data-cover-layout=custom]) h1{font-weight:700!important;font-size:var(--cover-title-size,64px)!important;line-height:var(--cover-title-leading,1.04)!important;letter-spacing:var(--cover-title-tracking,-.025em)!important;max-width:var(--cover-title-width,600px);margin:0;color:inherit!important}
-[data-cover-layout]:not([data-cover-layout=custom]) .flow-eyebrow{font:600 13px/1.4 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.16em;text-transform:uppercase;margin-bottom:20px;color:var(--cover-eyebrow-color,var(--cover-color))}
+[data-cover-layout]:not([data-cover-layout=custom]) .flow-eyebrow{font:600 13px/1.4 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.16em;text-transform:uppercase;margin-bottom:20px;color:var(--cover-eyebrow-color,var(--cover-small-accent,var(--cover-color)))}
 .cover-meta-label{display:block;font:600 11px/1.3 var(--font-ui,"Instrument Sans",sans-serif);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;opacity:1}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-logo{width:auto;margin:0;line-height:0}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-logo:not(:has(img)) .cover-brand-name{margin-left:0}

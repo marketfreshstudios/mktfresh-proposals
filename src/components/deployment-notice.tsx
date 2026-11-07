@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { appBuildId, buildPollMs, buildSnoozeMs } from "../lib/app-build";
 import { ToastSurface } from "./toast-surface";
 import { Button } from "./ui";
@@ -25,6 +25,7 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
     let active = true,
       checking = false,
       newer = false,
+      queued = false,
       timer: ReturnType<typeof setTimeout>;
     const controller = new AbortController();
     const key = `yeswell-update-later:${appBuildId}`;
@@ -49,7 +50,10 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
     const check = async () => {
       if (!active || document.visibilityState !== "visible") return;
       show();
-      if (checking) return;
+      if (checking) {
+        queued = true;
+        return;
+      }
       checking = true;
       try {
         const response = await fetch("/api/staff-build", {
@@ -68,7 +72,10 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
         /* A failed/offline build check never interrupts staff work. */
       } finally {
         checking = false;
-        if (active) schedule();
+        if (active && queued && document.visibilityState === "visible") {
+          queued = false;
+          void check();
+        } else if (active) schedule();
       }
     };
     const visibility = () => {
@@ -87,9 +94,73 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
       window.removeEventListener("focus", focus);
     };
   }, [enabled]);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    if (!enabled || !available) return;
+    const watched = new Set<Element>();
+    const resize = new ResizeObserver(() => place());
+    const place = () => {
+      const region =
+        document.querySelector<HTMLElement>(
+          ".editor-document-region,.studio-template-main",
+        ) ?? document.querySelector<HTMLElement>("#workspace-content");
+      const box = region?.getBoundingClientRect();
+      const left = Math.max(0, box?.left ?? 0),
+        right = Math.min(innerWidth, box?.right ?? innerWidth);
+      const width = Math.max(0, Math.min(560, right - left - 32));
+      let top = 16;
+      for (const header of document.querySelectorAll<HTMLElement>(
+        ".editor-document-header,.band-phone-header,.staff-mobile-brand,.studio-tablet-header",
+      )) {
+        const r = header.getBoundingClientRect();
+        if (r.height > 0 && r.width > 0 && r.bottom > 0 && r.top < 120)
+          top = Math.max(top, r.bottom + 16);
+        if (!watched.has(header)) {
+          watched.add(header);
+          resize.observe(header);
+        }
+      }
+      if (region && !watched.has(region)) {
+        watched.add(region);
+        resize.observe(region);
+      }
+      const next = { left: left + (right - left - width) / 2, top, width };
+      setPosition((old) =>
+        old &&
+        old.left === next.left &&
+        old.top === next.top &&
+        old.width === next.width
+          ? old
+          : next,
+      );
+    };
+    place();
+    const mutation = new MutationObserver(place);
+    mutation.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      resize.disconnect();
+      mutation.disconnect();
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [enabled, available]);
   if (!enabled || !available) return null;
   return (
-    <ToastSurface className="deployment-notice staff-foundation">
+    <ToastSurface
+      stableLayer
+      className="deployment-notice staff-foundation"
+      style={
+        position
+          ? { ...position, visibility: "visible" }
+          : { visibility: "hidden" }
+      }
+    >
       <div>
         <strong>A new version of Yeswell is available.</strong>
         {(blocked || failed) && <p>Save your changes first.</p>}

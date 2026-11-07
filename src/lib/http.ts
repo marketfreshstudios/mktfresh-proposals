@@ -52,7 +52,6 @@ import {
   validateStyles,
   workspaceEvent,
 } from "./studio";
-import { whiteContrast, accessibleAccent } from "./brand";
 import { clientBilling } from "./client-billing";
 import { DuplicateClient, linkStripeCustomer } from "./clients";
 import { proposalAction, proposalActions } from "./proposal-actions";
@@ -957,11 +956,6 @@ async function handleRoute(req: Request, path: string[]) {
           delete entity.default_password_enabled;
           await validateFonts(rt.repo, entity.proposal_fonts);
           await validateStyles(rt.repo, entity);
-          check(
-            whiteContrast(entity.accent_colour) >= 4.5 ||
-              previous?.accent_colour === entity.accent_colour,
-            `Accent needs 4.5:1 contrast with white. Try ${accessibleAccent(entity.accent_colour)}.`,
-          );
           if (entity.show_powered_by !== (previous?.show_powered_by ?? true))
             check(
               user.staff_role === "owner",

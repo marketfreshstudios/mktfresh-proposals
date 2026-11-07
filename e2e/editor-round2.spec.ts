@@ -486,7 +486,11 @@ test("Workspace and templates save style overrides and show responsive live samp
     .getByRole("spinbutton", { name: "Heading 2 weight", exact: true })
     .fill("700");
   await styles.getByRole("button", { name: "Custom", exact: true }).click();
-  await styles.getByLabel("Custom color", { exact: true }).fill("#123456");
+  await styles
+    .getByRole("button", { name: "Edit custom color", exact: true })
+    .click();
+  await page.getByLabel("Hex color", { exact: true }).fill("#123456");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   await styles.getByText("Typography details", { exact: true }).click();
   await styles
     .getByRole("combobox", { name: "Letter case", exact: true })

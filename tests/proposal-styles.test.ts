@@ -96,8 +96,8 @@ it("resolves styles per property: proposal > template > workspace > defaults", (
   expect(resolveStyles().title.size).toBe(40);
   expect(
     StyleOverridesSchema.safeParse({ body: { colour: "#eeeeee" } }).success,
-  ).toBe(false);
-  expect(() =>
+  ).toBe(true);
+  expect(
     validateStyleContrast(
       resolveStyles({
         proposal_styles: { body: { colour: "accent" } },
@@ -105,7 +105,7 @@ it("resolves styles per property: proposal > template > workspace > defaults", (
       }),
       "#ffffff",
     ),
-  ).toThrow("4.5:1");
+  ).toEqual(["Body uses a darker shade for small text"]);
   const frozen = freezeStyles({
     accent_colour: "#123456",
     proposal_styles: { heading1: { colour: "accent" } },
@@ -297,7 +297,7 @@ it("migrates draft/template headings only, with a revision bump; sent and frozen
     await db.close();
   }
 });
-it("rejects fonts outside this workspace at every style level and rejects low contrast or AI style edits", async () => {
+it("rejects fonts outside this workspace at every style level and accepts advisory contrast but rejects AI style edits", async () => {
   const { service, draft } = await setup();
   const alien = {
     id: crypto.randomUUID(),
@@ -325,7 +325,9 @@ it("rejects fonts outside this workspace at every style level and rejects low co
       },
       staff,
     ),
-  ).rejects.toThrow("4.5:1");
+  ).resolves.toMatchObject({
+    style_overrides: { body: { colour: "#ffffff" } },
+  });
   await expect(
     service.edit(
       draft.id,

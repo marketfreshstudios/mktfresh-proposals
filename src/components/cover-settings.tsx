@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Disclosure, Field, Button, post } from "./ui";
 import { SpacingInput } from "./editor/spacing-input";
-import { BrandPalettePicker } from "./brand-palette-picker";
+import { ColorPicker } from "./color-picker";
 import {
   applyCoverLayout,
   coverElements,
@@ -146,19 +146,15 @@ export function CoverSettings({
               </select>
             </Field>
             {usesColor && (
-              <Field
-                label={layout === "split" ? "Panel color" : "Background color"}
-              >
-                <BrandPalettePicker
+              <div className="field">
+                <span>
+                  {layout === "split" ? "Panel color" : "Background color"}
+                </span>
+                <ColorPicker
+                  label={layout === "split" ? "Panel" : "Background"}
+                  value={color}
                   settings={settings}
-                  value={color}
                   onChange={(color) => change({ color })}
-                />
-                <input
-                  aria-label="Custom cover color"
-                  type="color"
-                  value={color}
-                  onChange={(e) => change({ color: e.target.value })}
                 />
                 <span className="muted">
                   {text === "#ffffff" ? "White" : "Ink"} text on{" "}
@@ -167,7 +163,7 @@ export function CoverSettings({
                     : "the cover"}{" "}
                   · AA contrast
                 </span>
-              </Field>
+              </div>
             )}
             {b.type === "image" && (
               <>

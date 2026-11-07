@@ -57,7 +57,9 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
   ).toBeVisible();
   await expect(panel.getByText("Colour", { exact: true })).toHaveCount(0);
   await panel.getByRole("button", { name: "Custom", exact: true }).click();
-  await expect(panel.getByLabel("Custom color", { exact: true })).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Edit custom color", exact: true }),
+  ).toBeVisible();
   await panel.getByText("Typography details", { exact: true }).click();
   await expect(
     panel.getByRole("combobox", { name: "Letter case", exact: true }),

@@ -10,7 +10,11 @@ export function ToolbarPopover({
   avoid,
   onEscape,
   visualViewport = false,
+  placementAnchor,
+  preferredSide = "below",
 }: {
+  placementAnchor?: HTMLElement;
+  preferredSide?: "below" | "right";
   onEscape?: () => void;
   visualViewport?: boolean;
   children: ReactNode;
@@ -33,7 +37,10 @@ export function ToolbarPopover({
           (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 8;
       if (visualViewport) el.style.maxHeight = `${bottom - top}px`;
       const anchor =
-        trigger ?? el.closest(".phone-formatting-bar") ?? el.parentElement;
+        placementAnchor ??
+        trigger ??
+        el.closest(".phone-formatting-bar") ??
+        el.parentElement;
       const bounds = anchor!.getBoundingClientRect(),
         box = el.getBoundingClientRect();
       const paper = anchor
@@ -93,6 +100,10 @@ export function ToolbarPopover({
           );
           if (spot) ({ x, y } = spot);
         }
+      }
+      if (preferredSide === "right" && bounds.right + 16 + box.width <= right) {
+        x = bounds.right + 16;
+        y = Math.max(top, Math.min(bounds.top, bottom - box.height));
       }
       el.style.left = `${x}px`;
       el.style.top = `${y}px`;
