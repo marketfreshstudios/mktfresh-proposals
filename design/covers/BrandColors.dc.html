@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brand colors</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 880px; height: 640px; box-sizing: border-box; background: #FAF9F6; font-family: 'DM Sans', sans-serif; color: #17262B; padding: 40px 48px; display: flex; flex-direction: column; gap: 28px;">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #E4E1DA; padding-top: 28px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 16px; font-weight: 600;">Brand colors</span>
+<span style="font-size: 14px; color: #5B6468;">Used on covers, accents and buttons. Primary plus up to four more.</span>
+</div>
+</div>
+<div style="display: flex; gap: 20px; align-items: flex-start;">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 84px;">
+<button style="width: 64px; height: 64px; border-radius: 50%; background: #365C4A; border: 0; box-shadow: 0 0 0 2px #FAF9F6, 0 0 0 4px #17262B; cursor: pointer;" aria-label="Edit primary color #365C4A"></button>
+<span style="font-size: 13px; font-weight: 600;">Primary</span>
+<span style="font-size: 12px; color: #5B6468; font-family: ui-monospace, monospace;">#365C4A</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 84px;">
+<button style="width: 64px; height: 64px; border-radius: 50%; background: #335577; border: 1px solid rgba(0,0,0,0.08); cursor: pointer;" aria-label="Edit color #335577"></button>
+<span style="font-size: 13px; color: #17262B;">Color 2</span>
+<span style="font-size: 12px; color: #5B6468; font-family: ui-monospace, monospace;">#335577</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 84px;">
+<button style="width: 64px; height: 64px; border-radius: 50%; background: transparent; border: 1.5px dashed #A8A49B; color: #5B6468; font-size: 26px; cursor: pointer;" aria-label="Add color">+</button>
+<span style="font-size: 13px; color: #5B6468;">Add</span>
+</div>
+<div style="flex-grow: 1;"></div>
+<div style="width: 300px; background: #FFFFFF; border: 1px solid #E4E1DA; border-radius: 12px; box-shadow: 0 8px 24px rgba(23,38,43,0.12); padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+<div style="height: 140px; border-radius: 8px; background: #365C4A; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 13px;">Picker area (saturation · brightness)</div>
+<div style="height: 12px; border-radius: 6px; background: #D9D4C8; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B6468;">hue</div>
+<div style="display: flex; gap: 8px; align-items: center;">
+<div style="flex-grow: 1; border: 1px solid #C9C4B9; border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: ui-monospace, monospace;">#365C4A</div>
+<span style="font-size: 12px; color: #2E7D4F;">✓ 7.5:1 on white</span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<a href="#" style="font-size: 13px; color: #A33A2A;">Remove color</a>
+<button style="height: 36px; padding: 0 16px; border-radius: 8px; background: #17262B; color: #FFFFFF; border: 0; font-size: 14px; font-weight: 600;">Done</button>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; background: #F2F0EB; border-radius: 12px; padding: 16px 20px;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<span style="font-size: 14px; font-weight: 600;">From your logo</span>
+<div style="display: flex; gap: 16px; align-items: center;">
+<a href="#" style="font-size: 13px; color: #17262B;">Add all</a>
+<a href="#" style="font-size: 13px; color: #5B6468;">Dismiss</a>
+</div>
+</div>
+<div style="display: flex; gap: 12px;">
+<div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #E4E1DA; border-radius: 999px; padding: 6px 8px 6px 6px;">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #EA4E26; display: block;"></span>
+<span style="font-size: 13px; font-family: ui-monospace, monospace;">#EA4E26</span>
+<button style="width: 32px; height: 32px; border-radius: 50%; border: 0; background: #17262B; color: #FFFFFF; font-size: 16px;" aria-label="Add #EA4E26 to brand colors">+</button>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #E4E1DA; border-radius: 999px; padding: 6px 8px 6px 6px;">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #74CCDB; display: block;"></span>
+<span style="font-size: 13px; font-family: ui-monospace, monospace;">#74CCDB</span>
+<button style="width: 32px; height: 32px; border-radius: 50%; border: 0; background: #17262B; color: #FFFFFF; font-size: 16px;" aria-label="Add #74CCDB to brand colors">+</button>
+</div>
+</div>
+<span style="font-size: 12px; color: #5B6468;">Suggested automatically when you upload a logo. Never replaces your saved colors.</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":640}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
