@@ -48,3 +48,62 @@ it("lets the consent form redirect to the registered callback origin, and only t
   expect(csp).toContain("form-action 'self' https://claude.ai;");
   expect(csp).not.toContain("*");
 });
+
+it("adds a separately described template scope without expanding old grants on refresh", async () => {
+  const { OAuthServer, MCP_SCOPE_LABELS } = await import("../src/lib/oauth");
+  const { MemoryOAuthStore } = await import("../src/lib/oauth-store");
+  const { staff } = await import("./helpers");
+  const oauth = new OAuthServer(
+    new MemoryOAuthStore(),
+    "https://app.example.test",
+    ["https://claude.ai/api/mcp/auth_callback"],
+  );
+  const client = await oauth.register({
+    client_name: "Claude",
+    redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+  });
+  const params = {
+    client_id: client.client_id,
+    redirect_uri: client.redirect_uris[0],
+    response_type: "code",
+    code_challenge_method: "S256",
+    code_challenge: createHash("sha256")
+      .update("a".repeat(43))
+      .digest("base64url"),
+    resource: oauth.resource,
+    scope: "proposals:read proposals:draft",
+  };
+  const redirect = new URL(
+    await oauth.authorize(params, {
+      ...staff,
+      workspace_id: "00000000-0000-4000-8000-000000000001",
+    }),
+  );
+  const first = await oauth.exchange({
+    ...params,
+    grant_type: "authorization_code",
+    code: redirect.searchParams.get("code")!,
+    code_verifier: "a".repeat(43),
+  });
+  const next = await oauth.exchange({
+    grant_type: "refresh_token",
+    client_id: client.client_id,
+    refresh_token: first.refresh_token,
+    resource: oauth.resource,
+  });
+  expect((await oauth.authenticate(next.access_token)).scopes).toEqual([
+    "proposals:read",
+    "proposals:draft",
+  ]);
+  expect(MCP_SCOPE_LABELS["templates:edit"]).toBe(
+    "Create and edit templates and saved blocks; nothing is sent",
+  );
+  expect(
+    (
+      await oauth.validateAuthorization({
+        ...params,
+        scope: "proposals:read templates:edit",
+      })
+    ).scopes,
+  ).toContain("templates:edit");
+});

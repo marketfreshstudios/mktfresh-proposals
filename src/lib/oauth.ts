@@ -2,10 +2,20 @@ import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
 import { check, type Actor } from "./model";
 import { sha256 } from "./content";
+export const MCP_SCOPE_LABELS: Record<string, string> = {
+  "proposals:read": "Read workspace reference data and proposals",
+  "proposals:draft": "Prepare proposal drafts; a person reviews and sends",
+  "templates:edit":
+    "Create and edit templates and saved blocks; nothing is sent",
+};
 import { LOCAL_WORKSPACE_ID } from "./workspace";
 import type { OAuthStore, OAuthRecord } from "./oauth-store";
 const token = () => randomBytes(32).toString("base64url");
-export const MCP_SCOPES = ["proposals:read", "proposals:draft"];
+export const MCP_SCOPES = [
+  "proposals:read",
+  "proposals:draft",
+  "templates:edit",
+];
 export class OAuthServer {
   constructor(
     public store: OAuthStore,
@@ -83,7 +93,7 @@ export class OAuthServer {
       "PKCE S256 is required",
     );
     check(params.resource === this.resource, "Resource audience mismatch");
-    const scopes = (params.scope ?? "proposals:read proposals:draft")
+    const scopes = (params.scope ?? MCP_SCOPES.join(" "))
       .split(" ")
       .filter(Boolean);
     check(
@@ -113,6 +123,7 @@ export class OAuthServer {
         resource: this.resource,
         scopes,
         user_id: actor.actor.slice(6),
+        user_name: actor.staff_name ?? "Staff member",
         expires_at: this.clock() + 300000,
         used: false,
       },
@@ -188,6 +199,7 @@ export class OAuthServer {
           client_id: params.client_id,
           connector_name: code.data.connector_name,
           user_id: code.data.user_id,
+          user_name: code.data.user_name,
           scopes: code.data.scopes,
           revoked: false,
           created_at: new Date(this.clock()).toISOString(),
@@ -235,6 +247,8 @@ export class OAuthServer {
       actor: {
         actor: "ai:" + grant.data.connector_name,
         connector_id: grant.id,
+        on_behalf_of_user_id: grant.data.user_id as string,
+        on_behalf_of_name: (grant.data.user_name as string) ?? "Staff member",
         workspace_id: grant.workspace_id,
         ip: "",
         user_agent: "MCP",

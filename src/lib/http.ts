@@ -1,4 +1,10 @@
 import {
+  studioEntityViews,
+  writeStudioEntity,
+  restoreConnectorChange,
+  connectorActivityViews,
+} from "./studio-history";
+import {
   TemplateInputSchema,
   libraryTemplates,
   libraryStarterAction,
@@ -771,9 +777,20 @@ async function handleRoute(req: Request, path: string[]) {
         ),
       );
     }
+    if (
+      method === "POST" &&
+      path[0] === "studio-history" &&
+      path[1] &&
+      path[2] === "restore"
+    )
+      return json(
+        await restoreConnectorChange(rt.repo, uuid.parse(path[1]), user),
+      );
     if (method === "GET" && path[0] === "workspace_events") {
       const query = new URL(req.url).searchParams;
-      const rows = (await activity(rt.repo)).filter(
+      const rows = (
+        await connectorActivityViews(rt.repo, await activity(rt.repo), user)
+      ).filter(
         (e) =>
           (!query.get("actor") || query.get("actor") === e.actor) &&
           (!query.get("type") || query.get("type") === e.type) &&
@@ -881,12 +898,43 @@ async function handleRoute(req: Request, path: string[]) {
             (a, b) =>
               Number(a.starter_order ?? 999) - Number(b.starter_order ?? 999),
           );
-          for (const e of entities) {
+          for (let index = 0; index < entities.length; index++) {
+            const e = entities[index];
             if (!e.signature_heading_defaulted) {
-              e.content = withSignatureHeadings(e.content as Block[]);
-              e.signature_heading_defaulted = true;
-              delete e.pagination;
-              await rt.repo.put("templates", e as any);
+              const next = {
+                ...e,
+                content: withSignatureHeadings(e.content as Block[]),
+                signature_heading_defaulted: true,
+              } as Record<string, unknown>;
+              delete next.pagination;
+              const audit = {
+                id: randomUUID(),
+                ...user,
+                type: "template_defaults_updated",
+                created_at: new Date().toISOString(),
+                metadata: { entity_id: e.id, name: e.name },
+              };
+              const changed = e.starter_key
+                ? await rt.repo.replaceStarter(
+                    e as unknown as import("./model").Template,
+                    next as unknown as import("./model").Template,
+                    audit,
+                  )
+                : await rt.repo.saveStudioEntity(
+                    "templates",
+                    e as { id: string },
+                    next as { id: string },
+                    audit,
+                  );
+              if (changed) entities[index] = next;
+              else {
+                // A read-time legacy upgrade must never overwrite a newer edit.
+                const current = (
+                  await rt.repo.entities<Record<string, unknown>>("templates")
+                ).find((row) => row.id === e.id);
+                if (current) entities[index] = current;
+                else entities.splice(index--, 1);
+              }
             }
           }
         }
@@ -894,6 +942,13 @@ async function handleRoute(req: Request, path: string[]) {
           entities = await libraryTemplates(
             rt.repo,
             entities as import("./model").Template[],
+          );
+        if (table === "templates" || table === "content_library")
+          entities = await studioEntityViews(
+            rt.repo,
+            table,
+            entities as { id: string }[],
+            user,
           );
         return json(
           table === "workspace_settings"
@@ -1075,6 +1130,9 @@ async function handleRoute(req: Request, path: string[]) {
           const previousTemplate = (
             await rt.repo.entities<import("./model").Template>("templates")
           ).find((t) => t.id === savedTemplateId);
+          delete entity.connector_created;
+          if (previousTemplate?.connector_created)
+            entity.connector_created = true;
           delete entity.starter_key;
           delete entity.starter_order;
           delete entity.source_starter_key;
@@ -1110,6 +1168,23 @@ async function handleRoute(req: Request, path: string[]) {
               block: z.record(z.string(), z.unknown()),
             })
             .parse(raw);
+        if (table === "templates" || table === "content_library") {
+          const before =
+            (await rt.repo.entities<{ id: string }>(table)).find(
+              (row) => row.id === entity.id,
+            ) ?? null;
+          const expected = raw.expected_revision ?? raw.revision;
+          if (expected !== undefined)
+            z.string()
+              .regex(/^[a-f0-9]{64}$/)
+              .parse(expected);
+          return json(
+            await writeStudioEntity(rt.repo, table, before, entity, user, {
+              revision: expected,
+            }),
+            201,
+          );
+        }
         await rt.repo.put(table, entity);
         await workspaceEvent(rt.repo, user, `${table}_saved`, {
           name:

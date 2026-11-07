@@ -111,3 +111,32 @@ AI tools cannot set Stripe/QuickBooks customer IDs, link/unlink customers, or de
 ### Heading levels and typography
 
 In proposal Markdown, `#` creates Heading 1 and starts a section; `##` and `###` create Heading 2 and 3 within it. Higher Markdown depths are limited to Heading 3. The connector's returned blocks include the numeric `level`. Only Heading 1 defines AI review/outline sections. Typography comes from the template and workspace; staff can override it in the app. Sent versions freeze their resolved styles and signed-content hashes, and connector writes remain draft-only.
+
+
+## Template and saved-block access
+
+Template/saved-block writes require a separate `templates:edit` grant: “Create and edit templates and saved blocks; nothing is sent.” Existing proposal-only connections do not gain this permission through refresh; reconnect and approve it. Read tools still require `proposals:read`. Human sending/signing and the proposal draft-only limit are unchanged.
+
+Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters are read-only: duplicate them before customizing. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog values, never invent or calculate prices. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
+
+Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's plain-text clause bodies. Existing fixed Image blocks are read-only. Each write commits an Activity event atomically with the entity, attributed to Claude and the consenting staff member. Updates retain the full previous state. A Super admin or that recorded editor can Restore while the entity still matches Claude's saved version. Later changes produce a 409, including if a staff save races the Restore. No existing proposal or frozen version changes.
+
+Deployment requires `supabase/migrations/20261107090000_connector_studio_history.sql` **before** deploying the code. It adds a service-role-only compare-and-swap helper, with no data backfill or new table. Snapshots remain in the append-only workspace Activity events; they are not exposed in the Activity API or CSV.
+
+### Template read / modify / write
+
+`get_template {template_id}` (legacy `{id}` still works) returns `content` Markdown, `cover` text by stored line ID, `default_quote_items` in the same item/sub-line shape as `set_quote_lines`, and `revision`. It also returns read-only name/availability/starter metadata and a compact `blocks` inventory with IDs, labels and `requires_remove_blocks`.
+
+Call `update_template {template_id, revision, name?, description?, content?, cover?, default_quote_items?, remove_blocks?}`. Provided Markdown and quote items replace those fields; cover text merges only supplied lines. Omitted fields remain unchanged. Do not send read-only metadata as update arguments. New and duplicated templates remain hidden until staff enable them; updating an available template keeps its availability.
+
+Every existing block has one opaque `<!-- yeswell:block:ID -->` on its own line. Never edit or invent IDs, duplicate markers or put block JSON in Markdown. A marker alone preserves the complete block. To edit ordinary text, put the replacement proposal Markdown immediately after its marker. To move a block, move its marker and associated text together; marker-only objects move as a whole. Unchanged marked blocks keep their exact rich data. New ordinary Markdown may be added without a marker. Legacy blocks without safe unique IDs receive stable opaque aliases for this revision; use the IDs returned by this read.
+
+Omitting a text/list/heading/image/divider marker removes that block. Omitting a pricing table, signature, contract or page break **fails** unless its ID is explicitly included in `remove_blocks: ["ID"]`, alongside `content` with that marker omitted. Keeping a marker while listing it for removal also fails. Unknown/duplicate IDs fail before anything is saved. Example:
+
+```json
+{"template_id":"TEMPLATE_UUID","revision":"REVISION_FROM_GET","content":"EDITED_MARKDOWN_WITH_THE_PAGE_BREAK_MARKER_OMITTED","remove_blocks":["PAGE_BREAK_ID_FROM_GET"]}
+```
+
+Preservation markers are exclusive to `update_template`; do not copy them into proposal Markdown.
+
+Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.

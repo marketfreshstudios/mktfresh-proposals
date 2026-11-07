@@ -3,6 +3,7 @@ import { expect, type APIRequestContext } from "@playwright/test";
 export async function connectAssistant(
   request: APIRequestContext,
   headers: Record<string, string>,
+  scope = "proposals:read proposals:draft",
 ) {
   const registration = await request.post("/oauth/register", {
     data: {
@@ -20,7 +21,7 @@ export async function connectAssistant(
       code_challenge_method: "S256",
       code_challenge: createHash("sha256").update(verifier).digest("base64url"),
       resource: "http://127.0.0.1:3100/mcp",
-      scope: "proposals:read proposals:draft",
+      scope,
       state: "e2e",
     });
   const consent = await request.get("/oauth/authorize?" + params, { headers });

@@ -1,3 +1,10 @@
+import {
+  connectorStudioSchemas,
+  connectorStudioDescriptions,
+  CONNECTOR_STUDIO_WRITES,
+  connectorStudioTool,
+  connectorTemplateView,
+} from "./connector-studio";
 import { AddressSchema, PhoneInputSchema, clientView } from "./client-contact";
 import { saveClient } from "./clients";
 import { cloneQuote, quoteSublines } from "./quote-model";
@@ -34,6 +41,8 @@ export const READ_TOOLS = [
   "get_document",
   "search_proposals",
   "get_proposal",
+  "list_saved_blocks",
+  "get_saved_block",
 ] as const;
 export const WRITE_TOOLS = [
   "create_client",
@@ -45,10 +54,14 @@ export const WRITE_TOOLS = [
 ] as const;
 const id = z.string().uuid();
 const schemas: Record<string, z.ZodType> = {
+  ...connectorStudioSchemas,
   search_clients: z.object({ query: z.string().max(200).default("") }),
   get_client: z.object({ id }),
   list_templates: z.object({}),
-  get_template: z.object({ id }),
+  get_template: z.union([
+    z.object({ id }).strict(),
+    z.object({ template_id: id }).strict(),
+  ]),
   list_catalog: z.object({}),
   list_documents: z.object({}),
   get_document: z.object({ id }),
@@ -105,11 +118,17 @@ const schemas: Record<string, z.ZodType> = {
 export const toolDefinitions = Object.entries(schemas).map(
   ([name, schema]) => ({
     name,
-    description: `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name === "list_catalog" ? "list products" : name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send. Markdown # starts a section (Heading 1); ## and ### are subheadings within that section." : "Read only."}`,
-    inputSchema: z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
+    description:
+      connectorStudioDescriptions[name] ??
+      `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name === "list_catalog" ? "list products" : name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send. Markdown # starts a section (Heading 1); ## and ### are subheadings within that section." : "Read only."}`,
+    inputSchema: {
+      type: "object",
+      ...z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
+    },
     annotations: {
       readOnlyHint:
-        !(WRITE_TOOLS as readonly string[]).includes(name) ||
+        (!(WRITE_TOOLS as readonly string[]).includes(name) &&
+          !CONNECTOR_STUDIO_WRITES.includes(name)) ||
         name === "check_ready",
       destructiveHint: false,
       openWorldHint: false,
@@ -140,7 +159,7 @@ export async function aiTool(
   raw: unknown,
   scopes: string[],
   service = new ProposalService(repo),
-) {
+): Promise<unknown> {
   check(
     actor.actor.startsWith("ai:") && actor.workspace_id === repo.workspaceId,
     "AI workspace authorization required",
@@ -150,8 +169,16 @@ export async function aiTool(
   const writing =
     (WRITE_TOOLS as readonly string[]).includes(name) && name !== "check_ready";
   check(
-    scopes.includes(writing ? "proposals:draft" : "proposals:read"),
-    "Insufficient connector scope",
+    scopes.includes(
+      CONNECTOR_STUDIO_WRITES.includes(name)
+        ? "templates:edit"
+        : writing
+          ? "proposals:draft"
+          : "proposals:read",
+    ),
+    CONNECTOR_STUDIO_WRITES.includes(name)
+      ? "Insufficient connector scope: templates:edit is required. Reconnect and approve template editing."
+      : "Insufficient connector scope",
     403,
   );
   check(
@@ -159,6 +186,39 @@ export async function aiTool(
     "Flat lines are no longer supported; supply items with sublines",
   );
   const input = schemas[name].parse(raw) as any;
+  if (name in connectorStudioSchemas) {
+    const value = await connectorStudioTool(repo, actor, name, input);
+    if (["create_saved_block", "update_saved_block"].includes(name)) {
+      const row = value as {
+        saved_block_id: string;
+        name: string;
+        type: string;
+        revision: string;
+      };
+      return {
+        saved_block_id: row.saved_block_id,
+        name: row.name,
+        type: row.type,
+        revision: row.revision,
+      };
+    }
+    return [
+      "create_template",
+      "duplicate_template",
+      "update_template",
+    ].includes(name)
+      ? {
+          template_id: (value as any).id,
+          name: (value as any).name,
+          revision: (value as any).revision,
+          available_for_new_proposals: (value as Template).active,
+          message:
+            name === "update_template"
+              ? "Template updated. Previous state kept for staff Restore; no existing proposal changed."
+              : "Created by Claude — not yet available. A person must review and enable this template in Studio.",
+        }
+      : value;
+  }
   if (name === "set_quote_lines")
     check(input.items !== undefined, "Items required");
   if (name === "search_clients")
@@ -208,10 +268,15 @@ export async function aiTool(
   if (["get_client", "get_template"].includes(name)) {
     const table = name === "get_client" ? "clients" : "templates";
     const entity = (await repo.entities<{ id: string }>(table)).find(
-      (e) => e.id === input.id,
+      (e) => e.id === (input.id ?? input.template_id),
     );
     check(entity, "Not found", 404);
-    return name === "get_client" ? clientView(entity as Client) : entity;
+    return name === "get_client"
+      ? clientView(entity as Client)
+      : connectorTemplateView(
+          entity as Template,
+          await repo.entities<Item>("pricing_items"),
+        );
   }
   if (name === "search_proposals")
     return (await repo.list(input.query)).slice(0, 30).map(proposalView);

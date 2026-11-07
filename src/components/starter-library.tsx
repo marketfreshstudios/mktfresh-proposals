@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes } from "react";
 import type { Template } from "../lib/model";
+import { useConnectorRestore } from "./connector-restore";
 import { post, Button, Field, Banner } from "./ui";
 import { Sheet } from "./foundation";
 import { DialogActions } from "./dialog-actions";
@@ -273,6 +274,7 @@ export function StarterCardMenu({
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const actions = useStarterActions(template, owner, onChanged);
+  const restore = useConnectorRestore(onChanged);
   return (
     <>
       <button
@@ -307,11 +309,24 @@ export function StarterCardMenu({
             >
               New proposal from this
             </a>
-            {actions.items}
+            {template.starter_key && actions.items}
+            {template.connector_restore_event_id && (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={restore.busy}
+                onClick={() =>
+                  void restore.restore(template.connector_restore_event_id!)
+                }
+              >
+                Restore previous version
+              </button>
+            )}
           </div>
         </ToolbarPopover>
       )}
       {actions.dialogs}
+      {restore.feedback}
     </>
   );
 }

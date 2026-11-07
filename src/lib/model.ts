@@ -148,6 +148,9 @@ export type RichText = {
 export type Template = {
   description?: string;
   starter_key?: string;
+  revision?: string;
+  connector_created?: boolean;
+  connector_restore_event_id?: string;
   source_starter_key?: string;
   source_starter_name?: string;
   starter_edited?: boolean;
@@ -207,6 +210,8 @@ export const CounterSignatureSchema = z.object({
 });
 export type Actor = {
   connector_id?: string;
+  on_behalf_of_user_id?: string;
+  on_behalf_of_name?: string;
   staff_name?: string;
   staff_email?: string;
   staff_role?: "owner" | "member";

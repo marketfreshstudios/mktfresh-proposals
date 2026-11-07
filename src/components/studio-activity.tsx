@@ -1,4 +1,5 @@
 "use client";
+import { useConnectorRestore } from "./connector-restore";
 import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
@@ -42,6 +43,9 @@ export function ActivityStudio({ data }: { data: Data }) {
       setError((e as Error).message);
     }
   }
+  const restore = useConnectorRestore(async () => {
+    await load();
+  });
   useEffect(() => {
     void load();
   }, []);
@@ -90,6 +94,7 @@ export function ActivityStudio({ data }: { data: Data }) {
   }
   return (
     <div className="studio-activity-v3">
+      {restore.feedback}
       <div className="studio-list-intro">
         <p>
           Everything that happened in the workspace, by whom. Proposal records
@@ -173,23 +178,42 @@ export function ActivityStudio({ data }: { data: Data }) {
                             .join("")}
                   </span>
                   <div>
-                    <strong>{who(e)}</strong> {eventLabel(e)}
+                    {e.type.startsWith("connector_") &&
+                    e.metadata.editor_name ? (
+                      eventLabel(e)
+                    ) : (
+                      <>
+                        <strong>{who(e)}</strong> {eventLabel(e)}
+                      </>
+                    )}
                     <small>{e.detail}</small>
+                    {e.metadata.can_restore === true && (
+                      <Button
+                        disabled={restore.busy}
+                        onClick={() => void restore.restore(e.id)}
+                      >
+                        Restore previous version
+                      </Button>
+                    )}
                   </div>
                   <a
                     className={
                       e.proposal_id ? "activity-primary-link" : undefined
                     }
                     href={
-                      e.proposal_id
-                        ? `/proposals/${e.proposal_id}`
-                        : activityGroup(e) === "Team"
-                          ? "/studio/workspace?view=team"
-                          : /email/.test(e.type)
-                            ? "/studio/emails"
-                            : /catalog|pricing/.test(e.type)
-                              ? "/studio/products"
-                              : "/studio/workspace"
+                      e.metadata.entity_table === "templates"
+                        ? `/studio/templates/${e.metadata.entity_id}`
+                        : e.metadata.entity_table === "content_library"
+                          ? `/studio/blocks/${e.metadata.entity_id}`
+                          : e.proposal_id
+                            ? `/proposals/${e.proposal_id}`
+                            : activityGroup(e) === "Team"
+                              ? "/studio/workspace?view=team"
+                              : /email/.test(e.type)
+                                ? "/studio/emails"
+                                : /catalog|pricing/.test(e.type)
+                                  ? "/studio/products"
+                                  : "/studio/workspace"
                     }
                   >
                     {e.proposal_id ? "Open" : "View"}

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { MCP_SCOPE_LABELS } from "../../../lib/oauth";
 import { oauthServer } from "../../../lib/oauth-runtime";
 import { staff, cookie, equalSecret } from "../../../lib/auth";
 import { escape } from "../../../lib/content";
@@ -73,7 +74,7 @@ async function handler(
         )
         .join("");
       return new Response(
-        `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Connect assistant · Yeswell</title><style>body{font:18px system-ui;max-width:560px;margin:10vh auto;padding:24px;color:#202820;background:#f7f8f4}button,a{display:inline-block;padding:16px;margin:8px 8px 0 0}button{background:#13303A;color:white;border:0;border-radius:8px}</style><main><p><strong>Yeswell</strong></p><h1>Connect ${escape(validated.client.data.client_name)}</h1><p>Connect your Yeswell workspace. This assistant can read this workspace and create or edit drafts. It cannot send proposals, sign, change billing or change settings.</p><p>Requested access: ${escape(validated.scopes.join(", "))}</p><form method="post">${hidden}<button name="decision" value="allow">Allow access</button><a href="/settings/ai">Cancel</a></form></main></html>`,
+        `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Connect assistant · Yeswell</title><style>body{font:18px system-ui;max-width:560px;margin:10vh auto;padding:24px;color:#202820;background:#f7f8f4}button,a{display:inline-block;padding:16px;margin:8px 8px 0 0}button{background:#13303A;color:white;border:0;border-radius:8px}</style><main><p><strong>Yeswell</strong></p><h1>Connect ${escape(validated.client.data.client_name)}</h1><p>Connect your Yeswell workspace. This assistant can use only the access you approve below. It cannot send proposals, sign, change billing or change settings.</p><ul>${validated.scopes.map((scope) => `<li>${escape(MCP_SCOPE_LABELS[scope] ?? scope)}</li>`).join("")}</ul><p>Requested access: ${escape(validated.scopes.join(", "))}</p><form method="post">${hidden}<button name="decision" value="allow">Allow access</button><a href="/settings/ai">Cancel</a></form></main></html>`,
         {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
