@@ -244,9 +244,14 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     ).toContain(`Proposal-${chosen.id}`);
   }
   await page.getByRole("button", { name: "Brand", exact: true }).click();
-  await page.getByLabel("Accent hex", { exact: true }).fill("#aaddcc");
-  await expect(page.getByText(/Needs 4.5:1 contrast on white/)).toBeVisible();
-  await page.getByRole("button", { name: /darker, same hue/ }).click();
+  await page
+    .getByRole("button", { name: "Edit primary color", exact: true })
+    .click();
+  await page.getByLabel("Hex color", { exact: true }).fill("#aaddcc");
+  await expect(
+    page.getByText(/fine for backgrounds and large text/),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   await expect(
     page.locator(".workspace-section-card [role=status]"),
   ).toHaveText("Saved");

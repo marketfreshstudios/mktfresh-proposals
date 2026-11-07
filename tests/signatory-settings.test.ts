@@ -129,7 +129,7 @@ it("workspace password defaults are hashed, owner-only, redacted on reads and no
     403,
   );
 });
-it("rejects inaccessible accent choices and foreign font descriptors without saving", async () => {
+it("accepts low-contrast brand colors exactly and still rejects foreign font descriptors", async () => {
   const { repo, service, settings } = await setup();
   mocked.runtime.mockReturnValue({ repo, service });
   mocked.staff.mockResolvedValue({ ...staff, workspace_id: repo.workspaceId });
@@ -141,9 +141,9 @@ it("rejects inaccessible accent choices and foreign font descriptors without sav
       }),
       ["workspace_settings"],
     );
-  const bad = await request({ ...settings, accent_colour: "#aaddcc" });
-  expect(bad.status).toBe(400);
-  expect((await bad.json()).error).toContain("4.5:1");
+  const saved = await request({ ...settings, accent_colour: "#ea4e26" });
+  expect(saved.status).toBe(201);
+  expect((await saved.json()).accent_colour).toBe("#ea4e26");
   const font = {
     id: crypto.randomUUID(),
     name: "Foreign",

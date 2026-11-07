@@ -2,7 +2,6 @@ import { listMarkerCss } from "./list-markers";
 import { signatureCss } from "./signature-presentation";
 import { documentQuoteCss } from "./document-quote";
 import { documentFlowCss } from "./document-spacing";
-import { AppError } from "./model";
 import { z } from "zod";
 import {
   fontChoice,
@@ -10,7 +9,7 @@ import {
   type FontChoice,
   type ProposalFont,
 } from "./proposal-fonts";
-import { whiteContrast } from "./brand";
+import { whiteContrast, accessibleAccent } from "./brand";
 export const styleLevels = [
   "title",
   "heading1",
@@ -32,13 +31,7 @@ export const StyleEntrySchema = z.object({
   weight: z.number().int().min(100).max(900),
   colour: z.union([
     z.enum(["accent", "ink"]),
-    z
-      .string()
-      .regex(/^#[\da-fA-F]{6}$/)
-      .refine(
-        (v) => whiteContrast(v) >= 4.5,
-        "Color needs at least 4.5:1 contrast against white paper",
-      ),
+    z.string().regex(/^#[\da-fA-F]{6}$/),
   ]),
   letter_case: z.enum(["normal", "uppercase"]),
   letter_spacing: z.number().min(-0.1).max(0.5),
@@ -203,13 +196,13 @@ export function freezeStyles(
     );
   return styles;
 }
+/** Contrast is advisory. Small text derives a readable shade at render time. */
 export function validateStyleContrast(styles: ResolvedStyles, accent?: string) {
-  for (const level of styleLevels)
-    if (whiteContrast(styleColour(styles[level].colour, accent)) < 4.5)
-      throw new AppError(
-        400,
-        `${styleLabels[level]} color needs 4.5:1 contrast against white paper`,
-      );
+  return styleLevels
+    .filter(
+      (level) => whiteContrast(styleColour(styles[level].colour, accent)) < 4.5,
+    )
+    .map((level) => `${styleLabels[level]} uses a darker shade for small text`);
 }
 export function styleFonts(styles?: ResolvedStyles) {
   return styles ? styleLevels.map((level) => styles[level].font) : [];
@@ -272,7 +265,7 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
       .map((level) => {
         const s = styles[level],
           lh = textLineHeight(styles, level);
-        const declaration = `font-family:${fontFamily(s.font)};font-size:${s.size}px;font-weight:${s.weight};line-height:${lh};color:${styleColour(s.colour, accent)};text-transform:${s.letter_case === "normal" ? "none" : "uppercase"};letter-spacing:${s.letter_spacing}em;`;
+        const declaration = `font-family:${fontFamily(s.font)};font-size:${s.size}px;font-weight:${s.weight};line-height:${lh};color:${s.size < 24 ? accessibleAccent(styleColour(s.colour, accent)) : styleColour(s.colour, accent)};text-transform:${s.letter_case === "normal" ? "none" : "uppercase"};letter-spacing:${s.letter_spacing}em;`;
         return (
           `${selector(level)}{${declaration}${level === "body" ? "" : `margin-top:${s.space_above}px;margin-bottom:${s.space_below}px;`}}` +
           (level === "body"

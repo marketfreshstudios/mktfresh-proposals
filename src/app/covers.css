@@ -12,29 +12,6 @@
   margin: 0;
   font: 400 12px/1.5 var(--font-ui);
 }
-.brand-palette-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 44px;
-  align-items: center;
-}
-.brand-palette-swatch {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  box-shadow: inset 0 0 0 2px var(--surface);
-  cursor: pointer;
-}
-.brand-palette-swatch[aria-pressed="true"] {
-  outline: 2px solid var(--accent-text);
-  outline-offset: 2px;
-}
-.brand-palette-swatch:disabled {
-  cursor: default;
-  opacity: 0.65;
-}
 .cover-focal-picker {
   position: relative;
   cursor: crosshair;
@@ -60,71 +37,4 @@
   display: grid;
   place-items: center;
   pointer-events: none;
-}
-.palette-edit-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 44px;
-  margin: 8px 0;
-}
-.brand-color-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.brand-color-swatch {
-  display: flex;
-  align-items: center;
-  flex: none;
-}
-.brand-color-field input[type="color"] {
-  width: 44px;
-  height: 44px;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-}
-.brand-color-field input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-.brand-color-field input[type="color"]::-webkit-color-swatch {
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-}
-.brand-color-field input[type="color"]::-moz-color-swatch {
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-}
-.brand-color-hex {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font: 600 12px/1.4 var(--font-ui);
-}
-.brand-color-hex input {
-  width: 120px;
-  font: 400 14px/1.4 var(--font-ui);
-}
-.workspace-palette {
-  margin-block: 24px;
-  padding-block: 16px;
-  border-block: 1px solid var(--border);
-}
-.palette-suggestions {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px dashed var(--border-strong);
-  border-radius: 12px;
-  background: var(--surface);
-}
-@media (max-width: 959px) {
-  .brand-palette-swatch {
-    width: 44px;
-    height: 44px;
-  }
 }

@@ -346,8 +346,9 @@ test("cover controls preserve history, use palette colors, validate uploads and 
     settings.getByText("Background color", { exact: true }),
   ).toBeVisible();
   await settings
-    .getByRole("button", { name: "Use brand color #ffeeaa" })
+    .getByRole("button", { name: /^Edit background color/ })
     .click();
+  await page.getByRole("button", { name: "Use brand color #ffeeaa" }).click();
   await expect(page.locator(".editor-paper .cover-decoration")).toHaveCSS(
     "background-color",
     "rgb(255, 238, 170)",
@@ -505,15 +506,17 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
     await expect(
       page.getByRole("heading", { name: "Brand palette", exact: true }),
     ).toHaveCount(0);
-    await expect(page.getByLabel("Primary", { exact: true })).toHaveCount(1);
-    await expect(page.getByLabel("Accent hex", { exact: true })).toHaveValue(
-      original.accent_colour,
-    );
     await expect(
-      page.getByLabel("Brand color 2 hex", { exact: true }),
-    ).toHaveValue(palette[0]);
-    await page.getByLabel("Brand color 2 hex", { exact: true }).fill("#335577");
-    await page.getByLabel("Brand color 2 hex", { exact: true }).blur();
+      page.getByRole("button", { name: "Edit primary color", exact: true }),
+    ).toHaveCount(1);
+    await page
+      .getByRole("button", { name: "Edit color 2", exact: true })
+      .click();
+    await expect(page.getByLabel("Hex color", { exact: true })).toHaveValue(
+      palette[0],
+    );
+    await page.getByLabel("Hex color", { exact: true }).fill("#335577");
+    await page.getByRole("button", { name: "Done", exact: true }).click();
     await expect
       .poll(
         async () =>
@@ -524,7 +527,7 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
           )[0].brand_palette,
       )
       .toEqual(["#335577"]);
-    await expect(page.getByText("Suggested from your logo")).toBeVisible();
+    await expect(page.getByText("From your logo")).toBeVisible();
     await expect
       .poll(() =>
         page
@@ -548,7 +551,7 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
     expect(before.brand_palette).toEqual(["#335577"]);
     expect(before.accent_colour).toBe(original.accent_colour);
     await page
-      .getByRole("button", { name: "Accept color", exact: true })
+      .getByRole("button", { name: /^Add #[A-F0-9]{6} to brand colors$/ })
       .first()
       .click();
     await expect
@@ -566,15 +569,11 @@ test("Brand suggests logo colors for explicit acceptance and keeps saved colors 
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `${shots}/brand-palette-1440.png` });
     }
-    await page.getByLabel("Suggested color 1", { exact: true }).fill("#805522");
-    await page
-      .getByRole("button", { name: "Discard", exact: true })
-      .first()
-      .click();
+    await page.getByRole("button", { name: "Dismiss", exact: true }).click();
     const after = (
       await (await request.get("/api/workspace_settings", { headers })).json()
     )[0];
-    expect(after.brand_palette).not.toContain("#805522");
+    expect(after.brand_palette).toHaveLength(2);
   } finally {
     expect(
       (
