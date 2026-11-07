@@ -889,11 +889,18 @@ function TemplatesStudioContent({
     applyModel,
     () => model.current,
   );
+  const [copyWithoutEdit, setCopyWithoutEdit] = useState(false);
   const [starterAttempt, setStarterAttempt] = useState<Template | null>(null),
     [starterGeneration, setStarterGeneration] = useState(0);
   const editDraft = (next: typeof draft) => {
     if (model.current.draft?.starter_key && next) {
       if (serialise(next) !== serialise(model.current.draft)) {
+        (document.activeElement as HTMLElement)?.blur();
+        setIndex(null);
+        setFields(false);
+        setInsertAt(null);
+        setMoreAnchor(null);
+        setTemplateToolsOpen(false);
         setStarterAttempt((pending) => pending ?? structuredClone(next));
         setStarterGeneration((n) => n + 1);
       }
@@ -1179,6 +1186,8 @@ function TemplatesStudioContent({
     starterAttempt,
   );
   useEffect(() => {
+    if (new URLSearchParams(location.search).get("copy") === "without-edit")
+      setCopyWithoutEdit(true);
     if (new URLSearchParams(location.search).get("preview") === "1")
       setPreviewOpen(true);
   }, []);
@@ -1613,6 +1622,7 @@ function TemplatesStudioContent({
     >
       {blockDrop.line}
       <EditorControlConfig
+        locked={!!starterAttempt && !!draft?.starter_key}
         compactPhone
         compact={templatePanels.compact}
         map={map}
@@ -1792,6 +1802,11 @@ function TemplatesStudioContent({
             </>
           )}
         </EditorHeader>
+        {copyWithoutEdit && (
+          <Banner title="Your copy is ready">
+            The unfinished change could not be applied. Continue editing here.
+          </Banner>
+        )}
         {starterAttempt && draft?.starter_key && (
           <div className="starter-edit-notice" role="status">
             <span>This is a Yeswell starter. Make a copy to customize it.</span>

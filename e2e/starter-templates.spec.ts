@@ -59,7 +59,7 @@ async function fixture(
   await page.setViewportSize({ width: 1440, height: 1000 });
   return { ...f, logo, templates, getSettings: () => settings };
 }
-test("starter descriptions, order, approved covers and Terms remain editable in existing template editor", async ({
+test("starter descriptions, order, approved covers and Terms remain readable in the template editor", async ({
   page,
 }) => {
   const f = await fixture(page, true);

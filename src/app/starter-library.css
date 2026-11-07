@@ -58,6 +58,10 @@
   background: var(--surface-sunken);
 }
 .starter-edit-notice {
+  position: sticky;
+  top: 8px;
+  z-index: var(--z-formatting);
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,4 +102,9 @@
 .studio-template-card-shell > .studio-template-card {
   display: block;
   height: 100%;
+}
+
+.toolbar-popover.starter-actions-menu {
+  width: 288px;
+  max-width: calc(100vw - 24px);
 }

@@ -28,7 +28,7 @@ async function fixture(page: Page, edited = false, member = false) {
       ...staff,
       staff_role: member ? ("member" as const) : ("owner" as const),
     };
-  await page.route("**/api/auth", (r) =>
+  await page.route("**/api/auth/**", (r) =>
     r.fulfill({
       json: {
         user: actor,
@@ -152,6 +152,26 @@ test("starter typing stays read-only; named copy gets the attempted edit and pro
     ),
   ).toEqual(f.starter);
   await shot(page, "copy-based-on-1440");
+  const copiedText = page
+    .locator(`[data-block-id="template-${b.id}"] .tiptap`)
+    .first();
+  await copiedText.scrollIntoViewIfNeeded();
+  await copiedText.click();
+  await copiedText.fill("A second edit to my copy.");
+  await expect
+    .poll(async () =>
+      blockText(
+        (await f.repo.entities<Template>("templates"))
+          .find((t) => t.id === copy.id)!
+          .content.find((v) => v.id === b.id)!,
+      ),
+    )
+    .toBe("A second edit to my copy.");
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === f.starter.id,
+    ),
+  ).toEqual(f.starter);
   await page.goto("/studio/templates");
   const card = page
     .locator(".studio-template-card")
@@ -206,6 +226,42 @@ test("starter cards preview/use/copy and reset with backup and exact Undo; Staff
       (t) => t.id === f.starter.id,
     ),
   ).toEqual(f.starter);
+  await page
+    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Reset to starter", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", {
+      name: `Reset ${f.starter.name} to the latest starter?`,
+    })
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === f.starter.id,
+    ),
+  ).toEqual(f.starter);
+  await page
+    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
+    .click();
+  await page
+    .getByRole("menuitem", { name: "Reset to starter", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", {
+      name: `Reset ${f.starter.name} to the latest starter?`,
+    })
+    .getByRole("button", { name: "Reset to starter", exact: true })
+    .click();
+  await expect(toast).toBeVisible();
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === f.starter.id,
+    )!.content,
+  ).toEqual(f.seeds[0].content);
+  await toast.getByRole("button", { name: "Undo", exact: true }).click();
   await page.goto(`/studio/templates/${f.starter.id}`);
   await page
     .getByRole("button", { name: "New proposal from this", exact: true })
@@ -223,6 +279,11 @@ test("style, quote and insert attempts prompt without changing the library; phon
   await expect(page.locator(".starter-edit-notice")).toBeVisible();
   expect(f.writes).toEqual([]);
   await page.reload();
+  await page.getByRole("tab", { name: "Quote", exact: true }).click();
+  await page.getByRole("button", { name: "+ Custom", exact: true }).click();
+  await expect(page.locator(".starter-edit-notice")).toBeVisible();
+  expect(f.writes).toEqual([]);
+  await page.reload();
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
   await page
     .getByRole("tabpanel", { name: "Blocks" })
@@ -231,8 +292,23 @@ test("style, quote and insert attempts prompt without changing the library; phon
     .click();
   await expect(page.locator(".starter-edit-notice")).toBeVisible();
   expect(f.writes).toEqual([]);
+  await page.reload();
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await page.locator(".cover-settings-accordion>summary").click();
+  await page.getByLabel("Cover layout", { exact: true }).selectOption("split");
+  await expect(page.locator(".starter-edit-notice")).toBeVisible();
+  expect(f.writes).toEqual([]);
   await page.setViewportSize({ width: 375, height: 850 });
   await attempt(page, f);
+  const bar = await page.locator(".starter-edit-notice").boundingBox(),
+    button = await page
+      .locator(".starter-edit-notice")
+      .getByRole("button", { name: "Make a copy", exact: true })
+      .boundingBox();
+  expect(button!.y).toBeGreaterThanOrEqual(bar!.y + 8);
+  expect(button!.y + button!.height).toBeLessThanOrEqual(
+    bar!.y + bar!.height - 7,
+  );
   await shot(page, "starter-edit-bar-375");
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     375,
@@ -241,6 +317,12 @@ test("style, quote and insert attempts prompt without changing the library; phon
 test("Staff can copy but cannot reset or hide a starter", async ({ page }) => {
   const f = await fixture(page, true, true);
   await page.goto("/studio/templates");
+  expect(
+    await page.evaluate(
+      async () =>
+        (await (await fetch("/api/auth/session")).json()).user.staff_role,
+    ),
+  ).toBe("member");
   await page
     .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
     .click();
@@ -252,4 +334,52 @@ test("Staff can copy but cannot reset or hide a starter", async ({ page }) => {
       name: /Reset to starter|Hide from new proposals/,
     }),
   ).toHaveCount(0);
+});
+test("an unfinished recovered style opens a clean editable copy with an explicit explanation", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.addInitScript(
+    ({ id, value, workspace }) => {
+      for (const key of ["workspace", workspace])
+        localStorage.setItem(
+          `studio-unsaved:${key}:templates:${id}`,
+          JSON.stringify(value),
+        );
+    },
+    {
+      id: f.starter.id,
+      value: { ...f.starter, style_overrides: { body: { size: 0 } } },
+      workspace: f.repo.workspaceId,
+    },
+  );
+  await page.goto(`/studio/templates/${f.starter.id}`);
+  await page
+    .getByRole("button", { name: "Restore my edits", exact: true })
+    .click();
+  await page
+    .locator(".starter-edit-notice")
+    .getByRole("button", { name: "Make a copy", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Name your template" })
+    .getByRole("button", { name: "Make copy", exact: true })
+    .click();
+  await page.waitForURL(/copy=without-edit/);
+  await expect(
+    page.getByText(
+      "The unfinished change could not be applied. Continue editing here.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.source_starter_key === f.starter.starter_key,
+    )!.style_overrides,
+  ).toBeUndefined();
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === f.starter.id,
+    ),
+  ).toEqual(f.starter);
 });

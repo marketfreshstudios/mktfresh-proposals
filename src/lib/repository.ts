@@ -85,6 +85,8 @@ export class MemoryRepository implements Repository {
       )
     )
       return false;
+    if (this.catalog.get("workspace_events")?.has(audit.id))
+      throw new AppError(409, "Append-only history");
     this.catalog
       .get("templates")!
       .set(expected.id, structuredClone(replacement));

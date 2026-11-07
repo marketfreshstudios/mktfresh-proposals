@@ -86,37 +86,54 @@ export async function libraryStarterAction(
     const data = z
       .object({
         name: z.string().trim().min(1).max(200),
-        attempt: TemplateInputSchema.optional(),
+        attempt: z.record(z.string(), z.unknown()).optional(),
       })
       .parse(input);
-    const value = TemplateInputSchema.parse({
-      ...before,
-      ...data.attempt,
-      id: randomUUID(),
-      name: data.name,
-      active: true,
-    });
-    delete value.starter_key;
-    delete value.starter_order;
-    delete value.pagination;
-    value.source_starter_key = before.starter_key;
-    value.content = reviewBlocks(
-      contentAfterCover(value.content as Template["content"]),
-      false,
-    );
-    value.cover = loadedCover(value.cover);
-    await validateStyles(
-      repo,
-      (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
-      value.style_overrides,
-    );
+    const copyId = randomUUID();
+    const prepare = async (authored: Record<string, unknown>) => {
+      const value = TemplateInputSchema.parse({
+        ...authored,
+        id: copyId,
+        name: data.name,
+        active: true,
+      });
+      delete value.starter_key;
+      delete value.starter_order;
+      delete value.pagination;
+      value.source_starter_key = before.starter_key;
+      value.content = reviewBlocks(
+        contentAfterCover(value.content as Template["content"]),
+        false,
+      );
+      value.cover = loadedCover(value.cover);
+      await validateStyles(
+        repo,
+        (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
+        value.style_overrides,
+      );
+      return value;
+    };
+    let value,
+      attemptApplied = true;
+    try {
+      value = await prepare({ ...before, ...data.attempt });
+    } catch (error) {
+      if (!data.attempt) throw error;
+      // Incomplete numeric/style input is not safe template data. Copy the original
+      // and explicitly report that no tentative change was applied.
+      value = await prepare(before);
+      attemptApplied = false;
+    }
     await repo.put("templates", value);
     await workspaceEvent(repo, actor, "starter_copied", {
       entity_id: value.id,
       name: value.name,
       source_starter_key: before.starter_key,
     });
-    return (await libraryTemplates(repo, [value as Template]))[0];
+    return {
+      ...(await libraryTemplates(repo, [value as Template]))[0],
+      attempt_applied: attemptApplied,
+    };
   }
   check(
     actor.staff_role === "owner",

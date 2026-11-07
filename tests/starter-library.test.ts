@@ -63,6 +63,16 @@ it("every save and delete path protects starters; copy retains the attempted tex
   });
   expect(res.status).toBe(200);
   const copy = await res.json();
+  const proposal = await f.service.create(
+    {
+      client_id: f.draft.client.id,
+      template_id: t.id,
+      title: "From the library",
+    },
+    staff,
+  );
+  expect(proposal.template_id).toBe(t.id);
+  expect(proposal.content).toEqual(t.content);
   expect(copy.starter_key).toBeUndefined();
   expect(copy.source_starter_key).toBe(t.starter_key);
   expect(copy.content[1].text).toBe("Attempted wording");
@@ -77,12 +87,28 @@ it("every save and delete path protects starters; copy retains the attempted tex
     t.name,
   );
 });
+it("an unfinished invalid style falls back explicitly to a clean copy instead of saving invalid template data", async () => {
+  const f = await fixture(),
+    t = f.templates[0],
+    attempt = { ...t, style_overrides: { body: { size: 0 } } };
+  const result = (await libraryStarterAction(f.repo, staff, t.id, "copy", {
+    name: "Continue here",
+    attempt,
+  })) as any;
+  expect(result.attempt_applied).toBe(false);
+  expect(result.style_overrides).toBeUndefined();
+  expect(result.content).toEqual(t.content);
+  expect(
+    (await f.repo.entities<Template>("templates")).find((v) => v.id === t.id),
+  ).toEqual(t);
+});
 it("Reset resolves current SKU products, preserves identity/availability, Undo restores the exact edited row, and proposals never change", async () => {
   const f = await fixture(),
     t = structuredClone(f.templates[1]),
     proposals = await f.repo.list();
   t.content[1].text = "Keep this edited version";
   t.cover!.eyebrow = "Edited";
+  t.name = "Workspace website name";
   t.active = false;
   await f.repo.put("templates", t);
   const snapshot = structuredClone(t),
@@ -96,6 +122,7 @@ it("Reset resolves current SKU products, preserves identity/availability, Undo r
   expect(result.template.id).toBe(t.id);
   expect(result.template.name).toBe(t.name);
   expect(result.template.active).toBe(false);
+  expect(result.template.starter_edited).toBe(false);
   expect(result.template.content).toEqual(f.templates[1].content);
   expect(result.template.default_items).toEqual(f.templates[1].default_items);
   expect(await f.repo.list()).toEqual(proposals);
@@ -155,7 +182,16 @@ it("seed equality ignores timestamps, annotations and object-key ordering; edit 
       updated_at: "later",
       metadata: { last_actor: "staff" },
     };
+  expect(
+    sameStarterState({ ...row, name: "A workspace name", active: false }, seed),
+  ).toBe(true);
   expect(sameStarterState(row, seed)).toBe(true);
+  expect(
+    sameStarterState(
+      Object.fromEntries(Object.entries(seed).reverse()) as Template,
+      seed,
+    ),
+  ).toBe(true);
   row.content[1].text = "Edited";
   expect(sameStarterState(row, seed)).toBe(false);
   row.content = structuredClone(seed.content);
@@ -172,7 +208,7 @@ it("workspace-scoped SQL CAS is atomic, rejects stale writes and is service-role
     );
     await db.exec(
       await readFile(
-        "supabase/migrations/20261106203000_starter_library.sql",
+        "supabase/migrations/20261106205000_starter_library.sql",
         "utf8",
       ),
     );

@@ -17,7 +17,13 @@ function Cancel({
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <button ref={ref} type="button" className="btn secondary" onClick={onClick}>
+    <button
+      {...props}
+      ref={ref}
+      type="button"
+      className="btn secondary"
+      onClick={onClick}
+    >
       {children ?? "Cancel"}
     </button>
   );
@@ -103,19 +109,20 @@ export function useStarterActions(
               onSubmit={(e) => {
                 e.preventDefault();
                 void safe(async () => {
-                  const value = await post<Template>(
-                    `/api/templates/${template!.id}/copy`,
-                    {
-                      name,
-                      ...(copyMode === "copy" && attempt ? { attempt } : {}),
-                    },
-                  );
+                  const value = await post<
+                    Template & { attempt_applied?: boolean }
+                  >(`/api/templates/${template!.id}/copy`, {
+                    name,
+                    ...(copyMode === "copy" && attempt ? { attempt } : {}),
+                  });
                   if (copyMode === "backup") {
                     await doReset();
                     setCopyMode(null);
                   } else {
                     beforeNavigate?.();
-                    location.assign(`/studio/templates/${value.id}`);
+                    location.assign(
+                      `/studio/templates/${value.id}${value.attempt_applied === false ? "?copy=without-edit" : ""}`,
+                    );
                   }
                 });
               }}
@@ -176,7 +183,11 @@ export function useStarterActions(
                 </p>
               )}
               <DialogActions>
-                <Cancel onClick={() => setReset(false)} />
+                <Cancel
+                  children="Cancel"
+                  disabled={busy}
+                  onClick={() => setReset(false)}
+                />
                 <Button
                   disabled={busy}
                   onClick={() => {
