@@ -1,3 +1,4 @@
+import { socialCatalog } from "../tests/social-catalog";
 import { starterLogo } from "../tests/starter-logo";
 import { authoringPreview } from "../src/lib/authoring-preview";
 import { pdfPreview } from "../src/lib/pdf-preview";
@@ -65,7 +66,7 @@ test("starter descriptions, order, approved covers and Terms remain readable in 
   const f = await fixture(page, true);
   mkdirSync(shots, { recursive: true });
   await page.goto("/studio/templates");
-  await expect(page.locator(".studio-template-card")).toHaveCount(7);
+  await expect(page.locator(".studio-template-card")).toHaveCount(8);
   expect(
     await page.locator(".studio-template-card strong").allTextContents(),
   ).toContain("General project proposal");
@@ -77,7 +78,7 @@ test("starter descriptions, order, approved covers and Terms remain readable in 
   const names = await page
     .locator(".studio-template-card > div:last-child > strong")
     .allTextContents();
-  expect(names.slice(0, 6)).toEqual(f.templates.map((t) => t.name));
+  expect(names.slice(0, 7)).toEqual(f.templates.map((t) => t.name));
   await page.screenshot({
     path: `${shots}/templates-1440.png`,
     fullPage: true,
@@ -400,4 +401,86 @@ test("every starter field is highlighted in template and proposal editors, while
       (sheet) => !sheet.html.includes("field-chip"),
     ),
   ).toBe(true);
+});
+
+test("seventh Social media starter shows the four plans, keeps Growth selected and stays read-only", async ({
+  page,
+}) => {
+  const f = await fixture(page, true),
+    catalog = [
+      ...(await f.repo.entities<Item>("pricing_items")),
+      ...socialCatalog(),
+    ];
+  f.settings.company_name = "MarketFresh Studios";
+  f.getSettings().company_name = f.settings.company_name;
+  await f.repo.put("workspace_settings", f.getSettings());
+  for (const product of socialCatalog())
+    await f.repo.put("pricing_items", product);
+  const social = starterTemplates(f.repo.workspaceId, {
+    marketfresh: true,
+    catalog,
+  }).at(-1)!;
+  await f.repo.put("templates", social);
+  await page.goto("/studio/templates");
+  await expect(page.locator(".starter-pill")).toHaveCount(7);
+  await expect(
+    page.getByText(social.description!, { exact: true }),
+  ).toBeVisible();
+  if (process.env.CAPTURE_SOCIAL_STARTER) {
+    mkdirSync("docs/screenshots/social-starter", { recursive: true });
+    await page.screenshot({
+      path: "docs/screenshots/social-starter/templates-1440.png",
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 1440, height: 1400 });
+  await page.goto(`/studio/templates/${social.id}`);
+  const paper = page.locator(".template-paged-paper");
+  await expect(paper.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
+  await expect(paper).toContainText("A social media plan for");
+  await expect(paper.locator(".cover-logo img")).toBeVisible();
+  if (process.env.CAPTURE_SOCIAL_STARTER)
+    await page.screenshot({
+      path: "docs/screenshots/social-starter/cover-1440.png",
+    });
+  await paper
+    .getByRole("heading", { name: "Investment", exact: true })
+    .scrollIntoViewIfNeeded();
+  const investmentPage = await paper.evaluate((root) => {
+    const heading = [...root.querySelectorAll("h1,h2,h3")].find(
+      (el) => el.textContent === "Investment",
+    )!;
+    const y = heading.getBoundingClientRect().top;
+    return [
+      ...root.querySelectorAll<HTMLElement>(".page-sheet[data-editor-page]"),
+    ].find((sheet) => {
+      const r = sheet.getBoundingClientRect();
+      return y >= r.top && y < r.bottom;
+    })!.dataset.editorPage;
+  });
+  await paper
+    .locator(`.page-sheet[data-editor-page="${investmentPage}"]`)
+    .evaluate((el) => el.scrollIntoView({ block: "start" }));
+  await expect(paper).toContainText("Social Media Management Growth");
+  expect(social.default_items!.map((q) => q.default_selected)).toEqual([
+    false,
+    true,
+    false,
+    false,
+  ]);
+  if (process.env.CAPTURE_SOCIAL_STARTER)
+    await page.screenshot({
+      path: "docs/screenshots/social-starter/investment-1440.png",
+    });
+  const text = paper.locator(".tiptap").first();
+  await text.scrollIntoViewIfNeeded();
+  await text.click();
+  await text.fill("My attempted customization");
+  await expect(page.locator(".starter-edit-notice")).toBeVisible();
+  expect(
+    (await f.repo.entities<any>("templates")).find((t) => t.id === social.id),
+  ).toEqual(social);
 });

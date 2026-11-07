@@ -17,7 +17,7 @@ import { authoringErrors } from "../src/lib/authoring-guidance";
 import type { Item, Template } from "../src/lib/model";
 const workspace = "00000000-0000-4000-8000-000000000001";
 
-it("six exact starters, order, covers, renumbered terms and both signatures without generic default prices", () => {
+it("seven exact starters, order, covers, renumbered terms and both signatures without generic default prices", () => {
   const templates = starterTemplates(workspace);
   expect(templates.map((t) => t.starter_key)).toEqual([
     "general-project",
@@ -26,6 +26,7 @@ it("six exact starters, order, covers, renumbered terms and both signatures with
     "local-visibility-seo",
     "website-ai-audit",
     "monthly-marketing",
+    "social-media-management",
   ]);
   for (const t of templates) {
     expect(t.active).toBe(true);
@@ -64,7 +65,7 @@ it("MarketFresh defaults resolve to existing items; care has no default, 4.4 sta
   const catalog = await repo.entities<Item>("pricing_items");
   const templates = starterTemplates(workspace, { marketfresh: true, catalog });
   expect(templates.map((t) => t.default_items!.length)).toEqual([
-    0, 3, 3, 2, 1, 0,
+    0, 3, 3, 2, 1, 0, 0,
   ]);
   for (const t of templates) validateItems(t.default_items!);
   for (const t of templates)
@@ -101,7 +102,7 @@ it("MarketFresh defaults resolve to existing items; care has no default, 4.4 sta
     ),
   ).toBe(true);
 });
-it("workspace creation trigger seeds six; backfill is idempotent, atomic and preserves edited starters and old clause", async () => {
+it("workspace creation trigger seeds seven; backfill is idempotent, atomic and preserves edited starters and old clause", async () => {
   const db = await PGlite.create();
   try {
     await db.exec(
@@ -122,6 +123,12 @@ it("workspace creation trigger seeds six; backfill is idempotent, atomic and pre
     await db.exec(
       await readFile(
         "supabase/migrations/20261106203920_cover_layout_defaults.sql",
+        "utf8",
+      ),
+    );
+    await db.exec(
+      await readFile(
+        "supabase/migrations/20261107225320_social_media_starter.sql",
         "utf8",
       ),
     );
@@ -174,13 +181,13 @@ it("workspace creation trigger seeds six; backfill is idempotent, atomic and pre
           [existingWorkspace, JSON.stringify(existingPayload)],
         )
       ).rows[0].n,
-    ).toBe(6);
+    ).toBe(7);
     const defaults = await db.query<{ data: Template }>(
       "select data from templates where workspace_id=$1 order by (data->>'starter_order')::int",
       [existingWorkspace],
     );
     expect(defaults.rows.map((r) => r.data.default_items!.length)).toEqual([
-      0, 3, 3, 2, 1, 0,
+      0, 3, 3, 2, 1, 0, 0,
     ]);
     const id = starterId(workspace, "general-project");
     await db.query(
@@ -231,7 +238,7 @@ it("workspace creation trigger seeds six; backfill is idempotent, atomic and pre
           "select count(*)::int n from templates where workspace_id='00000000-0000-4000-8000-000000000001'",
         )
       ).rows[0].n,
-    ).toBe(7);
+    ).toBe(8);
   } finally {
     await db.close();
   }

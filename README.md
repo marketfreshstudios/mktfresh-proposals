@@ -273,11 +273,11 @@ Newly published proposals use stable 12-character client codes; older links rema
 
 ### Starter proposal templates
 
-The six approved starters and the Business state field are documented in
+The seven approved starters and the Business state field are documented in
 [`design/templates/starter-templates.md`](design/templates/starter-templates.md).
-**Hosted rollout requires the migration plus an owner-run, insert-only backfill**;
+**The Social media starter requires the hosted migration before deploy**;
 see [`docs/starter-template-rollout.md`](docs/starter-template-rollout.md).
-The backfill defaults to a dry run and never replaces an existing starter key.
+It provisions seven starters for future workspaces and inserts only the missing Social media starter in MarketFresh; existing starter keys are never replaced. The original six-starter backfill instructions remain in the rollout document as historical reference.
 
 Staff pages check the baked app build identity at `/api/staff-build` on focus and every five minutes while visible. A newer deployment offers Reload or a thirty-minute Later snooze in a top floating banner, centered in the main column below any editor header. Reload settles template/block/workspace saves; unsaved proposal/email or recovery/save-error states require the existing Save/Retry first. No client/signing/PDF page polls. Vercel supplies deployment metadata automatically; self-hosted releases may set the optional public `YESWELL_BUILD_ID` at build time. Reuse the same built artifact across replicas. No hosted SQL is required.
 
