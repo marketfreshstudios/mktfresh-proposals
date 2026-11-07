@@ -1,14 +1,24 @@
 "use client";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type CSSProperties,
+} from "react";
 export function ToastSurface({
   children,
   role = "status",
   className = "",
+  style,
+  stableLayer = false,
 }: {
   children: ReactNode;
   role?: "status" | "alert";
   className?: string;
+  style?: CSSProperties;
+  stableLayer?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [host, setHost] = useState<Element | null>(null);
@@ -25,7 +35,7 @@ export function ToastSurface({
       // A newly opened menu/dialog must not cover an existing toast. Keeping
       // it inside the modal also prevents the browser from making Undo inert.
       const toast = ref.current;
-      if (toast?.matches(":popover-open")) {
+      if (!stableLayer && toast?.matches(":popover-open")) {
         toast.hidePopover();
         toast.showPopover();
       }
@@ -50,6 +60,7 @@ export function ToastSurface({
     ? createPortal(
         <div
           ref={ref}
+          style={style}
           popover="manual"
           data-editor-chrome
           className={`block-feedback-toast ${className}`}

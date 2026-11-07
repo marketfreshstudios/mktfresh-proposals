@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { test, expect, type Page } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import { emailEditorFixture } from "./email-editor-fixture";
+import { blockText } from "../src/lib/editor-document";
 import { publicResult } from "../src/lib/service";
 import { mkdir } from "node:fs/promises";
 async function buildFixture(page: Page, email = false) {
@@ -82,6 +83,59 @@ test("visible staff tabs detect builds, poll every five minutes, snooze thirty m
   await page.clock.setFixedTime(until + 1);
   await focus(page);
   await expect(notice(page)).toBeVisible();
+});
+test("a focus during the initial build check queues a fresh check instead of dropping the update", async ({
+  page,
+}) => {
+  const f = await buildFixture(page),
+    id = (await (await page.request.get("/api/staff-build")).json()).buildId;
+  let release = () => {},
+    count = 0,
+    released = false;
+  const gate = new Promise<void>((r) => (release = r));
+  await page.route("**/api/staff-build", async (r) => {
+    count++;
+    if (!released) {
+      await gate;
+      await r.fulfill({ json: { buildId: id } }).catch(() => {});
+    } else await r.fulfill({ json: { buildId: "new-after-focus" } });
+  });
+  await page.goto("/");
+  await expect.poll(() => count).toBeGreaterThanOrEqual(1);
+  const before = count;
+  await focus(page);
+  released = true;
+  release();
+  await expect(notice(page)).toBeVisible();
+  expect(count).toBeGreaterThan(before);
+});
+test("top banner does not restart its entrance animation during document updates", async ({
+  page,
+}) => {
+  const f = await buildFixture(page);
+  await page.goto(`/proposals/${f.draft.id}/edit`);
+  f.update();
+  await focus(page);
+  const n = notice(page);
+  await expect(n).toBeVisible();
+  await n.evaluate(async (el) => {
+    await Promise.all(el.getAnimations().map((a) => a.finished));
+    (el as HTMLElement).dataset.animationRestarts = "0";
+    el.addEventListener("animationstart", () => {
+      (el as HTMLElement).dataset.animationRestarts = String(
+        Number((el as HTMLElement).dataset.animationRestarts) + 1,
+      );
+    });
+  });
+  const b = f.active().content.find((b) => b.type === "paragraph")!;
+  await page.locator(`[data-block-id="block-${b.id}"]`).click();
+  await page
+    .locator(`[data-block-id="block-${b.id}"] .tiptap`)
+    .fill("Updated while the notice is visible.");
+  await expect
+    .poll(() => blockText(f.active().content.find((x) => x.id === b.id)!))
+    .toBe("Updated while the notice is visible.");
+  await expect(n).toHaveAttribute("data-animation-restarts", "0");
 });
 test("Reload drains a pending workspace save, waits for it and preserves changes on failure", async ({
   page,
@@ -265,52 +319,87 @@ test("an unrelated failed test email does not block reloading a fully saved edit
     0,
   );
 });
-for (const width of [1440, 375])
-  for (const theme of ["light", "dark"])
-    test(`notice is accessible and clear of phone navigation at ${width} ${theme}`, async ({
-      page,
-    }) => {
-      const f = await buildFixture(page);
-      await page.setViewportSize({ width, height: 900 });
-      await page.addInitScript((theme) => {
-        localStorage.setItem("proposal-theme", theme);
-      }, theme);
-      await page.goto("/");
-      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-      f.update();
-      await focus(page);
-      const n = notice(page);
-      await expect(n).toBeVisible();
-      await expect(n).toHaveCSS(
-        "background-color",
-        theme === "dark" ? "rgb(28, 27, 25)" : "rgb(251, 250, 247)",
-      );
-      expect(
-        (await new AxeBuilder({ page }).include(".deployment-notice").analyze())
-          .violations,
-      ).toEqual([]);
-      for (const button of await n.getByRole("button").all()) {
-        const box = (await button.boundingBox())!;
-        expect(box.height).toBeGreaterThanOrEqual(44);
-        expect(box.width).toBeGreaterThanOrEqual(44);
-        await button.focus();
-        await expect(button).toBeFocused();
-      }
-      await expect(
-        n.getByRole("button", { name: "Reload", exact: true }),
-      ).toHaveClass(/primary/);
-      const box = (await n.boundingBox())!;
-      expect(box.height).toBeLessThan(220);
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(width);
-      if (width === 375) expect(box.y + box.height).toBeLessThanOrEqual(820);
-      if (process.env.CAPTURE_UPDATES) {
-        await mkdir("docs/screenshots/deployment-notice", { recursive: true });
-        await page.screenshot({
-          path: `docs/screenshots/deployment-notice/notice-${width}-${theme}.png`,
+for (const width of [1440, 768, 375])
+  for (const surface of ["home", "editor"])
+    for (const theme of ["light", "dark"])
+      test(`top notice clears navigation/header at ${width} ${theme} ${surface}`, async ({
+        page,
+      }) => {
+        const f = await buildFixture(page);
+        await page.setViewportSize({ width, height: 900 });
+        await page.addInitScript((theme) => {
+          localStorage.setItem("proposal-theme", theme);
+        }, theme);
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.goto(
+          surface === "editor" ? `/proposals/${f.draft.id}/edit` : "/",
+        );
+        if (surface === "editor")
+          await expect(page.locator(".editor-document-header")).toBeVisible();
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        f.update();
+        await focus(page);
+        const n = notice(page);
+        await expect(n).toBeVisible();
+        await expect(n).toHaveCSS(
+          "background-color",
+          theme === "dark" ? "rgb(28, 27, 25)" : "rgb(251, 250, 247)",
+        );
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .include(".deployment-notice")
+              .analyze()
+          ).violations,
+        ).toEqual([]);
+        for (const button of await n.getByRole("button").all()) {
+          const box = (await button.boundingBox())!;
+          expect(box.height).toBeGreaterThanOrEqual(44);
+          expect(box.width).toBeGreaterThanOrEqual(44);
+          await button.focus();
+          await expect(button).toBeFocused();
+        }
+        await expect(
+          n.getByRole("button", { name: "Reload", exact: true }),
+        ).toHaveClass(/primary/);
+        const box = (await n.boundingBox())!;
+        expect(box.height).toBeLessThan(220);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        const bounds = await page.evaluate(() => {
+          const region =
+            document.querySelector(".editor-document-region") ??
+            document.querySelector("#workspace-content")!;
+          const main = region.getBoundingClientRect();
+          const header = document.querySelector(
+            ".editor-document-header,.staff-mobile-brand",
+          );
+          const h = header?.getBoundingClientRect();
+          return {
+            left: main.left,
+            right: main.right,
+            headerBottom: h && h.width && h.height ? Math.max(0, h.bottom) : 0,
+          };
         });
-      }
-    });
+        expect(box.x).toBeGreaterThanOrEqual(Math.max(0, bounds.left));
+        expect(box.x + box.width).toBeLessThanOrEqual(bounds.right + 1);
+        expect(box.y).toBeGreaterThanOrEqual(bounds.headerBottom + 15);
+        expect(box.width).toBeLessThanOrEqual(560);
+        if (width === 375) {
+          expect(box.x).toBeCloseTo(16, 0);
+          expect(box.width).toBeCloseTo(width - 32, 0);
+        }
+        await expect(n).toHaveCSS("animation-name", "none");
+        if (
+          process.env.CAPTURE_POLISH &&
+          (width === 1440 || (width === 375 && surface === "home"))
+        ) {
+          await mkdir("docs/screenshots/brand-polish", { recursive: true });
+          await page.screenshot({
+            path: `docs/screenshots/brand-polish/banner-${surface}-${width}-${theme}.png`,
+          });
+        }
+      });
 test("public proposal and signing routes never check or show deployment notices", async ({
   page,
 }) => {
