@@ -99,14 +99,42 @@ it("opt-in updates only complete unchanged starter seeds and preserves every oth
       (r) => r.eligible,
     ),
   ).toBe(true);
+  const dated = old.map((t) => ({
+    ...structuredClone(t),
+    updated_at: "later",
+    metadata: { last_actor: "staff" },
+  }));
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, dated).every(
+      (r) => r.eligible,
+    ),
+  ).toBe(true);
+  const editedAndUndone = structuredClone(dated);
+  editedAndUndone[0].content[1].text = "An edit";
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, editedAndUndone)[0]
+      .eligible,
+  ).toBe(false);
+  editedAndUndone[0].content = structuredClone(old[0].content);
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, editedAndUndone)[0]
+      .eligible,
+  ).toBe(true);
   old[1].name += " edited";
+  old[1].active = false;
   old[2].content[0].text = "An owner change";
   const before = JSON.stringify(old);
   expect(
     starterBrandUpdates(f.repo.workspaceId, catalog, old).map(
       (r) => r.eligible,
     ),
-  ).toEqual([true, false, false, true, true, true]);
+  ).toEqual([true, true, false, true, true, true]);
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, old)[1].after.name,
+  ).toBe(old[1].name);
+  expect(
+    starterBrandUpdates(f.repo.workspaceId, catalog, old)[1].after.active,
+  ).toBe(false);
   expect(JSON.stringify(old)).toBe(before);
   expect(
     starterBrandUpdates(f.repo.workspaceId, catalog, current).every(
