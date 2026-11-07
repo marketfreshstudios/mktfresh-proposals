@@ -13,6 +13,7 @@ import "./editor.css";
 import "./studio-v3.css";
 import "./editor-fields.css";
 import "./covers.css";
+import "./deployment-notice.css";
 export default function RootLayout({
   children,
 }: {

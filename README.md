@@ -276,3 +276,5 @@ The six approved starters and the Business state field are documented in
 **Hosted rollout requires the migration plus an owner-run, insert-only backfill**;
 see [`docs/starter-template-rollout.md`](docs/starter-template-rollout.md).
 The backfill defaults to a dry run and never replaces an existing starter key.
+
+Staff pages check the baked app build identity at `/api/staff-build` on focus and every five minutes while visible. A newer deployment offers Reload or a thirty-minute Later snooze. Reload settles template/block/workspace saves; unsaved proposal/email or recovery/save-error states require the existing Save/Retry first. No client/signing/PDF page polls. Vercel supplies deployment metadata automatically; self-hosted releases may set the optional public `YESWELL_BUILD_ID` at build time. Reuse the same built artifact across replicas. No hosted SQL is required.

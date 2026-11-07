@@ -28,3 +28,13 @@ export function usesWorkspaceBrand(value: {
     JSON.stringify(value.header_footer ?? {}).includes('"workspace-brand"')
   );
 }
+
+/** Automatic icon defaults fit the name; non-default authored heights are retained. */
+export function brandIconHeight(kind: "cover" | "band", stored?: number) {
+  const originalDefault = kind === "cover" ? 60 : 18;
+  return stored === undefined || stored === originalDefault
+    ? kind === "cover"
+      ? 26
+      : 16
+    : stored;
+}

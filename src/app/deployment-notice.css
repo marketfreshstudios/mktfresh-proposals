@@ -1,0 +1,51 @@
+.block-feedback-toast.deployment-notice[popover] {
+  position: fixed;
+  inset: auto auto calc(20px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+  transform: none;
+  margin: 0;
+  width: max-content;
+  height: auto;
+  min-height: 0;
+  max-width: calc(100vw - 40px);
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  font: 400 13px/1.5 var(--font-ui);
+  white-space: normal;
+}
+.deployment-notice strong {
+  font-weight: 600;
+}
+.deployment-notice p {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+}
+.deployment-notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+.block-feedback-toast.deployment-notice .btn {
+  min-width: 64px;
+  min-height: 44px;
+  margin: 0;
+}
+@media (max-width: 699px) {
+  .block-feedback-toast.deployment-notice[popover] {
+    left: calc(12px + env(safe-area-inset-left));
+    right: calc(12px + env(safe-area-inset-right));
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    gap: 10px;
+  }
+}

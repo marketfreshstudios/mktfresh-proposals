@@ -1,4 +1,5 @@
 "use client";
+import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { QuoteItemsPanel } from "./quote-items-panel";
@@ -713,6 +714,9 @@ function QuoteEditorContent({
     });
     return flight;
   }
+  useReloadGuard({
+    blocked: dirty || saving || stale || !!recovery || reviewBusy || sending,
+  });
   useEffect(() => {
     if (!dirty || saving || stale || error || offline || reviewBusy || sending)
       return;

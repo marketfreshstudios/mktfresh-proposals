@@ -6,7 +6,7 @@ import oldBands from "../seed/starter-bands-v83.json";
 import previousCovers from "../seed/starter-covers-pr-a.json";
 import { defaultHeaderFooter } from "../src/lib/page-bands";
 import { pageBandHtml } from "../src/lib/page-band-render";
-import { coverBrand } from "../src/lib/workspace-brand";
+import { brandIconHeight, coverBrand } from "../src/lib/workspace-brand";
 import { editableCoverHtml } from "../src/lib/cover-render";
 import type { Item, Template } from "../src/lib/model";
 const wide = "data:image/png;base64,V0lERQ==",
@@ -199,4 +199,12 @@ it("hosted updater compares the entire expected row and cannot overwrite a concu
   } finally {
     await db.close();
   }
+});
+
+it("automatic icon defaults fit the name while deliberate resized heights are preserved", () => {
+  expect(brandIconHeight("cover")).toBe(26);
+  expect(brandIconHeight("cover", 60)).toBe(26);
+  expect(brandIconHeight("cover", 48)).toBe(48);
+  expect(brandIconHeight("band", 18)).toBe(16);
+  expect(brandIconHeight("band", 32)).toBe(32);
 });

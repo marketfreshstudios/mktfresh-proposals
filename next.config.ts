@@ -1,5 +1,13 @@
 import type { NextConfig } from "next";
+import { randomUUID } from "node:crypto";
+import { buildIdentity } from "./src/lib/app-build";
+const buildId = buildIdentity(
+  process.env,
+  process.env.NODE_ENV === "development" ? "development" : randomUUID(),
+);
 const config: NextConfig = {
+  generateBuildId: async () => buildId,
+  env: { NEXT_PUBLIC_YESWELL_BUILD_ID: buildId },
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
   outputFileTracingIncludes: {
     "/api/**": [

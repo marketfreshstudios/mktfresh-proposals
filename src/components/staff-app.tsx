@@ -1,4 +1,6 @@
 "use client";
+import { ReloadSafetyProvider } from "./reload-safety";
+import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
 import { YeswellBrand } from "./yeswell-brand";
 import { StudioTemplateList } from "./studio-template-list";
@@ -97,7 +99,19 @@ export type Data = {
     revoked: boolean;
   }[];
 };
-export function StaffApp({
+type StaffAppProps = { path: string[]; query?: StaffQuery; local?: boolean };
+export function StaffApp(props: StaffAppProps) {
+  const { section, action } = staffRoute(props.path, props.query);
+  const enabled =
+    !["login", "billing"].includes(section) && action !== "countersign";
+  return (
+    <ReloadSafetyProvider>
+      <StaffAppContent {...props} />
+      <DeploymentNotice enabled={enabled} />
+    </ReloadSafetyProvider>
+  );
+}
+function StaffAppContent({
   path,
   query = {},
   local = false,
