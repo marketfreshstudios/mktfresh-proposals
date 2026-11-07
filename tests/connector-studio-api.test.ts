@@ -120,3 +120,33 @@ it("normal Studio saves and Restore both refuse a stale revision without replaci
     )?.name,
   ).toBe("A staff edit");
 });
+it("a legacy read-time upgrade cannot overwrite a concurrent staff/connector edit", async () => {
+  const f = await setup();
+  mocks.runtime.mockReturnValue(f);
+  mocks.staff.mockResolvedValue(staff);
+  const original = (await f.repo.entities<Template>("templates"))[0];
+  const next = {
+    ...original,
+    name: "Concurrent staff wording",
+    signature_heading_defaulted: true,
+  };
+  const save = f.repo.saveStudioEntity.bind(f.repo);
+  let raced = false;
+  f.repo.saveStudioEntity = async (table, before, after, event) => {
+    if (!raced && event.type === "template_defaults_updated") {
+      raced = true;
+      await f.repo.put("templates", next);
+    }
+    return save(table, before, after, event);
+  };
+  const result = await request(["templates"]);
+  expect(result.status).toBe(200);
+  expect(
+    (await result.json()).find((t: Template) => t.id === original.id).name,
+  ).toBe(next.name);
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === original.id,
+    ),
+  ).toEqual(next);
+});

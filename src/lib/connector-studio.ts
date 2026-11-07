@@ -456,7 +456,8 @@ export async function connectorStudioTool(
               await connectorFields(repo),
               before?.block,
             )
-          : input.type !== undefined
+          : input.type !== undefined &&
+              input.type !== savedBlockView(before!).type
             ? convertSavedBlockType(
                 before!.block,
                 input.type === "list" ? "Bulleted list" : "Text",

@@ -145,6 +145,13 @@ it("saved Text/List tools read, replace, safely convert and reject stale revisio
     content: "1. **Results** for {{client.company}}\n2. Next steps",
   });
   expect(block.content).toContain("1. **Results**");
+  block = await call(f, "update_saved_block", {
+    saved_block_id: block.saved_block_id,
+    revision: block.revision,
+    type: "list",
+    name: "Renamed ordered list",
+  });
+  expect(block.content).toContain("1. **Results**");
   expect((await call(f, "list_saved_blocks", {})) as any[]).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ saved_block_id: block.saved_block_id }),

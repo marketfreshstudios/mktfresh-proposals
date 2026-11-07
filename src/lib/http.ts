@@ -898,12 +898,43 @@ async function handleRoute(req: Request, path: string[]) {
             (a, b) =>
               Number(a.starter_order ?? 999) - Number(b.starter_order ?? 999),
           );
-          for (const e of entities) {
+          for (let index = 0; index < entities.length; index++) {
+            const e = entities[index];
             if (!e.signature_heading_defaulted) {
-              e.content = withSignatureHeadings(e.content as Block[]);
-              e.signature_heading_defaulted = true;
-              delete e.pagination;
-              await rt.repo.put("templates", e as any);
+              const next = {
+                ...e,
+                content: withSignatureHeadings(e.content as Block[]),
+                signature_heading_defaulted: true,
+              } as Record<string, unknown>;
+              delete next.pagination;
+              const audit = {
+                id: randomUUID(),
+                ...user,
+                type: "template_defaults_updated",
+                created_at: new Date().toISOString(),
+                metadata: { entity_id: e.id, name: e.name },
+              };
+              const changed = e.starter_key
+                ? await rt.repo.replaceStarter(
+                    e as unknown as import("./model").Template,
+                    next as unknown as import("./model").Template,
+                    audit,
+                  )
+                : await rt.repo.saveStudioEntity(
+                    "templates",
+                    e as { id: string },
+                    next as { id: string },
+                    audit,
+                  );
+              if (changed) entities[index] = next;
+              else {
+                // A read-time legacy upgrade must never overwrite a newer edit.
+                const current = (
+                  await rt.repo.entities<Record<string, unknown>>("templates")
+                ).find((row) => row.id === e.id);
+                if (current) entities[index] = current;
+                else entities.splice(index--, 1);
+              }
             }
           }
         }
