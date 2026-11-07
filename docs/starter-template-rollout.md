@@ -1,4 +1,17 @@
-# Starter templates rollout — owner action required before merge
+# Seventh starter rollout — Social media management
+
+Apply [20261107225320_social_media_starter.sql](../supabase/migrations/20261107225320_social_media_starter.sql) **before deploying** this PR. Run the complete file in the hosted Supabase SQL editor/connector; it includes both steps in one transaction. No separate backfill script is needed for this release. Codex has not run it against hosted.
+
+- Future workspaces receive all seven starters, ordered General, Website, Care, Visibility, Audit, Monthly marketing, Social media. All generic quotes are empty.
+- Existing MarketFresh workspace 1 gets only `social-media-management`, and only if its starter key is absent. The six existing starters, the old sample, proposals and versions are untouched. Re-running keeps an existing or edited Social starter unchanged.
+- The four products resolve from current catalog JSON by SKU: `social-starter-595`, `social-growth-995`, `social-pro-1650`, `social-premium-2200`. Their actual UUIDs, amounts, sub-lines, provider mapping and terms are copied. Growth is the only default selection in one choose-one group. No prices/products are manufactured from SKU names.
+- Read the SQL notices: they report each SKU/ID and the insert count. Missing, inactive, legacy or duplicated matches leave the entire quote empty and report the problem. If that happens, correct the catalog and use the existing Super-admin **Reset to starter** flow after reviewing/copying the saved template; rerunning an insert-only migration deliberately does not overwrite it.
+- MarketFresh alone receives the approved platform/add-on/minimum/approval bracket fills. The remaining guidance stays and prevents sending until staff handle it. The template remains a read-only library starter, with normal Make a copy and Reset behavior.
+
+The checked-in payloads are reproducible with `node --import tsx scripts/build-starter-migration.ts`. The historical branding updater skips the new starter, which has no old cover snapshot. The original six have not been regenerated or rewritten in place; their historical assertions remain covered.
+
+## Historical six-starter rollout (already applied)
+
 
 Two steps are required on the hosted project. Codex has not run either against hosted data.
 
