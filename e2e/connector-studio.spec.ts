@@ -1,9 +1,10 @@
+import { connectAssistant } from "./mcp-client";
 import { test, expect, type Page } from "@playwright/test";
 test.use({ actionTimeout: 10000 });
 import { mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { editorFixture } from "./editor-fixture";
-import { staff } from "../tests/helpers";
+import { staff, setup } from "../tests/helpers";
 import {
   writeStudioEntity,
   studioRevision,
@@ -27,6 +28,7 @@ async function fixture(page: Page) {
     {
       ...before,
       name: "Our case studies",
+      signature_heading_defaulted: true,
       connector_created: true,
       active: false,
     },
@@ -229,4 +231,71 @@ test("consent explains the new template permission without approving it silently
     page.getByRole("button", { name: "Allow access" }),
   ).toBeVisible();
   await shot(page, "consent-1440");
+});
+
+test("OAuth MCP creates a hidden template and reads/edits saved copy without touching proposals", async ({
+  request,
+}) => {
+  const headers = { Authorization: "Bearer e2e-staff-secret-only" };
+  const settings = await (
+    await request.get("/api/workspace_settings", { headers })
+  ).json();
+  if (!settings.length) {
+    const seed = await setup();
+    const saved = await request.post("/api/workspace_settings", {
+      headers,
+      data: { ...seed.settings, company_signatory: null },
+    });
+    expect(saved.ok(), await saved.text()).toBe(true);
+  }
+  const before = await (
+    await request.get("/api/proposals", { headers })
+  ).json();
+  const call = await connectAssistant(
+    request,
+    headers,
+    "proposals:read proposals:draft templates:edit",
+  );
+  const template = await call("create_template", {
+    name: "Connector integration template",
+    content: "# Case studies\n\nOur work for {{client.company}}.",
+  });
+  expect(template.available_for_new_proposals).toBe(false);
+  const read = await call("get_template", {
+    template_id: template.template_id,
+  });
+  expect(read.active).toBe(false);
+  expect(read.revision).toBe(template.revision);
+  const copy = await call("duplicate_template", {
+    template_id: template.template_id,
+    name: "Connector integration copy",
+  });
+  expect(copy.available_for_new_proposals).toBe(false);
+  const block = await call("create_saved_block", {
+    name: "Connector integration block",
+    type: "text",
+    content: "A **case study** for {{client.company}}.",
+  });
+  const loaded = await call("get_saved_block", {
+    saved_block_id: block.saved_block_id,
+  });
+  expect(loaded.content).toBe("A **case study** for {{client.company}}.");
+  const edited = await call("update_saved_block", {
+    saved_block_id: block.saved_block_id,
+    revision: loaded.revision,
+    content: "Our **updated** case study.",
+  });
+  expect(edited.revision).not.toBe(loaded.revision);
+  expect(
+    (await call("get_saved_block", { saved_block_id: block.saved_block_id }))
+      .content,
+  ).toContain("updated");
+  expect(
+    (await call("list_saved_blocks", {})).some(
+      (b: any) => b.saved_block_id === block.saved_block_id,
+    ),
+  ).toBe(true);
+  expect(
+    await (await request.get("/api/proposals", { headers })).json(),
+  ).toEqual(before);
 });

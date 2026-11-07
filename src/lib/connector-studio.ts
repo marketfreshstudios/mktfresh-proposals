@@ -1,3 +1,5 @@
+import { validateStyles } from "./studio";
+import { withSignatureHeadings } from "./signature-headings";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -228,9 +230,15 @@ export function connectorCover(
       };
       elements.push(element);
     }
-    if (!element.content || coverPlainText(element.content) !== line)
+    const currentText = element.content
+      ? coverPlainText(element.content)
+      : element.kind === "title"
+        ? "{{proposal.title}}"
+        : "";
+    if (currentText !== line) {
       element.content = fieldNodes(coverText(line));
-    element.hidden = false;
+      element.hidden = false;
+    }
     if (["workspace", "eyebrow", "byline", "prepared_for"].includes(key))
       (value as any)[key] = line;
   }
@@ -262,7 +270,9 @@ export function savedBlockView(row: SavedBlock) {
       row.block.type === "contract"
         ? { clauses: row.block.clauses ?? [] }
         : richMarkdown(row.block.content) || row.block.text || "",
-    block: !editable ? row.block : undefined,
+    ...(!editable
+      ? { reason: "This block type is read-only to the connector" }
+      : {}),
   };
 }
 export function richMarkdown(node: RichText | undefined): string {
@@ -362,6 +372,29 @@ export function connectorSavedContent(
         : "Bulleted list",
   );
 }
+async function validatedTemplate(repo: Repository, value: Template) {
+  const parsed = TemplateInputSchema.parse(value);
+  reviewBlocks(parsed.content as Block[], false);
+  await validateStyles(
+    repo,
+    (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
+    parsed.style_overrides,
+  );
+  const allowed = await connectorFields(
+    repo,
+    templateAuthoringItems(
+      parsed as Template,
+      await repo.entities<Item>("pricing_items"),
+    ),
+  );
+  validateConnectorFields(
+    [parsed.content, parsed.cover, parsed.default_items],
+    allowed,
+  );
+  const result = parsed as Template;
+  if (value.header_footer === undefined) delete result.header_footer;
+  return result;
+}
 export async function connectorStudioTool(
   repo: Repository,
   actor: Actor,
@@ -375,9 +408,10 @@ export async function connectorStudioTool(
 ) {
   const catalog = await repo.entities<Item>("pricing_items");
   if (name === "list_saved_blocks")
-    return (await repo.entities<SavedBlock>("content_library")).map(
-      savedBlockView,
-    );
+    return (await repo.entities<SavedBlock>("content_library")).map((row) => {
+      const { content: _content, ...summary } = savedBlockView(row);
+      return summary;
+    });
   if (name === "get_saved_block") {
     const row = (await repo.entities<SavedBlock>("content_library")).find(
       (r) => r.id === input.saved_block_id,
@@ -469,10 +503,20 @@ export async function connectorStudioTool(
     delete after.starter_key;
     delete after.starter_order;
     delete after.pagination;
-    return writeStudioEntity(repo, "templates", null, after, actor, {
-      connector: true,
-      type: "connector_template_created",
-    });
+    if (!after.signature_heading_defaulted)
+      after.content = withSignatureHeadings(after.content);
+    after.signature_heading_defaulted = true;
+    return writeStudioEntity(
+      repo,
+      "templates",
+      null,
+      await validatedTemplate(repo, after),
+      actor,
+      {
+        connector: true,
+        type: "connector_template_created",
+      },
+    );
   }
   if (name === "create_template") {
     const quote = prepareQuote(input.default_quote_items ?? [], catalog, true),
@@ -484,15 +528,23 @@ export async function connectorStudioTool(
       description: input.description,
       active: false,
       connector_created: true,
+      signature_heading_defaulted: true,
       content: contentAfterCover(connectorMarkdown(input.content, allowed)),
       cover: connectorCover(undefined, input.cover, allowed),
       default_quote: [],
       default_items: quote,
     });
-    return writeStudioEntity(repo, "templates", null, value, actor, {
-      connector: true,
-      type: "connector_template_created",
-    });
+    return writeStudioEntity(
+      repo,
+      "templates",
+      null,
+      await validatedTemplate(repo, value as Template),
+      actor,
+      {
+        connector: true,
+        type: "connector_template_created",
+      },
+    );
   }
   if (name === "update_template") {
     const before = (await repo.entities<Template>("templates")).find(
@@ -531,6 +583,9 @@ export async function connectorStudioTool(
         ? {}
         : { content: replaceTemplateContent!(input.content, before, allowed) }),
     };
+    if (!after.signature_heading_defaulted)
+      after.content = withSignatureHeadings(after.content);
+    after.signature_heading_defaulted = true;
     // Cached page plans describe the old content; the existing editor recomputes them.
     if (
       input.content !== undefined ||
@@ -538,11 +593,18 @@ export async function connectorStudioTool(
       input.default_quote_items !== undefined
     )
       delete after.pagination;
-    return writeStudioEntity(repo, "templates", before, after, actor, {
-      connector: true,
-      type: "connector_template_updated",
-      revision: input.revision,
-    });
+    return writeStudioEntity(
+      repo,
+      "templates",
+      before,
+      await validatedTemplate(repo, after),
+      actor,
+      {
+        connector: true,
+        type: "connector_template_updated",
+        revision: input.revision,
+      },
+    );
   }
   throw new Error("Unsupported Studio connector tool");
 }

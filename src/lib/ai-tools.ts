@@ -126,7 +126,10 @@ export const toolDefinitions = Object.entries(schemas).map(
     description:
       connectorStudioDescriptions[name] ??
       `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name === "list_catalog" ? "list products" : name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send. Markdown # starts a section (Heading 1); ## and ### are subheadings within that section." : "Read only."}`,
-    inputSchema: z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
+    inputSchema: {
+      type: "object",
+      ...z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
+    },
     annotations: {
       readOnlyHint:
         (!(WRITE_TOOLS as readonly string[]).includes(name) &&
@@ -190,6 +193,20 @@ export async function aiTool(
   const input = schemas[name].parse(raw) as any;
   if (name in connectorStudioSchemas) {
     const value = await connectorStudioTool(repo, actor, name, input);
+    if (["create_saved_block", "update_saved_block"].includes(name)) {
+      const row = value as {
+        saved_block_id: string;
+        name: string;
+        type: string;
+        revision: string;
+      };
+      return {
+        saved_block_id: row.saved_block_id,
+        name: row.name,
+        type: row.type,
+        revision: row.revision,
+      };
+    }
     return name === "create_template" || name === "duplicate_template"
       ? {
           template_id: (value as any).id,

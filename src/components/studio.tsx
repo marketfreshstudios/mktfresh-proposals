@@ -859,10 +859,19 @@ function TemplatesStudioContent({
   const templateFlight = useRef<Promise<boolean> | null>(null),
     allowLeave = useRef(false);
   const serialise = (value: unknown) =>
-    JSON.stringify(value, (key, v) =>
-      ["pagination", "revision", "connector_restore_event_id"].includes(key)
-        ? undefined
-        : v,
+    JSON.stringify(
+      value && typeof value === "object"
+        ? Object.fromEntries(
+            Object.entries(value).filter(
+              ([key]) =>
+                ![
+                  "pagination",
+                  "revision",
+                  "connector_restore_event_id",
+                ].includes(key),
+            ),
+          )
+        : value,
     );
   const studioRevisions = useRef(
     new Map<string, string | undefined>([

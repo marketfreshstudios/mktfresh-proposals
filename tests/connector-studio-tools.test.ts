@@ -366,3 +366,29 @@ it("template metadata merges, quotes replace exactly, and starters refuse writes
     }),
   ).rejects.toThrow();
 });
+it("all published tool definitions are valid MCP schemas, including backward-compatible template IDs", async () => {
+  const { toolDefinitions, aiTool } = await import("../src/lib/ai-tools"),
+    { ToolSchema } = await import("@modelcontextprotocol/sdk/types.js");
+  for (const tool of toolDefinitions)
+    expect(() => ToolSchema.parse(tool)).not.toThrow();
+  const f = await setup(),
+    ai = actor(f.repo.workspaceId),
+    scopes = ["proposals:read"],
+    id = f.draft.template_id;
+  const original: any = await aiTool(
+      f.repo,
+      ai,
+      "get_template",
+      { id },
+      scopes,
+    ),
+    alias: any = await aiTool(
+      f.repo,
+      ai,
+      "get_template",
+      { template_id: id },
+      scopes,
+    );
+  expect(alias).toEqual(original);
+  expect(original.revision).toMatch(/^[a-f0-9]{64}$/);
+});
