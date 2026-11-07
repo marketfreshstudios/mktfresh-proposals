@@ -1,4 +1,6 @@
 "use client";
+import { StarterCardMenu } from "./starter-library";
+import type { Template } from "../lib/model";
 import { studioDate, templateUsage } from "../lib/studio-v3";
 import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
@@ -34,6 +36,11 @@ export function StudioTemplateList({
   data: Data;
   blocks?: boolean;
 }) {
+  const [templates, setTemplates] = useState(data.templates);
+  useEffect(() => setTemplates(data.templates), [data.templates]);
+  const refreshTemplates = async () => {
+    setTemplates(await api<Template[]>("/api/templates"));
+  };
   const [query, setQuery] = useState(""),
     [type, setType] = useState("All"),
     [error, setError] = useState(""),
@@ -115,7 +122,7 @@ export function StudioTemplateList({
             aria-current={!blocks ? "page" : undefined}
             href="/studio/templates"
           >
-            Templates · {data.templates.length}
+            Templates · {templates.length}
           </a>
           <a
             aria-current={blocks ? "page" : undefined}
@@ -143,8 +150,8 @@ export function StudioTemplateList({
       )}
       {!blocks ? (
         <>
-          <TemplateWarnings templates={data.templates} catalog={data.catalog} />
-          {data.templates.some((t) => t.starter_key) && (
+          <TemplateWarnings templates={templates} catalog={data.catalog} />
+          {templates.some((t) => t.starter_key) && (
             <p className="muted">
               Starter terms are a starting point, not legal advice. Have an
               attorney review them before you use them.
@@ -152,59 +159,87 @@ export function StudioTemplateList({
           )}
           <style>{fontCss(data.settings)}</style>
           <div className="studio-template-grid">
-            {[...data.templates]
+            {[...templates]
               .sort(
                 (a, b) => (a.starter_order ?? 999) - (b.starter_order ?? 999),
               )
               .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
               .map((t) => (
-                <a
-                  className="studio-template-card"
-                  key={t.id}
-                  href={`/studio/templates/${t.id}`}
-                >
-                  <div
-                    className="template-thumbnail proposal-typography"
-                    aria-hidden="true"
+                <div className="studio-template-card-shell" key={t.id}>
+                  <a
+                    href={`/studio/templates/${t.id}`}
+                    className="studio-template-card"
                   >
-                    <small>{data.settings?.company_name}</small>
-                    <strong>{t.name}</strong>
-                    <span>Prepared for your client</span>
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <div>
-                    <strong>{t.name}</strong>
-                    {t.description && <p>{t.description}</p>}
-                    {!t.active && (
-                      <span className="studio-hidden-pill">
-                        Hidden from new proposals
-                      </span>
-                    )}
-                    <small>
-                      {
-                        t.content.filter(
+                    <div
+                      className="template-thumbnail proposal-typography"
+                      aria-hidden="true"
+                    >
+                      <small>{data.settings?.company_name}</small>
+                      <strong>{t.name}</strong>
+                      <span>Prepared for your client</span>
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                    <div>
+                      <strong>{t.name}</strong>
+                      {t.starter_key && (
+                        <span className="starter-pill">Starter</span>
+                      )}
+                      {t.source_starter_key && (
+                        <p className="starter-source">
+                          Based on{" "}
+                          {t.source_starter_name ??
+                            templates.find(
+                              (s) => s.starter_key === t.source_starter_key,
+                            )?.name ??
+                            t.source_starter_key}
+                        </p>
+                      )}
+                      {t.description && <p>{t.description}</p>}
+                      {!t.active && (
+                        <span className="studio-hidden-pill">
+                          Hidden from new proposals
+                        </span>
+                      )}
+                      <small>
+                        {
+                          t.content.filter(
+                            (b) => b.type === "heading" && (b.level ?? 1) === 1,
+                          ).length
+                        }{" "}
+                        {t.content.filter(
                           (b) => b.type === "heading" && (b.level ?? 1) === 1,
-                        ).length
-                      }{" "}
-                      {t.content.filter(
-                        (b) => b.type === "heading" && (b.level ?? 1) === 1,
-                      ).length === 1
-                        ? "section"
-                        : "sections"}{" "}
-                      ·{" "}
-                      {templateUsage(
-                        data.proposals.filter((p) => p.template_id === t.id)
-                          .length,
-                      )}{" "}
-                      · {lastEdit(t.id)}
-                    </small>
-                  </div>
-                </a>
+                        ).length === 1
+                          ? "section"
+                          : "sections"}{" "}
+                        ·{" "}
+                        {templateUsage(
+                          data.proposals.filter((p) => p.template_id === t.id)
+                            .length,
+                        )}{" "}
+                        ·{" "}
+                        {t.starter_key
+                          ? t.starter_edited
+                            ? edited(t.id)
+                              ? lastEdit(t.id)
+                              : "Edited"
+                            : "Default"
+                          : lastEdit(t.id)}
+                      </small>
+                    </div>
+                  </a>
+                  {t.starter_key && (
+                    <StarterCardMenu
+                      template={t}
+                      owner={data.user.staff_role === "owner"}
+                      onChanged={refreshTemplates}
+                    />
+                  )}
+                </div>
               ))}
           </div>
-          {!data.templates.length && (
+          {!templates.length && (
             <Empty
               title="Create your first template"
               action={<Button onClick={create}>New template</Button>}
