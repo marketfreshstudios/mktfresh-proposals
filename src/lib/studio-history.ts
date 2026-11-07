@@ -28,6 +28,18 @@ export const mayRestore = (event: Audit, actor: Actor) =>
   actor.actor.startsWith("staff:") &&
   (actor.staff_role === "owner" ||
     event.metadata.editor_user_id === actor.actor.slice(6));
+export function assertStudioRevision(
+  table: StudioEntityTable,
+  before: { id: string },
+  expected: string | undefined,
+) {
+  if (expected !== undefined)
+    check(
+      studioRevision(before) === expected,
+      `409: ${table === "templates" ? "Template" : "Saved block"} changed. Call ${table === "templates" ? "get_template" : "get_saved_block"} again, merge your edits, then retry with its revision.`,
+      409,
+    );
+}
 export async function writeStudioEntity<T extends { id: string }>(
   repo: Repository,
   table: StudioEntityTable,
@@ -36,12 +48,7 @@ export async function writeStudioEntity<T extends { id: string }>(
   actor: Actor,
   options: { type?: string; revision?: string; connector?: boolean } = {},
 ) {
-  if (before && options.revision !== undefined)
-    check(
-      studioRevision(before) === options.revision,
-      `409: ${table === "templates" ? "Template" : "Saved block"} changed. Call ${table === "templates" ? "get_template" : "get_saved_block"} again, merge your edits, then retry with its revision.`,
-      409,
-    );
+  if (before) assertStudioRevision(table, before, options.revision);
   const value = storedStudioEntity(after);
   const events = options.connector
     ? await repo.entities<Audit>("workspace_events")

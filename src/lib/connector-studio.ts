@@ -1,3 +1,9 @@
+import {
+  templateMarkdown,
+  templateMarkdownBlocks,
+  replaceTemplateMarkdown,
+  templateBlockLabel,
+} from "./connector-template-markdown";
 import { validateStyles } from "./studio";
 import { withSignatureHeadings } from "./signature-headings";
 import { randomUUID } from "node:crypto";
@@ -33,6 +39,7 @@ import { templateAuthoringItems } from "./template-quote";
 import { TemplateInputSchema } from "./template-library";
 import {
   studioRevision,
+  assertStudioRevision,
   storedStudioEntity,
   writeStudioEntity,
 } from "./studio-history";
@@ -73,6 +80,7 @@ export const connectorStudioSchemas = {
       content: text.optional(),
       cover: cover.optional(),
       default_quote_items: items.optional(),
+      remove_blocks: z.array(z.string().min(1).max(200)).max(300).optional(),
     })
     .strict(),
   duplicate_template: z.object({ template_id: id, name }).strict(),
@@ -98,11 +106,19 @@ export const CONNECTOR_STUDIO_WRITES = [
   "create_saved_block",
   "update_saved_block",
 ];
+const markerRules =
+  "Each <!-- yeswell:block:ID --> is an opaque id only, never block JSON. A marker alone preserves the entire block. Keep it exactly once on its own line, with any edited Markdown immediately after it; move the marker with its text to move that block. Object markers move their preserved blocks without echoing their data. Unknown, duplicated or edited markers are rejected. A missing ordinary text/list/heading/image/divider marker removes that block. A missing pricing_table, signature_block, contract or page_break marker is REFUSED unless its id is explicitly listed in update_template remove_blocks: [ids]; also omit the marker when removing. Newly inserted ordinary Markdown needs no marker. ";
 export const connectorStudioDescriptions: Record<string, string> = {
   create_template:
     "Create a hidden template for human review. content is proposal Markdown: # section, ##/### subheads, paragraphs, bold/italic and flat lists. cover maps line IDs (eyebrow, title, prepared_for, byline, date, validity) to text with valid fields. default_quote_items uses set_quote_lines items/sublines; supply exact provided or list_catalog amounts, never invent or calculate prices. Requires templates:edit; reconnect to grant it.",
+  get_template:
+    "Read a template as content Markdown with preservation markers, cover text keyed by stored line id, default_quote_items, revision and a block-id/type summary. Implicit cover title inherits proposal.title and is omitted from cover. Starters are read-only: duplicate_template first. " +
+    markerRules +
+    "Read-only metadata (active, starter_key, blocks) is not an update argument. Use the returned revision when writing.",
   update_template:
-    "Update a non-starter template using the latest get_template revision; a concurrent edit returns 409: read again, merge and retry. Provided content and default_quote_items replace those fields completely; cover merges only supplied text lines, retaining layout, images and other lines. Omitted fields remain unchanged. A previous state is retained for staff Restore. Starters are read-only: duplicate_template first. Availability cannot be changed. Requires templates:edit.",
+    "Update a non-starter template using the latest get_template revision; on 409 read again, merge and retry. Provided content replaces the body subject to marker/removal guards; provided default_quote_items replace the quote; cover merges only supplied text lines, retaining images/layout/spacing. Omitted fields remain unchanged. " +
+    markerRules +
+    "remove_blocks requires content. Edited text supports the same Markdown as proposals; unchanged marked blocks keep their exact rich data. Staff can Restore previous version. Starters are read-only: duplicate_template first. Availability is human-only. Supply agreed or exact list_catalog amounts, never invent/calculate prices. Requires templates:edit.",
   duplicate_template:
     "Copy any template, including a read-only Yeswell starter, into a hidden editable template. Use this before customizing a starter. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
   create_saved_block:
@@ -114,6 +130,34 @@ export const connectorStudioDescriptions: Record<string, string> = {
   get_saved_block:
     "Read a saved block's name, type, revision and content in the shape update_saved_block accepts. Contract clauses remain plain text. Image and other fixed block types are read-only to the connector.",
 };
+export function connectorTemplateView(template: Template, catalog: Item[]) {
+  const value = template.cover;
+  const cover = value
+    ? Object.fromEntries(
+        coverElements(value, "")
+          .filter((e) => e.kind !== "logo" && e.content)
+          .map((e) => [e.id, coverPlainText(e.content!)]),
+      )
+    : {};
+  return {
+    template_id: template.id,
+    id: template.id,
+    revision: studioRevision(template),
+    name: template.name,
+    description: template.description,
+    content: templateMarkdown(template),
+    cover,
+    default_quote_items: templateAuthoringItems(template, catalog),
+    active: template.active,
+    starter_key: template.starter_key,
+    blocks: templateMarkdownBlocks(template).map((row) => ({
+      id: row.id,
+      type: row.block.type,
+      label: templateBlockLabel(row.block),
+      requires_remove_blocks: row.protected,
+    })),
+  };
+}
 export type SavedBlock = { id: string; name: string; block: Block };
 export async function connectorFields(
   repo: Repository,
@@ -190,12 +234,13 @@ export function connectorCover(
   patch: Record<string, string> | undefined,
   allowed: string[],
 ) {
-  const value = structuredClone(loadedCover(previous ?? defaultCover(true)));
+  const value = structuredClone(previous ?? defaultCover(true));
   if (!patch) return value;
   validateConnectorFields(patch, allowed);
   const elements = coverElements(value, "{{proposal.title}}").map((e) => ({
     ...e,
   }));
+  let changed = false;
   for (const [key, line] of Object.entries(patch)) {
     const meta = (
       {
@@ -205,8 +250,8 @@ export function connectorCover(
       } as Record<string, string>
     )[key];
     let element =
-      (meta ? elements.find((e) => e.meta === meta) : undefined) ??
-      elements.find((e) => e.id === key && e.kind !== "logo");
+      elements.find((e) => e.id === key && e.kind !== "logo") ??
+      (meta ? elements.find((e) => e.meta === meta) : undefined);
     if (!element) {
       check(
         [
@@ -230,19 +275,19 @@ export function connectorCover(
       };
       elements.push(element);
     }
-    const currentText = element.content
-      ? coverPlainText(element.content)
-      : element.kind === "title"
-        ? "{{proposal.title}}"
-        : "";
-    if (currentText !== line) {
+    const currentText = element.content ? coverPlainText(element.content) : "";
+    if (!element.content || currentText !== line) {
+      changed = true;
       element.content = fieldNodes(coverText(line));
       element.hidden = false;
+      if (
+        element.kind === key &&
+        ["workspace", "eyebrow", "byline", "prepared_for"].includes(key)
+      )
+        (value as any)[key] = line;
     }
-    if (["workspace", "eyebrow", "byline", "prepared_for"].includes(key))
-      (value as any)[key] = line;
   }
-  value.elements = elements;
+  if (changed) value.elements = elements;
   return value;
 }
 export function savedBlockView(row: SavedBlock) {
@@ -400,11 +445,6 @@ export async function connectorStudioTool(
   actor: Actor,
   name: string,
   input: any,
-  replaceTemplateContent?: (
-    markdown: string,
-    before: Template,
-    allowed: string[],
-  ) => Block[],
 ) {
   const catalog = await repo.entities<Item>("pricing_items");
   if (name === "list_saved_blocks")
@@ -426,8 +466,10 @@ export async function connectorStudioTool(
             (r) => r.id === input.saved_block_id,
           )
         : undefined;
-    if (name === "update_saved_block")
+    if (name === "update_saved_block") {
       check(before, "Saved block not found", 404);
+      assertStudioRevision("content_library", before, input.revision);
+    }
     const type =
       input.type ??
       (before?.block.type === "contract"
@@ -557,6 +599,7 @@ export async function connectorStudioTool(
       "Yeswell starters are read-only. Call duplicate_template first, then update the new template.",
       403,
     );
+    assertStudioRevision("templates", before, input.revision);
     const quote =
       input.default_quote_items === undefined
         ? templateAuthoringItems(before, catalog)
@@ -564,9 +607,8 @@ export async function connectorStudioTool(
     const allowed = await connectorFields(repo, quote);
     validateConnectorFields(input, allowed);
     check(
-      input.content === undefined || replaceTemplateContent,
-      "Lossless template content replacement is not configured",
-      400,
+      input.remove_blocks === undefined || input.content !== undefined,
+      "remove_blocks requires content: supply the edited Markdown with those markers omitted",
     );
     const after: Template = {
       ...before,
@@ -574,17 +616,30 @@ export async function connectorStudioTool(
       ...(input.description === undefined
         ? {}
         : { description: input.description }),
-      ...(input.cover === undefined
+      ...(input.cover === undefined || !Object.keys(input.cover).length
         ? {}
-        : { cover: connectorCover(before.cover, input.cover, allowed) }),
+        : {
+            cover: connectorCover(
+              before.cover ?? loadedCover(undefined),
+              input.cover,
+              allowed,
+            ),
+          }),
       ...(input.default_quote_items === undefined
         ? {}
         : { default_items: quote, default_quote: [] }),
       ...(input.content === undefined
         ? {}
-        : { content: replaceTemplateContent!(input.content, before, allowed) }),
+        : {
+            content: replaceTemplateMarkdown(
+              input.content,
+              before,
+              input.remove_blocks ?? [],
+              (md) => connectorMarkdown(md, allowed),
+            ),
+          }),
     };
-    if (!after.signature_heading_defaulted)
+    if (!after.signature_heading_defaulted && input.content === undefined)
       after.content = withSignatureHeadings(after.content);
     after.signature_heading_defaulted = true;
     // Cached page plans describe the old content; the existing editor recomputes them.

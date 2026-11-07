@@ -1,9 +1,9 @@
-import { studioRevision } from "./studio-history";
 import {
   connectorStudioSchemas,
   connectorStudioDescriptions,
   CONNECTOR_STUDIO_WRITES,
   connectorStudioTool,
+  connectorTemplateView,
 } from "./connector-studio";
 import { AddressSchema, PhoneInputSchema, clientView } from "./client-contact";
 import { saveClient } from "./clients";
@@ -54,12 +54,7 @@ export const WRITE_TOOLS = [
 ] as const;
 const id = z.string().uuid();
 const schemas: Record<string, z.ZodType> = {
-  // Existing template-body replacement is wired after its lossless transport is agreed.
-  ...Object.fromEntries(
-    Object.entries(connectorStudioSchemas).filter(
-      ([name]) => name !== "update_template",
-    ),
-  ),
+  ...connectorStudioSchemas,
   search_clients: z.object({ query: z.string().max(200).default("") }),
   get_client: z.object({ id }),
   list_templates: z.object({}),
@@ -207,14 +202,20 @@ export async function aiTool(
         revision: row.revision,
       };
     }
-    return name === "create_template" || name === "duplicate_template"
+    return [
+      "create_template",
+      "duplicate_template",
+      "update_template",
+    ].includes(name)
       ? {
           template_id: (value as any).id,
           name: (value as any).name,
           revision: (value as any).revision,
-          available_for_new_proposals: false,
+          available_for_new_proposals: (value as Template).active,
           message:
-            "Created by Claude — not yet available. A person must review and enable this template in Studio.",
+            name === "update_template"
+              ? "Template updated. Previous state kept for staff Restore; no existing proposal changed."
+              : "Created by Claude — not yet available. A person must review and enable this template in Studio.",
         }
       : value;
   }
@@ -272,7 +273,10 @@ export async function aiTool(
     check(entity, "Not found", 404);
     return name === "get_client"
       ? clientView(entity as Client)
-      : { ...entity, template_id: entity.id, revision: studioRevision(entity) };
+      : connectorTemplateView(
+          entity as Template,
+          await repo.entities<Item>("pricing_items"),
+        );
   }
   if (name === "search_proposals")
     return (await repo.list(input.query)).slice(0, 30).map(proposalView);

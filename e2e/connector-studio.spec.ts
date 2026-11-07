@@ -266,6 +266,23 @@ test("OAuth MCP creates a hidden template and reads/edits saved copy without tou
   });
   expect(read.active).toBe(false);
   expect(read.revision).toBe(template.revision);
+  const updated = await call("update_template", {
+    template_id: template.template_id,
+    revision: read.revision,
+    content: read.content.replace(
+      "Our work for",
+      "Our reviewed case studies for",
+    ),
+    cover: read.cover,
+  });
+  expect(updated.available_for_new_proposals).toBe(false);
+  const changed = await call("get_template", {
+    template_id: template.template_id,
+  });
+  expect(changed.content).toContain("Our reviewed case studies for");
+  expect(changed.content).toContain("<!-- yeswell:block:");
+  expect(changed.cover).toEqual(read.cover);
+
   const copy = await call("duplicate_template", {
     template_id: template.template_id,
     name: "Connector integration copy",

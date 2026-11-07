@@ -123,4 +123,18 @@ Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's
 
 Deployment requires `supabase/migrations/20261107090000_connector_studio_history.sql` **before** deploying the code. It adds a service-role-only compare-and-swap helper, with no data backfill or new table. Snapshots remain in the append-only workspace Activity events; they are not exposed in the Activity API or CSV.
 
-The draft PR's open content-transport decision must be resolved before template body replacement is enabled; ordinary proposal Markdown cannot round-trip pricing, signature, image, page-break and contract blocks. See the PR question.
+### Template read / modify / write
+
+`get_template {template_id}` (legacy `{id}` still works) returns `content` Markdown, `cover` text by stored line ID, `default_quote_items` in the same item/sub-line shape as `set_quote_lines`, and `revision`. It also returns read-only name/availability/starter metadata and a compact `blocks` inventory with IDs, labels and `requires_remove_blocks`.
+
+Call `update_template {template_id, revision, name?, description?, content?, cover?, default_quote_items?, remove_blocks?}`. Provided Markdown and quote items replace those fields; cover text merges only supplied lines. Omitted fields remain unchanged. Do not send read-only metadata as update arguments. New and duplicated templates remain hidden until staff enable them; updating an available template keeps its availability.
+
+Every existing block has one opaque `<!-- yeswell:block:ID -->` on its own line. Never edit or invent IDs, duplicate markers or put block JSON in Markdown. A marker alone preserves the complete block. To edit ordinary text, put the replacement proposal Markdown immediately after its marker. To move a block, move its marker and associated text together; marker-only objects move as a whole. Unchanged marked blocks keep their exact rich data. New ordinary Markdown may be added without a marker. Legacy blocks without safe unique IDs receive stable opaque aliases for this revision; use the IDs returned by this read.
+
+Omitting a text/list/heading/image/divider marker removes that block. Omitting a pricing table, signature, contract or page break **fails** unless its ID is explicitly included in `remove_blocks: ["ID"]`, alongside `content` with that marker omitted. Keeping a marker while listing it for removal also fails. Unknown/duplicate IDs fail before anything is saved. Example:
+
+```json
+{"template_id":"TEMPLATE_UUID","revision":"REVISION_FROM_GET","content":"EDITED_MARKDOWN_WITH_THE_PAGE_BREAK_MARKER_OMITTED","remove_blocks":["PAGE_BREAK_ID_FROM_GET"]}
+```
+
+Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.
