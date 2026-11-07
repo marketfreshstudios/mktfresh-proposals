@@ -12,7 +12,7 @@ import { defaultTemplateBands } from "../src/lib/page-bands";
 import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
 
-export const starterOrder = [6, 1, 2, 3, 4, 5];
+export const starterOrder = [6, 1, 2, 3, 4, 5, 7];
 export function starterId(workspace: string, key: string) {
   const hash = createHash("md5").update(`${workspace}:${key}`).digest("hex");
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-8${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
@@ -28,7 +28,7 @@ export const paymentPlanClause = {
   },
   draft: true,
 };
-const starterProducts: Record<number, { sku: string; seed: number }[]> = {
+const starterProducts: Record<number, { sku: string; seed?: number }[]> = {
   1: [
     { sku: "build", seed: 101 },
     { sku: "oiot-monthly-175", seed: 103 },
@@ -44,14 +44,23 @@ const starterProducts: Record<number, { sku: string; seed: number }[]> = {
     { sku: "retainer-growth-495", seed: 110 },
   ],
   4: [{ sku: "audit", seed: 100 }],
+  7: [
+    { sku: "social-starter-595" },
+    { sku: "social-growth-995" },
+    { sku: "social-pro-1650" },
+    { sku: "social-premium-2200" },
+  ],
 };
 /** SKU is authoritative, including inactive matches. IDs support older seeded catalogs. */
 export function starterCatalogProducts(number: number, catalog: Item[]) {
   return (starterProducts[number] ?? []).map(({ sku, seed }) => {
-    const fallback = `00000000-0000-4000-8000-${String(seed).padStart(12, "0")}`;
+    const fallback =
+      seed === undefined
+        ? undefined
+        : `00000000-0000-4000-8000-${String(seed).padStart(12, "0")}`;
     const item =
       catalog.find((i) => i.sku === sku) ??
-      catalog.find((i) => i.id === fallback);
+      (seed === undefined ? undefined : catalog.find((i) => i.id === fallback));
     return {
       sku,
       item,
@@ -83,9 +92,17 @@ export function starterTemplates(
       align: "left",
       ...(text === undefined ? {} : { content: fieldNodes(coverText(text)) }),
     });
+    const markdown =
+      options.marketfresh && number === 7
+        ? source.markdown
+            .replaceAll("[Facebook and Instagram]", "Facebook and Instagram")
+            .replaceAll("[$200]", "$200")
+            .replaceAll("[$75–150]", "$75–150")
+            .replaceAll("[3]", "3")
+        : source.markdown;
     const blocks = markdownBlocks(
-      source.markdown,
-      [...source.markdown.matchAll(/{{([^}]+)}}/g)].map((m) => m[1]),
+      markdown,
+      [...markdown.matchAll(/{{([^}]+)}}/g)].map((m) => m[1]),
     );
     const content: Block[] = [{ type: "page_break" }];
     for (const block of blocks) {
@@ -153,8 +170,16 @@ export function starterTemplates(
               (s) => s.interval !== "one_time",
             );
           const choice =
-            (number === 1 && index < 2) || number === 2 || number === 3;
-          const checked = number === 1 ? index === 0 : number === 4;
+            (number === 1 && index < 2) ||
+            number === 2 ||
+            number === 3 ||
+            number === 7;
+          const checked =
+            number === 1
+              ? index === 0
+              : number === 7
+                ? index === 1
+                : number === 4;
           return {
             ...quote,
             optional: choice || (number === 1 && index === 2),

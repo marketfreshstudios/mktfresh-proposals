@@ -34,7 +34,7 @@ it("hosted SKUs resolve UUID products, correct groups/defaults, and the live 4.4
   const { catalog } = await hostedCatalog();
   const templates = starterTemplates(workspace, { marketfresh: true, catalog });
   expect(templates.map((t) => t.default_items!.length)).toEqual([
-    0, 3, 3, 2, 1, 0,
+    0, 3, 3, 2, 1, 0, 0,
   ]);
   expect(
     templates[1].default_items!.map(
@@ -135,7 +135,7 @@ it("SKU takes priority over a stale seed row; missing or inactive members leave 
     starterTemplates(workspace, { marketfresh: true, catalog: seed }).map(
       (t) => t.default_items!.length,
     ),
-  ).toEqual([0, 3, 3, 2, 1, 0]);
+  ).toEqual([0, 3, 3, 2, 1, 0, 0]);
 });
 it("kickoff guidance is directly after the Investment sentence and blocks until staff remove it; no blank quote amounts", async () => {
   const { draft, catalog } = await hostedCatalog();

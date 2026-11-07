@@ -9,12 +9,13 @@ export function starterBrandUpdates(
   catalog: Item[],
   saved: Template[],
 ) {
-  return starterTemplates(workspace, { marketfresh: true, catalog }).map(
-    (after) => {
+  return starterTemplates(workspace, { marketfresh: true, catalog })
+    .filter((t) => t.starter_key! in previousCovers)
+    .map((after) => {
       const before = structuredClone(after);
-      before.cover = structuredClone(
-        previousCovers[after.starter_key as keyof typeof previousCovers],
-      ) as Template["cover"];
+      const oldCover =
+        previousCovers[after.starter_key as keyof typeof previousCovers];
+      before.cover = structuredClone(oldCover) as Template["cover"];
       const previous = structuredClone(before);
       before.header_footer = oldBands as Template["header_footer"];
       delete before.cover!.logo_mode;
@@ -45,6 +46,5 @@ export function starterBrandUpdates(
               ? "unchanged — already updated"
               : "edited — kept",
       };
-    },
-  );
+    });
 }

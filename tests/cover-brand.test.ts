@@ -84,7 +84,7 @@ it("opt-in updates only complete unchanged starter seeds and preserves every oth
   const current = starterTemplates(f.repo.workspaceId, {
     marketfresh: true,
     catalog,
-  });
+  }).filter((t) => t.starter_key! in previousCovers);
   const old = current.map((t) => {
     const v = structuredClone(t);
     v.cover = structuredClone(
