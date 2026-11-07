@@ -185,3 +185,34 @@ it("generic hosted CAS is workspace scoped, append-only and rollback-safe for bo
     await db.close();
   }
 });
+it("concurrent connector writes have one winner and keep exactly its previous state", async () => {
+  const f = await setup(),
+    before = (await f.repo.entities<Template>("templates"))[0];
+  const results = await Promise.allSettled(
+    ["First", "Second"].map((name) =>
+      writeStudioEntity(
+        f.repo,
+        "templates",
+        before,
+        { ...before, name },
+        ai(f.repo.workspaceId),
+        {
+          connector: true,
+          type: "connector_template_updated",
+          revision: studioRevision(before),
+        },
+      ),
+    ),
+  );
+  expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+  expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+  const failed = results.find(
+    (r) => r.status === "rejected",
+  ) as PromiseRejectedResult;
+  expect(failed.reason.status).toBe(409);
+  const events = (await f.repo.entities<Audit>("workspace_events")).filter(
+    (e) => e.type === "connector_template_updated",
+  );
+  expect(events).toHaveLength(1);
+  expect(events[0].metadata.before).toEqual(before);
+});
