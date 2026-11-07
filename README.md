@@ -6,6 +6,8 @@ Branding, client attribution and the unchanged domain plan are documented in [Ye
 
 Studio shell, lists, Workspace autosave and the Phase 1 scope decisions are documented in [Studio v3](docs/studio-v3-phase1.md). Existing template, saved-block and email editors remain in use for the next redesign PRs.
 
+Connector template access and its required pre-deploy SQL helper are documented in [AI connector](docs/ai-connector.md). Existing proposal-only grants require re-consent for template writes.
+
 ## Local development
 
 Requires Node 24 and npm. Docker is only needed for Supabase integration verification.

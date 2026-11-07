@@ -197,10 +197,16 @@ export function StudioTemplateList({
                         </p>
                       )}
                       {t.description && <p>{t.description}</p>}
-                      {!t.active && (
+                      {t.connector_created && !t.active ? (
                         <span className="studio-hidden-pill">
-                          Hidden from new proposals
+                          Created by Claude — not yet available
                         </span>
+                      ) : (
+                        !t.active && (
+                          <span className="studio-hidden-pill">
+                            Hidden from new proposals
+                          </span>
+                        )
                       )}
                       <small>
                         {
@@ -229,7 +235,7 @@ export function StudioTemplateList({
                       </small>
                     </div>
                   </a>
-                  {t.starter_key && (
+                  {(t.starter_key || t.connector_restore_event_id) && (
                     <StarterCardMenu
                       template={t}
                       owner={data.user.staff_role === "owner"}

@@ -111,3 +111,16 @@ AI tools cannot set Stripe/QuickBooks customer IDs, link/unlink customers, or de
 ### Heading levels and typography
 
 In proposal Markdown, `#` creates Heading 1 and starts a section; `##` and `###` create Heading 2 and 3 within it. Higher Markdown depths are limited to Heading 3. The connector's returned blocks include the numeric `level`. Only Heading 1 defines AI review/outline sections. Typography comes from the template and workspace; staff can override it in the app. Sent versions freeze their resolved styles and signed-content hashes, and connector writes remain draft-only.
+
+
+## Template and saved-block access
+
+Template/saved-block writes require a separate `templates:edit` grant: “Create and edit templates and saved blocks; nothing is sent.” Existing proposal-only connections do not gain this permission through refresh; reconnect and approve it. Read tools still require `proposals:read`. Human sending/signing and the proposal draft-only limit are unchanged.
+
+Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters are read-only: duplicate them before customizing. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog values, never invent or calculate prices. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
+
+Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's plain-text clause bodies. Existing fixed Image blocks are read-only. Each write commits an Activity event atomically with the entity, attributed to Claude and the consenting staff member. Updates retain the full previous state. A Super admin or that recorded editor can Restore while the entity still matches Claude's saved version. Later changes produce a 409, including if a staff save races the Restore. No existing proposal or frozen version changes.
+
+Deployment requires `supabase/migrations/20261107090000_connector_studio_history.sql` **before** deploying the code. It adds a service-role-only compare-and-swap helper, with no data backfill or new table. Snapshots remain in the append-only workspace Activity events; they are not exposed in the Activity API or CSV.
+
+The draft PR's open content-transport decision must be resolved before template body replacement is enabled; ordinary proposal Markdown cannot round-trip pricing, signature, image, page-break and contract blocks. See the PR question.

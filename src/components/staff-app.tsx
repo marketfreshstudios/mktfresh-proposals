@@ -88,7 +88,7 @@ export type Data = {
   catalog: Item[];
   catalog_error?: string;
   templates: Template[];
-  library: { id: string; name: string; block: Block }[];
+  library: { id: string; name: string; block: Block; revision?: string }[];
   families: { id: string; name: string; active: boolean }[];
   documents: ReferenceDocument[];
   assistants: {

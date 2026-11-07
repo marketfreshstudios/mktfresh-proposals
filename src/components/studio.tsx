@@ -1,4 +1,5 @@
 "use client";
+import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
@@ -858,7 +859,17 @@ function TemplatesStudioContent({
   const templateFlight = useRef<Promise<boolean> | null>(null),
     allowLeave = useRef(false);
   const serialise = (value: unknown) =>
-    JSON.stringify(value, (key, v) => (key === "pagination" ? undefined : v));
+    JSON.stringify(value, (key, v) =>
+      ["pagination", "revision", "connector_restore_event_id"].includes(key)
+        ? undefined
+        : v,
+    );
+  const studioRevisions = useRef(
+    new Map<string, string | undefined>([
+      ...data.templates.map((t) => [`templates:${t.id}`, t.revision] as const),
+      ...data.library.map((t) => [`blocks:${t.id}`, t.revision] as const),
+    ]),
+  );
   const savedModels = useRef(
     new Map<string, string>([
       ...data.templates.map(
@@ -1087,11 +1098,19 @@ function TemplatesStudioContent({
           templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
           const result = await post(captured.path, {
             ...captured.value,
+            expected_revision: studioRevisions.current.get(captured.key),
             id: captured.value.id ?? crypto.randomUUID(),
             ...(captured.path === "/api/templates"
               ? { pagination: pagePlan.current }
               : {}),
           });
+          if (result.revision) {
+            studioRevisions.current.set(captured.key, result.revision);
+            studioRevisions.current.set(
+              `${captured.path === "/api/templates" ? "templates" : "blocks"}:${result.id}`,
+              result.revision,
+            );
+          }
           savedModels.current.set(captured.key, serialise(captured.value));
           setTemplateLastSaved(new Date().toISOString());
           if (!templateRecovery)
@@ -1191,6 +1210,14 @@ function TemplatesStudioContent({
     if (new URLSearchParams(location.search).get("preview") === "1")
       setPreviewOpen(true);
   }, []);
+  const connectorRestore = useConnectorRestore(async (value) => {
+    const next = { ...model.current, draft: value };
+    history.record(model.current, next);
+    applyModel(next);
+    studioRevisions.current.set(`templates:${value.id}`, value.revision);
+    savedModels.current.set(`templates:${value.id}`, serialise(value));
+    await run(async () => {});
+  }, saveTemplate);
   async function duplicateSaved() {
     if (!model.current.saved) return;
     const value = model.current.saved,
@@ -1816,6 +1843,7 @@ function TemplatesStudioContent({
           </div>
         )}
         {starterActions.dialogs}
+        {connectorRestore.feedback}
         {templateRecovery && (
           <EditorNotice kind="recovered">
             <span title={templateRecovery.name}>
@@ -2704,6 +2732,19 @@ function TemplatesStudioContent({
                       Available for new proposals
                     </label>
                   )}
+                  {draft?.connector_restore_event_id && (
+                    <Button
+                      disabled={connectorRestore.busy}
+                      onClick={() => {
+                        setTemplateToolsOpen(false);
+                        void connectorRestore.restore(
+                          draft.connector_restore_event_id!,
+                        );
+                      }}
+                    >
+                      Restore previous version
+                    </Button>
+                  )}
                   <Button
                     onClick={() => {
                       setTemplateToolsOpen(false);
@@ -2766,6 +2807,19 @@ function TemplatesStudioContent({
                 />
                 Available for new proposals
               </label>
+            )}
+            {draft?.connector_restore_event_id && (
+              <Button
+                disabled={connectorRestore.busy}
+                onClick={() => {
+                  setMoreAnchor(null);
+                  void connectorRestore.restore(
+                    draft.connector_restore_event_id!,
+                  );
+                }}
+              >
+                Restore previous version
+              </Button>
             )}
           </div>
         </ToolbarPopover>
@@ -3263,8 +3317,9 @@ function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
     <div className="stack">
       <Banner tone="ai" title="You stay in control">
         Assistants can read your reference data, create clients and draft
-        proposals. They cannot send, sign, delete clients, choose the sender or
-        change billing.
+        proposals. With template access, they can create and edit templates and
+        saved blocks. New templates stay hidden for review. They cannot send,
+        sign, delete, choose the sender, change availability or change billing.
       </Banner>
       <h3>Connect or reconnect an assistant</h3>
       <p>
@@ -3272,7 +3327,11 @@ function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
         registration, then sign in and approve its access:
       </p>
       <code className="endpoint">{data.app_url}/mcp</code>
-      <p>Access: proposals:read · proposals:draft</p>
+      <p>Available access: proposals:read · proposals:draft · templates:edit</p>
+      <p>
+        Existing connections must reconnect and approve template access before
+        using the new tools.
+      </p>
       {data.assistants.length ? (
         data.assistants.map((a) => (
           <section className="studio-section" key={a.id}>

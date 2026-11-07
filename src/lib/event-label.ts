@@ -6,6 +6,11 @@ export function eventLabel(
   actorName = "staff",
 ) {
   const labels: Record<string, string> = {
+    connector_template_created: `Claude created ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
+    connector_template_updated: `Claude updated ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
+    connector_saved_block_created: `Claude created ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
+    connector_saved_block_updated: `Claude updated ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
+    connector_change_restored: "Previous version restored",
     email_template_saved: e.metadata.reset
       ? "Email template reset"
       : "Email template updated",
