@@ -56,7 +56,7 @@ async function handler(req: Request) {
       {
         capabilities: { tools: {} },
         instructions:
-          "Starters are read-only: duplicate_template first. Created/duplicated templates are hidden until a person reviews and enables them in Studio. Use supplied prices or exact list_catalog values; never invent or calculate prices. Read get_template/get_saved_block before updating and pass its revision. Keep get_template preservation markers exact and unique; moving a marker moves its block. Missing ordinary markers remove blocks, but pricing, signatures, contracts and page breaks require explicit remove_blocks ids as well as omission. Never put block JSON in Markdown or invent markers. A 409 means reload and merge, never blindly retry. Sending, signing, availability, deletion, Reset and billing are human-only.",
+          "Starters are read-only: duplicate_template first. Created/duplicated templates are hidden until a person reviews and enables them in Studio. Use supplied prices or exact list_catalog values; never invent or calculate prices. Read get_template/get_saved_block before updating and pass its revision. Keep get_template preservation markers exact and unique; moving a marker moves its block. Missing ordinary markers remove blocks, but pricing, signatures, contracts and page breaks require explicit remove_blocks ids as well as omission. Never put block JSON in Markdown or invent markers. Markers are only for update_template, never for proposal Markdown. A 409 means reload and merge, never blindly retry. Sending, signing, availability, deletion, Reset and billing are human-only.",
       },
     );
     server.setRequestHandler(ListToolsRequestSchema, async () => ({

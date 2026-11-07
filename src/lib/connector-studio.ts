@@ -114,7 +114,7 @@ export const connectorStudioDescriptions: Record<string, string> = {
   get_template:
     "Read a template as content Markdown with preservation markers, cover text keyed by stored line id, default_quote_items, revision and a block-id/type summary. Implicit cover title inherits proposal.title and is omitted from cover. Starters are read-only: duplicate_template first. " +
     markerRules +
-    "Read-only metadata (active, starter_key, blocks) is not an update argument. Use the returned revision when writing.",
+    "Read-only metadata (active, starter_key, blocks) is not an update argument. Use the returned revision when writing. Preservation markers are only for update_template, never for proposal Markdown.",
   update_template:
     "Update a non-starter template using the latest get_template revision; on 409 read again, merge and retry. Provided content replaces the body subject to marker/removal guards; provided default_quote_items replace the quote; cover merges only supplied text lines, retaining images/layout/spacing. Omitted fields remain unchanged. " +
     markerRules +

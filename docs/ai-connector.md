@@ -137,4 +137,6 @@ Omitting a text/list/heading/image/divider marker removes that block. Omitting a
 {"template_id":"TEMPLATE_UUID","revision":"REVISION_FROM_GET","content":"EDITED_MARKDOWN_WITH_THE_PAGE_BREAK_MARKER_OMITTED","remove_blocks":["PAGE_BREAK_ID_FROM_GET"]}
 ```
 
+Preservation markers are exclusive to `update_template`; do not copy them into proposal Markdown.
+
 Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.
