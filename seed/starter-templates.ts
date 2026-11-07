@@ -1,3 +1,4 @@
+import { LOCAL_WORKSPACE_ID } from "../src/lib/workspace";
 import { fieldNodes } from "../src/lib/editor-fields";
 import { createHash } from "node:crypto";
 import copy from "./starter-copy.json" with { type: "json" };
@@ -200,5 +201,13 @@ export function starterTemplates(
       default_quote: [],
       default_items,
     };
+  });
+}
+
+/** Workspace-specific catalog defaults stay in the seed layer, never in proposal logic. */
+export function workspaceStarterTemplates(workspace: string, catalog: Item[]) {
+  return starterTemplates(workspace, {
+    marketfresh: workspace === LOCAL_WORKSPACE_ID,
+    catalog,
   });
 }

@@ -1,0 +1,110 @@
+.studio-template-card-shell {
+  position: relative;
+  overflow: visible;
+}
+.starter-card-more {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 20px var(--font-ui);
+  cursor: pointer;
+}
+.starter-pill,
+.starter-source {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font: 500 11px/1.4 var(--font-ui);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  margin-left: 8px;
+}
+.starter-source {
+  margin-left: 0;
+  background: none;
+  padding-left: 0;
+}
+.starter-actions-menu {
+  min-width: 240px;
+}
+.starter-actions-menu [role="menu"] {
+  display: flex;
+  flex-direction: column;
+}
+.starter-actions-menu :is(button, a) {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  font: 500 13px/1.4 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.starter-actions-menu :is(button, a):hover {
+  background: var(--surface-sunken);
+}
+.starter-edit-notice {
+  position: sticky;
+  top: 8px;
+  z-index: var(--z-formatting);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 13px/1.5 var(--font-ui);
+}
+.starter-dialog-content {
+  font: 400 14px/1.5 var(--font-ui);
+}
+@media (max-width: 699px) {
+  .starter-edit-notice {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .starter-edit-notice .btn {
+    min-height: 44px;
+  }
+}
+
+.template-card-open {
+  display: block;
+  color: var(--ink);
+}
+.template-card-open > div:last-child {
+  padding: 16px;
+}
+.template-card-open .template-thumbnail {
+  border-radius: 14px 14px 0 0;
+}
+
+.studio-template-card-shell > .studio-template-card {
+  display: block;
+  height: 100%;
+}
+
+.toolbar-popover.starter-actions-menu {
+  width: 288px;
+  max-width: calc(100vw - 24px);
+}

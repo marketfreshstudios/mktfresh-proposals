@@ -14,6 +14,7 @@ import "./studio-v3.css";
 import "./editor-fields.css";
 import "./covers.css";
 import "./color-picker.css";
+import "./starter-library.css";
 import "./deployment-notice.css";
 export default function RootLayout({
   children,

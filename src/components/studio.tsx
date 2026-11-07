@@ -1,4 +1,5 @@
 "use client";
+import { useStarterActions } from "./starter-library";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { PlainClauseText } from "./editor/plain-clause-text";
@@ -888,7 +889,23 @@ function TemplatesStudioContent({
     applyModel,
     () => model.current,
   );
+  const [copyWithoutEdit, setCopyWithoutEdit] = useState(false);
+  const [starterAttempt, setStarterAttempt] = useState<Template | null>(null),
+    [starterGeneration, setStarterGeneration] = useState(0);
   const editDraft = (next: typeof draft) => {
+    if (model.current.draft?.starter_key && next) {
+      if (serialise(next) !== serialise(model.current.draft)) {
+        (document.activeElement as HTMLElement)?.blur();
+        setIndex(null);
+        setFields(false);
+        setInsertAt(null);
+        setMoreAnchor(null);
+        setTemplateToolsOpen(false);
+        setStarterAttempt((pending) => pending ?? structuredClone(next));
+        setStarterGeneration((n) => n + 1);
+      }
+      return;
+    }
     const value = { ...model.current, draft: next };
     history.record(model.current, value);
     applyModel(value);
@@ -998,6 +1015,7 @@ function TemplatesStudioContent({
   resourceRef.current = resource();
   const currentResource = resourceRef.current,
     templateDirty =
+      !(mode === "templates" && draft?.starter_key) &&
       !!currentResource.value &&
       savedModels.current.get(currentResource.key) !==
         serialise(currentResource.value);
@@ -1050,6 +1068,8 @@ function TemplatesStudioContent({
     return () => window.removeEventListener("beforeunload", warn);
   }, [mode]);
   function saveTemplate(): Promise<boolean> {
+    if (mode === "templates" && model.current.draft?.starter_key)
+      return Promise.resolve(true);
     if (templateFlight.current) return templateFlight.current;
     const flight = (async () => {
       setTemplateError("");
@@ -1149,6 +1169,28 @@ function TemplatesStudioContent({
     templateError,
     templateOffline,
   ]);
+  const starterActions = useStarterActions(
+    mode === "templates" ? draft : null,
+    data.user.staff_role === "owner",
+    async (next) => {
+      setStarterAttempt(null);
+      selection.clear();
+      setIndex(null);
+      savedModels.current.set(`templates:${next.id}`, serialise(next));
+      applyModel({ ...model.current, draft: next });
+      await run(async () => {});
+    },
+    () => {
+      allowLeave.current = true;
+    },
+    starterAttempt,
+  );
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("copy") === "without-edit")
+      setCopyWithoutEdit(true);
+    if (new URLSearchParams(location.search).get("preview") === "1")
+      setPreviewOpen(true);
+  }, []);
   async function duplicateSaved() {
     if (!model.current.saved) return;
     const value = model.current.saved,
@@ -1580,6 +1622,7 @@ function TemplatesStudioContent({
     >
       {blockDrop.line}
       <EditorControlConfig
+        locked={!!starterAttempt && !!draft?.starter_key}
         compactPhone
         compact={templatePanels.compact}
         map={map}
@@ -1620,7 +1663,9 @@ function TemplatesStudioContent({
           }
           savedLabel={
             mode === "templates"
-              ? "Saved · changes apply to new proposals"
+              ? draft?.starter_key
+                ? "Yeswell starter · read-only"
+                : "Saved · changes apply to new proposals"
               : "Saved"
           }
           dirtyLabel="Edited · not saved"
@@ -1652,10 +1697,27 @@ function TemplatesStudioContent({
             </>
           }
           meta={
-            mode === "templates" && !draft?.active ? (
-              <span className="studio-hidden-pill">
-                Hidden from new proposals
-              </span>
+            mode === "templates" ? (
+              <>
+                {draft?.starter_key && (
+                  <span className="starter-pill">Starter</span>
+                )}
+                {draft?.source_starter_key && (
+                  <span className="starter-source">
+                    Based on{" "}
+                    {draft.source_starter_name ??
+                      data.templates.find(
+                        (t) => t.starter_key === draft.source_starter_key,
+                      )?.name ??
+                      draft.source_starter_key}
+                  </span>
+                )}
+                {!draft?.active && (
+                  <span className="studio-hidden-pill">
+                    Hidden from new proposals
+                  </span>
+                )}
+              </>
             ) : null
           }
           save={saveTemplate}
@@ -1740,6 +1802,20 @@ function TemplatesStudioContent({
             </>
           )}
         </EditorHeader>
+        {copyWithoutEdit && (
+          <Banner title="Your copy is ready">
+            The unfinished change could not be applied. Continue editing here.
+          </Banner>
+        )}
+        {starterAttempt && draft?.starter_key && (
+          <div className="starter-edit-notice" role="status">
+            <span>This is a Yeswell starter. Make a copy to customize it.</span>
+            <Button variant="primary" onClick={starterActions.copy}>
+              Make a copy
+            </Button>
+          </div>
+        )}
+        {starterActions.dialogs}
         {templateRecovery && (
           <EditorNotice kind="recovered">
             <span title={templateRecovery.name}>
@@ -1810,6 +1886,7 @@ function TemplatesStudioContent({
                   }
                 >
                   <div
+                    key={draft?.starter_key ? starterGeneration : undefined}
                     ref={templatePaper}
                     data-sheet-view={mode === "templates" ? "true" : undefined}
                     data-editor-density={
@@ -2606,17 +2683,27 @@ function TemplatesStudioContent({
                   >
                     Sections
                   </Button>
-                  <label className="check">
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={draft!.active}
-                      onChange={(e) =>
-                        editDraft({ ...draft!, active: e.target.checked })
-                      }
-                    />
-                    Available for new proposals
-                  </label>
+                  {draft?.starter_key ? (
+                    <div
+                      role="menu"
+                      className="starter-actions-menu"
+                      onClick={() => setTemplateToolsOpen(false)}
+                    >
+                      {starterActions.items}
+                    </div>
+                  ) : (
+                    <label className="check">
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={draft!.active}
+                        onChange={(e) =>
+                          editDraft({ ...draft!, active: e.target.checked })
+                        }
+                      />
+                      Available for new proposals
+                    </label>
+                  )}
                   <Button
                     onClick={() => {
                       setTemplateToolsOpen(false);
@@ -2659,17 +2746,27 @@ function TemplatesStudioContent({
           close={() => setMoreAnchor(null)}
         >
           <div role="dialog" aria-label="Template actions">
-            <label className="check">
-              <input
-                type="checkbox"
-                role="switch"
-                checked={draft!.active}
-                onChange={(e) =>
-                  editDraft({ ...draft!, active: e.target.checked })
-                }
-              />
-              Available for new proposals
-            </label>
+            {draft?.starter_key ? (
+              <div
+                role="menu"
+                className="starter-actions-menu"
+                onClick={() => setMoreAnchor(null)}
+              >
+                {starterActions.items}
+              </div>
+            ) : (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={draft!.active}
+                  onChange={(e) =>
+                    editDraft({ ...draft!, active: e.target.checked })
+                  }
+                />
+                Available for new proposals
+              </label>
+            )}
           </div>
         </ToolbarPopover>
       )}

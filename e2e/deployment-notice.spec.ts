@@ -337,10 +337,20 @@ for (const width of [1440, 768, 375])
         if (surface === "editor")
           await expect(page.locator(".editor-document-header")).toBeVisible();
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        const focusedBefore = await page.evaluateHandle(
+          () => document.activeElement,
+        );
         f.update();
         await focus(page);
         const n = notice(page);
         await expect(n).toBeVisible();
+        expect(
+          await page.evaluate(
+            (el) => document.activeElement === el,
+            focusedBefore,
+          ),
+        ).toBe(true);
+        await focusedBefore.dispose();
         await expect(n).toHaveCSS(
           "background-color",
           theme === "dark" ? "rgb(28, 27, 25)" : "rgb(251, 250, 247)",
@@ -390,6 +400,12 @@ for (const width of [1440, 768, 375])
           expect(box.width).toBeCloseTo(width - 32, 0);
         }
         await expect(n).toHaveCSS("animation-name", "none");
+        await page.evaluate(() =>
+          (document.activeElement as HTMLElement)?.blur(),
+        );
+        await expect(
+          n.getByRole("button", { name: "Reload", exact: true }),
+        ).not.toBeFocused();
         if (
           process.env.CAPTURE_POLISH &&
           (width === 1440 || (width === 375 && surface === "home"))

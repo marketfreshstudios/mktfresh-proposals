@@ -1,9 +1,8 @@
-import { isDeepStrictEqual } from "node:util";
+import { sameStarterState } from "../src/lib/starter-template-state";
 import oldBands from "./starter-bands-v83.json" with { type: "json" };
 import previousCovers from "./starter-covers-pr-a.json" with { type: "json" };
 import { starterTemplates } from "./starter-templates";
 import type { Item, Template } from "../src/lib/model";
-const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 /** Compare the entire saved seed, not just branding; any owner edit is protected. */
 export function starterBrandUpdates(
   workspace: string,
@@ -23,20 +22,28 @@ export function starterBrandUpdates(
         (t) => t.id === after.id && t.starter_key === after.starter_key,
       );
       const baseline = [before, previous].find(
-        (candidate) =>
-          current && isDeepStrictEqual(plain(current), plain(candidate)),
+        (candidate) => current && sameStarterState(current, candidate),
       );
       const eligible = !!baseline;
+      const replacement = {
+        ...current,
+        ...after,
+        name: current?.name ?? after.name,
+        active: current?.active ?? after.active,
+      };
+      delete replacement.pagination;
       return {
         name: after.name,
         before: current,
-        after,
+        after: replacement,
         eligible,
         reason: !current
           ? "not present"
           : eligible
             ? `identical to ${baseline === before ? "PR #83" : "PR A"} seed`
-            : "edited or already updated — kept",
+            : current && sameStarterState(current, after)
+              ? "unchanged — already updated"
+              : "edited — kept",
       };
     },
   );
