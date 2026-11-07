@@ -41,6 +41,10 @@ async function fixture(page: Page) {
     r.fulfill({ json: { colors: ["#ea4e26", "#74ccdb"] } }),
   );
   await page.setViewportSize({ width: 1440, height: 1200 });
+  if (process.env.CAPTURE_POLISH_DARK)
+    await page.addInitScript(() =>
+      localStorage.setItem("proposal-theme", "dark"),
+    );
   await page.goto("/studio/workspace?view=brand");
   return { ...f, logo };
 }
@@ -50,7 +54,7 @@ async function shot(page: Page, name: string) {
   if (process.env.CAPTURE_POLISH) {
     await mkdir("docs/screenshots/brand-polish", { recursive: true });
     await page.screenshot({
-      path: `docs/screenshots/brand-polish/${name}.png`,
+      path: `docs/screenshots/brand-polish/${name}${process.env.CAPTURE_POLISH_DARK ? "-dark" : ""}.png`,
     });
   }
 }
@@ -94,7 +98,9 @@ async function pair(
       { input: b, left: 824, top: 0 },
     ])
     .png()
-    .toFile(`docs/screenshots/brand-polish/brand-${state}-reference.png`);
+    .toFile(
+      `docs/screenshots/brand-polish/brand-${state}${process.env.CAPTURE_POLISH_DARK ? "-dark" : ""}-reference.png`,
+    );
   await ref.close();
 }
 test("one shared picker toggles reliably, closes every way, and accepts low-contrast Primary exactly", async ({
