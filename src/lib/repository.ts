@@ -26,7 +26,14 @@ export type EntityTable =
   | "provider_credentials"
   | "webhook_events"
   | "provider_actions";
+export type StudioEntityTable = "templates" | "content_library";
 export interface Repository {
+  saveStudioEntity(
+    table: StudioEntityTable,
+    expected: { id: string } | null,
+    replacement: { id: string },
+    audit: Audit,
+  ): Promise<boolean>;
   readonly workspaceId: string;
   replaceStarter(
     expected: Template,
@@ -68,6 +75,37 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async saveStudioEntity(
+    table: StudioEntityTable,
+    expected: { id: string } | null,
+    replacement: { id: string },
+    audit: Audit,
+  ) {
+    const current = this.catalog.get(table)?.get(replacement.id);
+    if (
+      expected
+        ? !current ||
+          !isDeepStrictEqual(
+            JSON.parse(JSON.stringify(current)),
+            JSON.parse(JSON.stringify(expected)),
+          )
+        : !!current
+    )
+      return false;
+    if (
+      table === "templates" &&
+      ((current as any)?.starter_key || (replacement as any).starter_key)
+    )
+      throw new AppError(403, "Duplicate the starter first");
+    if (this.catalog.get("workspace_events")?.has(audit.id))
+      throw new AppError(409, "Append-only history");
+    if (!this.catalog.has(table)) this.catalog.set(table, new Map());
+    if (!this.catalog.has("workspace_events"))
+      this.catalog.set("workspace_events", new Map());
+    this.catalog.get(table)!.set(replacement.id, structuredClone(replacement));
+    this.catalog.get("workspace_events")!.set(audit.id, structuredClone(audit));
+    return true;
+  }
   async replaceStarter(
     expected: Template,
     replacement: Template,
@@ -497,6 +535,26 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async saveStudioEntity(
+    table: StudioEntityTable,
+    expected: { id: string } | null,
+    replacement: { id: string },
+    audit: Audit,
+  ) {
+    await this.ready;
+    const operation = this.tail.then(async () => {
+      const saved = await super.saveStudioEntity(
+        table,
+        expected,
+        replacement,
+        audit,
+      );
+      if (saved) await this.persist();
+      return saved;
+    });
+    this.tail = operation.catch(() => {});
+    return operation;
+  }
   override async replaceStarter(
     expected: Template,
     replacement: Template,
@@ -723,6 +781,23 @@ export class SupabaseRepository implements Repository {
       .select("id");
     if (error) throw error;
     return !!data?.length;
+  }
+  async saveStudioEntity(
+    table: StudioEntityTable,
+    expected: { id: string } | null,
+    replacement: { id: string },
+    audit: Audit,
+  ) {
+    const { data, error } = await this.db.rpc("save_studio_entity", {
+      p_workspace: this.workspaceId,
+      p_table: table,
+      p_id: replacement.id,
+      p_expected: expected,
+      p_replacement: replacement,
+      p_event: audit,
+    });
+    if (error) throw error;
+    return data === true;
   }
   async replaceStarter(
     expected: Template,

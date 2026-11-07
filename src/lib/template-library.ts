@@ -27,6 +27,7 @@ export const TemplateInputSchema = z.object({
   starter_key: z.string().max(100).optional(),
   starter_order: z.number().int().min(0).max(5).optional(),
   source_starter_key: z.string().max(100).optional(),
+  connector_created: z.boolean().optional(),
   content: z.array(z.record(z.string(), z.unknown())).max(300),
   default_items: QuoteSchema.optional(),
   default_quote: z

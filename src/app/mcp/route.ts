@@ -30,7 +30,7 @@ async function handler(req: Request) {
     if (process.env.APP_MODE !== "local") {
       const { data, error } = await supabase()
         .from("staff_users")
-        .select("user_id,status,password_change_required")
+        .select("user_id,status,password_change_required,display_name")
         .eq("user_id", auth.user_id)
         .eq("workspace_id", auth.actor.workspace_id)
         .maybeSingle();
@@ -42,16 +42,22 @@ async function handler(req: Request) {
         "Staff access revoked",
         401,
       );
+      auth.actor.on_behalf_of_name =
+        data.display_name ?? auth.actor.on_behalf_of_name;
     }
     const server = new Server(
       {
         name: "Yeswell",
         title: "Yeswell",
         description:
-          "Read your workspace and prepare proposal drafts in Yeswell. Sending and signing remain staff-only.",
+          "Prepare proposal drafts and maintain reviewed templates and saved blocks in Yeswell. Nothing is sent by the connector.",
         version: "2.0.0",
       },
-      { capabilities: { tools: {} } },
+      {
+        capabilities: { tools: {} },
+        instructions:
+          "Starters are read-only: duplicate_template first. Created/duplicated templates are hidden until a person reviews and enables them in Studio. Use supplied prices or exact list_catalog values; never invent or calculate prices. Read get_template/get_saved_block before updating and pass its revision. A 409 means reload and merge, never blindly retry. Sending, signing, availability, deletion, Reset and billing are human-only.",
+      },
     );
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: toolDefinitions as any,
