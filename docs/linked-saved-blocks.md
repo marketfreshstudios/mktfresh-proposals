@@ -1,0 +1,24 @@
+# Linked saved blocks — Phase 2 rollout
+
+Run the complete [20261108015810_linked_saved_blocks.sql](../supabase/migrations/20261108015810_linked_saved_blocks.sql) **before deploying** this PR. Claude/the owner applies it through the Supabase connector. It is a small service-only transaction helper, with no seed payload, new table, column, storage policy or data backfill. Codex has not run it against hosted.
+
+The function is `SECURITY INVOKER` with an empty search path, scoped to the server's workspace. Execute is revoked from public/anon/authenticated and granted only to service_role. Existing RLS remains unchanged. Every affected template/draft is locked and compared with its expected state before any write; a concurrent edit aborts the whole library save. The function refuses starter changes and any proposal that is already sent or signed, and permits only content, derived pagination, revision and audit changes in drafts. Signed evidence, versions and billing state are immutable.
+
+## Copies and links
+
+- Saved rows retain the single-block shape for existing Text/List/Image/Contract clause records. Groups add `type: "group"` and an ordered `blocks` array; `block` mirrors the first member for older previews. Library saves assign a monotonically increasing `version` (legacy rows begin at 1).
+- Inserted document blocks remain ordinary flat blocks. They carry `saved_block_id`, `saved_block_version`, `saved_block_position`, `saved_block_length`, `saved_block_instance` and `saved_block_hash`. No PagePlan change is needed. Inserting a group is one history operation.
+- The fingerprint is SHA-256 of canonical author content. It ignores IDs, review state and link stamps, while retaining text, marks, images, alignment and other author formatting. A template occurrence is **Edited here** if any fingerprint, group length or member order differs from its stamp. A moved whole group stays linked. Unrelated blocks interleaved with members stay in place during updates.
+- Unedited linked templates update when the library is saved; edited occurrences stay intact until **Restore linked version** or **Unlink**. Template saves resolve clean older references to the current source, preventing a stale editor from silently writing old library copy back. Proposals created from a template preserve the references but own their content.
+- **Templates and new proposals** is the safe save default. **Also update drafts** explicitly overwrites referenced copies, including local edits, only in native unsent unsigned drafts. All writes, the library audit, and each draft's timeline event commit together. Activity reads each draft event once from its timeline.
+- Sent/Viewed unsigned proposals require **Replace with latest block** and a confirmation explaining the existing link goes live. It uses the existing readiness-guarded publication path, appends a version, sends no email and never changes prior versions or the token. Signed, archived and imported proposals cannot replace blocks.
+- Deleting a library row reports the linked template count and unlinks templates/drafts without changing their content. Sent/signed copies and their historical references remain unchanged; a removed source is no longer an active link. Old unreferenced copies are never guessed or retroactively linked.
+- Read-only starters never receive links. Attempts to insert or stamp them use the existing Make a copy flow. Copies can link normally.
+
+## Selection and save
+
+Shift-click extends from the selection anchor; Cmd/Ctrl-click toggles in document order. Shift-Up/Down on a focused block frame extends the block range (inside a text editor those keys retain their normal text-selection meaning). Escape clears selection after any open menu/dialog closes. Touch Select more uses gutter checkboxes and a docked count/save/cancel bar.
+
+Save as reusable block keeps only ordinary author content: pricing tables, signatures and the contract block remain in the document and are named in the dialog. A fully excluded selection cannot save. A single selected eligible block keeps its existing single-block type. A multiple-block selection creates a group, even if exclusions leave only one eligible member. The source document keeps every block and its IDs; only eligible members receive references. Copying/duplicating does not permit additional pricing tables or supported signers. Undo returning a template to the saved state clears stale recovery data rather than treating an undone deletion as unsaved work.
+
+Connector group tools use the existing `templates:edit` scope and the proposal Markdown/preservation-marker rules. Group update refuses omitted page-break markers unless explicitly listed in `remove_blocks`, and rejects pricing/signature/contract members. Connector saves update clean linked templates and new proposals only; they never opt into draft replacement. Existing restore permissions (Super admin or the recorded editor) remain unchanged.

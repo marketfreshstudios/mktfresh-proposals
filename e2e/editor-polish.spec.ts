@@ -170,7 +170,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   expect(hit.hit, JSON.stringify(hit)).toBe("Save for reuse");
   await reuseButton.click();
   const ownedDialog = page.getByRole("dialog", {
-    name: "Save for reuse",
+    name: "Save as reusable block",
     exact: true,
   });
   await expect(

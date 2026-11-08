@@ -248,7 +248,7 @@ test("block controls own one block and never move document content on hover, foc
             if (
               !node.textContent?.trim() ||
               node.parentElement?.closest(
-                ":is(.editor-edit-bar,.phone-block-actions),.block-insert,.drag-handle,.heading-measure",
+                "[data-editor-chrome],:is(.editor-edit-bar,.phone-block-actions),.block-insert,.drag-handle,.heading-measure",
               )
             )
               continue;
@@ -368,7 +368,7 @@ test("block controls own one block and never move document content on hover, foc
                 !node.textContent?.trim() ||
                 node.parentElement?.closest(".block-frame") !== el ||
                 node.parentElement?.closest(
-                  ":is(.editor-edit-bar,.phone-block-actions),.drag-handle,small",
+                  "[data-editor-chrome],:is(.editor-edit-bar,.phone-block-actions),.drag-handle,small",
                 )
               )
                 continue;
@@ -488,7 +488,7 @@ test("block controls own one block and never move document content on hover, foc
           };
           await (await action("Save for reuse")).click();
           const dialog = page.getByRole("dialog", {
-            name: "Save for reuse",
+            name: "Save as reusable block",
             exact: true,
           });
           await expect(
@@ -502,7 +502,7 @@ test("block controls own one block and never move document content on hover, foc
           if (editor === "proposal" && width === 1440 && theme === "light") {
             failReuse = true;
             await dialog
-              .getByRole("button", { name: "Save", exact: true })
+              .getByRole("button", { name: "Save block", exact: true })
               .click();
             await expect(
               page
@@ -512,21 +512,42 @@ test("block controls own one block and never move document content on hover, foc
             await expect(dialog).toBeVisible();
           }
           await dialog
-            .getByRole("button", { name: "Save", exact: true })
+            .getByRole("button", { name: "Save block", exact: true })
             .click();
           await expect(dialog).toHaveCount(0);
           await expect(
             page
               .getByRole("status")
-              .filter({ hasText: "Saved to Templates & blocks" }),
+              .filter({ hasText: "Saved as Reusable scope" }),
           ).toBeVisible();
           await expect(await action("Save for reuse")).toHaveAttribute(
             "title",
             "Saved as Reusable scope",
           );
           await expect(
-            page.getByRole("link", { name: "View", exact: true }),
-          ).toHaveAttribute("href", "/studio/templates?view=blocks");
+            page.getByRole("link", { name: "Open", exact: true }),
+          ).toHaveAttribute("href", /^\/studio\/blocks\/[a-f0-9-]{36}$/);
+          const savedId = (await page
+            .getByRole("link", { name: "Open", exact: true })
+            .getAttribute("href"))!
+            .split("/")
+            .at(-1);
+          const sourceFrame = await paragraph.getAttribute("data-block-id");
+          // Saving for reuse now stamps a reference and autosaves the document.
+          // Confirm it persisted before testing layout or navigating elsewhere.
+          await expect
+            .poll(async () => {
+              const document =
+                editor === "proposal"
+                  ? active
+                  : (await repo.entities<any>("templates")).find(
+                      (t) => t.id === template.id,
+                    );
+              return document.content.find(
+                (b: Block) => b.id && sourceFrame?.endsWith(b.id),
+              )?.saved_block_id;
+            })
+            .toBe(savedId);
           await expect(paragraph).toHaveAttribute("data-selected", "true");
           await shot(`${editor}-reuse-success`, width, theme);
           const id = await paragraph.getAttribute("data-block-id");
