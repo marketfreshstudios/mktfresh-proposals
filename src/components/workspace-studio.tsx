@@ -1094,6 +1094,51 @@ export function WorkspaceStudio({
             </select>
           </div>
         </div>
+        {(
+          [
+            [
+              "in_app",
+              "First client view · in-app note",
+              "Show a note on the proposal record after its first qualified client view.",
+            ],
+            [
+              "email",
+              "First client view · staff email",
+              "Email staff once when a client first views a sent proposal.",
+            ],
+          ] as const
+        ).map(([key, label, hint]) => (
+          <div
+            className="workspace-setting-row workspace-reminder-row"
+            key={key}
+          >
+            <div>
+              <h3>{label}</h3>
+              <p>{hint}</p>
+            </div>
+            <label className="workspace-engagement-switch workspace-switch">
+              <span className="sr-only">{label}</span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-label={label}
+                disabled={!owner}
+                checked={
+                  draft.engagement_notifications?.[key] ?? key === "in_app"
+                }
+                onChange={(e) =>
+                  change({
+                    engagement_notifications: {
+                      in_app: draft.engagement_notifications?.in_app ?? true,
+                      email: draft.engagement_notifications?.email ?? false,
+                      [key]: e.target.checked,
+                    },
+                  })
+                }
+              />
+            </label>
+          </div>
+        ))}
         <ReminderRules
           settings={draft}
           disabled={!owner}

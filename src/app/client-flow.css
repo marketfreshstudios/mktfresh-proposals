@@ -994,3 +994,12 @@ label.flow-quote-line {
     display: none;
   }
 }
+
+.flow-engagement-privacy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  margin: 16px auto;
+  max-width: 40rem;
+}

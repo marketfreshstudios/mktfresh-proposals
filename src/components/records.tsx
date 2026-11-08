@@ -1,4 +1,9 @@
 "use client";
+import {
+  ProposalEngagement,
+  EngagementListLine,
+  useEngagementSummaries,
+} from "./proposal-engagement";
 import { DialogActions } from "./dialog-actions";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
 import { automaticRemindersEnabled } from "../lib/delivery";
@@ -424,6 +429,9 @@ export function ProposalRows({
 }) {
   const [undo, setUndo] = useState<Proposal | null>(null),
     [undoError, setUndoError] = useState("");
+  const engagement = useEngagementSummaries(
+    proposals.map((p) => p.id).join(","),
+  );
   const money = useMoney(),
     yearly = proposals.some((p) =>
       p.quote.some((i) => i.sublines.some((s) => s.interval === "year")),
@@ -460,6 +468,7 @@ export function ProposalRows({
                 <div className="proposal-name">
                   <strong>{p.client.company}</strong>
                   <span>{p.title}</span>
+                  <EngagementListLine summary={engagement[p.id]} />
                 </div>
                 {showOwner && (
                   <span className="proposal-owner" data-label="Owner">
@@ -1546,6 +1555,13 @@ export function RecordV4({
           </li>
         ))}
       </ol>
+      {native && (
+        <ProposalEngagement
+          id={p.id}
+          timezone={data.settings?.timezone ?? "UTC"}
+          notify={data.settings?.engagement_notifications?.in_app !== false}
+        />
+      )}
       <div className="record-columns">
         <section className="card timeline">
           <header className="section-heading">
