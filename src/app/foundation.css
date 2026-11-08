@@ -652,13 +652,20 @@
 /* A selected control owns its palette. Generic hover paint must never replace
    only half of that foreground/background pair. Document chrome owns its own
    dark-menu/formatting palette; color swatches retain their inline fill. */
-.staff-foundation.staff-foundation
+:is(
+    .staff-foundation.studio-v3-shell,
+    .staff-foundation .studio-v3-editor,
+    .staff-foundation .studio-email-editor,
+    .staff-foundation .editor-v2-panel,
+    .staff-foundation .editor-v2-drawer,
+    .staff-foundation .editor-v2-sheet
+  )
   :is(button, a):is(
     [aria-current="page"],
     [aria-selected="true"],
     [aria-pressed="true"],
     .active
-  ):hover:not(:disabled):not(:where(.editor-edit-bar *, .toolbar-popover *)) {
+  ):hover:not(:disabled):not(:where(.editor-edit-bar *, [popover] *)) {
   background: var(--control-active-background, var(--surface));
   color: var(--control-active-color, var(--ink));
 }
