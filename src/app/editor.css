@@ -9065,9 +9065,14 @@ body:has(.studio-v3-editor) {
   min-width: 0;
   max-width: none;
   height: auto;
-  min-height: 44px;
+  min-height: var(--toolbar-menu-row-height, 44px);
   padding: 8px 10px;
   white-space: nowrap;
+}
+@media (min-width: 700px) {
+  .toolbar-popover.text-style-popover {
+    --toolbar-menu-row-height: 38px;
+  }
 }
 .toolbar-popover.text-style-popover {
   width: max-content;

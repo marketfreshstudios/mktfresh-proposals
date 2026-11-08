@@ -1,3 +1,4 @@
+import { blockText } from "../src/lib/editor-document";
 import { openEditorPanel } from "./editor-ui";
 import { pdfPreview } from "../src/lib/pdf-preview";
 import { test, expect, type Page } from "@playwright/test";
@@ -224,17 +225,30 @@ for (const width of [1440, 375]) {
         .toBe(level);
       await bar.locator('button[aria-label="Text style"]').click();
       await page.getByLabel("Paragraph", { exact: true }).click();
-      await expect(frame.locator(".tiptap")).toBeFocused();
+      await expect(
+        bar.getByRole("button", { name: "Text style", exact: true }),
+      ).toBeFocused();
     }
     await frame.locator(".tiptap").fill("A retained sentence");
-    await frame.locator(".tiptap").evaluate((el) => {
-      const range = document.createRange();
-      range.setStart(el.querySelector("p")!.firstChild!, 0);
-      range.collapse(true);
-      getSelection()!.removeAllRanges();
-      getSelection()!.addRange(range);
-    });
-    await frame.locator(".tiptap").pressSequentially("## ");
+    await expect
+      .poll(() => blockText(f.current().content.find((b) => b.id === f.text)!))
+      .toBe("A retained sentence");
+    // The menu now returns focus to its trigger. Re-enter text and place the
+    // caret with real keys so the editor and browser share the same selection.
+    await frame.locator(".tiptap").press("ControlOrMeta+a");
+    await frame.locator(".tiptap").press("ArrowLeft");
+    // Let the browser selectionchange reach Tiptap before the next key.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await frame.locator(".tiptap").pressSequentially("##");
+    await expect
+      .poll(() => blockText(f.current().content.find((b) => b.id === f.text)!))
+      .toBe("##A retained sentence");
+    await frame.locator(".tiptap").press("Space");
     await expect(frame.locator("h3 .tiptap")).toHaveText("A retained sentence");
     await expect
       .poll(() => f.current().content.find((b) => b.id === f.text)?.level)
