@@ -185,6 +185,7 @@ function NewClientFlow({
     preview && step === "billing"
       ? [
           {
+            payment_state: undefined,
             requires_checkout: true,
             checkout: [],
             added_existing: [],
@@ -208,7 +209,13 @@ function NewClientFlow({
   const returnConfirmed = returnSession
     ? confirmations.some((c) => c.checkout_session_id === returnSession)
     : confirmations.length > 0 && !requiresCheckout;
-  const finishingReturn = checkoutReturned && signed && !returnConfirmed;
+  const bankState = billing.some((b) => b.payment_state === "failed")
+    ? "failed"
+    : billing.some((b) => b.payment_state === "processing")
+      ? "processing"
+      : undefined;
+  const finishingReturn =
+    checkoutReturned && signed && !returnConfirmed && !bankState;
   const contact = p?.contact ??
     brand.contact ?? { name: "", email: brand.email };
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
@@ -662,7 +669,20 @@ function NewClientFlow({
                       ? "This is a preview. No signature or billing has been submitted."
                       : `Your proposal is signed. Your copy will be sent to ${p.recipient.email}.`}
                   </p>
-                  {finishingReturn ? (
+                  {bankState && !requiresCheckout ? (
+                    <>
+                      <h1>
+                        {bankState === "processing"
+                          ? "Bank payment processing"
+                          : "Bank payment failed"}
+                      </h1>
+                      <p role="status">
+                        {bankState === "processing"
+                          ? "Bank payments take a few business days to clear. We'll email you when Stripe confirms your payment."
+                          : "Stripe could not complete your bank payment. Please contact us to arrange payment."}
+                      </p>
+                    </>
+                  ) : finishingReturn ? (
                     <>
                       <h1>Payment details received — finishing setup…</h1>
                       <p role="status">

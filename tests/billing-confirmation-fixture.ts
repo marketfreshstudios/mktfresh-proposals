@@ -125,8 +125,10 @@ export async function billingFixture(
     current_period_end: next,
     latest_invoice: "in_fixture",
     schedule: null,
+    metadata: { proposal_id: p.id, workspace_id: base.repo.workspaceId },
   });
   subscriptions.set("sub_fixture", sub("sub_fixture"));
+  const invoices = new Map<string, any>();
   let permissionError = false;
   const api: StripeTransport = {
     async get<T>(path: string, params: Record<string, string>) {
@@ -150,6 +152,11 @@ export async function billingFixture(
           livemode: false,
           invoice_settings: { default_payment_method: method },
         } as T;
+      if (
+        path.startsWith("/v1/invoices/") &&
+        invoices.has(path.split("/").at(-1)!)
+      )
+        return structuredClone(invoices.get(path.split("/").at(-1)!)) as T;
       if (path.startsWith("/v1/subscriptions/"))
         return structuredClone(subscriptions.get(path.split("/").at(-1)!)) as T;
       return { data: [], has_more: false } as T;
@@ -159,6 +166,7 @@ export async function billingFixture(
       if (path === "/v1/subscriptions") {
         const id = "sub_" + String(key).replace(/\W/g, "").slice(-40);
         const record = sub(id);
+        record.latest_invoice = "in_" + id;
         subscriptions.set(id, record);
         return record as T;
       }
@@ -190,6 +198,9 @@ export async function billingFixture(
         id,
         customer: "cus_fixture",
         metadata: { proposal_id: p.id, workspace_id: base.repo.workspaceId },
+        ...(type.startsWith("invoice.")
+          ? { subscription: [...subscriptions.keys()].at(-1) }
+          : {}),
       },
     },
   });
@@ -218,6 +229,7 @@ export async function billingFixture(
     session,
     method,
     subscriptions,
+    invoices,
     calls,
     event,
     signedRequest,

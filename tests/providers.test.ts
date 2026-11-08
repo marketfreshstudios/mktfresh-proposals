@@ -440,3 +440,79 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
     },
   });
 });
+
+it("Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes", async () => {
+  for (const mode of ["subscription", "invoice-setup", "scheduled-setup"]) {
+    const { repo, draft } = await setup();
+    const original = (await repo.entities<any>("workspace_settings"))[0];
+    const line = { ...quoteSublines(draft.quote)[1], id: "line_fixture" };
+    if (mode === "scheduled-setup")
+      line.schedule = {
+        after_paid_invoices: 3,
+        then: { amount: 2500, lookup_key: "next-plan" },
+      };
+    let baseline: any;
+    for (const methods of [undefined, "card", "card_ach"]) {
+      await repo.put("workspace_settings", {
+        ...original,
+        collection_method:
+          mode === "invoice-setup" ? "send_invoice" : "charge_automatically",
+        payment_methods: methods,
+      });
+      const { api, calls } = transport();
+      const result = await new StripeProvider(api, repo).createObject(
+        { id: "cus_test", email: "jane@example.test", company: "Example" },
+        [line],
+        "fixture",
+        {
+          currency: "usd",
+          proposal_id: "proposal_fixture",
+          proposal_title: "Test proposal",
+          client_return_url: "http://127.0.0.1:3100/p/fixture",
+        },
+      );
+      const { payment_method_types, ...params } = calls.find(
+        (c) => c.path === "/v1/checkout/sessions",
+      )!.params;
+      expect(payment_method_types).toEqual(
+        methods === "card_ach" ? ["card", "us_bank_account"] : ["card"],
+      );
+      if (baseline) expect(params).toEqual(baseline);
+      else {
+        baseline = params;
+        expect(params).toMatchSnapshot(mode);
+      }
+      expect(result.metadata.checkout).toMatchObject([
+        { payment_methods: methods ?? "card" },
+      ]);
+    }
+  }
+});
+it("opting into ACH leaves existing-subscriber requests and one-time routing unchanged", async () => {
+  const { repo, draft, service } = await setup();
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const settings = (await repo.entities<any>("workspace_settings"))[0];
+  const run = async (payment_methods: string) => {
+    await repo.put("workspace_settings", { ...settings, payment_methods });
+    const { api, calls } = transport(true);
+    await bill(p, "stripe", new StripeProvider(api, repo));
+    return calls;
+  };
+  const card = await run("card"),
+    ach = await run("card_ach");
+  expect(ach).toEqual(card);
+  expect(ach.some((c) => c.path.includes("checkout"))).toBe(false);
+  const { MockBillingProvider } = await import("../src/lib/billing");
+  const qbo = new MockBillingProvider("qbo");
+  const result = await bill(p, "qbo", qbo);
+  expect(
+    (result.metadata!.lines as BillingLine[]).every(
+      (l) => l.interval === "one_time",
+    ),
+  ).toBe(true);
+  expect(result.metadata!.send_invoice).toBe(false);
+});

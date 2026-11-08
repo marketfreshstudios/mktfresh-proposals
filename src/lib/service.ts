@@ -1,3 +1,4 @@
+import { bankPayments, publicBankState } from "./billing-confirmation";
 import { cycleViewedAt, dueClientReminders, countersignDue } from "./reminders";
 import {
   saveClient,
@@ -1474,6 +1475,9 @@ export function publicResult(
           .filter((l) => l.provider === "stripe")
           .map((l) => ({
             status: l.status,
+            ...(publicBankState(l)
+              ? { payment_state: publicBankState(l) }
+              : {}),
             ...(completedCheckouts(l).length
               ? { confirmations: completedCheckouts(l).map(publicCompletion) }
               : {}),
@@ -1487,25 +1491,27 @@ export function publicResult(
                 collection_method?: "send_invoice" | "charge_automatically";
                 amount_due_today?: number;
               }[]
-            ).map((s) => ({
-              url: s.url,
-              ...(s.line_ids ? { line_ids: s.line_ids } : {}),
-              ...(s.items
-                ? {
-                    items: s.items.map((i) => ({
-                      line_id: i.line_id,
-                      name: i.name,
-                    })),
-                  }
-                : {}),
-              ...(s.mode ? { mode: s.mode } : {}),
-              ...(s.collection_method
-                ? { collection_method: s.collection_method }
-                : {}),
-              ...(typeof s.amount_due_today === "number"
-                ? { amount_due_today: s.amount_due_today }
-                : {}),
-            })),
+            )
+              .filter((s) => !bankPayments(l)[(s as { id?: string }).id ?? ""])
+              .map((s) => ({
+                url: s.url,
+                ...(s.line_ids ? { line_ids: s.line_ids } : {}),
+                ...(s.items
+                  ? {
+                      items: s.items.map((i) => ({
+                        line_id: i.line_id,
+                        name: i.name,
+                      })),
+                    }
+                  : {}),
+                ...(s.mode ? { mode: s.mode } : {}),
+                ...(s.collection_method
+                  ? { collection_method: s.collection_method }
+                  : {}),
+                ...(typeof s.amount_due_today === "number"
+                  ? { amount_due_today: s.amount_due_today }
+                  : {}),
+              })),
             added_existing: (
               (l.metadata?.added_existing ?? []) as {
                 monthly_total: number;

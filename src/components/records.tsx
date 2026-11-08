@@ -11,7 +11,10 @@ import {
   friendlyJobError,
 } from "../lib/job-presentation";
 import { Disclosure } from "./ui";
-import { stripeBillingStatus } from "../lib/billing-confirmation";
+import {
+  publicBankState,
+  stripeBillingStatus,
+} from "../lib/billing-confirmation";
 import { StripeBillingDetails } from "./billing-breakdown";
 import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
@@ -1621,7 +1624,7 @@ export function RecordV4({
                         : "One-time invoice"}
                     </strong>
                     <span
-                      className={`pill ${link.status === "succeeded" && !(link.provider === "stripe" && link.metadata?.requires_checkout) ? "success" : link.status === "failed" ? "danger" : "warning"}`}
+                      className={`pill ${publicBankState(link) === "failed" ? "danger" : publicBankState(link) === "processing" ? "warning" : link.status === "succeeded" && !(link.provider === "stripe" && link.metadata?.requires_checkout) ? "success" : link.status === "failed" ? "danger" : "warning"}`}
                     >
                       {link.provider === "stripe" &&
                       link.status === "succeeded" &&

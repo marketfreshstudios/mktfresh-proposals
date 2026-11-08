@@ -89,5 +89,6 @@ export const WorkspaceSettingsSchema = z.object({
   }),
   qbo_custom_item_ref: z.string().nullable(),
   collection_method: z.enum(["charge_automatically", "send_invoice"]),
+  payment_methods: z.enum(["card", "card_ach"]).optional(),
 });
 export type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
