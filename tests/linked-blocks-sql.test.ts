@@ -99,6 +99,20 @@ it("hosted save is service-only, workspace scoped, atomic across templates/draft
       (await db.query("select * from workspace_events")).rows,
     ).toHaveLength(1);
     expect(await call()).toBe(false);
+    // A late audit failure also rolls back a source write, not just stale CAS.
+    await expect(
+      call({
+        before: change.after,
+        after: { ...change.after!, name: "Must roll back" },
+        templates: [],
+        proposals: [],
+        events: [],
+      }),
+    ).rejects.toThrow(/duplicate key/);
+    expect(
+      (await db.query<{ data: SavedBlock }>("select data from content_library"))
+        .rows[0].data,
+    ).toEqual(change.after);
     await db.exec("set role authenticated");
     await expect(call()).rejects.toThrow(/permission denied/);
     await db.exec("reset role");
