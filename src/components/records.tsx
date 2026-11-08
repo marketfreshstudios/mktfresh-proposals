@@ -1556,6 +1556,7 @@ export function RecordV4({
       </ol>
       {native && (
         <ProposalEngagement
+          knownRecipient={!!p.token && !!p.client.email}
           id={p.id}
           timezone={data.settings?.timezone ?? "UTC"}
           notify={data.settings?.engagement_notifications?.in_app !== false}

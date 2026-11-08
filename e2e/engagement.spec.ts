@@ -350,7 +350,24 @@ test("record/list summaries match the retained sessions, with empty and responsi
   const panel = page.locator(".engagement-panel");
   await expect(panel.locator("dd").nth(0)).toHaveText("3");
   await expect(panel.locator("dd").nth(1)).toHaveText("2");
-  await expect(panel.locator("dd").nth(2)).toHaveText("6m 0s");
+  await expect(
+    panel
+      .locator(".engagement-stats > div")
+      .filter({ has: page.getByText("Devices", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("2");
+  await expect(
+    panel
+      .locator(".engagement-stats > div")
+      .filter({ has: page.getByText("Recipients", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("1");
+  await expect(
+    panel
+      .locator(".engagement-stats > div")
+      .filter({ has: page.getByText("Total time", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("6m 0s");
   await expect(panel.locator(".engagement-sessions>li")).toHaveCount(3);
   await expect(panel.getByText("First section", { exact: true })).toBeVisible();
   expect(
