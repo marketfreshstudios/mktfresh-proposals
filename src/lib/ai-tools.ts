@@ -30,7 +30,10 @@ import {
 import type { Repository } from "./repository";
 import { ProposalService, event } from "./service";
 import { variables } from "./content";
-import { markdownBlocks } from "./markdown";
+import { markdownBlocks, MARKDOWN_INPUT_LIMIT } from "./markdown";
+import { markdownImages } from "./connector-images";
+import { pageMetrics, resolveStyles } from "./proposal-styles";
+import type { WorkspaceSettings } from "./workspace";
 export const READ_TOOLS = [
   "search_clients",
   "get_client",
@@ -96,7 +99,7 @@ const schemas: Record<string, z.ZodType> = {
     client_id: id,
     title: z.string().min(1).max(300),
     valid_until: z.string().nullable().optional(),
-    content_markdown: z.string().max(100000),
+    content_markdown: z.string().max(MARKDOWN_INPUT_LIMIT),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   update_proposal_draft: z.object({
@@ -105,7 +108,7 @@ const schemas: Record<string, z.ZodType> = {
     title: z.string().min(1).max(300).optional(),
     brief: z.string().max(50000).optional(),
     valid_until: z.string().nullable().optional(),
-    content_markdown: z.string().max(100000).optional(),
+    content_markdown: z.string().max(MARKDOWN_INPUT_LIMIT).optional(),
     items: z.array(QuoteItemSchema).max(100).optional(),
   }),
   set_quote_lines: z.object({
@@ -120,7 +123,7 @@ export const toolDefinitions = Object.entries(schemas).map(
     name,
     description:
       connectorStudioDescriptions[name] ??
-      `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name === "list_catalog" ? "list products" : name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send. Markdown # starts a section (Heading 1); ## and ### are subheadings within that section." : "Read only."}`,
+      `${["create_client", "get_client", "update_client"].includes(name) ? "Client phone is E.164 with phone_formatted for display; invalid unsaved legacy values return phone=null and phone_needs_review=true. Address: line1, line2, city, region, postal_code, country (ISO 3166 alpha-2; defaults US). Updating contacts never changes provider links. " : ""}${["create_proposal_draft", "update_proposal_draft", "set_quote_lines", "get_proposal", "list_catalog", "check_ready"].includes(name) ? "Quote items have order, optional/default_selected/choice_group_id and sublines with cents/qty/interval/provider mapping. Supply current quote items with sublines. Flat lines inputs are rejected. Client must choose exactly one item per choice group before signing. Amounts are given by you, never calculated or suggested. " : ""}${name === "list_catalog" ? "list products" : name.replaceAll("_", " ")}. Workspace-scoped. ${["create_client", "update_client"].includes(name) ? "Contact data only; provider links require staff review in the app." : WRITE_TOOLS.includes(name as any) ? "Draft changes only; a person must review and send. Markdown # starts a section (Heading 1); ## and ### are subheadings within that section. HTTPS/mailto links and bare HTTPS autolinks become normal editor links. A standalone ![alt](data:image/png|jpeg;base64,...){width=120} is an embedded image, under 700 KB / 16 megapixels; no SVG/WebP or remote image URLs. Width is CSS px at canonical page width. Limit 100,000 prose / 1,100,000 total Markdown characters including images." : "Read only."}`,
     inputSchema: {
       type: "object",
       ...z.toJSONSchema(schema, { target: "draft-7", io: "input" }),
@@ -276,6 +279,7 @@ export async function aiTool(
       : connectorTemplateView(
           entity as Template,
           await repo.entities<Item>("pricing_items"),
+          (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
         );
   }
   if (name === "search_proposals")
@@ -304,9 +308,7 @@ export async function aiTool(
   }
   if (name === "create_proposal_draft") {
     const settings = (
-      await repo.entities<{ id: string; default_validity_days: number }>(
-        "workspace_settings",
-      )
+      await repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
     // Validate content before persisting a draft, using a provisional variable map.
@@ -333,7 +335,13 @@ export async function aiTool(
         sent_at: null,
       } as Proposal),
     );
-    const blocks = markdownBlocks(input.content_markdown, allowed);
+    const blocks = markdownBlocks(
+      input.content_markdown,
+      allowed,
+      await markdownImages(input.content_markdown),
+      pageMetrics(resolveStyles(settings, template.style_overrides))
+        .contentWidth,
+    );
     const p = await service.create(
       {
         ...input,
@@ -362,7 +370,18 @@ export async function aiTool(
     input.content_markdown === undefined
       ? undefined
       : [
-          ...markdownBlocks(input.content_markdown, Object.keys(variables(p))),
+          ...markdownBlocks(
+            input.content_markdown,
+            Object.keys(variables(p)),
+            await markdownImages(input.content_markdown),
+            pageMetrics(
+              resolveStyles(
+                p.workspace_settings,
+                p.template_style_overrides,
+                p.style_overrides,
+              ),
+            ).contentWidth,
+          ),
           ...p.content.filter((b) => b.type === "contract"),
           { type: "pricing_table" as const },
           { type: "signature_block" as const, role: "client" as const },

@@ -142,3 +142,9 @@ Omitting a text/list/heading/image/divider marker removes that block. Omitting a
 Preservation markers are for `update_template` and group `update_saved_block`; do not copy them into proposal draft Markdown.
 
 Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.
+
+### Case-study links and logos
+
+Use normal `[website](https://example.test)` or `[Email](mailto:hello@example.test)` Markdown; bare HTTPS URLs also become links. Other protocols and relative links are rejected.
+
+Call `upload_image` with `{ filename, content_base64, alt }` using a locally resized PNG/JPEG under 700 KB (16 megapixels maximum). It requires the existing `templates:edit` scope and returns an embedded `image_ref`, not a remote asset ID. Put the complete returned value in `![Client logo](IMAGE_REF){width=120}` on its own paragraph. Create a saved block with `type: "group"` to combine that image with case-study text and links. Read/update round trips retain the image and existing marker protections. No remote image fetching, SVG or WebP. EXIF is retained as in Studio; clean it locally if necessary. See [embedded image details](connector-images-rollout.md).

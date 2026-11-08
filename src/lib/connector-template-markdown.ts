@@ -1,5 +1,6 @@
 import { canonical, sha256 } from "./content";
 import { check, type Block, type RichText, type Template } from "./model";
+import { linkMarkdown } from "./markdown";
 
 const protectedTypes = new Set([
   "pricing_table",
@@ -25,6 +26,8 @@ function inline(node: RichText): string {
   for (const mark of node.marks ?? [])
     if (mark.type === "bold") text = `**${text}**`;
     else if (mark.type === "italic") text = `_${text}_`;
+    else if (mark.type === "link")
+      text = linkMarkdown(text, String(mark.attrs?.href ?? ""));
   return text;
 }
 function rich(node: RichText, indent = ""): string {
@@ -62,7 +65,12 @@ export function templateBlockLabel(block: Block) {
                 ? block.text || "Heading"
                 : "Text/list";
 }
-export function templateBlockMarkdown(block: Block) {
+export function templateBlockMarkdown(block: Block, contentWidth = 672) {
+  if (
+    block.type === "image" &&
+    /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(block.src ?? "")
+  )
+    return `![${escapeText(block.alt ?? "")}](<${block.src ?? ""}>){width=${Number((((block.width_percent ?? 100) / 100) * contentWidth).toFixed(4))}}`;
   if (!["heading", "paragraph"].includes(block.type)) return "";
   if (block.content?.content?.some((n) => n.type === "horizontalRule"))
     return "";
@@ -74,7 +82,7 @@ export function templateBlockMarkdown(block: Block) {
     : value;
 }
 /** IDs are opaque and scoped to this exact template revision; no block JSON is encoded. */
-export function templateMarkdownBlocks(template: Template) {
+export function templateMarkdownBlocks(template: Template, contentWidth = 672) {
   const counts = new Map<string, number>();
   for (const block of template.content)
     if (block.id) counts.set(block.id, (counts.get(block.id) ?? 0) + 1);
@@ -91,13 +99,13 @@ export function templateMarkdownBlocks(template: Template) {
     return {
       id,
       block,
-      markdown: templateBlockMarkdown(block),
+      markdown: templateBlockMarkdown(block, contentWidth),
       protected: protectedTypes.has(block.type),
     };
   });
 }
-export const templateMarkdown = (template: Template) =>
-  templateMarkdownBlocks(template)
+export const templateMarkdown = (template: Template, contentWidth = 672) =>
+  templateMarkdownBlocks(template, contentWidth)
     .map(
       (row) =>
         `<!-- yeswell:block:${row.id} -->${row.markdown ? `\n${row.markdown}` : ""}`,
@@ -109,9 +117,10 @@ export function replaceTemplateMarkdown(
   template: Template,
   removeBlocks: string[],
   parse: (markdown: string) => Block[],
+  contentWidth = 672,
 ): Block[] {
   const source = markdown.replace(/\r\n/g, "\n"),
-    rows = templateMarkdownBlocks(template),
+    rows = templateMarkdownBlocks(template, contentWidth),
     known = new Map(rows.map((row) => [row.id, row]));
   check(
     new Set(removeBlocks).size === removeBlocks.length,
@@ -180,13 +189,19 @@ export function replaceTemplateMarkdown(
       return;
     }
     if (
-      !["paragraph", "heading"].includes(row.block.type) ||
+      !["paragraph", "heading", "image"].includes(row.block.type) ||
       row.block.content?.content?.some((n) => n.type === "horizontalRule")
     ) {
       out.push(structuredClone(row.block), ...parse(body));
       return;
     }
     const replacement = parse(body);
+    if (row.block.type === "image" && replacement[0]?.type !== "image") {
+      // Older reads returned an image marker alone. Text added after that
+      // marker is still appended; remove the marker to remove the image.
+      out.push(structuredClone(row.block), ...replacement);
+      return;
+    }
     if (!replacement.length)
       replacement.push(
         row.block.type === "heading"
@@ -202,6 +217,12 @@ export function replaceTemplateMarkdown(
       );
     const first = { ...row.block, ...replacement[0] };
     if (row.block.id) first.id = row.block.id;
+    if (first.type === "image") {
+      delete first.content;
+      delete first.text;
+      delete first.level;
+      delete first.rich_heading;
+    }
     if (first.type === "paragraph") {
       delete first.level;
       delete first.rich_heading;
