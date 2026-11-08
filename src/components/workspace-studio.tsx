@@ -1036,15 +1036,83 @@ export function WorkspaceStudio({
             Only a super admin can change the verified sending domain.
           </p>
         )}
-        <h3>Reminders</h3>
-        <p>
-          Sends 'Reminder · unopened' or 'Reminder · viewed, not signed' as
-          appropriate.
-        </p>
-        <ReminderDays
-          days={draft.reminder_days}
-          onChange={(reminder_days) => change({ reminder_days })}
+        <div className="workspace-setting-row workspace-reminder-row">
+          <div>
+            <h3>Reply-to</h3>
+            <p>Where client replies go.</p>
+          </div>
+          <div className="field">
+            <select
+              aria-label="Reply-to"
+              value={draft.email_reply_to ?? "sender"}
+              disabled={!owner}
+              onChange={(e) =>
+                change({
+                  email_reply_to: e.target.value as "sender" | "workspace",
+                })
+              }
+            >
+              <option value="sender">Sender</option>
+              <option value="workspace">Workspace sending address</option>
+            </select>
+          </div>
+        </div>
+        <ReminderRules
+          settings={draft}
+          disabled={!owner}
+          onChange={(reminder_rules) => change({ reminder_rules })}
         />
+        <div className="workspace-setting-row workspace-reminder-row">
+          <div>
+            <h3>Remind staff to countersign</h3>
+            <p>
+              Next morning is 9:00 on the next Monday–Friday in {draft.timezone}
+              .
+            </p>
+          </div>
+          <div className="workspace-reminder-controls field">
+            <select
+              aria-label="Remind staff to countersign"
+              value={draft.countersign_reminder?.mode ?? "off"}
+              disabled={!owner}
+              onChange={(e) =>
+                change({
+                  countersign_reminder: {
+                    mode: e.target.value as
+                      "off" | "next_morning" | "after_days",
+                    days: draft.countersign_reminder?.days ?? 1,
+                  },
+                })
+              }
+            >
+              <option value="off">Off</option>
+              <option value="next_morning">Next morning</option>
+              <option value="after_days">After days</option>
+            </select>
+            {draft.countersign_reminder?.mode === "after_days" && (
+              <label>
+                After{" "}
+                <input
+                  type="number"
+                  aria-label="Countersign reminder days"
+                  min={1}
+                  max={365}
+                  value={draft.countersign_reminder.days}
+                  disabled={!owner}
+                  onChange={(e) =>
+                    change({
+                      countersign_reminder: {
+                        mode: "after_days",
+                        days: e.target.valueAsNumber,
+                      },
+                    })
+                  }
+                />{" "}
+                days
+              </label>
+            )}
+          </div>
+        </div>
       </>
     ),
     "pricing-references": (
@@ -1154,45 +1222,126 @@ export function WorkspaceStudio({
     </div>
   );
 }
-function ReminderDays({
-  days,
+function ReminderRules({
+  settings,
+  disabled,
   onChange,
 }: {
-  days: number[];
-  onChange: (days: number[]) => void;
+  settings: WorkspaceSettings;
+  disabled: boolean;
+  onChange: (rules: NonNullable<WorkspaceSettings["reminder_rules"]>) => void;
 }) {
-  const [value, setValue] = useState(days.join(", ")),
-    previous = useRef(days.length ? days : [3, 7]);
+  const legacy = [...new Set(settings.reminder_days)].sort((a, b) => a - b);
+  const rules = settings.reminder_rules ?? {
+    enabled: legacy.length > 0,
+    unopened_days: Math.min(365, legacy[0] ?? 3),
+    viewed_days: Math.min(365, legacy[1] ?? legacy[0] ?? 7),
+    stop_after: Math.max(1, legacy.length || 2),
+  };
+  const update = (patch: Partial<typeof rules>) =>
+    onChange({ ...rules, ...patch });
   return (
     <>
-      <label className="check-row">
-        <input
-          role="switch"
-          type="checkbox"
-          checked={days.length > 0}
-          onChange={(e) => {
-            if (days.length) previous.current = days;
-            const next = e.target.checked ? previous.current : [];
-            setValue(next.join(", "));
-            onChange(next);
-          }}
-        />
-        Automatic reminders
-      </label>
-      <Field label="Reminders · days after sending, comma separated">
-        <input
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            onChange(
-              e.target.value
-                .split(",")
-                .filter((n) => n.trim())
-                .map(Number),
-            );
-          }}
-        />
-      </Field>
+      {!settings.reminder_rules && (
+        <p className="workspace-reminder-legacy">
+          Current schedule:{" "}
+          {legacy.length
+            ? `days ${legacy.join(" and ")} after sending`
+            : "automatic reminders off"}
+          . Saving reminder timing applies repeating rules to future sends and
+          reopens. Already-sent proposals keep their schedule.
+        </p>
+      )}
+      <div className="workspace-setting-row workspace-reminder-row">
+        <div>
+          <h3>Automatic client reminders</h3>
+          <p>
+            Each proposal keeps its own Automatic reminders switch. Manually
+            delivered proposals start with it off.
+          </p>
+        </div>
+        <label className="check-row workspace-switch">
+          <input
+            type="checkbox"
+            role="switch"
+            aria-label="Automatic client reminders"
+            disabled={disabled}
+            checked={rules.enabled}
+            onChange={(e) => update({ enabled: e.target.checked })}
+          />
+          <span>{rules.enabled ? "On" : "Off"}</span>
+        </label>
+      </div>
+      {(
+        [
+          [
+            "unopened_days",
+            "Not opened",
+            "Counts from sending or reopening. A view stops these reminders.",
+          ],
+          [
+            "viewed_days",
+            "Viewed, not signed",
+            "Counts from the first view after sending or reopening.",
+          ],
+        ] as const
+      ).map(([key, title, help]) => (
+        <div className="workspace-setting-row workspace-reminder-row" key={key}>
+          <div>
+            <h3>{title}</h3>
+            <p>{help}</p>
+            <small>
+              {settings.reminder_rules
+                ? rules.enabled
+                  ? `Every ${rules[key]} ${rules[key] === 1 ? "day" : "days"}, up to ${rules.stop_after} ${rules.stop_after === 1 ? "reminder" : "reminders"} across both kinds`
+                  : "Off"
+                : "Legacy schedule above stays in effect until you save these controls."}
+            </small>
+          </div>
+          <div className="workspace-reminder-controls field">
+            <label>
+              After{" "}
+              <input
+                type="number"
+                aria-label={`${title} days`}
+                min={1}
+                max={365}
+                value={rules[key]}
+                disabled={disabled || !rules.enabled}
+                onChange={(e) => update({ [key]: e.target.valueAsNumber })}
+              />{" "}
+              days
+            </label>
+          </div>
+        </div>
+      ))}
+      <div className="workspace-setting-row workspace-reminder-row">
+        <div>
+          <h3>Stop after</h3>
+          <p>
+            Per proposal, across unopened and viewed reminders. Manual reminders
+            are not counted.
+          </p>
+        </div>
+        <div className="workspace-reminder-controls field">
+          <label>
+            <input
+              type="number"
+              aria-label="Stop after reminders"
+              min={1}
+              max={100}
+              value={rules.stop_after}
+              disabled={disabled || !rules.enabled}
+              onChange={(e) => update({ stop_after: e.target.valueAsNumber })}
+            />{" "}
+            reminders
+          </label>
+        </div>
+      </div>
+      <p className="muted">
+        Calendar days use {settings.timezone}. Settings apply on the next Send
+        or Reopen.
+      </p>
     </>
   );
 }

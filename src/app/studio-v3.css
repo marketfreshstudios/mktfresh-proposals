@@ -2051,3 +2051,47 @@
 .action-menu .team-remove-action small {
   color: var(--ink-muted);
 }
+
+/* Email-sending rules use the Workspace section-list row pattern. */
+.workspace-reminder-row {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 250px);
+  align-items: center;
+}
+.workspace-reminder-row h3 {
+  margin: 0;
+}
+.workspace-reminder-row p {
+  margin: 4px 0 0;
+}
+.workspace-reminder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.workspace-reminder-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace-reminder-controls input[type="number"] {
+  width: 76px;
+}
+.workspace-reminder-row select,
+.workspace-reminder-row input:not([type="checkbox"]) {
+  min-height: 44px;
+}
+@media (max-width: 699px) {
+  .workspace-reminder-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+.workspace-reminder-row .workspace-switch {
+  min-height: 44px;
+  margin: 0;
+}
+.workspace-reminder-row .field {
+  margin: 0;
+}
