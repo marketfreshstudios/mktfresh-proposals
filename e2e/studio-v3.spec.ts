@@ -310,7 +310,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
       for (const action of await page
         .locator(".studio-v3-shell .workspace .btn.primary")
         .all())
-        await expect(action).toHaveCSS("border-radius", "999px");
+        await expect(action).toHaveCSS("border-radius", "9999px");
       await expect
         .poll(() =>
           page.evaluate(
