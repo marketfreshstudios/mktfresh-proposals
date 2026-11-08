@@ -2044,8 +2044,10 @@ function TemplatesStudioContent({
                 className="saved-block-phone-usage"
                 onClick={() => openTab("Used in")}
               >
-                In {usage.templates.length} templates · {usage.drafts.length}{" "}
-                drafts with a copy
+                In {usage.templates.length}{" "}
+                {usage.templates.length === 1 ? "template" : "templates"} ·{" "}
+                {usage.drafts.length}{" "}
+                {usage.drafts.length === 1 ? "draft" : "drafts"} with a copy
               </button>
             )}
             {mode === "blocks" && (

@@ -124,6 +124,11 @@ export async function prepareLinkedSave(
     delete before.connector_restore_event_id;
   }
   check(before || row, "Saved block required");
+  if (before?.type === "group" && row)
+    check(
+      row.type === "group",
+      "Groups keep their type. Edit their member blocks instead.",
+    );
   const id = (before ?? row)!.id;
   const after = row
     ? validateSavedBlock({

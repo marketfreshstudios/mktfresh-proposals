@@ -765,6 +765,13 @@ function MultiBlockBar({
     binding = useContext(DocumentBindingContext),
     feedback = useBlockFeedback();
   const [menu, setMenu] = useState<HTMLElement | null>(null);
+  const actionsMenu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (menu)
+      actionsMenu.current
+        ?.querySelector<HTMLButtonElement>("button")
+        ?.focus({ preventScroll: true });
+  }, [menu]);
   const doc = binding.current;
   if (!doc) return null;
   const picked = doc.content.filter((b, n) =>
@@ -838,6 +845,8 @@ function MultiBlockBar({
         ) : (
           <button
             aria-label="Selected blocks actions"
+            aria-haspopup="menu"
+            aria-expanded={!!menu}
             onClick={(e) => setMenu(e.currentTarget)}
           >
             ⋯
@@ -851,6 +860,7 @@ function MultiBlockBar({
           className="edit-dark-menu"
         >
           <div
+            ref={actionsMenu}
             role="menu"
             aria-label="Selected blocks actions"
             className="edit-more-menu"

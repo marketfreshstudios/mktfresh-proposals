@@ -1,7 +1,7 @@
 import type { Block, RichText } from "./model";
 export const savedBlockLabel = (row: import("./model").SavedBlock) =>
   row.type === "group"
-    ? `Group · ${row.blocks?.length ?? 0} blocks`
+    ? `Group · ${row.blocks?.length ?? 0} ${row.blocks?.length === 1 ? "block" : "blocks"}`
     : savedBlockType(row.block);
 import { convertTextStyle } from "./editor-document";
 const fixedTypeLabels: Partial<Record<Block["type"], string>> = {

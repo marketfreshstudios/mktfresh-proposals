@@ -9,6 +9,7 @@ import type { Activity } from "../lib/studio";
 import type { Block } from "../lib/model";
 import { fieldLabel } from "../lib/field-labels";
 import { blockText } from "../lib/editor-document";
+import { savedBlockLabel } from "../lib/saved-block-type";
 import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
 import { fontCss } from "../lib/proposal-fonts";
@@ -310,7 +311,7 @@ export function StudioTemplateList({
                   <small>{summary(b.block) || "Empty block"}</small>
                   <small className="saved-block-phone-summary">
                     {b.type === "group"
-                      ? `Group · ${b.blocks?.length ?? 0} blocks`
+                      ? savedBlockLabel(b)
                       : blockType(b.block)}{" "}
                     · In {b.used_in?.templates.length ?? 0}{" "}
                     {b.used_in?.templates.length === 1
@@ -319,9 +320,7 @@ export function StudioTemplateList({
                   </small>
                 </span>
                 <span>
-                  {b.type === "group"
-                    ? `Group · ${b.blocks?.length ?? 0} blocks`
-                    : blockType(b.block)}
+                  {b.type === "group" ? savedBlockLabel(b) : blockType(b.block)}
                 </span>
                 <span>
                   In {b.used_in?.templates.length ?? 0}{" "}

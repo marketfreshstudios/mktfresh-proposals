@@ -51,6 +51,16 @@ it("Staff retains library edit permissions; groups validate, draft scope require
   const created = await request(["content_library"], "POST", row);
   expect(created.status).toBe(201);
   const saved = await created.json();
+  expect(
+    (
+      await request(["content_library"], "POST", {
+        id: saved.id,
+        name: saved.name,
+        block: saved.block,
+        expected_revision: saved.revision,
+      })
+    ).status,
+  ).toBe(400);
   const template = (await f.repo.entities<Template>("templates"))[0];
   await f.repo.put("templates", {
     ...template,
