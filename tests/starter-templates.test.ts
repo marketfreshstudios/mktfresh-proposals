@@ -1,3 +1,4 @@
+import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
 import { validateItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
@@ -142,7 +143,9 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
     expect(rows.rows.every((r) => r.data.default_items?.length === 0)).toBe(
       true,
     );
-    const reference = starterTemplates("00000000-0000-4000-8000-000000000000");
+    const reference = starterTemplates(
+      "00000000-0000-4000-8000-000000000000",
+    ).map(preAmericanEnglishStarter);
     expect(rows.rows.map(({ data: { id, ...t } }) => t)).toEqual(
       reference.map(({ id, ...t }) => t),
     );

@@ -36,6 +36,7 @@ textarea {
   outline: 2px solid var(--focus-ring);
 }
 button {
+  border-radius: var(--radius-button);
   cursor: pointer;
 }
 button:disabled {
@@ -79,7 +80,7 @@ small {
   justify-content: center;
   gap: 6px;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
+  border-radius: var(--radius-button);
   min-height: 36px;
   padding: 7px 13px;
   background: var(--surface);
@@ -1192,6 +1193,7 @@ select:hover:not(:disabled),
   font: 500 13px var(--font-ui);
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
   color: var(--ink-muted);
 }
@@ -1918,4 +1920,9 @@ details[open] > summary > .disclosure-marker > .disclosure-chevron {
   .dialog-actions
   :is(button, a.btn) {
   min-height: 44px;
+}
+
+/* Tab-style buttons remain navigation, including Draw / Type on sign forms. */
+button.btn[role="tab"] {
+  border-radius: var(--radius-navigation-button);
 }

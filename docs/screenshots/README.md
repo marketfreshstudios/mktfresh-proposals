@@ -12,7 +12,7 @@ Rendered from the real app using neutral visual fixtures. Provider-specific stat
 | send | [desktop light](send-desktop-light.png) | [desktop dark](send-desktop-dark.png) | — | — |
 | clients | [desktop light](clients-desktop-light.png) | [desktop dark](clients-desktop-dark.png) | — | — |
 | client-detail | [desktop light](client-detail-desktop-light.png) | [desktop dark](client-detail-desktop-dark.png) | — | — |
-| catalogue | [desktop light](catalogue-desktop-light.png) | [desktop dark](catalogue-desktop-dark.png) | — | — |
+| catalog | [desktop light](catalogue-desktop-light.png) | [desktop dark](catalogue-desktop-dark.png) | — | — |
 | templates | [desktop light](templates-desktop-light.png) | [desktop dark](templates-desktop-dark.png) | — | — |
 | template-editor | [desktop light](template-editor-desktop-light.png) | [desktop dark](template-editor-desktop-dark.png) | — | — |
 | content-library | [desktop light](content-library-desktop-light.png) | [desktop dark](content-library-desktop-dark.png) | — | — |

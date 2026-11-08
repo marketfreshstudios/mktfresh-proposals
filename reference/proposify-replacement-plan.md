@@ -121,7 +121,7 @@ Proposify gives you two exits on your plan: a per-proposal "Download as PDF" (30
 2. **PDFs via browser automation:** a Playwright script running on your Mac in a logged-in Chrome profile (or driven by Claude in Chrome) iterates the proposal list, opens each, triggers Download as PDF, waits for the render, saves as `{proposify_id}_{client}_{title}.pdf`. At ~45 s each, 300 proposals ≈ 4 hours unattended; run overnight. Retry list for failures.
 3. **Upload & link:** push PDFs to Supabase Storage, attach to the imported rows, extract text (pdftotext) for search.
 4. **Templates and content:** don't scrape — rebuild your handful of live templates by hand in the new editor from the PDFs; it's faster and cleaner than parsing Proposify's markup.
-5. **Verify:** count rows vs. PDFs, spot-check 10 signed ones for audit pages, then keep the Proposify account one more billing cycle as insurance before cancelling.
+5. **Verify:** count rows vs. PDFs, spot-check 10 signed ones for audit pages, then keep the Proposify account one more billing cycle as insurance before canceling.
 
 Risk: Proposify's web app may rate-limit or block scripted downloads; pace the script (one at a time, human-like waits) and, if the internal JSON endpoints the web app uses are stable, capture them from the network tab to download PDFs directly with the session cookie.
 

@@ -1,4 +1,5 @@
 "use client";
+import { anchoredPopover } from "../lib/popover-position";
 import { useManagedPopover } from "./editor-popovers";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 /** Native top-layer menus escape the pinned bar's lower stacking context. */
@@ -12,8 +13,10 @@ export function ToolbarPopover({
   visualViewport = true,
   placementAnchor,
   preferredSide = "below",
+  align,
 }: {
   placementAnchor?: HTMLElement;
+  align?: "start" | "end";
   preferredSide?: "below" | "right";
   onEscape?: () => void;
   visualViewport?: boolean;
@@ -43,40 +46,43 @@ export function ToolbarPopover({
         el.parentElement;
       const bounds = anchor!.getBoundingClientRect(),
         box = el.getBoundingClientRect();
-      const paper = anchor
-        ?.closest(".editor-document-region,.studio-template-main")
-        ?.querySelector<HTMLElement>(".editor-paper,.template-paged-paper");
-      let left = (viewport?.offsetLeft ?? 0) + 8,
+      // Floating menus follow their own trigger, even when a wide toolbar
+      // extends beyond the document text column. Clamp only to the viewport.
+      const left = (viewport?.offsetLeft ?? 0) + 8,
         right =
           (viewport?.offsetLeft ?? 0) + (viewport?.width ?? innerWidth) - 8;
-      if (paper) {
-        const rect = paper.getBoundingClientRect(),
-          scale = rect.width / paper.offsetWidth,
-          style = getComputedStyle(paper);
-        const start = rect.left + parseFloat(style.paddingLeft) * scale,
-          end = rect.right - parseFloat(style.paddingRight) * scale;
-        // Keep wide-screen menus inside the text column, clear of both action
-        // gutters. Small screens retain the viewport-sized, scrollable menu.
-        if (end - start >= box.width) {
-          left = Math.max(left, start);
-          right = Math.min(right, end);
-        }
-      }
       const toolbar = anchor?.closest(".editor-edit-bar");
       const edge = toolbar?.getBoundingClientRect() ?? bounds;
-      const below = bottom - edge.bottom - 4,
-        above = edge.top - top - 4;
-      let x = Math.max(left, Math.min(bounds.left, right - box.width)),
-        y = Math.max(top, Math.min(bounds.bottom + 4, bottom - box.height));
-      if (toolbar) {
-        // Relocated bars can sit at the bottom of a page. Keep their sibling
-        // actions clickable while a menu is open instead of clamping over them.
-        const useAbove = box.height > below && above > below;
-        const room = Math.max(44, useAbove ? above : below);
-        el.style.maxHeight = `${Math.min(500, room)}px`;
-        const height = el.getBoundingClientRect().height;
-        y = useAbove ? edge.top - height - 4 : edge.bottom + 4;
-      }
+      const position = anchoredPopover(
+        {
+          left: bounds.left,
+          right: bounds.right,
+          width: bounds.width,
+          height: edge.height,
+          top: edge.top,
+          bottom: edge.bottom,
+        },
+        box,
+        { left, right, top, bottom },
+        align ?? (toolbar ? "start" : "end"),
+      );
+      el.style.maxHeight = `${Math.min(500, position.maxHeight)}px`;
+      const height = el.getBoundingClientRect().height;
+      const final = anchoredPopover(
+        {
+          left: bounds.left,
+          right: bounds.right,
+          width: bounds.width,
+          height: edge.height,
+          top: edge.top,
+          bottom: edge.bottom,
+        },
+        { width: box.width, height },
+        { left, right, top, bottom },
+        align ?? (toolbar ? "start" : "end"),
+      );
+      let x = final.left,
+        y = final.top;
       if (avoid) {
         const text = avoid.getBoundingClientRect();
         const clear = (x: number, y: number) =>

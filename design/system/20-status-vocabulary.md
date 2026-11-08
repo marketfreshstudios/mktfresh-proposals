@@ -4,7 +4,7 @@ Status is fixed vocabulary. The words below are the only words; do not paraphras
 
 ## Proposal status
 
-| Status | Colour pair | Icon | Means | Primary next action |
+| Status | Color pair | Icon | Means | Primary next action |
 |---|---|---|---|---|
 | Draft | `neutral-soft` / `ink-muted` | `edit` | Editable, never sent | Continue editing |
 | Sent | `info-soft` / `info` | `send` | Link is live, not yet opened | Copy link · Re-send |
@@ -17,7 +17,7 @@ Status is fixed vocabulary. The words below are the only words; do not paraphras
 
 **Signed by client is `warning`, not `success`.** It is the one status that is waiting on the studio, and it is the top line of the dashboard. Completed is the only `success`.
 
-**Expired is neutral, not `danger`.** A clock running out is not a failure, and colouring it red next to genuinely declined proposals makes the list unreadable at a glance.
+**Expired is neutral, not `danger`.** A clock running out is not a failure, and coloring it red next to genuinely declined proposals makes the list unreadable at a glance.
 
 ## Source badge
 
@@ -27,7 +27,7 @@ Beside the status, never instead of it. `native` renders nothing. `imported` ren
 
 Background work — PDF sealing, email, accounting sync, subscription setup — has its own state, shown wherever the proposal appears. It is never a modal, and it never contradicts the signature.
 
-| State | Colour pair | Icon | Retryable | Copy pattern |
+| State | Color pair | Icon | Retryable | Copy pattern |
 |---|---|---|---|---|
 | Queued | `neutral-soft` / `ink-muted` | `clock` | no | "Queued" |
 | Running | `info-soft` / `info` | `running` | no | "Sealing PDF…" |

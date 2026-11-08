@@ -16,7 +16,6 @@
 .ps-root :focus-visible {
   outline: var(--stroke-thick) solid var(--focus-ring);
   outline-offset: var(--stroke-thick);
-  border-radius: var(--radius-sm);
 }
 .ps-paper :focus-visible {
   outline-color: var(--paper-accent);
@@ -40,7 +39,7 @@
   height: var(--control-md);
   padding: 0 var(--space-4);
   border: var(--stroke-hairline) solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-button);
   font: inherit;
   font-size: 15px;
   line-height: 22px;
@@ -785,7 +784,7 @@ textarea.ps-field__control {
   padding: 0 10px;
   border: 0;
   background: transparent;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-button);
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 13px;

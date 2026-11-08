@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
@@ -707,7 +708,7 @@ function NewProposal({ data }: { data: Data }) {
             />
           </Field>
           <Field label="Template">
-            <select
+            <Select
               name="template"
               required
               defaultValue={
@@ -724,7 +725,7 @@ function NewProposal({ data }: { data: Data }) {
                     {t.name}
                   </option>
                 ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Valid until">
             <ValidityField

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
@@ -447,7 +448,7 @@ function InlineEmailEditor({
           {valuesOn && (
             <label className="field email-sample">
               <span className="sr-only">Preview data</span>
-              <select
+              <Select
                 value={proposal}
                 onChange={(e) => setProposal(e.target.value)}
               >
@@ -461,7 +462,7 @@ function InlineEmailEditor({
                       {p.title} · {p.client.company}
                     </option>
                   ))}
-              </select>
+              </Select>
             </label>
           )}
           <div className="email-width-tools">

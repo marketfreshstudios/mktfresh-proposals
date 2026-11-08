@@ -34,7 +34,7 @@ Expected default-quote counts, in display order: **0, 3, 3, 2, 1, 0**. Products 
 | Visibility | `retainer-core-295`, `retainer-growth-495` (choose one; no default) |
 | Audit | `audit` |
 
-If any required member is missing, inactive or legacy, the whole starter quote stays empty. The dry run prints each requested SKU, its actual resolved ID, and any issue. An inactive SKU match never falls back to an old active seed row. Catalogue prices/mappings are copied, never calculated.
+If any required member is missing, inactive or legacy, the whole starter quote stays empty. The dry run prints each requested SKU, its actual resolved ID, and any issue. An inactive SKU match never falls back to an old active seed row. Catalog prices/mappings are copied, never calculated.
 
 Own It Over Time's starter option contains its recurring line only; it does not copy a preset kickoff amount. The Website Investment section includes the owner-approved guidance: “[If the client chooses Own It Over Time, add the kickoff as a one-time Custom line with its amount, then delete this note.]” The existing bracket guard blocks sending until the note is handled and removed. There is no blank-amount schema change.
 

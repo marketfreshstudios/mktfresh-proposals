@@ -433,6 +433,7 @@ export function EditorHeader({
     <header className={`editor-document-header ${className}`}>
       <div className="editor-header-identity">
         <Button
+          className="editor-back-link"
           title={`Back to ${backLabel.toLowerCase()}`}
           aria-label={`Back to ${backLabel.toLowerCase()}`}
           disabled={leaving}

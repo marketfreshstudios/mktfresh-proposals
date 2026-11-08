@@ -1,5 +1,6 @@
 @import "./foundation-tokens.css";
 .staff-foundation {
+  --radius-navigation-button: 10px;
   min-height: 100dvh;
   background: var(--surface-page);
   color: var(--ink);
@@ -171,7 +172,7 @@
 }
 .staff-foundation .btn {
   min-height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-button);
   transition:
     background-color 150ms ease-out,
     border-color 150ms ease-out;
@@ -681,7 +682,7 @@
 }
 .engagement-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   margin: 20px 0;
 }

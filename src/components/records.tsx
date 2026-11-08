@@ -1,4 +1,5 @@
 "use client";
+import { Select, Switch } from "./form-controls";
 import {
   ProposalEngagement,
   EngagementListLine,
@@ -598,7 +599,7 @@ export function ProposalListV4({
       <div className="list-tools">
         <label className="proposal-owner-filter">
           Owner
-          <select
+          <Select
             aria-label="Filter by owner"
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
@@ -610,7 +611,7 @@ export function ProposalListV4({
                 {m.display_name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="search-field">
           <Icon name="search" />
@@ -623,7 +624,7 @@ export function ProposalListV4({
         </label>
         <label className="compact-views">
           View
-          <select
+          <Select
             aria-label="Filter proposals"
             value={view}
             onChange={(e) => change(e.target.value)}
@@ -633,7 +634,7 @@ export function ProposalListV4({
                 {v} ({rows.filter((p) => inView(p, viewKey(v))).length})
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       </div>
       <nav className="proposal-views" aria-label="Proposal views">
@@ -1408,9 +1409,7 @@ export function RecordV4({
       {native && p.token && (
         <section className="record-reminders">
           <label className="check">
-            <input
-              type="checkbox"
-              role="switch"
+            <Switch
               checked={reminders}
               disabled={
                 reminderBusy ||
@@ -1557,6 +1556,7 @@ export function RecordV4({
       </ol>
       {native && (
         <ProposalEngagement
+          knownRecipient={!!p.token && !!p.client.email}
           id={p.id}
           timezone={data.settings?.timezone ?? "UTC"}
           notify={data.settings?.engagement_notifications?.in_app !== false}

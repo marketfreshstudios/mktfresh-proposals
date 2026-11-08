@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import type { Proposal, SavedBlock } from "../lib/model";
 import { api, post, Button, Field } from "./ui";
@@ -67,7 +68,7 @@ export function ReplaceSavedBlockDialog({
         }}
       >
         <Field label="Saved block">
-          <select
+          <Select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
           >
@@ -76,7 +77,7 @@ export function ReplaceSavedBlockDialog({
                 {r.name} · version {r.version ?? 1}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         {error && <p role="alert">{error}</p>}
         <DialogActions>

@@ -1,3 +1,4 @@
+import { preAmericanEnglishStarter } from "./starter-legacy-copy";
 import { sameStarterState } from "../src/lib/starter-template-state";
 import oldBands from "./starter-bands-v83.json" with { type: "json" };
 import previousCovers from "./starter-covers-pr-a.json" with { type: "json" };
@@ -22,9 +23,13 @@ export function starterBrandUpdates(
       const current = saved.find(
         (t) => t.id === after.id && t.starter_key === after.starter_key,
       );
-      const baseline = [before, previous].find(
-        (candidate) => current && sameStarterState(current, candidate),
-      );
+      const legacyBefore = preAmericanEnglishStarter(before);
+      const baseline = [
+        before,
+        previous,
+        legacyBefore,
+        preAmericanEnglishStarter(previous),
+      ].find((candidate) => current && sameStarterState(current, candidate));
       const eligible = !!baseline;
       const replacement = {
         ...current,
@@ -41,8 +46,10 @@ export function starterBrandUpdates(
         reason: !current
           ? "not present"
           : eligible
-            ? `identical to ${baseline === before ? "PR #83" : "PR A"} seed`
-            : current && sameStarterState(current, after)
+            ? `identical to ${baseline === before || baseline === legacyBefore ? "PR #83" : "PR A"} seed`
+            : current &&
+                (sameStarterState(current, after) ||
+                  sameStarterState(current, preAmericanEnglishStarter(after)))
               ? "unchanged — already updated"
               : "edited — kept",
       };

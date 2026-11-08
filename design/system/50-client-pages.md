@@ -31,7 +31,7 @@ Its own focused step, not a section of the reading page. It opens over `overlay`
 Order matters: summary of what's being accepted (the selected items and both totals) → the consent text → the signature → identity → submit.
 
 - **The summary is complete.** Every selected line and both totals. A client must be able to check what they are signing without going back.
-- **The consent text is the server's, in full**, in `doc-small` on `paper`, with a required checkbox. Never truncated, never behind a "read more", never summarised. The audit trail records this exact text.
+- **The consent text is the server's, in full**, in `doc-small` on `paper`, with a required checkbox. Never truncated, never behind a "read more", never summarized. The audit trail records this exact text.
 - **Draw or type**, with draw thumb-friendly and default on touch. `stroke-signature` in `paper-ink` on `paper`. Clear and redo always available.
 - **Name, title, email.** The email must match the address it was sent to. Design that error kindly — name the address it went to, offer to have it re-sent elsewhere, never say "invalid".
 - **Submitting takes several seconds** while the PDF seals. Show a determinate-feeling state with its own copy ("Sealing your signed copy…"), disable the submit control, and never let a second press double-submit.

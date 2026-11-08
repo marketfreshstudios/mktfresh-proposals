@@ -620,11 +620,12 @@
   .email-edit-bar.image-edit-bar .edit-formatting {
     gap: 0;
   }
-  .email-edit-bar.image-edit-bar button {
+  .email-edit-bar.image-edit-bar
+    button:not(:where([role^="menuitem"], [role="option"])) {
     color: #fff;
     background: transparent;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-button);
     min-width: 44px;
     height: 44px;
     min-height: 44px;
@@ -653,4 +654,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.studio-email-editor
+  .email-width-tools
+  > .button-wrap
+  > button:not(:where([role^="menuitem"], [role="option"])) {
+  border-radius: var(--radius-button);
 }

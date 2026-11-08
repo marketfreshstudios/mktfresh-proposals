@@ -809,36 +809,6 @@
   gap: 7px;
   min-height: 32px;
 }
-.item-options input[role="switch"] {
-  appearance: none !important;
-  width: 30px;
-  height: 18px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  position: relative;
-  cursor: pointer;
-  flex: none;
-}
-.item-options input[role="switch"]:before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--ink-muted);
-  transition: transform 140ms ease-out;
-}
-.item-options input[role="switch"]:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.item-options input[role="switch"]:checked:before {
-  transform: translateX(12px);
-  background: #fff;
-}
 .drag-handle {
   font: 600 19px/24px var(--font-ui);
   min-width: 32px;
@@ -1254,9 +1224,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .item-options input[role="switch"]:before {
-    transition: none;
-  }
 }
 /* Home groups follow frames 3d–3f: a title above each group of action rows. */
 .staff-foundation:has(.home-v4) > .workspace > .page-header {
@@ -1436,12 +1403,6 @@
   .studio-dismiss {
     display: none;
   }
-}
-.staff-foundation .item-options input[role="switch"] {
-  min-height: 18px;
-  height: 18px;
-  min-width: 30px;
-  width: 30px;
 }
 .item-options .check {
   min-height: 40px;

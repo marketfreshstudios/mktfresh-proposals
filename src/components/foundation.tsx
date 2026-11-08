@@ -1,4 +1,5 @@
 "use client";
+import { anchoredPopover } from "../lib/popover-position";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useId, useState, type ReactNode } from "react";
 export function Skeleton({
@@ -44,24 +45,51 @@ export function Sheet({
     if (!host) return;
     const dialog = ref.current!;
     dialog.showModal();
+    let stopPlacing = () => {};
     if (menu && window.innerWidth >= 700 && anchor) {
-      const bounds = anchor.getBoundingClientRect(),
-        box = dialog.getBoundingClientRect();
-      dialog.style.setProperty(
-        "--menu-x",
-        `${Math.max(12, Math.min(bounds.right - box.width, innerWidth - box.width - 12))}px`,
-      );
-      dialog.style.setProperty(
-        "--menu-y",
-        `${Math.max(12, Math.min(bounds.bottom + 6, innerHeight - box.height - 12))}px`,
-      );
+      const place = () => {
+        const viewport = window.visualViewport;
+        const left = (viewport?.offsetLeft ?? 0) + 12,
+          top = (viewport?.offsetTop ?? 0) + 12;
+        const position = anchoredPopover(
+          anchor.getBoundingClientRect(),
+          dialog.getBoundingClientRect(),
+          {
+            left,
+            top,
+            right: left + (viewport?.width ?? innerWidth) - 24,
+            bottom: top + (viewport?.height ?? innerHeight) - 24,
+          },
+        );
+        dialog.style.setProperty("--menu-x", `${position.left}px`);
+        dialog.style.setProperty("--menu-y", `${position.top}px`);
+        dialog.style.maxHeight = `${position.maxHeight}px`;
+      };
+      place();
+      const viewport = window.visualViewport;
+      const observer = new ResizeObserver(place);
+      observer.observe(dialog);
+      window.addEventListener("resize", place);
+      window.addEventListener("scroll", place, true);
+      viewport?.addEventListener("resize", place);
+      viewport?.addEventListener("scroll", place);
+      stopPlacing = () => {
+        observer.disconnect();
+        window.removeEventListener("resize", place);
+        window.removeEventListener("scroll", place, true);
+        viewport?.removeEventListener("resize", place);
+        viewport?.removeEventListener("scroll", place);
+      };
       dialog
         .querySelector<HTMLElement>(
           ".action-menu a, .action-menu button:not(:disabled)",
         )
         ?.focus();
     } else dialog.querySelector<HTMLElement>("h2")?.focus();
-    return () => dialog.close();
+    return () => {
+      stopPlacing();
+      dialog.close();
+    };
   }, [host, menu, anchor]);
   if (!host) return null;
   return createPortal(

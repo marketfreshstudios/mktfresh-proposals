@@ -1,15 +1,15 @@
 import type { Block } from "./model";
 import { contentSections } from "./ai-review";
-const cancelled = () =>
+const canceled = () =>
   new Error(
-    "Move cancelled: document blocks changed. Nothing was moved. Reload and try again.",
+    "Move canceled: document blocks changed. Nothing was moved. Reload and try again.",
   );
 /** A move is a permutation, including page-break IDs and nested block content. */
 export function assertBlockMove(before: Block[], after: Block[]) {
-  if (before.length !== after.length) throw cancelled();
+  if (before.length !== after.length) throw canceled();
   const originals = new Map(before.map((block) => [block.id, block]));
   if (originals.size !== before.length || before.some((block) => !block.id))
-    throw cancelled();
+    throw canceled();
   const seen = new Set<string>();
   for (const block of after) {
     if (
@@ -18,7 +18,7 @@ export function assertBlockMove(before: Block[], after: Block[]) {
       !originals.has(block.id) ||
       JSON.stringify(originals.get(block.id)) !== JSON.stringify(block)
     )
-      throw cancelled();
+      throw canceled();
     seen.add(block.id);
   }
   return after;
@@ -38,7 +38,7 @@ export function moveBlockRange(
     before < 0 ||
     before > content.length
   )
-    throw cancelled();
+    throw canceled();
   if (before >= start && before <= end)
     return assertBlockMove(content, content);
   const moved = content.slice(start, end),
@@ -136,7 +136,7 @@ export function applyDocumentMove(
     if (JSON.stringify(next) !== JSON.stringify(content)) commit(next);
     return true;
   } catch (reason) {
-    error(reason instanceof Error ? reason.message : cancelled().message);
+    error(reason instanceof Error ? reason.message : canceled().message);
     return false;
   }
 }
@@ -149,7 +149,7 @@ export function moveDocumentBlocksAt(
   selected: string[] = [],
 ) {
   if (!Number.isInteger(before) || before < 0 || before > content.length)
-    throw cancelled();
+    throw canceled();
   const source = content.findIndex((b) => b.id === from);
   if (source < 0) return content;
   if (selected.length > 1 && selected.includes(from)) {

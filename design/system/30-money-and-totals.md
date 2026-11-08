@@ -4,7 +4,7 @@
 
 Every surface that shows money shows **two** figures side by side: **one-time** and **monthly**. There is no combined number anywhere in the product — not in the list, not in the sticky bar, not in an email, not in the PDF. A blended figure would be wrong in a way nobody could catch.
 
-Both totals are set in `ink` at the same size (`amount-display` in the sticky bar and record header, `amount-lg` in a subtotal row). **Neither is coloured.** The temptation to make the recurring one green is the single most likely mistake here: a colour that reads as "good" attached to one of two figures a client is comparing is a thumb on the scale.
+Both totals are set in `ink` at the same size (`amount-display` in the sticky bar and record header, `amount-lg` in a subtotal row). **Neither is colored.** The temptation to make the recurring one green is the single most likely mistake here: a color that reads as "good" attached to one of two figures a client is comparing is a thumb on the scale.
 
 They are told apart by label and suffix, always both:
 

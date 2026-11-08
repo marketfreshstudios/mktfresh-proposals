@@ -1,6 +1,6 @@
 # Studio v3 — template and saved-block editors (PR #79)
 
-The Studio v3 spec takes precedence over the prototype. This phase reuses editor v2's Sections nav, quote rows, Fields cards, Blocks catalogue, toolbars, band controls, history, drawers and sheets.
+The Studio v3 spec takes precedence over the prototype. This phase reuses editor v2's Sections nav, quote rows, Fields cards, Blocks catalog, toolbars, band controls, history, drawers and sheets.
 
 Templates autosave after 600ms through the serialized save/recovery flow. Authored inactive defaults remain intact; preview totals and new drafts continue to skip them with the existing warnings. New proposal from this opens the existing New proposal sheet with this template selected. Availability is in the header menu; unavailable templates show “Hidden from new proposals” in the header and list.
 
@@ -20,7 +20,7 @@ Captures use local, neutral fixtures. Reference images are comparison targets; c
 | --- | --- | --- |
 | Default quote | [Capture](screenshots/studio-v3-editors/template-quote.png) | [08-template-quote](../design/studio-v3/reference/08-template-quote.png) |
 | Fields | [Capture](screenshots/studio-v3-editors/template-fields.png) | [08-template-Fields](../design/studio-v3/reference/08-template-Fields.png) |
-| Blocks | [Catalogue](screenshots/studio-v3-editors/template-blocks.png), [Saved blocks](screenshots/studio-v3-editors/template-blocks-saved.png) | [08-template-Blocks](../design/studio-v3/reference/08-template-Blocks.png) |
+| Blocks | [Catalog](screenshots/studio-v3-editors/template-blocks.png), [Saved blocks](screenshots/studio-v3-editors/template-blocks-saved.png) | [08-template-Blocks](../design/studio-v3/reference/08-template-Blocks.png) |
 | Styles | [Fonts/styles](screenshots/studio-v3-editors/template-styles.png), [Bands/reset](screenshots/studio-v3-editors/template-styles-bands.png) | [08-template-Styles](../design/studio-v3/reference/08-template-Styles.png) |
 | Saved block Fields | [Capture](screenshots/studio-v3-editors/block-fields.png) | [09-block-Fields](../design/studio-v3/reference/09-block-Fields.png) |
 | Saved block Details | [Capture](screenshots/studio-v3-editors/block-details.png) | [09-block-Details](../design/studio-v3/reference/09-block-Details.png) |

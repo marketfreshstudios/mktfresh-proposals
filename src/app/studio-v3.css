@@ -611,6 +611,7 @@
 .workspace-section-list button {
   border: 0;
   border-left: 2px solid transparent;
+  border-radius: 0;
   --control-active-background: none;
   background: none;
   --control-active-color: var(--ink-muted);
@@ -1319,33 +1320,6 @@
   justify-content: space-between;
   gap: 20px;
 }
-.workspace-switch input[role="switch"] {
-  appearance: none;
-  width: 40px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--border-strong);
-  position: relative;
-  flex: none;
-  cursor: pointer;
-}
-.workspace-switch input[role="switch"]:checked {
-  background: var(--accent);
-}
-.workspace-switch input[role="switch"]::after {
-  content: "";
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--surface);
-  top: 2px;
-  left: 2px;
-  transition: transform 0.12s;
-}
-.workspace-switch input[role="switch"]:checked::after {
-  transform: translateX(16px);
-}
 @media (max-width: 699px) {
   .studio-list-intro {
     flex-wrap: wrap;
@@ -1357,15 +1331,6 @@
   .workspace-brand-top {
     align-items: stretch;
   }
-}
-.workspace-switch input[role="switch"]::after {
-  width: 12px;
-  height: 12px;
-  top: 2px;
-  left: 2px;
-}
-.workspace-switch input[role="switch"]:checked::after {
-  transform: translateX(12px);
 }
 .workspace-section-card .workspace-switch {
   justify-content: flex-start;
@@ -1523,7 +1488,7 @@
   color: var(--warning);
 }
 .studio-v3-shell .workspace .btn.primary {
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-button);
 }
 
 /* Owner review: Studio list surfaces and semantic states (document editors excluded). */
@@ -1979,7 +1944,7 @@
   color: var(--ink-muted);
 }
 .studio-connections-v3 .btn {
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-button);
 }
 .workspace-accent input[aria-label="Accent hex"] {
   width: 84px;

@@ -68,8 +68,8 @@ Routes. Keep the existing ones and their redirects in `src/lib/staff-routes.ts`:
    - client/proposal/quote fields for client emails
    - For read-only emails, the Fields tab is replaced by the read-only note, so the tabs are Details · Plain text.
 5. **Previews are the real renderer.** The canvas shows the email exactly as it is sent. Staff emails carry the Yeswell product line (#71), not the workspace brand header the prototype draws. Client emails show workspace branding plus "Powered by Yeswell" when that setting is on.
-6. **The template Blocks tab is the full #73 Blocks catalogue, plus a Saved blocks group.** It is not saved blocks only.
-   - The catalogue includes Heading, Paragraph, lists, Divider, Image, Pricing / Quote, Contract, Signatures, Client signature, Company signature and Page break.
+6. **The template Blocks tab is the full #73 Blocks catalog, plus a Saved blocks group.** It is not saved blocks only.
+   - The catalog includes Heading, Paragraph, lists, Divider, Image, Pricing / Quote, Contract, Signatures, Client signature, Company signature and Page break.
    - Same click/drag/keyboard insertion, insertion line, signature rules and "Signatures" heading as the proposal editor.
    - Saved blocks are listed below with "Insert" and drag handles.
 7. **Template Default quote and Sections reuse the editor.** Default quote uses the proposal editor's Quote tab rows (collapsed rows that expand, sub-lines, Choose one, Optional · ticked). Sections uses the editor's Sections nav (grouped by PAGE N). Don't build the prototype's simplified copies.

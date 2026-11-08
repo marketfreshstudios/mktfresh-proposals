@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
@@ -150,7 +151,7 @@ export function TeamStudio({
             </div>
             <div role="cell">
               <span className="team-mobile-label">Role</span>
-              <select
+              <Select
                 aria-label={`Role for ${person.display_name}`}
                 value={person.role}
                 disabled={
@@ -170,7 +171,7 @@ export function TeamStudio({
               >
                 <option value="owner">Super admin</option>
                 <option value="member">Staff</option>
-              </select>
+              </Select>
             </div>
             <div role="cell">
               <span className="team-mobile-label">Status</span>
@@ -557,10 +558,10 @@ function TeamForm({
       )}
       {["invite", "role"].includes(action) && (
         <Field label="Role">
-          <select name="role" defaultValue={person?.role ?? "member"}>
+          <Select name="role" defaultValue={person?.role ?? "member"}>
             <option value="member">Staff</option>
             <option value="owner">Super admin</option>
-          </select>
+          </Select>
         </Field>
       )}
       {action === "own_password" && (

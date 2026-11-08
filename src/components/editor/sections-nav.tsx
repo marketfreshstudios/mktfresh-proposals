@@ -213,7 +213,7 @@ export function SectionsNav({
               );
               onChange(next);
             } catch (e) {
-              feedback.error(e instanceof Error ? e.message : "Move cancelled");
+              feedback.error(e instanceof Error ? e.message : "Move canceled");
             }
           }
         }}

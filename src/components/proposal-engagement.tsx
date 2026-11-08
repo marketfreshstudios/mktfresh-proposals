@@ -20,10 +20,12 @@ export function ProposalEngagement({
   id,
   timezone,
   notify = true,
+  knownRecipient = false,
 }: {
   id: string;
   timezone: string;
   notify?: boolean;
+  knownRecipient?: boolean;
 }) {
   const [report, setReport] = useState<Report | null>(null),
     [error, setError] = useState("");
@@ -106,10 +108,14 @@ export function ProposalEngagement({
               <dd>{report.views}</dd>
             </div>
             <div>
-              <dt title="Unique browsers on this proposal link, not verified people. No fingerprinting.">
-                Unique viewers
+              <dt title="Separate browsers that opened this link — not verified people">
+                Devices
               </dt>
               <dd>{report.unique_viewers}</dd>
+            </div>
+            <div>
+              <dt title="Distinct known recipient links opened">Recipients</dt>
+              <dd>{report.views > 0 && knownRecipient ? 1 : 0}</dd>
             </div>
             <div>
               <dt>Total time</dt>

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { useId, useState } from "react";
 import { AsYouType, getCountries } from "libphonenumber-js/max";
 import {
@@ -130,7 +131,7 @@ export function ClientContactFields({ client }: { client?: Client }) {
           </Field>
         ))}
         <Field label="Country">
-          <select
+          <Select
             aria-label="Country"
             name="address.country"
             defaultValue={countryCode(client?.address.country || "US")}
@@ -142,7 +143,7 @@ export function ClientContactFields({ client }: { client?: Client }) {
                   {countryName(c)}
                 </option>
               ))}
-          </select>
+          </Select>
         </Field>
       </div>
     </>

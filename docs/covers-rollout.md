@@ -11,7 +11,7 @@ node --env-file-if-exists=.env.local --import tsx scripts/upgrade-starter-brandi
 node --env-file-if-exists=.env.local --import tsx scripts/upgrade-starter-branding.ts --confirm
 ```
 
-Review the dry run first. It compares the **entire** saved starter with its PR #83 seed, including names, content, quotes, cover, bands and availability. Changed/missing/already-updated starters are skipped. A catalogue change that makes the old seed impossible to verify also skips it. Confirmation checks the complete row again atomically. It updates cover/header defaults only; old sample, non-starters, proposals, published/frozen versions and sealed files are never updated. The script targets workspace 1 explicitly and is safe to rerun.
+Review the dry run first. It compares the **entire** saved starter with its PR #83 seed, including names, content, quotes, cover, bands and availability. Changed/missing/already-updated starters are skipped. A catalog change that makes the old seed impossible to verify also skips it. Confirmation checks the complete row again atomically. It updates cover/header defaults only; old sample, non-starters, proposals, published/frozen versions and sealed files are never updated. The script targets workspace 1 explicitly and is safe to rerun.
 
 New automatic logo elements prefer the uploaded wide logo; otherwise the icon with the workspace name; otherwise the name. Explicit compositions remain authored content. Old covers without `logo_mode: "brand"` and old band image sources retain their prior rendering. No settings columns or storage policies are added.
 

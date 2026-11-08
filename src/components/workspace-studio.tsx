@@ -1,4 +1,5 @@
 "use client";
+import { Switch, Select } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
@@ -214,9 +215,7 @@ export function WorkspaceStudio({
     help?: string,
   ) => (
     <label className="check-row workspace-switch">
-      <input
-        type="checkbox"
-        role="switch"
+      <Switch
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
@@ -248,7 +247,7 @@ export function WorkspaceStudio({
   ];
   const fontSelect = (label: string, kind: "heading" | "body") => (
     <Field label={label}>
-      <select
+      <Select
         value={
           typeof draft.proposal_fonts?.[kind] === "string"
             ? (draft.proposal_fonts[kind] as string)
@@ -291,7 +290,7 @@ export function WorkspaceStudio({
             ))}
           </optgroup>
         )}
-      </select>
+      </Select>
     </Field>
   );
   const cards: Record<string, ReactNode> = {
@@ -667,7 +666,7 @@ export function WorkspaceStudio({
             {text("Phone", "phone")}
             {text("Address", "address")}
             <Field label="Business state">
-              <select
+              <Select
                 id="workspace-business-state"
                 disabled={!owner}
                 value={draft.business_state?.name ?? ""}
@@ -688,7 +687,7 @@ export function WorkspaceStudio({
                   <option key={state}>{state}</option>
                 ))}
                 <option value="other">Other / outside the US</option>
-              </select>
+              </Select>
             </Field>
             {draft.business_state?.name === "other" && (
               <Field label="State or region">
@@ -837,7 +836,7 @@ export function WorkspaceStudio({
               payment step.
             </p>
           </div>
-          <select
+          <Select
             aria-labelledby="payment-methods-label"
             aria-describedby="payment-methods-hint"
             disabled={!owner}
@@ -854,13 +853,13 @@ export function WorkspaceStudio({
           >
             <option value="card">Card</option>
             <option value="card_ach">Card + US bank account (ACH)</option>
-          </select>
+          </Select>
         </div>
         <details className="workspace-more">
           <Disclosure>More billing settings</Disclosure>
           <div className="stack">
             <Field label="Collection method">
-              <select
+              <Select
                 value={draft.collection_method}
                 onChange={(e) =>
                   change(
@@ -876,7 +875,7 @@ export function WorkspaceStudio({
                   Charge automatically
                 </option>
                 <option value="send_invoice">Send invoice</option>
-              </select>
+              </Select>
             </Field>
             {text(
               "QuickBooks custom services item reference",
@@ -920,7 +919,7 @@ export function WorkspaceStudio({
             />
           </Field>
           <Field label="Signatory staff account">
-            <select
+            <Select
               value={signatory?.user_id ?? ""}
               onChange={(e) =>
                 change(
@@ -943,7 +942,7 @@ export function WorkspaceStudio({
                   {m.display_name} · {m.email}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <StoredSignatureEditor
             value={signatory?.image ?? null}
@@ -1079,7 +1078,7 @@ export function WorkspaceStudio({
             <p>Where client replies go.</p>
           </div>
           <div className="field">
-            <select
+            <Select
               aria-label="Reply-to"
               value={draft.email_reply_to ?? "sender"}
               disabled={!owner}
@@ -1091,7 +1090,7 @@ export function WorkspaceStudio({
             >
               <option value="sender">Sender</option>
               <option value="workspace">Workspace sending address</option>
-            </select>
+            </Select>
           </div>
         </div>
         {(
@@ -1118,9 +1117,7 @@ export function WorkspaceStudio({
             </div>
             <label className="workspace-engagement-switch workspace-switch">
               <span className="sr-only">{label}</span>
-              <input
-                type="checkbox"
-                role="switch"
+              <Switch
                 aria-label={label}
                 disabled={!owner}
                 checked={
@@ -1153,7 +1150,7 @@ export function WorkspaceStudio({
             </p>
           </div>
           <div className="workspace-reminder-controls field">
-            <select
+            <Select
               aria-label="Remind staff to countersign"
               value={draft.countersign_reminder?.mode ?? "off"}
               disabled={!owner}
@@ -1170,7 +1167,7 @@ export function WorkspaceStudio({
               <option value="off">Off</option>
               <option value="next_morning">Next morning</option>
               <option value="after_days">After days</option>
-            </select>
+            </Select>
             {draft.countersign_reminder?.mode === "after_days" && (
               <label>
                 After{" "}
@@ -1211,7 +1208,7 @@ export function WorkspaceStudio({
   cards.money = (
     <>
       <Field label="Currency">
-        <select
+        <Select
           value={draft.currency}
           onChange={(e) =>
             change(
@@ -1223,7 +1220,7 @@ export function WorkspaceStudio({
           {["USD", "CAD", "GBP", "EUR", "AUD"].map((c) => (
             <option key={c}>{c}</option>
           ))}
-        </select>
+        </Select>
       </Field>
       <fieldset className="studio-radio">
         <legend>Cents</legend>
@@ -1343,9 +1340,7 @@ function ReminderRules({
           </p>
         </div>
         <label className="check-row workspace-switch">
-          <input
-            type="checkbox"
-            role="switch"
+          <Switch
             aria-label="Automatic client reminders"
             disabled={disabled}
             checked={rules.enabled}

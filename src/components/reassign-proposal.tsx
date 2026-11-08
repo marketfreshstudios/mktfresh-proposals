@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { DialogActions } from "./dialog-actions";
 import { useEffect, useState } from "react";
 import { liveSenderAssignment } from "../lib/proposal-owner";
@@ -145,7 +146,7 @@ export function ReassignDialog({
               </fieldset>
             )}
             <Field label="To">
-              <select
+              <Select
                 aria-label="To"
                 required
                 value={to}
@@ -159,7 +160,7 @@ export function ReassignDialog({
                       {p.display_name} · {p.email}
                     </option>
                   ))}
-              </select>
+              </Select>
             </Field>
             <label className="check-row">
               <input
