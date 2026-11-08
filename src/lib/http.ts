@@ -18,6 +18,12 @@ import {
 } from "./workspace-icon";
 import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
+import {
+  prepareLinkedSave,
+  savedBlockViews,
+  validateSavedBlock,
+} from "./saved-blocks";
+import type { SavedBlock } from "./model";
 import { ReassignmentService } from "./reassignment";
 import { TeamWorkConflict } from "./team";
 import { teamService } from "./team-runtime";
@@ -846,15 +852,24 @@ async function handleRoute(req: Request, path: string[]) {
     }
     if (method === "DELETE" && path[0] === "content_library" && path[1]) {
       const id = uuid.parse(path[1]);
-      const item = (
-        await rt.repo.entities<{ id: string; name: string }>("content_library")
-      ).find((v) => v.id === id);
+      const item = (await rt.repo.entities<SavedBlock>("content_library")).find(
+        (v) => v.id === id,
+      );
       check(item, "Saved block not found", 404);
-      check(await rt.repo.removeSavedBlock(id), "Saved block not found", 404);
-      await workspaceEvent(rt.repo, user, "content_library_deleted", {
-        name: item.name,
-        entity_id: id,
-      });
+      check(
+        await rt.repo.commitLinkedBlock(
+          await prepareLinkedSave(rt.repo, item, null, user),
+          {
+            id: crypto.randomUUID(),
+            ...user,
+            type: "content_library_deleted",
+            created_at: new Date().toISOString(),
+            metadata: { name: item.name, entity_id: id },
+          },
+        ),
+        "Saved block changed; reload before deleting",
+        409,
+      );
       return json({ deleted: true });
     }
     if (path[0] === "templates" && path[1]) {
@@ -950,6 +965,8 @@ async function handleRoute(req: Request, path: string[]) {
             entities as { id: string }[],
             user,
           );
+        if (table === "content_library")
+          entities = await savedBlockViews(rt.repo, entities as SavedBlock[]);
         return json(
           table === "workspace_settings"
             ? entities.map((e) => ({
@@ -1166,6 +1183,12 @@ async function handleRoute(req: Request, path: string[]) {
               id: uuid,
               name: z.string().min(1).max(200),
               block: z.record(z.string(), z.unknown()),
+              type: z.literal("group").optional(),
+              blocks: z
+                .array(z.record(z.string(), z.unknown()))
+                .min(1)
+                .max(300)
+                .optional(),
             })
             .parse(raw);
         if (table === "templates" || table === "content_library") {
@@ -1181,6 +1204,12 @@ async function handleRoute(req: Request, path: string[]) {
           return json(
             await writeStudioEntity(rt.repo, table, before, entity, user, {
               revision: expected,
+              updateDrafts:
+                table === "content_library" && raw.update_drafts === true,
+              draftIds:
+                table === "content_library" && raw.update_drafts === true
+                  ? z.array(uuid).max(1000).parse(raw.update_draft_ids)
+                  : undefined,
             }),
             201,
           );
@@ -1252,6 +1281,20 @@ async function handleRoute(req: Request, path: string[]) {
         return json(await rt.service.create(input, user), 201);
       }
       uuid.parse(id);
+      if (method === "POST" && action === "replace-saved-block") {
+        const input = z
+          .object({ revision: z.number().int(), saved_block_id: uuid })
+          .strict()
+          .parse(await body(req));
+        return json(
+          await rt.service.replaceSavedBlock(
+            id,
+            input.revision,
+            input.saved_block_id,
+            user,
+          ),
+        );
+      }
       if (["GET", "POST"].includes(method) && action === "preview-pdf") {
         const stored = await rt.repo.get(id);
         check(stored, "Not found", 404);

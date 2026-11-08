@@ -11,6 +11,9 @@ export function eventLabel(
     connector_saved_block_created: `Claude created ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
     connector_saved_block_updated: `Claude updated ${e.metadata.name} (on behalf of ${e.metadata.editor_name})`,
     connector_change_restored: "Previous version restored",
+    saved_block_updated: `Updated saved block “${e.metadata.name}” · version ${e.metadata.version}`,
+    saved_block_replaced: `Replaced “${e.metadata.name}” with latest block · version ${e.metadata.version}`,
+    saved_block_unlinked: `Unlinked saved block “${e.metadata.name}”`,
     email_template_saved: e.metadata.reset
       ? "Email template reset"
       : "Email template updated",

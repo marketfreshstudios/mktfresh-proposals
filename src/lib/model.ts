@@ -108,6 +108,12 @@ export const ContractClauseSchema = z.object({
   draft: z.boolean().optional(),
 });
 export type Block = {
+  saved_block_id?: string;
+  saved_block_version?: number;
+  saved_block_position?: number;
+  saved_block_length?: number;
+  saved_block_instance?: string;
+  saved_block_hash?: string;
   type:
     | "heading"
     | "paragraph"
@@ -137,6 +143,22 @@ export type Block = {
     draft?: boolean;
   }[];
   contract_edited?: boolean;
+};
+export type SavedBlock = {
+  id: string;
+  name: string;
+  block: Block;
+  type?: "group";
+  blocks?: Block[];
+  version?: number;
+  revision?: string;
+  connector_restore_event_id?: string;
+  used_in?: {
+    template_count?: number;
+    draft_count?: number;
+    templates: { id: string; name: string; edited: boolean }[];
+    drafts: { id: string; title: string; status: string; owner: string }[];
+  };
 };
 export type RichText = {
   type: string;

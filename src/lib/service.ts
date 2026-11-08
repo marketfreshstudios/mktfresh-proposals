@@ -4,6 +4,8 @@ import {
   unsignedClientProposal,
 } from "./clients";
 import { withSignatureHeadings } from "./signature-headings";
+import { replaceLinkedBlocks } from "./linked-blocks";
+import type { SavedBlock } from "./model";
 import { validClientToken, newClientCode } from "./client-code";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
@@ -469,6 +471,48 @@ export class ProposalService {
         if (!(key in candidate))
           delete (p as unknown as Record<string, unknown>)[key];
       Object.assign(p, candidate);
+    });
+  }
+  async replaceSavedBlock(
+    id: string,
+    revision: number,
+    savedBlockId: string,
+    actor: Actor,
+  ) {
+    check(
+      actor.actor.startsWith("staff:"),
+      "Staff authorization required",
+      403,
+    );
+    const current = await this.repo.get(id);
+    check(
+      current &&
+        ["sent", "viewed"].includes(current.status) &&
+        editableProposal(current),
+      "Only unsigned sent proposals can replace a saved block",
+      409,
+    );
+    check(current.revision === revision, "Proposal changed; reload", 409);
+    const row = (await this.repo.entities<SavedBlock>("content_library")).find(
+      (r) => r.id === savedBlockId,
+    );
+    check(row, "Saved block not found", 404);
+    check(
+      current.content.some((b) => b.saved_block_id === row.id),
+      "This proposal has no copy of that block",
+      400,
+    );
+    const updated = await this.edit(
+      id,
+      { revision, content: replaceLinkedBlocks(current.content, row, true) },
+      actor,
+    );
+    return mutate(this.repo, id, (p) => {
+      event(p, "saved_block_replaced", actor, {
+        saved_block_id: row.id,
+        name: row.name,
+        version: row.version ?? 1,
+      });
     });
   }
   async edit(
