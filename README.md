@@ -10,6 +10,8 @@ Connector template access and its required pre-deploy SQL helper are documented 
 
 Email reminder rules, legacy schedule preservation, DST behavior and queue guarantees are documented in [Email reminder rules](docs/email-reminder-rules.md). No hosted SQL is required.
 
+Editor pointer-drop targeting and its unchanged pagination boundary are documented in [Page-aware drop targets](docs/page-drop-targets.md).
+
 ## Local development
 
 Requires Node 24 and npm. Docker is only needed for Supabase integration verification.
