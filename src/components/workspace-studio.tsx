@@ -828,6 +828,34 @@ export function WorkspaceStudio({
             · {data.connections?.qbo ? "Manage" : "Connect"}
           </a>
         </div>
+        <div className="workspace-setting-row workspace-payment-methods">
+          <div>
+            <h3 id="payment-methods-label">Payment methods</h3>
+            <p id="payment-methods-hint">
+              For new recurring Stripe Checkout payments. US bank payments take
+              a few business days to clear. Existing subscribers have no new
+              payment step.
+            </p>
+          </div>
+          <select
+            aria-labelledby="payment-methods-label"
+            aria-describedby="payment-methods-hint"
+            disabled={!owner}
+            value={draft.payment_methods ?? "card"}
+            onChange={(e) =>
+              change(
+                {
+                  payment_methods: e.target
+                    .value as WorkspaceSettings["payment_methods"],
+                },
+                true,
+              )
+            }
+          >
+            <option value="card">Card</option>
+            <option value="card_ach">Card + US bank account (ACH)</option>
+          </select>
+        </div>
         <details className="workspace-more">
           <Disclosure>More billing settings</Disclosure>
           <div className="stack">
@@ -1197,7 +1225,7 @@ export function WorkspaceStudio({
       >
         <header>
           <h2>{workspaceSections.find(([key]) => key === section)?.[1]}</h2>
-          {section !== "billing" && (uploading || current) && (
+          {(uploading || current) && (
             <span role="status" className={current?.error ? "danger" : "muted"}>
               {uploading ? "Uploading…" : (current?.status ?? "")}
             </span>

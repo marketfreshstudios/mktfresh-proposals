@@ -1,28 +1,25 @@
-# Payment methods — implementation checkpoint
+# Payment methods
 
-## Owner clarification required
+## Checkout compatibility
 
-The requested default is **Card**, with the exact existing Checkout request preserved. The current request does not specify `payment_method_types` (in either subscription or setup mode). Stripe therefore uses the payment methods enabled in its Dashboard; the app does not currently enforce Card only.
+The owner approved making payment methods explicit (PR #100): `payment_method_types: ["card"]` for Card, `["card", "us_bank_account"]` for Card + US bank account (ACH). This is the sole change to Checkout request parameters; regression snapshots cover the remaining parameters in subscription, invoice-setup and scheduled-setup modes. Apple Pay / Google Pay remain card wallets; eligibility still depends on Stripe and the browser. Dashboard-only methods such as Link are excluded until explicitly added later.
 
-These requirements cannot both be guaranteed by the app:
+The setting is optional in existing workspace settings JSON and defaults to Card on read. Only Super admins may change it. No database migration or hosted SQL is required. Existing subscribers with a usable default card keep the existing add-items path without another payment step; one-time fees remain on QuickBooks.
 
-1. Preserve the default request exactly. Card retains the current Dashboard-controlled behavior; opting into ACH can send an explicit `card` / `us_bank_account` list. The Card label relies on the Dashboard remaining configured for cards only.
-2. Enforce the two choices in the app. Card sends `payment_method_types: ["card"]`; Card + ACH sends `["card", "us_bank_account"]`. This changes the default request by adding that field, while leaving its other parameters unchanged.
+## ACH confirmation and events
 
-Implementation is paused for the owner's choice. No Stripe account settings have been read or changed, and no payment requests have been made.
+Bank-account setup is not payment success. After verified Checkout/setup, the application stores a durable processing state and checks each subscription's latest invoice. The invoice must belong to that test customer and subscription and report `status=paid` and `paid=true` before billing-complete notifications are queued and the subscription is reported active. A pending debit stays processing, even if Stripe reports the subscription itself active. Invoice-collection and scheduled-plan setups wait for their first paid invoice too.
 
-Source: [Stripe dynamic payment methods](https://docs.stripe.com/payments/payment-methods/dynamic-payment-methods), which documents Dashboard-controlled payment methods when `payment_method_types` is omitted. The app remains pinned to API version `2024-06-20`.
+Webhook event subscriptions used:
 
-## Existing flow findings
+- `checkout.session.completed`: verify the current session and payment method; finish setup-mode subscriptions with the same stable keys; record processing instead of failing an unpaid bank payment.
+- `checkout.session.async_payment_succeeded`: reconcile the current state; it is not itself trusted as proof of a paid invoice.
+- `checkout.session.async_payment_failed`: reconcile failure, including a later bank failure on an already-confirmed session.
+- `invoice.paid`: reconcile processing Checkouts/subscriptions, and retain the existing paid-invoice schedule progression.
+- `invoice.payment_failed`: record invoice evidence and reconcile the current bank debit without success notifications.
 
-- The recurring provider creates subscription-mode Checkout for automatic collection, and setup-mode Checkout for scheduled plans or invoice collection. The payment-method choice needs to cover both paths.
-- The existing-subscriber path adds subscription items without creating Checkout. It must remain unchanged.
-- The webhook receiver already accepts `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid` and `invoice.payment_failed`. It currently ignores `checkout.session.async_payment_failed`.
-- Subscription Checkout completion currently requires immediate payment. An unpaid ACH Checkout must instead enter a durable processing state without retrying an otherwise successful completion event as a job failure.
-- Setup-mode completion currently creates the subscription and sends the billing-complete emails once the bank/card setup succeeds. For ACH, successful bank setup alone does not establish that a subsequent debit succeeded. Payment confirmation must be checked separately before reporting paid/active or sending the completion notification.
-- Existing invoice-failure handling records the Stripe event. The new delayed-payment path must retain that failure reporting and must not send a success notification.
-- The Stripe transport rejects non-test keys and live-mode responses. Those guards and the API version remain unchanged.
+Receipt IDs deduplicate the durable webhook jobs. Provider keys are stable across receipts for a session. Completion and both notification jobs are committed together through the proposal CAS and deduplicated by Checkout session. Current invoice state protects against stale success/failure snapshots; concurrent changes to bank metadata require fresh verification instead of overwriting the other worker. If invoice success arrives before Checkout completion, the later Checkout receipt reads that paid invoice. Repeated processing notifications do not add duplicate timeline events. Later invoice failures remove the active label while preserving the historical confirmation/email log.
 
-## Planned validation after clarification
+Stripe remains pinned to `2024-06-20`; test-key and live-response rejection are unchanged. No Stripe account configuration is changed. All validation uses fixtures/mocks, with no credentials or real payment requests.
 
-Mock-only tests will cover default request compatibility (according to the owner's choice), the ACH allow-list, processing/success/failure and duplicate/out-of-order events, setup-mode ACH, Staff authorization, existing subscribers and QuickBooks routing. The full local suite and the requested Billing defaults screenshots follow implementation. No hosted SQL is expected: the setting belongs in the existing workspace settings JSON.
+References: [Checkout ACH](https://docs.stripe.com/payments/ach-direct-debit/accept-a-payment?payment-ui=checkout), [subscription webhooks](https://docs.stripe.com/billing/subscriptions/webhooks), [dynamic payment methods](https://docs.stripe.com/payments/payment-methods/dynamic-payment-methods).

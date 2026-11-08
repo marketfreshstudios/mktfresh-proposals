@@ -1000,6 +1000,15 @@ async function handleRoute(req: Request, path: string[]) {
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
           if (
+            (entity.payment_methods ?? "card") !==
+            (previous?.payment_methods ?? "card")
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change payment methods",
+              403,
+            );
+          if (
             JSON.stringify(entity.brand_palette ?? []) !==
             JSON.stringify(previous?.brand_palette ?? [])
           )

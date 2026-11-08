@@ -1,0 +1,69 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes > invoice-setup 1`] = `
+{
+  "cancel_url": "http://127.0.0.1:3100/p/fixture?billing=pending",
+  "currency": "usd",
+  "custom_text": {
+    "submit": {
+      "message": "Plan · $25/month. No payment is taken in this card setup step. Your subscription is arranged after you save your card.",
+    },
+  },
+  "customer": "cus_test",
+  "metadata": {
+    "line_ids": "["line_fixture"]",
+    "proposal_id": "proposal_fixture",
+    "workspace_id": "00000000-0000-4000-8000-000000000001",
+  },
+  "mode": "setup",
+  "success_url": "http://127.0.0.1:3100/p/fixture?billing=returned&session_id={CHECKOUT_SESSION_ID}",
+}
+`;
+
+exports[`Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes > scheduled-setup 1`] = `
+{
+  "cancel_url": "http://127.0.0.1:3100/p/fixture?billing=pending",
+  "currency": "usd",
+  "custom_text": {
+    "submit": {
+      "message": "Plan · $25/month. No payment is taken in this card setup step. Your subscription is arranged after you save your card.",
+    },
+  },
+  "customer": "cus_test",
+  "metadata": {
+    "line_ids": "["line_fixture"]",
+    "proposal_id": "proposal_fixture",
+    "workspace_id": "00000000-0000-4000-8000-000000000001",
+  },
+  "mode": "setup",
+  "success_url": "http://127.0.0.1:3100/p/fixture?billing=returned&session_id={CHECKOUT_SESSION_ID}",
+}
+`;
+
+exports[`Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes > subscription 1`] = `
+{
+  "cancel_url": "http://127.0.0.1:3100/p/fixture?billing=pending",
+  "customer": "cus_test",
+  "line_items": [
+    {
+      "price": "price_lookup",
+      "quantity": 1,
+    },
+  ],
+  "metadata": {
+    "line_ids": "["line_fixture"]",
+    "proposal_id": "proposal_fixture",
+    "workspace_id": "00000000-0000-4000-8000-000000000001",
+  },
+  "mode": "subscription",
+  "subscription_data": {
+    "description": "Test proposal",
+    "metadata": {
+      "plan": "hosting-essentials-25",
+      "plan_items": "hosting-essentials-25",
+      "proposal_id": "proposal_fixture",
+    },
+  },
+  "success_url": "http://127.0.0.1:3100/p/fixture?billing=returned&session_id={CHECKOUT_SESSION_ID}",
+}
+`;

@@ -263,6 +263,7 @@ export class StripeProvider implements BillingProvider {
       items: { line_id: string; name: string }[];
       mode: "setup" | "subscription";
       collection_method: "send_invoice" | "charge_automatically";
+      payment_methods: "card" | "card_ach";
       amount_due_today?: number;
     }[] = [];
     const added: {
@@ -359,6 +360,10 @@ export class StripeProvider implements BillingProvider {
           "/v1/checkout/sessions",
           {
             customer: c.id,
+            payment_method_types:
+              settings.payment_methods === "card_ach"
+                ? ["card", "us_bank_account"]
+                : ["card"],
             mode:
               settings.collection_method === "send_invoice"
                 ? "setup"
@@ -400,6 +405,7 @@ export class StripeProvider implements BillingProvider {
               ? "setup"
               : "subscription",
           collection_method: settings.collection_method,
+          payment_methods: settings.payment_methods ?? "card",
           ...(typeof session.amount_total === "number"
             ? { amount_due_today: session.amount_total }
             : {}),
@@ -439,6 +445,10 @@ export class StripeProvider implements BillingProvider {
         "/v1/checkout/sessions",
         {
           customer: c.id,
+          payment_method_types:
+            settings.payment_methods === "card_ach"
+              ? ["card", "us_bank_account"]
+              : ["card"],
           mode: "setup",
           currency,
           custom_text: setupMessage([line]),
@@ -463,6 +473,7 @@ export class StripeProvider implements BillingProvider {
         items: displayItems([line]),
         mode: "setup",
         collection_method: settings.collection_method,
+        payment_methods: settings.payment_methods ?? "card",
         amount_due_today: 0,
       });
     }
