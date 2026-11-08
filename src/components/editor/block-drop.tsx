@@ -92,7 +92,7 @@ export function useBlockDrop(
       event.stopPropagation();
       try {
         const blocks = JSON.parse(event.dataTransfer.getData(mime));
-        if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 2)
+        if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 300)
           insert(blocks, line.at);
       } finally {
         clear();

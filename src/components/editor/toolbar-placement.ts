@@ -13,13 +13,32 @@ export function placeEditorToolbar(
     return;
   }
   const paper = owner.closest<HTMLElement>(
-    ".editor-paper,.template-paged-paper",
+    ".editor-paper,.template-paged-paper,.studio-blocks",
   );
   if (!paper) return;
   const region = owner
     .closest<HTMLElement>(".editor-document-region,.studio-template-main")
     ?.getBoundingClientRect();
-  const root = owner.getBoundingClientRect();
+  let root: ToolbarRect = owner.getBoundingClientRect();
+  if (bar.classList.contains("selection-edit-bar")) {
+    const selected = [
+      ...(owner
+        .closest(".block-scope")
+        ?.querySelectorAll<HTMLElement>('[data-multi-selected="true"]') ?? []),
+    ]
+      .filter(
+        (el) =>
+          !el.closest("[data-page-measurement]") && el.getClientRects().length,
+      )
+      .map((el) => el.getBoundingClientRect());
+    if (selected.length)
+      root = {
+        top: Math.min(...selected.map((r) => r.top)),
+        bottom: Math.max(...selected.map((r) => r.bottom)),
+        left: Math.min(...selected.map((r) => r.left)),
+        right: Math.max(...selected.map((r) => r.right)),
+      };
+  }
   const bounds: ToolbarRect = {
     left: 8,
     right: innerWidth - 8,
