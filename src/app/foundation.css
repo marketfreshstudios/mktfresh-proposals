@@ -664,7 +664,7 @@
     [aria-current="page"],
     [aria-selected="true"],
     [aria-pressed="true"],
-    .active
+    a.active
   ):hover:not(:disabled):not(:where(.editor-edit-bar *, [popover] *)) {
   background: var(--control-active-background, var(--surface));
   color: var(--control-active-color, var(--ink));

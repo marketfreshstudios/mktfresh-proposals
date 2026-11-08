@@ -352,6 +352,22 @@ for (const theme of ["light", "dark"])
       const tab = page.getByRole("tab", { name, exact: true });
       await tab.click();
       await activeHover(page, tab);
+      if (name === "Blocks") {
+        const item = page
+          .locator(".blocks-panel .block-menu-options button:not(:disabled)")
+          .first();
+        await item.hover();
+        const rowHover = await item.evaluate((el) => {
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.fillStyle =
+            getComputedStyle(el).getPropertyValue("--row-hover");
+          context.fillRect(0, 0, 1, 1);
+          const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+          return `rgb(${r}, ${g}, ${b})`;
+        });
+        await expect(item).toHaveCSS("background-color", rowHover);
+        expect((await paint(item)).contrast).toBeGreaterThanOrEqual(4.5);
+      }
     }
     expect(
       (
@@ -368,6 +384,22 @@ for (const theme of ["light", "dark"])
       const tab = page.getByRole("tab", { name, exact: true });
       await tab.click();
       await activeHover(page, tab);
+      if (name === "Blocks") {
+        const item = page
+          .locator(".blocks-panel .block-menu-options button:not(:disabled)")
+          .first();
+        await item.hover();
+        const rowHover = await item.evaluate((el) => {
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.fillStyle =
+            getComputedStyle(el).getPropertyValue("--row-hover");
+          context.fillRect(0, 0, 1, 1);
+          const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+          return `rgb(${r}, ${g}, ${b})`;
+        });
+        await expect(item).toHaveCSS("background-color", rowHover);
+        expect((await paint(item)).contrast).toBeGreaterThanOrEqual(4.5);
+      }
     }
     await page.setViewportSize({ width: 768, height: 1000 });
     await page.goto("/studio/workspace?view=styles");
