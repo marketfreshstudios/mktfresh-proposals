@@ -309,7 +309,9 @@
   color: var(--ink-muted);
 }
 .studio-email-editor .segmented .btn[aria-pressed="true"] {
+  --control-active-background: var(--surface);
   background: var(--surface);
+  --control-active-color: var(--ink);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }

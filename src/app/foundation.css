@@ -73,6 +73,7 @@
   display: none;
 }
 .staff-foundation .sidebar nav a.active {
+  --control-active-background: var(--border);
   background: var(--border);
   font-weight: 600;
 }
@@ -281,6 +282,7 @@
   color: var(--ink);
 }
 .staff-foundation .studio-menu a[aria-current="page"] {
+  --control-active-background: var(--accent-soft);
   background: var(--accent-soft);
 }
 .staff-foundation .studio-subnav {
@@ -440,7 +442,9 @@
     border-radius: 10px;
   }
   .staff-foundation .bottom-tabs .active {
+    --control-active-color: var(--accent);
     color: var(--accent);
+    --control-active-background: var(--accent-soft);
     background: var(--accent-soft);
   }
   .staff-foundation .bottom-tabs .bottom-new {
@@ -591,7 +595,9 @@
   max-height: none;
 }
 .staff-foundation .sidebar nav a.active {
+  --control-active-background: var(--accent);
   background: var(--accent);
+  --control-active-color: var(--on-accent);
   color: var(--on-accent);
 }
 .staff-foundation .sidebar nav a.active:hover {
@@ -641,4 +647,18 @@
     width: 24px;
     height: 24px;
   }
+}
+
+/* A selected control owns its palette. Generic hover paint must never replace
+   only half of that foreground/background pair. Document chrome owns its own
+   dark-menu/formatting palette; color swatches retain their inline fill. */
+.staff-foundation.staff-foundation
+  :is(button, a):is(
+    [aria-current="page"],
+    [aria-selected="true"],
+    [aria-pressed="true"],
+    .active
+  ):hover:not(:disabled):not(:where(.editor-edit-bar *, .toolbar-popover *)) {
+  background: var(--control-active-background, var(--surface));
+  color: var(--control-active-color, var(--ink));
 }

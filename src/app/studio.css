@@ -58,7 +58,9 @@
 }
 .studio-tabs :is(a, button):hover,
 .studio-tabs button[aria-selected="true"] {
+  --control-active-background: var(--surface-sunken);
   background: var(--surface-sunken);
+  --control-active-color: var(--ink);
   color: var(--ink);
   border-color: var(--border);
   text-decoration: none;
@@ -268,6 +270,7 @@
 }
 .template-link.active {
   border-color: var(--ink);
+  --control-active-background: var(--surface);
   background: var(--surface);
 }
 .template-link small {
