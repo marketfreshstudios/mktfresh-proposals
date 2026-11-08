@@ -54,7 +54,7 @@ export async function writeStudioEntity<T extends { id: string }>(
     ? await repo.entities<Audit>("workspace_events")
     : [];
   const priorTime = events
-    .filter((e) => e.metadata.entity_id === value.id)
+    .filter((e) => e.metadata?.entity_id === value.id)
     .reduce((max, e) => Math.max(max, Date.parse(e.created_at) || 0), 0);
   const audit: Audit = {
     id: randomUUID(),

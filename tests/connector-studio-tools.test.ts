@@ -399,3 +399,17 @@ it("all published tool definitions are valid MCP schemas, including backward-com
   expect(alias).toEqual(original);
   expect(original.revision).toMatch(/^[a-f0-9]{64}$/);
 });
+it("saves through the connector when the activity log holds events without metadata (pricing reference snapshots)", async () => {
+  const f = await setup();
+  await f.repo.put("workspace_events", {
+    id: crypto.randomUUID(),
+    type: "document_version",
+    content: "/* playbook snapshot */",
+  } as any);
+  const block: any = await call(f, "create_saved_block", {
+    name: "Case study",
+    type: "text",
+    content: "### Example client\n\n**Result:** [Add a result]",
+  });
+  expect(block.name).toBe("Case study");
+});
