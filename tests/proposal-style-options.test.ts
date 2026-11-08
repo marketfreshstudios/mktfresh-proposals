@@ -130,3 +130,42 @@ it("Table typography explicitly follows resolved body styles, with no inherited 
   expect(css).toContain("table-layout:fixed");
   expect(documentStyleCss(resolveStyles())).not.toContain("quote-table");
 });
+
+it("resolves one four/five-column geometry for the entire quote and keeps metadata when Description is absent", async () => {
+  const { quoteTableColumns, quoteTableHtml } =
+    await import("../src/lib/quote-table");
+  const f = await setup();
+  const quote = f.draft.quote.map((i) => ({ ...i, description: "" }));
+  expect(quoteTableColumns(quote)).toEqual([
+    { key: "item", label: "Item", width: 53 },
+    { key: "qty", label: "Qty", width: 7 },
+    { key: "price", label: "Price", width: 20 },
+    { key: "total", label: "Total", width: 20 },
+  ]);
+  quote[0].description = "  ";
+  expect(quoteTableColumns(quote).map((c) => c.key)).not.toContain(
+    "description",
+  );
+  quote[1].description = "An actual service description";
+  expect(quoteTableColumns(quote).map((c) => [c.key, c.width])).toEqual([
+    ["item", 24],
+    ["description", 29],
+    ["qty", 7],
+    ["price", 20],
+    ["total", 20],
+  ]);
+  quote[0].description = "";
+  quote[1].description = "";
+  quote[0].min_term_months = 12;
+  quote[0].sublines.push({
+    ...quote[0].sublines[0],
+    id: crypto.randomUUID(),
+    label: "Second sub-line",
+  });
+  const html = quoteTableHtml(quote, "USD");
+  expect(html).not.toContain("quote-col-description");
+  expect(html).not.toContain('class="quote-table-description"');
+  expect(html).toContain('class="quote-table-details"');
+  expect(html).toContain("Second sub-line");
+  expect(html).toContain("12-month minimum commitment.");
+});

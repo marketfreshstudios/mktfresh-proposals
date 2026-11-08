@@ -17,6 +17,26 @@ export function QuoteTable({
   disabled?: boolean;
   defaults?: boolean;
 }) {
+  const columns = quoteTableColumns(quote),
+    description = columns.some((c) => c.key === "description");
+  const details = (
+    r: ReturnType<typeof quoteTableGroups>[number]["rows"][number],
+  ) => (
+    <>
+      {r.item.description.trim() && <p>{r.item.description}</p>}
+      {r.entries.length > 1 &&
+        r.entries.map((e, n) => (
+          <div key={n} className="quote-table-entry">
+            {e.label}
+          </div>
+        ))}
+      {r.terms.map((t, n) => (
+        <p key={n} className="flow-terms">
+          {t}
+        </p>
+      ))}
+    </>
+  );
   const control = (item: QuoteItem) =>
     item.optional ? (
       <label className="quote-table-hit">
@@ -38,30 +58,44 @@ export function QuoteTable({
       />
     );
   return (
-    <table className="quote-table" aria-label="Your investment">
+    <table
+      className="quote-table"
+      role="table"
+      aria-label="Your investment"
+      data-description-column={description}
+    >
       <colgroup>
-        {["item", "description", "qty", "price", "total"].map((c) => (
-          <col key={c} className={`quote-col-${c}`} />
+        {columns.map((c) => (
+          <col
+            key={c.key}
+            className={`quote-col-${c.key}`}
+            style={{ width: `${c.width}%` }}
+          />
         ))}
       </colgroup>
-      <thead>
-        <tr>
-          {quoteTableColumns.map((c) => (
-            <th key={c} scope="col">
-              {c}
+      <thead role="rowgroup">
+        <tr role="row">
+          {columns.map((c) => (
+            <th key={c.key} scope="col" role="columnheader">
+              {c.label}
             </th>
           ))}
         </tr>
       </thead>
       {quoteTableGroups(quote, currency, cents).map((g) => (
-        <tbody key={g.id} data-quote-choice-group={g.choice ? g.id : undefined}>
+        <tbody
+          role="rowgroup"
+          key={g.id}
+          data-quote-choice-group={g.choice ? g.id : undefined}
+        >
           {g.rows.map((r, n) => (
             <tr
               key={r.item.id}
+              role="row"
               className="print-pricing-card quote-table-row"
               data-print-unit={r.item.id}
             >
-              <th scope="row">
+              <th scope="row" role="rowheader">
                 {g.choice && n === 0 && (
                   <span className="quote-table-choice">Choose one</span>
                 )}
@@ -69,25 +103,25 @@ export function QuoteTable({
                   <span className="quote-control-slot">{control(r.item)}</span>
                   <strong>{r.item.name}</strong>
                 </span>
+                {!description && (
+                  <div className="quote-table-details">{details(r)}</div>
+                )}
               </th>
-              <td>
-                {r.item.description && <p>{r.item.description}</p>}
-                {r.entries.length > 1 &&
-                  r.entries.map((e, n) => (
-                    <div key={n} className="quote-table-entry">
-                      {e.label}
-                    </div>
-                  ))}
-                {r.terms.map((t, n) => (
-                  <p key={n} className="flow-terms">
-                    {t}
-                  </p>
-                ))}
-              </td>
+              {description && (
+                <td role="cell" className="quote-table-description">
+                  {details(r)}
+                </td>
+              )}
               {(["qty", "price", "total"] as const).map((k) => (
-                <td key={k} className="quote-table-numeric">
+                <td key={k} role="cell" className="quote-table-numeric">
                   {r.entries.map((e, n) => (
                     <div key={n} className="quote-table-entry">
+                      <span
+                        className="quote-table-mobile-label"
+                        aria-hidden="true"
+                      >
+                        {columns.find((c) => c.key === k)!.label}{" "}
+                      </span>
                       {e[k]}
                     </div>
                   ))}

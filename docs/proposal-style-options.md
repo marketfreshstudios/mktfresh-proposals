@@ -12,8 +12,14 @@ The same table typography, columns and row structure serve editor, PDF and clien
 
 ## Local verification — November 8, 2026
 
-- 624 unit tests passed across 119 files; typecheck, formatting, neutral-business check and production build passed.
-- Full configured browser suite: 327 passed, 4 existing skips (331 tests), 19.9 minutes on final application code.
-- All 15 new browser checks passed: the margin × body-size × layout matrix, long-table row splitting and repeated headers, stable native choices and keyboard interaction, shared settings persistence, and intentionally empty previews. Continuation headers start within 1px of the content edge. The existing page-aware insertion tests also pass with the selected-page highlight assertion.
-- Five consecutive long-table interaction runs passed with 4× CPU throttling. Desktop Table axe and 44px target checks passed; phone Table retains the chosen body size without horizontal page scroll.
+- 625 unit tests passed across 119 files; typecheck, formatting, neutral-business check and production build passed.
+- Full configured browser suite: 328 passed, 4 existing skips (332 tests), 19.8 minutes on final application code.
+- All 16 new browser checks passed: the margin × body-size × layout matrix, long-table row splitting and repeated headers, stable native choices and keyboard interaction, shared settings persistence, and intentionally empty previews. Continuation headers start within 1px of the content edge. The existing page-aware insertion tests also pass with the selected-page highlight assertion.
+- Desktop and stacked-phone Table axe, native keyboard and 44px target checks passed. Normal description words stay whole; oversized unbroken names/descriptions wrap without horizontal page scroll. A 700px check retains the normal table layout.
 - Requested 1440px editor/PDF/Workspace and 375px client captures are in `docs/screenshots/proposal-style-options/`. No hosted SQL or backfill.
+
+## Owner-review Table refinements
+
+Phone client rows stack at ≤699px: item/control, full-width description, then Qty · Price · Total, preserving stacked sub-lines, native keyboard controls and 44px targets. Headers stay in the accessible table tree while visually hidden. Normal words wrap only at word boundaries; a single oversized token can wrap with `overflow-wrap: break-word`. The screen-only rules are scoped to the flowing phone client.
+
+A quote with no nonblank descriptions has four columns: Item 53%, Qty 7%, Price 20%, Total 20%. Otherwise it retains Item 24%, Description 29%, Qty 7%, Price 20%, Total 20%. A shared resolver runs against the whole quote for editor, client and PDF; continuation pages retain that result. Labels/terms remain under Item when Description is absent. No SQL.

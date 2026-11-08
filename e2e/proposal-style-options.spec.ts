@@ -32,7 +32,10 @@ for (const layout of ["cards", "table"] as const)
       test(`${layout}: ${preset} margins and ${size}px body share editor, client and PDF geometry`, async ({
         page,
       }) => {
-        const f = await editorFixture(page, false, { content });
+        const f = await editorFixture(page, false, {
+          content,
+          quote: (base) => base.map((i) => ({ ...i, description: "" })),
+        });
         const bands = {
           ...defaultHeaderFooter(),
           showHeader: false,
@@ -71,6 +74,22 @@ for (const layout of ["cards", "table"] as const)
             els.map((el) => Number(el.getAttribute("data-content-height"))),
           );
         for (const height of areas) expect(height).toBeCloseTo(expected, 7);
+        if (layout === "table") {
+          const table = paper.locator("table.quote-table");
+          await expect(table.getByRole("columnheader")).toHaveCount(4);
+          await expect(
+            table.getByRole("columnheader", {
+              name: "Description",
+              exact: true,
+            }),
+          ).toHaveCount(0);
+          const ratio = await table.evaluate(
+            (el) =>
+              el.querySelector("col")!.getBoundingClientRect().width /
+              el.getBoundingClientRect().width,
+          );
+          expect(ratio).toBeCloseTo(0.53, 2);
+        }
         const plan = JSON.parse((await paper.getAttribute("data-pagination"))!);
         await f.editRemote({ pagination: plan });
         await page
@@ -79,6 +98,16 @@ for (const layout of ["cards", "table"] as const)
         await expect.poll(() => f.renders.length).toBe(1);
         const pdf = f.renders[0];
         expect(pdf.layout.pages).toBe(plan.pages);
+        if (layout === "table") {
+          const quoteSheets = pdf.layout.sheets!.filter((s) =>
+            s.html.includes('class="quote-table"'),
+          );
+          expect(quoteSheets.length).toBeGreaterThan(0);
+          for (const sheet of quoteSheets) {
+            expect(sheet.html).not.toContain("quote-col-description");
+            expect(sheet.html).toMatch(/quote-col-item[^>]+width:\s*53%/);
+          }
+        }
         for (const sheet of pdf.layout.sheets!)
           expect(
             Math.abs(sheet.content_area!.height - expected),
@@ -93,6 +122,16 @@ for (const layout of ["cards", "table"] as const)
           JSON.parse((await client.getAttribute("data-page-plan"))!),
         ).toEqual(plan);
         await expect(client.locator(".print-sheet")).toHaveCount(plan.pages);
+        if (layout === "table") {
+          const table = client.locator("table.quote-table").first();
+          await expect(table.getByRole("columnheader")).toHaveCount(4);
+          const ratio = await table.evaluate(
+            (el) =>
+              el.querySelector("col")!.getBoundingClientRect().width /
+              el.getBoundingClientRect().width,
+          );
+          expect(ratio).toBeCloseTo(0.53, 2);
+        }
         for (const sheet of await client.locator(".print-sheet").all()) {
           const height = await sheet
             .locator(".client-sheet-content")
@@ -121,16 +160,16 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   const { clientActor } = await import("../tests/helpers");
   const { writeFileSync } = await import("node:fs");
   const { execFileSync } = await import("node:child_process");
+  const longToken = "ReferenceIdentifier".repeat(8);
   const f = await editorFixture(page, false, {
     content: content.filter((b) => b.id !== "body"),
     quote: (base) =>
       Array.from({ length: 30 }, (_, n) => ({
         ...base[0],
         id: crypto.randomUUID(),
-        name: `Service option ${n + 1}`,
+        name: `Service option ${n + 1}${n === 29 ? ` ${longToken}` : ""}`,
         order: n,
-        description:
-          "A clear description of the service and the agreed deliverables.",
+        description: `A clear description of the service and the agreed deliverables.${n === 29 ? ` ${longToken}` : ""}`,
         schedule: null,
         min_term_months: null,
         plan_terms: null,
@@ -241,13 +280,13 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   await host.waitFor();
   await expect(
     host.getByRole("checkbox", {
-      name: "Service option 30 · not included",
+      name: `${items[29].name} · not included`,
       exact: true,
     }),
   ).toBeVisible();
   await host
     .getByRole("checkbox", {
-      name: "Service option 30 · not included",
+      name: `${items[29].name} · not included`,
       exact: true,
     })
     .check();
@@ -299,6 +338,14 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     });
     expect(Math.abs(offset)).toBeLessThanOrEqual(1);
   }
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect(page.locator(".flow-document table.quote-table")).toHaveCSS(
+    "display",
+    "table",
+  );
+  await expect(
+    page.locator(".flow-document .quote-table-row").first(),
+  ).toHaveCSS("display", "table-row");
   await page.setViewportSize({ width: 375, height: 900 });
   await expect(page.locator(".client-document-sheets")).toHaveCount(0);
   await expect(page.locator(".flow-document table.quote-table")).toHaveCount(1);
@@ -306,6 +353,54 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     "font-size",
     "18px",
   );
+  const mobile = page.locator(".flow-document table.quote-table");
+  const row = mobile.locator(".quote-table-row").first();
+  await expect(row).toHaveCSS("display", "grid");
+  await expect(
+    mobile.getByRole("columnheader", { name: "Description", exact: true }),
+  ).toHaveCount(1);
+  const boxes = await row.evaluate((el) => {
+    const row = el.getBoundingClientRect(),
+      item = el.querySelector(".quote-table-item strong")!;
+    const description = el.querySelector(".quote-table-description")!,
+      rect = description.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(item);
+    const wordRects: number[] = [];
+    const walker = document.createTreeWalker(description, NodeFilter.SHOW_TEXT);
+    let text: Node | null;
+    while ((text = walker.nextNode()))
+      for (const match of text.textContent!.matchAll(/[A-Za-z]+/g)) {
+        const r = document.createRange();
+        r.setStart(text, match.index!);
+        r.setEnd(text, match.index! + match[0].length);
+        wordRects.push(r.getClientRects().length);
+      }
+    return {
+      row: { x: row.x, width: row.width },
+      description: { x: rect.x, width: rect.width },
+      nameLines: range.getClientRects().length,
+      wordRects,
+      numbers: [...el.querySelectorAll(".quote-table-numeric")].map((n) => ({
+        x: n.getBoundingClientRect().x,
+        y: n.getBoundingClientRect().y,
+      })),
+    };
+  });
+  expect(boxes.nameLines).toBe(1);
+  expect(boxes.description.x).toBeCloseTo(boxes.row.x, 0);
+  expect(boxes.description.width).toBeCloseTo(boxes.row.width, 0);
+  expect(boxes.wordRects.every((n) => n === 1)).toBe(true);
+  expect(
+    boxes.numbers.every((n) => Math.abs(n.y - boxes.numbers[0].y) < 1),
+  ).toBe(true);
+  expect(boxes.numbers[0].x).toBeLessThan(boxes.numbers[1].x);
+  expect(boxes.numbers[1].x).toBeLessThan(boxes.numbers[2].x);
+  await expect(row.locator(".quote-table-mobile-label")).toHaveText([
+    "Qty ",
+    "Price ",
+    "Total ",
+  ]);
   for (const control of await page
     .locator(".flow-document .quote-table-hit")
     .all()) {
@@ -315,10 +410,60 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   }
   await expect(
     page.getByRole("checkbox", {
-      name: "Service option 30 · included",
+      name: `${items[29].name} · included`,
       exact: true,
     }),
   ).toBeChecked();
+  const phoneRadio = mobile.getByRole("radio", {
+    name: "Service option 1 · not included",
+    exact: true,
+  });
+  await expect(phoneRadio).toBeEnabled();
+  await phoneRadio.press("Space");
+  await expect
+    .poll(() => current.quote.find((i) => i.id === items[0].id)!.selected)
+    .toBe(true);
+  expect(current.quote.find((i) => i.id === items[1].id)!.selected).toBe(false);
+  const phoneCheckbox = mobile.getByRole("checkbox", {
+    name: `${items[29].name} · included`,
+    exact: true,
+  });
+  await expect(phoneCheckbox).toBeEnabled();
+  await phoneCheckbox.press("Space");
+  await expect
+    .poll(() => current.quote.find((i) => i.id === items[29].id)!.selected)
+    .toBe(false);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  const tokenLines = await mobile
+    .locator(".quote-table-row")
+    .last()
+    .evaluate((el, token) => {
+      const lines = (element: Element) => {
+        const text = element.firstChild!,
+          start = text.textContent!.indexOf(token),
+          range = document.createRange();
+        range.setStart(text, start);
+        range.setEnd(text, start + token.length);
+        return range.getClientRects().length;
+      };
+      const name = el.querySelector(".quote-table-item strong")!,
+        description = el.querySelector(".quote-table-description p")!;
+      return {
+        name: lines(name),
+        description: lines(description),
+        width: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        wordBreak: getComputedStyle(name).wordBreak,
+        wrap: getComputedStyle(name).overflowWrap,
+        hyphens: getComputedStyle(name).hyphens,
+      };
+    }, longToken);
+  expect(tokenLines.name).toBeGreaterThan(1);
+  expect(tokenLines.description).toBeGreaterThan(1);
+  expect(tokenLines.width).toBeLessThanOrEqual(tokenLines.clientWidth);
+  expect(tokenLines.wordBreak).toBe("normal");
+  expect(tokenLines.wrap).toBe("break-word");
+  expect(tokenLines.hyphens).toBe("none");
   if (process.env.CAPTURE_STYLE_OPTIONS) {
     const { mkdirSync } = await import("node:fs");
     mkdirSync("docs/screenshots/proposal-style-options", { recursive: true });
@@ -344,6 +489,7 @@ test("workspace, template and proposal Styles save the same opt-in controls with
   const { mkdirSync, writeFileSync } = await import("node:fs");
   const { execFileSync } = await import("node:child_process");
   const f = await editorFixture(page, false, {
+    quote: (base) => base.map((i) => ({ ...i, description: "" })),
     content: content.map((b) =>
       b.id === "body"
         ? { ...b, text: "Clear deliverables, clear prices, and a shared plan." }
@@ -438,9 +584,26 @@ test("workspace, template and proposal Styles save the same opt-in controls with
   const pricing = page.locator('[data-block-id="block-pricing"]');
   await pricing.scrollIntoViewIfNeeded();
   await expect(pricing.locator("table")).toBeVisible();
+  const nameLines = await pricing
+    .locator(".quote-table-item strong")
+    .first()
+    .evaluate((el) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return r.getClientRects().length;
+    });
+  expect(nameLines).toBe(1);
   await capture("table-wide-18-editor-1440");
   await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
   await expect.poll(() => f.renders.length).toBe(1);
+  const geometryPdf = info.outputPath("no-description.pdf");
+  writeFileSync(geometryPdf, Buffer.from(f.renders[0].pdf_base64, "base64"));
+  const extracted = execFileSync("pdftotext", ["-layout", geometryPdf, "-"], {
+    encoding: "utf8",
+  });
+  expect(
+    extracted.split("\n").some((line) => /Website.*Build.*Own.*Now/.test(line)),
+  ).toBe(true);
   if (process.env.CAPTURE_STYLE_OPTIONS) {
     const file = info.outputPath("table-wide.pdf");
     writeFileSync(file, Buffer.from(f.renders[0].pdf_base64, "base64"));
@@ -490,4 +653,79 @@ test("an empty Table quote retains its header in the editor and PDF preview", as
       s.html.includes('class="quote-table"'),
     ),
   ).toHaveLength(1);
+});
+
+test("a description-free long quote keeps four columns and the same row starts on every sheet", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, {
+    content: content.filter((b) => b.id !== "body"),
+    quote: (base) =>
+      Array.from({ length: 45 }, (_, n) => ({
+        ...base[0],
+        id: crypto.randomUUID(),
+        order: n,
+        name: `Service ${n + 1}`,
+        description: "",
+        sublines: base[0].sublines.map((s) => ({
+          ...s,
+          id: crypto.randomUUID(),
+        })),
+      })),
+  });
+  await f.editRemote({
+    style_overrides: {
+      quote_layout: "table",
+      body: { size: 18 },
+      margins: { top: 1.1, right: 1.1, bottom: 1.1, left: 1.1 },
+    },
+  });
+  await page.setViewportSize({ width: 1920, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const paper = page.locator(".editor-paper");
+  await paper
+    .locator('.editor-page-sheets[data-layout-settled="true"]')
+    .waitFor();
+  const plan = JSON.parse((await paper.getAttribute("data-pagination"))!);
+  expect(
+    plan.starts.filter((s: any) => s.block === "pricing" && s.unit).length,
+  ).toBeGreaterThan(1);
+  await expect(paper.locator(".quote-table thead th")).toHaveCount(4);
+  for (const gap of await paper.locator(".quote-table-gap td").all())
+    await expect(gap).toHaveAttribute("colspan", "4");
+  await f.editRemote({ pagination: plan });
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.renders.length).toBe(1);
+  const pdf = f.renders[0];
+  expect(pdf.layout.pages).toBe(plan.pages);
+  expect(pdf.layout.overflow_pages).toEqual([]);
+  const sent = await f.sendRemote();
+  await page.goto(`/p/${sent.token}`);
+  const client = page.locator(
+    '.client-document-sheets[data-layout-ready="true"]',
+  );
+  await client.waitFor();
+  for (let n = 0; n < plan.pages; n++) {
+    const rows = await client
+      .locator(".print-sheet")
+      .nth(n)
+      .locator(".quote-table-row")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("data-print-unit")));
+    const printed = await page.evaluate(
+      (html) =>
+        [
+          ...new DOMParser()
+            .parseFromString(html, "text/html")
+            .querySelectorAll(".quote-table-row"),
+        ].map((e) => e.getAttribute("data-print-unit")),
+      pdf.layout.sheets![n].html,
+    );
+    expect(rows).toEqual(printed);
+    if (rows.length) {
+      await expect(
+        client.locator(".print-sheet").nth(n).locator("thead th"),
+      ).toHaveCount(4);
+      expect(pdf.layout.sheets![n].html).not.toContain("quote-col-description");
+    }
+  }
 });

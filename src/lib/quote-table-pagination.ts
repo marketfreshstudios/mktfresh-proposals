@@ -12,7 +12,7 @@ export function placeQuoteTableBreak(row: HTMLElement, top: number) {
   gap.dataset.paginationSpacer = "true";
   gap.setAttribute("aria-hidden", "true");
   const cell = row.ownerDocument.createElement("td");
-  cell.colSpan = 5;
+  cell.colSpan = head.children.length;
   gap.append(cell);
   let height = Math.max(0, top - row.getBoundingClientRect().top);
   cell.style.height = `${height}px`;
