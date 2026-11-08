@@ -1,3 +1,4 @@
+import type { EngagementAggregate, EngagementSession } from "./engagement";
 import { isDeepStrictEqual } from "node:util";
 import { sameClientContact, unsignedClientProposal } from "./clients";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
@@ -26,7 +27,10 @@ export type EntityTable =
   | "custom_families"
   | "provider_credentials"
   | "webhook_events"
-  | "provider_actions";
+  | "provider_actions"
+  | "proposal_engagement"
+  | "proposal_engagement_totals"
+  | "engagement_local_limits";
 export type StudioEntityTable = "templates" | "content_library";
 export type LinkedBlockCommit = {
   before: SavedBlock | null;
@@ -36,6 +40,18 @@ export type LinkedBlockCommit = {
   events: Audit[];
 };
 export interface Repository {
+  engagementSummary(id: string): Promise<EngagementAggregate | null>;
+  engagementSession(
+    proposal: string,
+    id: string,
+  ): Promise<EngagementSession | null>;
+  engagementSessions(proposal: string): Promise<EngagementSession[]>;
+  saveEngagement(
+    expected: number,
+    session: EngagementSession,
+    summary: EngagementAggregate,
+  ): Promise<"saved" | "stale" | "limited">;
+  pruneEngagement(before: string): Promise<void>;
   commitLinkedBlock(change: LinkedBlockCommit, audit: Audit): Promise<boolean>;
   saveStudioEntity(
     table: StudioEntityTable,
@@ -84,6 +100,72 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async engagementSummary(id: string) {
+    return structuredClone(
+      (this.catalog
+        .get("proposal_engagement_totals")
+        ?.get(id) as EngagementAggregate) ?? null,
+    );
+  }
+  async engagementSession(proposal: string, id: string) {
+    const row = this.catalog.get("proposal_engagement")?.get(id) as
+      EngagementSession | undefined;
+    return structuredClone(row?.proposal_id === proposal ? row : null);
+  }
+  async engagementSessions(proposal: string) {
+    return (await this.entities<EngagementSession>("proposal_engagement"))
+      .filter((s) => s.proposal_id === proposal)
+      .sort((a, b) => b.started_at.localeCompare(a.started_at));
+  }
+  async saveEngagement(
+    expected: number,
+    session: EngagementSession,
+    summary: EngagementAggregate,
+  ): Promise<"saved" | "stale" | "limited"> {
+    const p = this.rows.get(summary.id);
+    if (
+      !p ||
+      p.archived_at ||
+      !p.token ||
+      !["sent", "viewed", "signed_by_client", "completed"].includes(p.status)
+    )
+      return "stale";
+    const bucket = Math.floor(Date.now() / 600000);
+    const rates = this.catalog.get("engagement_local_limits") ?? new Map();
+    const previous = rates.get(p.id) as
+      { bucket: number; count: number } | undefined;
+    const count = previous?.bucket === bucket ? previous.count + 1 : 1;
+    rates.set(p.id, { bucket, count });
+    this.catalog.set("engagement_local_limits", rates);
+    if (count > 600) return "limited";
+    const current = this.catalog
+      .get("proposal_engagement_totals")
+      ?.get(p.id) as EngagementAggregate | undefined;
+    if ((current?.revision ?? 0) !== expected) return "stale";
+    const prior = this.catalog.get("proposal_engagement")?.get(session.id) as
+      EngagementSession | undefined;
+    if (!prior && session.count_view && !["sent", "viewed"].includes(p.status))
+      return "stale";
+    if (prior && (prior.proposal_id !== p.id || prior.seq >= session.seq))
+      return "stale";
+    for (const name of [
+      "proposal_engagement",
+      "proposal_engagement_totals",
+    ] as const)
+      if (!this.catalog.has(name)) this.catalog.set(name, new Map());
+    this.catalog
+      .get("proposal_engagement")!
+      .set(session.id, structuredClone(session));
+    this.catalog
+      .get("proposal_engagement_totals")!
+      .set(p.id, structuredClone(summary));
+    return "saved";
+  }
+  async pruneEngagement(before: string) {
+    const rows = this.catalog.get("proposal_engagement");
+    for (const [id, s] of rows ?? [])
+      if ((s as EngagementSession).started_at < before) rows!.delete(id);
+  }
   async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
     const clean = (x: unknown) => JSON.parse(JSON.stringify(x ?? null));
     const id = (change.before ?? change.after)!.id;
@@ -479,6 +561,41 @@ export class MemoryRepository implements Repository {
 }
 // Local development only, single Node process. Production always uses database CAS.
 export class LocalRepository extends MemoryRepository {
+  override async engagementSummary(id: string) {
+    await this.ready;
+    return super.engagementSummary(id);
+  }
+  override async engagementSession(p: string, id: string) {
+    await this.ready;
+    return super.engagementSession(p, id);
+  }
+  override async engagementSessions(p: string) {
+    await this.ready;
+    return super.engagementSessions(p);
+  }
+  override async saveEngagement(
+    expected: number,
+    session: EngagementSession,
+    summary: EngagementAggregate,
+  ) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const result = await super.saveEngagement(expected, session, summary);
+      await this.persist();
+      return result;
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
+  override async pruneEngagement(before: string) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      await super.pruneEngagement(before);
+      await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
   override async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
     await this.ready;
     const operation = this.tail.then(async () => {
@@ -704,6 +821,65 @@ export class LocalRepository extends MemoryRepository {
   }
 }
 export class SupabaseRepository implements Repository {
+  async engagementSummary(id: string) {
+    const { data, error } = await this.db
+      .from("proposal_engagement_totals")
+      .select("data")
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.data as EngagementAggregate) ?? null;
+  }
+  async engagementSession(proposal: string, id: string) {
+    const { data, error } = await this.db
+      .from("proposal_engagement")
+      .select("data")
+      .eq("workspace_id", this.workspaceId)
+      .eq("proposal_id", proposal)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.data as EngagementSession) ?? null;
+  }
+  async engagementSessions(proposal: string) {
+    const result: EngagementSession[] = [];
+    for (let n = 0; ; n += 500) {
+      const { data, error } = await this.db
+        .from("proposal_engagement")
+        .select("data")
+        .eq("workspace_id", this.workspaceId)
+        .eq("proposal_id", proposal)
+        .order("started_at", { ascending: false })
+        .order("id")
+        .range(n, n + 499);
+      if (error) throw error;
+      result.push(...data.map((r) => r.data as EngagementSession));
+      if (data.length < 500) return result;
+    }
+  }
+  async saveEngagement(
+    expected: number,
+    session: EngagementSession,
+    summary: EngagementAggregate,
+  ): Promise<"saved" | "stale" | "limited"> {
+    const { data, error } = await this.db.rpc("record_proposal_engagement", {
+      p_workspace: this.workspaceId,
+      p_expected: expected,
+      p_session: session,
+      p_summary: summary,
+    });
+    if (error) throw error;
+    return data;
+  }
+  async pruneEngagement(before: string) {
+    const { error } = await this.db
+      .from("proposal_engagement")
+      .delete()
+      .eq("workspace_id", this.workspaceId)
+      .lt("started_at", before);
+    if (error) throw error;
+  }
   async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
     const { data, error } = await this.db.rpc("save_linked_block", {
       p_workspace: this.workspaceId,

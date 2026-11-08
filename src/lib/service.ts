@@ -1005,16 +1005,38 @@ export class ProposalService {
     publicAccess(p, password, this.clock());
     return p;
   }
-  async view(token: string, password: string, actor: Actor) {
+  async view(
+    token: string,
+    password: string,
+    actor: Actor,
+    preferences?: { in_app: boolean; email: boolean },
+  ) {
     const p = await this.byToken(token, password);
     return mutate(this.repo, p.id, (p) => {
       publicAccess(p, password, this.clock());
       check(p.token === token, "Link superseded", 410);
+      if (!["sent", "viewed"].includes(p.status) || p.signers.length) return;
       if (!p.first_viewed_at) {
         p.first_viewed_at = this.clock().toISOString();
         if (p.status === "sent") p.status = "viewed";
-        event(p, "viewed", actor, {}, p.first_viewed_at);
-        notify(p, "viewed");
+        event(
+          p,
+          "viewed",
+          actor,
+          {
+            in_app:
+              preferences?.in_app ??
+              p.workspace_settings?.engagement_notifications?.in_app ??
+              true,
+          },
+          p.first_viewed_at,
+        );
+        if (
+          preferences?.email ??
+          p.workspace_settings?.engagement_notifications?.email ??
+          false
+        )
+          notify(p, "viewed");
       } else if (p.workspace_settings?.reminder_rules && !cycleViewedAt(p)) {
         // Preserve lifetime viewed tracking; the new reminder cycle needs its own first view.
         event(p, "viewed", actor, {}, this.clock().toISOString());
@@ -1356,12 +1378,17 @@ export class ProposalService {
 }
 export function publicResult(
   p: Proposal,
-  options?: { qboConnected?: boolean; showPoweredBy?: boolean },
+  options?: {
+    qboConnected?: boolean;
+    showPoweredBy?: boolean;
+    engagementAllowed?: boolean;
+  },
 ) {
   p = publishedPresentation(p);
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
+    engagement_allowed: options?.engagementAllowed === true,
     show_powered_by:
       options?.showPoweredBy ?? p.workspace_settings?.show_powered_by !== false,
     quote: cloneQuote(v.quote).map(
@@ -1378,6 +1405,7 @@ export function publicResult(
       }),
     ),
     sent_at: v.created_at,
+    version_no: v.version_no,
     money_cents: p.workspace_settings?.money?.cents ?? "auto",
     timezone: p.workspace_settings?.timezone ?? "UTC",
     proposal_fonts: p.workspace_settings?.proposal_fonts,

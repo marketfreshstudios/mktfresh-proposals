@@ -669,3 +669,136 @@
   background: var(--control-active-background, var(--surface));
   color: var(--control-active-color, var(--ink));
 }
+
+/* First-party proposal engagement: staff record and list surfaces only. */
+.engagement-panel {
+  margin-block: 24px;
+  padding: 24px;
+}
+.engagement-panel h3 {
+  font-size: 14px;
+  margin: 20px 0 12px;
+}
+.engagement-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.engagement-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.engagement-stats dd {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.engagement-last small,
+.engagement-sessions small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.engagement-first-note {
+  border-radius: 8px;
+  background: var(--success-soft, var(--surface));
+  color: var(--ink);
+  padding: 10px 12px;
+}
+.engagement-sections,
+.engagement-sessions {
+  padding: 0;
+  list-style: none;
+}
+.engagement-sections li {
+  margin: 14px 0;
+}
+.engagement-sections li > div,
+.engagement-sessions li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.engagement-sections strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.engagement-sections span,
+.engagement-sessions span {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.engagement-sections meter {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin-top: 6px;
+  accent-color: var(--accent);
+}
+.engagement-help {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.engagement-panel summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.engagement-sessions > li {
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+.engagement-sessions time {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.engagement-empty {
+  padding: 16px 0;
+  max-width: 540px;
+  color: var(--muted);
+}
+.proposal-name .proposal-engagement-line {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.workspace-engagement-switch {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 699px) {
+  .engagement-panel {
+    padding: 16px;
+  }
+  .engagement-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.engagement-sections meter::-webkit-meter-bar {
+  background: var(--surface);
+  border: 0;
+  border-radius: 4px;
+}
+.engagement-sections meter::-webkit-meter-optimum-value {
+  background: var(--accent);
+  border-radius: 4px;
+}
+.engagement-sections meter::-moz-meter-bar {
+  background: var(--accent);
+  border-radius: 4px;
+}
+.engagement-panel .disclosure-marker {
+  margin-right: 8px;
+}
+.engagement-panel .btn {
+  min-height: 44px;
+}

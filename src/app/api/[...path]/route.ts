@@ -60,6 +60,26 @@ async function route(
             await rt.worker.drain(p.id, "email", job.id);
     });
   }
+  if (
+    response.ok &&
+    request.method === "POST" &&
+    path[0] === "public" &&
+    path[2] === "engagement" &&
+    path[3] === "start"
+  ) {
+    const result = await response.clone().json();
+    if (result.ticket) {
+      const rt = await publicRuntime(path[1]);
+      const p = await rt.repo.byToken(path[1]);
+      if (p)
+        after(async () => {
+          for (const job of p.jobs.filter(
+            (j) => j.status === "pending" && j.id.includes(":notify:viewed:"),
+          ))
+            await rt.worker.drain(p.id, "email", job.id);
+        });
+    }
+  }
   return response;
 }
 export { route as GET, route as POST, route as PUT, route as PATCH };

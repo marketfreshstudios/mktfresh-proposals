@@ -1,4 +1,16 @@
 import {
+  EngagementStartSchema,
+  EngagementSnapshotSchema,
+  publicEngagement,
+  engagementTargets,
+} from "./engagement";
+import {
+  engagementBot,
+  startEngagement,
+  recordEngagement,
+  engagementReport,
+} from "./engagement-server";
+import {
   studioEntityViews,
   writeStudioEntity,
   restoreConnectorChange,
@@ -104,6 +116,7 @@ import {
 } from "./model";
 import {
   actor,
+  cookie,
   equalSecret,
   login,
   staff,
@@ -235,10 +248,16 @@ async function handleRoute(req: Request, path: string[]) {
       const workspaceBrand = (
         await rt.repo.entities<WorkspaceSettings>("workspace_settings")
       )[0];
+      const engagementAllowed =
+        !engagementBot(req.headers) &&
+        !cookie(req, "proposal_session") &&
+        !cookie(req, "proposal_refresh") &&
+        !req.headers.has("authorization");
       const clientResult = (p: import("./model").Proposal) =>
         publicResult(p, {
           qboConnected: rt.worker.providers.qbo instanceof QboProvider,
           showPoweredBy: workspaceBrand?.show_powered_by !== false,
+          engagementAllowed,
         });
       if (method === "GET" && action === "brand") {
         const p = await rt.repo.byToken(token);
@@ -325,10 +344,52 @@ async function handleRoute(req: Request, path: string[]) {
         );
         return json(clientResult(proposal));
       }
-      if (method === "GET" && !action)
-        return json(
-          clientResult(await rt.service.view(token, password, actor(req))),
+      if (method === "POST" && action === "engagement") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        // Staff visits, previews and scanners never create a qualified view.
+        if (!engagementAllowed) return json({ ignored: true });
+        const raw = await req.text();
+        check(
+          Buffer.byteLength(raw) <= 60000,
+          "Engagement batch too large",
+          413,
         );
+        let value: unknown;
+        try {
+          value = JSON.parse(raw);
+        } catch {
+          throw new AppError(400, "Invalid engagement batch");
+        }
+        if (path[3] === "start") {
+          const input = EngagementStartSchema.parse(value);
+          const p = await rt.service.byToken(token, password);
+          const started = await startEngagement(rt.repo, p, input);
+          if (input.intent === "read")
+            await rt.service.view(
+              token,
+              password,
+              { actor: "client", ip: "", user_agent: "" },
+              workspaceBrand?.engagement_notifications,
+            );
+          return json({
+            ticket: started.ticket,
+            targets: engagementTargets(p),
+          });
+        }
+        const input = z
+          .object({
+            ticket: z.string().max(2000),
+            snapshot: EngagementSnapshotSchema,
+          })
+          .strict()
+          .parse(value);
+        const p = await rt.repo.byToken(token);
+        check(p, "Not found", 404);
+        await recordEngagement(rt.repo, p, input.ticket, input.snapshot);
+        return json({ accepted: true });
+      }
+      if (method === "GET" && !action)
+        return json(clientResult(await rt.service.byToken(token, password)));
       if (method === "POST" && action === "quote") {
         const input = z
           .object({
@@ -400,6 +461,9 @@ async function handleRoute(req: Request, path: string[]) {
       check(method === "GET" || method === "POST", "Method not allowed", 405);
       const results = [];
       for (const rt of await allRuntimes()) {
+        const cutoff = new Date();
+        cutoff.setUTCMonth(cutoff.getUTCMonth() - 12);
+        await rt.repo.pruneEngagement(cutoff.toISOString());
         await refreshDueDocuments(rt.repo);
         await rt.service.tick();
         results.push(await rt.worker.drain());
@@ -1077,6 +1141,15 @@ async function handleRoute(req: Request, path: string[]) {
               403,
             );
           if (
+            JSON.stringify(entity.engagement_notifications) !==
+            JSON.stringify(previous?.engagement_notifications)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change engagement notifications",
+              403,
+            );
+          if (
             entity.email_reply_to !== previous?.email_reply_to ||
             JSON.stringify(entity.reminder_rules) !==
               JSON.stringify(previous?.reminder_rules) ||
@@ -1253,6 +1326,19 @@ async function handleRoute(req: Request, path: string[]) {
         );
       }
     }
+    if (path[0] === "engagement" && method === "GET") {
+      return json(
+        Object.fromEntries(
+          (
+            await rt.repo.entities<import("./engagement").EngagementAggregate>(
+              "proposal_engagement_totals",
+            )
+          )
+            .filter((a) => a.views > 0)
+            .map((a) => [a.id, publicEngagement(a)]),
+        ),
+      );
+    }
     if (path[0] === "proposals") {
       const id = path[1],
         action = path[2];
@@ -1399,6 +1485,11 @@ async function handleRoute(req: Request, path: string[]) {
               : null,
           },
         });
+      }
+      if (method === "GET" && action === "engagement") {
+        const p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        return json(await engagementReport(rt.repo, p));
       }
       if (method === "GET" && !action) {
         const p = await rt.repo.get(id);
@@ -1618,6 +1709,20 @@ async function handleRoute(req: Request, path: string[]) {
       return json({ error: e.message, unfinished_proposals: e.proposals }, 409);
     if (e instanceof DuplicateClient)
       return json({ error: e.message, existing_client: e.existing }, 409);
+    if (
+      e instanceof AppError &&
+      e.status === 429 &&
+      path[0] === "public" &&
+      path[2] === "engagement"
+    )
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 429,
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          "Retry-After": "600",
+        },
+      });
     if (e instanceof AppError)
       return json(
         {

@@ -1,4 +1,5 @@
 "use client";
+import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
@@ -218,6 +219,13 @@ function NewClientFlow({
     checkoutReturned && signed && !returnConfirmed && !bankState;
   const contact = p?.contact ??
     brand.contact ?? { name: "", email: brand.email };
+  const engagement = useClientEngagement(
+    p,
+    token,
+    password,
+    preview,
+    step === "read",
+  );
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
   const review = step === "read" && !signed;
   const activeStep = signed ? (step === "done" ? "done" : "billing") : step;
@@ -393,14 +401,14 @@ function NewClientFlow({
     setBusy(true);
     setError("");
     try {
-      setP(
-        await submit("quote", {
-          revision: previous.revision,
-          reviewed_hash: previous.reviewed_hash,
-          item_id: id,
-          selected,
-        }),
-      );
+      const saved = await submit("quote", {
+        revision: previous.revision,
+        reviewed_hash: previous.reviewed_hash,
+        item_id: id,
+        selected,
+      });
+      setP(saved);
+      engagement.choice(id, selected);
     } catch (e) {
       setP(previous);
       if (e instanceof ApiError && e.status === 409) setStale(true);
@@ -422,6 +430,7 @@ function NewClientFlow({
         headers,
       });
       if (!response.ok) throw new Error();
+      void engagement.download(id);
       const url = URL.createObjectURL(await response.blob()),
         link = document.createElement("a");
       link.href = url;
@@ -1278,6 +1287,9 @@ function NewClientFlow({
           company={brand.name}
         />
         <ContactToast />
+        <p className="flow-engagement-privacy">
+          The sender can see when and how this proposal was viewed.
+        </p>
         {(p?.show_powered_by ?? brand.show_powered_by) !== false && (
           <PoweredByYeswell />
         )}

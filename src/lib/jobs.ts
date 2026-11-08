@@ -190,6 +190,14 @@ export class Worker {
       return;
     }
     if (j.kind === "email") {
+      if (j.id.startsWith(`${p.id}:notify:viewed:`)) {
+        const current = (
+          await this.repo.entities<NonNullable<Proposal["workspace_settings"]>>(
+            "workspace_settings",
+          )
+        )[0];
+        if (current?.engagement_notifications?.email !== true) return;
+      }
       const payload = j.payload;
       const failure = payload.job_failure as { job_id: string } | undefined;
       if (failure) {
