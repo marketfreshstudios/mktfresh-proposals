@@ -7,6 +7,9 @@ import { eventLabel } from "../src/lib/event-label";
 import { activity, workspaceEvent } from "../src/lib/studio";
 import { WorkspaceSettingsSchema } from "../src/lib/workspace";
 import { workspaceSections } from "../src/lib/studio-v3";
+import { coverText, defaultCover } from "../src/lib/cover";
+import { fieldNodes } from "../src/lib/editor-fields";
+import type { Template } from "../src/lib/model";
 async function fixture(page: Page) {
   const f = await setup();
   let member = false,
@@ -155,6 +158,165 @@ async function capture(page: Page, name: string, fullPage = true) {
     await page.screenshot({ path: `${shots}/${name}.png`, fullPage });
   }
 }
+test("template cards show cropped Letter sheets with resolved titles at every width", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  f.settings.accent_colour = "#365c4a";
+  f.settings.proposal_fonts = { heading: "serif", body: "mono" };
+  const templates = await f.repo.entities<Template>("templates");
+  const entries = [
+    {
+      name: "Website proposal",
+      starter_key: "website",
+      title: "Website for {{client.company}}",
+      heading: "Overview",
+      expected: "Website for Client",
+    },
+    {
+      name: "Care plan renewal",
+      heading: "Keeping your site healthy",
+      expected: "Keeping your site healthy",
+    },
+    {
+      name: "Local visibility",
+      title: "Title hidden on the cover",
+      hiddenTitle: true,
+      heading:
+        "Be found by customers nearby with a local visibility plan that keeps your business easy to find",
+      expected:
+        "Be found by customers nearby with a local visibility plan that keeps your business easy to find",
+    },
+  ];
+  for (const [index, entry] of entries.entries()) {
+    await f.repo.put("templates", {
+      ...templates[index],
+      name: entry.name,
+      starter_key: entry.starter_key,
+      starter_order: index,
+      active: index !== 2,
+      default_quote: [],
+      default_items: [],
+      cover: entry.title
+        ? {
+            ...defaultCover(),
+            elements: [
+              {
+                id: "title",
+                kind: "title",
+                align: "left",
+                hidden: entry.hiddenTitle,
+                content: fieldNodes(coverText(entry.title)),
+              },
+            ],
+          }
+        : undefined,
+      content: [
+        { id: crypto.randomUUID(), type: "heading", text: entry.heading },
+        ...templates[index].content.filter((block) => block.type === "heading"),
+      ],
+    });
+  }
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/studio/templates");
+  const grid = page.locator(".studio-template-grid");
+  const cards = grid.locator(".studio-template-card");
+  await expect(cards).toHaveCount(3);
+  for (const [index, entry] of entries.entries()) {
+    const card = cards.nth(index);
+    const band = card.locator(".template-thumbnail");
+    const paper = band.locator(".template-thumbnail-paper");
+    const title = paper.locator(".template-thumbnail-title");
+    await expect(card).toHaveAttribute(
+      "href",
+      `/studio/templates/${templates[index].id}`,
+    );
+    await expect(band).toHaveAttribute("aria-hidden", "true");
+    await expect(band).toHaveCSS("overflow", "hidden");
+    await expect(paper).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await expect(paper.locator(".template-thumbnail-accent")).toHaveCSS(
+      "background-color",
+      "rgb(54, 92, 74)",
+    );
+    await expect(title).toHaveText(entry.expected);
+    await expect(title).toHaveCSS("font-family", /Source Serif 4/);
+    await expect(title).toHaveCSS("-webkit-line-clamp", "2");
+    await expect(paper.locator("[data-field]")).toHaveCount(0);
+    const lines = paper.locator(".template-thumbnail-lines > span");
+    await expect(lines).toHaveCount(3);
+    const widths = await lines.evaluateAll((nodes) =>
+      nodes.map((node) => node.getBoundingClientRect().width),
+    );
+    expect(widths[0]).toBeGreaterThan(widths[1]);
+    expect(widths[1]).toBeGreaterThan(widths[2]);
+  }
+  await expect(
+    cards.first().getByText("Starter", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    cards.last().getByText("Hidden from new proposals"),
+  ).toBeVisible();
+  const longTitle = cards.last().locator(".template-thumbnail-title");
+  expect(
+    await longTitle.evaluate((node) => ({
+      clips: node.scrollHeight > node.clientHeight,
+      lines: Math.round(
+        node.clientHeight / parseFloat(getComputedStyle(node).lineHeight),
+      ),
+    })),
+  ).toEqual({ clips: true, lines: 2 });
+
+  for (const [width, columns] of [
+    [1440, 3],
+    [768, 2],
+    [375, 1],
+  ] as const) {
+    await page.setViewportSize({ width, height: 1000 });
+    const shapes = await cards.evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        card: node.getBoundingClientRect().toJSON(),
+        band: node
+          .querySelector(".template-thumbnail")!
+          .getBoundingClientRect()
+          .toJSON(),
+        paper: node
+          .querySelector(".template-thumbnail-paper")!
+          .getBoundingClientRect()
+          .toJSON(),
+      })),
+    );
+    expect(new Set(shapes.map(({ card }) => card.x)).size).toBe(columns);
+    expect(new Set(shapes.map(({ card }) => card.height)).size).toBe(1);
+    for (const { band, paper } of shapes) {
+      expect(band.width / band.height).toBeCloseTo(7 / 3, 2);
+      expect(paper.width / band.width).toBeCloseTo(0.6, 2);
+      expect(paper.width / paper.height).toBeCloseTo(8.5 / 11, 2);
+      expect(paper.x + paper.width / 2).toBeCloseTo(band.x + band.width / 2, 0);
+      expect(paper.bottom).toBeGreaterThan(band.bottom);
+    }
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+    if (width !== 768 && process.env.TEMPLATE_THUMBNAILS_CAPTURE === "1") {
+      await page.evaluate(() => document.fonts.ready);
+      const directory = "docs/screenshots/template-thumbnails";
+      mkdirSync(directory, { recursive: true });
+      await page.screenshot({
+        path: `${directory}/templates-${width}.png`,
+      });
+    }
+  }
+
+  await page.getByRole("searchbox", { name: "Search templates" }).focus();
+  await page.keyboard.press("Tab");
+  await expect(cards.first()).toBeFocused();
+  await expect(cards.first()).toHaveCSS("outline-style", "solid");
+  await expect(cards.first()).toHaveCSS("outline-width", "2px");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`/studio/templates/${templates[0].id}`);
+});
+
 test("Studio v3 route lists, ten staff emails and Workspace autosave keep values on error", async ({
   page,
 }) => {
