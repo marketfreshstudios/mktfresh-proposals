@@ -25,7 +25,7 @@ Five cover layouts. A template picks one; a proposal inherits it and can change 
 | 1 Editorial (default for new templates and all six starters) | Main.dc.html | White + **logo-mark watermark** top-right | Title large in the lower half, short accent rule under it, 4-column meta row (Prepared for · Prepared by · Date · Valid until) above the bottom margin |
 | 2 Split panel | Split.dc.html | Left 296px panel in brand color + **logo-mark watermark** bottom of the panel | Logo, Prepared by, Date, Valid until in the panel; eyebrow, title, Prepared for on the right |
 | 3 Full color | Bold.dc.html | Brand color + Waves graphic | White text; meta row at the bottom |
-| 4 Photo / uploaded design | Photo.dc.html | Uploaded image top ~64%, brand-colour band with the text below | Logo in a white chip top-left |
+| 4 Photo / uploaded design | Photo.dc.html | Uploaded image top ~64%, brand-color band with the text below | Logo in a white chip top-left |
 | 5 Centered minimal | Centered.dc.html | Warm paper + thin frame | Everything centered |
 
 Meta labels are small caps-style labels (11px, 600, 0.12em tracking, uppercase) above values (14px). Title: heading font, 700, tight leading (≈1.04), slight negative tracking; sizes as drawn (64px Editorial). Text color flips to white or ink automatically so it passes 4.5:1 on whatever background is chosen.
@@ -33,7 +33,7 @@ Meta labels are small caps-style labels (11px, 600, 0.12em tracking, uppercase) 
 ## 4. Cover graphic (watermark) — layouts 1 and 2
 
 - Default graphic is the workspace's **logo icon**, drawn large and cropped by the page edge (Editorial: ~480px square, offset so roughly a third bleeds off the top-right corner; Split: ~420px, bleeding off the panel's right and bottom).
-- Controls (cover settings): **Graphic** = Logo icon (default when uploaded) · one of the built-in graphics · Upload image · None; **Opacity** 0–40% (defaults: 8% on white, 12% on a brand-colour panel); **Size** S / M / L (or a slider, 300–700px); position stays as designed per layout.
+- Controls (cover settings): **Graphic** = Logo icon (default when uploaded) · one of the built-in graphics · Upload image · None; **Opacity** 0–40% (defaults: 8% on white, 12% on a brand-color panel); **Size** S / M / L (or a slider, 300–700px); position stays as designed per layout.
 - No logo icon uploaded: default to the built-in Ring (Editorial) / Orbits (Split) graphic.
 - Logo icon resolution: the current icon minimum (128×128) is too small for a ~700px watermark. Require **at least 1024×1024** for an icon to be offered as the cover graphic; a smaller icon still works everywhere else, and the cover settings show "Upload a 1024×1024 or larger icon to use it as the cover graphic". Prefer PNG with transparency. Raise the Brand upload hint accordingly ("square, at least 1024×1024 for cover graphics").
 - The graphic is tinted to the background: on white it uses the icon's own colors at the chosen opacity; a recolour option is not needed now.

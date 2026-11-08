@@ -68,11 +68,19 @@ export const americanSpellings: Record<string, string> = {
   colourful: "colorful",
 };
 const words = new RegExp(
-  `(?<![\\w/_.-])(${Object.keys(americanSpellings).join("|")})(?![\\w/_-])`,
+  `(?<![\\w/_.])(${Object.keys(americanSpellings).join("|")})(?![\\w_])`,
   "gi",
 );
 export function americanEnglishViolations(text: string) {
-  return [...text.matchAll(words)].map((m) => ({
+  const copy = text
+    .replace(/https?:\/\/[^\s"<>]+/g, (value) => " ".repeat(value.length))
+    .replace(/[\w./-]+\.(?:png|jpe?g|svg|webp|tsx?|json|css|md)\b/gi, (value) =>
+      " ".repeat(value.length),
+    )
+    .replace(/\bstyle-colour-controls\b|--[\w-]+/g, (value) =>
+      " ".repeat(value.length),
+    );
+  return [...copy.matchAll(words)].map((m) => ({
     word: m[0],
     replacement: americanSpellings[m[0].toLowerCase()],
     index: m.index,

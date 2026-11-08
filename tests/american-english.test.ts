@@ -28,6 +28,18 @@ describe("American English copy", () => {
       ),
     ).toEqual([]);
   });
+  it("catches compound prose while preserving technical paths and identifiers", () => {
+    expect(
+      americanEnglishViolations(
+        "brand-colour and greyed-out and catalogue/family",
+      ),
+    ).toHaveLength(3);
+    expect(
+      americanEnglishViolations(
+        "catalogue-desktop-light.png style-colour-controls --accent-colour",
+      ),
+    ).toEqual([]);
+  });
   it("keeps application, email, starter and documentation copy American", () =>
     expect(checkAmericanEnglish()).toEqual([]));
 });

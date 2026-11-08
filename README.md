@@ -117,7 +117,7 @@ Do not treat a passing mocked billing flow as a live-provider acceptance test. K
 
 Apply migrations in order. Existing records are assigned to workspace 1 without rewriting signed version evidence. Staff membership includes a workspace, role and status. Super admins manage Team and the existing workspace security settings; Staff retain authoring and their own profile changes. Company-signature delegation remains separate and unchanged. Seed data lives in `seed/marketfresh.ts`. Edit workspace settings before sending proposals, including consent, sending domain and fallback QuickBooks item. The deployment origin comes from APP_URL; the send screen chooses a staff sender. Development always mocks email; billing stays mocked unless explicitly configured for test mode.
 
-New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalogue/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
+New lines use `amount`, `list_amount`, `interval` (`one_time`, `month`, `year`), nullable catalog/family IDs, lookup key, QuickBooks item reference, optional minimum term, schedule and plan terms. No price or kickoff calculation occurs. The readiness endpoint `/api/proposals/:id/ready` returns the same blockers used by send.
 
 The playbook handoff is `GET /proposals/new?draft=<base64url JSON>` with a staff session. Schema: `/schemas/quote-draft.v2.json`. A payload has `source: "playbook"`, `source_version: "v1.17 · 15 October 2026"`, optional title/client/notes, and an `items` array using the current item/sub-line schema. For example, create the URL in the playbook using UTF-8 encoding:
 
@@ -159,7 +159,7 @@ References are inert UTF-8 text, limited to 1 MiB and a total 15-second fetch de
 
 Staff can open **Preview as client** from the editor (after autosave) or proposal record. It opens /p/<proposal-id>?preview=1 with a staff-authenticated read-only data loader; drafts do not need a sent token. Preview uses the client component with local optional selections, live totals, reading/signing/billing layouts, viewport controls and a persistent banner. Signatures, checkout, declines, public view tracking and client actions are disabled.
 
-Catalog **Display name** is an optional app-only override preserved by Stripe sync. New catalogue-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
+Catalog **Display name** is an optional app-only override preserved by Stripe sync. New catalog-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
 
 Workspace settings remain live while a proposal is a draft. Draft API responses and readiness use current settings without persisting a snapshot. Send and re-send capture the current settings before validation and rendering; signed proposals retain their frozen snapshot.
 

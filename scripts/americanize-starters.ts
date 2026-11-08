@@ -1,5 +1,6 @@
 /** Read-only hosted dry run: emit compact checksum-guarded SQL for Claude to review/apply. */
 import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { runtime } from "../src/lib/runtime";
 import { supabase, SupabaseRepository } from "../src/lib/repository";
@@ -18,8 +19,35 @@ for (const file of [
     ...JSON.parse(sql.match(/\$starter\$([\s\S]*?)\$starter\$/)![1]),
   );
 }
-const workspaces =
-  process.env.APP_MODE === "local"
+const argument = (name: string) => {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return undefined;
+  if (!process.argv[index + 1] || process.argv[index + 1].startsWith("--"))
+    throw new Error(`Missing value for ${name}`);
+  return process.argv[index + 1];
+};
+const input = argument("--input");
+const parsed = input ? JSON.parse(await readFile(input, "utf8")) : null;
+const snapshot = parsed?.snapshot ?? parsed;
+if (
+  input &&
+  (!snapshot ||
+    !Array.isArray(snapshot.workspaces) ||
+    snapshot.workspaces.some(
+      (w: any) =>
+        !w ||
+        typeof w.id !== "string" ||
+        !Array.isArray(w.catalog) ||
+        !Array.isArray(w.templates),
+    ))
+)
+  throw new Error("Expected {workspaces:[{id,catalog,templates}]} snapshot");
+const entries = snapshot?.workspaces as
+  { id: string; catalog: Item[]; templates: Template[] }[] | undefined;
+const output = argument("--output") ?? ".data/american-english-starters.sql";
+const workspaces = entries
+  ? entries.map((w) => w.id)
+  : process.env.APP_MODE === "local"
     ? ["00000000-0000-4000-8000-000000000001"]
     : (
         await supabase().from("workspaces").select("id").throwOnError()
@@ -32,18 +60,20 @@ const updates: string[] = [
 ];
 let total = 0;
 for (const workspace of workspaces) {
-  const repo =
-    process.env.APP_MODE === "local"
+  const entry = entries?.find((w) => w.id === workspace);
+  const repo = entry
+    ? undefined
+    : process.env.APP_MODE === "local"
       ? runtime(workspace).repo
       : new SupabaseRepository(supabase(), workspace);
   const rows = starterEnglishUpdates(
     workspace,
-    await repo.entities<Item>("pricing_items"),
-    await repo.entities<Template>("templates"),
+    entry?.catalog ?? (await repo!.entities<Item>("pricing_items")),
+    entry?.templates ?? (await repo!.entities<Template>("templates")),
     historical,
   );
   console.log(
-    `${workspace}: ${rows.length} untouched starters eligible (0–2 expected).`,
+    `${workspace}: ${rows.length} untouched ${rows.length === 1 ? "starter" : "starters"} eligible (0–2 expected).`,
   );
   for (const row of rows) {
     const result = await db.query<{ hash: string }>(
@@ -59,11 +89,8 @@ for (const workspace of workspaces) {
 }
 updates.push("commit;");
 await db.close();
-await mkdir(".data", { recursive: true });
-await writeFile(
-  ".data/american-english-starters.sql",
-  updates.join("\n") + "\n",
-);
+await mkdir(dirname(output), { recursive: true });
+await writeFile(output, updates.join("\n") + "\n");
 console.log(
-  `${total} updates prepared in .data/american-english-starters.sql. No hosted writes performed. Review and apply through the Supabase connector; rerun to verify 0 eligible.`,
+  `${total} updates prepared in ${output}. No hosted writes performed. Review and apply through the Supabase connector; rerun to verify 0 eligible.`,
 );

@@ -1,3 +1,8 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
@@ -172,5 +177,77 @@ it("new seed copy and preserved historical comparison remain distinct", () => {
           [before],
         ),
       ).toHaveLength(1);
+  }
+});
+
+it("connector snapshots generate executable guarded SQL without Supabase credentials or a pre-existing output folder", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "starter-copy-"));
+  try {
+    const ws = crypto.randomUUID();
+    const before = preAmericanEnglishStarter(
+      workspaceStarterTemplates(ws, []).find(
+        (t) => t.starter_key === "website-care-hosting",
+      )!,
+    );
+    before.name = "Workspace care plan";
+    before.active = false;
+    const input = join(dir, "snapshot.json"),
+      output = join(dir, "nested", "copy.sql");
+    await writeFile(
+      input,
+      JSON.stringify({
+        workspaces: [{ id: ws, catalog: [], templates: [before] }],
+      }),
+    );
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "scripts/americanize-starters.ts",
+        "--input",
+        input,
+        "--output",
+        output,
+      ],
+      {
+        env: {
+          ...process.env,
+          SUPABASE_URL: "",
+          SUPABASE_ANON_KEY: "",
+          SUPABASE_SERVICE_ROLE_KEY: "",
+        },
+      },
+    );
+    expect(stdout).toContain("1 untouched starter eligible");
+    expect(stdout).toContain("No hosted writes performed");
+    const db = await PGlite.create();
+    try {
+      await db.exec(
+        "create role service_role;create table public.templates(id uuid,workspace_id uuid,data jsonb);grant select,update on public.templates to service_role;",
+      );
+      await db.query("insert into templates values($1,$2,$3)", [
+        before.id,
+        ws,
+        JSON.stringify(before),
+      ]);
+      await db.exec(await readFile(output, "utf8"));
+      const after = (
+        await db.query<{ data: Template }>("select data from templates")
+      ).rows[0].data;
+      expect(after.name).toBe(before.name);
+      expect(after.active).toBe(false);
+      expect(JSON.stringify(after.content)).toContain("can be canceled");
+      expect(JSON.stringify(after.content)).not.toContain("cancelled");
+      await db.exec(await readFile(output, "utf8"));
+      expect(
+        (await db.query<{ data: Template }>("select data from templates"))
+          .rows[0].data,
+      ).toEqual(after);
+    } finally {
+      await db.close();
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
   }
 });
