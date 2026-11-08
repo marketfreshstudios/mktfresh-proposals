@@ -1,4 +1,4 @@
-/* Shared native selection controls: one centred, full-row label target. */
+/* Shared native selection controls: one centered, full-row label target. */
 label:has(> input:is([type="checkbox"], [type="radio"], [role="switch"])) {
   display: flex;
   align-items: center !important;
@@ -6,7 +6,7 @@ label:has(> input:is([type="checkbox"], [type="radio"], [role="switch"])) {
   flex-direction: row !important;
   cursor: pointer;
 }
-label > input:is([type="checkbox"], [type="radio"], [role="switch"]) {
+label > input:is([type="checkbox"], [type="radio"]):not([role="switch"]) {
   flex: 0 0 auto;
   width: 18px !important;
   height: 18px !important;
@@ -16,10 +16,6 @@ label > input:is([type="checkbox"], [type="radio"], [role="switch"]) {
   order: -1;
   align-self: center;
   accent-color: var(--accent);
-}
-label > input[role="switch"] {
-  width: 30px !important;
-  height: 18px !important;
 }
 label:has(> input:disabled) {
   cursor: default;
@@ -272,4 +268,9 @@ button.contact-open {
   background: var(--surface-inverse);
   color: var(--ink-inverse);
   box-shadow: 0 4px 24px #0003;
+}
+
+/* Copy is an action; the neighbouring tel/mail links remain navigation. */
+.contact-copy-icon {
+  border-radius: var(--radius-button);
 }

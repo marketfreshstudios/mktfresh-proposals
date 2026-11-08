@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { DialogActions } from "./dialog-actions";
 import { staffErrorMessage } from "./staff-sign-in";
 import { ClientContactFields, clientFormValues } from "./client-contact-fields";
@@ -33,7 +34,7 @@ export function ClientPicker({
   return (
     <>
       <Field label="Client">
-        <select
+        <Select
           name={name}
           required={required}
           value={selected}
@@ -50,7 +51,7 @@ export function ClientPicker({
                 {c.company} · {c.email}
               </option>
             ))}
-        </select>
+        </Select>
       </Field>
       <button
         type="button"

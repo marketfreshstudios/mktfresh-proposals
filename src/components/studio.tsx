@@ -1,4 +1,5 @@
 "use client";
+import { Select, Switch } from "./form-controls";
 import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
@@ -642,11 +643,11 @@ function CatalogItem({
             />
           </Field>
           <Field label="Interval">
-            <select name="interval" defaultValue={i?.interval ?? "one_time"}>
+            <Select name="interval" defaultValue={i?.interval ?? "one_time"}>
               <option value="one_time">One-time</option>
               <option value="month">Monthly</option>
               <option value="year">Yearly</option>
-            </select>
+            </Select>
           </Field>
         </div>
       )}
@@ -712,12 +713,7 @@ function CatalogItem({
             </Field>
           ))}
           <label className="check">
-            <input
-              type="checkbox"
-              name="active"
-              defaultChecked={i?.active ?? true}
-              role="switch"
-            />
+            <Switch name="active" defaultChecked={i?.active ?? true} />
             Active
           </label>
           <label className="check">
@@ -759,7 +755,7 @@ function CatalogItem({
                   />
                 </Field>
                 <Field label="Then Stripe lookup key">
-                  <select
+                  <Select
                     name="then_lookup_key"
                     required
                     defaultValue={i?.schedule?.then.lookup_key ?? ""}
@@ -772,7 +768,7 @@ function CatalogItem({
                           {itemDisplayName(i)} · {i.stripe_lookup_key}
                         </option>
                       ))}
-                  </select>
+                  </Select>
                 </Field>
               </>
             )}
@@ -1715,7 +1711,7 @@ function TemplatesStudioContent({
         </Field>
         {saved.type !== "group" && (
           <Field label="Type">
-            <select
+            <Select
               disabled={!["paragraph", "heading"].includes(saved.block.type)}
               value={savedBlockType(saved.block)}
               onChange={(e) =>
@@ -1736,7 +1732,7 @@ function TemplatesStudioContent({
                   <option>Numbered list</option>
                 </>
               )}
-            </select>
+            </Select>
           </Field>
         )}
         {saved.type !== "group" &&
@@ -2924,9 +2920,7 @@ function TemplatesStudioContent({
                     </div>
                   ) : (
                     <label className="check">
-                      <input
-                        type="checkbox"
-                        role="switch"
+                      <Switch
                         checked={draft!.active}
                         onChange={(e) =>
                           editDraft({ ...draft!, active: e.target.checked })
@@ -3000,9 +2994,7 @@ function TemplatesStudioContent({
               </div>
             ) : (
               <label className="check">
-                <input
-                  type="checkbox"
-                  role="switch"
+                <Switch
                   checked={draft!.active}
                   onChange={(e) =>
                     editDraft({ ...draft!, active: e.target.checked })
@@ -3136,7 +3128,7 @@ function BlockPanel({
         />
       </Field>
       <Field label="Clause">
-        <select
+        <Select
           value={clause}
           onChange={(e) => setClause(Number(e.target.value))}
         >
@@ -3145,7 +3137,7 @@ function BlockPanel({
               {resolvedEditorText(c.heading, map)}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
       {c && (
         <>
@@ -3197,7 +3189,7 @@ function BlockPanel({
           </fieldset>
           {c.show_when && (
             <Field label="When the quote includes and the client selects">
-              <select
+              <Select
                 value={c.show_when.pricing_item_id}
                 onChange={(e) =>
                   update({
@@ -3223,7 +3215,7 @@ function BlockPanel({
                       {itemDisplayName(i)}
                     </option>
                   ))}
-              </select>
+              </Select>
             </Field>
           )}
           <p>

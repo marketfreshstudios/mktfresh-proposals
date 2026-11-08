@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import { Disclosure, Field, Button, post } from "./ui";
 import { SpacingInput } from "./editor/spacing-input";
@@ -102,7 +103,7 @@ export function CoverSettings({
       <Disclosure>Cover</Disclosure>
       <div className="cover-settings">
         <Field label="Cover layout">
-          <select
+          <Select
             aria-label="Cover layout"
             value={layout}
             onChange={(e) =>
@@ -122,7 +123,7 @@ export function CoverSettings({
                 {coverLayoutNames[v]}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <p className="muted">
           Layouts keep your editable fields. Undo restores the previous
@@ -131,7 +132,7 @@ export function CoverSettings({
         {layout !== "custom" && (
           <>
             <Field label="Background">
-              <select
+              <Select
                 aria-label="Cover background"
                 value={b.type}
                 onChange={(e) =>
@@ -143,7 +144,7 @@ export function CoverSettings({
                     {names[type as keyof typeof names]}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             {usesColor && (
               <div className="field">
@@ -290,7 +291,7 @@ export function CoverSettings({
               </>
             )}
             <Field label="Graphic">
-              <select
+              <Select
                 aria-label="Cover graphic"
                 value={
                   b.graphic === "logo-icon" && iconWidth < 1024
@@ -314,7 +315,7 @@ export function CoverSettings({
                   ))}
                 <option value="upload">Upload image</option>
                 <option value="none">None</option>
-              </select>
+              </Select>
             </Field>
             {iconWidth < 1024 && (
               <p className="muted">

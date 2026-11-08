@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { eventLabel } from "../lib/event-label";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
@@ -121,13 +122,13 @@ export function StudioFilters({
       </nav>
       <label className="field studio-filter-select">
         {label}
-        <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <Select value={value} onChange={(e) => onChange(e.target.value)}>
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
     </div>
   );

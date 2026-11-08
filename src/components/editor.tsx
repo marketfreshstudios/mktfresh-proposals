@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { SelectableImage } from "./editor/selectable-image";
 import {
   blockText,
@@ -116,7 +117,7 @@ export function BlocksEditor({
             ) : b.type === "signature_block" ? (
               <label className="field">
                 Signer role
-                <select
+                <Select
                   value={b.role ?? "client"}
                   onChange={(e) =>
                     patch({
@@ -127,7 +128,7 @@ export function BlocksEditor({
                 >
                   <option value="client">Client</option>
                   <option value="company">Company</option>
-                </select>
+                </Select>
               </label>
             ) : b.type === "variable" ? (
               <>

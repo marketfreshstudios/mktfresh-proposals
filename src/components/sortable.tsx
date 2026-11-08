@@ -191,7 +191,7 @@ export function Reorder({
       )
       .map((b) => b.id!) ?? [];
 
-  // Align centres for vertical keyboard moves. The stock getter bottom-aligns
+  // Align centers for vertical keyboard moves. The stock getter bottom-aligns
   // differently sized cards, which leaves a tall choice group over itself.
   const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
     if (!["ArrowDown", "ArrowUp"].includes(event.code))
@@ -283,7 +283,7 @@ export function Reorder({
           const pointer = activatorEvent as PointerEvent;
           const distance =
             pointer.clientY + delta.y - (over.rect.top + over.rect.height / 2);
-          // A drop on the row centre keeps sortable's direction semantics. The
+          // A drop on the row center keeps sortable's direction semantics. The
           // upper/lower edge is an explicit before/after slot.
           const edge =
             typeof pointer.clientY === "number" && Math.abs(distance) > 8

@@ -1,4 +1,5 @@
 "use client";
+import { Select, Switch } from "./form-controls";
 import { CoverSettings } from "./cover-settings";
 import { ColorPicker } from "./color-picker";
 import type { Cover } from "../lib/cover";
@@ -144,7 +145,7 @@ export function ProposalStyles({
         <div className="style-accordion-body">
           <label className="field">
             Text level
-            <select
+            <Select
               value={level}
               onChange={(e) => setLevel(e.target.value as StyleLevel)}
             >
@@ -153,12 +154,12 @@ export function ProposalStyles({
                   {styleLabels[l]}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <div className="style-font-grid">
             <label className="field">
               Font
-              <select
+              <Select
                 aria-label={`${styleLabels[level]} font`}
                 value={
                   typeof selected.font === "string"
@@ -193,7 +194,7 @@ export function ProposalStyles({
                     ))}
                   </optgroup>
                 )}
-              </select>
+              </Select>
             </label>
             {field(
               "Size (px)",
@@ -300,7 +301,7 @@ export function ProposalStyles({
             <Disclosure>Typography details</Disclosure>
             <label className="field">
               Letter case
-              <select
+              <Select
                 value={selected.letter_case}
                 onChange={(e) =>
                   patch({
@@ -310,7 +311,7 @@ export function ProposalStyles({
               >
                 <option value="normal">Normal</option>
                 <option value="uppercase">Uppercase</option>
-              </select>
+              </Select>
             </label>
             {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
           </details>
@@ -554,10 +555,9 @@ function BandSettings({
         {subtitle && <small id={`${id}-${key}`}>{subtitle}</small>}
       </span>
       <span className="band-switch-hit">
-        <input
+        <Switch
           className="band-switch-input"
-          type="checkbox"
-          role="switch"
+
           aria-label={label}
           aria-describedby={subtitle ? `${id}-${key}` : undefined}
           checked={value[key]}
@@ -635,9 +635,7 @@ function BandSettings({
                   <strong>Show on cover</strong>
                 </span>
                 <span className="band-switch-hit">
-                  <input
-                    type="checkbox"
-                    role="switch"
+                  <Switch
                     className="band-switch-input"
                     aria-label={`${title} show on cover`}
                     checked={bandOnCover(value, kind)}
@@ -698,9 +696,7 @@ function BandSettings({
                   <strong>Divider line</strong>
                 </span>
                 <span className="band-switch-hit">
-                  <input
-                    type="checkbox"
-                    role="switch"
+                  <Switch
                     className="band-switch-input"
                     aria-label={`${title} divider line`}
                     checked={bandDivider(value, kind)}
@@ -902,7 +898,7 @@ export function ProposalLayoutOptions({
       {row(
         "Page margins",
         "Letter paper. Current/custom margins are preserved until you pick a preset.",
-        <select
+        <Select
           aria-label="Page margin preset"
           value={preset}
           onChange={(e) => {
@@ -924,12 +920,12 @@ export function ProposalLayoutOptions({
           <option value="narrow">Narrow · 0.6 in</option>
           <option value="normal">Normal · 0.9 in</option>
           <option value="wide">Wide · 1.1 in</option>
-        </select>,
+        </Select>,
       )}
       {row(
         "Quote layout",
         "The same layout is used in the editor, client page and PDF.",
-        <select
+        <Select
           aria-label="Quote layout"
           value={styles.layout?.quote_layout ?? "cards"}
           onChange={(e) =>
@@ -941,7 +937,7 @@ export function ProposalLayoutOptions({
         >
           <option value="cards">Cards</option>
           <option value="table">Table</option>
-        </select>,
+        </Select>,
       )}
     </div>
   );

@@ -1,4 +1,10 @@
 :root {
+  --radius-button: 9999px;
+  --radius-field: 10px;
+  --field-padding-inline: 11px;
+  --switch-on: var(--accent);
+  --switch-off: var(--border-strong);
+  --switch-knob: #fff;
   --editor-touch-target: calc(var(--tap-min) + var(--space-1));
   --select-padding-right: 36px;
   --select-chevron-size: 12px;

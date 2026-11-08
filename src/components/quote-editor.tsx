@@ -1,4 +1,5 @@
 "use client";
+import { Select, Switch } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
@@ -898,7 +899,7 @@ function QuoteEditorContent({
       <p className="eyebrow">Pricing reference · read only</p>
       {documents.length > 1 && (
         <Field label="Document">
-          <select
+          <Select
             value={documentId}
             onChange={(e) => setDocumentId(e.target.value)}
           >
@@ -907,7 +908,7 @@ function QuoteEditorContent({
                 {d.name}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
       )}
       {doc ? (
@@ -1152,13 +1153,13 @@ function QuoteEditorContent({
       ) : (
         <>
           <Field label="From">
-            <select value={sender} onChange={(e) => setSender(e.target.value)}>
+            <Select value={sender} onChange={(e) => setSender(e.target.value)}>
               {staff.map((s) => (
                 <option key={s.user_id} value={s.user_id}>
                   {s.display_name} · {settings?.company_name} &lt;{s.email}&gt;
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="To">
             <input
@@ -1229,9 +1230,7 @@ function QuoteEditorContent({
         </>
       )}
       <label className="check">
-        <input
-          type="checkbox"
-          role="switch"
+        <Switch
           checked={protectedLink}
           onChange={(e) => setProtected(e.target.checked)}
         />
@@ -2030,7 +2029,7 @@ function QuoteEditorContent({
                   close={() => setBlockSettings(null)}
                 >
                   <Field label="Signer role">
-                    <select
+                    <Select
                       value={b.role ?? "client"}
                       onChange={(e) =>
                         patchBlock({
@@ -2041,7 +2040,7 @@ function QuoteEditorContent({
                     >
                       <option value="client">Client</option>
                       <option value="company">Company</option>
-                    </select>
+                    </Select>
                   </Field>
                 </Sheet>
               )}
@@ -2868,7 +2867,7 @@ function QuoteEditorContent({
           return (
             <Sheet title="Clause settings" close={() => setClauseEdit(null)}>
               <Field label="Clause">
-                <select
+                <Select
                   value={clauseEdit.clause}
                   onChange={(e) =>
                     setClauseEdit({
@@ -2891,7 +2890,7 @@ function QuoteEditorContent({
                         : ""}
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
               <Field label="Clause heading">
                 <PlainClauseText
@@ -2911,7 +2910,7 @@ function QuoteEditorContent({
                 />
               </Field>
               <Field label="Show when">
-                <select
+                <Select
                   value={c.show_when?.pricing_item_id ?? ""}
                   onChange={(e) =>
                     patch({
@@ -2930,7 +2929,7 @@ function QuoteEditorContent({
                       {itemDisplayName(i)} is selected
                     </option>
                   ))}
-                </select>
+                </Select>
               </Field>
             </Sheet>
           );

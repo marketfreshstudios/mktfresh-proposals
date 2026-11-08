@@ -171,7 +171,7 @@
 }
 .staff-foundation .btn {
   min-height: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-button);
   transition:
     background-color 150ms ease-out,
     border-color 150ms ease-out;

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "./form-controls";
 import { Disclosure } from "./ui";
 import { useState } from "react";
 import type { ReferenceDocument } from "../lib/documents";
@@ -128,13 +129,13 @@ function ReferenceForm({
         <input name="name" required defaultValue={document?.name} />
       </Field>
       <Field label="Source">
-        <select
+        <Select
           value={source}
           onChange={(e) => setSource(e.target.value as "pasted" | "linked")}
         >
           <option value="pasted">Pasted text</option>
           <option value="linked">Linked HTTPS document</option>
-        </select>
+        </Select>
       </Field>
       {source === "linked" ? (
         <>
@@ -178,11 +179,11 @@ function ReferenceForm({
             <input name="version" defaultValue={document?.version} />
           </Field>
           <Field label="Format">
-            <select name="format" defaultValue={document?.format ?? "markdown"}>
+            <Select name="format" defaultValue={document?.format ?? "markdown"}>
               <option value="markdown">Markdown</option>
               <option value="json">JSON</option>
               <option value="text">Plain text</option>
-            </select>
+            </Select>
           </Field>
           <Field label="Pricing reference content">
             <textarea

@@ -1,4 +1,5 @@
 "use client";
+import { Select, Switch } from "./form-controls";
 import type { QuoteItem, Item } from "../lib/model";
 import { quoteRange } from "../lib/quote-model";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
@@ -252,7 +253,7 @@ export function QuoteItemsPanel({
                     />
                   </Field>
                   <Field label="Interval">
-                    <select
+                    <Select
                       aria-label={`Interval ${s.label || i.name}`}
                       value={s.interval}
                       onChange={(e) =>
@@ -271,7 +272,7 @@ export function QuoteItemsPanel({
                       <option value="one_time">One-time</option>
                       <option value="month">Monthly</option>
                       <option value="year">Yearly</option>
-                    </select>
+                    </Select>
                   </Field>
                 </div>
                 {(i.ai_entered || aiUnreviewed) &&
@@ -372,9 +373,7 @@ export function QuoteItemsPanel({
             )}
             <div className="item-options">
               <label className="check">
-                <input
-                  type="checkbox"
-                  role="switch"
+                <Switch
                   checked={i.optional}
                   onChange={(e) => {
                     if (!e.target.checked && i.choice_group_id) {
@@ -416,7 +415,7 @@ export function QuoteItemsPanel({
             </div>
             {!i.choice_group_id && i.optional ? (
               <Field label="Link as alternative">
-                <select value="" onChange={(e) => link(i, e.target.value)}>
+                <Select value="" onChange={(e) => link(i, e.target.value)}>
                   <option value="">Choose another optional item</option>
                   {items
                     .filter((v) => v.id !== i.id && v.optional)
@@ -425,14 +424,14 @@ export function QuoteItemsPanel({
                         {v.name}
                       </option>
                     ))}
-                </select>
+                </Select>
               </Field>
             ) : null}
             {i.source === "custom" &&
               itemDetails === i.id &&
               i.sublines.some((s) => s.interval !== "one_time") && (
                 <Field label="Custom family">
-                  <select
+                  <Select
                     value={i.custom_family_id ?? ""}
                     onChange={(e) =>
                       updateItem(i.id, {
@@ -448,7 +447,7 @@ export function QuoteItemsPanel({
                           {f.name}
                         </option>
                       ))}
-                  </select>
+                  </Select>
                 </Field>
               )}
             <details
@@ -592,7 +591,7 @@ export function QuoteItemsPanel({
         </Reorder>
         <div className="quote-add-row">
           <Field label="+ Add product">
-            <select
+            <Select
               value=""
               onChange={(e) => {
                 const item = catalog.find((i) => i.id === e.target.value);
@@ -607,7 +606,7 @@ export function QuoteItemsPanel({
                     {itemDisplayName(c)}
                   </option>
                 ))}
-            </select>
+            </Select>
           </Field>
           <Button onClick={() => addItem()}>+ Custom</Button>
         </div>
