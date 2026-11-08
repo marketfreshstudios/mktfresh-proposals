@@ -9033,3 +9033,84 @@ body:has(.studio-v3-editor) {
 .editor-gutter:has(> .drag-handle:only-child) {
   justify-content: center;
 }
+
+/* Top-layer popovers still inherit their DOM ancestors' toolbar selectors.
+   Give flat menu/listbox rows one layout contract, independent of bar sizing.
+   Custom grids such as the band Layout tiles keep their own layout. */
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+}
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"])
+  > button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 44px;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+.toolbar-popover.text-style-popover {
+  width: max-content;
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+}
+.toolbar-popover.toolbar-popover.text-style-popover
+  :is([role="menu"], [role="listbox"])
+  > button {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.text-style-check {
+  font: 600 12px/1 var(--font-ui);
+}
+.text-style-popover kbd {
+  justify-self: end;
+  opacity: 0.72;
+}
+
+/* Selected floating/docked bars must not inherit the legacy rich-toolbar fade
+   when focus moves from the text into one of their menus. */
+.editor-edit-bar.rich-toolbar,
+.editor-edit-bar .rich-toolbar {
+  opacity: 1;
+}
+
+.toolbar-popover.edit-dark-menu {
+  --menu-active-background: var(--editor-tool-hover);
+}
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"])
+  > button:is(
+    :hover,
+    :focus-visible,
+    [data-active="true"],
+    [aria-checked="true"],
+    [aria-selected="true"]
+  ) {
+  background: var(--menu-active-background, var(--selected));
+}

@@ -80,7 +80,11 @@ export function FieldEditor({
   inlineControls?: boolean;
   autoFocus?: boolean;
   onBeforeInsert?: () => void;
-  onTextStyle?: (level: TextLevel, text?: string) => void;
+  onTextStyle?: (
+    level: TextLevel,
+    text?: string,
+    afterFocus?: () => void,
+  ) => void;
 }) {
   const scope = useBlockToolbar();
   const layout = useControlLayout();
@@ -433,7 +437,8 @@ export function FieldEditor({
       rich: !plainText,
       textStyle: () => ({
         value: levelRef.current,
-        change: (level) => styleChange.current?.(level),
+        change: (level, afterFocus) =>
+          styleChange.current?.(level, undefined, afterFocus),
       }),
       insert: insertField,
     });
@@ -495,7 +500,11 @@ export function FieldEditor({
       independent={standalone}
       textStyle={
         onTextStyle
-          ? { value: textLevel, change: (level) => onTextStyle(level) }
+          ? {
+              value: textLevel,
+              change: (level, afterFocus) =>
+                onTextStyle(level, undefined, afterFocus),
+            }
           : toolbar
             ? null
             : undefined

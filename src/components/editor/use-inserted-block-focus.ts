@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 /** Wait for the inserted editor to mount; menus/modals must release focus first. */
 export function useInsertedBlockFocus(select: (id: string) => void) {
-  const [pending, setPending] = useState<{ id: string; text: boolean } | null>(
-      null,
-    ),
+  const [pending, setPending] = useState<{
+      id: string;
+      text: boolean;
+      afterFocus?: () => void;
+    } | null>(null),
     latest = useRef(select);
   latest.current = select;
   useEffect(() => {
@@ -34,6 +36,7 @@ export function useInsertedBlockFocus(select: (id: string) => void) {
         target.focus({ preventScroll: true });
         owner?.scrollIntoView({ block: "center" });
         setPending(null);
+        pending.afterFocus?.();
       });
     };
     const observer = new MutationObserver(schedule);
@@ -46,5 +49,6 @@ export function useInsertedBlockFocus(select: (id: string) => void) {
     schedule();
     return stop;
   }, [pending]);
-  return (id: string, text: boolean) => setPending({ id, text });
+  return (id: string, text: boolean, afterFocus?: () => void) =>
+    setPending({ id, text, afterFocus });
 }

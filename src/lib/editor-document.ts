@@ -45,7 +45,7 @@ export function appendField(block: Block, path: string): Block {
 export type TextLevel = 0 | 1 | 2 | 3;
 export type TextStyleControl = {
   value: TextLevel;
-  change: (level: TextLevel) => void;
+  change: (level: TextLevel, afterFocus?: () => void) => void;
 };
 export function blockText(block: Block): string {
   const walk = (node: NonNullable<Block["content"]>): string =>
