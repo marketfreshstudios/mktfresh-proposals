@@ -24,7 +24,7 @@ Only corner geometry changes in this list; padding, dimensions, colors and handl
 | HTML email | CTA link and its containing cell use 9999px; wording, size, color, target and sending logic unchanged |
 | Shared design-system CSS | Base button and toolbar action rules use the same token; focus no longer resets button corners |
 
-Navigation exclusions retain their existing CSS: Studio/sidebar/Workspace section lists, editor tabs/dock, Sections item rows, breadcrumb/back navigation, preview tabs, list/catalog/field cards, dropdown/menu rows, panel rails and collapse arrows. Ambiguous input-like setting segments (Density, Ink/Accent/Custom and band height), color-field triggers, Go to controls and drag/resize handles also retain their existing shape. Color palette swatches remain circles. None of these controls gets a pill override.
+Navigation exclusions retain their existing CSS: Studio/sidebar/Workspace section lists, editor tabs/dock, Sections item rows, breadcrumb/back navigation, preview tabs, list/catalog/field cards, dropdown/menu rows, panel rails and collapse arrows. Ambiguous input-like setting segments (Density, Ink/Accent/Custom and band height), color-field triggers, Go to controls and drag/resize handles also retain their existing shape. Color palette swatches remain circles. None of these controls gets a pill override. The browser audit checks the straight Workspace and Sections indicators, the Studio sidebar and tablet chips, the phone bottom navigation, and the editor panel tabs.
 
 ## Form controls
 

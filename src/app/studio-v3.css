@@ -611,6 +611,7 @@
 .workspace-section-list button {
   border: 0;
   border-left: 2px solid transparent;
+  border-radius: 0;
   --control-active-background: none;
   background: none;
   --control-active-color: var(--ink-muted);

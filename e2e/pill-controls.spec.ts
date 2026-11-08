@@ -20,6 +20,23 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   await expect(
     page.getByRole("combobox", { name: "Payment methods", exact: true }),
   ).toBeVisible();
+  const workspaceNav = page.getByRole("navigation", {
+    name: "Workspace sections",
+    exact: true,
+  });
+  const activeSection = workspaceNav.locator('button[aria-current="page"]');
+  await expect(activeSection).toHaveText("Billing defaults");
+  await expect(activeSection).toHaveCSS("border-radius", "0px");
+  await expect(activeSection).toHaveCSS("border-left-width", "2px");
+  await expect(activeSection).not.toHaveCSS(
+    "border-left-color",
+    "rgba(0, 0, 0, 0)",
+  );
+  await expect(
+    page
+      .getByRole("navigation", { name: "Studio navigation", exact: true })
+      .locator('a[aria-current="page"]'),
+  ).toHaveCSS("border-radius", "8px");
   const metrics = (el: Element) => {
     const s = getComputedStyle(el);
     return {
@@ -45,6 +62,14 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
     .evaluate(metrics);
   expect(selectMetrics).toEqual(inputMetrics);
   await shot(page, "workspace-fields-1440");
+  await page.setViewportSize({ width: 1024, height: 1000 });
+  await expect(activeSection).toHaveCSS("border-radius", "999px");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Studio areas", exact: true })
+      .locator('a[aria-current="page"]'),
+  ).toHaveCSS("border-radius", "999px");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const f = await editorFixture(page);
   await page.goto(`/proposals/${f.draft.id}`);
   await expect(
@@ -215,13 +240,41 @@ for (const width of [1440, 375])
     ]) {
       await page.goto(`/studio/workspace?view=${view}`);
       await expect(page.locator(".workspace-section-card")).toBeVisible();
+      if (width === 375) {
+        await expect(
+          page.locator('.workspace-section-list button[aria-current="page"]'),
+        ).toHaveCSS("border-radius", "999px");
+        await expect(
+          page.locator('.bottom-tabs a[aria-current="page"]'),
+        ).toHaveCSS("border-radius", "10px");
+      }
       await audit(page);
     }
     await page.goto(`/proposals/${f.draft.id}`);
     await expect(
       page.getByRole("button", { name: "More editor actions", exact: true }),
     ).toBeVisible();
+    if (width === 1440) {
+      const sections = page.getByRole("navigation", {
+        name: "Sections",
+        exact: true,
+      });
+      const row = sections.getByRole("button", {
+        name: "First section",
+        exact: true,
+      });
+      await row.click();
+      await expect(row).toHaveAttribute("aria-current", "location");
+      await expect(row).toHaveCSS("border-radius", "0px 6px 6px 0px");
+      await expect(row).toHaveCSS("border-left-width", "2px");
+      await expect(row).not.toHaveCSS("border-left-color", "rgba(0, 0, 0, 0)");
+    }
     await openQuoteRow(page, 0);
+    await expect(
+      page
+        .getByRole("tab", { name: "Quote", exact: true })
+        .filter({ visible: true }),
+    ).toHaveCSS("border-radius", "8px");
     await audit(page);
     const optional = page.getByRole("switch", {
       name: "Optional",

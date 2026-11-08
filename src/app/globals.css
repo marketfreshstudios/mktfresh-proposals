@@ -1193,6 +1193,7 @@ select:hover:not(:disabled),
   font: 500 13px var(--font-ui);
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
   color: var(--ink-muted);
 }
