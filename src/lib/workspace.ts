@@ -60,6 +60,10 @@ export const WorkspaceSettingsSchema = z.object({
     .regex(/^$|^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)
     .default(""),
   consent_text: z.string().min(20).max(10000),
+  engagement_notifications: z
+    .object({ in_app: z.boolean(), email: z.boolean() })
+    .strict()
+    .optional(),
   reminder_days: z.array(z.number().int().positive()).max(10),
   email_reply_to: z.enum(["sender", "workspace"]).optional(),
   reminder_rules: z
