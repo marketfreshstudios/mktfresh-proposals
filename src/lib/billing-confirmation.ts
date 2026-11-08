@@ -14,6 +14,7 @@ export type BillingCompletion = {
     qty: number;
     interval: "month" | "year";
   }[];
+  payment_method_type?: "us_bank_account";
   card: { brand: string; last4: string } | null;
   subscriptions: {
     id: string;
@@ -32,6 +33,9 @@ export function publicCompletion(c: BillingCompletion) {
     currency: c.currency,
     items: c.items,
     card: c.card,
+    ...(c.payment_method_type
+      ? { payment_method_type: c.payment_method_type }
+      : {}),
     next_billing_at:
       c.subscriptions
         .map((s) => s.next_billing_at)
@@ -67,7 +71,9 @@ export function billingCompletionText(
       ? `Next billing date: ${readableDate(details.next_billing_at, timezone)}`
       : "",
     c.collection_method === "send_invoice"
-      ? "Your card is saved. No charge was taken during card setup. Your first invoice will be emailed."
+      ? c.payment_method_type === "us_bank_account"
+        ? "Your bank payment is confirmed. Future invoices will be emailed."
+        : "Your card is saved. No charge was taken during card setup. Your first invoice will be emailed."
       : "",
   ]
     .filter(Boolean)
@@ -82,10 +88,23 @@ export function stripeBillingStatus(link: BillingLink) {
       status: "active",
     })),
   ].filter((s) => /^sub_[\w]+$/.test(s.id));
+  const banks = bankPayments(link);
   const labels = [
+    Object.values(banks).some((p) => p.state === "processing")
+      ? "Bank payment processing"
+      : "",
+    Object.values(banks).some((p) => p.state === "failed")
+      ? "Bank payment failed"
+      : "",
     link.metadata?.requires_checkout ? "Waiting for checkout" : "",
     completed.some((c) => c.card) ? "Card saved" : "",
-    subscriptions.some((s) => ["active", "trialing"].includes(s.status))
+    subscriptions.some(
+      (s) =>
+        ["active", "trialing"].includes(s.status) &&
+        !Object.values(banks).some(
+          (p) => p.subscription_ids.includes(s.id) && p.state !== "paid",
+        ),
+    )
       ? "Subscription active"
       : "",
   ].filter(Boolean);
@@ -93,4 +112,19 @@ export function stripeBillingStatus(link: BillingLink) {
     labels,
     subscriptions: [...new Map(subscriptions.map((s) => [s.id, s])).values()],
   };
+}
+
+export type BankPayment = {
+  state: "processing" | "failed" | "paid";
+  subscription_ids: string[];
+};
+export const bankPayments = (link: BillingLink) =>
+  (link.metadata?.bank_payments ?? {}) as Record<string, BankPayment>;
+export function publicBankState(link: BillingLink) {
+  const states = Object.values(bankPayments(link)).map((s) => s.state);
+  return states.includes("failed")
+    ? ("failed" as const)
+    : states.includes("processing")
+      ? ("processing" as const)
+      : undefined;
 }

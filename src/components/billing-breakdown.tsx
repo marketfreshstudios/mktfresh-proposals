@@ -118,7 +118,11 @@ export function BillingConfirmationCard({
             </p>
           )}
           {c.collection_method === "send_invoice" && (
-            <p>Your card is saved. Your first invoice will be emailed.</p>
+            <p>
+              {c.payment_method_type === "us_bank_account"
+                ? "Your bank payment is confirmed. Future invoices will be emailed."
+                : "Your card is saved. Your first invoice will be emailed."}
+            </p>
           )}
         </div>
       ))}

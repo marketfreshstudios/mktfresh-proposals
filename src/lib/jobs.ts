@@ -351,6 +351,15 @@ export class Worker {
           };
         const link = await bill(fresh, provider, this.providers[provider]);
         await mutate(this.repo, p.id, (p) => {
+          // A retry may have read this link before a payment webhook settled it.
+          // Never replace the durable Stripe payment/completion ledger with that old copy.
+          if (
+            provider === "stripe" &&
+            p.billing_links.some(
+              (l) => l.provider === "stripe" && l.status === "succeeded",
+            )
+          )
+            return;
           if (
             provider === "stripe" &&
             link.status === "succeeded" &&
