@@ -1,4 +1,5 @@
 "use client";
+import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
 import { useReloadGuard } from "./reload-safety";
@@ -2601,6 +2602,7 @@ function TemplatesStudioContent({
                                       templatePreview.quote,
                                       data.settings?.currency ?? "USD",
                                       data.settings?.money?.cents,
+                                      quoteLayout(templateStyles),
                                     ),
                                   }}
                                 />

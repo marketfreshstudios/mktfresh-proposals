@@ -1,3 +1,4 @@
+import { quoteTableHtml } from "./quote-table";
 import { sublineLabel } from "./subline-label";
 import type { Quote } from "./model";
 import { orderedItems, selected, quoteSublines } from "./quote-model";
@@ -15,7 +16,10 @@ export function documentQuote(
   quote: Quote,
   currency: string,
   cents: "auto" | "always" = "auto",
+  layout: "cards" | "table" = "cards",
 ) {
+  if (layout === "table")
+    return `<section class="print-pricing-table"><h2>Your investment</h2><p>Optional items are your choice. Totals update as you go.</p>${quoteTableHtml(quote, currency, cents)}${documentTotalsHtml(quote, currency, cents)}</section>`;
   const items = orderedItems(quote),
     units = Array.from(new Set(items.map((i) => i.choice_group_id ?? i.id))),
     fmt = (n: number) => formatMoney(n, currency, cents);

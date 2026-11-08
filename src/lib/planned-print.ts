@@ -7,6 +7,13 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
   const remaining = doc.createElement("div");
   remaining.append(...Array.from(root.childNodes));
   root.append(remaining);
+  const tableHeaders = Array.from(
+    root.querySelectorAll("table.quote-table"),
+  ).map((table) => ({
+    block: table.closest<HTMLElement>("[data-print-block]")?.dataset.printBlock,
+    head: table.querySelector("thead")?.cloneNode(true),
+    cols: table.querySelector("colgroup")?.cloneNode(true),
+  }));
   const consumed = new Map<string, number>();
   const consumedParagraphs = new Map<string, number>();
   const sheets: HTMLElement[] = [];
@@ -21,6 +28,21 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
     el.querySelectorAll(".print-source").forEach((n) => {
       if (!n.textContent?.trim() && !n.querySelector("img,br,p")) n.remove();
     });
+    for (const table of el.querySelectorAll("table.quote-table")) {
+      if (!table.querySelector("[data-print-unit]")) {
+        table.remove();
+        continue;
+      }
+      const source = tableHeaders.find(
+        (h) =>
+          h.block ===
+          table.closest<HTMLElement>("[data-print-block]")?.dataset.printBlock,
+      );
+      if (!table.querySelector("thead") && source?.head)
+        table.prepend(source.head.cloneNode(true));
+      if (!table.querySelector("colgroup") && source?.cols)
+        table.prepend(source.cols.cloneNode(true));
+    }
     const first = el.firstElementChild as HTMLElement | null;
     if (first) first.style.marginTop = "0px";
   }

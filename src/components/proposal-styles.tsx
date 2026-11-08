@@ -30,6 +30,7 @@ import {
 } from "../lib/proposal-fonts";
 import {
   textLineHeight,
+  marginPresets,
   styleLevels,
   styleLabels,
   resolveStyles,
@@ -194,7 +195,12 @@ export function ProposalStyles({
                 )}
               </select>
             </label>
-            {field("Size (px)", "size", 8, 96)}
+            {field(
+              "Size (px)",
+              "size",
+              level === "body" ? 14 : 8,
+              level === "body" ? 18 : 96,
+            )}
           </div>
           <fieldset className="style-colors">
             <legend>Color</legend>
@@ -397,6 +403,13 @@ export function ProposalStyles({
               ))}
             </div>
           </fieldset>
+          {!hidePageMargins && (
+            <ProposalLayoutOptions
+              styles={styles}
+              value={value}
+              onChange={onChange}
+            />
+          )}
           {!hidePageMargins && (
             <fieldset className="style-fields style-margin-grid">
               <legend>Page margins (inches)</legend>
@@ -832,6 +845,103 @@ function BandSettings({
             Undo
           </button>
         </ToastSurface>
+      )}
+    </div>
+  );
+}
+
+export function ProposalLayoutOptions({
+  styles,
+  value,
+  onChange,
+  workspace = false,
+}: {
+  styles: ReturnType<typeof resolveStyles>;
+  value?: StyleOverrides;
+  onChange: (value: StyleOverrides) => void;
+  workspace?: boolean;
+}) {
+  const margins = styles.layout!.margins;
+  const preset =
+    Object.entries(marginPresets).find(([, n]) =>
+      Object.values(margins).every((v) => v === n),
+    )?.[0] ?? "current";
+  const row = (name: string, description: string, control: React.ReactNode) =>
+    workspace ? (
+      <div className="workspace-setting-row workspace-style-option">
+        <div>
+          <h3>{name}</h3>
+          <p>{description}</p>
+        </div>
+        <div className="field">{control}</div>
+      </div>
+    ) : (
+      <label className="field">
+        {name}
+        {control}
+      </label>
+    );
+  return (
+    <div className="proposal-layout-options">
+      {workspace &&
+        row(
+          "Body size",
+          "Default text size. Existing sent documents keep their saved size.",
+          <StyleNumber
+            name="Body size (px)"
+            ariaLabel="Body size (px)"
+            value={styles.body.size}
+            min={14}
+            max={18}
+            step={1}
+            onChange={(size) =>
+              onChange({ ...value, body: { ...value?.body, size } })
+            }
+          />,
+        )}
+      {row(
+        "Page margins",
+        "Letter paper. Current/custom margins are preserved until you pick a preset.",
+        <select
+          aria-label="Page margin preset"
+          value={preset}
+          onChange={(e) => {
+            const n =
+              marginPresets[e.target.value as keyof typeof marginPresets];
+            if (n)
+              onChange({
+                ...value,
+                margins: { top: n, right: n, bottom: n, left: n },
+              });
+          }}
+        >
+          <option value="current">
+            Current ·{" "}
+            {Object.values(margins).every((n) => n === margins.top)
+              ? `${margins.top} in`
+              : "Custom"}
+          </option>
+          <option value="narrow">Narrow · 0.6 in</option>
+          <option value="normal">Normal · 0.9 in</option>
+          <option value="wide">Wide · 1.1 in</option>
+        </select>,
+      )}
+      {row(
+        "Quote layout",
+        "The same layout is used in the editor, client page and PDF.",
+        <select
+          aria-label="Quote layout"
+          value={styles.layout?.quote_layout ?? "cards"}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              quote_layout: e.target.value as "cards" | "table",
+            })
+          }
+        >
+          <option value="cards">Cards</option>
+          <option value="table">Table</option>
+        </select>,
       )}
     </div>
   );

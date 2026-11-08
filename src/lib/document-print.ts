@@ -12,7 +12,11 @@ import { documentSpacing } from "./document-spacing";
 import { documentQuote } from "./document-quote";
 import { escape, renderBlocks, resolve } from "./presentation";
 import type { Block, Quote } from "./model";
-import { pageMetrics, type ResolvedStyles } from "./proposal-styles";
+import {
+  pageMetrics,
+  quoteLayout,
+  type ResolvedStyles,
+} from "./proposal-styles";
 export function printPageCss(
   styles?: ResolvedStyles,
   hf?: HeaderFooterSettings,
@@ -106,7 +110,12 @@ export function printContent(input: {
       b.type === "page_break"
         ? ""
         : b.type === "pricing_table" && input.currentLayout
-          ? documentQuote(input.quote, input.currency, input.cents)
+          ? documentQuote(
+              input.quote,
+              input.currency,
+              input.cents,
+              quoteLayout(input.styles),
+            )
           : b.type === "signature_block" &&
               input.currentLayout &&
               input.signatureBlocks?.[b.role!]

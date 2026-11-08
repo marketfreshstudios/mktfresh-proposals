@@ -23,6 +23,7 @@ import { resetBandSettings } from "./editor/reset-band-settings";
 import { defaultHeaderFooter } from "../lib/page-bands";
 import { pairSignatureNodes } from "./signature-pair";
 import { signatureHtml } from "../lib/signature-presentation";
+import { QuoteTable } from "./quote-table";
 import { DocumentTotals } from "./document-totals";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
 import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
@@ -52,6 +53,7 @@ import { useEditorPanels } from "./use-editor-panels";
 import { ProposalStyles } from "./proposal-styles";
 import {
   resolveStyles,
+  quoteLayout,
   documentStyleCss,
   styleFontFaces,
 } from "../lib/proposal-styles";
@@ -1764,69 +1766,97 @@ function QuoteEditorContent({
               <h2>Your investment</h2>
               <p>Optional items are your choice. Totals update as you go.</p>
               <div className="flow-quote document-quote">
-                <Reorder
-                  ids={units}
-                  onMove={(from, to) =>
-                    setItems(
-                      arrayMove(
-                        units,
-                        units.indexOf(from),
-                        units.indexOf(to),
-                      ).flatMap(unitItems),
-                    )
-                  }
-                >
-                  {units.map((id) => (
-                    <Sortable
-                      key={id}
-                      id={id}
-                      documentKind={
-                        unitItems(id)[0].choice_group_id ? "group" : "card"
-                      }
-                      printUnit={unitItems(id)[0].id}
-                      label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
-                    >
-                      {unitItems(id)[0].choice_group_id ? (
-                        <div
-                          className="flow-choice-group"
-                          role="radiogroup"
-                          aria-label="Choose one"
-                        >
-                          <h3>Choose one</h3>
-                          <Reorder
-                            ids={unitItems(id).map((i) => i.id)}
-                            onMove={(from, to) => {
-                              const group = unitItems(id),
-                                next = arrayMove(
-                                  group,
-                                  group.findIndex((i) => i.id === from),
-                                  group.findIndex((i) => i.id === to),
-                                );
-                              setItems(
-                                units.flatMap((u) =>
-                                  u === id ? next : unitItems(u),
-                                ),
-                              );
-                            }}
+                {quoteLayout(
+                  resolveStyles(
+                    p.workspace_settings,
+                    p.template_style_overrides,
+                    p.style_overrides,
+                  ),
+                ) === "table" ? (
+                  <QuoteTable
+                    quote={items}
+                    currency={p.currency}
+                    cents={p.workspace_settings?.money?.cents}
+                    defaults
+                    onToggle={(id, value) => {
+                      const item = items.find((i) => i.id === id)!;
+                      setItems(
+                        items.map((v) =>
+                          v.choice_group_id &&
+                          v.choice_group_id === item.choice_group_id
+                            ? { ...v, default_selected: v.id === id }
+                            : v.id === id
+                              ? { ...v, default_selected: value }
+                              : v,
+                        ),
+                      );
+                    }}
+                  />
+                ) : (
+                  <Reorder
+                    ids={units}
+                    onMove={(from, to) =>
+                      setItems(
+                        arrayMove(
+                          units,
+                          units.indexOf(from),
+                          units.indexOf(to),
+                        ).flatMap(unitItems),
+                      )
+                    }
+                  >
+                    {units.map((id) => (
+                      <Sortable
+                        key={id}
+                        id={id}
+                        documentKind={
+                          unitItems(id)[0].choice_group_id ? "group" : "card"
+                        }
+                        printUnit={unitItems(id)[0].id}
+                        label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
+                      >
+                        {unitItems(id)[0].choice_group_id ? (
+                          <div
+                            className="flow-choice-group"
+                            role="radiogroup"
+                            aria-label="Choose one"
                           >
-                            {unitItems(id).map((i) => (
-                              <Sortable
-                                key={i.id}
-                                id={i.id}
-                                documentKind="card"
-                                label={`document option ${i.name}`}
-                              >
-                                {documentItem(i)}
-                              </Sortable>
-                            ))}
-                          </Reorder>
-                        </div>
-                      ) : (
-                        documentItem(unitItems(id)[0])
-                      )}
-                    </Sortable>
-                  ))}
-                </Reorder>
+                            <h3>Choose one</h3>
+                            <Reorder
+                              ids={unitItems(id).map((i) => i.id)}
+                              onMove={(from, to) => {
+                                const group = unitItems(id),
+                                  next = arrayMove(
+                                    group,
+                                    group.findIndex((i) => i.id === from),
+                                    group.findIndex((i) => i.id === to),
+                                  );
+                                setItems(
+                                  units.flatMap((u) =>
+                                    u === id ? next : unitItems(u),
+                                  ),
+                                );
+                              }}
+                            >
+                              {unitItems(id).map((i) => (
+                                <Sortable
+                                  key={i.id}
+                                  id={i.id}
+                                  documentKind="card"
+                                  label={`document option ${i.name}`}
+                                >
+                                  {documentItem(i)}
+                                </Sortable>
+                              ))}
+                            </Reorder>
+                          </div>
+                        ) : (
+                          documentItem(unitItems(id)[0])
+                        )}
+                      </Sortable>
+                    ))}
+                  </Reorder>
+                )}
                 <DocumentTotals
                   {...quoteTotalValues(items)}
                   currency={p.currency}

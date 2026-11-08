@@ -12,11 +12,12 @@ import {
   type FontChoice,
   type ProposalFont,
 } from "../lib/proposal-fonts";
+import { resolveStyles } from "../lib/proposal-styles";
 import { formatMoney } from "../lib/money";
 import { stripeStatus } from "../lib/studio-v3";
 import { workspaceSections } from "./studio-v3";
 import { api, post, Button, Field, Banner, Disclosure } from "./ui";
-import { ProposalStyles } from "./proposal-styles";
+import { ProposalStyles, ProposalLayoutOptions } from "./proposal-styles";
 import { TeamStudio } from "./team-studio";
 import { ReferenceDocuments } from "./reference-documents";
 import { StoredSignatureEditor } from "./company-signature";
@@ -769,14 +770,22 @@ export function WorkspaceStudio({
       </>
     ),
     styles: (
-      <ProposalStyles
-        settings={draft}
-        value={draft.proposal_styles ?? {}}
-        availableFonts={allFonts}
-        onChange={(proposal_styles) => change({ proposal_styles })}
-        scope="workspace"
-        hidePageMargins
-      />
+      <>
+        <ProposalLayoutOptions
+          workspace
+          styles={resolveStyles(draft)}
+          value={draft.proposal_styles}
+          onChange={(proposal_styles) => change({ proposal_styles })}
+        />
+        <ProposalStyles
+          settings={draft}
+          value={draft.proposal_styles ?? {}}
+          availableFonts={allFonts}
+          onChange={(proposal_styles) => change({ proposal_styles })}
+          scope="workspace"
+          hidePageMargins
+        />
+      </>
     ),
     billing: (
       <>
