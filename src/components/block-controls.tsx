@@ -247,7 +247,11 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
         .closest(".block-sortable")
         ?.querySelector<HTMLElement>(":scope > .block-frame");
       if (target.closest(".drag-handle") && dragFrame) {
-        if (dragFrame.dataset.blockId) select(dragFrame.dataset.blockId);
+        if (
+          dragFrame.dataset.blockId &&
+          !idsRef.current.includes(dragFrame.dataset.blockId)
+        )
+          select(dragFrame.dataset.blockId);
         return;
       }
       pendingFieldTarget.current = target.closest(
@@ -718,7 +722,12 @@ export function BlockFrame({
         {!layout.locked &&
           (selection.ids.length > 1 || selection.selectMode) &&
           (selection.ids[0] ?? selection.selected) === id && (
-            <MultiBlockBar frame={frame} />
+            <>
+              <MultiBlockBar frame={frame} />
+              {layout.desktop && !layout.phone && (
+                <GutterInsert dragHandle={dragHandle} />
+              )}
+            </>
           )}
         {layout.desktop &&
           !layout.locked &&

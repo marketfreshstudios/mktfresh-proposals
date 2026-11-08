@@ -1,6 +1,6 @@
 "use client";
-import { useState, type DragEvent, type RefObject } from "react";
-import { createPortal } from "react-dom";
+import { type DragEvent, type RefObject } from "react";
+import { useDropIndicator } from "./drop-target";
 import type { Block } from "../../lib/model";
 const mime = "application/x-yeswell-block";
 export function defaultBlockInsertion(
@@ -55,64 +55,42 @@ export function useBlockDrop(
   insert: (blocks: Block[], at: number) => void,
   disabled = false,
 ) {
-  const [line, setLine] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    at: number;
-  } | null>(null);
-  const clear = () => setLine(null);
+  const indicator = useDropIndicator(content, paper);
+  const clear = indicator.clear;
   const handlers = {
     onDragOver(event: DragEvent<HTMLElement>) {
-      if (disabled || !event.dataTransfer.types.includes(mime)) return;
-      const target = event.target as Element;
-      if (!paper.current?.contains(target)) return;
-      const frame = target.closest<HTMLElement>("[data-block-id]");
-      const n = content.findIndex((b) =>
-        frame?.dataset.blockId?.endsWith(b.id!),
-      );
-      const box = (frame ?? paper.current).getBoundingClientRect();
-      const below = event.clientY > box.top + box.height / 2;
+      if (disabled || !event.dataTransfer.types.includes(mime)) {
+        clear();
+        return;
+      }
+      const target = indicator.show(event.clientX, event.clientY);
+      if (!target) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
-      setLine({
-        x: box.left,
-        y: below ? box.bottom : box.top,
-        width: box.width,
-        at: n < 0 ? content.length : n + (below ? 1 : 0),
-      });
     },
     onDragLeave(event: DragEvent<HTMLElement>) {
       if (!event.currentTarget.contains(event.relatedTarget as Node)) clear();
     },
     onDragEnd: clear,
     onDrop(event: DragEvent<HTMLElement>) {
-      if (!line || disabled || !event.dataTransfer.types.includes(mime)) return;
+      if (!event.dataTransfer.types.includes(mime)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const target = indicator.resolve(event.clientX, event.clientY);
+      if (!target || disabled || !event.dataTransfer.types.includes(mime)) {
+        clear();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       try {
         const blocks = JSON.parse(event.dataTransfer.getData(mime));
         if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 300)
-          insert(blocks, line.at);
+          insert(blocks, target.at);
       } finally {
         clear();
       }
     },
   };
-  return {
-    handlers,
-    line:
-      line && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              data-editor-chrome
-              className="block-drop-line"
-              role="status"
-              aria-label="Insert block here"
-              style={{ left: line.x, top: line.y, width: line.width }}
-            />,
-            document.body,
-          )
-        : null,
-  };
+  return { handlers, line: indicator.line };
 }

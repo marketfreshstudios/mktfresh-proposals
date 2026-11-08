@@ -9014,3 +9014,7 @@ body:has(.studio-v3-editor) {
     min-height: 44px;
   }
 }
+
+.editor-gutter:has(> .drag-handle:only-child) {
+  justify-content: center;
+}

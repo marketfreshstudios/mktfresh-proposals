@@ -58,6 +58,7 @@ import {
   canMoveAdjacentBlock,
   moveAdjacentBlock,
   moveDocumentBlock,
+  moveDocumentBlocksAt,
 } from "../lib/editor-moves";
 import { pageMetrics } from "../lib/proposal-styles";
 import { ProposalStyles } from "./proposal-styles";
@@ -2072,6 +2073,18 @@ function TemplatesStudioContent({
               >
                 <Reorder
                   ids={content.map((_, n) => String(n))}
+                  documentDrop={
+                    mode === "templates"
+                      ? {
+                          paper: templatePaper,
+                          content,
+                          onMoveAt: (from, at, selected) =>
+                            move((blocks) =>
+                              moveDocumentBlocksAt(blocks, from, at, selected),
+                            ),
+                        }
+                      : undefined
+                  }
                   onMove={(from, to) =>
                     move((blocks) =>
                       moveDocumentBlock(

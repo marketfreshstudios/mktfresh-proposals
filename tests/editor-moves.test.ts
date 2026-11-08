@@ -10,6 +10,7 @@ import {
   moveAdjacentBlock,
   moveBlockRange,
   moveDocumentBlock,
+  moveDocumentBlocksAt,
 } from "../src/lib/editor-moves";
 const content: Block[] = [
   { id: "overview", type: "heading", text: "Overview" },
@@ -274,4 +275,27 @@ it("aborts loss, duplication, ID replacement and mutation before any commit, wit
     );
     expect(content).toEqual(before);
   }
+});
+
+it("pointer boundaries move exact selected members in document order without changing page markers", () => {
+  const next = moveDocumentBlocksAt(content, "list", 7, ["list", "pricing"]);
+  expect(next.slice(5, 7).map((b) => b.id)).toEqual(["list", "pricing"]);
+  expect(assertBlockMove(content, next)).toBe(next);
+  const history = new EditorHistory<Block[]>();
+  history.record(content, next);
+  expect(history.undo(next)).toEqual(content);
+  expect(history.redo(content)).toEqual(next);
+});
+it("pointer moves keep whole sections and accept an empty page's source boundary", () => {
+  const blocks: Block[] = [
+    { id: "a", type: "paragraph", text: "a" },
+    { id: "p", type: "page_break" },
+    { id: "empty", type: "page_break" },
+    { id: "h", type: "heading", text: "H" },
+    { id: "b", type: "paragraph", text: "b" },
+  ];
+  const next = moveDocumentBlocksAt(blocks, "h", 2);
+  expect(next.map((b) => b.id)).toEqual(["a", "p", "h", "b", "empty"]);
+  expect(assertBlockMove(blocks, next)).toBe(next);
+  expect(() => moveDocumentBlocksAt(blocks, "h", -1)).toThrow("Move cancelled");
 });

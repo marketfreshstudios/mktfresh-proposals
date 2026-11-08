@@ -140,3 +140,29 @@ export function applyDocumentMove(
     return false;
   }
 }
+
+/** Pointer destinations are original-array boundaries, shared with library insertion. */
+export function moveDocumentBlocksAt(
+  content: Block[],
+  from: string,
+  before: number,
+  selected: string[] = [],
+) {
+  if (!Number.isInteger(before) || before < 0 || before > content.length)
+    throw cancelled();
+  const source = content.findIndex((b) => b.id === from);
+  if (source < 0) return content;
+  if (selected.length > 1 && selected.includes(from)) {
+    const ids = new Set(selected);
+    const moved = content.filter((b) => ids.has(b.id!));
+    const rest = content.filter((b) => !ids.has(b.id!));
+    const at =
+      before - content.slice(0, before).filter((b) => ids.has(b.id!)).length;
+    rest.splice(at, 0, ...moved);
+    return assertBlockMove(content, rest);
+  }
+  const section = documentSectionRanges(content).find(
+    (s) => s.start === source,
+  );
+  return moveBlockRange(content, source, section?.end ?? source + 1, before);
+}

@@ -47,17 +47,28 @@ async function ready(page: Page, template = false) {
     ),
   ).toHaveAttribute("data-approximate", "false");
 }
-async function drag(page: Page, from: Locator, to: Locator) {
+async function drag(page: Page, from: Locator, to: Locator, after?: number) {
   await from.scrollIntoViewIfNeeded();
-  const a = (await from.boundingBox())!,
-    b = (await to.boundingBox())!;
+  const a = (await from.boundingBox())!;
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 + 12, {
     steps: 4,
   });
   await expect(from).toHaveAttribute("aria-pressed", "true");
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 24 });
+  // Resolve the destination after scrolling during the drag, just as a pointer
+  // user must. Measuring it before returning to the source produced offscreen drops.
+  await to.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const b = (await to.boundingBox())!;
+  await page.mouse.move(
+    after !== undefined ? b.x - 20 : b.x + b.width / 2,
+    after !== undefined ? b.y + b.height + 8 : b.y + b.height / 2,
+    { steps: 24 },
+  );
+  if (after !== undefined)
+    await expect(
+      page.getByRole("status", { name: "Insert block here", exact: true }),
+    ).toHaveAttribute("data-drop-index", String(after));
   const scales = await page.locator(".quote-sortable").evaluateAll((els) =>
     els.map((el) => {
       const m = new DOMMatrix(getComputedStyle(el).transform);
@@ -144,9 +155,10 @@ test("Overview moves preserve every saved block and page marker through controls
       name: "Drag block 1",
       exact: true,
     }),
-    target = page.locator(`[data-block-id="block-${blocks[7].id}"]`);
-  await target.scrollIntoViewIfNeeded();
-  await drag(page, source, target);
+    target = page.locator(`[data-block-id="block-${blocks[8].id}"]`);
+  // The old centre-of-section drop expected the whole target section's end.
+  // Point at that actual boundary, outside the protected signature body.
+  await drag(page, source, target, blocks.length);
   await changed(blocks[4].id!, blocks[3].id!);
   expect(patches.length).toBeGreaterThan(5);
   for (const patch of patches)

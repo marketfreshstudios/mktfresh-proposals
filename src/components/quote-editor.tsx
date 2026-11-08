@@ -41,6 +41,7 @@ import {
   canMoveAdjacentBlock,
   moveAdjacentBlock,
   moveDocumentBlock,
+  moveDocumentBlocksAt,
 } from "../lib/editor-moves";
 import { paginateBrowser } from "./browser-pagination";
 import { type BrowserPages, PagedPaper } from "./paged-paper";
@@ -2700,6 +2701,23 @@ function QuoteEditorContent({
                   {firstBlock}
                   <Reorder
                     ids={p.content.map((b, n) => `block-${b.id ?? n}`)}
+                    documentDrop={
+                      locked || stale
+                        ? undefined
+                        : {
+                            paper,
+                            content: p.content,
+                            onMoveAt: (from, at, selected) =>
+                              move((content) =>
+                                moveDocumentBlocksAt(
+                                  content,
+                                  from,
+                                  at,
+                                  selected,
+                                ),
+                              ),
+                          }
+                    }
                     onMove={(from, to) =>
                       move((content) =>
                         moveDocumentBlock(content, from.slice(6), to.slice(6)),
