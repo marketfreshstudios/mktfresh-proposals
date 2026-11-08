@@ -15,7 +15,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { Block } from "../../lib/model";
-import { useBlockToolbar } from "../block-controls";
+import { useBlockToolbar, useBlockSelection } from "../block-controls";
 import { FormattingControls } from "../formatting-controls";
 import { PageBreakAction, usePageBreakAvailable } from "../page-break-action";
 import { ToolbarPopover } from "../toolbar-popover";
@@ -43,7 +43,8 @@ function label(node: ReactElement<any>) {
 export function EditBar(
   props:
     | {
-        variant: "cover" | "email";
+        variant: "cover" | "email" | "selection";
+        selectMode?: boolean;
         children: ReactNode;
         frame: RefObject<HTMLElement | null>;
       }
@@ -67,7 +68,11 @@ export function EditBar(
         plainText?: boolean;
       },
 ) {
-  if (props.variant === "cover" || props.variant === "email")
+  if (
+    props.variant === "cover" ||
+    props.variant === "email" ||
+    props.variant === "selection"
+  )
     return <CoverEditBar {...props} />;
   if (props.variant === "band") return <BandEditBar {...props} />;
   return "tools" in props ? <BlockEditBar {...props} /> : null;
@@ -76,7 +81,11 @@ function CoverEditBar({
   children,
   frame,
   variant,
-}: Extract<Parameters<typeof EditBar>[0], { variant: "cover" | "email" }>) {
+  selectMode,
+}: Extract<
+  Parameters<typeof EditBar>[0],
+  { variant: "cover" | "email" | "selection" }
+>) {
   const bar = useRef<HTMLSpanElement>(null);
   useImageToolbar(frame, bar, true);
   useEffect(() => {
@@ -94,25 +103,33 @@ function CoverEditBar({
       viewport?.removeEventListener("scroll", place);
     };
   }, []);
-  return (
-    <PhoneToolbar>
-      <span
-        ref={bar}
-        data-editor-chrome
-        className={`editor-edit-bar image-edit-bar ${variant === "email" ? "email-edit-bar" : "cover-edit-bar"}`}
-        role="toolbar"
-        aria-label={
-          variant === "email"
+  const toolbar = (
+    <span
+      ref={bar}
+      data-editor-chrome
+      className={`editor-edit-bar image-edit-bar ${variant === "email" ? "email-edit-bar" : variant === "selection" ? "selection-edit-bar" : "cover-edit-bar"}`}
+      data-select-mode={selectMode}
+      role="toolbar"
+      aria-label={
+        variant === "selection"
+          ? "Selected blocks"
+          : variant === "email"
             ? "Email body formatting"
             : "Cover text formatting"
-        }
-        onMouseDown={(e) => {
-          if ((e.target as Element).closest("button")) e.preventDefault();
-        }}
-      >
-        {children}
-      </span>
-    </PhoneToolbar>
+      }
+      onMouseDown={(e) => {
+        if ((e.target as Element).closest("button")) e.preventDefault();
+      }}
+    >
+      {children}
+    </span>
+  );
+  return variant === "selection" &&
+    typeof window !== "undefined" &&
+    (innerWidth >= 700 || selectMode) ? (
+    createPortal(toolbar, document.body)
+  ) : (
+    <PhoneToolbar>{toolbar}</PhoneToolbar>
   );
 }
 function BandEditBar(
@@ -203,6 +220,7 @@ function BlockEditBar({
   blockType: Block["type"];
   objectAction?: ReactNode;
 }) {
+  const selection = useBlockSelection();
   const root = useRef<HTMLDivElement>(null),
     trigger = useRef<HTMLButtonElement>(null),
     fields = useBlockToolbar(),
@@ -459,7 +477,7 @@ function BlockEditBar({
             {save}
           </>
         )}
-        {(phoneActions || page || extras.length > 0) && (
+        {
           <button
             type="button"
             aria-label="More block actions"
@@ -471,7 +489,7 @@ function BlockEditBar({
           >
             ⋯
           </button>
-        )}
+        }
         {!phoneActions && remove}
       </div>
       {more && (
@@ -512,6 +530,9 @@ function BlockEditBar({
             }}
           >
             <BlockActionPresentation.Provider value="menu">
+              <button role="menuitem" onClick={selection.selectMore}>
+                Select more
+              </button>
               {phoneActions && (
                 <div className="studio-phone-block-actions">
                   {up}

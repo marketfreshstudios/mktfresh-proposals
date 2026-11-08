@@ -11,6 +11,7 @@ import {
   type Client,
   type Audit,
   type Template,
+  type SavedBlock,
 } from "./model";
 export type EntityTable =
   | "email_templates"
@@ -27,7 +28,15 @@ export type EntityTable =
   | "webhook_events"
   | "provider_actions";
 export type StudioEntityTable = "templates" | "content_library";
+export type LinkedBlockCommit = {
+  before: SavedBlock | null;
+  after: SavedBlock | null;
+  templates: { before: Template; after: Template }[];
+  proposals: { before: Proposal; after: Proposal }[];
+  events: Audit[];
+};
 export interface Repository {
+  commitLinkedBlock(change: LinkedBlockCommit, audit: Audit): Promise<boolean>;
   saveStudioEntity(
     table: StudioEntityTable,
     expected: { id: string } | null,
@@ -75,6 +84,101 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
+    const clean = (x: unknown) => JSON.parse(JSON.stringify(x ?? null));
+    const id = (change.before ?? change.after)!.id;
+    const omit = (value: object, keys: string[]) =>
+      clean(
+        Object.fromEntries(
+          Object.entries(value).filter(([k]) => !keys.includes(k)),
+        ),
+      );
+    if (change.after && change.after.id !== id)
+      throw new AppError(400, "Saved block identity changed");
+    const current = this.catalog.get("content_library")?.get(id) ?? null;
+    if (!isDeepStrictEqual(clean(current), clean(change.before))) return false;
+    for (const pair of change.templates) {
+      if (
+        pair.before.starter_key ||
+        !isDeepStrictEqual(
+          clean(this.catalog.get("templates")?.get(pair.before.id)),
+          clean(pair.before),
+        )
+      )
+        return false;
+      if (
+        !isDeepStrictEqual(
+          omit(pair.before, ["content", "pagination"]),
+          omit(pair.after, ["content", "pagination"]),
+        )
+      )
+        throw new AppError(400, "Linked update only changes template content");
+    }
+    for (const pair of change.proposals) {
+      const p = this.rows.get(pair.before.id);
+      if (
+        !p ||
+        p.status !== "draft" ||
+        p.signers.length ||
+        p.token ||
+        p.source !== "native" ||
+        p.archived_at ||
+        (p.workspace_id ?? this.workspaceId) !== this.workspaceId ||
+        p.versions.some((v) => v.frozen) ||
+        !isDeepStrictEqual(clean(p), clean(pair.before))
+      )
+        return false;
+      if (
+        !isDeepStrictEqual(
+          omit(pair.before, [
+            "content",
+            "pagination",
+            "revision",
+            "updated_at",
+            "events",
+          ]),
+          omit(pair.after, [
+            "content",
+            "pagination",
+            "revision",
+            "updated_at",
+            "events",
+          ]),
+        )
+      )
+        throw new AppError(
+          400,
+          "Linked update cannot change signing, versions or billing",
+        );
+      if (
+        pair.after.revision !== p.revision + 1 ||
+        pair.after.events.length !== p.events.length + 1 ||
+        !isDeepStrictEqual(
+          clean(pair.after.events.slice(0, -1)),
+          clean(p.events),
+        )
+      )
+        throw new AppError(400, "Append-only history required");
+    }
+    const events = this.catalog.get("workspace_events") ?? new Map();
+    for (const e of [...change.events, audit])
+      if (events.has(e.id)) throw new AppError(409, "Append-only history");
+    if (!this.catalog.has("content_library"))
+      this.catalog.set("content_library", new Map());
+    if (change.after)
+      this.catalog
+        .get("content_library")!
+        .set(id, structuredClone(change.after));
+    else this.catalog.get("content_library")!.delete(id);
+    for (const { after } of change.templates)
+      this.catalog.get("templates")!.set(after.id, structuredClone(after));
+    for (const { after } of change.proposals)
+      this.rows.set(after.id, structuredClone(after));
+    for (const e of [...change.events, audit])
+      events.set(e.id, structuredClone(e));
+    this.catalog.set("workspace_events", events);
+    return true;
+  }
   async saveStudioEntity(
     table: StudioEntityTable,
     expected: { id: string } | null,
@@ -375,6 +479,16 @@ export class MemoryRepository implements Repository {
 }
 // Local development only, single Node process. Production always uses database CAS.
 export class LocalRepository extends MemoryRepository {
+  override async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
+    await this.ready;
+    const operation = this.tail.then(async () => {
+      const saved = await super.commitLinkedBlock(change, audit);
+      if (saved) await this.persist();
+      return saved;
+    });
+    this.tail = operation.catch(() => {});
+    return operation;
+  }
   private ready: Promise<void>;
   private tail: Promise<unknown> = Promise.resolve();
   constructor(
@@ -590,6 +704,16 @@ export class LocalRepository extends MemoryRepository {
   }
 }
 export class SupabaseRepository implements Repository {
+  async commitLinkedBlock(change: LinkedBlockCommit, audit: Audit) {
+    const { data, error } = await this.db.rpc("save_linked_block", {
+      p_workspace: this.workspaceId,
+      p_change: change,
+      p_event: audit,
+    });
+    if (error)
+      throw new AppError(error.code === "40001" ? 409 : 400, error.message);
+    return data === true;
+  }
   constructor(
     public db: SupabaseClient,
     public readonly workspaceId = LOCAL_WORKSPACE_ID,

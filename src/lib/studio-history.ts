@@ -2,12 +2,16 @@ import { randomUUID } from "node:crypto";
 import { canonical, sha256 } from "./content";
 import { check, type Actor, type Audit, type Template } from "./model";
 import type { Repository, StudioEntityTable } from "./repository";
+import { prepareLinkedSave } from "./saved-blocks";
+import type { SavedBlock } from "./model";
+import { replaceLinkedBlocks, withoutBlockLink } from "./linked-blocks";
 const derived = new Set([
   "revision",
   "connector_restore_event_id",
   "starter_edited",
   "source_starter_name",
   "attempt_applied",
+  "used_in",
 ]);
 export function storedStudioEntity<T extends { id: string }>(value: T): T {
   return JSON.parse(
@@ -46,10 +50,43 @@ export async function writeStudioEntity<T extends { id: string }>(
   before: { id: string } | null,
   after: T,
   actor: Actor,
-  options: { type?: string; revision?: string; connector?: boolean } = {},
+  options: {
+    type?: string;
+    revision?: string;
+    connector?: boolean;
+    updateDrafts?: boolean;
+    draftIds?: string[];
+  } = {},
 ) {
   if (before) assertStudioRevision(table, before, options.revision);
-  const value = storedStudioEntity(after);
+  let value = storedStudioEntity(after);
+  if (table === "templates") {
+    const template = value as unknown as Template;
+    if (!template.starter_key) {
+      const sources = await repo.entities<SavedBlock>("content_library");
+      template.content = template.content.map((b) =>
+        b.saved_block_id && !sources.some((r) => r.id === b.saved_block_id)
+          ? withoutBlockLink(b)
+          : b,
+      );
+      for (const source of sources) {
+        if (template.content.some((b) => b.saved_block_id === source.id))
+          template.content = replaceLinkedBlocks(template.content, source);
+      }
+    }
+  }
+  const linked =
+    table === "content_library"
+      ? await prepareLinkedSave(
+          repo,
+          before as SavedBlock | null,
+          value as unknown as SavedBlock,
+          actor,
+          !options.connector && !!options.updateDrafts,
+          options.connector ? undefined : options.draftIds,
+        )
+      : null;
+  if (linked) value = linked.after as unknown as T;
   const events = options.connector
     ? await repo.entities<Audit>("workspace_events")
     : [];
@@ -65,6 +102,12 @@ export async function writeStudioEntity<T extends { id: string }>(
       entity_id: value.id,
       entity_table: table,
       name: (value as any).name,
+      ...(linked
+        ? {
+            linked_templates: linked.templates.map((t) => t.after.id),
+            updated_drafts: linked.proposals.map((p) => p.after.id),
+          }
+        : {}),
       ...(options.connector
         ? {
             before: before ? storedStudioEntity(before) : null,
@@ -79,12 +122,14 @@ export async function writeStudioEntity<T extends { id: string }>(
     },
   };
   check(
-    await repo.saveStudioEntity(
-      table,
-      before ? storedStudioEntity(before) : null,
-      value,
-      audit,
-    ),
+    linked
+      ? await repo.commitLinkedBlock(linked, audit)
+      : await repo.saveStudioEntity(
+          table,
+          before ? storedStudioEntity(before) : null,
+          value,
+          audit,
+        ),
     `409: ${table === "templates" ? "Template" : "Saved block"} changed during save. Reload it and merge your changes before retrying.`,
     409,
   );

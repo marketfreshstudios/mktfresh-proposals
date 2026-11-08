@@ -121,6 +121,8 @@ Created and duplicated templates start unavailable for new proposals (`active:fa
 
 Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's plain-text clause bodies. Existing fixed Image blocks are read-only. Each write commits an Activity event atomically with the entity, attributed to Claude and the consenting staff member. Updates retain the full previous state. A Super admin or that recorded editor can Restore while the entity still matches Claude's saved version. Later changes produce a 409, including if a staff save races the Restore. No existing proposal or frozen version changes.
 
+Phase 2 adds saved `type: "group"` with ordered proposal Markdown. `get_saved_block` returns preservation markers for its members, the group size, version/revision and Used in counts. Updating a group uses those exact markers; removing a page break requires its id in `remove_blocks` as well as omitting its marker. Groups cannot contain pricing tables, signatures or contracts. Linked templates update only when their inserted content is unedited; local edits stay intact. Connector writes always use **Templates and new proposals**, never **Also update drafts**. The small [linked-block transaction migration](linked-saved-blocks.md) must run before deploying this addition. No new scope or re-consent is needed beyond the existing templates:edit grant.
+
 Deployment requires `supabase/migrations/20261107090000_connector_studio_history.sql` **before** deploying the code. It adds a service-role-only compare-and-swap helper, with no data backfill or new table. Snapshots remain in the append-only workspace Activity events; they are not exposed in the Activity API or CSV.
 
 ### Template read / modify / write
@@ -137,6 +139,6 @@ Omitting a text/list/heading/image/divider marker removes that block. Omitting a
 {"template_id":"TEMPLATE_UUID","revision":"REVISION_FROM_GET","content":"EDITED_MARKDOWN_WITH_THE_PAGE_BREAK_MARKER_OMITTED","remove_blocks":["PAGE_BREAK_ID_FROM_GET"]}
 ```
 
-Preservation markers are exclusive to `update_template`; do not copy them into proposal Markdown.
+Preservation markers are for `update_template` and group `update_saved_block`; do not copy them into proposal draft Markdown.
 
 Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.

@@ -17,6 +17,7 @@ import {
   type Item,
   type RichText,
   type Template,
+  type SavedBlock,
 } from "./model";
 import type { Repository } from "./repository";
 import { markdownBlocks } from "./markdown";
@@ -44,6 +45,8 @@ import {
   writeStudioEntity,
 } from "./studio-history";
 import { convertSavedBlockType, savedBlockType } from "./saved-block-type";
+import { savedBlocks } from "./linked-blocks";
+import { savedBlockUsage, savedBlockViews } from "./saved-blocks";
 
 const id = z.string().uuid(),
   revision = z
@@ -56,7 +59,7 @@ const name = z.string().trim().min(1).max(200),
   text = z.string().max(100000);
 const cover = z.record(z.string().min(1).max(100), z.string().max(4000));
 const items = z.array(QuoteItemSchema).max(100);
-const blockType = z.enum(["text", "list", "contract_clause"]);
+const blockType = z.enum(["text", "list", "contract_clause", "group"]);
 const clauseContent = z
   .object({ clauses: z.array(ContractClauseSchema.strict()).min(1).max(100) })
   .strict();
@@ -94,6 +97,7 @@ export const connectorStudioSchemas = {
       name: name.optional(),
       type: blockType.optional(),
       content: blockContent.optional(),
+      remove_blocks: z.array(z.string().min(1).max(200)).max(300).optional(),
     })
     .strict(),
   list_saved_blocks: z.object({}).strict(),
@@ -122,13 +126,13 @@ export const connectorStudioDescriptions: Record<string, string> = {
   duplicate_template:
     "Copy any template, including a read-only Yeswell starter, into a hidden editable template. Use this before customizing a starter. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
   create_saved_block:
-    "Create a reusable text, list or plain contract_clause block. Text/list content uses proposal Markdown (no HTML or images); contract_clause uses plain text or {clauses:[{id,heading,body,show_when}]}, preserving Studio's plain-text clauses. No proposal is changed. Requires templates:edit.",
+    "Create a reusable text, list, group or plain contract_clause block. Group content is an ordered mini document in proposal Markdown (#/##/### headings, paragraphs and lists), never pricing tables, signatures or contracts. Text/list content uses proposal Markdown (no HTML or images); contract_clause uses plain text or {clauses:[{id,heading,body,show_when}]}. Only templates and new proposals use later saved-block updates; existing drafts are never updated by the connector. Requires templates:edit.",
   update_saved_block:
-    "Update a saved block with the latest get_saved_block revision. Provided content replaces the whole block's content; name merges. Only Text ↔ List conversions are allowed; contracts keep their type. Previous state is retained for staff Restore. On 409 read again, merge and retry. No proposals are changed. Requires templates:edit.",
+    "Update a saved block with the latest get_saved_block revision. Provided content replaces the whole content; name merges. Groups keep their type and use get_saved_block's opaque preservation markers: unknown, edited or duplicated markers are rejected; missing page-break markers require explicit remove_blocks:[ids]. Ordinary missing markers remove their blocks; moving a marker moves its block. Pricing/signature/contract blocks are prohibited in groups. Text ↔ List conversions remain supported; contracts keep their type. Previous state is retained for staff Restore. On 409 read again, merge and retry. Updates unedited linked templates and new proposals only; NEVER updates existing drafts, sent or signed proposals. Requires templates:edit.",
   list_saved_blocks:
-    "Read workspace saved blocks, their types and revisions. No proposal is changed.",
+    "Read workspace saved blocks, including group type/block count, revisions and Used in template/draft counts. No proposal is changed.",
   get_saved_block:
-    "Read a saved block's name, type, revision and content in the shape update_saved_block accepts. Contract clauses remain plain text. Image and other fixed block types are read-only to the connector.",
+    "Read a saved block's name, type, version, revision, Used in counts and content in the shape update_saved_block accepts. Groups return ordered proposal Markdown with opaque preservation markers; keep markers exact, move them with their blocks, and list omitted page-break ids in remove_blocks when updating. Contract clauses remain plain text. Standalone images and other fixed types are read-only to the connector.",
 };
 export function connectorTemplateView(template: Template, catalog: Item[]) {
   const value = template.cover;
@@ -158,7 +162,7 @@ export function connectorTemplateView(template: Template, catalog: Item[]) {
     })),
   };
 }
-export type SavedBlock = { id: string; name: string; block: Block };
+export type { SavedBlock } from "./model";
 export async function connectorFields(
   repo: Repository,
   quote: import("./model").Quote = [],
@@ -291,6 +295,21 @@ export function connectorCover(
   return value;
 }
 export function savedBlockView(row: SavedBlock) {
+  if (row.type === "group")
+    return {
+      saved_block_id: row.id,
+      name: row.name,
+      revision: studioRevision(row),
+      version: row.version ?? 1,
+      type: "group",
+      editable: true,
+      block_count: savedBlocks(row).length,
+      content: templateMarkdown({
+        id: row.id,
+        content: savedBlocks(row),
+      } as Template),
+      blocks: savedBlocks(row).map((b) => ({ id: b.id, type: b.type })),
+    };
   const label = savedBlockType(row.block),
     editable = [
       "Text",
@@ -302,6 +321,7 @@ export function savedBlockView(row: SavedBlock) {
     saved_block_id: row.id,
     name: row.name,
     revision: studioRevision(row),
+    version: row.version ?? 1,
     type:
       label === "Text"
         ? "text"
@@ -447,17 +467,23 @@ export async function connectorStudioTool(
   input: any,
 ) {
   const catalog = await repo.entities<Item>("pricing_items");
-  if (name === "list_saved_blocks")
-    return (await repo.entities<SavedBlock>("content_library")).map((row) => {
+  if (name === "list_saved_blocks") {
+    const rows = await repo.entities<SavedBlock>("content_library"),
+      views = await savedBlockViews(repo, rows);
+    return rows.map((row, i) => {
       const { content: _content, ...summary } = savedBlockView(row);
-      return summary;
+      return { ...summary, used_in: views[i].used_in };
     });
+  }
   if (name === "get_saved_block") {
     const row = (await repo.entities<SavedBlock>("content_library")).find(
       (r) => r.id === input.saved_block_id,
     );
     check(row, "Saved block not found", 404);
-    return savedBlockView(row);
+    return {
+      ...savedBlockView(row),
+      used_in: await savedBlockUsage(repo, row),
+    };
   }
   if (name.includes("saved_block")) {
     const before =
@@ -469,6 +495,64 @@ export async function connectorStudioTool(
     if (name === "update_saved_block") {
       check(before, "Saved block not found", 404);
       assertStudioRevision("content_library", before, input.revision);
+    }
+    if (input.type === "group" || before?.type === "group") {
+      check(
+        !input.remove_blocks?.length || input.content !== undefined,
+        "remove_blocks requires content with those markers omitted",
+      );
+      check(
+        !before || before.type === "group",
+        "Groups keep their type; create a new group instead",
+      );
+      check(
+        !input.type || input.type === "group",
+        "Group type cannot be changed",
+      );
+      check(
+        input.content === undefined || typeof input.content === "string",
+        "Group content must be proposal Markdown",
+      );
+      const allowed = await connectorFields(repo);
+      const content =
+        input.content === undefined
+          ? savedBlocks(before!)
+          : before
+            ? replaceTemplateMarkdown(
+                input.content,
+                { id: before.id, content: savedBlocks(before) } as Template,
+                input.remove_blocks ?? [],
+                (md) => connectorMarkdown(md, allowed),
+              )
+            : connectorMarkdown(input.content, allowed);
+      check(content.length, "A group needs at least one block");
+      check(
+        content.every(
+          (b) =>
+            !["pricing_table", "signature_block", "contract"].includes(b.type),
+        ),
+        "Groups cannot contain pricing tables, signatures or contracts",
+      );
+      const value = await writeStudioEntity(
+        repo,
+        "content_library",
+        before ?? null,
+        {
+          ...before,
+          id: before?.id ?? randomUUID(),
+          name: input.name ?? before!.name,
+          type: "group" as const,
+          blocks: content,
+          block: content[0],
+        },
+        actor,
+        {
+          connector: true,
+          type: `connector_saved_block_${before ? "updated" : "created"}`,
+          revision: input.revision,
+        },
+      );
+      return savedBlockView(value);
     }
     const type =
       input.type ??

@@ -69,6 +69,7 @@ export function EditorHeader({
   primaryLabel,
   onPrimary,
   onReassign,
+  onReplaceBlock,
   titleEditor,
   savedLabel,
   dirtyLabel,
@@ -113,6 +114,7 @@ export function EditorHeader({
   primaryLabel?: string;
   onPrimary?: () => void;
   onReassign?: () => void;
+  onReplaceBlock?: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreTrigger = useRef<HTMLButtonElement>(null);
@@ -204,6 +206,7 @@ export function EditorHeader({
         }
         onPrimary={onPrimary}
         onReassign={onReassign}
+        onReplaceBlock={onReplaceBlock}
       />
     );
   if (!phone && onReviewSend) {
@@ -350,7 +353,7 @@ export function EditorHeader({
           {primaryLabel ??
             (locked ? "Duplicate as new draft" : "Review & send")}
         </EditorButton>
-        {onReassign && (
+        {(onReassign || onReplaceBlock) && (
           <>
             <button
               ref={moreTrigger}
@@ -370,16 +373,29 @@ export function EditorHeader({
                 close={() => setMoreOpen(false)}
               >
                 <div role="menu" aria-label="Editor actions">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMoreOpen(false);
-                      onReassign();
-                    }}
-                  >
-                    Reassign…
-                  </button>
+                  {onReplaceBlock && (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onReplaceBlock();
+                      }}
+                    >
+                      Replace with latest block
+                    </button>
+                  )}
+                  {onReassign && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onReassign();
+                      }}
+                    >
+                      Reassign…
+                    </button>
+                  )}
                 </div>
               </ToolbarPopover>
             )}

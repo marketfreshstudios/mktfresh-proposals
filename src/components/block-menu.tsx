@@ -15,7 +15,9 @@ export function BlockMenu({
   signatureRoles = [],
   variant = "menu",
   onDragStart,
+  reusableOnly = false,
 }: {
+  reusableOnly?: boolean;
   anchor: HTMLElement | null;
   hasPricing: boolean;
   saved: { id: string; name: string; block: Block }[];
@@ -39,7 +41,15 @@ export function BlockMenu({
   const close = useRef(onClose),
     restoreTrigger = useRef(false);
   close.current = onClose;
-  const allOptions = blockOptions({ hasPricing, saved, signatureRoles });
+  const allOptions = blockOptions({ hasPricing, saved, signatureRoles }).filter(
+    (o) =>
+      !reusableOnly ||
+      ![o.block, ...(o.extra ?? [])].some(
+        (b) =>
+          b &&
+          ["pricing_table", "signature_block", "contract"].includes(b.type),
+      ),
+  );
   const optionName = (option: Option) =>
     variant === "panel"
       ? option.name === "Text"

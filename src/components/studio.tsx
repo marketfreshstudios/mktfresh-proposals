@@ -9,7 +9,14 @@ import { ToolsPanel } from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { ToolbarPopover } from "./toolbar-popover";
-import { convertSavedBlockType, savedBlockType } from "../lib/saved-block-type";
+import {
+  convertSavedBlockType,
+  savedBlockType,
+  savedBlockLabel,
+} from "../lib/saved-block-type";
+import { savedBlocks } from "../lib/linked-blocks";
+import { LinkedBlockNote } from "./editor/linked-block-note";
+import type { SavedBlock } from "../lib/model";
 import { templateAuthoringItems } from "../lib/template-quote";
 import { studioDate } from "../lib/studio-v3";
 import { curatedFonts } from "../lib/proposal-fonts";
@@ -832,17 +839,15 @@ function TemplatesStudioContent({
         return t ?? null;
       })(),
     ),
-    [saved, setSaved] = useState<{
-      id?: string;
-      name: string;
-      block: Block;
-    } | null>(
+    [saved, setSaved] = useState<
+      (Omit<SavedBlock, "id"> & { id?: string }) | null
+    >(
       blocksOnly ? (data.library.find((b) => b.id === selected) ?? null) : null,
     ),
     [index, setIndex] = useState<number | null>(null),
     [clauseIndex, setClauseIndex] = useState(0),
     [fields, setFields] = useState(false),
-    [tab, setTab] = useState<string>(blocksOnly ? "Fields" : "Quote"),
+    [tab, setTab] = useState<string>(blocksOnly ? "Used in" : "Quote"),
     [expandedDefault, setExpandedDefault] = useState<string | null>(null),
     [defaultDetails, setDefaultDetails] = useState<string | null>(null),
     [previewOpen, setPreviewOpen] = useState(false),
@@ -858,6 +863,9 @@ function TemplatesStudioContent({
     [templateOffline, setTemplateOffline] = useState(false);
   const templateFlight = useRef<Promise<boolean> | null>(null),
     allowLeave = useRef(false);
+  const [updateDrafts, setUpdateDrafts] = useState(false),
+    updateDraftsRef = useRef(false);
+  updateDraftsRef.current = updateDrafts;
   const serialise = (value: unknown) =>
     JSON.stringify(
       value && typeof value === "object"
@@ -868,6 +876,8 @@ function TemplatesStudioContent({
                   "pagination",
                   "revision",
                   "connector_restore_event_id",
+                  "used_in",
+                  "version",
                 ].includes(key),
             ),
           )
@@ -896,7 +906,11 @@ function TemplatesStudioContent({
     return () => q.removeEventListener("change", update);
   }, []);
   const content =
-    mode === "blocks" ? (saved ? [saved.block] : []) : (draft?.content ?? []);
+    mode === "blocks"
+      ? saved
+        ? savedBlocks(saved as SavedBlock)
+        : []
+      : (draft?.content ?? []);
   const model = useRef({ draft, saved });
   model.current = { draft, saved };
   const applyModel = (next: typeof model.current) => {
@@ -964,17 +978,18 @@ function TemplatesStudioContent({
       .then(setEvents)
       .catch(() => {});
   }, []);
-  const phoneSection = templatePanels.phone
-    ? contentSections(content).find((s) =>
-        s.indices.some(
-          (n) =>
-            `template-${content[n].id ?? n}` === selection.selected ||
-            content[n].clauses?.some(
-              (c) => `template-clause-${c.id}` === selection.selected,
-            ),
-        ),
-      )
-    : undefined;
+  const phoneSection =
+    templatePanels.phone && !selection.selectMode
+      ? contentSections(content).find((s) =>
+          s.indices.some(
+            (n) =>
+              `template-${content[n].id ?? n}` === selection.selected ||
+              content[n].clauses?.some(
+                (c) => `template-clause-${c.id}` === selection.selected,
+              ),
+          ),
+        )
+      : undefined;
   useEffect(() => {
     templatePaper.current?.dispatchEvent(new Event("pagination-layout-change"));
   }, [templatePanels.phone, selection.selected]);
@@ -1041,6 +1056,7 @@ function TemplatesStudioContent({
         serialise(currentResource.value);
   const templateCache = (key: string) =>
     `studio-unsaved:${data.user.workspace_id ?? "workspace"}:${key}`;
+  const dirtyResources = useRef(new Set<string>());
   useEffect(() => {
     const online = () => setTemplateOffline(!navigator.onLine);
     online();
@@ -1064,12 +1080,21 @@ function TemplatesStudioContent({
     } catch {}
   }, [currentResource.key]);
   useEffect(() => {
-    if (templateDirty)
+    if (templateDirty) {
+      dirtyResources.current.add(currentResource.key);
       try {
         localStorage.setItem(
           templateCache(currentResource.key),
           serialise(currentResource.value),
         );
+      } catch {}
+    } else if (
+      !templateRecovery &&
+      currentResource.value &&
+      dirtyResources.current.delete(currentResource.key)
+    )
+      try {
+        localStorage.removeItem(templateCache(currentResource.key));
       } catch {}
   }, [currentResource.key, templateDirty, serialise(currentResource.value)]);
   useEffect(() => {
@@ -1091,6 +1116,9 @@ function TemplatesStudioContent({
     if (mode === "templates" && model.current.draft?.starter_key)
       return Promise.resolve(true);
     if (templateFlight.current) return templateFlight.current;
+    const draftScope = mode === "blocks" && updateDraftsRef.current;
+    const approvedDraftIds = usage.drafts.map((p) => p.id);
+    let forceScope = draftScope;
     const flight = (async () => {
       setTemplateError("");
       setTemplateBusy(true);
@@ -1099,7 +1127,9 @@ function TemplatesStudioContent({
           const captured = resourceRef.current;
           if (
             !captured.value ||
-            savedModels.current.get(captured.key) === serialise(captured.value)
+            (savedModels.current.get(captured.key) ===
+              serialise(captured.value) &&
+              !forceScope)
           )
             return true;
           if (!navigator.onLine)
@@ -1109,10 +1139,17 @@ function TemplatesStudioContent({
             ...captured.value,
             expected_revision: studioRevisions.current.get(captured.key),
             id: captured.value.id ?? crypto.randomUUID(),
+            ...(captured.path === "/api/content_library"
+              ? {
+                  update_drafts: draftScope,
+                  update_draft_ids: approvedDraftIds,
+                }
+              : {}),
             ...(captured.path === "/api/templates"
               ? { pagination: pagePlan.current }
               : {}),
           });
+          forceScope = false;
           if (result.revision) {
             studioRevisions.current.set(captured.key, result.revision);
             studioRevisions.current.set(
@@ -1121,6 +1158,16 @@ function TemplatesStudioContent({
             );
           }
           savedModels.current.set(captured.key, serialise(captured.value));
+          if (
+            captured.path === "/api/templates" &&
+            resourceRef.current.key === captured.key &&
+            serialise(resourceRef.current.value) === serialise(captured.value)
+          ) {
+            const next = { ...model.current.draft!, ...result };
+            savedModels.current.set(captured.key, serialise(next));
+            applyModel({ ...model.current, draft: next });
+            resourceRef.current = { ...captured, value: next };
+          }
           setTemplateLastSaved(new Date().toISOString());
           if (!templateRecovery)
             try {
@@ -1153,6 +1200,10 @@ function TemplatesStudioContent({
           async () => {},
           mode === "templates" ? "Template saved" : "Block saved",
         );
+        if (draftScope) {
+          updateDraftsRef.current = false;
+          setUpdateDrafts(false);
+        }
         return true;
       } catch (e) {
         setTemplateError(e instanceof Error ? e.message : "Unable to save");
@@ -1236,6 +1287,9 @@ function TemplatesStudioContent({
         id,
         name: `${value.name} copy`,
         block: duplicateBlock(value.block),
+        ...(value.type === "group"
+          ? { type: "group", blocks: value.blocks?.map(duplicateBlock) }
+          : {}),
       });
       allowLeave.current = true;
       location.assign(`/studio/blocks/${id}`);
@@ -1249,8 +1303,7 @@ function TemplatesStudioContent({
     if (
       !(await confirmDialog({
         title: `Delete block “${value.name}”?`,
-        description:
-          "Removes it from Saved blocks. Copies already in templates and proposals stay as they are.",
+        description: `Used in ${value.used_in?.templates.length ?? 0} linked templates. Removes it from Saved blocks and unlinks those copies. Copies already in templates and proposals stay as they are.`,
         confirmLabel: "Delete block",
         cancelLabel: "Cancel",
         destructive: true,
@@ -1329,9 +1382,16 @@ function TemplatesStudioContent({
     setExpandedDefault(id);
   }
   const patch = (next: Block[]) => {
-    if (mode === "blocks" && saved && next[0])
-      editSaved({ ...saved, block: next[0] });
-    else if (draft) editDraft({ ...draft, content: next });
+    if (mode === "blocks" && saved) {
+      const blocks: Block[] = next.length
+        ? next
+        : [{ id: crypto.randomUUID(), type: "paragraph", text: "" }];
+      editSaved({
+        ...saved,
+        block: blocks[0],
+        ...(saved.type === "group" ? { blocks } : {}),
+      });
+    } else if (draft) editDraft({ ...draft, content: next });
   };
   const move = (operation: (content: Block[]) => Block[]) =>
     applyDocumentMove(
@@ -1553,9 +1613,86 @@ function TemplatesStudioContent({
   const panelTabs =
     mode === "templates"
       ? ["Quote", "Fields", "Blocks", "Styles"]
-      : ["Fields", "Details"];
+      : ["Used in", "Fields", "Details"];
+  const usage = data.library.find((b) => b.id === saved?.id)?.used_in ??
+    saved?.used_in ?? { templates: [], drafts: [] };
   const panelBody =
-    tab === "Fields" ? (
+    mode === "blocks" && tab === "Used in" ? (
+      <section className="saved-block-usage stack" aria-label="Used in">
+        <h3>TEMPLATES · LINKED</h3>
+        {usage.templates.length ? (
+          usage.templates.map((t) => (
+            <a
+              className="saved-block-usage-row"
+              key={t.id}
+              href={`/studio/templates/${t.id}`}
+            >
+              <strong>{t.name}</strong>
+              <small>
+                {t.edited ? "Edited here · kept on save" : "Updates on save"}
+              </small>
+            </a>
+          ))
+        ) : (
+          <p className="muted">Not linked to any templates yet.</p>
+        )}
+        <h3>DRAFTS WITH A COPY · {usage.drafts.length}</h3>
+        {usage.drafts.map((p) => (
+          <a
+            className="saved-block-usage-row"
+            key={p.id}
+            href={`/proposals/${p.id}/edit`}
+          >
+            <strong>{p.title}</strong>
+            <small>
+              {p.status} ·{" "}
+              {data.staff.find((m) => m.user_id === p.owner)?.display_name ??
+                p.owner}
+            </small>
+          </a>
+        ))}
+        {!usage.drafts.length && (
+          <p className="muted">No drafts have a copy.</p>
+        )}
+        <fieldset className="saved-block-save-scope">
+          <legend>WHEN YOU SAVE</legend>
+          <label>
+            <input
+              type="radio"
+              name="saved-block-scope"
+              disabled={templateBusy}
+              checked={!updateDrafts}
+              onChange={() => setUpdateDrafts(false)}
+            />
+            <span>
+              <strong>Templates and new proposals</strong>
+              <small>
+                Drafts keep their current copy. This is the safe default.
+              </small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="saved-block-scope"
+              disabled={templateBusy}
+              checked={updateDrafts}
+              onChange={() => setUpdateDrafts(true)}
+            />
+            <span>
+              <strong>
+                Also update {usage.drafts.length}{" "}
+                {usage.drafts.length === 1 ? "draft" : "drafts"}
+              </strong>
+              <small>
+                Replaces this block in the drafts listed above. Any edits made
+                to it in those drafts are lost.
+              </small>
+            </span>
+          </label>
+        </fieldset>
+      </section>
+    ) : tab === "Fields" ? (
       <FieldOptions
         map={map}
         onInsert={(path) => {
@@ -1574,33 +1711,36 @@ function TemplatesStudioContent({
             onChange={(e) => editSaved({ ...saved, name: e.target.value })}
           />
         </Field>
-        <Field label="Type">
-          <select
-            disabled={!["paragraph", "heading"].includes(saved.block.type)}
-            value={savedBlockType(saved.block)}
-            onChange={(e) =>
-              editSaved({
-                ...saved,
-                block: convertSavedBlockType(saved.block, e.target.value),
-              })
-            }
-          >
-            {!["paragraph", "heading"].includes(saved.block.type) ? (
-              <option value={savedBlockType(saved.block)}>
-                {savedBlockType(saved.block)}
-              </option>
-            ) : (
-              <>
-                <option>Text</option>
-                <option>Bulleted list</option>
-                <option>Numbered list</option>
-              </>
-            )}
-          </select>
-        </Field>
-        {!["paragraph", "heading"].includes(saved.block.type) && (
-          <p className="muted">This block type can't be changed</p>
+        {saved.type !== "group" && (
+          <Field label="Type">
+            <select
+              disabled={!["paragraph", "heading"].includes(saved.block.type)}
+              value={savedBlockType(saved.block)}
+              onChange={(e) =>
+                editSaved({
+                  ...saved,
+                  block: convertSavedBlockType(saved.block, e.target.value),
+                })
+              }
+            >
+              {!["paragraph", "heading"].includes(saved.block.type) ? (
+                <option value={savedBlockType(saved.block)}>
+                  {savedBlockType(saved.block)}
+                </option>
+              ) : (
+                <>
+                  <option>Text</option>
+                  <option>Bulleted list</option>
+                  <option>Numbered list</option>
+                </>
+              )}
+            </select>
+          </Field>
         )}
+        {saved.type !== "group" &&
+          !["paragraph", "heading"].includes(saved.block.type) && (
+            <p className="muted">This block type can't be changed</p>
+          )}
         {edited && (
           <p className="muted">
             Edited {studioDate(edited.created_at)} · {eventAuthor(edited)}
@@ -1658,6 +1798,14 @@ function TemplatesStudioContent({
     >
       {blockDrop.line}
       <EditorControlConfig
+        document={{
+          content,
+          prefix: "template-",
+          source: mode === "templates" ? "template" : "library",
+          onChange: patch,
+          reuse: blockFeedback.reuse,
+          remove: blockFeedback.remove,
+        }}
         locked={!!starterAttempt && !!draft?.starter_key}
         compactPhone
         compact={templatePanels.compact}
@@ -1727,7 +1875,7 @@ function TemplatesStudioContent({
               />
               {mode === "blocks" && saved && (
                 <span className="studio-type-pill">
-                  {savedBlockType(saved.block)}
+                  {savedBlockLabel(saved as SavedBlock)}
                 </span>
               )}
             </>
@@ -1833,7 +1981,7 @@ function TemplatesStudioContent({
                 busy={templateBusy}
                 onClick={() => void saveTemplate()}
               >
-                Save
+                Save changes
               </Button>
             </>
           )}
@@ -1896,6 +2044,18 @@ function TemplatesStudioContent({
         )}
         {(mode === "templates" && draft) || (mode === "blocks" && saved) ? (
           <>
+            {mode === "blocks" && (
+              <button
+                type="button"
+                className="saved-block-phone-usage"
+                onClick={() => openTab("Used in")}
+              >
+                In {usage.templates.length}{" "}
+                {usage.templates.length === 1 ? "template" : "templates"} ·{" "}
+                {usage.drafts.length}{" "}
+                {usage.drafts.length === 1 ? "draft" : "drafts"} with a copy
+              </button>
+            )}
             {mode === "blocks" && (
               <p className="saved-block-caption">
                 Shown as it appears in a proposal. Fields fill in with each
@@ -2068,7 +2228,9 @@ function TemplatesStudioContent({
                       content.map((b, n) => (
                         <Sortable
                           block
-                          draggable={mode === "templates"}
+                          draggable={
+                            mode === "templates" || saved?.type === "group"
+                          }
                           id={String(n)}
                           spaceBefore={blockSpaces[b.id ?? String(n)]}
                           label={`block ${n + 1}`}
@@ -2108,7 +2270,7 @@ function TemplatesStudioContent({
                             }
                             className={`studio-block-card ${phoneSection && !phoneSection.indices.includes(n) ? "phone-section-hidden" : ""} ${b.type === "page_break" ? "sheet-break-marker" : ""}`}
                             insert={
-                              mode === "templates"
+                              mode === "templates" || saved?.type === "group"
                                 ? (edge, anchor) => {
                                     setInsertAnchor(anchor);
                                     setReplaceEmpty(false);
@@ -2156,7 +2318,8 @@ function TemplatesStudioContent({
                                 >
                                   Block settings
                                 </BlockAction>
-                                {mode === "templates" && (
+                                {(mode === "templates" ||
+                                  saved?.type === "group") && (
                                   <>
                                     <BlockAction
                                       aria-label={`Move block ${n + 1} up`}
@@ -2361,7 +2524,7 @@ function TemplatesStudioContent({
                                     )
                                   }
                                   onDelete={() =>
-                                    mode === "blocks"
+                                    mode === "blocks" && saved?.type !== "group"
                                       ? void deleteSaved()
                                       : blockFeedback.remove(
                                           b,
@@ -2661,6 +2824,14 @@ function TemplatesStudioContent({
                                 </div>
                               </Reorder>
                             )}
+                            {mode === "templates" && !draft?.starter_key && (
+                              <LinkedBlockNote
+                                block={b}
+                                content={content}
+                                library={data.library}
+                                onChange={patch}
+                              />
+                            )}
                           </BlockFrame>
                         </Sortable>
                       )),
@@ -2847,6 +3018,7 @@ function TemplatesStudioContent({
       )}
       {insertAt !== null && (
         <BlockMenu
+          reusableOnly={mode === "blocks"}
           anchor={insertAnchor}
           hasPricing={content.some((b) => b.type === "pricing_table")}
           saved={data.library}

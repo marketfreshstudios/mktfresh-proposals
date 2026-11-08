@@ -81,7 +81,7 @@ test("Saved block keeps explicit save, safe types, duplicate and deletion", asyn
       (b) => b.id === f.block.id,
     ).name,
   ).toBe(f.block.name);
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect
     .poll(
       async () =>
@@ -97,7 +97,7 @@ test("Saved block keeps explicit save, safe types, duplicate and deletion", asyn
   await expect(
     page.locator(".studio-saved-block-editor .tiptap ul"),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await page.getByRole("button", { name: "Duplicate", exact: true }).click();
   await expect(page).not.toHaveURL(new RegExp(f.block.id));
   const copied = (await f.repo.entities<any>("content_library")).find(
@@ -159,6 +159,7 @@ test("Plain contract clauses edit and insert fields without inert rich-text cont
   await expect(
     bar.getByRole("button", { name: /^(Bold|Italic|Text size)/ }),
   ).toHaveCount(0);
+  await bar.getByRole("button", { name: "Insert field", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Client company — {{client.company}}",
@@ -170,7 +171,7 @@ test("Plain contract clauses edit and insert fields without inert rich-text cont
     /field-chip/,
   );
   await expect(text).toBeFocused();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect
     .poll(
       async () =>

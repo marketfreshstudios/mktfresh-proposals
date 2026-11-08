@@ -3,6 +3,7 @@ export { moveSectionRange as moveSection } from "./editor-moves";
 export function duplicateBlock(block: Block): Block {
   const copy = structuredClone(block);
   copy.id = crypto.randomUUID();
+  if (copy.saved_block_id) copy.saved_block_instance = crypto.randomUUID();
   if (copy.clauses)
     copy.clauses = copy.clauses.map((c) => ({ ...c, id: crypto.randomUUID() }));
   return copy;

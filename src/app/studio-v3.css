@@ -394,7 +394,22 @@
   padding: 16px 20px;
 }
 .saved-block-table > :is(a, div) {
-  grid-template-columns: minmax(0, 2fr) 130px minmax(0, 1fr) 12px;
+  grid-template-columns: minmax(0, 2fr) 150px 130px minmax(0, 1fr) 12px;
+}
+.saved-block-table .saved-block-phone-summary {
+  display: none;
+}
+@media (max-width: 699px) {
+  .saved-block-table .saved-block-phone-summary {
+    display: block;
+  }
+  .saved-block-table .studio-table-row > span:nth-child(2),
+  .saved-block-table .studio-table-row > span:nth-child(3) {
+    display: none;
+  }
+  .saved-block-table .studio-table-row > span:nth-child(4) {
+    grid-column: 1;
+  }
 }
 .studio-table-head {
   font-size: 11px;

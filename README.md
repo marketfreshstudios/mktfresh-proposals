@@ -271,6 +271,10 @@ Review & send can publish a client link with **I'll send it myself**, without an
 
 Newly published proposals use stable 12-character client codes; older links remain valid. The record header exposes Edit, signature insertion defaults a removable Signatures heading, and rich text supports preset inline sizes. See [owner review 4](docs/owner-review4.md) for the durable lookup/password limits and required hosted migration. Apply `20261105063146_client_link_limits.sql` before merging/deploying this change; production protection uses the existing server-only integration encryption key and fails closed when its store is unavailable.
 
+### Linked saved blocks (Phase 2)
+
+Multi-select blocks to save an ordered reusable group. Templates stay linked; proposals own their copies. Library saves default to templates/new proposals, with explicit draft replacement and a separate same-link confirmation for unsigned sent proposals. **Apply the small hosted SQL before deploy**; see [linked saved blocks](docs/linked-saved-blocks.md). Existing copies without references and all frozen versions remain unchanged.
+
 ### Starter proposal templates
 
 The seven approved starters and the Business state field are documented in

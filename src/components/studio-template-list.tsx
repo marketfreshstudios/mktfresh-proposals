@@ -9,6 +9,7 @@ import type { Activity } from "../lib/studio";
 import type { Block } from "../lib/model";
 import { fieldLabel } from "../lib/field-labels";
 import { blockText } from "../lib/editor-document";
+import { savedBlockLabel } from "../lib/saved-block-type";
 import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
 import { fontCss } from "../lib/proposal-fonts";
@@ -62,7 +63,8 @@ export function StudioTemplateList({
   const items = data.library.filter(
     (b) =>
       (!query || b.name.toLowerCase().includes(query.toLowerCase())) &&
-      (type === "All" || blockType(b.block) === type),
+      (type === "All" ||
+        (b.type === "group" ? "Group" : blockType(b.block)) === type),
   );
   const recent = [...data.library]
     .sort((a, b) =>
@@ -279,17 +281,23 @@ export function StudioTemplateList({
             label="Block types"
             value={type}
             onChange={setType}
-            options={["All", "Text", "List", "Contract clause", "Image"].map(
-              (t) => ({
-                value: t,
-                label: `${t} · ${data.library.filter((b) => t === "All" || blockType(b.block) === t).length}`,
-              }),
-            )}
+            options={[
+              "All",
+              "Text",
+              "List",
+              "Contract clause",
+              "Image",
+              "Group",
+            ].map((t) => ({
+              value: t,
+              label: `${t} · ${data.library.filter((b) => t === "All" || (b.type === "group" ? "Group" : blockType(b.block)) === t).length}`,
+            }))}
           />
           <div className="studio-data-table saved-block-table">
             <div className="studio-table-head">
               <span>Block</span>
               <span>Type</span>
+              <span>Used in</span>
               <span>Last edited</span>
             </div>
             {items.map((b) => (
@@ -301,8 +309,23 @@ export function StudioTemplateList({
                 <span>
                   <strong>{b.name}</strong>
                   <small>{summary(b.block) || "Empty block"}</small>
+                  <small className="saved-block-phone-summary">
+                    {b.type === "group"
+                      ? savedBlockLabel(b)
+                      : blockType(b.block)}{" "}
+                    · In {b.used_in?.templates.length ?? 0}{" "}
+                    {b.used_in?.templates.length === 1
+                      ? "template"
+                      : "templates"}
+                  </small>
                 </span>
-                <span>{blockType(b.block)}</span>
+                <span>
+                  {b.type === "group" ? savedBlockLabel(b) : blockType(b.block)}
+                </span>
+                <span>
+                  In {b.used_in?.templates.length ?? 0}{" "}
+                  {b.used_in?.templates.length === 1 ? "template" : "templates"}
+                </span>
                 <span>{lastEdit(b.id)}</span>
                 <Icon name="chevron-right" />
               </a>

@@ -10,6 +10,7 @@ import { insertAuthoringBlocks } from "../lib/block-insertion";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { ReassignDialog } from "./reassign-proposal";
+import { ReplaceSavedBlockDialog } from "./replace-saved-block";
 import { canReassign } from "../lib/proposal-owner";
 import { pageGeometry } from "../lib/page-bands";
 import { Disclosure } from "./ui";
@@ -188,6 +189,7 @@ function QuoteEditorContent({
 }) {
   const blockFeedback = useBlockFeedback();
   const [reassignOpen, setReassignOpen] = useState(false);
+  const [replaceBlockOpen, setReplaceBlockOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   useEffect(() => {
@@ -2208,11 +2210,35 @@ function QuoteEditorContent({
       data-stale={stale}
       data-compact={panels.compact}
       data-shell-mode={panels.phone ? "phone" : "v2"}
-      data-phone-editing={panels.phone && !!selection.selected}
+      data-phone-editing={
+        panels.phone && !!selection.selected && !selection.selectMode
+      }
+      data-phone-select-mode={selection.selectMode}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
       {blockDrop.line}
+      {replaceBlockOpen && (
+        <ReplaceSavedBlockDialog
+          proposal={p}
+          onClose={() => setReplaceBlockOpen(false)}
+          onChanged={(next) => {
+            revision.current = next.revision;
+            latest.current = { ...next, quote: editorQuote(next) };
+            setP(latest.current);
+            setDirty(false);
+            setLastSaved(next.updated_at);
+            onSaved(next);
+          }}
+        />
+      )}
       <EditorControlConfig
+        document={{
+          content: p.content,
+          prefix: "block-",
+          onChange: (content) => change({ content }),
+          reuse: blockFeedback.reuse,
+          remove: blockFeedback.remove,
+        }}
         compact={panels.compact}
         locked={locked || stale}
         map={map}
@@ -2254,6 +2280,13 @@ function QuoteEditorContent({
         />
       )}
       <EditorHeader
+        onReplaceBlock={
+          !locked && live && p.content.some((b) => b.saved_block_id)
+            ? async () => {
+                if (await save()) setReplaceBlockOpen(true);
+              }
+            : undefined
+        }
         onReassign={
           user && canReassign(p, user)
             ? async () => {
@@ -2554,7 +2587,12 @@ function QuoteEditorContent({
                       p.style_overrides,
                     )}
                     enabled={
-                      panels.printMode && !(panels.phone && selection.selected)
+                      panels.printMode &&
+                      !(
+                        panels.phone &&
+                        selection.selected &&
+                        !selection.selectMode
+                      )
                     }
                     sheets
                     headerFooter={bands}

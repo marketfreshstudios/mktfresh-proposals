@@ -230,9 +230,16 @@ test("Studio v3 route lists, nine staff emails and Workspace autosave keep value
   await expect(
     page.locator(".saved-block-table .studio-table-row"),
   ).toHaveCount(9);
-  await expect(page.getByText("Used in", { exact: true })).toHaveCount(0);
+  await expect(
+    page
+      .locator(".saved-block-table .studio-table-head")
+      .getByText("Used in", { exact: true }),
+  ).toBeVisible();
   await page.locator(".saved-block-table .studio-table-row").first().click();
   await expect(page).toHaveURL(/studio\/blocks\//);
+  await expect(
+    page.getByRole("tab", { name: "Used in", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel("Block name")).toBeVisible();
 });
 test("Studio v3 Staff permissions and Team actions retain the existing endpoints", async ({

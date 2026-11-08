@@ -3,6 +3,7 @@ import { DialogActions } from "./dialog-actions";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
 import { automaticRemindersEnabled } from "../lib/delivery";
 import { ReassignDialog } from "./reassign-proposal";
+import { ReplaceSavedBlockDialog } from "./replace-saved-block";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
   jobName,
@@ -132,6 +133,7 @@ export function ProposalMenu({
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
+  const [replaceBlock, setReplaceBlock] = useState(false);
   const [open, setOpen] = useState(false),
     [confirm, setConfirm] = useState<ProposalAction | null>(null),
     [busy, setBusy] = useState(false),
@@ -195,6 +197,13 @@ export function ProposalMenu({
           onChanged={(rows) => {
             if (rows[0]) onChanged?.(rows[0]);
           }}
+        />
+      )}
+      {replaceBlock && (
+        <ReplaceSavedBlockDialog
+          proposal={p}
+          onClose={() => setReplaceBlock(false)}
+          onChanged={(next) => onChanged?.(next)}
         />
       )}
       {undo && (
@@ -279,6 +288,18 @@ export function ProposalMenu({
             </form>
           ) : (
             <nav className="action-menu">
+              {editable &&
+                ["sent", "viewed"].includes(p.status) &&
+                p.content.some((b) => b.saved_block_id) && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      setReplaceBlock(true);
+                    }}
+                  >
+                    Replace with latest block
+                  </button>
+                )}
               {p.token && (
                 <CopyClientLink
                   menu

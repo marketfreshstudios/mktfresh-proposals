@@ -1,4 +1,6 @@
 import type { Block } from "../lib/model";
+import type { SavedBlock } from "../lib/model";
+import { savedBlocks, stampSavedBlocks } from "../lib/linked-blocks";
 import type icons from "./icons.json";
 export type BlockOption = {
   name: string;
@@ -30,7 +32,7 @@ export function blockOptions({
   signatureRoles = [],
 }: {
   hasPricing: boolean;
-  saved: { id: string; name: string; block: Block }[];
+  saved: SavedBlock[];
   signatureRoles?: string[];
 }): BlockOption[] {
   return [
@@ -133,16 +135,23 @@ export function blockOptions({
         content: { type: "doc", content: [{ type: "horizontalRule" }] },
       },
     },
-    ...saved.map((s) => ({
-      group: "Saved blocks",
-      name: s.name,
-      description: "Saved block",
-      icon: "bookmark" as const,
-      block: s.block,
-      disabled:
-        (hasPricing && s.block.type === "pricing_table") ||
-        (s.block.type === "signature_block" &&
-          signatureRoles.includes(s.block.role!)),
-    })),
+    ...saved.map((s) => {
+      const blocks = stampSavedBlocks(s);
+      return {
+        group: "Saved blocks",
+        name: s.name,
+        description:
+          s.type === "group"
+            ? `Group · ${savedBlocks(s).length} blocks`
+            : "Saved block",
+        icon: "bookmark" as const,
+        block: blocks[0],
+        extra: blocks.slice(1),
+        disabled:
+          (hasPricing && s.block.type === "pricing_table") ||
+          (s.block.type === "signature_block" &&
+            signatureRoles.includes(s.block.role!)),
+      };
+    }),
   ];
 }
