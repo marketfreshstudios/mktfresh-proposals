@@ -1,8 +1,13 @@
+import {
+  clientReminderAllowed,
+  countersignReminderAllowed,
+  reminderCount,
+} from "./reminders";
+import { publishedExpiry, reminderCycle } from "./editor-publication";
 import { usesWorkspaceBrand } from "./workspace-brand";
 import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import { shortPrintDiagnostics, type PrintDiagnostic } from "./pdf-diagnostics";
 import { jobFailure } from "./job-presentation";
-import { publishedExpiry, reminderCycle } from "./editor-publication";
 import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
@@ -249,15 +254,17 @@ export class Worker {
           ))
       )
         return;
+      // On-demand reminders retain their existing closed/version/expiry guard.
       if (
-        payload.reminder_day &&
-        (!!p.archived_at ||
+        payload.reminder_day === "manual" &&
+        (p.archived_at ||
           !["sent", "viewed"].includes(p.status) ||
           payload.version !== reminderCycle(p).version ||
           (publishedExpiry(p) && Date.parse(publishedExpiry(p)!) <= Date.now()))
       )
         return;
-      if (isAutomaticReminder(j) && !automaticRemindersEnabled(p)) return;
+      if (isAutomaticReminder(j) && !clientReminderAllowed(p, j)) return;
+      if (payload.countersign_due && !countersignReminderAllowed(p, j)) return;
       const attachments = payload.file_id
         ? await this.attachment(p, String(payload.file_id))
         : undefined;
@@ -271,6 +278,29 @@ export class Worker {
       const snapshot = stored.jobs.find((v) => v.id === j.id)!.payload
         .email_snapshot as EmailSnapshot;
       await this.repo.emailLog(p.id);
+      // Rendering/log reads can await I/O. Recheck the current aggregate immediately
+      // before delivery, so signing/declining/archiving or switching off cancels queued mail.
+      if (isAutomaticReminder(j) || payload.countersign_due) {
+        const current = (await this.repo.get(p.id))!;
+        if (
+          isAutomaticReminder(j) &&
+          (!clientReminderAllowed(current, j) ||
+            (current.workspace_settings?.reminder_rules &&
+              reminderCount(current) >=
+                current.workspace_settings.reminder_rules.stop_after))
+        )
+          return;
+        if (payload.countersign_due && !countersignReminderAllowed(current, j))
+          return;
+        if (
+          current.events.some(
+            (e) =>
+              e.metadata.job === j.id &&
+              ["reminder_sent", "countersign_reminder_sent"].includes(e.type),
+          )
+        )
+          return;
+      }
       await this.mailer.send(
         {
           from: snapshot.from,
@@ -284,13 +314,22 @@ export class Worker {
         j.id,
       );
       await logSentEmail(this.repo, p, j, snapshot);
-      if (payload.reminder_day)
-        await mutate(this.repo, p.id, (p) =>
-          event(p, "reminder_sent", system, {
+      if (payload.reminder_day || payload.countersign_due)
+        await mutate(this.repo, p.id, (p) => {
+          const type = payload.countersign_due
+            ? "countersign_reminder_sent"
+            : "reminder_sent";
+          if (p.events.some((e) => e.type === type && e.metadata.job === j.id))
+            return;
+          event(p, type, system, {
+            job: j.id,
             day: payload.reminder_day,
             version: payload.version,
-          }),
-        );
+            kind: payload.reminder_kind,
+            due_at: payload.reminder_due ?? payload.countersign_due,
+            automatic: isAutomaticReminder(j),
+          });
+        });
       return;
     }
     if (j.kind === "billing") {

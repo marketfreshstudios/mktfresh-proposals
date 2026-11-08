@@ -1067,6 +1067,18 @@ async function handleRoute(req: Request, path: string[]) {
               "Only a super admin can change Yeswell attribution",
               403,
             );
+          if (
+            entity.email_reply_to !== previous?.email_reply_to ||
+            JSON.stringify(entity.reminder_rules) !==
+              JSON.stringify(previous?.reminder_rules) ||
+            JSON.stringify(entity.countersign_reminder) !==
+              JSON.stringify(previous?.countersign_reminder)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change email reminder rules",
+              403,
+            );
           if (entity.sending_domain !== (previous?.sending_domain ?? ""))
             check(
               user.staff_role === "owner",

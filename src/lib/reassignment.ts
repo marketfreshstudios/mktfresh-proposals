@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emailIdentity } from "./email-identity";
 import { check, type Actor, type Proposal } from "./model";
 import type { Repository } from "./repository";
 import { workspaceStaff } from "./auth";
@@ -149,7 +150,7 @@ export class ReassignmentService {
             if (j.payload.to !== p.client.email) j.payload.to = owner.email;
             delete j.payload.email_snapshot;
             j.payload.from = `${JSON.stringify(`${owner.display_name} · ${p.sender.company_name}`)} <${owner.email}>`;
-            j.payload.reply_to = owner.email;
+            j.payload.reply_to = emailIdentity(p).reply_to;
           }
       }
       event(

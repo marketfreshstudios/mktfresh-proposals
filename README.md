@@ -8,6 +8,8 @@ Studio shell, lists, Workspace autosave and the Phase 1 scope decisions are docu
 
 Connector template access and its required pre-deploy SQL helper are documented in [AI connector](docs/ai-connector.md). Existing proposal-only grants require re-consent for template writes.
 
+Email reminder rules, legacy schedule preservation, DST behavior and queue guarantees are documented in [Email reminder rules](docs/email-reminder-rules.md). No hosted SQL is required.
+
 ## Local development
 
 Requires Node 24 and npm. Docker is only needed for Supabase integration verification.
@@ -79,7 +81,7 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | `POST /api/public/:token/decline`             | Close an unsigned proposal                                                            |
 | `GET /api/public/:token/files/:fileId`        | Download a sealed copy after token/password authorization                             |
 | `GET /api/public/:token/files/:fileId/verify` | Public sealed-copy integrity check                                                    |
-| `GET, POST /api/cron`                         | Expiry, day-3/day-7 reminders, job drain; `Bearer CRON_SECRET`                        |
+| `GET, POST /api/cron`                         | Expiry, workspace reminder rules, job drain; `Bearer CRON_SECRET`                        |
 
 Public API calls for password-protected proposals supply `X-Proposal-Password`; never put passwords in URLs. The API returns `401` for missing credentials/password, `403` for unauthorized staff, `404` for unknown IDs/tokens, `409` for stale revisions/frozen state, and `410` for closed/expired proposals. Every response with proposal content is non-cacheable.
 

@@ -151,9 +151,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       ).toBeVisible();
       await expect(page.locator(".email-list-row")).toHaveCount(8);
       await page
-        .getByRole("tab", { name: "Staff notifications · 9", exact: true })
+        .getByRole("tab", { name: "Staff notifications · 10", exact: true })
         .click();
-      await expect(page.locator(".email-list-row")).toHaveCount(9);
+      await expect(page.locator(".email-list-row")).toHaveCount(10);
       await page
         .getByRole("tab", { name: "Client emails · 8", exact: true })
         .click();

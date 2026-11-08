@@ -155,7 +155,7 @@ async function capture(page: Page, name: string, fullPage = true) {
     await page.screenshot({ path: `${shots}/${name}.png`, fullPage });
   }
 }
-test("Studio v3 route lists, nine staff emails and Workspace autosave keep values on error", async ({
+test("Studio v3 route lists, ten staff emails and Workspace autosave keep values on error", async ({
   page,
 }) => {
   const f = await fixture(page);
@@ -164,9 +164,9 @@ test("Studio v3 route lists, nine staff emails and Workspace autosave keep value
   await expect(
     page.getByRole("tab", { name: "Client emails · 8" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Staff notifications · 9" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
   const list = page.locator(".studio-v3-emails");
-  await expect(list.locator(".email-list-row")).toHaveCount(9);
+  await expect(list.locator(".email-list-row")).toHaveCount(10);
   for (const label of [
     "Client activity",
     "Signatures",
@@ -423,7 +423,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
   await expect(page.getByLabel("Family name")).toHaveValue(family.name);
   await capture(page, "03-product-custom-1440");
   await page.goto("/studio/emails");
-  await page.getByRole("tab", { name: "Staff notifications · 9" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
   await capture(page, "02b-staff-emails-1440");
   await page
     .locator(".sidebar")
@@ -484,10 +484,10 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await expect(
     page.locator('.studio-email-subject [data-field="proposal.title"]').first(),
   ).toHaveText("Proposal title");
-  await page.getByRole("tab", { name: "Staff notifications · 9" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
   await expect(
     page.locator(".studio-email-edited").filter({ hasText: "Read-only" }),
-  ).toHaveCount(6);
+  ).toHaveCount(7);
   const group = page.locator(".studio-email-stage").first();
   const title = await group.locator("h2").boundingBox(),
     card = await group.locator(".studio-email-rows").boundingBox();

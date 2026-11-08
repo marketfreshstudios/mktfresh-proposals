@@ -63,6 +63,13 @@ export async function proposalAction(
     check(settings, "Workspace settings required");
     const candidate = structuredClone(original);
     candidate.valid_until = defaultValidUntil(settings, now);
+    if (candidate.workspace_settings) {
+      candidate.workspace_settings.reminder_days = [...settings.reminder_days];
+      candidate.workspace_settings.reminder_rules = settings.reminder_rules;
+      candidate.workspace_settings.countersign_reminder =
+        settings.countersign_reminder;
+      candidate.workspace_settings.email_reply_to = settings.email_reply_to;
+    }
     candidate.status = candidate.first_viewed_at ? "viewed" : "sent";
     const ready = await service.checkReady(candidate, false, true);
     check(ready.ready, ready.errors.join("; "));

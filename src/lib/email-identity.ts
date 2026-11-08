@@ -17,7 +17,13 @@ export function emailIdentity(p: Proposal) {
       "Choose a staff sender by sending or re-sending this proposal first",
     );
   if (/[\r\n]/.test(name + email)) throw new Error("Invalid email sender");
-  return { from: `${JSON.stringify(name)} <${email}>`, reply_to: email };
+  return {
+    from: `${JSON.stringify(name)} <${email}>`,
+    reply_to:
+      p.workspace_settings?.email_reply_to === "workspace"
+        ? p.workspace_settings.email
+        : email,
+  };
 }
 export function staffRecipients(p: Proposal) {
   return [

@@ -1,3 +1,4 @@
+import { cycleViewedAt, dueClientReminders, countersignDue } from "./reminders";
 import {
   saveClient,
   sameClientContact,
@@ -1013,6 +1014,9 @@ export class ProposalService {
         if (p.status === "sent") p.status = "viewed";
         event(p, "viewed", actor, {}, p.first_viewed_at);
         notify(p, "viewed");
+      } else if (p.workspace_settings?.reminder_rules && !cycleViewedAt(p)) {
+        // Preserve lifetime viewed tracking; the new reminder cycle needs its own first view.
+        event(p, "viewed", actor, {}, this.clock().toISOString());
       }
     });
   }
@@ -1258,17 +1262,63 @@ export class ProposalService {
   }
   async tick() {
     for (const item of await this.repo.list()) {
-      if (item.archived_at || !["sent", "viewed"].includes(item.status))
+      if (
+        item.archived_at ||
+        !["sent", "viewed", "signed_by_client"].includes(item.status)
+      )
         continue;
       await mutate(this.repo, item.id, (p) => {
-        if (!["sent", "viewed"].includes(p.status)) return;
+        if (p.archived_at) return;
         const now = this.clock();
+        if (p.status === "signed_by_client") {
+          const due = countersignDue(p);
+          if (
+            due &&
+            Date.parse(due) <= now.getTime() &&
+            !p.signers.some((s) => s.role === "company")
+          )
+            for (const to of staffRecipients(p))
+              queue(
+                p,
+                "email",
+                `countersign-reminder:${p.client_signed_at}:${due}:${to}`,
+                {
+                  to,
+                  email_template_key: "staff_countersign_reminder",
+                  client_signed_at: p.client_signed_at,
+                  countersign_due: due,
+                },
+                now.toISOString(),
+              );
+          return;
+        }
+        if (!["sent", "viewed"].includes(p.status) || p.signers.length) return;
         if (publishedExpiry(p) && new Date(publishedExpiry(p)!) <= now) {
           p.status = "expired";
           event(p, "expired", system, {}, now.toISOString());
           return;
         }
         if (!automaticRemindersEnabled(p)) return;
+        if (p.workspace_settings?.reminder_rules) {
+          for (const reminder of dueClientReminders(p, now))
+            queue(
+              p,
+              "email",
+              reminder.key,
+              {
+                to: p.client.email,
+                proposal_email: true,
+                email_template_key: `reminder_${reminder.kind}`,
+                reminder_day: reminder.day,
+                version: reminder.version,
+                reminder_kind: reminder.kind,
+                reminder_due: reminder.at,
+                reminder_anchor: reminder.anchor,
+              },
+              now.toISOString(),
+            );
+          return;
+        }
         const cycle = reminderCycle(p);
         const age = (now.getTime() - Date.parse(cycle.at)) / 86400000;
         for (const day of p.workspace_settings?.reminder_days ?? [3, 7])

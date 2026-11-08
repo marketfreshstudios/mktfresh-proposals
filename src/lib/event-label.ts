@@ -45,7 +45,10 @@ export function eventLabel(
     declined: "Client declined",
     expired: "Proposal expired",
     downloaded: "Signed copy downloaded",
-    reminder_sent: "Reminder emailed",
+    reminder_sent: e.metadata.automatic
+      ? `Automatic reminder emailed${e.metadata.kind === "unopened" ? " · unopened" : e.metadata.kind === "viewed" ? " · viewed, not signed" : ""}`
+      : "Reminder emailed",
+    countersign_reminder_sent: "Countersign reminder emailed",
     reminder_requested: "Reminder requested",
     marked_won: `Marked as won by ${actorName}`,
     marked_lost: `Marked as lost by ${actorName}`,

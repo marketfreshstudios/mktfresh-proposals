@@ -61,6 +61,23 @@ export const WorkspaceSettingsSchema = z.object({
     .default(""),
   consent_text: z.string().min(20).max(10000),
   reminder_days: z.array(z.number().int().positive()).max(10),
+  email_reply_to: z.enum(["sender", "workspace"]).optional(),
+  reminder_rules: z
+    .object({
+      enabled: z.boolean(),
+      unopened_days: z.number().int().min(1).max(365),
+      viewed_days: z.number().int().min(1).max(365),
+      stop_after: z.number().int().min(1).max(100),
+    })
+    .strict()
+    .optional(),
+  countersign_reminder: z
+    .object({
+      mode: z.enum(["off", "next_morning", "after_days"]),
+      days: z.number().int().min(1).max(365),
+    })
+    .strict()
+    .optional(),
   default_validity_days: z.number().int().min(1).max(365).default(30),
   timezone: z.string().refine((value) => {
     try {

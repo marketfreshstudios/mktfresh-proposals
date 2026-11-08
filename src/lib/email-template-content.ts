@@ -128,6 +128,14 @@ export const emailDefaults = [
     true,
   ),
   def(
+    "staff_countersign_reminder",
+    "Countersign reminder",
+    "Countersignature needed: {{proposal.title}}",
+    "{{client.full_name}} at {{client.company}} has signed. The agreement is waiting for the company countersignature.",
+    "Review and countersign",
+    true,
+  ),
+  def(
     "staff_completed",
     "Agreement completed",
     "Agreement completed: {{proposal.title}}",
