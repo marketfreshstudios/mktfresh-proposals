@@ -17,6 +17,10 @@
 }
 select.shared-select {
   font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: inherit;
   padding-left: var(--field-padding-inline);
   padding-right: var(--select-padding-right);
   border: 1px solid var(--border-strong);
@@ -103,4 +107,13 @@ input.shared-switch:disabled {
   select.shared-select
 ) {
   border-radius: var(--radius-field);
+}
+
+.client-app select.shared-select {
+  font-size: 16px;
+}
+@media (max-width: 699px) {
+  select.shared-select {
+    font-size: 16px;
+  }
 }

@@ -20,11 +20,30 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   await expect(
     page.getByRole("combobox", { name: "Payment methods", exact: true }),
   ).toBeVisible();
+  const metrics = (el: Element) => {
+    const s = getComputedStyle(el);
+    return {
+      family: s.fontFamily,
+      size: s.fontSize,
+      weight: s.fontWeight,
+      height: s.height,
+      left: s.paddingLeft,
+      radius: s.borderRadius,
+      border: s.borderTopWidth,
+    };
+  };
+  const selectMetrics = await page
+    .getByRole("combobox", { name: "Payment methods", exact: true })
+    .evaluate(metrics);
   await shot(page, "billing-1440");
   await page.goto("/studio/workspace?view=email-sending");
   await expect(
     page.getByRole("heading", { name: "Email sending", exact: true }),
   ).toBeVisible();
+  const inputMetrics = await page
+    .getByRole("textbox", { name: "Verified sending domain", exact: true })
+    .evaluate(metrics);
+  expect(selectMetrics).toEqual(inputMetrics);
   await shot(page, "workspace-fields-1440");
   const f = await editorFixture(page);
   await page.goto(`/proposals/${f.draft.id}`);
@@ -154,30 +173,32 @@ async function audit(page: Page) {
       expect(parseFloat(c.before) - parseFloat(c.after)).toBe(6);
     }
   }
-  const square = await page.locator("button:visible,a.btn:visible").evaluateAll(
-    (els, exclusions) =>
-      els
-        .filter((el) => !el.matches(exclusions))
-        .map((el) => {
-          const box = el.getBoundingClientRect(),
-            style = getComputedStyle(el),
-            raw = style.borderTopLeftRadius;
-          const radius = raw.endsWith("%")
-            ? (parseFloat(raw) * Math.min(box.width, box.height)) / 100
-            : parseFloat(raw);
-          return {
-            name:
-              el.getAttribute("aria-label") ??
-              el.textContent?.trim().slice(0, 60),
-            class: el.className,
-            radius,
-            width: box.width,
-            height: box.height,
-          };
-        })
-        .filter((b) => b.radius < Math.min(b.width, b.height) / 2 - 1),
-    buttonShapeExclusions,
-  );
+  const square = await page
+    .locator("button:visible,a.btn:visible,a.email-cta:visible")
+    .evaluateAll(
+      (els, exclusions) =>
+        els
+          .filter((el) => !el.matches(exclusions))
+          .map((el) => {
+            const box = el.getBoundingClientRect(),
+              style = getComputedStyle(el),
+              raw = style.borderTopLeftRadius;
+            const radius = raw.endsWith("%")
+              ? (parseFloat(raw) * Math.min(box.width, box.height)) / 100
+              : parseFloat(raw);
+            return {
+              name:
+                el.getAttribute("aria-label") ??
+                el.textContent?.trim().slice(0, 60),
+              class: el.className,
+              radius,
+              width: box.width,
+              height: box.height,
+            };
+          })
+          .filter((b) => b.radius < Math.min(b.width, b.height) / 2 - 1),
+      buttonShapeExclusions,
+    );
   expect.soft(square, page.url()).toEqual([]);
 }
 for (const width of [1440, 375])
