@@ -1188,7 +1188,7 @@ export function useBlockFeedback() {
                 </ToastSurface>
               )}
             </>,
-            document.body,
+            document.querySelector(".staff-foundation") ?? document.body,
           ),
   };
 }

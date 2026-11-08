@@ -1056,6 +1056,7 @@ function TemplatesStudioContent({
         serialise(currentResource.value);
   const templateCache = (key: string) =>
     `studio-unsaved:${data.user.workspace_id ?? "workspace"}:${key}`;
+  const dirtyResources = useRef(new Set<string>());
   useEffect(() => {
     const online = () => setTemplateOffline(!navigator.onLine);
     online();
@@ -1079,14 +1080,19 @@ function TemplatesStudioContent({
     } catch {}
   }, [currentResource.key]);
   useEffect(() => {
-    if (templateDirty)
+    if (templateDirty) {
+      dirtyResources.current.add(currentResource.key);
       try {
         localStorage.setItem(
           templateCache(currentResource.key),
           serialise(currentResource.value),
         );
       } catch {}
-    else if (!templateRecovery && currentResource.value)
+    } else if (
+      !templateRecovery &&
+      currentResource.value &&
+      dirtyResources.current.delete(currentResource.key)
+    )
       try {
         localStorage.removeItem(templateCache(currentResource.key));
       } catch {}

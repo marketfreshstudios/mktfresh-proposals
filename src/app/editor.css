@@ -8948,7 +8948,7 @@ body:has(.studio-v3-editor) {
   color: var(--ink-muted);
   letter-spacing: 0.06em;
 }
-.saved-block-usage-row {
+.saved-block-usage .saved-block-usage-row {
   display: flex;
   flex-direction: column;
   min-height: 52px;
@@ -8987,6 +8987,9 @@ body:has(.studio-v3-editor) {
   display: none;
 }
 @media (max-width: 699px) {
+  [data-phone-select-mode="true"] .editor-phone-dock {
+    display: none;
+  }
   .block-selection-check {
     left: -38px;
   }
