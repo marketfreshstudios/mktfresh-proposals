@@ -248,10 +248,16 @@ async function handleRoute(req: Request, path: string[]) {
       const workspaceBrand = (
         await rt.repo.entities<WorkspaceSettings>("workspace_settings")
       )[0];
+      const engagementAllowed =
+        !engagementBot(req.headers) &&
+        !cookie(req, "proposal_session") &&
+        !cookie(req, "proposal_refresh") &&
+        !req.headers.has("authorization");
       const clientResult = (p: import("./model").Proposal) =>
         publicResult(p, {
           qboConnected: rt.worker.providers.qbo instanceof QboProvider,
           showPoweredBy: workspaceBrand?.show_powered_by !== false,
+          engagementAllowed,
         });
       if (method === "GET" && action === "brand") {
         const p = await rt.repo.byToken(token);
@@ -341,13 +347,7 @@ async function handleRoute(req: Request, path: string[]) {
       if (method === "POST" && action === "engagement") {
         check(sameOrigin(req), "Same-origin request required", 403);
         // Staff visits, previews and scanners never create a qualified view.
-        if (
-          engagementBot(req.headers) ||
-          cookie(req, "proposal_session") ||
-          cookie(req, "proposal_refresh") ||
-          req.headers.has("authorization")
-        )
-          return json({ ignored: true });
+        if (!engagementAllowed) return json({ ignored: true });
         const raw = await req.text();
         check(
           Buffer.byteLength(raw) <= 60000,

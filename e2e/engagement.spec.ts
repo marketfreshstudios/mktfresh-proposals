@@ -95,6 +95,9 @@ async function fixture(page: Page) {
   );
   return { ...f, p };
 }
+function qualifiedClientResult(p: Parameters<typeof publicResult>[0]) {
+  return publicResult(p, { engagementAllowed: true });
+}
 async function clientRoutes(
   context: BrowserContext,
   f: Awaited<ReturnType<typeof fixture>>,
@@ -110,8 +113,8 @@ async function clientRoutes(
       let result: unknown;
       if (parts[4] === "brand")
         result = {
-          ...publicResult(p).company,
-          contact: publicResult(p).contact,
+          ...qualifiedClientResult(p).company,
+          contact: qualifiedClientResult(p).contact,
         };
       else if (parts[4] === "engagement") {
         if (engagementBot(new Headers(req.headers())))
@@ -139,10 +142,10 @@ async function clientRoutes(
           result = { accepted: true };
         }
       } else if (parts[4] === "quote")
-        result = publicResult(
+        result = qualifiedClientResult(
           await f.service.toggle(p.token!, "", req.postDataJSON(), clientActor),
         );
-      else result = publicResult(await f.service.byToken(p.token!));
+      else result = qualifiedClientResult(await f.service.byToken(p.token!));
       await route.fulfill({ json: result });
     } catch (error) {
       console.error("Engagement fixture request", parts[4], String(error));
@@ -384,6 +387,13 @@ test("staff Preview as client and Send-me-a-test preview URLs never start tracki
   await expect(
     page.getByText(/This is a preview|Preview/).first(),
   ).toBeAttached();
+  expect(requests).toEqual([]);
+  await page.goto(`/p/${f.p.token}`); // Staff eligibility is false even without preview=1.
+  await expect(page.locator("#proposal-document")).toBeVisible();
+  await page
+    .locator("#proposal-document")
+    .click({ position: { x: 100, y: 100 } });
+  await page.mouse.wheel(0, 500);
   expect(requests).toEqual([]);
   expect(await f.repo.engagementSummary(f.p.id)).toBeNull();
   expect((await f.repo.get(f.p.id))!.first_viewed_at).toBeNull();

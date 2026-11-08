@@ -97,7 +97,10 @@ export function useClientEngagement(
   const control = useRef<{ action: (a: EngagementAction) => void } | null>(
     null,
   );
-  const permitted = !preview && !!p && ["sent", "viewed"].includes(p.status);
+  const permitted =
+    !preview &&
+    p?.engagement_allowed === true &&
+    ["sent", "viewed"].includes(p.status);
   useEffect(() => {
     if (!permitted || !reading) return;
     let ticket = "",
@@ -267,7 +270,7 @@ export function useClientEngagement(
         selected,
       }),
     download: async (file: string) => {
-      if (preview) return;
+      if (preview || !p?.engagement_allowed) return;
       // A sealed-copy download is useful after signing, without restarting
       // reading/view tracking or changing the signed proposal.
       try {

@@ -69,6 +69,9 @@ function req(
 }
 it("public GETs/scanners/prefetch/staff previews never count; only qualified client start sets the same viewed fact once", async () => {
   expect((await req(`public/${token}`)).status).toBe(200);
+  expect((await (await req(`public/${token}`)).json()).engagement_allowed).toBe(
+    true,
+  );
   expect((await state.rt.repo.get(id)).first_viewed_at).toBeNull();
   for (const headers of [
     { "user-agent": "Slackbot" },
@@ -81,6 +84,10 @@ it("public GETs/scanners/prefetch/staff previews never count; only qualified cli
         await req(`public/${token}/engagement/start`, input(), headers)
       ).json(),
     ).toEqual({ ignored: true });
+    expect(
+      (await (await req(`public/${token}`, undefined, headers)).json())
+        .engagement_allowed,
+    ).toBe(false);
   }
   expect(await state.rt.repo.engagementSummary(id)).toBeNull();
   const payload = input();

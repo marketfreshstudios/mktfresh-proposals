@@ -1378,12 +1378,17 @@ export class ProposalService {
 }
 export function publicResult(
   p: Proposal,
-  options?: { qboConnected?: boolean; showPoweredBy?: boolean },
+  options?: {
+    qboConnected?: boolean;
+    showPoweredBy?: boolean;
+    engagementAllowed?: boolean;
+  },
 ) {
   p = publishedPresentation(p);
   const v = p.versions.at(-1)!;
   return {
     id: p.id,
+    engagement_allowed: options?.engagementAllowed === true,
     show_powered_by:
       options?.showPoweredBy ?? p.workspace_settings?.show_powered_by !== false,
     quote: cloneQuote(v.quote).map(
