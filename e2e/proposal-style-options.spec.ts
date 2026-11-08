@@ -282,6 +282,23 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     if (await sheet.locator(".quote-table-row").count())
       await expect(sheet.locator("thead")).toHaveCount(1);
   }
+  for (const start of plan.starts.filter(
+    (s: any) => s.block === "pricing" && s.unit && s.unit !== "quote-totals",
+  )) {
+    const sheet = host.locator(".print-sheet").nth(start.page - 1);
+    const offset = await sheet.evaluate((el) => {
+      const scale = Number(
+        ((el.getRootNode() as ShadowRoot).host as HTMLElement).dataset.scale,
+      );
+      return (
+        (el.querySelector("thead")!.getBoundingClientRect().top -
+          el.querySelector(".client-sheet-content")!.getBoundingClientRect()
+            .top) /
+        scale
+      );
+    });
+    expect(Math.abs(offset)).toBeLessThanOrEqual(1);
+  }
   await page.setViewportSize({ width: 375, height: 900 });
   await expect(page.locator(".client-document-sheets")).toHaveCount(0);
   await expect(page.locator(".flow-document table.quote-table")).toHaveCount(1);

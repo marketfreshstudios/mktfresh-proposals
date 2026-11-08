@@ -77,6 +77,7 @@ export function quoteTableHtml(
 /** Deliberately opt-in: legacy Cards CSS/HTML remains byte-for-byte unchanged. */
 export const quoteTableCss = `
 .proposal-typography.proposal-typography .quote-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:100%;margin:8px 0;font:inherit;line-height:1.5;color:inherit}
+.proposal-typography.proposal-typography .print-pricing-table>.quote-table:first-child{margin-top:0}
 .quote-table .quote-col-item{width:24%}.quote-table .quote-col-description{width:29%}.quote-table .quote-col-qty{width:7%}.quote-table .quote-col-price{width:20%}.quote-table .quote-col-total{width:20%}
 .proposal-typography.proposal-typography .quote-table th,.proposal-typography.proposal-typography .quote-table td{padding:12px 6px;border:0;border-bottom:1px solid #ECE8E1;text-align:left;vertical-align:top;overflow-wrap:anywhere;font:inherit;line-height:1.5;background:transparent;text-transform:none;letter-spacing:normal}
 .proposal-typography.proposal-typography .quote-table thead th,.proposal-typography.proposal-typography .quote-table .quote-table-repeat th{font-size:12px;font-weight:600;background:#F6F4EF;color:#5F5B53;padding:8px 6px}

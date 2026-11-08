@@ -294,3 +294,5 @@ Workspace Brand, cover backgrounds and custom proposal text colors use one keybo
 Starter templates are a protected library. Customize a named copy, or use the Super-admin-only Reset/Undo and availability actions. See [Starter library and rollout](docs/starter-library.md). Apply the hosted CAS helper **before deploying**; no proposal/version backfill is involved.
 
 Connector Markdown supports HTTPS/mailto links and embedded PNG/JPEG logos in templates, saved groups and proposal drafts. The existing-scope `upload_image` helper validates Studio-compatible bytes without creating an asset store. See [connector image syntax and limits](docs/connector-images-rollout.md). No hosted SQL is required.
+
+Proposal style options share workspace defaults and template/proposal overrides: existing per-level heading colors, 14–18px body size, opt-in Letter margin presets, and Cards/Table quote layout. Existing 16px / 0.75in defaults and frozen styles remain unchanged. Tables use the existing PagePlan row boundaries and repeat headers in the editor, client sheets and PDF; see [proposal style options](docs/proposal-style-options.md). No hosted SQL is required.
