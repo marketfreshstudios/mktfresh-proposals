@@ -64,18 +64,26 @@ describe("Studio v3 existing data and routes", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("lists exactly nine staff emails in the owner-approved groups without duplicating job failures", () => {
+  it("lists exactly ten staff emails in the owner-approved groups without duplicating job failures", () => {
     const groups = groupedEmails(emailDefaults, true);
     expect(groups.map((g) => [g.name, g.templates.map((t) => t.key)])).toEqual([
       ["Client activity", ["staff_viewed", "staff_declined"]],
-      ["Signatures", ["staff_signed", "staff_completed", "staff_copy"]],
+      [
+        "Signatures",
+        [
+          "staff_signed",
+          "staff_countersign_reminder",
+          "staff_completed",
+          "staff_copy",
+        ],
+      ],
       ["Billing", ["staff_billing_complete"]],
       [
         "Team and jobs · editable",
         ["staff_billing_failed", "team_invite", "team_password_reset"],
       ],
     ]);
-    expect(groups.flatMap((g) => g.templates)).toHaveLength(9);
+    expect(groups.flatMap((g) => g.templates)).toHaveLength(10);
     expect(
       groupedEmails(emailDefaults, false).flatMap((g) => g.templates),
     ).toHaveLength(8);

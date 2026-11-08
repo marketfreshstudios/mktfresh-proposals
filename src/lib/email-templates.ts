@@ -131,6 +131,8 @@ export async function saveEmailTemplate(
   return template;
 }
 export function emailKey(p: Proposal, j: Job) {
+  if (["unopened", "viewed"].includes(String(j.payload.reminder_kind)))
+    return `reminder_${j.payload.reminder_kind}`;
   if (
     typeof j.payload.email_template_key === "string" &&
     j.payload.email_template_key.startsWith("reminder_")
@@ -246,7 +248,7 @@ export function renderTemplate(
   }
   const s = p.workspace_settings,
     link = t.staff
-      ? `${appOrigin()}/proposals/${p.id}${t.key === "staff_signed" ? "?action=countersign" : ""}`
+      ? `${appOrigin()}/proposals/${p.id}${["staff_signed", "staff_countersign_reminder"].includes(t.key) ? "?action=countersign" : ""}`
       : proposalLink(p);
   const layout = emailLayout({
     title:

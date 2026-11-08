@@ -25,7 +25,12 @@ export const emailStages = [
   { name: "Client activity", keys: ["staff_viewed", "staff_declined"] },
   {
     name: "Signatures",
-    keys: ["staff_signed", "staff_completed", "staff_copy"],
+    keys: [
+      "staff_signed",
+      "staff_countersign_reminder",
+      "staff_completed",
+      "staff_copy",
+    ],
   },
   { name: "Billing", keys: ["staff_billing_complete"] },
   {
@@ -55,6 +60,8 @@ export const emailWhen: Record<string, string> = {
   staff_viewed: "When the client opens a proposal",
   staff_declined: "When the client declines",
   staff_signed: "When the client signs",
+  staff_countersign_reminder:
+    "When a client-signed proposal is waiting for countersignature",
   staff_completed: "When both parties have signed",
   staff_copy: "When a signed copy is available",
   staff_billing_complete: "When billing setup completes",
