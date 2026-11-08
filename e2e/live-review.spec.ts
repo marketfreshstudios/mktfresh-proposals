@@ -341,6 +341,21 @@ test("Live review: customer, contacts, setup, shared controls, products and font
               width: a.width,
               inputHeight: a.height / scale,
               inputCssHeight: getComputedStyle(input).height,
+              switch: input.getAttribute("role") === "switch",
+              track: {
+                width: getComputedStyle(input, "::before").width,
+                height: getComputedStyle(input, "::before").height,
+              },
+              knob: {
+                width: getComputedStyle(input, "::after").width,
+                height: getComputedStyle(input, "::after").height,
+                insetX:
+                  parseFloat(getComputedStyle(input, "::after").left) -
+                  parseFloat(getComputedStyle(input, "::before").left),
+                insetY:
+                  parseFloat(getComputedStyle(input, "::after").top) -
+                  parseFloat(getComputedStyle(input, "::before").top),
+              },
             };
           }),
       );
@@ -349,8 +364,17 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       expect(r.gap).toBe("8px");
       expect(r.align).toBe("center");
       expect(r.left).toBe(true);
-      expect(r.inputCssHeight).toBe("18px");
-      expect(r.inputHeight).toBeCloseTo(18, 2);
+      expect(r.inputCssHeight).toBe(r.switch ? "44px" : "18px");
+      expect(r.inputHeight).toBeCloseTo(r.switch ? 44 : 18, 2);
+      if (r.switch) {
+        expect(r.track).toEqual({ width: "36px", height: "22px" });
+        expect(r.knob).toEqual({
+          width: "16px",
+          height: "16px",
+          insetX: 3,
+          insetY: 3,
+        });
+      }
       if (page.viewportSize()!.width < 700)
         expect(r.height).toBeGreaterThanOrEqual(44);
     }

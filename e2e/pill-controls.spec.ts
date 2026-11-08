@@ -268,6 +268,14 @@ for (const width of [1440, 375])
     await page.goto(`/p/${f.draft.id}?preview=1`);
     await expect(page.locator(".client-flow")).toBeVisible();
     await audit(page);
+    await page
+      .getByRole("button", { name: "Review and sign", exact: true })
+      .click();
+    for (const label of ["Draw", "Type"])
+      await expect(
+        page.getByRole("tab", { name: label, exact: true }),
+      ).toHaveCSS("border-radius", "8px");
+    await audit(page);
     await page.goto("/this-page-does-not-exist");
     await expect(
       page.getByRole("heading", { name: "Page not found", exact: true }),

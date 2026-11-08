@@ -1920,3 +1920,8 @@ details[open] > summary > .disclosure-marker > .disclosure-chevron {
   :is(button, a.btn) {
   min-height: 44px;
 }
+
+/* Tab-style buttons remain navigation, including Draw / Type on sign forms. */
+button.btn[role="tab"] {
+  border-radius: var(--radius-navigation-button);
+}
