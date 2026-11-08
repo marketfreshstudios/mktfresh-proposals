@@ -161,6 +161,8 @@ export function ClientPageSheets({
           return;
         }
         el.dataset.layoutReady = "true";
+        if (latest.current.p.resolved_styles?.layout?.quote_layout === "table")
+          syncControls();
         latest.current.onReady?.();
       });
     }
@@ -212,12 +214,15 @@ export function ClientPageSheets({
       cards.forEach((card) => {
         const item = items.get(card.dataset.clientItemId ?? "");
         if (!item?.optional || current.frozen || !current.onToggle) return;
-        const label = document.createElement("label");
+        const tableRow = card.tagName === "TR";
+        const label = tableRow ? card : document.createElement("label");
         for (const attr of [...card.attributes])
           label.setAttribute(attr.name, attr.value);
         label.classList.add("client-interactive-card");
-        label.append(...card.childNodes);
-        card.replaceWith(label);
+        if (!tableRow) {
+          label.append(...card.childNodes);
+          card.replaceWith(label);
+        }
         // Keep the native node through optimistic/server responses. Replacing it
         // during a click detaches the active control before its action completes.
         const input = retained.get(item.id) ?? document.createElement("input");
@@ -226,7 +231,8 @@ export function ClientPageSheets({
         input.dataset.clientItem = item.id;
         input.className = "client-sheet-input";
         input.checked = selected(item);
-        input.disabled = current.busy;
+        input.disabled =
+          current.busy || (tableRow && el.dataset.layoutReady !== "true");
         input.setAttribute(
           "aria-label",
           `${item.name} · ${selected(item) ? "included" : "not included"}`,
@@ -236,7 +242,12 @@ export function ClientPageSheets({
         visual.setAttribute("aria-hidden", "true");
         visual.removeAttribute("role");
         visual.removeAttribute("aria-label");
-        slot.prepend(input);
+        if (tableRow) {
+          const hit = document.createElement("label");
+          hit.className = "quote-table-hit";
+          hit.append(input);
+          slot.prepend(hit);
+        } else slot.prepend(input);
       });
     }
     function focusControl() {
@@ -255,7 +266,12 @@ export function ClientPageSheets({
       view
         ?.querySelectorAll<HTMLInputElement>("input[data-client-item]")
         .forEach((input) => {
-          input.disabled = latest.current.busy || latest.current.frozen;
+          input.disabled =
+            latest.current.busy ||
+            latest.current.frozen ||
+            (latest.current.p.resolved_styles?.layout?.quote_layout ===
+              "table" &&
+              el.dataset.layoutReady !== "true");
         });
       if (!latest.current.busy) focusControl();
     }
@@ -405,6 +421,8 @@ export function ClientPageSheets({
     function schedule() {
       if (!frame && !stopped) {
         el.dataset.layoutReady = "false";
+        if (latest.current.p.resolved_styles?.layout?.quote_layout === "table")
+          syncControls();
         cancelAnimationFrame(readyFrame);
         frame = requestAnimationFrame(() => {
           frame = 0;
@@ -461,6 +479,7 @@ const sheetCss = `
 .client-sheet-gap{height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f2efe9);color:var(--ink-muted,#5f5b53);font:600 11px/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
 .proposal-typography.proposal-typography .flow-quote-line>.quote-control-slot{position:relative}
 .proposal-typography.proposal-typography .flow-quote-line .client-sheet-input{position:absolute;left:10px;top:10px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));margin:0;padding:0;border:0;opacity:0;z-index:1;cursor:pointer}
+.proposal-typography.proposal-typography .quote-table .client-sheet-input{position:absolute;left:22px;top:22px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));border:0;opacity:0;z-index:1;cursor:pointer}.quote-table .quote-control-slot:focus-within>.print-selection{outline:3px solid #365c4a;outline-offset:3px}
 .client-interactive-card{cursor:pointer}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid #365c4a;outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}

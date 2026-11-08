@@ -82,6 +82,32 @@ export function SectionsNav({
   const pages = computedPages(content, pagination),
     feedback = useBlockFeedback();
   const selected = useBlockSelection().selected;
+  const selectedIndex = content.findIndex(
+    (b) =>
+      selected === `block-${b.id}` ||
+      selected === `template-${b.id}` ||
+      b.clauses?.some(
+        (c) =>
+          selected === `clause-${c.id}` ||
+          selected === `template-clause-${c.id}`,
+      ),
+  );
+  const selectedRange = documentSectionRanges(content).find(
+    (s) => s.start <= selectedIndex && selectedIndex < s.end,
+  );
+  const activeSection =
+    selectedIndex < 0
+      ? currentSectionId
+      : (content
+          .slice(selectedRange?.start ?? selectedIndex, selectedIndex + 1)
+          .filter((b) => b.type === "heading")
+          .at(-1)?.id ?? selectedRange?.id);
+  const activePage =
+    selectedIndex < 0
+      ? undefined
+      : pagination?.assignments.find(
+          (a) => a.block === content[selectedIndex].id,
+        )?.page;
   const bandStatus = headerFooter
     ? resolvedBandPages(
         headerFooter,
@@ -267,7 +293,10 @@ export function SectionsNav({
                           ? display(blockLabel(s.blocks[0]))
                           : display(s.title)
                       }
-                      current={currentSectionId === s.id}
+                      current={
+                        activeSection === s.id &&
+                        (!activePage || activePage === p.number)
+                      }
                       pending={s.pending}
                       title={display(s.title)}
                       onClick={() => onFocus(s.id)}
@@ -279,7 +308,10 @@ export function SectionsNav({
                           key={b.id}
                           subheading
                           label={display(b.text || "Untitled subheading")}
-                          current={currentSectionId === b.id}
+                          current={
+                            activeSection === b.id &&
+                            (!activePage || activePage === p.number)
+                          }
                           onClick={() => onFocus(b.id!)}
                         />
                       ))}

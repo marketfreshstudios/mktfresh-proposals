@@ -135,6 +135,11 @@ for (const template of [false, true]) {
               ".editor-document-region,.studio-template-main",
             )?.scrollBy(0, -52);
           });
+        const current = page
+          .getByRole("navigation", { name: "Sections", exact: true })
+          .locator('[aria-current="location"]');
+        await expect(current).toHaveCount(1);
+        await expect(current).toHaveText("Overview");
         await shot(page, "empty-page-result-1440");
       }
       await undo.click();

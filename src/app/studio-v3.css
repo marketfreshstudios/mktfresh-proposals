@@ -2095,3 +2095,30 @@
 .workspace-reminder-row .field {
   margin: 0;
 }
+
+.workspace-style-option {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 240px);
+  align-items: center;
+}
+.workspace-style-option h3 {
+  margin: 0;
+}
+.workspace-style-option p {
+  margin: 4px 0 0;
+}
+.workspace-style-option .field {
+  margin: 0;
+}
+.proposal-layout-options {
+  display: grid;
+  gap: 12px;
+}
+.workspace-style-option input,
+.workspace-style-option select {
+  min-height: 44px;
+}
+@media (max-width: 699px) {
+  .workspace-style-option {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

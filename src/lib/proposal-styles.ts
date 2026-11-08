@@ -1,3 +1,4 @@
+import { quoteTableCss } from "./quote-table";
 import { listMarkerCss } from "./list-markers";
 import { signatureCss } from "./signature-presentation";
 import { documentQuoteCss } from "./document-quote";
@@ -47,6 +48,7 @@ export const StyleOverridesSchema = z
     heading3: StyleEntrySchema.partial().optional(),
     body: StyleEntrySchema.partial().optional(),
     density: z.enum(["standard", "comfortable"]).optional(),
+    quote_layout: z.enum(["cards", "table"]).optional(),
     margins: z
       .object({
         top: z.number().min(0.25).max(2).optional(),
@@ -61,6 +63,7 @@ export const StyleOverridesSchema = z
 export type StyleOverrides = z.infer<typeof StyleOverridesSchema>;
 export type DocumentLayout = {
   density: "standard" | "comfortable";
+  quote_layout?: "cards" | "table";
   margins: { top: number; right: number; bottom: number; left: number };
 };
 export type ResolvedStyles = Record<StyleLevel, TextStyle> & {
@@ -178,7 +181,17 @@ export function resolveStyles(
       ...proposal?.margins,
     },
   };
+  const quoteLayout =
+    proposal?.quote_layout ??
+    template?.quote_layout ??
+    settings?.proposal_styles?.quote_layout;
+  // Absence is preserved: old style maps/hashes and generated CSS remain identical.
+  if (quoteLayout) text.layout.quote_layout = quoteLayout;
   return text;
+}
+export const marginPresets = { narrow: 0.6, normal: 0.9, wide: 1.1 } as const;
+export function quoteLayout(styles?: ResolvedStyles) {
+  return styles?.layout?.quote_layout ?? "cards";
 }
 export function styleColour(value: string, accent = "#365c4a") {
   return value === "ink" ? "#25241f" : value === "accent" ? accent : value;
@@ -286,6 +299,10 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
         ? `${scope} .flow-quote-line{padding-block:20px}`
         : "") +
     (styles.layout ? documentFlowCss(styles) + signatureCss : "") +
+    (quoteLayout(styles) === "table"
+      ? quoteTableCss +
+        `.proposal-typography.proposal-typography .quote-table{font:${styles.body.weight} ${styles.body.size}px/${textLineHeight(styles, "body")} ${fontFamily(styles.body.font)}}`
+      : "") +
     `${scope}{--list-line-ratio:${textLineHeight(styles, "body")}}` +
     listMarkerCss(
       scope,

@@ -11,7 +11,11 @@ import {
   captureClientPosition,
   restoreClientPosition,
 } from "./client-page-sheets";
-import { documentStyleCss, styleFontFaces } from "../lib/proposal-styles";
+import {
+  quoteLayout,
+  documentStyleCss,
+  styleFontFaces,
+} from "../lib/proposal-styles";
 import { documentSpacing } from "../lib/document-spacing";
 import type { CSSProperties } from "react";
 import type { Block } from "../lib/model";
@@ -40,6 +44,7 @@ import { PoweredByYeswell } from "./powered-by-yeswell";
 import { ClientWorkspaceIcon } from "./client-workspace-icon";
 import type { BillingLine } from "../lib/model";
 import type { publicResult } from "../lib/service";
+import { QuoteTable } from "./quote-table";
 import { QuoteItemBody } from "./quote-item-body";
 import { DocumentCover } from "./document-cover";
 import { ClientSignatureBlock } from "./client-signature-block";
@@ -1640,6 +1645,16 @@ function ClientItems({
       </div>
     );
   }
+  if (quoteLayout(p.resolved_styles) === "table")
+    return (
+      <QuoteTable
+        quote={items}
+        currency={p.currency}
+        cents={p.money_cents}
+        disabled={busy || frozen}
+        onToggle={onToggle}
+      />
+    );
   return (
     <>
       {units.map((id) => {

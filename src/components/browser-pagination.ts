@@ -1,3 +1,7 @@
+import {
+  placeQuoteTableBreak,
+  copyQuoteTableBreaks,
+} from "../lib/quote-table-pagination";
 import { sizeListMarkers } from "../lib/list-markers";
 import { fitStoredImages } from "../lib/image-size";
 import {
@@ -210,6 +214,7 @@ export function paginateBrowser(
         return;
       }
     }
+    if (unit && placeQuoteTableBreak(target, top + desired)) return;
     const frame =
       unit || part || target.classList.contains("signature-pair")
         ? target
@@ -405,7 +410,29 @@ export function paginateBrowser(
           "[data-print-unit]",
         )) {
           if (unit.parentElement?.closest("[data-print-unit]")) continue;
-          if (unit.getBoundingClientRect().bottom - top > end() + 0.5)
+          const table = unit.closest("table.quote-table");
+          const group = unit.closest<HTMLElement>(
+            "tbody[data-quote-choice-group]",
+          );
+          const headHeight =
+            table?.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+          const firstInGroup =
+            group?.querySelector("[data-print-unit]") === unit;
+          const fitsGroup =
+            group && group.getBoundingClientRect().height + headHeight <= full;
+          if (
+            table &&
+            firstInGroup &&
+            fitsGroup &&
+            group.getBoundingClientRect().bottom - top > end() + 0.5
+          ) {
+            newPage(unit, b, undefined, unit.dataset.printUnit);
+          } else if (
+            unit.getBoundingClientRect().bottom - top > end() + 0.5 &&
+            (!table ||
+              local(unit) >
+                (page - 1) * stride + geometry(page).content.y + headHeight + 2)
+          )
             newPage(unit, b, undefined, unit.dataset.printUnit);
         }
       }
@@ -418,6 +445,7 @@ export function paginateBrowser(
       newPage(frame, marker, undefined, undefined, undefined, true, marker.id);
     }
     if (decorate) {
+      copyQuoteTableBreaks(clone, root, live);
       root
         .querySelectorAll<HTMLElement>("[data-layout-space]")
         .forEach((el) => {

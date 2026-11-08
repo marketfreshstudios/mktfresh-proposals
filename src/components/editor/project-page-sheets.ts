@@ -1,3 +1,7 @@
+import {
+  placeQuoteTableBreak,
+  copyQuoteTableBreaks,
+} from "../../lib/quote-table-pagination";
 import { pageGeometry, type HeaderFooterSettings } from "../../lib/page-bands";
 import type { ResolvedStyles } from "../../lib/proposal-styles";
 import type { Block } from "../../lib/model";
@@ -262,17 +266,18 @@ export function projectPageSheets(
                   : topPadding)
             : y(moved) - margin,
         );
-        placeAt(
-          moved,
+        const desired =
           pageTop +
-            (hf
-              ? pageGeometry(styles, hf, boxes.length + 1).content.y
-              : topPadding),
-        );
+          (hf
+            ? pageGeometry(styles, hf, boxes.length + 1).content.y
+            : topPadding);
+        if (!start.unit || !placeQuoteTableBreak(moved, origin + desired))
+          placeAt(moved, desired);
         previousFrame = moved;
       }
     }
     finish(endOfContent());
+    copyQuoteTableBreaks(clone, root, live);
     // There is no trailing gap. These decorations are excluded from source measurement.
     root.querySelectorAll<HTMLElement>("[data-layout-space]").forEach((el) => {
       el.style.removeProperty("margin-top");
