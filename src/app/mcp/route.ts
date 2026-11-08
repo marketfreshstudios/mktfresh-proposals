@@ -56,7 +56,7 @@ async function handler(req: Request) {
       {
         capabilities: { tools: {} },
         instructions:
-          "Starters are read-only: duplicate_template first. Created/duplicated templates are hidden until a person reviews and enables them in Studio. Use supplied prices or exact list_catalog values; never invent or calculate prices. Read get_template/get_saved_block before updating and pass its revision. Keep preservation markers exact and unique; moving a marker moves its block. Missing ordinary markers remove blocks, but pricing, signatures, contracts and page breaks require explicit remove_blocks ids as well as omission. Never put block JSON in Markdown or invent markers. Markers apply to update_template and group update_saved_block, never proposal Markdown. Saved groups contain ordinary blocks only, never pricing, signatures or contracts. Saved-block writes update unedited linked templates and new proposals only; the connector never updates existing draft copies, sent or signed proposals. A 409 means reload and merge, never blindly retry. Sending, signing, availability, deletion, Reset and billing are human-only.",
+          "Starters are read-only: duplicate_template first. Created/duplicated templates are hidden until a person reviews and enables them in Studio. Use supplied prices or exact list_catalog values; never invent or calculate prices. Read get_template/get_saved_block before updating and pass its revision. Keep preservation markers exact and unique; moving a marker moves its block. Missing ordinary markers remove blocks, but pricing, signatures, contracts and page breaks require explicit remove_blocks ids as well as omission. Never put block JSON in Markdown or invent markers. Markers apply to update_template and group update_saved_block, never proposal Markdown. Saved groups contain ordinary blocks only, never pricing, signatures or contracts. Saved-block writes update unedited linked templates and new proposals only; the connector never updates existing draft copies, sent or signed proposals. A 409 means reload and merge, never blindly retry. Use HTTPS/mailto links only. For case-study logos call upload_image with locally resized PNG/JPEG bytes, then use ![alt](IMAGE_REF){width=120} on its own line. References are embedded data, not remote URLs or asset IDs; original bytes/EXIF match Studio. Sending, signing, availability, deletion, Reset and billing are human-only.",
       },
     );
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -73,7 +73,10 @@ async function handler(req: Request) {
           appRuntime(auth.actor.workspace_id).service,
         );
         const text = JSON.stringify(result);
-        check(text.length < 140000, "Result is too large; narrow your search");
+        check(
+          text.length < 2000000,
+          "Result is too large; use smaller embedded images or narrow your search",
+        );
         return { content: [{ type: "text", text }] };
       } catch (e) {
         return {

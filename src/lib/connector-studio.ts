@@ -20,7 +20,14 @@ import {
   type SavedBlock,
 } from "./model";
 import type { Repository } from "./repository";
-import { markdownBlocks } from "./markdown";
+import {
+  markdownBlocks,
+  MARKDOWN_INPUT_LIMIT,
+  linkMarkdown,
+  type MarkdownImages,
+} from "./markdown";
+import { markdownImages, uploadConnectorImage } from "./connector-images";
+import { pageMetrics, resolveStyles } from "./proposal-styles";
 import {
   coverElements,
   coverPlainText,
@@ -56,7 +63,7 @@ const id = z.string().uuid(),
       "Use the revision returned by get_template or get_saved_block",
     );
 const name = z.string().trim().min(1).max(200),
-  text = z.string().max(100000);
+  text = z.string().max(MARKDOWN_INPUT_LIMIT);
 const cover = z.record(z.string().min(1).max(100), z.string().max(4000));
 const items = z.array(QuoteItemSchema).max(100);
 const blockType = z.enum(["text", "list", "contract_clause", "group"]);
@@ -65,6 +72,13 @@ const clauseContent = z
   .strict();
 const blockContent = z.union([text, clauseContent]);
 export const connectorStudioSchemas = {
+  upload_image: z
+    .object({
+      filename: z.string().min(1).max(200),
+      content_base64: z.string().min(1).max(933336),
+      alt: z.string().max(1000),
+    })
+    .strict(),
   create_template: z
     .object({
       name,
@@ -104,6 +118,7 @@ export const connectorStudioSchemas = {
   get_saved_block: z.object({ saved_block_id: id }).strict(),
 };
 export const CONNECTOR_STUDIO_WRITES = [
+  "upload_image",
   "create_template",
   "update_template",
   "duplicate_template",
@@ -112,7 +127,11 @@ export const CONNECTOR_STUDIO_WRITES = [
 ];
 const markerRules =
   "Each <!-- yeswell:block:ID --> is an opaque id only, never block JSON. A marker alone preserves the entire block. Keep it exactly once on its own line, with any edited Markdown immediately after it; move the marker with its text to move that block. Object markers move their preserved blocks without echoing their data. Unknown, duplicated or edited markers are rejected. A missing ordinary text/list/heading/image/divider marker removes that block. A missing pricing_table, signature_block, contract or page_break marker is REFUSED unless its id is explicitly listed in update_template remove_blocks: [ids]; also omit the marker when removing. Newly inserted ordinary Markdown needs no marker. ";
+const mediaRules =
+  " Markdown links use [text](https://...) or mailto:, and bare HTTPS autolinks. HTTP, relative, javascript: and data: links are refused. Images occupy their own paragraph: ![alt](IMAGE_REF){width=120}, using the embedded data:image/png|jpeg;base64,... image_ref returned by upload_image. No image: opaque IDs or remote URLs. Width is CSS px at canonical page width, converted to normal percentage sizing with locked proportions. get returns the same embedded syntax; an edited image marker replaces that image. Keep image payloads small: 100,000 prose characters / 1,100,000 total Markdown characters. No HTML. ";
 export const connectorStudioDescriptions: Record<string, string> = {
+  upload_image:
+    "Validate a locally resized PNG/JPEG under 700 KB and 16 megapixels, exactly as Studio's embedded image validator. No WebP/SVG, remote URLs, asset store or new scope. Returns image_ref as a self-contained data:image/png|jpeg;base64,... value; use it directly in Markdown: ![descriptive alt](IMAGE_REF){width=120}. Images must occupy their own paragraph. Width is CSS pixels at canonical page width, converted to the editor's percentage sizing and clamped with locked proportions/minimum 16px height. Requires templates:edit. Original embedded bytes (including EXIF, as in Studio) are retained; resize/clean the logo locally first. Markdown allows 100,000 prose characters and 1,100,000 total including image data.",
   create_template:
     "Create a hidden template for human review. content is proposal Markdown: # section, ##/### subheads, paragraphs, bold/italic and flat lists. cover maps line IDs (eyebrow, title, prepared_for, byline, date, validity) to text with valid fields. default_quote_items uses set_quote_lines items/sublines; supply exact provided or list_catalog amounts, never invent or calculate prices. Requires templates:edit; reconnect to grant it.",
   get_template:
@@ -126,7 +145,7 @@ export const connectorStudioDescriptions: Record<string, string> = {
   duplicate_template:
     "Copy any template, including a read-only Yeswell starter, into a hidden editable template. Use this before customizing a starter. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
   create_saved_block:
-    "Create a reusable text, list, group or plain contract_clause block. Group content is an ordered mini document in proposal Markdown (#/##/### headings, paragraphs and lists), never pricing tables, signatures or contracts. Text/list content uses proposal Markdown (no HTML or images); contract_clause uses plain text or {clauses:[{id,heading,body,show_when}]}. Only templates and new proposals use later saved-block updates; existing drafts are never updated by the connector. Requires templates:edit.",
+    "Create a reusable text, list, group or plain contract_clause block. Group content is an ordered mini document in proposal Markdown (#/##/### headings, paragraphs, lists and embedded PNG/JPEG images), never pricing tables, signatures or contracts. Text/list content uses proposal Markdown (no HTML or images); contract_clause uses plain text or {clauses:[{id,heading,body,show_when}]}. Only templates and new proposals use later saved-block updates; existing drafts are never updated by the connector. Requires templates:edit.",
   update_saved_block:
     "Update a saved block with the latest get_saved_block revision. Provided content replaces the whole content; name merges. Groups keep their type and use get_saved_block's opaque preservation markers: unknown, edited or duplicated markers are rejected; missing page-break markers require explicit remove_blocks:[ids]. Ordinary missing markers remove their blocks; moving a marker moves its block. Pricing/signature/contract blocks are prohibited in groups. Text ↔ List conversions remain supported; contracts keep their type. Previous state is retained for staff Restore. On 409 read again, merge and retry. Updates unedited linked templates and new proposals only; NEVER updates existing drafts, sent or signed proposals. Requires templates:edit.",
   list_saved_blocks:
@@ -134,7 +153,23 @@ export const connectorStudioDescriptions: Record<string, string> = {
   get_saved_block:
     "Read a saved block's name, type, version, revision, Used in counts and content in the shape update_saved_block accepts. Groups return ordered proposal Markdown with opaque preservation markers; keep markers exact, move them with their blocks, and list omitted page-break ids in remove_blocks when updating. Contract clauses remain plain text. Standalone images and other fixed types are read-only to the connector.",
 };
-export function connectorTemplateView(template: Template, catalog: Item[]) {
+for (const name of [
+  "create_template",
+  "get_template",
+  "update_template",
+  "create_saved_block",
+  "update_saved_block",
+  "get_saved_block",
+])
+  connectorStudioDescriptions[name] += mediaRules;
+export function connectorTemplateView(
+  template: Template,
+  catalog: Item[],
+  settings?: WorkspaceSettings,
+) {
+  const width = pageMetrics(
+    resolveStyles(settings, template.style_overrides),
+  ).contentWidth;
   const value = template.cover;
   const cover = value
     ? Object.fromEntries(
@@ -149,7 +184,7 @@ export function connectorTemplateView(template: Template, catalog: Item[]) {
     revision: studioRevision(template),
     name: template.name,
     description: template.description,
-    content: templateMarkdown(template),
+    content: templateMarkdown(template, width),
     cover,
     default_quote_items: templateAuthoringItems(template, catalog),
     active: template.active,
@@ -218,14 +253,22 @@ export function validateConnectorFields(value: unknown, allowed: string[]) {
   };
   inspect(value);
 }
-export function connectorMarkdown(markdown: string, allowed: string[]) {
+export function connectorMarkdown(
+  markdown: string,
+  allowed: string[],
+  images?: MarkdownImages,
+  width = 672,
+) {
   validateConnectorFields(markdown, allowed);
   return reviewBlocks(
-    markdownBlocks(markdown, allowed).map((b) => ({
+    markdownBlocks(markdown, allowed, images, width).map((b) => ({
       ...b,
       id: randomUUID(),
       ...(b.type === "heading"
-        ? { rich_heading: true, content: fieldNodes(coverText(b.text ?? "")) }
+        ? {
+            rich_heading: true,
+            content: fieldNodes(b.content ?? coverText(b.text ?? "")),
+          }
         : b.content
           ? { content: fieldNodes(b.content) }
           : {}),
@@ -294,7 +337,7 @@ export function connectorCover(
   if (changed) value.elements = elements;
   return value;
 }
-export function savedBlockView(row: SavedBlock) {
+export function savedBlockView(row: SavedBlock, width = 672) {
   if (row.type === "group")
     return {
       saved_block_id: row.id,
@@ -304,10 +347,13 @@ export function savedBlockView(row: SavedBlock) {
       type: "group",
       editable: true,
       block_count: savedBlocks(row).length,
-      content: templateMarkdown({
-        id: row.id,
-        content: savedBlocks(row),
-      } as Template),
+      content: templateMarkdown(
+        {
+          id: row.id,
+          content: savedBlocks(row),
+        } as Template,
+        width,
+      ),
       blocks: savedBlocks(row).map((b) => ({ id: b.id, type: b.type })),
     };
   const label = savedBlockType(row.block),
@@ -369,6 +415,8 @@ export function richMarkdown(node: RichText | undefined): string {
   for (const m of node.marks ?? [])
     if (m.type === "bold") value = `**${value}**`;
     else if (m.type === "italic") value = `_${value}_`;
+    else if (m.type === "link")
+      value = linkMarkdown(value, String(m.attrs?.href ?? ""));
   return value;
 }
 export function connectorSavedContent(
@@ -376,6 +424,8 @@ export function connectorSavedContent(
   content: string | z.infer<typeof clauseContent>,
   allowed: string[],
   before?: Block,
+  images?: MarkdownImages,
+  width = 672,
 ): Block {
   if (type === "contract_clause") {
     check(
@@ -409,7 +459,11 @@ export function connectorSavedContent(
     "This block type can't be changed",
   );
   check(typeof content === "string", "Text and List content must be Markdown");
-  const blocks = connectorMarkdown(content, allowed);
+  const blocks = connectorMarkdown(content, allowed, images, width);
+  check(
+    blocks.every((b) => b.type !== "image"),
+    "Use type group for a saved block containing an image and text",
+  );
   const doc: RichText = {
     type: "doc",
     content: blocks.flatMap(
@@ -466,6 +520,11 @@ export async function connectorStudioTool(
   name: string,
   input: any,
 ) {
+  if (name === "upload_image") return uploadConnectorImage(input);
+  const settings = (
+      await repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0],
+    width = pageMetrics(resolveStyles(settings)).contentWidth;
   const catalog = await repo.entities<Item>("pricing_items");
   if (name === "list_saved_blocks") {
     const rows = await repo.entities<SavedBlock>("content_library"),
@@ -481,7 +540,7 @@ export async function connectorStudioTool(
     );
     check(row, "Saved block not found", 404);
     return {
-      ...savedBlockView(row),
+      ...savedBlockView(row, width),
       used_in: await savedBlockUsage(repo, row),
     };
   }
@@ -496,6 +555,21 @@ export async function connectorStudioTool(
       check(before, "Saved block not found", 404);
       assertStudioRevision("content_library", before, input.revision);
     }
+    const images =
+      typeof input.content === "string" &&
+      input.type !== "contract_clause" &&
+      before?.block.type !== "contract"
+        ? await markdownImages(
+            input.content,
+            new Set(
+              before
+                ? savedBlocks(before).flatMap((b) =>
+                    b.type === "image" && b.src ? [b.src] : [],
+                  )
+                : [],
+            ),
+          )
+        : new Map();
     if (input.type === "group" || before?.type === "group") {
       check(
         !input.remove_blocks?.length || input.content !== undefined,
@@ -522,9 +596,10 @@ export async function connectorStudioTool(
                 input.content,
                 { id: before.id, content: savedBlocks(before) } as Template,
                 input.remove_blocks ?? [],
-                (md) => connectorMarkdown(md, allowed),
+                (md) => connectorMarkdown(md, allowed, images, width),
+                width,
               )
-            : connectorMarkdown(input.content, allowed);
+            : connectorMarkdown(input.content, allowed, images, width);
       check(content.length, "A group needs at least one block");
       check(
         content.every(
@@ -552,7 +627,7 @@ export async function connectorStudioTool(
           revision: input.revision,
         },
       );
-      return savedBlockView(value);
+      return savedBlockView(value, width);
     }
     const type =
       input.type ??
@@ -581,6 +656,8 @@ export async function connectorStudioTool(
               input.content,
               await connectorFields(repo),
               before?.block,
+              images,
+              width,
             )
           : input.type !== undefined &&
               input.type !== savedBlockView(before!).type
@@ -612,7 +689,7 @@ export async function connectorStudioTool(
         revision: input.revision,
       },
     );
-    return savedBlockView(value);
+    return savedBlockView(value, width);
   }
   if (name === "duplicate_template") {
     const before = (await repo.entities<Template>("templates")).find(
@@ -656,7 +733,14 @@ export async function connectorStudioTool(
       active: false,
       connector_created: true,
       signature_heading_defaulted: true,
-      content: contentAfterCover(connectorMarkdown(input.content, allowed)),
+      content: contentAfterCover(
+        connectorMarkdown(
+          input.content,
+          allowed,
+          await markdownImages(input.content),
+          width,
+        ),
+      ),
       cover: connectorCover(undefined, input.cover, allowed),
       default_quote: [],
       default_items: quote,
@@ -684,6 +768,20 @@ export async function connectorStudioTool(
       403,
     );
     assertStudioRevision("templates", before, input.revision);
+    const templateWidth = pageMetrics(
+      resolveStyles(settings, before.style_overrides),
+    ).contentWidth;
+    const images =
+      input.content === undefined
+        ? new Map()
+        : await markdownImages(
+            input.content,
+            new Set(
+              before.content.flatMap((b) =>
+                b.type === "image" && b.src ? [b.src] : [],
+              ),
+            ),
+          );
     const quote =
       input.default_quote_items === undefined
         ? templateAuthoringItems(before, catalog)
@@ -719,7 +817,8 @@ export async function connectorStudioTool(
               input.content,
               before,
               input.remove_blocks ?? [],
-              (md) => connectorMarkdown(md, allowed),
+              (md) => connectorMarkdown(md, allowed, images, templateWidth),
+              templateWidth,
             ),
           }),
     };
