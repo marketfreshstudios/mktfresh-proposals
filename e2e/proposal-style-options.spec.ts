@@ -469,3 +469,25 @@ test("workspace, template and proposal Styles save the same opt-in controls with
   await pricing.scrollIntoViewIfNeeded();
   await capture("cards-wide-18-editor-1440");
 });
+
+test("an empty Table quote retains its header in the editor and PDF preview", async ({
+  page,
+}) => {
+  const f = await editorFixture(page, false, { content, quote: [] });
+  await f.editRemote({ style_overrides: { quote_layout: "table" } });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  await page
+    .locator('.editor-page-sheets[data-layout-settled="true"]')
+    .waitFor();
+  await expect(
+    page.locator(".editor-paper table.quote-table thead"),
+  ).toHaveCount(1);
+  await page.getByRole("button", { name: "Preview PDF", exact: true }).click();
+  await expect.poll(() => f.renders.length).toBe(1);
+  expect(
+    f.renders[0].layout.sheets!.filter((s) =>
+      s.html.includes('class="quote-table"'),
+    ),
+  ).toHaveLength(1);
+});
