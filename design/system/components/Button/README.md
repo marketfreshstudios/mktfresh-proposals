@@ -8,7 +8,7 @@ The single action control: four variants, four sizes, and a busy state that name
 
 **Sizes carry meaning.** `md` is the internal default. Every control on a client page is at least `lg`. `xl` is reserved for `Accept & sign` and the billing hand-off — the two moments the whole product turns on. `sm` is for dense internal table rows and never appears on a client page.
 
-**A disabled button must say why.** Pass `note`. "Send proposal" greyed out with no explanation is the most common dead end in an internal tool; "Two variables are still unresolved" is a fix.
+**A disabled button must say why.** Pass `note`. "Send proposal" grayed out with no explanation is the most common dead end in an internal tool; "Two variables are still unresolved" is a fix.
 
 **`loading` shows the spinner and blocks re-entry.** Give it a `loadingLabel` when the wait is long enough to worry someone — sealing a PDF takes several seconds, so say "Sealing your signed copy…".
 

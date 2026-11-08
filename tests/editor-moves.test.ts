@@ -271,7 +271,7 @@ it("aborts loss, duplication, ID replacement and mutation before any commit, wit
     expect(applyDocumentMove(content, operation, commit, error)).toBe(false);
     expect(commit).not.toHaveBeenCalled();
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining("Move cancelled"),
+      expect.stringContaining("Move canceled"),
     );
     expect(content).toEqual(before);
   }
@@ -297,5 +297,5 @@ it("pointer moves keep whole sections and accept an empty page's source boundary
   const next = moveDocumentBlocksAt(blocks, "h", 2);
   expect(next.map((b) => b.id)).toEqual(["a", "p", "h", "b", "empty"]);
   expect(assertBlockMove(blocks, next)).toBe(next);
-  expect(() => moveDocumentBlocksAt(blocks, "h", -1)).toThrow("Move cancelled");
+  expect(() => moveDocumentBlocksAt(blocks, "h", -1)).toThrow("Move canceled");
 });

@@ -2,13 +2,13 @@
 
 **Font Awesome Free 6.7.2, Solid style.** Thirty-three icons pulled per-glyph from `@fortawesome/fontawesome-free` — not the whole library, and not the icon webfont. Solid is the only style used; do not mix in Regular or Brands.
 
-> Icons by [Font Awesome](https://fontawesome.com), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The attribution comment inside each SVG is part of the licence — keep it when you copy a file.
+> Icons by [Font Awesome](https://fontawesome.com), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The attribution comment inside each SVG is part of the license — keep it when you copy a file.
 
 ## Ink
 
-Each file here is a **single-ink** SVG with `fill="#12151a"` baked in, because an `<img>` cannot inherit text colour. That value is `paper-ink` / `ink` in the light theme.
+Each file here is a **single-ink** SVG with `fill="#12151a"` baked in, because an `<img>` cannot inherit text color. That value is `paper-ink` / `ink` in the light theme.
 
-**Prefer the `Icon` component**, which inlines the path with `fill="currentColor"` so a glyph takes the colour of the text it sits in — a `danger` pill's icon must be `danger`, and an `on-accent` button's icon must be `on-accent`. Use the files here directly only where inlining is impossible (email templates, the PDF renderer). In those places, ship a recoloured copy rather than tinting with CSS filters.
+**Prefer the `Icon` component**, which inlines the path with `fill="currentColor"` so a glyph takes the color of the text it sits in — a `danger` pill's icon must be `danger`, and an `on-accent` button's icon must be `on-accent`. Use the files here directly only where inlining is impossible (email templates, the PDF renderer). In those places, ship a recoloured copy rather than tinting with CSS filters.
 
 ## Semantic names
 
@@ -52,7 +52,7 @@ Files are named for their **job in this product**, not for the Font Awesome glyp
 
 ## Rules
 
-- **An icon never carries meaning alone.** Every status pill, job state and banner shows its icon *and* its word. The distinctions that matter most here — signed versus completed, failed versus needs-review, expired versus declined — are worth more than a shape and a colour can carry.
+- **An icon never carries meaning alone.** Every status pill, job state and banner shows its icon *and* its word. The distinctions that matter most here — signed versus completed, failed versus needs-review, expired versus declined — are worth more than a shape and a color can carry.
 - Sizes: `icon-sm` in pills, buttons and table cells; `icon-md` in banners and nav; `icon-lg` in empty states. Font Awesome viewBoxes vary in width, so size by height and let width follow, or the glyphs will not optically match.
 - `running` is the only icon that animates, and only while a job is actually running. Respect `prefers-reduced-motion`.
 - Decorative icons get `aria-hidden="true"` and the adjacent text carries the meaning. A rare icon-only control gets an `aria-label`.

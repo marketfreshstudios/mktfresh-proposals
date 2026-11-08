@@ -1,10 +1,10 @@
 # Icon
 
-Renders one glyph from the Font Awesome Free Solid set, inlined so it inherits the colour of the text around it.
+Renders one glyph from the Font Awesome Free Solid set, inlined so it inherits the color of the text around it.
 
 **You provide** a semantic `name` from the Icons group — `stale`, `countersign`, `recurring` — not a Font Awesome glyph name. Optionally `size` (height in px; width follows the glyph's own ratio) and `title`.
 
-**Colour comes from the text.** The component sets `fill="currentColor"`, so put the icon inside an element that already carries the right colour — a `danger` pill's icon is `danger`, an `on-accent` button's icon is `on-accent`. Never set a colour on the icon itself.
+**Color comes from the text.** The component sets `fill="currentColor"`, so put the icon inside an element that already carries the right color — a `danger` pill's icon is `danger`, an `on-accent` button's icon is `on-accent`. Never set a color on the icon itself.
 
 **Accessibility is decided by `title`.** With a `title` the glyph is `role="img"` with that label; without one it is `aria-hidden` and the neighbouring text carries the meaning. The second is almost always what you want.
 

@@ -2,7 +2,7 @@
 
 ## Internal app posture
 
-Two users, both owners. No roles, no onboarding, no marketing chrome, no empty-state tours. Desktop-first and dense: `control-md`, `ui-body` at 15px, `space-3` table cells. Assume both users know the product; optimise for the fifth hundredth proposal, not the first.
+Two users, both owners. No roles, no onboarding, no marketing chrome, no empty-state tours. Desktop-first and dense: `control-md`, `ui-body` at 15px, `space-3` table cells. Assume both users know the product; optimize for the fifth hundredth proposal, not the first.
 
 Content column caps at `measure-app`. Forms cap at `measure-form`.
 
@@ -14,7 +14,7 @@ Content column caps at `measure-app`. Forms cap at `measure-form`.
 
 ## Tables
 
-The proposals list is the workhorse: title, client, status, one-time total, monthly total, sent / viewed / signed dates, source. Both money columns are right-aligned with `.tnum`. Status is a pill, not a coloured row — a tinted row makes a list of mixed statuses unreadable.
+The proposals list is the workhorse: title, client, status, one-time total, monthly total, sent / viewed / signed dates, source. Both money columns are right-aligned with `.tnum`. Status is a pill, not a colored row — a tinted row makes a list of mixed statuses unreadable.
 
 Sticky header at `z-sticky` on `surface-sunken`. Pagination at 100 per page. Search covers title, client and imported PDF text; say which when results come from extracted PDF text, and highlight the hit.
 
@@ -40,6 +40,6 @@ Four to the client — proposal sent, reminders at day 3 and day 7, your signed 
 
 One layout for all eight: workspace logo or name, a subject that names the proposal and the client, **one short paragraph**, **one button**, and a plain-text link beneath it for clients whose mail client strips the button. Client emails carry both totals; staff emails carry the totals and the status.
 
-Emails use `paper` and `paper-*` tokens only — there is no dark mode in an inbox you control, and a mail client that inverts colours will do so on its own terms. The accent is the workspace's single accent value, the same one that prints in the PDF.
+Emails use `paper` and `paper-*` tokens only — there is no dark mode in an inbox you control, and a mail client that inverts colors will do so on its own terms. The accent is the workspace's single accent value, the same one that prints in the PDF.
 
 Reminders say which proposal and when it expires. They never imply pressure beyond the facts: "This proposal expires on 12 October" is the whole message.

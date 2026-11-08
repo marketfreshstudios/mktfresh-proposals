@@ -34,7 +34,7 @@ A client who follows a rotated link lands on the **superseded** state: one calm 
 
 `/proposals/:id/audit` is append-only and rendered as a table, not a feed. Each row: event type (`mono-body`), actor, IP, device, timestamp. `mono-small` for IP and revision. Below the table sit the artefacts — exact consent text as shown, content hash, body-PDF hash, final-PDF hash, file versions — each in a `surface-sunken` well with a copy control.
 
-**Verify controls give a real verdict**, not a status colour: a pass reads "Matches — this file is unchanged since sealing" with a `verified` icon in `success`; a failure reads "Does not match" in `danger` and says what to do next. Never a green tick alone.
+**Verify controls give a real verdict**, not a status color: a pass reads "Matches — this file is unchanged since sealing" with a `verified` icon in `success`; a failure reads "Does not match" in `danger` and says what to do next. Never a green tick alone.
 
 In non-production, IP may be unavailable. Render "Not available" in `ink-muted`, never an empty cell and never a zero address — a blank in an evidence table is worse than an absence stated plainly.
 

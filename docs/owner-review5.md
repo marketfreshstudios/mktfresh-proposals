@@ -10,7 +10,7 @@ The prior collision/no-overlap assertions now check the owner's replacement: nat
 
 ## Blocks
 
-The shared catalogue supplies the proposal Blocks tab, Studio Blocks tab, desktop/tablet panel and gutter/phone + menu. It includes all existing text/media/contract/saved types, Divider and all three signature choices. Click/Enter inserts after the selected block or at the end of the visible page section; pointer drag shows an insertion line and inserts at the drop edge.
+The shared catalog supplies the proposal Blocks tab, Studio Blocks tab, desktop/tablet panel and gutter/phone + menu. It includes all existing text/media/contract/saved types, Divider and all three signature choices. Click/Enter inserts after the selected block or at the end of the visible page section; pointer drag shows an insertion line and inserts at the drop edge.
 
 A proposal supports one client signature and one company signature. The pair is available only when neither role exists; individual roles remain available when missing. Duplicate options are disabled with an explanation, and the insertion operation also rejects duplicates. The normal editable Signatures heading and signer pair insert in one undo operation. Divider uses standard rich-text `horizontalRule`, requiring no new block or database schema.
 
@@ -51,7 +51,7 @@ Final results are recorded in HANDOFF_PHASE2.md and the PR. Requested neutral-da
 | Paragraph in middle | [1440](screenshots/owner-review5/bar-middle-1440.png) |
 | Paragraph near bottom | [1440](screenshots/owner-review5/bar-bottom-1440.png) |
 | Partly scrolled block; bar pinned under header | [1440](screenshots/owner-review5/bar-sticky-1440.png) |
-| Blocks catalogue | [1440](screenshots/owner-review5/blocks-tab-1440.png) |
+| Blocks catalog | [1440](screenshots/owner-review5/blocks-tab-1440.png) |
 | Gutter menu with Signatures | [1440](screenshots/owner-review5/plus-menu-signatures-1440.png) |
 | Phone + sheet with Signatures | [375](screenshots/owner-review5/plus-sheet-signatures-375.png) |
 | Cancel-first required-block deletion | [1440](screenshots/owner-review5/delete-required-cancel-first-1440.png) |

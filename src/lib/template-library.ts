@@ -3,6 +3,7 @@ import { reviewBlocks } from "./ai-review";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { workspaceStarterTemplates } from "../../seed/starter-templates";
+import { preAmericanEnglishStarter } from "../../seed/starter-legacy-copy";
 import { sameStarterState } from "./starter-template-state";
 import {
   AppError,
@@ -57,7 +58,10 @@ export async function libraryTemplates(repo: Repository, rows: Template[]) {
     ...(t.starter_key
       ? {
           starter_edited: !seeds.some(
-            (s) => s.starter_key === t.starter_key && sameStarterState(t, s),
+            (s) =>
+              s.starter_key === t.starter_key &&
+              (sameStarterState(t, s) ||
+                sameStarterState(t, preAmericanEnglishStarter(s))),
           ),
         }
       : {}),

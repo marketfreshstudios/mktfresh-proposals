@@ -20,12 +20,12 @@ Every template opens with the same cover. Only the eyebrow and title change.
 | --- | --- | --- |
 | Top left | Workspace logo | Wide logo from Workspace › Brand |
 | Above title | Eyebrow | Per template (below) |
-| Centre | Title | Per template (below) |
+| Center | Title | Per template (below) |
 | Under title | Prepared for | {{client.full_name}}, {{client.company}} |
 | Under title | Prepared by | {{sender.name}}, {{workspace.name}} |
 | Bottom | Date and validity | {{proposal.date}} · Valid until {{proposal.validity}} |
 
-Brand colours only, no stock photo.
+Brand colors only, no stock photo.
 
 ## Template 1: Website design & build
 
@@ -127,7 +127,7 @@ We move your site within [number] business days of signing. We need: hosting and
 
 (pricing_table)
 
-Plans are billed monthly and can be cancelled with 30 days' notice.
+Plans are billed monthly and can be canceled with 30 days' notice.
 
 **Next steps**
 
@@ -388,7 +388,7 @@ Social media builds over time. Most accounts see steadier engagement after [two 
 **What we need from you**
 
 - Admin access to your [Facebook and Instagram] accounts
-- Your logo, brand colours and any photos you'd like us to use
+- Your logo, brand colors and any photos you'd like us to use
 - Approval of each month's calendar within [3] business days. We only post what you've approved, so a late approval moves that month's posts later.
 
 **Why {{workspace.name}}**

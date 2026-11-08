@@ -8,7 +8,7 @@ Exported from Claude Design on 29 October 2026. These are the visual source of t
 
 Read in this order:
 
-1. `README.md` — content fundamentals, colour layers, type, spacing, iconography, and the usage rules that are not negotiable.
+1. `README.md` — content fundamentals, color layers, type, spacing, iconography, and the usage rules that are not negotiable.
 2. The numbered sections: `20-status-vocabulary.md`, `30-money-and-totals.md`, `40-trust-and-integrity.md`, `50-client-pages.md`, `60-ai-authorship.md`, `70-internal-app-and-email.md`.
 3. `components/<Name>/README.md` for each component you build, and its `preview.html` for how it looks with sample data.
 

@@ -2,7 +2,7 @@ A design system for a self-hosted proposal and e-signature product: staff build 
 
 Two audiences share one system and do not share a style. The **internal app** is dense, desktop-first, and built for two people who use it every day. The **client pages** at `/p/:token` are the product as far as a client is concerned: mobile-first, quiet, and closer to a contract than to an app. Build both from the tokens below; the difference is density and typeface, never a second palette.
 
-This system is **white-label by construction**. No company name, service name, pricing rule or sender address belongs in a component. Identity comes from workspace settings: name, logo, and one accent colour. Sample data in previews is neutral on purpose — Brightline Foods, Rowan Vale, `{{client.first_name}}` — and stays that way.
+This system is **white-label by construction**. No company name, service name, pricing rule or sender address belongs in a component. Identity comes from workspace settings: name, logo, and one accent color. Sample data in previews is neutral on purpose — Brightline Foods, Rowan Vale, `{{client.first_name}}` — and stays that way.
 
 ## Content fundamentals
 
@@ -19,13 +19,13 @@ Write like a careful studio owner, not like software. The product handles money 
 
 ## Visual foundations
 
-**Colour.** Three layers, and they do not mix.
+**Color.** Three layers, and they do not mix.
 
 1. *Neutrals* carry structure: `surface-page` behind, `surface` for cards, `surface-sunken` for wells inside a card, `surface-raised` for menus and dialogs. Text is `ink` and `ink-muted`; `border` is decoration, `border-strong` is any edge that carries meaning.
-2. *The tenant accent* (`accent`, `accent-hover`, `accent-soft`, `on-accent`) is chrome: primary buttons, links, focus, selection. A workspace replaces these four values. **Accent never carries a status** — if it did, a tenant changing their brand colour would silently re-label every proposal in the list.
-3. *Status semantics* are fixed product colours a tenant cannot change: `success`, `warning`, `danger`, `info`, `ai`, each with a `-soft` ground and an `on-` foreground.
+2. *The tenant accent* (`accent`, `accent-hover`, `accent-soft`, `on-accent`) is chrome: primary buttons, links, focus, selection. A workspace replaces these four values. **Accent never carries a status** — if it did, a tenant changing their brand color would silently re-label every proposal in the list.
+3. *Status semantics* are fixed product colors a tenant cannot change: `success`, `warning`, `danger`, `info`, `ai`, each with a `-soft` ground and an `on-` foreground.
 
-Put text on a fill with the matching `on-` token: `on-accent` on `accent`, `on-danger` on `danger`. These flip between themes, so never hard-code white on a coloured button. Soft grounds take the strong colour as text: `success` on `success-soft`.
+Put text on a fill with the matching `on-` token: `on-accent` on `accent`, `on-danger` on `danger`. These flip between themes, so never hard-code white on a colored button. Soft grounds take the strong color as text: `success` on `success-soft`.
 
 **`paper` is the exception to the theme.** The document body and the signature pad are `paper` with `paper-ink`, `paper-muted`, `paper-accent` and `paper-border` — identical in light and dark, because what a client reads on screen must match the PDF that gets sealed. Inside a document container, use only `paper-*` tokens. Everything around it — the sticky bar, the page background, the browser chrome — follows the theme normally.
 
@@ -49,11 +49,11 @@ Money uses the **Money** group with the `.tnum` class so digits align in a colum
 
 ## Iconography
 
-The icon system is **Font Awesome Free 6, Solid style**. Thirty glyphs are pulled per-icon into the **Icons** asset group — not the whole library and not the webfont — and named for their job in this product (`stale`, `countersign`, `recurring`) rather than for the glyph, so swapping which glyph does a job stays a one-line change. Solid only; never mix in Regular or Brands. The icons are CC BY 4.0, and the attribution comment inside each SVG is part of the licence.
+The icon system is **Font Awesome Free 6, Solid style**. Thirty glyphs are pulled per-icon into the **Icons** asset group — not the whole library and not the webfont — and named for their job in this product (`stale`, `countersign`, `recurring`) rather than for the glyph, so swapping which glyph does a job stays a one-line change. Solid only; never mix in Regular or Brands. The icons are CC BY 4.0, and the attribution comment inside each SVG is part of the license.
 
-Render them through the `Icon` component, which inlines the path with `fill="currentColor"` so a glyph takes the colour of the text it sits in — a `danger` pill's icon must be `danger`. The files in the group have `#12151a` baked in for the places inlining is impossible, such as email templates and the PDF renderer, because an `<img>` cannot inherit colour. Need a glyph that isn't there? Take it from Font Awesome Free Solid and add it under a semantic name — do not draw one.
+Render them through the `Icon` component, which inlines the path with `fill="currentColor"` so a glyph takes the color of the text it sits in — a `danger` pill's icon must be `danger`. The files in the group have `#12151a` baked in for the places inlining is impossible, such as email templates and the PDF renderer, because an `<img>` cannot inherit color. Need a glyph that isn't there? Take it from Font Awesome Free Solid and add it under a semantic name — do not draw one.
 
-An icon never carries meaning alone. Every status pill, job state and banner pairs its icon with the word, because the three most important distinctions in the product — signed versus completed, failed versus needs-review, expired versus declined — are worth more than a colour and a shape can carry, and because `success` and `danger` are told apart by hue for most people but not for all.
+An icon never carries meaning alone. Every status pill, job state and banner pairs its icon with the word, because the three most important distinctions in the product — signed versus completed, failed versus needs-review, expired versus declined — are worth more than a color and a shape can carry, and because `success` and `danger` are told apart by hue for most people but not for all.
 
 Sizes are `icon-sm` inside pills, buttons and table cells, `icon-md` in banners and nav, `icon-lg` in an empty state. Font Awesome viewBoxes vary in width, so size by height and let width follow — sizing by width makes the glyphs optically mismatched.
 
@@ -65,7 +65,7 @@ No mark was supplied, and none was invented. Wherever a workspace logo would app
 
 These come from the product's own contract and a component that breaks one is a bug, not a style choice.
 
-- **Two totals, side by side, always.** One-time and monthly. Never a blended figure, never one without the other, never one of them in a status colour. See the money section.
+- **Two totals, side by side, always.** One-time and monthly. Never a blended figure, never one without the other, never one of them in a status color. See the money section.
 - **Nothing is silently signed or overwritten.** Every edit, toggle and signature carries the revision it was made against. A stale revision blocks the action and asks the person to reload and re-review. See the integrity section.
 - **Signed content is frozen.** After a client signature, no component may offer a control that would change the document or the quote — not disabled, absent.
 - **Clients tick and untick; they never price.** Quantity and price overrides are staff-only controls and do not exist in the client-page components.

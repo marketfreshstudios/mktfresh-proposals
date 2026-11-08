@@ -22,12 +22,12 @@ There is no pre-redesign client data. Jonathan authorized purging native test pr
    - the app never calculates or suggests prices
    - workspace isolation
    - `check:neutral`
-2. **Then `design/redesign/specs/README.md`.** It deliberately changes behaviour: IA, status words, the quote model, sub-lines, choice groups and the contract block. Where it changes behaviour, it wins over `PHASE2.md` §E and over everything in `design/system` and `design/screens`.
+2. **Then `design/redesign/specs/README.md`.** It deliberately changes behavior: IA, status words, the quote model, sub-lines, choice groups and the contract block. Where it changes behavior, it wins over `PHASE2.md` §E and over everything in `design/system` and `design/screens`.
 3. **Then the older `design/system` docs**, for anything the redesign doesn't cover.
 
 ## Non-negotiables while rebuilding
 
-- **Keep `src/` neutral.** "Own It Over Time", its 30-invoice step-down and the 18-month minimum are catalogue and seed data (`plan_terms`, `schedule`, `min_term_months`), never hardcoded in `src/`. Clause 4.4 is a seed contract clause with `show_when`. `npm run check:neutral` must pass.
+- **Keep `src/` neutral.** "Own It Over Time", its 30-invoice step-down and the 18-month minimum are catalog and seed data (`plan_terms`, `schedule`, `min_term_months`), never hardcoded in `src/`. Clause 4.4 is a seed contract clause with `show_when`. `npm run check:neutral` must pass.
 - **All future signed snapshots remain immutable.** After the owner purges native test data, use only the current item/sub-line model. No legacy quote reader or conversion migration remains. Proposify imports are preserved.
 - **Update the MCP connector with the model.** `create_proposal_draft`, `set_quote_lines` / `update_proposal_draft`, `get_proposal`, `check_ready` and `list_catalog` must accept and return the new quote shape: items, sub-lines, `optional`, `default_selected`, `choice_group_id` and `order`. Accept `items` only; reject retired flat `lines` input. Update the tool descriptions. AI drafts must still go through review, and connectors never see countersign.
 - **Billing:** sub-lines map to Stripe prices by interval exactly as lines do today. Choice groups resolve to the one selected item before any billing job is created. The existing-subscriber path (add items, no Checkout), the Checkout path and the manual invoice path all keep working. Recurring totals stay "Monthly", and yearly sub-lines show as `/yr` and are never folded into the monthly figure.

@@ -25,7 +25,7 @@ Admin-set passwords are entered twice with a show/hide control. **Ask them to ch
 The existing code does **not** restrict entire Workspace, Connections, Products or Emails sections to owners. This PR preserves that behavior:
 
 - Workspace: changing the default client-link password, verified sending domain, or company signatory/delegates is Super-admin-only (previously owner-only).
-- Other workspace branding/fonts/styles, product/template/reference editing, catalogue sync, connection status/assistant management, imports and ordinary editable email templates remain available under their existing staff permissions. Stripe/QuickBooks secrets remain deployment configuration; no new credential-management UI is introduced.
+- Other workspace branding/fonts/styles, product/template/reference editing, catalog sync, connection status/assistant management, imports and ordinary editable email templates remain available under their existing staff permissions. Stripe/QuickBooks secrets remain deployment configuration; no new credential-management UI is introduced.
 - New in this PR: membership/role/status/invite/other-user password actions and editing team invite/reset templates require a Super admin. Own display-name/password changes remain available to Staff.
 - Company countersignature identity and delegation, proposal signing, billing, readiness, PagePlan and MCP's draft-only scope are unchanged. The existing workspace identity directory retains inactive identities so saved signatory settings are not silently changed; active authentication is enforced separately. Inactive membership additionally stops use of staff APIs/connectors.
 

@@ -4,9 +4,9 @@ Much of the wording and pricing in this product is drafted by an assistant conne
 
 The design job is to make AI authorship **visible without being alarming**. These drafts are wanted; they are just not yet reviewed.
 
-## The `ai` colour is reserved
+## The `ai` color is reserved
 
-`ai` and `ai-soft` mark AI-authored work and nothing else. They are not a sixth status colour and never indicate health, progress or risk. A proposal drafted by an assistant still carries its normal status pill — the AI pill sits beside it, not instead of it.
+`ai` and `ai-soft` mark AI-authored work and nothing else. They are not a sixth status color and never indicate health, progress or risk. A proposal drafted by an assistant still carries its normal status pill — the AI pill sits beside it, not instead of it.
 
 ## Where it shows
 

@@ -4,7 +4,7 @@ Both totals, side by side — one-time and monthly. There is deliberately no sin
 
 **You provide** `oneTime` and `monthly` as numbers, optionally `currency`, `size`, `layout`, and a note under either figure.
 
-**Neither figure is coloured.** Both are `ink` at the same size. Making the recurring one green is the mistake this component exists to prevent: a colour that reads as "good" attached to one of two figures a client is comparing is a thumb on the scale.
+**Neither figure is colored.** Both are `ink` at the same size. Making the recurring one green is the mistake this component exists to prevent: a color that reads as "good" attached to one of two figures a client is comparing is a thumb on the scale.
 
 **The monthly figure always carries `/month`.** In the bar, in a sentence, in a table cell, in the PDF. A monthly amount without its suffix is a bug.
 

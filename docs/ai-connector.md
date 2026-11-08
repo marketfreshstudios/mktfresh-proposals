@@ -39,7 +39,7 @@ A custom monthly item (all amounts are entered cents):
 {"id":"00000000-0000-4000-8000-000000000090","order":0,"name":"Monthly retainer","description":"Agreed scope","source":"custom","pricing_item_id":null,"custom_family_id":"FAMILY_UUID","sublines":[{"id":"00000000-0000-4000-8000-000000000091","amount":200000,"qty":1,"interval":"month","list_amount":null,"stripe_lookup_key":null,"qbo_item_ref":null}],"optional":false,"default_selected":true,"choice_group_id":null,"min_term_months":null,"schedule":null,"plan_terms":null}
 ```
 
-Use a real family UUID from the workspace. Catalogue lines snapshot the catalogue ID, list amount, name, description and lookup key. Unknown keys and inconsistencies warn; legacy keys block sending. Custom lines are flagged for scope/price review. Do not invent catalogue IDs or quote a price without checking the workspace's pricing documents.
+Use a real family UUID from the workspace. Catalog lines snapshot the catalog ID, list amount, name, description and lookup key. Unknown keys and inconsistencies warn; legacy keys block sending. Custom lines are flagged for scope/price review. Do not invent catalog IDs or quote a price without checking the workspace's pricing documents.
 
 ## Content and review
 
@@ -49,7 +49,7 @@ Every AI change is attributed to `ai:<connector name>`. Drafts remain marked for
 
 ## Sample prompt
 
-“Draft a proposal for Acme Plumbing from the discovery notes below. Search for the client, read our current pricing document and catalogue, and use the appropriate template. Preserve the exact scope and entered prices. Use a custom service family if no catalogue offering fits, and flag anything uncertain for my review. Save only a draft with the discovery brief; never send or sign it. Run check_ready and tell me what needs review. Discovery notes: …”
+“Draft a proposal for Acme Plumbing from the discovery notes below. Search for the client, read our current pricing document and catalog, and use the appropriate template. Preserve the exact scope and entered prices. Use a custom service family if no catalog offering fits, and flag anything uncertain for my review. Save only a draft with the discovery brief; never send or sign it. Run check_ready and tell me what needs review. Discovery notes: …”
 
 Official compatibility references checked 29 October 2026: https://claude.com/docs/connectors/building and https://developers.openai.com/plugins/build/auth . Actual hosted-client acceptance remains pending deployment.
 
@@ -89,7 +89,7 @@ A new item is:
 
 Use UUIDs for item/sub-line/group identities. Intervals are `one_time`, `month`, `year`. To offer alternatives, make every member optional, give them the same `choice_group_id`, and choose at most one `default_selected`. The client must select exactly one before signing. Groups render contiguously and billing receives only the chosen item's sub-lines. Different intervals always remain separate totals.
 
-Amounts are supplied by the author; the app only sums them. AI text remains pending per section. AI-entered catalogue overrides require a staff **Use list price** or **Keep** decision; send confirmation cannot bypass those price holds. Ordinary saving does not mark sections reviewed. An AI tool cannot send, sign, countersign, choose the email sender or approve its own changes. Contract clauses come from the template; conditional clauses are evaluated against selected catalogue item IDs and frozen at signature.
+Amounts are supplied by the author; the app only sums them. AI text remains pending per section. AI-entered catalog overrides require a staff **Use list price** or **Keep** decision; send confirmation cannot bypass those price holds. Ordinary saving does not mark sections reviewed. An AI tool cannot send, sign, countersign, choose the email sender or approve its own changes. Contract clauses come from the template; conditional clauses are evaluated against selected catalog item IDs and frozen at signature.
 
 AI assistants cannot delete clients or proposals, change outcomes, archive records, send or sign.
 

@@ -10,7 +10,7 @@ The redesign brief/spec and the owner's confirmed test-data reset supersede the 
 
 1. **Existing subscriber with a working card:** new monthly lines are added to their existing subscription with no billing link; the signed proposal is the authority and the client is emailed the new monthly total. Everyone else gets a Stripe Checkout link (D2 / D3).
 2. **Own It Over Time is always its own subscription**, because it carries a scheduled step-down (D6).
-3. **Screens without wireframes** (login, clients, catalogue, templates, content library, imports/archive, settings, AI assistants) are built straight from the design system, consistent with the wireframed screens (E).
+3. **Screens without wireframes** (login, clients, catalog, templates, content library, imports/archive, settings, AI assistants) are built straight from the design system, consistent with the wireframed screens (E).
 4. **Pricing:** the platform stores and bills the numbers it is given and never calculates a price (ground rules).
 5. **Custom offerings** (e.g. a $2,000/mo bespoke retainer) bill as custom lines under service-named custom product families, never as per-client products (C2a).
 
@@ -23,8 +23,8 @@ You are continuing the self-hosted proposal and e-signature system in `marketfre
 1. **Two signatures on every proposal.** The client reviews and signs, then MarketFresh counter-signs. Phase 1 built and tested this. Keep it intact; the UI must make it obvious who has signed and who is next.
 2. **Manual create and edit.** A person can build a proposal from a template, write and rearrange content, add and price lines, preview it as the client will see it, and send it.
 3. **Claude drafts proposals through the platform.** After a discovery conversation, the owner tells Claude (claude.ai or ChatGPT) what the client needs, and Claude creates the draft — wording, line items, prices — inside the platform for a person to review and send.
-4. **Integration with the MarketFresh sales playbook and its Stripe catalogue.** Prices come from the playbook, monthly items bill on the same Stripe prices the playbook's payment links use, and nothing in the platform can quietly drift from either.
-5. **A product, not a one-off.** The owner may sell this to other small service businesses. MarketFresh is the first workspace, not hard-coded behaviour.
+4. **Integration with the MarketFresh sales playbook and its Stripe catalog.** Prices come from the playbook, monthly items bill on the same Stripe prices the playbook's payment links use, and nothing in the platform can quietly drift from either.
+5. **A product, not a one-off.** The owner may sell this to other small service businesses. MarketFresh is the first workspace, not hard-coded behavior.
 
 ## Ground rules (unchanged from Phase 1, plus three)
 
@@ -36,9 +36,9 @@ You are continuing the self-hosted proposal and e-signature system in `marketfre
 ## Workstream A — Workspace foundation
 
 - Add `workspaces` and a `workspace_id` (not null, FK, indexed, in every RLS policy) to every application table. One workspace exists for now; build as if there were many.
-- `workspace_settings`: company name, owner, email, phone, address, logo (Storage), accent colour, email sender name/address, e-signature consent text, reminder cadence (default +3 / +7 days), default validity days, timezone. Variables `company.*` read from here, not env. Move `COMPANY_*` env vars into the seed.
+- `workspace_settings`: company name, owner, email, phone, address, logo (Storage), accent color, email sender name/address, e-signature consent text, reminder cadence (default +3 / +7 days), default validity days, timezone. Variables `company.*` read from here, not env. Move `COMPANY_*` env vars into the seed.
 - `staff_users` gains `workspace_id` and `role` (`owner|member`; both can do everything for now).
-- The MarketFresh catalogue, template and settings become **seed data for workspace 1**, not code paths. No MarketFresh service name, price or rule appears in application code.
+- The MarketFresh catalog, template and settings become **seed data for workspace 1**, not code paths. No MarketFresh service name, price or rule appears in application code.
 
 ## Workstream B — Quote model
 
@@ -49,8 +49,8 @@ Replace the line shape with:
 | `pricing_item_id` | nullable — **custom lines** have none |
 | `custom_family_id` | custom recurring lines: which custom product family bills it (see C2a) |
 | `name`, `description` | always stored on the line (snapshot) |
-| `amount` | cents, as entered; staff may override a catalogue default |
-| `list_amount` | the catalogue default at the time, for "differs from list" display |
+| `amount` | cents, as entered; staff may override a catalog default |
+| `list_amount` | the catalog default at the time, for "differs from list" display |
 | `qty` | fixed by staff |
 | `interval` | `one_time \| month \| year` (yearly plans exist, e.g. Hosting + Care Essentials $300/yr) |
 | `min_term_months` | nullable; printed beside the line ("18-month minimum") |
@@ -62,24 +62,24 @@ Replace the line shape with:
 | `optional`, `selected` | unchanged; clients toggle optional lines only |
 
 - **Own It Over Time becomes ordinary data:** a one-time kickoff line plus a monthly line with `min_term_months: 18`, `schedule: { after_paid_invoices: 30, then: hosted-standard-100 }` and `plan_terms: { full_price, kickoff_qbo, build_credit_mo, buyout_at_signing, term_months, payoff_months }`. Keep Phase 1's paid-invoice payoff logic; drive it from these fields instead of `proposal.oiot`. Legacy terms (35 payments for one existing client) remain expressible by entering different numbers.
-- **Consistency warnings, never blocks, never auto-fixes:** if a line has `plan_terms`, warn when `kickoff + payoff_months × build_credit_mo ≠ full_price`. Warn when a line's amount differs from its catalogue default. Warn when a recurring line's lookup key is legacy or unknown. Show these in the editor and on the send screen.
+- **Consistency warnings, never blocks, never auto-fixes:** if a line has `plan_terms`, warn when `kickoff + payoff_months × build_credit_mo ≠ full_price`. Warn when a line's amount differs from its catalog default. Warn when a recurring line's lookup key is legacy or unknown. Show these in the editor and on the send screen.
 - Totals: one-time, monthly and yearly, shown separately everywhere. Never blend them.
 
-## Workstream C — Playbook and Stripe catalogue integration
+## Workstream C — Playbook and Stripe catalog integration
 
-The owner's Stripe account is the shared catalogue. Since 15 October 2026 every sellable recurring price carries a **`lookup_key`** that encodes plan and amount (`hosted-standard-100`, `oiot-monthly-175`, `blog-weekly-595`), and legacy prices carry `metadata[legacy]=true`. The playbook's payment links and the owner's billing scripts are built on those keys. Hard-won rules from that work — treat them as requirements:
+The owner's Stripe account is the shared catalog. Since 15 October 2026 every sellable recurring price carries a **`lookup_key`** that encodes plan and amount (`hosted-standard-100`, `oiot-monthly-175`, `blog-weekly-595`), and legacy prices carry `metadata[legacy]=true`. The playbook's payment links and the owner's billing scripts are built on those keys. Hard-won rules from that work — treat them as requirements:
 
-1. **Resolve prices by lookup key at billing time,** using Stripe's `lookup_keys[]` filter. Never store or hard-code `price_…` IDs for catalogue items. Never list prices and filter locally (the account has >150 active prices; pagination will bite).
-2. **Never create Stripe prices with lookup keys, and never create per-client products.** Lookup-keyed catalogue prices are owned by the owner's own catalogue script; the platform only reads them.
-2a. **Custom offerings are first-class.** Some clients won't fit the catalogue — e.g. a $2,000/mo retainer for a specific set of services. Support them without touching the catalogue:
+1. **Resolve prices by lookup key at billing time,** using Stripe's `lookup_keys[]` filter. Never store or hard-code `price_…` IDs for catalog items. Never list prices and filter locally (the account has >150 active prices; pagination will bite).
+2. **Never create Stripe prices with lookup keys, and never create per-client products.** Lookup-keyed catalog prices are owned by the owner's own catalog script; the platform only reads them.
+2a. **Custom offerings are first-class.** Some clients won't fit the catalog — e.g. a $2,000/mo retainer for a specific set of services. Support them without touching the catalog:
    - **Custom product families**, managed in settings: generic, service-named Stripe products such as "Custom Retainer", "Custom Project Services", "Custom Hosting". Each is tagged `metadata[custom_family]=true`, carries no lookup-keyed prices, and is listed in the editor's "custom line" picker. Staff can create a new family from settings when none fits; the platform checks Stripe for an active product with the same name first and refuses duplicates (duplicate-named products have caused real damage in this account). Family names describe the service, never the client.
    - **A custom line** picks a family, and has a name, a description of exactly what is included, an amount, an interval, and optionally a minimum term and schedule. At billing it becomes a subscription item with inline `price_data` on that family's product, so the receipt reads e.g. "Custom Retainer", the subscription description carries the proposal title, and `metadata[plan]=custom:<family>`.
    - **The signed proposal is the contract** for what a custom line covers, so its description is frozen with the version like everything else and appears in full on the sealed PDF.
    - One-time custom lines invoice against a workspace "Custom services" QuickBooks item (or a QBO item the staff member picks).
-   - **Promoting a custom offering to the catalogue** (when it becomes something sold repeatedly) is the owner's job in Stripe. Once it has a lookup key, the catalogue sync picks it up. The platform does not do this itself.
+   - **Promoting a custom offering to the catalog** (when it becomes something sold repeatedly) is the owner's job in Stripe. Once it has a lookup key, the catalog sync picks it up. The platform does not do this itself.
    - The AI connector may propose custom lines; they show as "custom — check scope and price" in review.
 3. **Refuse legacy keys** for new proposals (warning in the editor, hard error at send).
-4. **Catalogue sync:** `scripts/sync-stripe-catalog.ts` (read-only against Stripe) reads every active price that has a lookup key, its product name, nickname, amount, interval and `metadata[legacy]`, and upserts `pricing_items` (legacy → inactive). One-time items come from the QuickBooks item list the same way. Run on demand and from settings; it never writes to Stripe.
+4. **Catalog sync:** `scripts/sync-stripe-catalog.ts` (read-only against Stripe) reads every active price that has a lookup key, its product name, nickname, amount, interval and `metadata[legacy]`, and upserts `pricing_items` (legacy → inactive). One-time items come from the QuickBooks item list the same way. Run on demand and from settings; it never writes to Stripe.
 5. **Calculator handoff.** The playbook (static pages, password-protected, not in this repo) will get a "Start proposal" button. Define and document the contract it calls:
    `GET /proposals/new?draft=<base64url JSON>` (staff session required), payload
    `{ "source": "playbook", "source_version": "v1.17 · 15 October 2026", "title?", "client?": {company, first_name, last_name, email}, "lines": [Line…], "notes?": "markdown" }`
@@ -106,11 +106,11 @@ Every provider action is a durable job with an idempotency key, as in Phase 1, a
 ## Workstream E — UI
 
 - **Source of truth for screens:** the Claude Design canvas "Proposal & E-Sign — Screens" (17 artboards, exported to `design/screens/`) and the design system "Proposal & E-Sign System" (exported to `design/system/`). Build those screens faithfully: staff dashboard, proposals list, new, editor, send, record, counter-sign, audit, integrations queue; client password, reading, revision conflict, signing, billing setup, signed, completed, ended.
-- **Screens without wireframes — build them from the design system's components and tokens, consistent with the wireframed ones:** login, clients list + detail, catalogue (with sync status, legacy shown separately), templates list + template editor, content library, imports report + archived proposal viewer, workspace settings, AI assistants (F).
-- **Editor (manual create/edit):** Tiptap with the Phase 1 block contract (heading, rich paragraph, embedded image upload, pricing table, signature block per role, page break, variable). Variable picker with live resolved values; unresolved ones flagged. Quote panel: add from catalogue or as a custom line, override amount (list price shown beside it), qty, interval, minimum term, schedule, group, optional/default-ticked. Readiness checklist mirroring the send validation. Autosave with revision handling.
+- **Screens without wireframes — build them from the design system's components and tokens, consistent with the wireframed ones:** login, clients list + detail, catalog (with sync status, legacy shown separately), templates list + template editor, content library, imports report + archived proposal viewer, workspace settings, AI assistants (F).
+- **Editor (manual create/edit):** Tiptap with the Phase 1 block contract (heading, rich paragraph, embedded image upload, pricing table, signature block per role, page break, variable). Variable picker with live resolved values; unresolved ones flagged. Quote panel: add from catalog or as a custom line, override amount (list price shown beside it), qty, interval, minimum term, schedule, group, optional/default-ticked. Readiness checklist mirroring the send validation. Autosave with revision handling.
 - **Signatures in the UI:** the record and list show both signature slots ("Client — signed 3 Nov · MarketFresh — awaiting you"). Counter-sign is the record's primary action whenever the client has signed.
 - **Client pages:** mobile first. Optional checkboxes update totals and any sentence that quotes them instantly. Signing is its own step. After signing, the billing-setup step appears only when D3 applies; when D2 applies, show "added to your existing monthly billing" with the new total.
-- **White-label:** client pages, PDFs and emails take name, logo and accent colour from workspace settings. No MarketFresh strings in components.
+- **White-label:** client pages, PDFs and emails take name, logo and accent color from workspace settings. No MarketFresh strings in components.
 - Accessibility: real buttons, links and labels; 4.5:1 text contrast; keyboard reachable; 44px touch targets on client pages.
 
 ## Workstream F — AI connector (Claude, ChatGPT)
@@ -124,7 +124,7 @@ A remote **MCP server** at `/mcp` (Streamable HTTP), authenticated with **OAuth 
 - `create_proposal_draft` accepts `brief` (markdown — the client requirements Claude was given, stored on the proposal and shown to the reviewer beside the draft), `template_id`, `client_id`, `title`, `content_markdown`, `lines`.
 - **Content goes in as Markdown plus `{{variables}}`**; convert server-side to the block contract. Reject unknown variables and unsupported constructs with a precise error so the model can correct itself.
 
-**Hard limits, enforced server-side, not by tool omission alone:** an AI token can never send, resend, sign, counter-sign, decline, touch billing, change settings, or modify a proposal that has been sent. Every AI write is an event with actor `ai:<connector-name>`. A draft with unreviewed AI changes shows a "Drafted by AI — needs review" state; the send screen requires explicit confirmation until a person has opened and saved it. Highlight AI-entered amounts that differ from the catalogue default.
+**Hard limits, enforced server-side, not by tool omission alone:** an AI token can never send, resend, sign, counter-sign, decline, touch billing, change settings, or modify a proposal that has been sent. Every AI write is an event with actor `ai:<connector-name>`. A draft with unreviewed AI changes shows a "Drafted by AI — needs review" state; the send screen requires explicit confirmation until a person has opened and saved it. Highlight AI-entered amounts that differ from the catalog default.
 
 **Settings → AI assistants:** connected assistants, scopes, last used, revoke.
 
@@ -156,7 +156,7 @@ Run the Proposify import in small batches as Phase 1's README describes, reconci
 - Headless test of the full path with mocks: Claude (MCP) creates a draft from a brief → person reviews, edits a line, sends → client toggles an option and signs → staff counter-signs → sealed PDF with both signatures and audit page → QBO unsent invoice + Stripe (D2 and D3 paths both covered) → verify passes.
 - MCP tests proving every forbidden action is refused for an AI token.
 - Playbook handoff payload round-trips into an editable draft with the badge and warnings.
-- Catalogue sync against Stripe test mode imports lookup keys and marks legacy prices inactive.
+- Catalog sync against Stripe test mode imports lookup keys and marks legacy prices inactive.
 - A $2,000/mo custom retainer line under a "Custom Retainer" family signs and bills end to end in test mode, with no new product or lookup-keyed price created; creating a family whose name already exists is refused.
 - No MarketFresh-specific strings or prices outside seed data (add a CI grep check).
 - `HANDOFF_PHASE2.md` written. Then **STOP**.

@@ -132,7 +132,7 @@ The create API accepts the validated payload as `playbook` alongside selected `c
 
 ### Test-only billing adapters
 
-Keep `BILLING_MODE=mock` until test credentials are ready. Set it to `test` to enable the Stripe/QuickBooks adapters for workspace 1. Stripe accepts only `sk_test_` or `rk_test_`; the shell's `STRIPE_KEY` is never read. QuickBooks requires `QBO_ENVIRONMENT=sandbox` and a base64 32-byte `INTEGRATION_ENCRYPTION_KEY` for its encrypted refresh-token store. Run catalogue sync with:
+Keep `BILLING_MODE=mock` until test credentials are ready. Set it to `test` to enable the Stripe/QuickBooks adapters for workspace 1. Stripe accepts only `sk_test_` or `rk_test_`; the shell's `STRIPE_KEY` is never read. QuickBooks requires `QBO_ENVIRONMENT=sandbox` and a base64 32-byte `INTEGRATION_ENCRYPTION_KEY` for its encrypted refresh-token store. Run catalog sync with:
 
 ```sh
 node --env-file=.env.local --import tsx scripts/sync-stripe-catalog.ts
@@ -159,7 +159,7 @@ References are inert UTF-8 text, limited to 1 MiB and a total 15-second fetch de
 
 Staff can open **Preview as client** from the editor (after autosave) or proposal record. It opens /p/<proposal-id>?preview=1 with a staff-authenticated read-only data loader; drafts do not need a sent token. Preview uses the client component with local optional selections, live totals, reading/signing/billing layouts, viewport controls and a persistent banner. Signatures, checkout, declines, public view tracking and client actions are disabled.
 
-Catalogue **Display name** is an optional app-only override preserved by Stripe sync. New catalogue-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
+Catalog **Display name** is an optional app-only override preserved by Stripe sync. New catalogue-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
 
 Workspace settings remain live while a proposal is a draft. Draft API responses and readiness use current settings without persisting a snapshot. Send and re-send capture the current settings before validation and rendering; signed proposals retain their frozen snapshot.
 
@@ -204,7 +204,7 @@ The heading/body font picker has Serif/Sans groups and self-hosted previews. Nin
 
 Proposal/reminder emails contain one View proposal button, the sender note and branding; prices and the printed HTML URL are omitted. Newly sealed PDFs end with a one-page completion certificate with the frozen content hash and signer/delegation facts. Existing sealed files and staff raw Evidence remain unchanged.
 
-Billing itemizes each pending Checkout separately from subscription additions and one-time invoices. It uses Stripe’s actual shared Product names, preserves catalogue Prices, and explains card-only setup. Signed document views keep the main reading width and a single sender contact footer.
+Billing itemizes each pending Checkout separately from subscription additions and one-time invoices. It uses Stripe’s actual shared Product names, preserves catalog Prices, and explains card-only setup. Signed document views keep the main reading width and a single sender contact footer.
 
 Proposal/template blocks and clauses share an attached toolbar, gutter drag handle and persistent selection with Escape to clear. Hover/focus actions never change block geometry. Reproduce the geometry/capture test with `npx playwright test e2e/block-controls.spec.ts`. The [comparison gallery](docs/screenshots/client-completion/index.html) also includes real main-branch before captures at 375/1440; all new surfaces include 375/768/1440 light/dark evidence. Package with `node --import tsx scripts/package-completion-evidence.ts`; email/billing/certificate captures come from `e2e/client-completion.spec.ts` (requires Poppler for PDF preview rendering).
 
@@ -245,7 +245,7 @@ Page, section and document-block moves preserve every original block, including 
 
 Document block gaps use the larger of the previous block’s space below and the next block’s space above. Editor, client and print share this rule; paragraph/list trailing margins do not stack. Pricing items use compact name/price rows, smaller optional descriptions and indented sub-lines. Optional/choice controls and required locks convey inclusion without extra status rows. Only page sheets are white; the gaps show the canvas background.
 
-Proposal styles now include Standard/Comfortable density and per-side margins in inches (default 0.75in). New sends freeze these with the existing styles; earlier frozen documents keep their prior metrics. The editor and templates show Letter sheets with PDF-derived page starts. Their spacers are display-only, and source content keeps its normal undo/autosave behaviour. A pricing table stays whole when it fits a page; larger ones split between cards and produce a measured readiness warning.
+Proposal styles now include Standard/Comfortable density and per-side margins in inches (default 0.75in). New sends freeze these with the existing styles; earlier frozen documents keep their prior metrics. The editor and templates show Letter sheets with PDF-derived page starts. Their spacers are display-only, and source content keeps its normal undo/autosave behavior. A pricing table stays whole when it fits a page; larger ones split between cards and produce a measured readiness warning.
 
 ### Editor v2 live proposals
 

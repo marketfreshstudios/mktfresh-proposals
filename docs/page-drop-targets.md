@@ -1,6 +1,6 @@
 # Page-aware editor drop targets
 
-Blocks catalogue, Saved blocks/groups, and pointer gutter moves share one hit-test resolver. It reads existing sheet rectangles plus the live PagePlan; it does not calculate pagination. An empty explicit page has a valid insertion boundary immediately after its marker even when it has no rendered content frame.
+Blocks catalog, Saved blocks/groups, and pointer gutter moves share one hit-test resolver. It reads existing sheet rectangles plus the live PagePlan; it does not calculate pagination. An empty explicit page has a valid insertion boundary immediately after its marker even when it has no rendered content frame.
 
 The insertion line uses the text column. Side margins and blank space map to the nearest vertical block boundary on that sheet. PAGE gaps choose the closest valid sheet, with ties favoring the following page. Cover-only paper, band rectangles, and pricing/signature/contract interiors reject the drop and clear the indicator. Unsettled layouts and moving drag rectangles do not supply insertion candidates. Release coordinates are checked again, so a remembered caret or a formerly valid hover cannot redirect a drop.
 

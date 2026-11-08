@@ -2,7 +2,7 @@
 
 Jonathan confirmed on 30 October 2026 that every native proposal is disposable test data and there is no pre-redesign client evidence to preserve. **Imported Proposify records are excluded**, including their versions and stored files.
 
-The script keeps clients, catalogue, templates, content/library/reference documents, workspace settings and integrations. It removes only the specified workspace's native proposals, dependent versions/events/signers/jobs/billing links/file records, and their private bucket objects (including orphaned uploads under those proposal prefixes). It appends a workspace activity entry. It never calls Stripe, QuickBooks or email providers.
+The script keeps clients, catalog, templates, content/library/reference documents, workspace settings and integrations. It removes only the specified workspace's native proposals, dependent versions/events/signers/jobs/billing links/file records, and their private bucket objects (including orphaned uploads under those proposal prefixes). It appends a workspace activity entry. It never calls Stripe, QuickBooks or email providers.
 
 The agent has not run this against the hosted project. Jonathan runs it during the release maintenance window, before using the current-model-only app:
 

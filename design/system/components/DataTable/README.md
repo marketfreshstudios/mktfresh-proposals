@@ -6,7 +6,7 @@ The proposals list and every other record table: sticky header, right-aligned mo
 
 **Both money columns are `numeric`.** That right-aligns them and applies tabular figures so the digits line up and a number does not change width as it updates. One-time and monthly are always both present, and the monthly cell carries `/mo`.
 
-**Status is a pill in a column, never a tinted row.** A list of mixed statuses with coloured rows is unreadable; a column of pills scans in one pass.
+**Status is a pill in a column, never a tinted row.** A list of mixed statuses with colored rows is unreadable; a column of pills scans in one pass.
 
 **Loading keeps the table's shape.** Skeletons in the real columns tell the user what is coming. A spinner over an area that already has a known structure does not.
 

@@ -8,9 +8,9 @@ A labelled input with hint and error, sized for either audience.
 
 **Write the error as the fix.** The email-mismatch error on the signature step is the most-hit error in the product and the one where a client is most likely to abandon: name the address it was sent to and offer the way forward. "This proposal was sent to r.vale@brightline.example. Sign in with that address, or ask us to re-send it to this one." Never "Invalid email".
 
-**`error` replaces `hint`** and wires `aria-invalid` and `aria-describedby`. Both are announced; do not put the error only in colour.
+**`error` replaces `hint`** and wires `aria-invalid` and `aria-describedby`. Both are announced; do not put the error only in color.
 
-**A disabled field explains itself** through `hint` — "Turned off for this proposal" — because a greyed box with no reason reads as broken.
+**A disabled field explains itself** through `hint` — "Turned off for this proposal" — because a grayed box with no reason reads as broken.
 
 ## Do
 

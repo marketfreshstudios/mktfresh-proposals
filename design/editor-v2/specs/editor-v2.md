@@ -412,7 +412,7 @@ Use it for undo, redo, list-bulleted, list-numbered, link, duplicate and trash. 
 
 - **`QuoteRow`** is `itemCard(i, full)` split into a collapsed row and an expanded body, with `expanded: boolean` and `onToggle()`. Every existing input and handler stays (`updateItem`, `defaultItem`, `link`, `unlink`, price review, Billing mapping, Plan terms). Only one row is expanded at a time. Billing mapping and Plan terms move under **Details**.
 - **`FieldCard`** goes in `FieldOptions` `variant="panel"`: the whole card is the button, showing the label + token on one line and the value under it. **Calls:** `onInsert(path)`.
-- **Styles** is `ProposalStyles`, restyled (§6.3), and the "Colour" labels become "Color".
+- **Styles** is `ProposalStyles`, restyled (§6.3), and the "Color" labels become "Color".
 
 ---
 

@@ -12,7 +12,7 @@ Styles and Studio templates have independent Header and Footer accordions. Each 
 
 Signed-out staff pages redirect before rendering, with no-store and the full path/query preserved. Root-path refresh cookies let the existing server refresh run before page rendering; old `/api` copies expire on login/rotation/logout. Anonymous API access remains guarded and public login, client links, OAuth/discovery, MCP and assets remain public. The existing mid-session signed-out recovery stays in place.
 
-Phone client reading has one inset, full-width descriptions/sub-lines and fixed, unwrapped prices. At both **375px and 390px**, the text inset changed from **33px left / 33px right to 16px / 16px**, plus safe-area insets. Totals also start at 16px. Control rows remain large click targets. Tablet/desktop rules are unchanged. The contact link is underlined on phones so it does not rely on colour alone.
+Phone client reading has one inset, full-width descriptions/sub-lines and fixed, unwrapped prices. At both **375px and 390px**, the text inset changed from **33px left / 33px right to 16px / 16px**, plus safe-area insets. Totals also start at 16px. Control rows remain large click targets. Tablet/desktop rules are unchanged. The contact link is underlined on phones so it does not rely on color alone.
 
 Before phone captures were taken from a separate `bbd46a8` checkout with the same neutral fixture. After captures use this branch. No hosted resources or data were changed.
 

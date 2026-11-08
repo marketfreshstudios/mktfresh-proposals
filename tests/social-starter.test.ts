@@ -1,3 +1,4 @@
+import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
 import { aiTool } from "../src/lib/ai-tools";
 import { studioRevision } from "../src/lib/studio-history";
 import { expect, it } from "vitest";
@@ -232,7 +233,7 @@ it("hosted migration adds only seventh, keeps existing edits, is idempotent and 
         "select data from templates where data->>'starter_key'='social-media-management'",
       )
     ).rows[0].data;
-    expect(added).toEqual(get(true, catalog));
+    expect(added).toEqual(preAmericanEnglishStarter(get(true, catalog)));
     expect(
       await db.query(
         "select * from templates where data->>'starter_key'<>'social-media-management' order by id",
