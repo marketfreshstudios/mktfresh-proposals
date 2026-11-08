@@ -285,6 +285,10 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   await page.setViewportSize({ width: 375, height: 900 });
   await expect(page.locator(".client-document-sheets")).toHaveCount(0);
   await expect(page.locator(".flow-document table.quote-table")).toHaveCount(1);
+  await expect(page.locator(".flow-document table.quote-table")).toHaveCSS(
+    "font-size",
+    "18px",
+  );
   for (const control of await page
     .locator(".flow-document .quote-table-hit")
     .all()) {
@@ -302,9 +306,8 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     const { mkdirSync } = await import("node:fs");
     mkdirSync("docs/screenshots/proposal-style-options", { recursive: true });
     await page
-      .locator(".flow-document .quote-table-row")
-      .first()
-      .scrollIntoViewIfNeeded();
+      .locator('.flow-document [data-document-block="pricing"]')
+      .evaluate((el) => el.scrollIntoView({ block: "start" }));
     await page.screenshot({
       path: "docs/screenshots/proposal-style-options/client-table-375.png",
       animations: "disabled",
