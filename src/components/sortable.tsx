@@ -3,9 +3,13 @@ import {
   type ReactNode,
   type CSSProperties,
   useLayoutEffect,
+  useEffect,
+  type RefObject,
   useRef,
   useCallback,
 } from "react";
+import type { Block } from "../lib/model";
+import { useDropIndicator } from "./editor/drop-target";
 import { BlockDragHandle, useControlLayout } from "./editor/control-layout";
 import { useBlockSelection } from "./block-controls";
 import {
@@ -100,7 +104,7 @@ export function Sortable({
             .closest(".block-sortable")
             ?.querySelector<HTMLElement>(":scope > .block-frame")
             ?.dataset.blockId;
-          if (id) selection.select(id);
+          if (id && !selection.ids.includes(id)) selection.select(id);
         }
       }}
       onPointerDownCapture={(e) => {
@@ -109,7 +113,7 @@ export function Sortable({
             .closest(".block-sortable")
             ?.querySelector<HTMLElement>(":scope > .block-frame")
             ?.dataset.blockId;
-          if (id) selection.select(id);
+          if (id && !selection.ids.includes(id)) selection.select(id);
         }
       }}
       {...attributes}
@@ -149,12 +153,44 @@ export function Reorder({
   onMove,
   children,
   pages = false,
+  documentDrop,
 }: {
   ids: string[];
   onMove: (from: string, to: string, edge?: "before" | "after") => void;
   children: ReactNode;
   pages?: boolean;
+  documentDrop?: {
+    paper: RefObject<HTMLElement | null>;
+    content: Block[];
+    onMoveAt: (from: string, at: number, selected: string[]) => void;
+  };
 }) {
+  const selection = useBlockSelection();
+  const emptyPaper = useRef<HTMLElement | null>(null);
+  const indicator = useDropIndicator(
+    documentDrop?.content ?? [],
+    documentDrop?.paper ?? emptyPaper,
+  );
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const pointerDrag = useRef(false);
+  useEffect(() => {
+    const track = (event: PointerEvent) => {
+      if (pointerDrag.current)
+        pointer.current = { x: event.clientX, y: event.clientY };
+    };
+    if (documentDrop) window.addEventListener("pointermove", track, true);
+    return () => window.removeEventListener("pointermove", track, true);
+  }, [!!documentDrop]);
+  const blockId = (id: string) => documentDrop?.content[ids.indexOf(id)]?.id;
+  const selectedBlocks = () =>
+    documentDrop?.content
+      .filter((b) =>
+        selection.ids.some(
+          (id) => id === `block-${b.id}` || id === `template-${b.id}`,
+        ),
+      )
+      .map((b) => b.id!) ?? [];
+
   // Align centres for vertical keyboard moves. The stock getter bottom-aligns
   // differently sized cards, which leaves a tall choice group over itself.
   const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
@@ -211,7 +247,38 @@ export function Reorder({
     <DndContext
       sensors={sensors}
       collisionDetection={collision}
+      onDragStart={({ activatorEvent }) => {
+        const e = activatorEvent as PointerEvent;
+        pointerDrag.current = typeof e.clientX === "number";
+        pointer.current =
+          typeof e.clientX === "number" ? { x: e.clientX, y: e.clientY } : null;
+      }}
+      onDragMove={({ active }) => {
+        if (documentDrop && pointer.current)
+          indicator.show(pointer.current.x, pointer.current.y, [
+            blockId(String(active.id))!,
+          ]);
+      }}
+      onDragCancel={() => {
+        pointerDrag.current = false;
+        pointer.current = null;
+        indicator.clear();
+      }}
       onDragEnd={({ active, over, delta, activatorEvent }: DragEndEvent) => {
+        if (documentDrop && pointer.current) {
+          const from = blockId(String(active.id));
+          const target = indicator.resolve(
+            pointer.current.x,
+            pointer.current.y,
+            [from!],
+          );
+          indicator.clear();
+          pointer.current = null;
+          pointerDrag.current = false;
+          if (target && from)
+            documentDrop.onMoveAt(from, target.at, selectedBlocks());
+          return;
+        }
         if (over && active.id !== over.id) {
           const pointer = activatorEvent as PointerEvent;
           const distance =
@@ -237,10 +304,11 @@ export function Reorder({
               )
             : ids
         }
-        strategy={verticalListSortingStrategy}
+        strategy={documentDrop ? () => null : verticalListSortingStrategy}
       >
         {children}
       </SortableContext>
+      {indicator.line}
     </DndContext>
   );
 }
