@@ -201,7 +201,9 @@
     font-size: 13px;
   }
   .studio-area-chips a[aria-current="page"] {
+    --control-active-background: var(--accent);
     background: var(--accent);
+    --control-active-color: var(--on-accent);
     color: var(--on-accent);
     border-color: var(--accent);
   }
@@ -282,7 +284,9 @@
 }
 .studio-segments [aria-current="page"],
 .studio-segments [aria-selected="true"] {
+  --control-active-background: var(--surface);
   background: var(--surface);
+  --control-active-color: var(--ink);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }
@@ -376,7 +380,9 @@
   font: 500 13px var(--font-ui);
 }
 .studio-filter-chips [aria-pressed="true"] {
+  --control-active-background: var(--accent);
   background: var(--accent);
+  --control-active-color: var(--on-accent);
   color: var(--on-accent);
   border-color: var(--accent);
 }
@@ -605,7 +611,9 @@
 .workspace-section-list button {
   border: 0;
   border-left: 2px solid transparent;
+  --control-active-background: none;
   background: none;
+  --control-active-color: var(--ink-muted);
   color: var(--ink-muted);
   padding: 10px 14px;
   text-align: left;
@@ -614,6 +622,7 @@
 }
 .workspace-section-list button[aria-current="page"] {
   border-left-color: var(--accent);
+  --control-active-color: var(--ink);
   color: var(--ink);
   font-weight: 600;
 }
@@ -808,7 +817,9 @@
     font-size: 12px;
   }
   .workspace-section-list button[aria-current="page"] {
+    --control-active-background: var(--accent);
     background: var(--accent);
+    --control-active-color: var(--on-accent);
     color: var(--on-accent);
     border-color: var(--accent);
   }
@@ -1216,7 +1227,9 @@
     gap: 4px;
   }
   .studio-v3-shell .bottom-tabs .active {
+    --control-active-color: var(--accent);
     color: var(--accent);
+    --control-active-background: var(--accent-soft);
     background: var(--accent-soft);
     border-radius: 10px;
   }
@@ -1515,7 +1528,9 @@
 
 /* Owner review: Studio list surfaces and semantic states (document editors excluded). */
 .studio-v3-shell .sidebar nav a.active {
+  --control-active-background: var(--surface-sunken);
   background: var(--surface-sunken);
+  --control-active-color: var(--ink);
   color: var(--ink);
   font-weight: 600;
 }

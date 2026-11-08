@@ -26,8 +26,21 @@ export function TextStylePicker({
     setOpen(true);
   };
   const choose = (n: number) => {
+    const blockId =
+      trigger.current?.closest<HTMLElement>("[data-block-id]")?.dataset.blockId;
     setOpen(false);
-    value?.change(n as 0 | 1 | 2 | 3);
+    value?.change(n as 0 | 1 | 2 | 3, () => {
+      // Conversion may remount the editor and trigger. Let its focus restoration
+      // finish first, then return to the corresponding live menu trigger.
+      requestAnimationFrame(() => {
+        const button = blockId
+          ? document.querySelector<HTMLButtonElement>(
+              `[data-block-id="${CSS.escape(blockId)}"] [aria-label="Text style"]`,
+            )
+          : trigger.current;
+        button?.focus({ preventScroll: true });
+      });
+    });
   };
   useLayoutEffect(() => {
     if (open) list.current?.focus({ preventScroll: true });
@@ -127,6 +140,9 @@ export function TextStylePicker({
                 onPointerMove={() => setActive(n)}
                 onClick={() => choose(n)}
               >
+                <span className="text-style-check" aria-hidden="true">
+                  {value?.value === n ? "✓" : ""}
+                </span>
                 <span>{name}</span>
                 {edit && <kbd>⌥{n}</kbd>}
               </button>

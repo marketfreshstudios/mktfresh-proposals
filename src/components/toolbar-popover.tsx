@@ -9,7 +9,7 @@ export function ToolbarPopover({
   trigger,
   avoid,
   onEscape,
-  visualViewport = false,
+  visualViewport = true,
   placementAnchor,
   preferredSide = "below",
 }: {
@@ -46,8 +46,9 @@ export function ToolbarPopover({
       const paper = anchor
         ?.closest(".editor-document-region,.studio-template-main")
         ?.querySelector<HTMLElement>(".editor-paper,.template-paged-paper");
-      let left = 8,
-        right = innerWidth - 8;
+      let left = (viewport?.offsetLeft ?? 0) + 8,
+        right =
+          (viewport?.offsetLeft ?? 0) + (viewport?.width ?? innerWidth) - 8;
       if (paper) {
         const rect = paper.getBoundingClientRect(),
           scale = rect.width / paper.offsetWidth,

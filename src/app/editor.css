@@ -2794,7 +2794,12 @@
   :is(.editor-v2-panel, .editor-v2-drawer)
     .editor-tabs
     > [aria-selected="true"] {
+    --control-active-background: var(
+      --editor-tab-active,
+      var(--surface-raised)
+    );
     background: var(--editor-tab-active, var(--surface-raised));
+    --control-active-color: var(--ink);
     color: var(--ink);
     box-shadow: 0 1px 2px color-mix(in oklch, var(--paper-ink) 8%, transparent);
   }
@@ -4320,7 +4325,9 @@
   flex: 1;
   border: 1px solid var(--border);
   border-radius: 8px;
+  --control-active-background: var(--paper);
   background: var(--paper);
+  --control-active-color: #1c1b18;
   color: #1c1b18;
   cursor: pointer;
 }
@@ -4521,7 +4528,9 @@
   font: 600 12px/16px var(--font-ui);
 }
 .editor-v2-sheet .editor-tabs button[aria-selected="true"] {
+  --control-active-background: var(--surface);
   background: var(--surface);
+  --control-active-color: var(--ink);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }
@@ -5642,8 +5651,10 @@
   color: var(--ink);
 }
 .proposal-styles .style-density button[aria-pressed="true"] {
+  --control-active-background: var(--paper);
   background: var(--paper);
   box-shadow: var(--shadow-sm);
+  --control-active-color: var(--paper-ink);
   color: var(--paper-ink);
 }
 .proposal-styles hr {
@@ -5725,7 +5736,9 @@
   font: 500 10px/16px var(--font-ui);
 }
 .style-preview-heading > [role="group"] button[aria-pressed="true"] {
+  --control-active-background: var(--neutral-soft);
   background: var(--neutral-soft);
+  --control-active-color: var(--ink);
   color: var(--ink);
 }
 :is(.editor-v2-panel, .editor-v2-sheet) .style-preview-viewport {
@@ -6437,7 +6450,9 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   font: 600 13px/18px var(--font-ui);
 }
 .band-height button[aria-pressed="true"] {
+  --control-active-background: var(--surface);
   background: var(--surface);
+  --control-active-color: var(--ink);
   color: var(--ink);
   box-shadow: 0 1px 2px #00000014;
 }
@@ -9017,4 +9032,90 @@ body:has(.studio-v3-editor) {
 
 .editor-gutter:has(> .drag-handle:only-child) {
   justify-content: center;
+}
+
+/* Top-layer popovers still inherit their DOM ancestors' toolbar selectors.
+   Give flat menu/listbox rows one layout contract, independent of bar sizing.
+   Custom grids such as the band Layout tiles keep their own layout. */
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+}
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"])
+  > button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: var(--toolbar-menu-row-height, 44px);
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+@media (min-width: 700px) {
+  .toolbar-popover.text-style-popover {
+    --toolbar-menu-row-height: 38px;
+  }
+}
+.toolbar-popover.text-style-popover {
+  width: max-content;
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+}
+.toolbar-popover.toolbar-popover.text-style-popover
+  :is([role="menu"], [role="listbox"])
+  > button {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.text-style-check {
+  font: 600 12px/1 var(--font-ui);
+}
+.text-style-popover kbd {
+  justify-self: end;
+  opacity: 0.72;
+}
+
+/* Selected floating/docked bars must not inherit the legacy rich-toolbar fade
+   when focus moves from the text into one of their menus. */
+.editor-edit-bar.rich-toolbar,
+.editor-edit-bar .rich-toolbar {
+  opacity: 1;
+}
+
+.toolbar-popover.edit-dark-menu {
+  --menu-active-background: var(--editor-tool-hover);
+}
+.toolbar-popover.toolbar-popover:is(
+    .text-style-popover,
+    .inline-size-popover,
+    .edit-dark-menu
+  )
+  :is([role="menu"], [role="listbox"])
+  > button:is(
+    :hover,
+    :focus-visible,
+    [data-active="true"],
+    [aria-checked="true"],
+    [aria-selected="true"]
+  ) {
+  background: var(--menu-active-background, var(--selected));
 }

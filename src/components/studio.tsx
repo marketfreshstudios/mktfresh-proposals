@@ -2457,7 +2457,7 @@ function TemplatesStudioContent({
                                       ),
                                     )
                                   }
-                                  onTextStyle={(level, text) => {
+                                  onTextStyle={(level, text, afterFocus) => {
                                     patch(
                                       content.map((v, j) =>
                                         j === n
@@ -2465,8 +2465,12 @@ function TemplatesStudioContent({
                                           : v,
                                       ),
                                     );
-                                    if (!templatePanels.phone)
-                                      focusInserted(`template-${b.id}`, true);
+                                    if (!templatePanels.phone || afterFocus)
+                                      focusInserted(
+                                        `template-${b.id}`,
+                                        true,
+                                        afterFocus,
+                                      );
                                   }}
                                   onSlash={(anchor) => {
                                     setInsertAnchor(anchor ?? null);
@@ -2485,7 +2489,7 @@ function TemplatesStudioContent({
                                     textLevel={b.level ?? 1}
                                     map={map}
                                     showNames={false}
-                                    onTextStyle={(level) => {
+                                    onTextStyle={(level, _text, afterFocus) => {
                                       patch(
                                         content.map((v, j) =>
                                           j === n
@@ -2493,7 +2497,11 @@ function TemplatesStudioContent({
                                             : v,
                                         ),
                                       );
-                                      focusInserted(`template-${b.id}`, true);
+                                      focusInserted(
+                                        `template-${b.id}`,
+                                        true,
+                                        afterFocus,
+                                      );
                                     }}
                                     value={
                                       b.content ?? {

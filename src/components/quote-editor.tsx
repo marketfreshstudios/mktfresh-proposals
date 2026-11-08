@@ -1520,20 +1520,25 @@ function QuoteEditorContent({
   function blockEditor(b: Block, n: number) {
     const signer = p.signers.find((s) => s.role === (b.role ?? "client"));
     const HeadingTag = `h${(b.level ?? 1) + 1}` as "h2" | "h3" | "h4";
-    const style = (level: TextLevel, text?: string) => {
+    const style = (
+      level: TextLevel,
+      text?: string,
+      afterFocus?: () => void,
+    ) => {
       const next = p.content.map((v, j) =>
         j === n ? convertTextStyle(b, level, text) : v,
       );
       change({ content: next });
       setSection(contentSections(next).findIndex((s) => s.indices.includes(n)));
       requestAnimationFrame(() =>
-        requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
           document
             .querySelector<HTMLElement>(
               `[data-block-id="block-${b.id ?? n}"] textarea,[data-block-id="block-${b.id ?? n}"] .tiptap`,
             )
-            ?.focus({ preventScroll: true }),
-        ),
+            ?.focus({ preventScroll: true });
+          afterFocus?.();
+        }),
       );
     };
     return (
