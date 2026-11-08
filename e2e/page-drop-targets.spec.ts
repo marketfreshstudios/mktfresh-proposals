@@ -256,6 +256,22 @@ for (const template of [false, true]) {
     }
     await moveToEmpty(false);
     await moveToEmpty(true);
+    // A dragged last block's moving rectangle must not invent an end-of-page target.
+    await frame(2).click({ position: { x: 20, y: 16 } });
+    const lastHandle = frame(2).locator(".editor-gutter .drag-handle");
+    const h = (await lastHandle.boundingBox())!;
+    await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + 16, {
+      steps: 4,
+    });
+    const heading = (await frame(1).boundingBox())!;
+    await page.mouse.move(heading.x - 20, heading.y + heading.height / 2 + 1, {
+      steps: 16,
+    });
+    await expect(line).toHaveAttribute("data-drop-index", "2");
+    await page.mouse.up();
+    expect(JSON.stringify(await read())).toBe(original);
     // Invalid targets must clear the previous indicator and must not reuse its last index.
     for (const target of [
       paper.locator(".document-cover"),

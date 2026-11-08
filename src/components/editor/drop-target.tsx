@@ -58,13 +58,23 @@ export function documentDropTarget(
     );
     if (el && contains(el.getBoundingClientRect(), x, y)) return null;
   }
+  const pages = paper.querySelector<HTMLElement>(
+    ":scope > .editor-page-sheets",
+  );
+  if (pages && pages.dataset.layoutSettled !== "true") return null;
   let plan: PagePlan;
   try {
     plan = JSON.parse(paper.dataset.pagination ?? "null");
     // The saved-group mini editor is intentionally unpaged; retain its drop support.
     if (!plan && paper.matches(".studio-blocks:not(.template-paged-paper)"))
       plan = { format: 1, pages: 1, starts: [] };
-    if (!plan?.starts) return null;
+    if (
+      !plan?.starts ||
+      plan.starts.some(
+        (s) => !content.some((b) => b.id === (s.marker ?? s.block)),
+      )
+    )
+      return null;
   } catch {
     return null;
   }
@@ -167,7 +177,11 @@ export function documentDropTarget(
   // Empty explicit pages have a real source boundary even without a block element.
   if (visibleBlocks.length) {
     const last = frameFor(visibleBlocks.at(-1)!);
-    if (last && last.getBoundingClientRect().bottom <= bottom + 1)
+    if (
+      last &&
+      !excluded.includes(visibleBlocks.at(-1)!.id!) &&
+      last.getBoundingClientRect().bottom <= bottom + 1
+    )
       candidates.push({
         at: Math.max(at, end),
         y: Math.max(top, last.getBoundingClientRect().bottom),
