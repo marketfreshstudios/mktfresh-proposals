@@ -1,4 +1,4 @@
-import { expectStraightTabIndicator } from "./tab-indicator";
+import { expectNoTabUnderline } from "./tab-indicator";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
@@ -29,13 +29,26 @@ import { editorFixture } from "./editor-fixture";
 
 const evidence = "docs/screenshots/ink-and-clay";
 async function capture(page: Page, name: string, fullPage = false) {
-  if (process.env.CAPTURE_REPORTS !== "1") return;
-  mkdirSync(evidence, { recursive: true });
+  const polish =
+    process.env.CAPTURE_REPORT_POLISH === "1" && name.startsWith("reports-");
+  if (!polish && process.env.CAPTURE_REPORTS !== "1") return;
+  const directory = polish
+    ? "docs/screenshots/reports-provider-polish"
+    : evidence;
+  mkdirSync(directory, { recursive: true });
+  const viewport = page.viewportSize();
+  if (polish && fullPage && viewport && viewport.width >= 1100) {
+    const height = await page.evaluate(
+      () => document.documentElement.scrollHeight,
+    );
+    await page.setViewportSize({ width: viewport.width, height });
+  }
   await page.screenshot({
-    path: `${evidence}/${name}.png`,
+    path: `${directory}/${name}.png`,
     fullPage,
     animations: "disabled",
   });
+  if (viewport) await page.setViewportSize(viewport);
 }
 async function useSample(page: Page, empty = false) {
   const { draft } = await editorFixture(page);
@@ -116,10 +129,34 @@ test("Reports uses scoped data, accessible trend and sortable breakdowns with ma
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("link", { name: "Reports" }),
   ).toHaveAttribute("aria-current", "page");
-  await expectStraightTabIndicator(
+  await expectNoTabUnderline(
     page
       .getByRole("tablist", { name: "Trend display" })
       .locator('[aria-selected="true"]'),
+  );
+  const trendTabs = page.getByRole("tablist", { name: "Trend display" });
+  await expect(trendTabs).toHaveAttribute("data-tab-style", "segment");
+  await expect(trendTabs.getByRole("tab", { name: "Chart" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  const filters = page.locator(".report-filter-pill");
+  await expect(filters).toHaveText([
+    /Owner.*All/,
+    /Template.*All/,
+    /Client.*All/,
+  ]);
+  const filterY = (await filters.first().boundingBox())!.y;
+  expect((await filters.last().boundingBox())!.y).toBe(filterY);
+  for (const card of await page.locator(".report-card").all())
+    await expect(card).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(
+    page.locator(".report-card.report-stages > section"),
+  ).toHaveCount(2);
+  expect(
+    (await page.locator(".report-stages > section").last().boundingBox())!.x,
+  ).toBeGreaterThan(
+    (await page.locator(".report-stages > section").first().boundingBox())!.x,
   );
   await expect(page.getByRole("figure")).toHaveAccessibleName(
     /11 sent and 4 client signatures across 4 months/,
@@ -238,6 +275,19 @@ test("Reports phone layout and new-workspace empty state", async ({ page }) => {
     (await new AxeBuilder({ page }).include(".reports").analyze()).violations,
   ).toEqual([]);
   await capture(page, "reports-375");
+  if (process.env.CAPTURE_REPORT_POLISH === "1") {
+    for (const [heading, shot] of [
+      ["Value signed", "reports-stages-375"],
+      ["Breakdowns", "reports-breakdowns-375"],
+      ["Engagement", "reports-engagement-375"],
+    ]) {
+      await page
+        .getByRole("heading", { name: heading, exact: true })
+        .evaluate((node) => node.scrollIntoView({ block: "start" }));
+      await capture(page, shot);
+    }
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
   await page.getByRole("button", { name: "About win rate" }).click();
   const tooltip = page.getByRole("tooltip");
   await expect(tooltip).toBeVisible();
@@ -414,4 +464,27 @@ test("Ink shell keeps its five phone slots and the Studio sub-navigation", async
     "aria-current",
     "location",
   );
+});
+
+test("Reports cards stack without horizontal overflow at 768px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 950 });
+  await useSample(page);
+  await page.goto("/reports?range=last-90");
+  const stages = page.locator(".report-card.report-stages > section");
+  await expect(stages).toHaveCount(2);
+  expect((await stages.last().boundingBox())!.y).toBeGreaterThan(
+    (await stages.first().boundingBox())!.y,
+  );
+  await expect(
+    page.getByRole("button", { name: "Filters", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    768,
+  );
+  expect(
+    (await new AxeBuilder({ page }).include(".reports").analyze()).violations,
+  ).toEqual([]);
+  await capture(page, "reports-768", true);
 });

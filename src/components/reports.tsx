@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import {
   useEffect,
   useId,
@@ -215,28 +216,44 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
   function fields(
     value: ReportFilters,
     onChange: (value: ReportFilters) => void,
+    compact = false,
   ) {
     return (Object.keys(dimensions) as (keyof typeof dimensions)[]).map(
-      (name) => (
-        <label key={name}>
-          {dimensions[name]}
-          <Select
-            aria-label={dimensions[name]}
-            disabled={empty}
-            value={value[name] ?? ""}
-            onChange={(event) =>
-              onChange({ ...value, [name]: event.target.value || undefined })
-            }
+      (name) => {
+        const options = report?.dimensions[name];
+        const selectedName = options?.find(
+          (option) => option.id === value[name],
+        )?.name;
+        return (
+          <label
+            key={name}
+            className={compact ? "report-filter-pill" : undefined}
           >
-            <option value="">All</option>
-            {report?.dimensions[name].map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </Select>
-        </label>
-      ),
+            <span>{dimensions[name]}</span>
+            {compact && (
+              <>
+                <strong aria-hidden="true">{selectedName ?? "All"}</strong>
+                <ChevronDown size={14} aria-hidden="true" />
+              </>
+            )}
+            <Select
+              aria-label={dimensions[name]}
+              disabled={empty}
+              value={value[name] ?? ""}
+              onChange={(event) =>
+                onChange({ ...value, [name]: event.target.value || undefined })
+              }
+            >
+              <option value="">All</option>
+              {options?.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        );
+      },
     );
   }
   const scoped = [filters.owner, filters.template, filters.client].filter(
@@ -264,7 +281,9 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
         aria-label="Report filters"
       >
         {rangeTabs("wide-ranges")}
-        <div className="report-filter-fields">{fields(filters, apply)}</div>
+        <div className="report-filter-fields">
+          {fields(filters, apply, true)}
+        </div>
         <Button
           className="report-filter-trigger"
           disabled={empty}
@@ -375,9 +394,7 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
             </section>
           ) : (
             <>
-              <div
-                className={`report-stages ${report.values.length === 1 && !report.values[0].yearly ? "compact-stages" : ""}`}
-              >
+              <div className="report-card report-stages">
                 <ValueSigned report={report} link={link} />
                 <Pipeline report={report} link={link} />
               </div>
@@ -564,9 +581,12 @@ function ValueSigned({ report, link }: { report: Report; link: Link }) {
                     <>
                       <span>{periods[key]}</span>
                       <strong className="t-hero-number">
-                        {amount === null
-                          ? "—"
-                          : money(amount, value.currency) + signSuffix[key]}
+                        {amount === null ? "—" : money(amount, value.currency)}
+                        {amount !== null && signSuffix[key] && (
+                          <span className="report-value-cadence">
+                            {signSuffix[key]}
+                          </span>
+                        )}
                       </strong>
                       <small>
                         {key === "one_time"
@@ -703,36 +723,51 @@ function Trend({
     </a>
   );
   return (
-    <section className="report-section" aria-labelledby="report-trend">
+    <section
+      className="report-card report-section"
+      aria-labelledby="report-trend"
+    >
       <div className="report-section-heading">
         <h2 className="t-section-title" id="report-trend">
           Sent vs signed by month
         </h2>
-        <div
-          className="report-trend-tabs"
-          data-tab-style="underline"
-          role="tablist"
-          aria-label="Trend display"
-          onKeyDown={(event) =>
-            arrowTabs(event, view === "chart" ? 0 : 1, 2, (i) =>
-              setView(i ? "table" : "chart"),
-            )
-          }
-        >
-          {(["chart", "table"] as const).map((tab) => (
-            <button
-              type="button"
-              key={tab}
-              role="tab"
-              id={id + tab}
-              aria-controls={id + "panel"}
-              aria-selected={view === tab}
-              tabIndex={view === tab ? 0 : -1}
-              onClick={() => setView(tab)}
-            >
-              {tab === "chart" ? "Chart" : "View as table"}
-            </button>
-          ))}
+        <div className="report-trend-controls">
+          {view === "chart" && (
+            <ul className="report-legend" role="list">
+              <li>
+                Sent <span className="sr-only">(hatched)</span>
+              </li>
+              <li>
+                Signed <span className="sr-only">(solid)</span>
+              </li>
+            </ul>
+          )}
+          <div
+            className="report-trend-tabs"
+            data-tab-style="segment"
+            role="tablist"
+            aria-label="Trend display"
+            onKeyDown={(event) =>
+              arrowTabs(event, view === "chart" ? 0 : 1, 2, (i) =>
+                setView(i ? "table" : "chart"),
+              )
+            }
+          >
+            {(["chart", "table"] as const).map((tab) => (
+              <button
+                type="button"
+                key={tab}
+                role="tab"
+                id={id + tab}
+                aria-controls={id + "panel"}
+                aria-selected={view === tab}
+                tabIndex={view === tab ? 0 : -1}
+                onClick={() => setView(tab)}
+              >
+                {tab === "chart" ? "Chart" : "View as table"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div role="tabpanel" id={id + "panel"} aria-labelledby={id + view}>
@@ -742,10 +777,6 @@ function Trend({
               {summary} Sent bars are outlined and hatched. Signed bars are
               solid.
             </figcaption>
-            <ul className="report-legend" role="list">
-              <li>Sent (hatched)</li>
-              <li>Signed (solid)</li>
-            </ul>
             <div className="report-chart-scroll">
               <div
                 className="report-plot"
@@ -886,7 +917,10 @@ function Breakdown({
     ];
   }
   return (
-    <section className="report-section report-breakdown" aria-label={heading}>
+    <section
+      className="report-card report-section report-breakdown"
+      aria-label={heading}
+    >
       <div className="report-section-heading">
         <h3 className="t-section-title">{heading}</h3>
         <span className="report-sort-hint">Click a column to sort</span>
@@ -1051,7 +1085,7 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
         Engagement
       </h2>
       <div className="report-engagement">
-        <section aria-labelledby="report-sections">
+        <section className="report-card" aria-labelledby="report-sections">
           <h3 className="t-section-title" id="report-sections">
             Most-read sections
           </h3>
@@ -1087,7 +1121,7 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
             <p className="muted">No section time recorded yet.</p>
           )}
         </section>
-        <section aria-labelledby="report-questions">
+        <section className="report-card" aria-labelledby="report-questions">
           <h3 className="t-section-title" id="report-questions">
             Client questions
           </h3>
@@ -1121,13 +1155,11 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
             </p>
           )}
           <div className="report-question-links">
-            <a className="btn" href={link({ report: "questions-open" })}>
+            <a href={link({ report: "questions-open" })}>
               See {questions.open} open{" "}
               {questions.open === 1 ? "question" : "questions"}
             </a>
-            <a className="btn" href={link({ report: "questions" })}>
-              All {questions.total}
-            </a>
+            <a href={link({ report: "questions" })}>All {questions.total}</a>
           </div>
         </section>
       </div>
