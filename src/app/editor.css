@@ -6003,6 +6003,37 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   white-space: nowrap;
   cursor: grabbing;
 }
+.section-gap-anchor {
+  position: relative;
+  height: 0;
+}
+.section-insertion-gap {
+  position: absolute;
+  inset: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: 600 11px/16px var(--font-ui);
+  pointer-events: none;
+}
+.sections-nav
+  :is([data-sortable-id^="section:"], .outline-page-tail, .outline-page-end) {
+  transition: transform 200ms ease;
+}
+.sections-nav .outline-page-end[data-projected] {
+  border-color: transparent;
+  background: transparent;
+  color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sections-nav
+    :is([data-sortable-id^="section:"], .outline-page-tail, .outline-page-end) {
+    transition: none;
+  }
+}
 .editor-v2 .editor-layout > .editor-outline,
 .editor-v2-sections-drawer {
   background: var(--surface-page);

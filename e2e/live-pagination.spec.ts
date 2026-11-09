@@ -495,14 +495,16 @@ test("overflow page 3 is a real section drop target, preserving original blocks 
       exact: true,
     }),
     to = nav.locator('[data-outline-page="3"] .outline-page-title');
-  const a = (await from.boundingBox())!,
-    b = (await to.boundingBox())!;
+  const a = (await from.boundingBox())!;
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 + 12, {
     steps: 4,
   });
-  await page.mouse.move(b.x + b.width / 2, b.y + 4, { steps: 20 });
+  // Aim at the live heading after the drag starts. Intermediate pages now
+  // move as they open and close their preview gaps.
+  const b = (await to.boundingBox())!;
+  await page.mouse.move(b.x + b.width / 2, b.y + 4);
   await page.mouse.up();
   await expect(
     nav

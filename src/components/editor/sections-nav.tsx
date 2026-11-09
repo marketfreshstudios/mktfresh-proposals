@@ -1,4 +1,5 @@
 "use client";
+import { Fragment, type ReactNode } from "react";
 import { resolvedEditorText } from "../../lib/editor-fields";
 import { bandPages, resolvedBandPages } from "../../lib/band-overrides";
 import type { HeaderFooterSettings } from "../../lib/page-bands";
@@ -15,11 +16,8 @@ import { assertBlockMove, documentSectionRanges } from "../../lib/editor-moves";
 import { computedPages, moveComputedSection } from "../../lib/computed-pages";
 import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { columnStyleKey } from "./style-clipboard";
-import { Reorder, Sortable } from "../sortable";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { Reorder, Sortable, sectionDropEdge } from "../sortable";
+import { SortableContext } from "@dnd-kit/sortable";
 import { useBlockFeedback, useBlockSelection } from "../block-controls";
 function SectionRow({
   label,
@@ -57,6 +55,14 @@ function blockLabel(block: Block) {
     : block.type === "contract"
       ? block.text || "Statement of Work & Contract"
       : "Signatures";
+}
+function findDropPage(pages: ReturnType<typeof computedPages>, target: string) {
+  return pages.find(
+    (p) =>
+      target === `page:${p.id}` ||
+      target === `page-end:${p.id}` ||
+      p.sections.some((s) => target === `section:${s.id}`),
+  );
 }
 export function SectionsNav({
   content,
@@ -163,12 +169,7 @@ export function SectionsNav({
           return section ? display(section.title) : "";
         }}
         onMove={(from, to, edge) => {
-          const target = pages.find(
-            (p) =>
-              `page:${p.id}` === to ||
-              `page-end:${p.id}` === to ||
-              p.sections.some((s) => `section:${s.id}` === to),
-          );
+          const target = findDropPage(pages, to);
           if (!target) return;
           if (from.startsWith("page:")) {
             const source = pages.find((p) => `page:${p.id}` === from);
@@ -237,143 +238,201 @@ export function SectionsNav({
           }
         }}
       >
-        {pages.map((p) => (
-          <Sortable
-            key={p.id}
-            id={`page:${p.id}`}
-            label={`page ${p.number}`}
-            draggable={p.explicit}
-          >
-            <div className="outline-page" data-outline-page={p.number}>
-              <div className="outline-page-title">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onPage) onPage(p.number);
-                    else
-                      document
-                        .querySelector(`[data-editor-page="${p.number}"]`)
-                        ?.scrollIntoView({ block: "start" });
-                  }}
-                >
-                  <span className="section-label page-label">
-                    Page {p.number}
-                  </span>
-                  {bandStatus[p.number - 1] && (
-                    <BandPageMarker page={bandStatus[p.number - 1]} />
-                  )}
-                </button>
-                {
-                  <>
-                    <button
-                      disabled={!p.explicit}
-                      title={
-                        p.explicit
-                          ? `Delete page ${p.number}`
-                          : "Automatic overflow page — edit its content to remove it"
-                      }
-                      type="button"
-                      aria-label={`Delete page ${p.number}`}
-                      onClick={() =>
-                        feedback.removePage(() =>
-                          onChange(deletePage(content, p.id)),
-                        )
-                      }
-                    >
-                      ×
-                    </button>
-                  </>
-                }
-              </div>
-              {p.number === 1 && (
-                <SectionRow
-                  label="Cover"
-                  current={currentSectionId === "cover"}
-                  onClick={() => onFocus("cover")}
+        <SectionDragLayout pages={pages}>
+          {(drag) =>
+            pages.map((p) => {
+              const source = p.sections.findIndex((s) => s.id === drag?.source);
+              const shrink = drag && source >= 0 ? drag.height : 0;
+              const grows = drag?.page === p.id;
+              const grow = grows ? drag.height : 0;
+              const insertion = grows ? drag.index : -1;
+              // Transforms animate the rows. The page margin accounts for
+              // their net movement in the surrounding sidebar layout.
+              const gap = grows && (
+                <SectionInsertionGap
+                  drag={drag}
+                  page={p.number}
+                  offset={source >= 0 && insertion > source ? -shrink : 0}
                 />
-              )}
-              <SortableContext
-                items={p.sections.map((s) => `section:${s.id}`)}
-                strategy={verticalListSortingStrategy}
-              >
-                {p.sections.map((s) => (
-                  <Sortable
-                    key={s.id}
-                    id={`section:${s.id}`}
-                    label={`section ${display(s.title)}`}
-                  >
-                    <SectionRow
-                      label={
-                        [
-                          "pricing_table",
-                          "signature_block",
-                          "contract",
-                        ].includes(s.blocks[0]?.type)
-                          ? display(blockLabel(s.blocks[0]))
-                          : display(s.title)
+              );
+              return (
+                <Sortable
+                  key={p.id}
+                  id={`page:${p.id}`}
+                  label={`page ${p.number}`}
+                  draggable={p.explicit}
+                  style={{ marginBlockEnd: grow - shrink || undefined }}
+                >
+                  <div className="outline-page" data-outline-page={p.number}>
+                    <div className="outline-page-title">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onPage) onPage(p.number);
+                          else
+                            document
+                              .querySelector(`[data-editor-page="${p.number}"]`)
+                              ?.scrollIntoView({ block: "start" });
+                        }}
+                      >
+                        <span className="section-label page-label">
+                          Page {p.number}
+                        </span>
+                        {bandStatus[p.number - 1] && (
+                          <BandPageMarker page={bandStatus[p.number - 1]} />
+                        )}
+                      </button>
+                      {
+                        <>
+                          <button
+                            disabled={!p.explicit}
+                            title={
+                              p.explicit
+                                ? `Delete page ${p.number}`
+                                : "Automatic overflow page — edit its content to remove it"
+                            }
+                            type="button"
+                            aria-label={`Delete page ${p.number}`}
+                            onClick={() =>
+                              feedback.removePage(() =>
+                                onChange(deletePage(content, p.id)),
+                              )
+                            }
+                          >
+                            ×
+                          </button>
+                        </>
                       }
-                      current={
-                        activeSection === s.id &&
-                        (!activePage || activePage === p.number)
-                      }
-                      pending={s.pending}
-                      title={display(s.title)}
-                      onClick={() => onFocus(s.id)}
-                    />
-                    {s.blocks
-                      .filter((b) => b.type === "heading" && (b.level ?? 1) > 1)
-                      .map((b) => (
-                        <SectionRow
-                          key={b.id}
-                          subheading
-                          label={display(b.text || "Untitled subheading")}
-                          current={
-                            activeSection === b.id &&
-                            (!activePage || activePage === p.number)
-                          }
-                          onClick={() => onFocus(b.id!)}
-                        />
+                    </div>
+                    {p.number === 1 && (
+                      <SectionRow
+                        label="Cover"
+                        current={currentSectionId === "cover"}
+                        onClick={() => onFocus("cover")}
+                      />
+                    )}
+                    <SortableContext
+                      items={p.sections.map((s) => `section:${s.id}`)}
+                      strategy={noSectionSorting}
+                    >
+                      {p.sections.map((s, index) => (
+                        <Fragment key={s.id}>
+                          {insertion === index && gap}
+                          <Sortable
+                            id={`section:${s.id}`}
+                            label={`section ${display(s.title)}`}
+                            style={
+                              index === source
+                                ? { opacity: 0, pointerEvents: "none" }
+                                : {
+                                    transform: sectionTranslate(
+                                      (index > source ? -shrink : 0) +
+                                        (insertion >= 0 && index >= insertion
+                                          ? grow
+                                          : 0),
+                                    ),
+                                  }
+                            }
+                          >
+                            <SectionRow
+                              label={
+                                [
+                                  "pricing_table",
+                                  "signature_block",
+                                  "contract",
+                                ].includes(s.blocks[0]?.type)
+                                  ? display(blockLabel(s.blocks[0]))
+                                  : display(s.title)
+                              }
+                              current={
+                                activeSection === s.id &&
+                                (!activePage || activePage === p.number)
+                              }
+                              pending={s.pending}
+                              title={display(s.title)}
+                              onClick={() => onFocus(s.id)}
+                            />
+                            {s.blocks
+                              .filter(
+                                (b) =>
+                                  b.type === "heading" && (b.level ?? 1) > 1,
+                              )
+                              .map((b) => (
+                                <SectionRow
+                                  key={b.id}
+                                  subheading
+                                  label={display(
+                                    b.text || "Untitled subheading",
+                                  )}
+                                  current={
+                                    activeSection === b.id &&
+                                    (!activePage || activePage === p.number)
+                                  }
+                                  onClick={() => onFocus(b.id!)}
+                                />
+                              ))}
+                          </Sortable>
+                        </Fragment>
                       ))}
-                  </Sortable>
-                ))}
-              </SortableContext>
-              {!p.sections.some((s) => s.blocks[0]?.type === "heading") &&
-                pageBlocks(p.number)
-                  .filter((b) => !p.sections.some((s) => s.id === b.id))
-                  .map((b) => (
-                    <SectionRow
-                      className="outline-block"
-                      key={b.id}
-                      label={display(blockLabel(b))}
-                      current={
-                        selected === `block-${b.id}` ||
-                        selected === `template-${b.id}`
-                      }
-                      onClick={() => onFocus(b.id!)}
+                    </SortableContext>
+                    {insertion === p.sections.length && !drag?.atPageEnd && gap}
+                    <div
+                      className="outline-page-tail"
+                      style={{
+                        transform: sectionTranslate(
+                          drag?.atPageEnd ? -shrink : grow - shrink,
+                        ),
+                      }}
+                    >
+                      {!p.sections.some(
+                        (s) => s.blocks[0]?.type === "heading",
+                      ) &&
+                        pageBlocks(p.number)
+                          .filter((b) => !p.sections.some((s) => s.id === b.id))
+                          .map((b) => (
+                            <SectionRow
+                              className="outline-block"
+                              key={b.id}
+                              label={display(blockLabel(b))}
+                              current={
+                                selected === `block-${b.id}` ||
+                                selected === `template-${b.id}`
+                              }
+                              onClick={() => onFocus(b.id!)}
+                            />
+                          ))}
+                      {!p.sections.length &&
+                        !pageBlocks(p.number).length &&
+                        p.continuing && (
+                          <SectionRow
+                            className="outline-continuing"
+                            label={`${display(p.continuing.title)} (continued)`}
+                            onClick={() => onPage?.(p.number)}
+                          />
+                        )}
+                      {p.number > 1 &&
+                        !p.sections.length &&
+                        !pageBlocks(p.number).length &&
+                        !p.continuing && (
+                          <SectionRow
+                            label="Empty page"
+                            onClick={() => onPage?.(p.number)}
+                          />
+                        )}
+                    </div>
+                    {grows && drag.atPageEnd && gap}
+                    <PageEndDropHint
+                      id={p.id}
+                      page={p.number}
+                      offset={grow - shrink}
+                      projected={grows && drag.atPageEnd}
                     />
-                  ))}
-              {!p.sections.length &&
-                !pageBlocks(p.number).length &&
-                p.continuing && (
-                  <SectionRow
-                    className="outline-continuing"
-                    label={`${display(p.continuing.title)} (continued)`}
-                    onClick={() => onPage?.(p.number)}
-                  />
-                )}
-              {p.number > 1 &&
-                !p.sections.length &&
-                !pageBlocks(p.number).length &&
-                !p.continuing && (
-                  <SectionRow
-                    label="Empty page"
-                    onClick={() => onPage?.(p.number)}
-                  />
-                )}
-              <PageEndDropHint id={p.id} page={p.number} />
-            </div>
-          </Sortable>
-        ))}
+                  </div>
+                </Sortable>
+              );
+            })
+          }
+        </SectionDragLayout>
       </Reorder>
       {!content.length && <p className="muted">No sections yet</p>}
       <button type="button" className="sections-add-page" onClick={() => add()}>
@@ -383,9 +442,98 @@ export function SectionsNav({
   );
 }
 
+const noSectionSorting = () => null;
+const sectionTranslate = (offset: number) =>
+  offset ? `translateY(${offset}px)` : undefined;
+
+type SectionDrag = {
+  source: string;
+  page: string;
+  index: number;
+  height: number;
+  target: string;
+  edge: "before" | "after";
+  atPageEnd: boolean;
+};
+
+function SectionDragLayout({
+  pages,
+  children,
+}: {
+  pages: ReturnType<typeof computedPages>;
+  children: (drag: SectionDrag | null) => ReactNode;
+}) {
+  const { active, activeNodeRect, collisions } = useDndContext();
+  const target = String(collisions?.[0]?.id ?? "");
+  const source = String(active?.id ?? "");
+  const edge = sectionDropEdge(collisions?.[0]);
+  const height = activeNodeRect?.height;
+  if (!source.startsWith("section:") || source === target || !height || !edge)
+    return children(null);
+
+  const atPageEnd = target.startsWith("page-end:");
+  const page = findDropPage(pages, target);
+  if (!page) return children(null);
+  const sourceId = source.slice(8);
+  const sourceIndex = page.sections.findIndex((s) => s.id === sourceId);
+  const index = atPageEnd
+    ? page.sections.length + 1
+    : target.startsWith("page:")
+      ? 0
+      : page.sections.findIndex((s) => `section:${s.id}` === target) +
+        (edge === "after" ? 1 : 0);
+  if (
+    index === sourceIndex ||
+    (index === sourceIndex + 1 && !atPageEnd && sourceIndex >= 0)
+  )
+    return children(null);
+  return children({
+    source: sourceId,
+    page: page.id,
+    index,
+    height,
+    target,
+    edge,
+    atPageEnd,
+  });
+}
+
+function SectionInsertionGap({
+  drag,
+  page,
+  offset,
+}: {
+  drag: SectionDrag;
+  page: number;
+  offset: number;
+}) {
+  return (
+    <div className="section-gap-anchor" aria-hidden="true">
+      <div
+        className="section-insertion-gap"
+        data-section-drop-gap={drag.target}
+        data-section-drop-edge={drag.edge}
+        style={{ height: drag.height, transform: sectionTranslate(offset) }}
+      >
+        {drag.atPageEnd && `Move to end of page ${page}`}
+      </div>
+    </div>
+  );
+}
+
 // The slot stays mounted and never takes focus. Its ID distinguishes the
 // bottom of this page from the first section after the following page break.
-function PageEndDropHint({ id, page }: { id: string; page: number }) {
+function PageEndDropHint({
+  id,
+  page,
+  offset,
+  projected,
+}: {
+  id: string;
+  page: number;
+  offset: number;
+  projected: boolean;
+}) {
   const { active } = useDndContext();
   const { isOver, setNodeRef } = useDroppable({ id: `page-end:${id}` });
   const dragging = String(active?.id ?? "").startsWith("section:");
@@ -395,6 +543,8 @@ function PageEndDropHint({ id, page }: { id: string; page: number }) {
       className="outline-page-end"
       data-dragging={dragging || undefined}
       data-drop-target={(dragging && isOver) || undefined}
+      data-projected={projected || undefined}
+      style={{ transform: sectionTranslate(offset) }}
     >
       {dragging ? `Move to end of page ${page}` : null}
     </div>
