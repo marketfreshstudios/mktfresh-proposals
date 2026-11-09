@@ -16,6 +16,8 @@
 }
 .ink-clay .staff-table.staff-surface {
   --staff-table-gutter: var(--space-4);
+}
+.ink-clay .staff-table.staff-surface:not(.table-wrap) {
   overflow: visible;
 }
 .ink-clay
