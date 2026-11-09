@@ -24,18 +24,6 @@
   :is(td, .proposal-row .row-amount, .proposal-row-head) {
   font-variant-numeric: tabular-nums;
 }
-/* Staff table headers share the card surface. Body rows supply the grid divider. */
-.staff-foundation.ink-clay
-  :is(.staff-table-head:not(thead), .staff-table-head th) {
-  background-color: var(--surface);
-}
-.staff-foundation.ink-clay
-  .staff-table-head:where(.proposal-row-head, .studio-table-head):is(
-    :only-child,
-    :has(+ .empty-copy)
-  ) {
-  box-shadow: inset 0 -1px var(--border);
-}
 /* Shared state colors pair the label with its background on every surface. */
 .staff-foundation.ink-clay
   :is(.btn, .btn.primary, .btn.secondary, .btn.ghost, .editor-button):not(

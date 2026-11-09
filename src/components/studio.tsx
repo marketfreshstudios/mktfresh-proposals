@@ -1,4 +1,7 @@
 "use client";
+import { withCount } from "../lib/count-label";
+import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
+import { ProviderMark } from "./provider-brand";
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
 import { QuickBooksPicker } from "./quickbooks-fields";
@@ -344,16 +347,16 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         className={`studio-products-layout ${selected ? "with-detail" : ""}`}
       >
         <div>
-          <div className="studio-data-table product-table">
-            <div className="studio-table-head staff-table-head">
+          <StaffTable className="studio-data-table product-table">
+            <StaffTableHead className="studio-table-head">
               <span>Product</span>
               <span>Price</span>
               <span>Plan terms</span>
               <span>Source</span>
-            </div>
+            </StaffTableHead>
             {items.map((i) => (
               <a
-                className="studio-table-row catalog-row catalog-row-v3"
+                className="staff-table-row studio-table-row catalog-row catalog-row-v3"
                 href={`?item=${i.id}`}
                 key={i.id}
                 onClick={(e) => {
@@ -384,7 +387,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 </span>
                 <span>
                   {i.schedule
-                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
+                    ? `${withCount(i.schedule.after_paid_invoices, "payment")}, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
                     : "—"}
                   {i.min_term_months && (
                     <small>{i.min_term_months}-month minimum</small>
@@ -401,7 +404,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             ))}
             {families.map((f) => (
               <a
-                className="studio-table-row"
+                className="staff-table-row studio-table-row"
                 href={`?item=${f.id}`}
                 key={f.id}
                 onClick={(e) => {
@@ -422,16 +425,14 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 <span className="studio-tag">Custom</span>
               </a>
             ))}
-          </div>
-          {!items.length && !families.length && (
-            <Empty
-              title={
-                query ? "No matching products" : "Your products start here"
-              }
-            >
-              Sync your Stripe products or create a custom family.
-            </Empty>
-          )}
+            {!items.length && !families.length && (
+              <StaffTableEmpty>
+                {query
+                  ? "No matching products."
+                  : "Your products start here. Sync your Stripe products or create a custom family."}
+              </StaffTableEmpty>
+            )}
+          </StaffTable>
           <Button onClick={() => setAdding(true)}>Add one-time product</Button>
         </div>
         {(item || custom) && (
@@ -833,7 +834,7 @@ function CatalogItem({
             {minimum && <p>{minimum}-month minimum commitment.</p>}
             {count && (
               <p>
-                After {count} paid invoices:{" "}
+                After {withCount(Number(count), "paid invoice")}:{" "}
                 {money(Math.round(Number(then || 0) * 100))} per recurring
                 period.
               </p>
@@ -1354,7 +1355,7 @@ function TemplatesStudioContent({
     if (
       !(await confirmDialog({
         title: `Delete block “${value.name}”?`,
-        description: `Used in ${value.used_in?.templates.length ?? 0} linked templates. Removes it from Saved blocks and unlinks those copies. Copies already in templates and proposals stay as they are.`,
+        description: `Used in ${withCount(value.used_in?.templates.length ?? 0, "linked template")}. Removes it from Saved blocks and unlinks those copies. Copies already in templates and proposals stay as they are.`,
         confirmLabel: "Delete block",
         cancelLabel: "Cancel",
         destructive: true,
@@ -3131,7 +3132,7 @@ function TemplatesStudioContent({
               </div>
             </div>
             {mode === "blocks" && (
-              <p className="saved-block-footer">
+              <p className="saved-block-footer staff-surface staff-surface-note">
                 Sent proposals that aren't signed yet update on the same link
                 when you save them; signed proposals never change.
               </p>
@@ -3623,7 +3624,7 @@ export function ConnectionsStudio({
               ? "Sandbox configured"
               : "Setup needed",
       line: "One-time invoices stay in review until a sandbox connection is ready.",
-      detail: `${data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length} proposals with invoices to review`,
+      detail: `${withCount(data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length, "proposal")} with invoices to review`,
       action:
         qbo?.state === "reconnect"
           ? "Reconnect QuickBooks"
@@ -3937,15 +3938,13 @@ export function ConnectionsStudio({
                     className={`connection-card ${c.id !== "assistants" && /needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
                     key={c.id}
                   >
-                    <span className="connection-monogram" aria-hidden="true">
-                      {c.id === "stripe"
-                        ? "S"
-                        : c.id === "qbo"
-                          ? "qb"
-                          : c.id === "assistants"
-                            ? "AI"
-                            : c.name[0]}
-                    </span>
+                    {c.id === "stripe" || c.id === "qbo" ? (
+                      <ProviderMark provider={c.id} />
+                    ) : (
+                      <span className="connection-monogram" aria-hidden="true">
+                        {c.id === "assistants" ? "AI" : c.name[0]}
+                      </span>
+                    )}
                     <div>
                       <div className="connection-title">
                         <h3>{c.name}</h3>

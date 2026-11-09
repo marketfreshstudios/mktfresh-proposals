@@ -233,7 +233,7 @@ export function Empty({
   action?: ReactNode;
 }) {
   return (
-    <div className="empty">
+    <div className="empty staff-empty">
       <Icon name="document" />
       <h2>{title}</h2>
       <p className="muted">{children}</p>

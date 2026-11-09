@@ -562,7 +562,7 @@ test("R21 desktop connection states use actual actions and link to affected prop
   await expect(page).toHaveURL(/\/studio\/connections\/quickbooks$/);
   await expect(headerChip).toHaveText("Not connected");
   await expect(
-    detail.getByRole("button", { name: "Connect QuickBooks" }),
+    detail.getByRole("button", { name: "Connect to QuickBooks" }),
   ).toBeEnabled();
   await capture(page, "3i-quickbooks-not-connected");
 
@@ -619,7 +619,9 @@ test("R21 desktop connection states use actual actions and link to affected prop
   ).toBeVisible();
   await capture(page, "3h-quickbooks-reconnect");
   await detail.getByRole("button", { name: "QuickBooks actions" }).click();
-  await menu.getByRole("button", { name: "Disconnect QuickBooks…" }).click();
+  await menu
+    .getByRole("button", { name: "Disconnect from QuickBooks…" })
+    .click();
   const confirm = page.getByRole("dialog", { name: "Disconnect QuickBooks?" });
   await expect(confirm.getByRole("button", { name: "Cancel" })).toBeFocused();
   await expect(
@@ -748,3 +750,83 @@ for (const width of [1440, 375]) {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
 }
+
+test("Connections and setup use the official provider artwork", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const f = await fixture(page);
+  let authorizations = 0;
+  await page.route("**/api/connections/qbo/authorize", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    authorizations++;
+    await route.fulfill({
+      json: { url: "/studio/connections/quickbooks?brand-fixture=connected" },
+    });
+  });
+  const evidence = "docs/screenshots/reports-provider-polish";
+  async function captureBrand(name: string) {
+    if (process.env.CAPTURE_REPORT_POLISH !== "1") return;
+    mkdirSync(evidence, { recursive: true });
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({
+      path: `${evidence}/${name}.png`,
+      animations: "disabled",
+    });
+  }
+  async function expectMarks(...providers: string[]) {
+    for (const provider of providers) {
+      const mark = page.locator(`[data-provider-mark="${provider}"]`);
+      await expect(mark).toBeVisible();
+      const bounds = (await mark.boundingBox())!;
+      const image = (await mark.locator("img").boundingBox())!;
+      expect(image.height).toBeGreaterThanOrEqual(16);
+      expect(bounds.width).toBeGreaterThanOrEqual(image.width * 2);
+      await expect
+        .poll(() =>
+          mark
+            .locator("img")
+            .evaluate((img: HTMLImageElement) => img.naturalWidth),
+        )
+        .toBeGreaterThan(0);
+    }
+  }
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript(
+      (mode) => localStorage.setItem("proposal-theme", mode),
+      theme,
+    );
+    f.state("not_connected");
+    await page.goto("/studio/connections");
+    await expectMarks("stripe", "qbo");
+    await captureBrand(`connections-${theme}-1440`);
+    await page.goto("/studio/connections/quickbooks");
+    await expectMarks("qbo");
+    const connect = page.getByRole("button", { name: "Connect to QuickBooks" });
+    const base = connect.locator('img[src$="-default.svg"]');
+    const hover = connect.locator('img[src$="-hover.svg"]');
+    await expect(base).toBeVisible();
+    await expect(base).toHaveCSS("width", "223px");
+    await expect(base).toHaveCSS("height", "36px");
+    await expect(connect).toHaveCSS("height", "44px");
+    await captureBrand(`quickbooks-connect-${theme}-1440`);
+    await connect.hover();
+    await expect(hover).toBeVisible();
+    f.state("connected");
+    await connect.click();
+    await expect(page).toHaveURL(/brand-fixture=connected$/);
+    await expectMarks("qbo");
+    await expect(connect).toHaveCount(0);
+    await captureBrand(`quickbooks-connected-${theme}-1440`);
+    await page.goto("/studio/connections/stripe");
+    await expectMarks("stripe");
+    await captureBrand(`stripe-connected-${theme}-1440`);
+  }
+  expect(authorizations).toBe(2);
+  await page.route("**/api/proposals?*", (route) =>
+    route.fulfill({ json: { items: [], total: 0 } }),
+  );
+  await page.goto("/");
+  await expectMarks("stripe", "qbo");
+  await captureBrand("setup-checklist-1440");
+});

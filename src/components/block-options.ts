@@ -1,3 +1,4 @@
+import { withCount } from "../lib/count-label";
 import { createColumns } from "../lib/columns";
 import type { Block } from "../lib/model";
 import type { SavedBlock } from "../lib/model";
@@ -150,7 +151,7 @@ export function blockOptions({
         name: s.name,
         description:
           s.type === "group"
-            ? `Group · ${savedBlocks(s).length} blocks`
+            ? `Group · ${withCount(savedBlocks(s).length, "block")}`
             : "Saved block",
         icon: "bookmark" as const,
         block: blocks[0],

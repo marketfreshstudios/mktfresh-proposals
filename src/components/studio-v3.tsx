@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { Select } from "./form-controls";
 import { eventLabel } from "../lib/event-label";
 import { useEffect, useState } from "react";
@@ -19,7 +20,7 @@ export function relativeTime(date?: string | null) {
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min ago`;
   if (minutes < 1440) return `${Math.floor(minutes / 60)} hr ago`;
-  return `${Math.floor(minutes / 1440)} days ago`;
+  return `${withCount(Math.floor(minutes / 1440), "day")} ago`;
 }
 export function StudioHome({ data }: { data: Data }) {
   const [emails, setEmails] = useState<EmailTemplate[] | null>(null);
@@ -43,11 +44,11 @@ export function StudioHome({ data }: { data: Data }) {
       : "",
   ].filter(Boolean);
   const statuses = [
-    `${data.templates.length} templates · ${data.library.length} saved blocks`,
+    `${withCount(data.templates.length, "template")} · ${withCount(data.library.length, "saved block")}`,
     clientEmails
-      ? `${clientEmails.length} client emails · ${clientEmails.filter((e) => e.updated_at).length} edited`
+      ? `${withCount(clientEmails.length, "client email")} · ${clientEmails.filter((e) => e.updated_at).length} edited`
       : "Loading email status…",
-    `${data.catalog.filter((i) => i.active && !i.legacy).length} products · ${sync ? `synced ${relativeTime(sync.created_at)}` : "not synced yet"}`,
+    `${withCount(data.catalog.filter((i) => i.active && !i.legacy).length, "product")} · ${sync ? `synced ${relativeTime(sync.created_at)}` : "not synced yet"}`,
     problems.join(" · ") ||
       (data.connections
         ? "Connections configured"

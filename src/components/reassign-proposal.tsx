@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { Select } from "./form-controls";
 import { DialogActions } from "./dialog-actions";
 import { useEffect, useState } from "react";
@@ -185,7 +186,8 @@ export function ReassignDialog({
             busy={busy}
             disabled={loading || !to || !selected.length}
           >
-            Reassign{proposal ? "" : ` ${selected.length} proposals`}
+            Reassign
+            {proposal ? "" : ` ${withCount(selected.length, "proposal")}`}
           </Button>
         </DialogActions>
       </form>

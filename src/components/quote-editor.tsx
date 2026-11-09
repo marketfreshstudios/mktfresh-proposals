@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { Select, Switch } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
@@ -1458,7 +1459,8 @@ function QuoteEditorContent({
       />
       <p className="eyebrow legacy-sections-progress">AI review</p>
       <p>
-        {sections.length - pending.length} of {sections.length} sections
+        {sections.length - pending.length} of{" "}
+        {withCount(sections.length, "section")}
         reviewed
       </p>
       <progress
@@ -2721,7 +2723,9 @@ function QuoteEditorContent({
                     "Document section"}
                 </p>
               ))}
-              <p>{recovery.quote?.length ?? 0} saved quote items.</p>
+              <p>
+                {withCount(recovery.quote?.length ?? 0, "saved quote item")}.
+              </p>
             </div>
           </details>
           <EditorButton

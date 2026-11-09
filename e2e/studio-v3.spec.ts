@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
+import sharp from "sharp";
 import { setup, staff } from "../tests/helpers";
 import { emailTemplates } from "../src/lib/email-templates";
 import { eventLabel } from "../src/lib/event-label";
@@ -158,7 +159,7 @@ async function capture(page: Page, name: string, fullPage = true) {
     await page.screenshot({ path: `${shots}/${name}.png`, fullPage });
   }
 }
-test("template cards show cropped Letter sheets with resolved titles at every width", async ({
+test("template cards show inset preview sheets with resolved titles at every width", async ({
   page,
 }) => {
   const f = await fixture(page);
@@ -233,8 +234,40 @@ test("template cards show cropped Letter sheets with resolved titles at every wi
       `/studio/templates/${templates[index].id}`,
     );
     await expect(band).toHaveAttribute("aria-hidden", "true");
+    await expect(card).toHaveCSS("border-radius", "18px");
     await expect(band).toHaveCSS("overflow", "hidden");
+    await expect(band).toHaveCSS("background-color", "rgb(244, 247, 247)");
+    await expect(band).toHaveCSS("border-bottom-width", "1px");
+    await expect(band).toHaveCSS("border-bottom-style", "solid");
+    await expect(band).toHaveCSS("border-bottom-color", "rgb(228, 222, 210)");
+    await expect(band).toHaveCSS("padding", "22px 22px 0px");
+    await expect(paper).toHaveCSS("border-radius", "3px 3px 0px 0px");
+    await expect(paper).toHaveCSS("padding", "20px 22px");
+    await expect(card.locator(".studio-template-card-footer")).toHaveCSS(
+      "padding",
+      "16px 20px",
+    );
+    await expect(card.getByTestId("template-card-name")).toHaveCSS(
+      "font-size",
+      "16px",
+    );
+    await expect(card.getByTestId("template-card-name")).toHaveCSS(
+      "font-weight",
+      "600",
+    );
+    await expect(card.locator(".studio-template-card-footer small")).toHaveCSS(
+      "font-size",
+      "13px",
+    );
+    await expect(card.locator(".studio-template-card-footer small")).toHaveCSS(
+      "font-weight",
+      "400",
+    );
     await expect(paper).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await expect(paper).toHaveCSS(
+      "box-shadow",
+      "rgb(228, 222, 210) 0px 0px 0px 1px, rgba(19, 48, 58, 0.08) 0px 6px 16px 0px",
+    );
     await expect(paper.locator(".template-thumbnail-accent")).toHaveCSS(
       "background-color",
       "rgb(54, 92, 74)",
@@ -289,11 +322,11 @@ test("template cards show cropped Letter sheets with resolved titles at every wi
     expect(new Set(shapes.map(({ card }) => card.x)).size).toBe(columns);
     expect(new Set(shapes.map(({ card }) => card.height)).size).toBe(1);
     for (const { band, paper } of shapes) {
-      expect(band.width / band.height).toBeCloseTo(7 / 3, 2);
-      expect(paper.width / band.width).toBeCloseTo(0.6, 2);
-      expect(paper.width / paper.height).toBeCloseTo(8.5 / 11, 2);
+      expect(band.height).toBe(220);
+      expect(paper.height).toBe(190);
+      expect(band.width - paper.width).toBeCloseTo(44, 0);
       expect(paper.x + paper.width / 2).toBeCloseTo(band.x + band.width / 2, 0);
-      expect(paper.bottom).toBeGreaterThan(band.bottom);
+      expect(band.bottom - paper.bottom).toBeCloseTo(1, 0);
     }
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
@@ -315,6 +348,42 @@ test("template cards show cropped Letter sheets with resolved titles at every wi
   await expect(cards.first()).toHaveCSS("outline-width", "2px");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(`/studio/templates/${templates[0].id}`);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const [theme, preview] of [
+    ["light", "rgb(244, 247, 247)"],
+    ["dark", "rgb(36, 52, 58)"],
+  ]) {
+    await page.evaluate(
+      (mode) => localStorage.setItem("proposal-theme", mode),
+      theme,
+    );
+    await page.goto("/studio/templates");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(cards.first().locator(".template-thumbnail")).toHaveCSS(
+      "background-color",
+      preview,
+    );
+    await expect(cards.first().locator(".template-thumbnail-paper")).toHaveCSS(
+      "background-color",
+      "rgb(255, 255, 255)",
+    );
+    if (process.env.CAPTURE_REPORT_POLISH === "1") {
+      const directory = "docs/screenshots/reports-provider-polish";
+      mkdirSync(directory, { recursive: true });
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: `${directory}/templates-${theme}-1440.png`,
+      });
+      if (theme === "light") {
+        const crop = await cards.first().screenshot({ animations: "disabled" });
+        const { width } = await sharp(crop).metadata();
+        await sharp(crop)
+          .resize(width * 2)
+          .toFile(`${directory}/template-card-closeup.png`);
+      }
+    }
+  }
 });
 
 test("Studio v3 route lists, eleven staff emails and Workspace autosave keep values on error", async ({
@@ -613,14 +682,11 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await page.goto("/studio/templates");
   const search = page.getByRole("searchbox", { name: "Search templates" });
   await expect(search).toHaveAttribute("placeholder", "Search templates");
-  await expect(page.locator(".studio-saved-preview>a>svg").first()).toHaveCSS(
-    "width",
-    "10px",
-  );
-  await expect(page.locator(".studio-saved-preview>a").first()).toHaveCSS(
-    "background-color",
-    "rgba(0, 0, 0, 0)",
-  );
+  const preview = page.locator(".studio-saved-preview .staff-table");
+  const openBlock = preview.getByRole("link", { name: /^Open / }).first();
+  await expect(openBlock).toHaveCSS("width", "44px");
+  await expect(openBlock).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(preview).toHaveCSS("background-color", "rgb(255, 255, 255)");
   const active = page.locator('.sidebar nav a[aria-current="page"]');
   await expect(active).toHaveCSS("color", "rgb(242, 245, 245)");
   await expect(page.locator(".sidebar footer").getByRole("button")).toHaveCount(

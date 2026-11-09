@@ -452,10 +452,12 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         theme,
       );
       await page.goto("/studio/activity");
-      await expect(
-        page.locator(".activity-row.clickable-row").first(),
-      ).toBeVisible();
-      await page.locator(".activity-primary-link").first().focus();
+      const openProposal = page
+        .getByRole("link", { name: "Open proposal", exact: true })
+        .first();
+      await expect(openProposal).toBeVisible();
+      await openProposal.focus();
+      await expect(openProposal).toBeFocused();
       await capture("activity-focus", "7e", width, theme);
     }
   if (!captureEvidence) return;

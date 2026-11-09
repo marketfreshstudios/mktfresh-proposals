@@ -1,5 +1,7 @@
 "use client";
 
+import { withCount } from "../lib/count-label";
+import { StaffTable, StaffTableHead } from "./staff-table";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
@@ -29,6 +31,7 @@ import { Sheet } from "./foundation";
 import { api, Banner, Button, post } from "./ui";
 import { useMoney } from "./money-context";
 import { useQuickBooksItemName } from "./quickbooks-fields";
+import { ProviderMark, QuickBooksConnectButton } from "./provider-brand";
 
 const billingDefaults = "/studio/workspace?view=billing";
 const quickBooksDashboard = "https://sandbox.qbo.intuit.com/app/homepage";
@@ -43,7 +46,7 @@ export function ConnectionDetailLayout({
   children,
 }: {
   name: string;
-  mark: string;
+  mark: ReactNode;
   status: string;
   tone?: "success" | "warning" | "info";
   subtitle: string;
@@ -57,9 +60,13 @@ export function ConnectionDetailLayout({
           <ChevronLeft size={16} aria-hidden="true" /> Connections
         </a>
         <header className="connection-detail-header">
-          <span className="connection-monogram" aria-hidden="true">
-            {mark}
-          </span>
+          {typeof mark === "string" ? (
+            <span className="connection-monogram" aria-hidden="true">
+              {mark}
+            </span>
+          ) : (
+            mark
+          )}
           <div>
             <div className="connection-detail-title">
               <h1 className="t-page-title">{name}</h1>
@@ -219,8 +226,6 @@ const queueTitles: Record<Queue, string> = {
 };
 const proposalLink = (p: Proposal) => `/proposals/${p.id}`;
 const proposalLabel = (p: Proposal) => `${p.client.company} · ${p.title}`;
-const withCount = (count: number, singular: string, plural: string) =>
-  `${count} ${count === 1 ? singular : plural}`;
 
 export function BillingConnectionDetail({
   provider,
@@ -800,9 +805,13 @@ export function BillingConnectionDetail({
         id={`connection-queue-${queue}`}
       >
         {queues[queue].length ? (
-          <ul className="connection-activity" role="list">
+          <StaffTable inline density="compact" className="connection-activity">
+            <StaffTableHead>
+              <span>Proposal</span>
+              {queue === "waiting" && <span>Status</span>}
+            </StaffTableHead>
             {queues[queue].map((p) => (
-              <li key={p.id}>
+              <div className="staff-table-row" key={p.id}>
                 <span>
                   <a href={proposalLink(p)}>
                     <strong>{proposalLabel(p)}</strong>
@@ -825,9 +834,9 @@ export function BillingConnectionDetail({
                 {queue === "waiting" && (
                   <span className="pill warning">Waiting</span>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </StaffTable>
         ) : (
           <p className="connection-panel-body muted">
             No proposals are waiting.
@@ -840,7 +849,7 @@ export function BillingConnectionDetail({
   return (
     <ConnectionDetailLayout
       name={name}
-      mark={qbo ? "qb" : "S"}
+      mark={<ProviderMark provider={provider} />}
       status={status}
       tone={
         stripeSetup || stripeDisconnecting
@@ -860,7 +869,10 @@ export function BillingConnectionDetail({
     >
       {error && <Banner tone="danger" title={error} />}
       {notice && (
-        <p className="connection-notice" role="status">
+        <p
+          className="connection-notice staff-surface staff-surface-note"
+          role="status"
+        >
           {notice}
         </p>
       )}
@@ -913,7 +925,7 @@ export function BillingConnectionDetail({
                 className="connection-danger"
                 onClick={() => void manage("disconnect")}
               >
-                Disconnect QuickBooks…
+                Disconnect from QuickBooks…
               </button>
             )}
           </div>
@@ -1077,13 +1089,10 @@ export function BillingConnectionDetail({
                     </>
                   ) : owner ? (
                     <>
-                      <Button
-                        className="studio-primary"
+                      <QuickBooksConnectButton
                         disabled={!!busy || connection?.available !== true}
                         onClick={() => void manage("authorize")}
-                      >
-                        Connect QuickBooks
-                      </Button>
+                      />
                       <p>
                         {connection?.available === false
                           ? "A Yeswell administrator must configure sandbox OAuth first."
@@ -1108,7 +1117,7 @@ export function BillingConnectionDetail({
                   )}
                 </div>
               </ConnectionPanel>
-              <p className="connection-setup-note">
+              <p className="connection-setup-note staff-surface staff-surface-note">
                 {qbo
                   ? "Until QuickBooks is connected, staff record the invoice number on the proposal by hand."
                   : "You can send proposals with custom lines. Clients need Stripe to set up recurring billing after signing."}
@@ -1332,9 +1341,17 @@ export function BillingConnectionDetail({
                         No activity recorded yet.
                       </p>
                     ) : (
-                      <ul className="connection-activity" role="list">
+                      <StaffTable
+                        inline
+                        density="compact"
+                        className="connection-activity"
+                      >
+                        <StaffTableHead>
+                          <span>Event</span>
+                          <span>Date</span>
+                        </StaffTableHead>
                         {activity.rows.map((event) => (
-                          <li key={event.id}>
+                          <div className="staff-table-row" key={event.id}>
                             <span>
                               <strong>{event.label}</strong>
                               {event.proposal_id && (
@@ -1346,9 +1363,9 @@ export function BillingConnectionDetail({
                             <time dateTime={event.created_at}>
                               {format(event.created_at)}
                             </time>
-                          </li>
+                          </div>
                         ))}
-                      </ul>
+                      </StaffTable>
                     )}
                     <footer>
                       <a href="/studio/activity">View Activity log</a>

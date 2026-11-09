@@ -952,3 +952,19 @@ Apply the account digest index before deploy. Follow the [Stripe Connect sandbox
 Staff data table headers share the card surface, white in light mode and the card surface in dark mode. Their hairline dividers keep headers distinct from the first row without changing the table's spacing. Proposal document tables retain their own styling.
 
 Home Recent proposals uses the full Proposals table with the first six rows. Uppercase column labels sit inside the card. Icon actions across staff tables share a borderless 44px circle, with a surface tint and tooltip on hover or keyboard focus. Countersign rows keep a filled Sign button.
+
+### Reports cards and billing provider branding (Nov 9, 2026)
+
+Reports follows Redesign 19 frame 2d1 with the owner's single shared card for Value signed and Pipeline. Each currency's tiles stay together and the currency groups stack when more than one is present. The remaining charts, breakdowns, and engagement panels use the staff card surface. The trend switch is segmented. Desktop filters present one inline label and value while retaining native select behavior. Report figures and definitions are unchanged.
+
+Provider logos appear only on their related integration pages, cards, and checklist entries. Stripe's original parallelogram comes from the [Stripe Mark Usage Terms](https://stripe.com/legal/marks) and its [original SVG](https://images.stripeassets.com/fzn2n1nzq965/2phuvRabuaCNWJGPHi7EFY/c74b44260751b74905cf417e5886d757/parallelogram.svg). It remains Stripe's trademark and is used to identify the integration under Stripe's usage terms.
+
+The original QuickBooks icon comes from the [Intuit Developer branding guidance](https://developer.intuit.com/app/developer/qbo/docs/go-live/list-on-the-app-store/naming-and-logo-guidelines) and the [approved icon kit](https://static.developer.intuit.com/resources/qb_logo_icon.zip). It displays at 18–26px with clear space of at least half its height. The initial OAuth action uses the [official green medium English button assets](https://static.developer.intuit.com/resources/Connect_to_QuickBooks_buttons.zip) at their original 223×36 size, with the matching hover artwork and a 44px-high button target. QuickBooks marks are Intuit trademarks and their use follows the developer program branding guidance. These provider assets are separate from the app's source license.
+
+Template cards follow the owner's Redesign 18 correction. The preview uses a 220px cool-gray mat with a white, bottom-aligned sheet and the exact paper edge and shadow. The dark preview mat is #24343A. The wider inset sheet replaces the earlier cropped portrait treatment. The document heading font, sample field resolution, and template metadata stay in use.
+
+### Staff content surfaces and record lists (Nov 9, 2026)
+
+Primary staff content uses the shared surface, 1px hairline and card radius. Page headings, subtitles, section headings, navigation, filters and toolbars may sit directly on the page. The Home pipeline and proposal next step retain their designated hero treatments, and editor document canvases retain their paper and chrome. Forms and detail panels use one surface. A table within an existing content card, such as Workspace Team or client proposal history, uses the surrounding surface with shared row dividers. Question threads keep their conversation layout with hairlines inside the Questions panel.
+
+Record lists share the staff table header, row spacing, in-table empty states, and existing borderless Lucide action targets. Each screen keeps its own columns and breakpoints. Saved blocks show the name, type and preview, block count, template use, last edit and Open action. Template thumbnails stay visual cards. Email stage groups and Activity dates keep their section headings over shared tables. Reports and proposal evidence keep native table semantics with the same header treatment.
