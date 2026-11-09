@@ -31,6 +31,12 @@ import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  reportMetricLabel,
+  reportParams,
+  type ReportDrill,
+  type ReportFilters,
+} from "../lib/report-filters";
 import type { Data } from "./staff-app";
 import type { Proposal, Client, Audit, QuoteItem, Signer } from "../lib/model";
 import {
@@ -424,8 +430,10 @@ export function ProposalRows({
   data,
   onChanged,
   showOwner = false,
+  reportSender = false,
 }: {
   showOwner?: boolean;
+  reportSender?: boolean;
   proposals: (Proposal & { question_summary?: QuestionSummary })[];
   data: Data;
   onChanged?: (p: Proposal) => void;
@@ -446,7 +454,9 @@ export function ProposalRows({
       >
         <div className="proposal-row-head">
           <span>Proposal</span>
-          {showOwner && <span>Owner</span>}
+          {showOwner && (
+            <span>{reportSender ? "Owner (sender)" : "Owner"}</span>
+          )}
           <span>Status</span>
           <span className="next-cell">Next</span>
           <span>One-time</span>
@@ -484,8 +494,14 @@ export function ProposalRows({
                 </div>
                 {showOwner && (
                   <span className="proposal-owner" data-label="Owner">
-                    {data.staff.find((m) => m.user_id === proposalOwnerId(p))
-                      ?.display_name ??
+                    {data.staff.find(
+                      (m) =>
+                        m.user_id ===
+                        (reportSender
+                          ? (p.sender?.user_id ?? proposalOwnerId(p))
+                          : proposalOwnerId(p)),
+                    )?.display_name ??
+                      (reportSender ? p.sender?.display_name : undefined) ??
                       p.owner?.display_name ??
                       p.sender?.display_name ??
                       "—"}
@@ -558,6 +574,100 @@ export function ProposalRows({
         </div>
       )}
     </>
+  );
+}
+export function ReportProposalList({
+  data,
+  drill,
+  filters,
+}: {
+  data: Data;
+  drill: ReportDrill;
+  filters: ReportFilters;
+}) {
+  const [offset, setOffset] = useState(0);
+  const [result, setResult] = useState<{
+    total: number;
+    items: Proposal[];
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const pageSize = 50;
+  const q = reportParams(filters, drill);
+  const queryKey = q.toString();
+  useEffect(() => {
+    const request = new AbortController();
+    setResult(null);
+    setError("");
+    api<{ total: number; items: Proposal[] }>(
+      `/api/proposals?${queryKey}&limit=${pageSize}&offset=${offset}`,
+      { signal: request.signal },
+    )
+      .then((next) => {
+        if (!request.signal.aborted) setResult(next);
+      })
+      .catch((e: Error) => {
+        if (!request.signal.aborted) setError(e.message);
+      });
+    return () => request.abort();
+  }, [queryKey, offset, retry]);
+  return (
+    <div className="stack phase4-list">
+      <div className="report-panel-heading">
+        <div>
+          <h2>{reportMetricLabel(drill)}</h2>
+          {result && (
+            <p role="status" className="muted">
+              {result.total} matching{" "}
+              {result.total === 1 ? "proposal" : "proposals"}
+            </p>
+          )}
+        </div>
+        <a className="btn" href={"/reports?" + reportParams(filters)}>
+          Back to Reports
+        </a>
+      </div>
+      {error ? (
+        <Banner
+          title="Unable to load proposals"
+          tone="danger"
+          action={<Button onClick={() => setRetry((n) => n + 1)}>Retry</Button>}
+        >
+          {error}
+        </Banner>
+      ) : result ? (
+        <>
+          <ProposalRows
+            proposals={result.items}
+            data={data}
+            showOwner
+            reportSender
+            onChanged={() => setRetry((n) => n + 1)}
+          />
+          {result.total > pageSize && (
+            <div className="report-pagination">
+              <Button
+                disabled={!offset}
+                onClick={() => setOffset((n) => Math.max(0, n - pageSize))}
+              >
+                Previous
+              </Button>
+              <span>
+                {offset + 1}–{offset + result.items.length} of {result.total}
+              </span>
+              <Button
+                disabled={offset + pageSize >= result.total}
+                onClick={() => setOffset((n) => n + pageSize)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <p role="status">Loading proposals…</p>
+      )}
+    </div>
   );
 }
 export function ProposalListV4({
