@@ -1,3 +1,4 @@
+import { ColumnsOverflowError } from "./columns";
 import { resolveCoverGraphics } from "./cover-graphics";
 import { sizeListMarkers } from "./list-markers";
 import {
@@ -201,7 +202,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour, version.content)}</style>` +
           printContent({
             cover: version.cover,
             legacyCover: version.cover === undefined,
@@ -293,6 +294,38 @@ export async function sealedPdf(
     layout.geometry = Array.from({ length: layout.pages }, (_, n) =>
       pageGeometry(version.resolved_styles, version.header_footer, n + 1),
     );
+    if (version.content.some((b) => b.type === "columns")) {
+      layout.overflow_columns = await page
+        .locator('[data-print-kind="columns"]')
+        .evaluateAll(
+          (blocks, expected) => {
+            if (blocks.length !== expected)
+              throw new Error("Missing Columns layout");
+            return blocks.flatMap((block) => {
+              const sheet = block.closest(".print-sheet")!;
+              const height = parseFloat(
+                getComputedStyle(sheet).getPropertyValue(
+                  "--print-content-height",
+                ),
+              );
+              if (!Number.isFinite(height) || height <= 0)
+                throw new Error("Invalid Letter content height for Columns");
+              const excess = block.getBoundingClientRect().height - height;
+              return excess > 0.5
+                ? [
+                    {
+                      block: (block as HTMLElement).dataset.printBlock!,
+                      excess: Math.ceil(excess),
+                    },
+                  ]
+                : [];
+            });
+          },
+          version.content.filter((b) => b.type === "columns").length,
+        );
+    }
+    if (layout.overflow_columns?.length)
+      throw new ColumnsOverflowError(layout.overflow_columns);
     const pricingIds = new Set(
       version.content
         .filter((b) => b.type === "pricing_table")

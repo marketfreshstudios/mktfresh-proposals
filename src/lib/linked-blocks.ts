@@ -1,5 +1,7 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { documentBlocks, transformBlocks } from "./columns";
+import { duplicateBlock } from "./editor-document";
 import type { Block, SavedBlock } from "./model";
 
 /** Canonical author content only: identities, review state and link stamps aren't edits. */
@@ -62,7 +64,9 @@ export function stampSavedBlocks(
 ) {
   const blocks = savedBlocks(row);
   return blocks.map((block, position) => ({
-    ...structuredClone(withoutBlockLink(block)),
+    ...(block.columns
+      ? duplicateBlock(withoutBlockLink(block))
+      : structuredClone(withoutBlockLink(block))),
     id: ids?.[position] ?? crypto.randomUUID(),
     saved_block_id: row.id,
     saved_block_version: row.version ?? 1,
@@ -74,7 +78,11 @@ export function stampSavedBlocks(
 }
 export function linkedInstances(content: Block[], id: string) {
   const instances = new Map<string, Block[]>();
-  for (const b of content)
+  const containing = new Map<string, string>();
+  for (const block of content)
+    for (const column of block.columns?.items ?? [])
+      for (const child of column.content) containing.set(child.id!, column.id);
+  for (const b of documentBlocks(content))
     if (b.saved_block_id === id) {
       const key = b.saved_block_instance ?? b.id!;
       instances.set(key, [...(instances.get(key) ?? []), b]);
@@ -83,6 +91,7 @@ export function linkedInstances(content: Block[], id: string) {
     key,
     blocks,
     edited:
+      new Set(blocks.map((b) => containing.get(b.id!))).size > 1 ||
       blocks.length !== (blocks[0].saved_block_length ?? 1) ||
       blocks.some(
         (b, i) =>
@@ -111,17 +120,36 @@ export function replaceLinkedBlocks(
       instance.key,
       instance.blocks.map((b) => b.id!),
     );
-    // Unlinked content between group members (including an excluded quote or
-    // signer) stays in place. New tail members follow the final old member.
-    next = next.flatMap((b) => {
-      const at = instance.blocks.indexOf(b);
-      return at < 0
-        ? [b]
-        : at === instance.blocks.length - 1
-          ? replacement.slice(at)
-          : replacement[at]
-            ? [replacement[at]]
-            : [];
+    const ids = instance.blocks.map((block) => block.id);
+    // An edited linked group can be dispersed across containers. Explicitly
+    // restoring it keeps the first container and restores its source order.
+    const parents = new Map<string, string>();
+    for (const block of next)
+      for (const column of block.columns?.items ?? [])
+        for (const child of column.content) parents.set(child.id!, column.id);
+    const dispersed = new Set(ids.map((id) => parents.get(id!))).size > 1;
+    if (
+      parents.get(ids[0]!) &&
+      replacement.some(
+        (block) =>
+          !["heading", "paragraph", "image", "variable"].includes(block.type),
+      )
+    ) {
+      if (force)
+        throw new Error(
+          "The latest saved block contains content that can't go inside a column. Move the linked block outside columns first.",
+        );
+      continue;
+    }
+    next = transformBlocks(next, (b) => {
+      const at = ids.indexOf(b.id);
+      if (at < 0) return [b];
+      if (dispersed) return at === 0 ? replacement : [];
+      return at === ids.length - 1
+        ? replacement.slice(at)
+        : replacement[at]
+          ? [replacement[at]]
+          : [];
     });
   }
   return next;

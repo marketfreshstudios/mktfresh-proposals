@@ -36,5 +36,16 @@ export function validatePagePlan(
     ids = new Set(content.map((b) => b.id));
   if (parsed.starts.some((s) => !ids.has(s.block)))
     throw new Error("Page start refers to a missing block");
+  const atomic = new Set(
+    content.filter((b) => b.type === "columns").map((b) => b.id),
+  );
+  if (
+    parsed.starts.some(
+      (s) =>
+        atomic.has(s.block) &&
+        (s.offset !== 0 || s.paragraph !== undefined || s.part || s.unit),
+    )
+  )
+    throw new Error("A page break cannot split a Columns block");
   return parsed;
 }

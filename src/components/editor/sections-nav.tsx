@@ -2,6 +2,7 @@
 import { resolvedEditorText } from "../../lib/editor-fields";
 import { bandPages, resolvedBandPages } from "../../lib/band-overrides";
 import type { HeaderFooterSettings } from "../../lib/page-bands";
+import { documentBlocks } from "../../lib/columns";
 import type { Block } from "../../lib/model";
 import type { BrowserPages } from "../browser-pagination";
 import {
@@ -84,8 +85,11 @@ export function SectionsNav({
   const selected = useBlockSelection().selected;
   const selectedIndex = content.findIndex(
     (b) =>
-      selected === `block-${b.id}` ||
-      selected === `template-${b.id}` ||
+      documentBlocks([b]).some(
+        (child) =>
+          selected === `block-${child.id}` ||
+          selected === `template-${child.id}`,
+      ) ||
       b.clauses?.some(
         (c) =>
           selected === `clause-${c.id}` ||

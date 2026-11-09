@@ -1,3 +1,7 @@
+import { blockBoxCss, columnBoxStyle, cssDeclarations } from "./block-style";
+import { columnGridStyle, columnRejection, columnsSchema } from "./columns";
+import { documentSpacing } from "./document-spacing";
+import { resolveStyles, type ResolvedStyles } from "./proposal-styles";
 import { businessState } from "./business-state";
 import { hasInlineFontSize, inlineSizeHtml } from "./inline-font-size";
 import { formattedAddress } from "./client-contact";
@@ -174,11 +178,32 @@ export function renderBlocks(
   map: Record<string, string>,
   currency = "USD",
   centsMode: "auto" | "always" = "auto",
+  styles?: ResolvedStyles,
 ): string {
   check(Array.isArray(blocks) && blocks.length <= 300, "Invalid content");
   return blocks
     .map((b) => {
       switch (b.type) {
+        case "columns": {
+          const columns = columnsSchema.parse(b.columns);
+          const resolved = styles ?? resolveStyles();
+          const groups = columns.items
+            .map((column, n) => {
+              const reason = columnRejection(column.content);
+              check(!reason, reason ?? "");
+              const spacing = documentSpacing(column.content, resolved, true);
+              const children = column.content
+                .map((child, i) => {
+                  const id = child.id ?? String(i);
+                  const box = blockBoxCss(child.style);
+                  return `<div class="print-atom column-document-block" data-column-block="${escape(id)}" style="display:flow-root;margin-top:${spacing[id]}px;padding-top:0;${box}">${renderBlocks([child], quote, map, currency, centsMode, resolved)}</div>`;
+                })
+                .join("");
+              return `<div class="document-column" role="group" aria-label="Column ${n + 1}" style="${cssDeclarations(columnBoxStyle(column.style))}">${children}</div>`;
+            })
+            .join("");
+          return `<div class="document-columns" role="region" aria-label="Columns" style="${cssDeclarations(columnGridStyle(columns))}">${groups}</div>`;
+        }
         case "heading": {
           const level = [1, 2, 3].includes(b.level ?? 1) ? (b.level ?? 1) : 1;
           return `<h${level + 1} data-heading-level="${level}">${b.content && (b.rich_heading || hasInlineFontSize(b.content)) ? rich(b.content, map).replace(/<\/?(?:div|p)>/g, "") : escapedResolved(b.text ?? "", map)}</h${level + 1}>`;

@@ -262,7 +262,9 @@ function BlockEditBar({
     save = all.find((n) => /save.*reuse/i.test(label(n))),
     remove = all.find((n) => /delete|remove/i.test(label(n))),
     settings = all.find((n) => /settings/i.test(label(n))),
-    extras = all.filter((n) => /add clause/i.test(label(n))),
+    extras = all.filter((n) =>
+      /add clause|block style|unwrap columns/i.test(label(n)),
+    ),
     page = usePageBreakAvailable(id),
     prohibited = ["pricing_table", "signature_block"].includes(blockType);
   const objectLabel =
@@ -270,11 +272,13 @@ function BlockEditBar({
       ? "Pricing table"
       : blockType === "signature_block"
         ? "Signatures"
-        : blockType === "image"
-          ? "Image"
-          : /clause/i.test(frame.current?.getAttribute("aria-label") ?? "")
-            ? "Clause"
-            : "Contract";
+        : blockType === "columns"
+          ? "Columns"
+          : blockType === "image"
+            ? "Image"
+            : /clause/i.test(frame.current?.getAttribute("aria-label") ?? "")
+              ? "Clause"
+              : "Contract";
   useLayoutEffect(() => {
     const bar = root.current,
       owner = frame.current;

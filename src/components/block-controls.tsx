@@ -17,6 +17,17 @@ import {
 } from "./editor/control-layout";
 import { EditBar, BlockActionPresentation } from "./editor/edit-bar";
 import { GutterInsert, AiReviewCheck } from "./editor/gutter-insert";
+import { Sheet } from "./foundation";
+import {
+  documentBlocks,
+  selectedBlockRoots,
+  transformBlocks,
+} from "../lib/columns";
+import { blockBoxStyle } from "../lib/block-style";
+import {
+  BlockStyleControls,
+  type BlockStyleControlProps,
+} from "./editor/block-style-controls";
 import { EditorIcon } from "./editor/editor-icon";
 import {
   createContext,
@@ -144,8 +155,11 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
   }, [guidance]);
   const select = (id: string, mode?: "range" | "toggle") => {
     const binding = documentBinding.current;
-    const order =
-      binding?.content.map((b, n) => `${binding.prefix}${b.id ?? n}`) ?? [];
+    const order = binding
+      ? documentBlocks(binding.content).map(
+          (b, n) => `${binding.prefix}${b.id ?? n}`,
+        )
+      : [];
     if ((mode || selectMode) && order.includes(id)) {
       if (!anchorId.current) anchorId.current = id;
       let next =
@@ -461,8 +475,12 @@ export function EditorControlConfig({
 export function BlockAction({
   children,
   variant: _variant,
+  menuLabel = false,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: string;
+  menuLabel?: boolean;
+}) {
   const presentation = useContext(BlockActionPresentation);
   const rawLabel =
     props["aria-label"] ??
@@ -499,7 +517,9 @@ export function BlockAction({
         props.onClick?.(e);
       }}
     >
-      {presentation === "bar" && /settings/i.test(label) ? (
+      {presentation === "menu" && menuLabel ? (
+        label
+      ) : presentation === "bar" && /settings/i.test(label) ? (
         <span className="edit-settings-label">Settings</span>
       ) : presentation && icon === "floppy-disk" ? (
         "Save"
@@ -510,7 +530,9 @@ export function BlockAction({
       ) : (
         <span aria-hidden="true">{icon}</span>
       )}
-      <span className="sr-only">{children}</span>
+      {!(presentation === "menu" && menuLabel) && (
+        <span className="sr-only">{children}</span>
+      )}
     </button>
   );
 }
@@ -531,8 +553,12 @@ export function BlockFrame({
   objectAction,
   reviewBusy = false,
   plainText = false,
+  appearance,
+  layoutControls,
 }: {
   plainText?: boolean;
+  appearance?: BlockStyleControlProps;
+  layoutControls?: ReactNode;
   id: string;
   label: string;
   children: ReactNode;
@@ -552,10 +578,12 @@ export function BlockFrame({
   const layout = useControlLayout(),
     dragHandle = useContext(BlockDragHandle);
   const frame = useRef<HTMLDivElement>(null);
+  const [showAppearance, setShowAppearance] = useState(false);
+  const boxStyle = blockBoxStyle(appearance?.value);
   const selection = useBlockSelection();
   const documentBinding = useContext(DocumentBindingContext);
   const orderedIds =
-      documentBinding.current?.content.map(
+      documentBlocks(documentBinding.current?.content ?? []).map(
         (b, n) => `${documentBinding.current!.prefix}${b.id ?? n}`,
       ) ?? [],
     selectedAt = orderedIds.indexOf(id);
@@ -693,6 +721,7 @@ export function BlockFrame({
         }}
         onClickCapture={(e) => {
           if (
+            (e.target as Element).closest(".block-frame") === e.currentTarget &&
             !(e.target as Element).closest("[data-editor-chrome]") &&
             (e.shiftKey || e.ctrlKey || e.metaKey || selection.selectMode)
           ) {
@@ -718,7 +747,13 @@ export function BlockFrame({
             className="multi-block-selection-fill"
           />
         )}
-        <div className="block-content">{children}</div>
+        <div
+          className="block-content"
+          style={boxStyle}
+          data-block-box={boxStyle ? true : undefined}
+        >
+          {children}
+        </div>
         {!layout.locked &&
           (selection.ids.length > 1 || selection.selectMode) &&
           (selection.ids[0] ?? selection.selected) === id && (
@@ -738,9 +773,32 @@ export function BlockFrame({
               <EditBar
                 id={id}
                 frame={frame}
-                tools={tools}
+                tools={
+                  <>
+                    {tools}
+                    {appearance?.onChange && blockType !== "page_break" && (
+                      <BlockAction
+                        menuLabel
+                        onClick={() => setShowAppearance(true)}
+                      >
+                        Block style
+                      </BlockAction>
+                    )}
+                  </>
+                }
                 blockType={blockType}
-                objectAction={objectAction}
+                objectAction={
+                  layoutControls ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAppearance(true)}
+                    >
+                      Columns settings
+                    </button>
+                  ) : (
+                    objectAction
+                  )
+                }
                 plainText={plainText}
               />
               <GutterInsert
@@ -761,6 +819,20 @@ export function BlockFrame({
           />
         )}
       </div>
+      {appearance && showAppearance && !layout.locked && (
+        <Sheet
+          title="Block style"
+          className="block-style-sheet"
+          onClose={() => setShowAppearance(false)}
+        >
+          {layoutControls && (
+            <div className="columns-settings-controls" data-editor-chrome>
+              {layoutControls}
+            </div>
+          )}
+          <BlockStyleControls {...appearance} />
+        </Sheet>
+      )}
     </>
   );
 }
@@ -783,8 +855,13 @@ function MultiBlockBar({
   }, [menu]);
   const doc = binding.current;
   if (!doc) return null;
-  const picked = doc.content.filter((b, n) =>
-    selection.ids.includes(`${doc.prefix}${b.id ?? n}`),
+  const picked = selectedBlockRoots(
+    doc.content,
+    new Set(
+      selection.ids
+        .filter((id) => id.startsWith(doc.prefix))
+        .map((id) => id.slice(doc.prefix.length)),
+    ),
   );
   const act = (action: string) => {
     setMenu(null);
@@ -802,7 +879,12 @@ function MultiBlockBar({
             : "paragraph",
         },
         () => {
-          doc.onChange(doc.content.filter((b) => !picked.includes(b)));
+          const ids = new Set(picked.map((block) => block.id));
+          doc.onChange(
+            transformBlocks(doc.content, (block) =>
+              ids.has(block.id) ? [] : [block],
+            ),
+          );
           selection.clear();
         },
         () => {},
@@ -825,12 +907,20 @@ function MultiBlockBar({
       feedback.error("Pricing tables and signatures cannot be duplicated.");
       return;
     }
-    const at = Math.max(...picked.map((b) => doc.content.indexOf(b))) + 1;
-    doc.onChange([
-      ...doc.content.slice(0, at),
-      ...copies,
-      ...doc.content.slice(at),
-    ]);
+    const last = picked.at(-1);
+    if (!last) return;
+    const roots = new Set(picked.map((block) => block.id));
+    const lastRoot = doc.content.findLast((block) =>
+      documentBlocks([block]).some((child) => roots.has(child.id)),
+    );
+    const anchor = picked.some((block) => doc.content.includes(block))
+      ? lastRoot
+      : last;
+    doc.onChange(
+      transformBlocks(doc.content, (block) =>
+        block.id === anchor?.id ? [block, ...copies] : [block],
+      ),
+    );
   };
   return (
     <>
@@ -1054,7 +1144,8 @@ export function useBlockFeedback() {
                               id: crypto.randomUUID(),
                               name: name.trim(),
                               block: withoutBlockLink(eligible[0]),
-                              ...(candidate.length > 1
+                              ...(candidate.length > 1 ||
+                              eligible[0].type === "columns"
                                 ? {
                                     type: "group",
                                     blocks: eligible.map(withoutBlockLink),
@@ -1071,9 +1162,9 @@ export function useBlockFeedback() {
                             );
                             const byId = new Map(stamped.map((b) => [b.id, b]));
                             doc.onChange(
-                              doc.content.map((b) =>
+                              transformBlocks(doc.content, (b) => [
                                 b.id ? (byId.get(b.id) ?? b) : b,
-                              ),
+                              ]),
                             );
                           }
                           setSaved((previous) => ({

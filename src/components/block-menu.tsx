@@ -4,6 +4,7 @@ import { useManagedPopover } from "./editor-popovers";
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
+import { columnRejection } from "../lib/columns";
 import type { Block } from "../lib/model";
 import { blockOptions, type BlockOption as Option } from "./block-options";
 export function BlockMenu({
@@ -16,8 +17,10 @@ export function BlockMenu({
   variant = "menu",
   onDragStart,
   reusableOnly = false,
+  columnOnly = false,
 }: {
   reusableOnly?: boolean;
+  columnOnly?: boolean;
   anchor: HTMLElement | null;
   hasPricing: boolean;
   saved: { id: string; name: string; block: Block }[];
@@ -41,15 +44,25 @@ export function BlockMenu({
   const close = useRef(onClose),
     restoreTrigger = useRef(false);
   close.current = onClose;
-  const allOptions = blockOptions({ hasPricing, saved, signatureRoles }).filter(
-    (o) =>
-      !reusableOnly ||
-      ![o.block, ...(o.extra ?? [])].some(
-        (b) =>
-          b &&
-          ["pricing_table", "signature_block", "contract"].includes(b.type),
-      ),
-  );
+  const allOptions = blockOptions({ hasPricing, saved, signatureRoles })
+    .filter(
+      (o) =>
+        !reusableOnly ||
+        ![o.block, ...(o.extra ?? [])].some(
+          (b) =>
+            b &&
+            ["pricing_table", "signature_block", "contract"].includes(b.type),
+        ),
+    )
+    .map((option) => {
+      const reason =
+        columnOnly &&
+        option.block &&
+        columnRejection([option.block, ...(option.extra ?? [])]);
+      return reason
+        ? { ...option, disabled: true, description: reason }
+        : option;
+    });
   const optionName = (option: Option) =>
     variant === "panel"
       ? option.name === "Text"
@@ -312,7 +325,11 @@ export function BlockMenu({
             </button>
           )}
           <strong>
-            {anchor?.dataset.insertEdge === "above" ? "Add above" : "Add below"}
+            {columnOnly
+              ? "Add to column"
+              : anchor?.dataset.insertEdge === "above"
+                ? "Add above"
+                : "Add below"}
           </strong>
           {!phone && (
             <button
@@ -353,6 +370,10 @@ export function BlockMenu({
                         aria-disabled={option.disabled || undefined}
                         tabIndex={i === active ? 0 : -1}
                         aria-label={optionName(option)}
+                        aria-description={
+                          option.disabled ? option.description : undefined
+                        }
+                        title={option.disabled ? option.description : undefined}
                         className={i === active ? "active" : ""}
                         onFocus={() => setActive(i)}
                         onMouseEnter={() => setActive(i)}

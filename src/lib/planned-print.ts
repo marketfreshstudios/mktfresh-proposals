@@ -27,7 +27,13 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
     el.querySelectorAll("[data-print-break]").forEach((n) => n.remove());
     // An empty source wrapper before the split must not add a phantom gap.
     el.querySelectorAll(".print-source").forEach((n) => {
-      if (!n.textContent?.trim() && !n.querySelector("img,br,p")) n.remove();
+      if (
+        !n.matches('[data-print-kind="columns"]') &&
+        !n.textContent?.trim() &&
+        !n.querySelector("img,br,p") &&
+        !(n.hasAttribute("data-block-layout") && n.querySelector("hr"))
+      )
+        n.remove();
     });
     for (const table of el.querySelectorAll("table.quote-table")) {
       const source = tableHeaders.find(
@@ -140,7 +146,23 @@ export function applyPagePlan(root: HTMLElement, plan: PagePlan) {
         index = Array.from(list.children).indexOf(li) + (list.start || 1);
       }
     }
-    sheet(range.extractContents());
+    const fragment = range.extractContents();
+    const first = fragment.querySelector<HTMLElement>(
+      `[data-print-block="${CSS.escape(start.block)}"][data-block-box]`,
+    );
+    if (first && remaining.contains(block)) {
+      // The editor measures a continuous box. Slice its vertical decoration
+      // at the existing page boundary, keeping the same inline text width.
+      first.style.paddingBottom = "0px";
+      first.style.borderBottomWidth = "0px";
+      first.style.borderBottomLeftRadius = "0px";
+      first.style.borderBottomRightRadius = "0px";
+      block.style.paddingTop = "0px";
+      block.style.borderTopWidth = "0px";
+      block.style.borderTopLeftRadius = "0px";
+      block.style.borderTopRightRadius = "0px";
+    }
+    sheet(fragment);
     if (start.paragraph !== undefined)
       consumedParagraphs.set(key, start.paragraph);
     if (list) list.start = index;

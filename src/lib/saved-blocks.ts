@@ -1,3 +1,4 @@
+import { documentBlocks, transformBlocks } from "./columns";
 import { randomUUID } from "node:crypto";
 import {
   check,
@@ -42,11 +43,15 @@ export function validateSavedBlock(row: SavedBlock) {
         "contract",
         "page_break",
         "variable",
+        "columns",
       ].includes(b.type),
     ),
     "Unsupported saved block type",
   );
-  const clean = reviewBlocks(blocks.map(withoutBlockLink), false);
+  const clean = reviewBlocks(
+    transformBlocks(blocks, (b) => [withoutBlockLink(b)]),
+    false,
+  );
   return {
     ...row,
     block: clean[0],
@@ -66,10 +71,14 @@ function usageFrom(
   proposalRows: Proposal[],
 ) {
   const templates = templateRows.filter(
-    (t) => !t.starter_key && t.content.some((b) => b.saved_block_id === row.id),
+    (t) =>
+      !t.starter_key &&
+      documentBlocks(t.content).some((b) => b.saved_block_id === row.id),
   );
   const drafts = proposalRows.filter(
-    (p) => draftCopy(p) && p.content.some((b) => b.saved_block_id === row.id),
+    (p) =>
+      draftCopy(p) &&
+      documentBlocks(p.content).some((b) => b.saved_block_id === row.id),
   );
   return {
     template_count: templates.length,
@@ -143,14 +152,14 @@ export async function prepareLinkedSave(
   for (const current of await repo.entities<Template>("templates")) {
     if (
       current.starter_key ||
-      !current.content.some((b) => b.saved_block_id === id)
+      !documentBlocks(current.content).some((b) => b.saved_block_id === id)
     )
       continue;
     const content = after
       ? replaceLinkedBlocks(current.content, after)
-      : current.content.map((b) =>
+      : transformBlocks(current.content, (b) => [
           b.saved_block_id === id ? withoutBlockLink(b) : b,
-        );
+        ]);
     if (JSON.stringify(content) === JSON.stringify(current.content)) continue;
     const next = { ...current, content };
     delete next.pagination;
@@ -166,7 +175,7 @@ export async function prepareLinkedSave(
               (p) =>
                 p.id === draftId &&
                 draftCopy(p) &&
-                p.content.some((b) => b.saved_block_id === id),
+                documentBlocks(p.content).some((b) => b.saved_block_id === id),
             ),
           ),
         "The draft list changed. Reload Used in before saving.",
@@ -176,14 +185,14 @@ export async function prepareLinkedSave(
       if (after && draftIds && !draftIds.includes(current.id)) continue;
       if (
         !draftCopy(current) ||
-        !current.content.some((b) => b.saved_block_id === id)
+        !documentBlocks(current.content).some((b) => b.saved_block_id === id)
       )
         continue;
       const content = after
         ? replaceLinkedBlocks(current.content, after, true)
-        : current.content.map((b) =>
+        : transformBlocks(current.content, (b) => [
             b.saved_block_id === id ? withoutBlockLink(b) : b,
-          );
+          ]);
       const event: Audit = {
         id: randomUUID(),
         ...actor,

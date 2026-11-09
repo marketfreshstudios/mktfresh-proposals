@@ -1,13 +1,18 @@
+import { blockSpacing } from "./block-style";
 import type { Block } from "./model";
 import type { ResolvedStyles, StyleLevel } from "./proposal-styles";
 type Edge = { above: number; below: number };
-export function documentSpacing(content: Block[], styles: ResolvedStyles) {
+export function documentSpacing(
+  content: Block[],
+  styles: ResolvedStyles,
+  trimStart = false,
+) {
   const edge = (level: StyleLevel): Edge => ({
     above: styles[level].space_above,
     below: styles[level].space_below,
   });
   const result: Record<string, number> = {};
-  let below = 20;
+  let below = trimStart ? 0 : 20;
   for (const [n, b] of content.entries()) {
     if (b.type === "page_break") {
       result[b.id ?? String(n)] = 0;
@@ -24,8 +29,16 @@ export function documentSpacing(content: Block[], styles: ResolvedStyles) {
             : "body";
     const first = edge(level),
       last = b.type === "heading" ? first : edge("body");
-    result[b.id ?? String(n)] = Math.max(below, first.above);
-    below = last.below;
+    const above = b.style?.margin_above;
+    const after = b.style?.margin_below;
+    result[b.id ?? String(n)] =
+      trimStart && n === 0
+        ? 0
+        : Math.max(
+            below,
+            above === undefined ? first.above : blockSpacing[above],
+          );
+    below = after === undefined ? last.below : blockSpacing[after];
   }
   return result;
 }

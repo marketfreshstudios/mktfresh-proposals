@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { columnAt, type BlockDestination } from "../../lib/columns";
 import type { Block } from "../../lib/model";
 import type { PagePlan } from "../../lib/page-plan";
-export type DropTarget = {
-  at: number;
+export type DropTarget = BlockDestination & {
   x: number;
   y: number;
   width: number;
@@ -119,6 +119,55 @@ export function documentDropTarget(
     .filter((s) => !coverOnly || s.page !== 1)
     .sort((a, b) => distance(a.box) - distance(b.box) || b.page - a.page)[0];
   if (!sheet) return null;
+  // Columns are new hit regions on the existing painted page. Drop edges
+  // follow each column's child boxes and never change the sheet boundary.
+  const columns = Array.from(
+    paper.querySelectorAll<HTMLElement>(".editor-column[data-column-id]"),
+  ).filter(
+    (el) =>
+      !el.closest("[data-page-measurement],[data-sheet-projection]") &&
+      !excluded.includes(el.dataset.columnsBlock!),
+  );
+  const column =
+    columns.find((el) => contains(el.getBoundingClientRect(), x, y)) ??
+    columns.find((el) => {
+      const placeholder = el.querySelector(":scope > .column-drop-area");
+      return placeholder && contains(placeholder.getBoundingClientRect(), x, y);
+    });
+  if (column) {
+    const inside = {
+      block: column.dataset.columnsBlock!,
+      column: column.dataset.columnId!,
+    };
+    const list = columnAt(content, inside)?.content;
+    if (!list) return null;
+    const box = column.getBoundingClientRect();
+    const scale = box.width / (column.offsetWidth || box.width);
+    const css = getComputedStyle(column);
+    const inset = (padding: string, border: string) =>
+      (parseFloat(padding) + parseFloat(border)) * scale;
+    const left = box.left + inset(css.paddingLeft, css.borderLeftWidth);
+    const right = box.right - inset(css.paddingRight, css.borderRightWidth);
+    const start = box.top + inset(css.paddingTop, css.borderTopWidth);
+    const edges = [{ at: 0, y: start }];
+    list.forEach((block, at) => {
+      if (excluded.includes(block.id!)) return;
+      const frame = frameFor(block)?.getBoundingClientRect();
+      if (frame?.height)
+        edges.push({ at, y: frame.top }, { at: at + 1, y: frame.bottom });
+    });
+    const nearest = edges.sort(
+      (a, b) => Math.abs(a.y - y) - Math.abs(b.y - y) || b.at - a.at,
+    )[0];
+    return {
+      ...nearest,
+      y: Math.max(viewportTop + 8, Math.min(viewportBottom - 8, nearest.y)),
+      page: sheet.page,
+      inside,
+      x: left,
+      width: Math.max(0, right - left),
+    };
+  }
   const at = boundary(sheet.page);
   const next = plan.starts.find((s) => s.page === sheet.page + 1);
   const end = next?.marker
@@ -253,6 +302,7 @@ export function useDropIndicator(
             aria-label="Insert block here"
             data-drop-index={target.at}
             data-drop-page={target.page}
+            data-drop-column={target.inside?.column}
             style={{ left: target.x, top: target.y, width: target.width }}
           />,
           document.body,

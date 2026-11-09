@@ -26,7 +26,17 @@ import { confirmDialog } from "./dialog-actions";
 import { stripeStatus } from "../lib/studio-v3";
 import { relativeTime } from "./studio-v3";
 import { DialogActions } from "./dialog-actions";
-import { insertAuthoringBlocks } from "../lib/block-insertion";
+import {
+  insertAuthoringBlocks,
+  insertColumnBlocks,
+} from "../lib/block-insertion";
+import { ColumnsEditor, ColumnsSettings } from "./editor/columns-editor";
+import {
+  documentBlocks,
+  moveBlocksAcrossColumns,
+  unwrapColumns,
+  type BlockDestination,
+} from "../lib/columns";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { pageGeometry } from "../lib/page-bands";
@@ -981,7 +991,9 @@ function TemplatesStudioContent({
       ? contentSections(content).find((s) =>
           s.indices.some(
             (n) =>
-              `template-${content[n].id ?? n}` === selection.selected ||
+              documentBlocks([content[n]]).some(
+                (block) => `template-${block.id ?? n}` === selection.selected,
+              ) ||
               content[n].clauses?.some(
                 (c) => `template-clause-${c.id}` === selection.selected,
               ),
@@ -1432,9 +1444,46 @@ function TemplatesStudioContent({
       ["paragraph", "heading"].includes(inserted.type),
     );
   }
-  const blockDrop = useBlockDrop(content, templatePaper, (blocks, at) =>
-    insertBlock(blocks[0], blocks.slice(1), at),
+  const blockDrop = useBlockDrop(
+    content,
+    templatePaper,
+    (blocks, { at, inside }) => {
+      if (!inside) return insertBlock(blocks[0], blocks.slice(1), at);
+      try {
+        const next = insertColumnBlocks(
+          currentContent.current,
+          blocks,
+          inside,
+          at,
+        );
+        patch(next.content);
+        if (next.first?.id) focusInserted(`template-${next.first.id}`, false);
+      } catch (error) {
+        blockFeedback.error((error as Error).message);
+      }
+    },
   );
+  function moveAt(from: string, target: BlockDestination, selected: string[]) {
+    const current = currentContent.current;
+    const ids = selected.includes(from) ? selected : [from];
+    if (
+      !target.inside &&
+      ids.every((id) => current.some((block) => block.id === id))
+    )
+      return move((content) =>
+        moveDocumentBlocksAt(content, from, target.at, selected),
+      );
+    try {
+      const next = moveBlocksAcrossColumns(current, ids, target);
+      if (JSON.stringify(next) !== JSON.stringify(current)) {
+        patch(next);
+        selection.clear();
+        setIndex(null);
+      }
+    } catch (error) {
+      blockFeedback.error((error as Error).message);
+    }
+  }
   const templateBlocks = (
     <BlockMenu
       variant="panel"
@@ -2075,10 +2124,7 @@ function TemplatesStudioContent({
                       ? {
                           paper: templatePaper,
                           content,
-                          onMoveAt: (from, at, selected) =>
-                            move((blocks) =>
-                              moveDocumentBlocksAt(blocks, from, at, selected),
-                            ),
+                          onMoveAt: moveAt,
                         }
                       : undefined
                   }
@@ -2159,6 +2205,7 @@ function TemplatesStudioContent({
                         {documentStyleCss(
                           templateStyles,
                           data.settings?.accent_colour,
+                          content,
                         )}
                       </style>
                       {mode === "templates" && (
@@ -2243,6 +2290,10 @@ function TemplatesStudioContent({
                           }
                           id={String(n)}
                           spaceBefore={blockSpaces[b.id ?? String(n)]}
+                          customSpacing={
+                            b.style?.margin_above !== undefined ||
+                            content[n - 1]?.style?.margin_below !== undefined
+                          }
                           label={`block ${n + 1}`}
                           key={b.id ?? n}
                         >
@@ -2250,6 +2301,32 @@ function TemplatesStudioContent({
                             id={`template-${b.id ?? n}`}
                             label={`Template block ${n + 1}`}
                             blockType={b.type}
+                            layoutControls={
+                              b.columns && (
+                                <ColumnsSettings
+                                  value={b.columns}
+                                  onChange={(columns) =>
+                                    patch(
+                                      currentContent.current.map((v) =>
+                                        v.id === b.id ? { ...v, columns } : v,
+                                      ),
+                                    )
+                                  }
+                                />
+                              )
+                            }
+                            appearance={{
+                              value: b.style,
+                              settings: data.settings,
+                              styles: templateStyles,
+                              block: b,
+                              onChange: (style) =>
+                                patch(
+                                  currentContent.current.map((v) =>
+                                    v.id === b.id ? { ...v, style } : v,
+                                  ),
+                                ),
+                            }}
                             plainText={b.type === "contract"}
                             objectAction={
                               b.type === "pricing_table" ? (
@@ -2319,6 +2396,22 @@ function TemplatesStudioContent({
                             }
                             tools={
                               <>
+                                {b.type === "columns" && (
+                                  <BlockAction
+                                    menuLabel
+                                    onClick={() => {
+                                      patch(
+                                        unwrapColumns(
+                                          currentContent.current,
+                                          b.id!,
+                                        ),
+                                      );
+                                      selection.clear();
+                                    }}
+                                  >
+                                    Unwrap columns
+                                  </BlockAction>
+                                )}
                                 <BlockAction
                                   aria-label="Block settings"
                                   onClick={() => {
@@ -2531,6 +2624,49 @@ function TemplatesStudioContent({
                                     }
                                   />
                                 </HeadingElement>
+                              ) : b.type === "columns" && b.columns ? (
+                                <ColumnsEditor
+                                  block={b}
+                                  map={map}
+                                  styles={templateStyles}
+                                  settings={data.settings}
+                                  prefix="template-"
+                                  saved={data.library}
+                                  onChange={(next) =>
+                                    patch(
+                                      currentContent.current.map((v) =>
+                                        v.id === b.id ? next : v,
+                                      ),
+                                    )
+                                  }
+                                  onUnwrap={() => {
+                                    patch(
+                                      unwrapColumns(
+                                        currentContent.current,
+                                        b.id!,
+                                      ),
+                                    );
+                                    selection.clear();
+                                  }}
+                                  excess={
+                                    browserPages?.overflowColumns?.find(
+                                      (item) => item.block === b.id,
+                                    )?.excess
+                                  }
+                                  reuse={blockFeedback.reuse}
+                                  renderLink={
+                                    mode === "templates" && !draft?.starter_key
+                                      ? (child) => (
+                                          <LinkedBlockNote
+                                            block={child}
+                                            content={content}
+                                            library={data.library}
+                                            onChange={patch}
+                                          />
+                                        )
+                                      : undefined
+                                  }
+                                />
                               ) : b.type === "image" ? (
                                 <SelectableImage
                                   value={{ ...b, src: b.src ?? "" }}
@@ -3070,6 +3206,7 @@ function blockName(b: Block) {
     signature_block: "Signature",
     page_break: "Page break",
     variable: "Field",
+    columns: "Columns",
     contract: "Contract",
   }[b.type];
 }

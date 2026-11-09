@@ -1,6 +1,7 @@
 "use client";
 import { type DragEvent, type RefObject } from "react";
 import { useDropIndicator } from "./drop-target";
+import type { BlockDestination } from "../../lib/columns";
 import type { Block } from "../../lib/model";
 const mime = "application/x-yeswell-block";
 export function defaultBlockInsertion(
@@ -52,7 +53,7 @@ export function defaultBlockInsertion(
 export function useBlockDrop(
   content: Block[],
   paper: RefObject<HTMLElement | null>,
-  insert: (blocks: Block[], at: number) => void,
+  insert: (blocks: Block[], target: BlockDestination) => void,
   disabled = false,
 ) {
   const indicator = useDropIndicator(content, paper);
@@ -86,7 +87,7 @@ export function useBlockDrop(
       try {
         const blocks = JSON.parse(event.dataTransfer.getData(mime));
         if (Array.isArray(blocks) && blocks.length > 0 && blocks.length <= 300)
-          insert(blocks, target.at);
+          insert(blocks, target);
       } finally {
         clear();
       }

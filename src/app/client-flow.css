@@ -1004,3 +1004,9 @@ label.flow-quote-line {
   margin: 16px auto;
   max-width: 40rem;
 }
+
+/* The flowing client document reads one column at a time. Canonical sheets
+   and the browser print projection use the Letter grid from the source. */
+.flow-document .document-columns {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
