@@ -2,14 +2,8 @@
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ChevronDown } from "lucide-react";
-import { chromeIcons } from "./staff-icons";
-import {
-  Archive,
-  ArchiveRestore,
-  Copy,
-  PenTool,
-  SquarePen,
-} from "lucide-react";
+import { chromeIcons, SigningIcon } from "./staff-icons";
+import { Archive, ArchiveRestore, Copy, SquarePen } from "lucide-react";
 import {
   finalOiotClause,
   oiotPlan,
@@ -282,7 +276,7 @@ export function ProposalMenu({
                     location.href = `/proposals/${p.id}?action=countersign`;
                   }}
                 >
-                  <PenTool size={18} aria-hidden="true" />
+                  <SigningIcon size={18} aria-hidden="true" />
                 </button>
               )}
             </TableRowAction>
