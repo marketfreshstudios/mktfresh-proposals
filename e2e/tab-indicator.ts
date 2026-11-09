@@ -21,3 +21,11 @@ export async function expectStraightTabIndicator(tab: Locator) {
   expect(indicator.width).toBeGreaterThan(0);
   expect(indicator.radius).toBeLessThanOrEqual(1);
 }
+
+export async function expectNoTabUnderline(tab: Locator) {
+  await expect(tab).toBeVisible();
+  const content = await tab.evaluate(
+    (el) => getComputedStyle(el, "::after").content,
+  );
+  expect(["none", "normal"]).toContain(content);
+}

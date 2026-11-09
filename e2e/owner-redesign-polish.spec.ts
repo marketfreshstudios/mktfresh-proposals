@@ -1,7 +1,10 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { editorFixture } from "./editor-fixture";
-import { expectStraightTabIndicator } from "./tab-indicator";
+import {
+  expectNoTabUnderline,
+  expectStraightTabIndicator,
+} from "./tab-indicator";
 
 async function screenshot(page: Page, name: string) {
   if (process.env.CAPTURE_OWNER_REDESIGN !== "1") return;
@@ -81,7 +84,8 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await preview.hover();
   await expectReadable(preview, "Editor outline button hover");
   await back.hover();
-  await expectStraightTabIndicator(
+  // The editor sidebar tabs are a segmented control: no underline.
+  await expectNoTabUnderline(
     page.getByRole("tab", { name: "Quote", exact: true }),
   );
   await screenshot(page, "editor-proposals-hover-1440");
