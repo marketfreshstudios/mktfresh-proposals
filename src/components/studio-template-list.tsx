@@ -8,6 +8,7 @@ import type { Data } from "./staff-app";
 import type { Activity } from "../lib/studio";
 import type { Block } from "../lib/model";
 import { fieldLabel } from "../lib/field-labels";
+import { plainEditorText, resolvedEditorText } from "../lib/editor-fields";
 import { blockText } from "../lib/editor-document";
 import { savedBlockLabel } from "../lib/saved-block-type";
 import { defaultCover, contentAfterCover } from "../lib/cover";
@@ -28,6 +29,47 @@ const blockType = (b: Block) =>
 function summary(block: Block) {
   return blockText(block).replace(/\{\{([^}]+)\}\}/g, (_, token: string) =>
     fieldLabel(token),
+  );
+}
+function TemplateThumbnail({
+  template,
+  settings,
+}: {
+  template: Template;
+  settings: Data["settings"];
+}) {
+  const coverTitle = template.cover?.elements?.find(
+    (element) => element.kind === "title" && !element.hidden,
+  )?.content;
+  const heading = template.content.find((block) => block.type === "heading");
+  const title =
+    (coverTitle && plainEditorText(coverTitle).trim()) ||
+    (heading && blockText(heading).trim()) ||
+    template.name;
+  const samples = {
+    "client.company": "Client",
+    "workspace.name": settings?.company_name ?? "Workspace",
+    "company.name": settings?.company_name ?? "Workspace",
+  };
+  const previewTitle = resolvedEditorText(title, {
+    ...samples,
+    "proposal.title": resolvedEditorText(template.name, samples),
+  });
+  return (
+    <div className="template-thumbnail proposal-typography" aria-hidden="true">
+      <div className="template-thumbnail-paper">
+        <span
+          className="template-thumbnail-accent"
+          style={{ backgroundColor: settings?.accent_colour }}
+        />
+        <strong className="template-thumbnail-title">{previewTitle}</strong>
+        <div className="template-thumbnail-lines">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    </div>
   );
 }
 export function StudioTemplateList({
@@ -171,23 +213,18 @@ export function StudioTemplateList({
                   <a
                     href={`/studio/templates/${t.id}`}
                     className="studio-template-card"
+                    data-hidden={!t.active || undefined}
                   >
-                    <div
-                      className="template-thumbnail proposal-typography"
-                      aria-hidden="true"
-                    >
-                      <small>{data.settings?.company_name}</small>
-                      <strong>{t.name}</strong>
-                      <span>Prepared for your client</span>
-                      <i />
-                      <i />
-                      <i />
-                    </div>
-                    <div>
-                      <strong>{t.name}</strong>
-                      {t.starter_key && (
-                        <span className="starter-pill">Starter</span>
-                      )}
+                    <TemplateThumbnail template={t} settings={data.settings} />
+                    <div className="studio-template-card-footer">
+                      <div>
+                        <strong data-testid="template-card-name">
+                          {t.name}
+                        </strong>
+                        {t.starter_key && (
+                          <span className="starter-pill">Starter</span>
+                        )}
+                      </div>
                       {t.source_starter_key && (
                         <p className="starter-source">
                           Based on{" "}

@@ -88,22 +88,6 @@
   }
 }
 
-.template-card-open {
-  display: block;
-  color: var(--ink);
-}
-.template-card-open > div:last-child {
-  padding: 16px;
-}
-.template-card-open .template-thumbnail {
-  border-radius: 14px 14px 0 0;
-}
-
-.studio-template-card-shell > .studio-template-card {
-  display: block;
-  height: 100%;
-}
-
 .toolbar-popover.starter-actions-menu {
   width: 288px;
   max-width: calc(100vw - 24px);
