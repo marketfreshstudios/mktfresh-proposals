@@ -58,6 +58,7 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | Method / route                                | Purpose                                                                               |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `POST /api/auth/login`                        | `{email,password}` → `{authenticated:true}` plus HttpOnly cookies for allowlisted staff                   |
+| `POST /api/auth/reset-password` | Same-origin staff recovery request with `{email}`; generic response and workspace-scoped delivery |
 | `POST /api/auth/set-password` | Invite/reset acceptance or own password change; verifies one-time link or current password, returns no credentials |
 | `GET /api/team` | Workspace staff/status/last sign-in and recent audit changes |
 | `POST /api/team/invite` | Super admin invite using app email |

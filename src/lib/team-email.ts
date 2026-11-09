@@ -13,6 +13,7 @@ import {
   resolveEmailText,
 } from "./email-templates";
 import { emailLayout } from "./email-layout";
+import { escape } from "./presentation";
 import { appOrigin } from "./links";
 export async function sendTeamEmail(
   repo: Repository,
@@ -24,6 +25,7 @@ export async function sendTeamEmail(
     token: string;
     type: "invite" | "recovery";
     template?: "team_invite" | "team_password_reset";
+    replyTo?: string;
   },
 ) {
   const settings = (
@@ -80,7 +82,7 @@ export async function sendTeamEmail(
   const id = randomUUID(),
     identity = {
       from: `${JSON.stringify(`${actor.staff_name ?? email} · ${settings.company_name}`)} <${email}>`,
-      reply_to: email,
+      reply_to: input.replyTo ?? email,
     };
   await mailer.send(
     { to: input.email, ...identity, subject, ...layout(url.toString()) },
@@ -108,4 +110,66 @@ export async function sendTeamEmail(
     },
   });
   return { sent: true };
+}
+
+/** A verified workspace domain can send even if the public contact uses another domain. */
+export function workspaceSecuritySender(settings: WorkspaceSettings) {
+  const domain = settings.sending_domain;
+  if (!domain) return null;
+  return settings.email.split("@")[1]?.toLowerCase() === domain
+    ? settings.email
+    : `notifications@${domain}`;
+}
+
+export async function sendPasswordChangedEmail(
+  repo: Repository,
+  mailer: Mailer,
+  member: Pick<StaffMember, "workspace_id" | "user_id">,
+  email: string,
+) {
+  const settings = (
+    await repo.entities<WorkspaceSettings>("workspace_settings")
+  )[0];
+  const from = settings && workspaceSecuritySender(settings);
+  check(settings && from, "Configure a verified workspace sending domain", 409);
+  const title = "Your Yeswell password was changed";
+  const body = "Your Yeswell account now uses your new password.";
+  const help = "Not you? Contact your workspace admin right away.";
+  const button = { label: "Sign in", url: `${appOrigin()}/login` };
+  const layout = emailLayout({
+    title,
+    staff: true,
+    bodyHtml: `<p>${escape(body)}</p><p>${escape(help)}</p>`,
+    bodyText: `${body}\n\n${help}`,
+    button,
+    workspace: settings.company_name,
+    sender: "Yeswell",
+    contact: settings.email,
+    accent: settings.accent_colour,
+  });
+  const identity = {
+    from: `${JSON.stringify(`Yeswell · ${settings.company_name}`)} <${from}>`,
+    reply_to: settings.email,
+  };
+  const id = randomUUID();
+  await mailer.send(
+    { to: email, ...identity, subject: title, ...layout },
+    `team:${repo.workspaceId}:${id}`,
+  );
+  await repo.put("email_log", {
+    id,
+    proposal_id: null,
+    target_user_id: member.user_id,
+    sent_at: new Date().toISOString(),
+    snapshot: {
+      template_key: "staff_password_changed",
+      subject: title,
+      ...layout,
+      button_label: button.label,
+      button_url: button.url,
+      to: email,
+      ...identity,
+      prepared_at: new Date().toISOString(),
+    },
+  });
 }

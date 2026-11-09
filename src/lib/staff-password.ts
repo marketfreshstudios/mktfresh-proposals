@@ -5,6 +5,7 @@ import { authClient, staffCredentials } from "./staff-session";
 import { validateStaffMembership } from "./staff-access";
 import { StaffPasswordSchema } from "./team-model";
 import { SupabaseTeamStore } from "./team-store";
+import { notifyStaffPasswordChanged } from "./staff-reset";
 import { SupabaseTeamAuth } from "./team";
 export const SetStaffPasswordSchema = z
   .object({
@@ -14,7 +15,11 @@ export const SetStaffPasswordSchema = z
     current_password: z.string().min(1).max(200).optional(),
   })
   .strict();
-export async function setStaffPassword(request: Request, raw: unknown) {
+export async function setStaffPassword(
+  request: Request,
+  raw: unknown,
+  afterResponse?: (work: () => Promise<void>) => void,
+) {
   const input = SetStaffPasswordSchema.parse(raw),
     client = authClient();
   let session;
@@ -94,5 +99,13 @@ export async function setStaffPassword(request: Request, raw: unknown) {
     result.data.session.user,
     result.data.session.access_token,
   );
+  const email = result.data.session.user.email;
+  if (
+    fromLink &&
+    input.type === "recovery" &&
+    member.status === "active" &&
+    email
+  )
+    afterResponse?.(() => notifyStaffPasswordChanged(member, email));
   return result.data.session;
 }

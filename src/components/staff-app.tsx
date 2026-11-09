@@ -3,6 +3,7 @@ import { Select } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
+import { StaffResetForm } from "./staff-reset-form";
 import { StaffAuthFrame } from "./staff-auth-frame";
 import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
@@ -594,17 +595,7 @@ function Login({ local }: { local: boolean }) {
         <p>Return to your editor and choose Retry to save your kept changes.</p>
       </StaffAuthFrame>
     );
-  if (forgot)
-    return (
-      <StaffAuthFrame>
-        <h1>Forgot password?</h1>
-        <p>
-          Ask your workspace administrator to send you a password reset email.
-          Use the link in that email to choose a new password.
-        </p>
-        <Button onClick={() => setForgot(false)}>Back to sign in</Button>
-      </StaffAuthFrame>
-    );
+  if (forgot) return <StaffResetForm onBack={() => setForgot(false)} />;
   if (error.startsWith("Staff access deactivated"))
     return (
       <StaffAuthFrame>

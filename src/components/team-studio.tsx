@@ -677,6 +677,8 @@ function auditText(e: TeamAudit) {
   switch (e.action) {
     case "password_set":
       return `Password set by ${by} for ${e.target_name}`;
+    case "password_reset_requested":
+      return `Password reset requested · ${e.target_name}`;
     case "password_changed":
       return `${e.target_name} changed their password`;
     case "name":

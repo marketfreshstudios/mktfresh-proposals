@@ -1,3 +1,8 @@
+import {
+  processStaffPasswordReset,
+  staffResetExpiryMinutes,
+  staffResetRequest,
+} from "./staff-reset";
 import { AskQuestionSchema, StaffQuestionSchema } from "./proposal-questions";
 import {
   askQuestion,
@@ -166,19 +171,28 @@ async function body(req: Request) {
   }
 }
 const resolvedClientLinks = new WeakSet<Request>();
-export async function handle(req: Request, path: string[]) {
+type AfterResponse = (work: () => Promise<void>) => void;
+export async function handle(
+  req: Request,
+  path: string[],
+  afterResponse?: AfterResponse,
+) {
   const result =
     path[0] === "public"
       ? await limitClientLink(
           req,
           path[1] ?? "",
-          () => handleRoute(req, path),
+          () => handleRoute(req, path, afterResponse),
           () => resolvedClientLinks.has(req),
         )
-      : await handleRoute(req, path);
+      : await handleRoute(req, path, afterResponse);
   return withStaffCookies(req, result);
 }
-async function handleRoute(req: Request, path: string[]) {
+async function handleRoute(
+  req: Request,
+  path: string[],
+  afterResponse?: AfterResponse,
+) {
   try {
     const method = req.method;
     if (path[0] === "auth" && path[1] === "local" && method === "POST") {
@@ -230,9 +244,32 @@ async function handleRoute(req: Request, path: string[]) {
       });
       return setStaffCookies(response, session);
     }
+    if (
+      path[0] === "auth" &&
+      path[1] === "reset-password" &&
+      path.length === 2 &&
+      method === "POST"
+    ) {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      const input = staffResetRequest.safeParse(
+        await body(req).catch(() => null),
+      );
+      if (input.success)
+        afterResponse?.(() =>
+          processStaffPasswordReset(input.data.email, req.headers),
+        );
+      return json({
+        accepted: true,
+        expires_in_minutes: staffResetExpiryMinutes,
+      });
+    }
     if (path[0] === "auth" && path[1] === "set-password" && method === "POST") {
       check(sameOrigin(req), "Same-origin request required", 403);
-      const session = await setStaffPassword(req, await body(req));
+      const session = await setStaffPassword(
+        req,
+        await body(req),
+        afterResponse,
+      );
       return setStaffCookies(json({ authenticated: true }), session);
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {

@@ -452,10 +452,9 @@ for (const width of [1440, 768, 375]) {
     if (width === 1440) await capture(page, "staff-sign-in-1440");
     await page.getByRole("button", { name: "Forgot password?" }).click();
     await expect(
-      page.getByText(/Ask your workspace administrator to send/),
+      page.getByRole("heading", { name: "Reset your password" }),
     ).toBeVisible();
     await axe(page, ".account-screen", "forgot password");
-    if (width === 1440) await capture(page, "staff-password-help-1440");
     await page.getByRole("button", { name: "Back to sign in" }).click();
     await page.getByLabel("Email address").fill("former@example.test");
     await page.getByLabel("Password", { exact: true }).fill("fixture password");

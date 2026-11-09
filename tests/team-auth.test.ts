@@ -10,6 +10,11 @@ const state = vi.hoisted(() => ({
   authCalls: [] as unknown[],
   members: new Map<string, any>(),
   current: null as any,
+  resetMail: [] as any[],
+  resetAudit: [] as any[],
+  resetLimit: true,
+  resetKeys: [] as any[],
+  resetWorkspaces: [] as string[],
 }));
 const id = "00000000-0000-4000-8000-000000000001";
 function token(sid: string) {
@@ -51,10 +56,32 @@ const credentials = {
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({ auth: credentials }),
 }));
+vi.mock("../src/lib/jobs", async (original) => ({
+  ...(await original<typeof import("../src/lib/jobs")>()),
+  ResendMailer: class {
+    async send(message: unknown) {
+      state.resetMail.push(message);
+    }
+  },
+}));
 vi.mock("../src/lib/repository", async (original) => ({
   ...(await original<typeof import("../src/lib/repository")>()),
+  SupabaseRepository: class {
+    constructor(_db: unknown, workspaceId: string) {
+      state.resetWorkspaces.push(workspaceId);
+      return state.rt.repo;
+    }
+  },
   supabase: () => ({
-    from: () => {
+    from: (table: string) => {
+      if (table === "team_audit")
+        return {
+          insert: async (row: unknown) => {
+            state.resetAudit.push(row);
+            return { error: null };
+          },
+        };
+
       const query = {
         select: () => query,
         eq: () => query,
@@ -63,6 +90,22 @@ vi.mock("../src/lib/repository", async (original) => ({
       return query;
     },
     rpc: async (name: string, args: any) => {
+      if (name === "admit_staff_password_reset") {
+        state.resetKeys.push(args);
+        return { data: state.resetLimit, error: null };
+      }
+      if (name === "team_auth_identity")
+        return {
+          data:
+            args.target_email === state.user.email
+              ? {
+                  id,
+                  workspace_id: state.member.workspace_id,
+                  confirmed: !!state.user.email_confirmed_at,
+                }
+              : null,
+          error: null,
+        };
       if (name === "staff_session_exists")
         return { data: state.sessions.has(args.target_session), error: null };
       if (name === "change_team_member") {
@@ -89,6 +132,22 @@ vi.mock("../src/lib/repository", async (original) => ({
         }
       },
       admin: {
+        getUserById: async () => ({ data: { user: state.user }, error: null }),
+        generateLink: async ({
+          email,
+          type,
+        }: {
+          email: string;
+          type: string;
+        }) => {
+          expect(email).toBe(state.user.email);
+          const hashed_token = "fake-recovery-token-" + crypto.randomUUID();
+          state.links.set(hashed_token, { user_id: id, type });
+          return {
+            data: { user: state.user, properties: { hashed_token } },
+            error: null,
+          };
+        },
         updateUserById: async (userId: string, input: any) => {
           state.password = input.password;
           state.sessions.clear();
@@ -131,6 +190,15 @@ beforeEach(async () => {
   vi.stubEnv("SUPABASE_URL", "https://auth.example.test");
   vi.stubEnv("SUPABASE_ANON_KEY", "fake");
   vi.stubEnv("APP_URL", "https://app.example.test");
+  vi.stubEnv(
+    "INTEGRATION_ENCRYPTION_KEY",
+    "local-only-password-reset-hmac-secret",
+  );
+  state.resetMail = [];
+  state.resetAudit = [];
+  state.resetKeys = [];
+  state.resetWorkspaces = [];
+  state.resetLimit = true;
   state.sessions.clear();
   state.links.clear();
   state.authCalls = [];
@@ -138,6 +206,7 @@ beforeEach(async () => {
   state.user = {
     id,
     email: "staff@example.test",
+    email_confirmed_at: new Date().toISOString(),
     app_metadata: {},
     user_metadata: {},
     aud: "authenticated",
@@ -313,3 +382,141 @@ it("ordinary self password changes require the current password and cross-site c
   hostile.headers.set("origin", "https://other.example.test");
   expect((await handle(hostile, ["auth", "set-password"])).status).toBe(403);
 });
+
+it("self-service sends one recovery link, signs in on one use, and sends a credential-free notice", async () => {
+  // There is no workspace selector on the shared login; scope is derived from the account.
+  state.member.workspace_id = "b36a2c11-64aa-4ca9-a8b1-2a17f35f9808";
+  const scheduled: (() => Promise<void>)[] = [];
+  const after = (work: () => Promise<void>) => {
+    scheduled.push(work);
+  };
+  const request = await handle(
+    req(
+      "auth/reset-password",
+      {
+        email: " STAFF@EXAMPLE.TEST ",
+        workspace_id: state.rt.repo.workspaceId,
+      },
+      null,
+    ),
+    ["auth", "reset-password"],
+    after,
+  );
+  expect(request.status).toBe(200);
+  expect(request.headers.get("cache-control")).toBe("no-store");
+  expect(await request.json()).toEqual({
+    accepted: true,
+    expires_in_minutes: 60,
+  });
+  expect(state.resetMail).toHaveLength(0);
+  await scheduled.shift()!();
+  expect(state.resetWorkspaces).toEqual([state.member.workspace_id]);
+  expect(state.resetAudit).toEqual([
+    {
+      workspace_id: state.member.workspace_id,
+      actor: "system",
+      actor_name: "Password reset form",
+      target_user_id: id,
+      target_name: "Jamie",
+      action: "password_reset_requested",
+    },
+  ]);
+  expect(state.resetMail).toHaveLength(1);
+  expect(state.resetMail[0].to).toBe(state.user.email);
+  const resetLink = state.resetMail[0].text.match(
+    /https:\/\/app.example.test\/set-password#\S+/,
+  )[0];
+  const data = new URLSearchParams(new URL(resetLink).hash.slice(1));
+  const token_hash = data.get("token_hash");
+  expect(data.get("type")).toBe("recovery");
+  expect(
+    JSON.stringify(await state.rt.repo.entities("email_log")),
+  ).not.toContain(token_hash);
+
+  const input = {
+    token_hash,
+    type: "recovery",
+    password: "Replacement after reset!",
+  };
+  const response = await handle(
+    req("auth/set-password", input, null),
+    ["auth", "set-password"],
+    after,
+  );
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ authenticated: true });
+  expect(response.headers.getSetCookie().join()).toContain("HttpOnly");
+  await scheduled.shift()!();
+  expect(state.resetMail).toHaveLength(2);
+  expect(state.resetMail[1]).toMatchObject({
+    to: state.user.email,
+    subject: "Your Yeswell password was changed",
+  });
+  expect(state.resetMail[1].text).toContain(
+    "Not you? Contact your workspace admin",
+  );
+  expect(state.resetMail[1].text).not.toContain(token_hash);
+  expect(state.resetMail[1].text).not.toContain(input.password);
+  const replay = await handle(
+    req("auth/set-password", input, null),
+    ["auth", "set-password"],
+    after,
+  );
+  expect(replay.status).toBe(410);
+  expect(scheduled).toHaveLength(0);
+});
+it.each([
+  "unknown",
+  "invalid",
+  "invited",
+  "unconfirmed",
+  "deactivated",
+  "banned",
+  "limited",
+] as const)(
+  "self-service returns the same confirmation and sends nothing for %s",
+  async (kind) => {
+    const email =
+      kind === "unknown"
+        ? "stranger@example.test"
+        : kind === "invalid"
+          ? "invalid email"
+          : state.user.email;
+    if (kind === "invited" || kind === "deactivated")
+      state.member.status = kind;
+    if (kind === "invited" || kind === "unconfirmed")
+      delete state.user.email_confirmed_at;
+    if (kind === "banned")
+      state.user.banned_until = new Date(Date.now() + 60000).toISOString();
+    if (kind === "limited") state.resetLimit = false;
+    const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    const scheduled: (() => Promise<void>)[] = [];
+    try {
+      const response = await handle(
+        req("auth/reset-password", { email }, null),
+        ["auth", "reset-password"],
+        (work) => scheduled.push(work),
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        accepted: true,
+        expires_in_minutes: 60,
+      });
+      expect(response.headers.getSetCookie()).toEqual([]);
+      for (const work of scheduled) await work();
+      expect(state.resetMail).toHaveLength(0);
+      expect(state.resetAudit).toHaveLength(
+        ["unknown", "invalid"].includes(kind) ? 0 : 1,
+      );
+      if (kind === "unknown") {
+        expect(log).toHaveBeenCalledWith("Password reset requested", {
+          email_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        });
+        expect(JSON.stringify(log.mock.calls)).not.toContain(email);
+      }
+      expect(JSON.stringify(state.resetKeys)).not.toContain(email);
+    } finally {
+      log.mockRestore();
+    }
+  },
+);
