@@ -1,9 +1,12 @@
+import type { StripeConnectionStatus } from "./stripe-connect-status";
 import type { QboConnectionStatus } from "./providers/qbo-connection";
 import { businessState, businessStateUrl } from "./business-state";
 import type { WorkspaceSettings } from "./workspace";
 import type { Item, Template } from "./model";
 export type ConnectionStatus = {
   stripe: boolean;
+  stripe_connect?: StripeConnectionStatus;
+  stripe_platform?: boolean;
   stripe_webhooks_configured?: boolean;
   qbo: boolean;
   qbo_connection?: QboConnectionStatus;

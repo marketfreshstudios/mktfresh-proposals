@@ -1,4 +1,5 @@
 "use client";
+import { stripeTestDashboard } from "../lib/stripe-connect-status";
 import {
   publicCompletion,
   cardLabel,
@@ -129,7 +130,13 @@ export function BillingConfirmationCard({
     </section>
   );
 }
-export function StripeBillingDetails({ link }: { link: BillingLink }) {
+export function StripeBillingDetails({
+  link,
+  dashboardUrl = stripeTestDashboard,
+}: {
+  link: BillingLink;
+  dashboardUrl?: string;
+}) {
   const status = stripeBillingStatus(link);
   return (
     <div className="stack stripe-billing-details">
@@ -141,7 +148,7 @@ export function StripeBillingDetails({ link }: { link: BillingLink }) {
       {status.subscriptions.map((s) => (
         <a
           key={s.id}
-          href={`https://dashboard.stripe.com/test/subscriptions/${encodeURIComponent(s.id)}`}
+          href={`${dashboardUrl}/subscriptions/${encodeURIComponent(s.id)}`}
           target="_blank"
           rel="noreferrer"
         >

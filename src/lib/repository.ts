@@ -1163,8 +1163,7 @@ export class SupabaseRepository implements Repository {
       .eq("workspace_id", this.workspaceId)
       .eq("id", id)
       .maybeSingle();
-    if (error)
-      throw new AppError(503, "QuickBooks connection storage is unavailable");
+    if (error) throw new AppError(503, "Connection storage is unavailable");
     return (data?.data ?? null) as T | null;
   }
   async replaceProviderCredential<T extends { id: string }>(
@@ -1178,8 +1177,15 @@ export class SupabaseRepository implements Repository {
       expected_data: expected,
       replacement_data: replacement,
     });
-    if (error)
-      throw new AppError(503, "QuickBooks connection storage is unavailable");
+    if (
+      error?.code === "23505" &&
+      (replacement as { kind?: string } | null)?.kind === "stripe_connect"
+    )
+      throw new AppError(
+        409,
+        "This Stripe account is already linked to another workspace.",
+      );
+    if (error) throw new AppError(503, "Connection storage is unavailable");
     return data === true;
   }
   async reportNames() {

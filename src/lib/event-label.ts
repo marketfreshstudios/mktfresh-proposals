@@ -67,6 +67,9 @@ export function eventLabel(
       e.metadata.delivery === "email"
         ? "QuickBooks invoices set to create and email"
         : "QuickBooks invoices set to draft for review",
+    stripe_connect_authorized: "Stripe account connected",
+    stripe_connect_disconnected: "Stripe account disconnected",
+    stripe_connect_revoked: "Stripe access revoked",
     subscription_created: "Subscription created",
     sync_failed: (() => {
       const id = String(e.metadata.job ?? "");

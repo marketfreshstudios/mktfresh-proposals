@@ -118,11 +118,16 @@ import {
   proposalInvoiceRef,
   quickBooksCustomerReview,
 } from "./qbo-mapping";
-import { receiveStripeWebhook } from "./providers/webhook";
+import { receiveStripeWebhook, verifyStripeWebhook } from "./providers/webhook";
+import { stripeConnectCookie } from "./providers/stripe-connect";
 import { syncStripeCatalog, createCustomFamily } from "./catalog";
 import { PlaybookDraftSchema } from "./playbook";
 import type { Item } from "./model";
-import { WorkspaceSettingsSchema, type WorkspaceSettings } from "./workspace";
+import {
+  LOCAL_WORKSPACE_ID,
+  WorkspaceSettingsSchema,
+  type WorkspaceSettings,
+} from "./workspace";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -146,7 +151,8 @@ import {
   workspaceStaff,
   updateStaffDisplayName,
 } from "./auth";
-import { runtime, publicRuntime, allRuntimes } from "./runtime";
+import { publicRuntime, allRuntimes } from "./runtime";
+import { workspaceRuntime, stripeWebhookWorkspace } from "./workspace-runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
 import { hashPassword, sha256 } from "./content";
@@ -281,23 +287,64 @@ async function handleRoute(
       return setStaffCookies(json({ authenticated: true }), session);
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
-      const rt = runtime(uuid.parse(path[2]));
+      const isConnect = path[2] === "connect";
+      const secret =
+        (isConnect
+          ? process.env.STRIPE_CONNECT_WEBHOOK_SECRET
+          : process.env.STRIPE_WEBHOOK_SECRET) ?? "";
+      const raw = await req.text();
+      check(Buffer.byteLength(raw) < 2000000, "Request too large", 413);
+      const signature = req.headers.get("stripe-signature") ?? "";
+      const webhook = verifyStripeWebhook(raw, signature, secret);
+      let workspaceId = LOCAL_WORKSPACE_ID;
+      if (isConnect) {
+        check(
+          typeof webhook.account === "string",
+          "Stripe connected account required.",
+          403,
+        );
+        const routed = await stripeWebhookWorkspace(webhook.account);
+        if (!routed) return json({ received: true, ignored: true });
+        workspaceId = routed;
+      } else {
+        check(
+          uuid.parse(path[2]) === LOCAL_WORKSPACE_ID && !webhook.account,
+          "Use the Stripe Connect endpoint for connected accounts.",
+          403,
+        );
+      }
+      const stripeRuntime = await workspaceRuntime(workspaceId);
+      if (isConnect && webhook.type === "account.application.deauthorized") {
+        await stripeRuntime.stripeConnect?.revoked(
+          webhook.account!,
+          webhook.created,
+        );
+        return json({ received: true });
+      }
+      if (
+        isConnect &&
+        (await stripeRuntime.stripeConnect?.activeAccount())?.id !==
+          webhook.account
+      )
+        return json({ received: true, ignored: true });
       check(
-        rt.worker.providers.stripe instanceof StripeProvider,
+        stripeRuntime.worker.providers.stripe instanceof StripeProvider,
         "Stripe test adapter not configured",
         503,
       );
-      const raw = await req.text();
-      check(Buffer.byteLength(raw) < 2000000, "Request too large", 413);
-      return json(
-        await receiveStripeWebhook(
-          rt.repo,
-          rt.worker.providers.stripe,
-          raw,
-          req.headers.get("stripe-signature") ?? "",
-          process.env.STRIPE_WEBHOOK_SECRET ?? "",
-        ),
+      const receipt = await receiveStripeWebhook(
+        stripeRuntime.repo,
+        stripeRuntime.worker.providers.stripe,
+        raw,
+        signature,
+        secret,
+        isConnect ? webhook.account : undefined,
       );
+      if (receipt.proposal_id)
+        afterResponse?.(async () => {
+          await stripeRuntime.worker.drain(receipt.proposal_id);
+        });
+      return json(receipt);
     }
     if (path[0] === "public") {
       const token = path[1],
@@ -577,7 +624,7 @@ async function handleRoute(
       return clearStaffCookies(json({ signed_out: true }));
     }
     const user = await staff(req),
-      rt = runtime(user.workspace_id);
+      rt = await workspaceRuntime(user.workspace_id);
     if (path[0] === "auth" && path[1] === "session" && method === "GET") {
       const settings =
         (await rt.repo.entities<WorkspaceSettings>("workspace_settings"))[0] ??
@@ -669,6 +716,68 @@ async function handleRoute(
       method === "GET"
     )
       return json(await providerActivity(rt.repo, path[1]));
+    if (path[0] === "connections" && path[1] === "stripe" && path[2]) {
+      check(
+        user.staff_role === "owner",
+        "Only a super admin can manage Stripe Connect.",
+        403,
+      );
+      const connect = rt.stripeConnect;
+      check(
+        connect,
+        "Stripe Connect test settings are unavailable for this workspace.",
+        503,
+      );
+      if (path[2] === "callback" && method === "GET") {
+        let destination = "/studio/connections/stripe";
+        try {
+          await connect.callback(
+            user,
+            new URL(req.url),
+            cookie(req, stripeConnectCookie) ?? "",
+          );
+          afterResponse?.(() => connect.runSetup(user));
+        } catch (error) {
+          if (!(error instanceof AppError)) throw error;
+          destination += "?connection=failed";
+        }
+        return new Response(null, {
+          status: 303,
+          headers: {
+            ...headers,
+            Location: destination,
+            "Set-Cookie": connect.cookie("", 0),
+          },
+        });
+      }
+      if (method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        if (path[2] === "authorize") {
+          const input = z
+            .object({ mode: z.literal("test") })
+            .strict()
+            .parse(await body(req));
+          const started = await connect.authorize(
+            user,
+            new URL(req.url).origin,
+            input.mode,
+          );
+          const response = json({ url: started.url });
+          response.headers.append("Set-Cookie", started.cookie);
+          return response;
+        }
+        if (path[2] === "setup") {
+          if (afterResponse) afterResponse(() => connect.runSetup(user));
+          else await connect.runSetup(user);
+          return json(await connect.status(), 202);
+        }
+        if (path[2] === "disconnect") {
+          await connect.disconnect(user);
+          return json(await connect.status());
+        }
+      }
+      throw new AppError(405, "Stripe connection action unavailable");
+    }
     if (path[0] === "connections" && path[1] === "qbo") {
       const qbo = rt.worker.providers.qbo;
       if (path[2] === "items" || path[2] === "terms") {
@@ -759,7 +868,12 @@ async function handleRoute(
             };
       return json({
         stripe: rt.worker.providers.stripe instanceof StripeProvider,
-        stripe_webhooks_configured: !!process.env.STRIPE_WEBHOOK_SECRET,
+        stripe_platform: rt.repo.workspaceId === LOCAL_WORKSPACE_ID,
+        stripe_connect: await rt.stripeConnect?.status(),
+        stripe_webhooks_configured:
+          rt.repo.workspaceId === LOCAL_WORKSPACE_ID
+            ? !!process.env.STRIPE_WEBHOOK_SECRET
+            : !!process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
         qbo: qbo_connection.state === "connected",
         qbo_connection,
         email: !!process.env.RESEND_API_KEY,

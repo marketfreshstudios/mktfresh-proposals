@@ -2208,6 +2208,10 @@
 .connection-detail-title .pill {
   white-space: nowrap;
 }
+
+.connection-detail-title .pill:not(.success, .warning, .info) {
+  color: var(--ink-muted);
+}
 .connection-tiles,
 .connection-panel,
 .studio-connection-detail .connection-setup-note {
@@ -2622,4 +2626,37 @@
   .foundation-action-menu .action-menu .connection-mobile-menu-link {
     display: flex;
   }
+}
+
+.stripe-connection-mode {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.stripe-connection-mode legend {
+  margin-block-end: 8px;
+  font-weight: 600;
+}
+
+.stripe-connection-mode label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.stripe-connection-mode label:has(:checked) {
+  border-color: var(--ink-title);
+  box-shadow: inset 0 0 0 1px var(--ink-title);
+}
+
+.stripe-connection-mode label small {
+  display: block;
+  color: var(--ink-muted);
 }

@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { staff } from "../../../lib/auth";
-import { runtime as appRuntime, publicRuntime } from "../../../lib/runtime";
+import { publicRuntime } from "../../../lib/runtime";
+import { workspaceRuntime } from "../../../lib/workspace-runtime";
 import { deliverQuestionMail } from "../../../lib/question-service";
 import { handle } from "../../../lib/http";
 export const runtime = "nodejs";
@@ -15,27 +16,13 @@ async function route(
   if (
     response.ok &&
     request.method === "POST" &&
-    path[0] === "webhooks" &&
-    path[1] === "stripe"
-  ) {
-    const receipt = await response.clone().json();
-    if (receipt.proposal_id) {
-      const rt = appRuntime(path[2]);
-      after(async () => {
-        await rt.worker.drain(receipt.proposal_id);
-      });
-    }
-  }
-  if (
-    response.ok &&
-    request.method === "POST" &&
     ((path[0] === "public" && path[2] === "sign") ||
       (path[0] === "proposals" && ["send", "countersign"].includes(path[2])))
   ) {
     const rt =
       path[0] === "public"
         ? await publicRuntime(path[1])
-        : appRuntime((await staff(request)).workspace_id);
+        : await workspaceRuntime((await staff(request)).workspace_id);
     const id =
       path[0] === "public" ? (await rt.repo.byToken(path[1]))!.id : path[1];
     after(async () => {
@@ -48,7 +35,7 @@ async function route(
     ((path[0] === "proposals" && path[2] === "reassign") ||
       (path[0] === "team" && path[1] === "reassign"))
   ) {
-    const rt = appRuntime((await staff(request)).workspace_id);
+    const rt = await workspaceRuntime((await staff(request)).workspace_id);
     const result = await response.clone().json();
     const rows = Array.isArray(result) ? result : [result];
     after(async () => {
@@ -91,7 +78,7 @@ async function route(
       const rt =
         path[0] === "public"
           ? await publicRuntime(path[1])
-          : appRuntime((await staff(request)).workspace_id);
+          : await workspaceRuntime((await staff(request)).workspace_id);
       const id =
         path[0] === "public" ? (await rt.repo.byToken(path[1]))?.id : path[1];
       if (id) await deliverQuestionMail(rt.repo, rt.mailer, id);

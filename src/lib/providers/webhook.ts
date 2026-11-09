@@ -54,6 +54,8 @@ export function verifyStripeWebhook(
   return payload as {
     id: string;
     type: string;
+    account?: string;
+    created?: number;
     data: { object: Record<string, any> };
   };
 }
@@ -63,8 +65,14 @@ export async function receiveStripeWebhook(
   raw: string,
   signature: string,
   secret: string,
+  account?: string,
 ) {
   const payload = verifyStripeWebhook(raw, signature, secret);
+  check(
+    payload.account === account,
+    "Stripe webhook account does not match the connection.",
+    403,
+  );
   if (
     ![
       "checkout.session.completed",
@@ -77,6 +85,8 @@ export async function receiveStripeWebhook(
     return { received: true, ignored: true };
   let object = payload.data.object;
   if (payload.type.startsWith("invoice.")) {
+    if (account && typeof object.subscription !== "string")
+      return { received: true, ignored: true };
     check(
       typeof object.subscription === "string",
       "Subscription invoice required",
@@ -86,6 +96,8 @@ export async function receiveStripeWebhook(
       {},
     );
   }
+  if (account && !object.metadata?.proposal_id)
+    return { received: true, ignored: true };
   const proposal = await repo.get(String(object.metadata?.proposal_id));
   check(
     proposal && proposal.client_signed_at,
