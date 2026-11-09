@@ -440,6 +440,7 @@
   display: none;
 }
 .ink-clay .proposal-row-actions {
+  --proposal-row-action-size: 40px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
@@ -455,13 +456,24 @@
   --button-label: var(--hero-ink);
   --button-fill-hover: color-mix(in srgb, var(--hero) 88%, var(--hero-ink));
 }
-.staff-foundation.ink-clay .proposal-row-actions .sign-link {
-  display: inline-grid;
-  place-items: center;
-  width: 100%;
-  min-height: 44px;
-  margin: 0;
-  padding: 0;
+.staff-foundation.ink-clay .proposal-row-actions .btn.table-icon-action {
+  --round-icon-size: var(--proposal-row-action-size);
+  --button-label: var(--ink-muted);
+}
+.staff-foundation.ink-clay
+  .proposal-row-actions
+  .btn.table-icon-action:is(:hover, :active, :focus-visible) {
+  --button-label: var(--ink-title);
+}
+.proposal-action-spacer {
+  inline-size: var(--proposal-row-action-size);
+  block-size: var(--proposal-row-action-size);
+  justify-self: center;
+}
+@media (max-width: 1099px), (pointer: coarse) {
+  .ink-clay .proposal-row-actions {
+    --proposal-row-action-size: 44px;
+  }
 }
 .ink-clay .with-row-actions .proposal-row {
   overflow: visible;

@@ -2,8 +2,8 @@
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ChevronDown } from "lucide-react";
-import { chromeIcons } from "./staff-icons";
-import { Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
+import { chromeIcons, SigningIcon } from "./staff-icons";
+import { Archive, ArchiveRestore, Copy, SquarePen } from "lucide-react";
 import {
   finalOiotClause,
   oiotPlan,
@@ -143,19 +143,10 @@ function rememberList() {
     }),
   );
 }
-export function SignLink({
-  p,
-  data,
-  hint,
-}: {
-  p: Proposal;
-  data: Data;
-  hint?: string;
-}) {
+export function SignLink({ p, data }: { p: Proposal; data: Data }) {
   return canCountersign(p, data.user, data.settings) ? (
     <a
       className="btn primary sign-link"
-      aria-describedby={hint}
       href={`/proposals/${p.id}?action=countersign`}
       onClick={(e) => {
         e.stopPropagation();
@@ -245,7 +236,9 @@ export function ProposalMenu({
       type="button"
       ref={anchor}
       className={`btn ghost more-control round-icon${tableRow ? " table-icon-action" : ""}`}
-      aria-label={`More actions for ${p.client.company}`}
+      aria-label={
+        listRow ? "More actions" : `More actions for ${p.client.company}`
+      }
       aria-describedby={hintId}
       aria-haspopup="dialog"
       aria-expanded={open}
@@ -271,41 +264,49 @@ export function ProposalMenu({
           onClick={(event) => event.stopPropagation()}
         >
           {sign ? (
-            <TableRowAction label="Review and countersign">
-              {(hint) => <SignLink p={p} data={data} hint={hint} />}
+            <TableRowAction label="Countersign">
+              {(hint) => (
+                <button
+                  className="btn icon-only table-icon-action"
+                  type="button"
+                  aria-label="Countersign"
+                  aria-describedby={hint}
+                  onClick={() => {
+                    if (location.pathname === "/proposals") rememberList();
+                    location.href = `/proposals/${p.id}?action=countersign`;
+                  }}
+                >
+                  <SigningIcon size={18} aria-hidden="true" />
+                </button>
+              )}
             </TableRowAction>
-          ) : canEditRecord(p) ? (
-            <TableRowAction label={archived ? "Unarchive and edit" : "Edit"}>
-              {(hint) =>
-                archived ? (
-                  <button
-                    className="btn icon-only table-icon-action"
-                    type="button"
-                    disabled={busy}
-                    aria-label="Unarchive and edit"
-                    aria-describedby={hint}
-                    onClick={() => void act("unarchive", "", p, true)}
-                  >
-                    <Pencil size={18} aria-hidden="true" />
-                  </button>
-                ) : (
-                  <a
-                    className="btn icon-only table-icon-action"
-                    href={`/proposals/${p.id}?action=edit`}
-                    aria-label="Edit"
-                    aria-describedby={hint}
-                    onClick={rememberList}
-                  >
-                    <Pencil size={18} aria-hidden="true" />
-                  </a>
-                )
-              }
+          ) : !needsCountersign(p) && canEditRecord(p) ? (
+            <TableRowAction label="Edit">
+              {(hint) => (
+                <button
+                  className="btn icon-only table-icon-action"
+                  type="button"
+                  disabled={archived && busy}
+                  aria-label="Edit"
+                  aria-describedby={hint}
+                  onClick={() => {
+                    if (archived) {
+                      void act("unarchive", "", p, true);
+                    } else {
+                      rememberList();
+                      location.href = `/proposals/${p.id}?action=edit`;
+                    }
+                  }}
+                >
+                  <SquarePen size={18} aria-hidden="true" />
+                </button>
+              )}
             </TableRowAction>
           ) : (
-            <span />
+            <span className="proposal-action-spacer" aria-hidden="true" />
           )}
           {imported ? (
-            <span />
+            <span className="proposal-action-spacer" aria-hidden="true" />
           ) : (
             <TableRowAction label="Duplicate">
               {(hint) => (
@@ -337,7 +338,7 @@ export function ProposalMenu({
             )}
           </TableRowAction>
           {imported ? (
-            <span />
+            <span className="proposal-action-spacer" aria-hidden="true" />
           ) : (
             <TableRowAction label="More actions">{more}</TableRowAction>
           )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext } from "react";
+import { PenTool as SigningIcon } from "lucide-react";
 import {
   AlignCenter,
   AlignLeft,
@@ -60,6 +61,8 @@ import {
   Users,
   X,
 } from "lucide-react";
+
+export { SigningIcon };
 
 export const StaffIconContext = createContext(false);
 export const staffIcons = {
