@@ -204,17 +204,12 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
           .locator(".editor-phone-header")
           .getByRole("button", { name: "Done", exact: true })
           .click();
-        await page
-          .getByRole("button", { name: "Open Quote", exact: true })
-          .click();
+        await page.getByRole("button", { name: /^Open Quote\b/ }).click();
       } else if (width === 768) {
         await capture("tablet-document", "5g", width, theme);
-        await page
-          .getByRole("button", {
-            name: /^(Expand|Collapse) tools sidebar$/,
-            exact: true,
-          })
-          .click();
+        const quote = page.getByRole("tabpanel", { name: "Quote" });
+        if (!(await quote.isVisible()))
+          await page.getByRole("button", { name: /^Open Quote\b/ }).click();
       }
       await expect(
         page
@@ -284,6 +279,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   );
 
   await page.getByRole("tab", { name: "Quote", exact: true }).click();
+  await openQuoteRow(page, 0);
   await expect(
     page.locator(".editor-paper .block-frame .tiptap .field-chip").first(),
   ).toHaveText("Jane");

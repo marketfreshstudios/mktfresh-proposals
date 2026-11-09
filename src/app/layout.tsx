@@ -21,6 +21,7 @@ import "./ink-clay-tokens.css";
 import "./ink-clay.css";
 import "./reports.css";
 import "./ink-clay-records.css";
+import "./ink-clay-editor-studio.css";
 export default function RootLayout({
   children,
 }: {

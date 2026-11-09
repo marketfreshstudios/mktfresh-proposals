@@ -96,7 +96,9 @@ export function useEditorPanels(
   const rightWidth = v2
     ? canRight && right
       ? 400
-      : 64
+      : canRight
+        ? 56
+        : 64
     : right
       ? Math.min(600, Math.max(420, width - (left ? 240 : 44) - 816 - 48))
       : 44;

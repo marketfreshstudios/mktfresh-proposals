@@ -184,7 +184,7 @@ export function FieldEditor({
             ...(readOnly ? { "aria-readonly": "true" } : {}),
             ...(domId ? { id: domId } : {}),
           }
-        : {},
+        : { "aria-label": "Document text" },
     },
     extensions: [
       Extension.create({

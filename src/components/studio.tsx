@@ -260,7 +260,10 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           Services you can add to a quote. Stripe products keep their Stripe
           price; custom families are priced on each proposal.
         </p>
-        <Button variant="primary" onClick={() => setFamily(true)}>
+        <Button
+          className={item || custom ? undefined : "studio-primary"}
+          onClick={() => setFamily(true)}
+        >
           New custom family
         </Button>
       </div>
@@ -698,12 +701,15 @@ function CatalogItem({
               </div>
             )}
           </dl>
-          <p>
-            {String(
-              i.plan_terms?.client_copy ??
-                "Payoff counts paid invoices, not calendar months.",
-            )}
-          </p>
+          <div className="studio-product-client-copy">
+            <h4>Client sees</h4>
+            <p>
+              {String(
+                i.plan_terms?.client_copy ??
+                  "Payoff counts paid invoices, not calendar months.",
+              )}
+            </p>
+          </div>
         </section>
       )}
       <details open={!i}>
@@ -817,7 +823,12 @@ function CatalogItem({
         <Button onClick={close} disabled={save.busy}>
           Cancel
         </Button>
-        <Button type="submit" variant="primary" busy={save.busy}>
+        <Button
+          type="submit"
+          variant="primary"
+          className="studio-primary"
+          busy={save.busy}
+        >
           Save item and terms
         </Button>
       </DialogActions>
@@ -1879,7 +1890,12 @@ function TemplatesStudioContent({
           {templateSidebar}
         </SectionsPanel>
       )}
-      <main className="studio-template-main stack">
+      <section
+        className="studio-template-main stack"
+        aria-label={
+          mode === "templates" ? "Template document" : "Saved block document"
+        }
+      >
         <EditorHeader
           className="template-editor-header"
           title={
@@ -1998,7 +2014,7 @@ function TemplatesStudioContent({
                 Preview
               </Button>
               <Button
-                className="studio-desktop-action"
+                className={`studio-desktop-action ${starterAttempt ? "" : "studio-primary"}`}
                 variant="primary"
                 disabled={!draft?.active}
                 title={
@@ -2026,6 +2042,7 @@ function TemplatesStudioContent({
               </Button>
               <Button
                 variant="primary"
+                className="studio-primary"
                 busy={templateBusy}
                 onClick={() => void saveTemplate()}
               >
@@ -2042,7 +2059,11 @@ function TemplatesStudioContent({
         {starterAttempt && draft?.starter_key && (
           <div className="starter-edit-notice" role="status">
             <span>This is a Yeswell starter. Make a copy to customize it.</span>
-            <Button variant="primary" onClick={starterActions.copy}>
+            <Button
+              variant="primary"
+              className="studio-primary"
+              onClick={starterActions.copy}
+            >
               Make a copy
             </Button>
           </div>
@@ -3018,7 +3039,7 @@ function TemplatesStudioContent({
             Select one from the list, or create a new one.
           </Empty>
         )}
-      </main>
+      </section>
       <ToolsPanel
         tab={tab}
         tabs={panelTabs}
@@ -3540,7 +3561,11 @@ export function ConnectionsStudio({
           { name: "AI assistants", ids: ["assistants"] },
           { name: "Imports", ids: ["imports"] },
         ].map((group) => (
-          <section className="connection-group" key={group.name}>
+          <section
+            className="connection-group"
+            key={group.name}
+            data-connection-group={group.ids[0]}
+          >
             <h2>{group.name}</h2>
             <div className="connection-grid">
               {cards
@@ -3565,7 +3590,7 @@ export function ConnectionsStudio({
                         <span
                           className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /^(Connected|Configured|Verified|Imported|Sandbox configured)\b/i.test(c.state) ? "success" : "warning"}`}
                         >
-                          ● {c.state}
+                          {c.state}
                         </span>
                       </div>
                       <p>{c.line}</p>
@@ -3586,7 +3611,7 @@ export function ConnectionsStudio({
           {open === "assistants" ? (
             <AssistantConnections data={data} run={run} />
           ) : open === "imports" ? (
-            <div className="stack">
+            <div className="stack studio-import-summary">
               <Banner title="Imported proposals are read-only">
                 Existing imported records and PDFs are preserved.
               </Banner>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../ui";
+import { Check } from "lucide-react";
 import { ToastSurface } from "../block-controls";
 export function GutterInsert({
   onAdd,
@@ -91,7 +92,7 @@ export function AiReviewCheck({
             onReviewed();
           }}
         >
-          ✓
+          <Check size={16} aria-hidden="true" />
         </button>
       )}
       {toast && (

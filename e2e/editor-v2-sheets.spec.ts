@@ -112,7 +112,8 @@ test("computed pages draw separate sheets and PDF-numbered 52px gaps; display wi
       await expect(gaps.nth(n).locator("button,input,a")).toHaveCount(0);
       const values = await gaps.nth(n).evaluate((el) => ({
         bg: getComputedStyle(el).backgroundColor,
-        canvas: getComputedStyle(el.closest("main")!).backgroundColor,
+        canvas: getComputedStyle(el.closest(".editor-document-region")!)
+          .backgroundColor,
       }));
       expect(values.bg).toBe(values.canvas);
     }

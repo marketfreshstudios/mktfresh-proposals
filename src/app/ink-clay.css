@@ -27,6 +27,7 @@
 .staff-foundation.ink-clay
   :is(.btn, .btn.primary, .btn.secondary, .btn.ghost):not(
     .action,
+    .studio-primary,
     .notice-reload,
     .notice-later,
     .action-menu .btn,
@@ -41,6 +42,7 @@
 .staff-foundation.ink-clay
   :is(.btn, .btn.primary, .btn.secondary, .btn.ghost):not(
     .action,
+    .studio-primary,
     .notice-reload,
     .notice-later,
     .action-menu .btn,

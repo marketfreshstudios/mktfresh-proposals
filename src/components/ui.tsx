@@ -376,7 +376,7 @@ export function JobState({
         )}
       </div>
       {["failed", "review"].includes(state) && onRetry && (
-        <Button onClick={onRetry} icon="retry">
+        <Button onClick={onRetry}>
           {state === "review" ? "Resolve" : "Retry"}
         </Button>
       )}

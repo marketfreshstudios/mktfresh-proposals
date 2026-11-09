@@ -153,7 +153,12 @@ export function StudioTemplateList({
           Starting points for new proposals, and content you can drop into any
           of them.
         </p>
-        <Button variant="primary" busy={busy} onClick={create}>
+        <Button
+          variant="primary"
+          className="action"
+          busy={busy}
+          onClick={create}
+        >
           {blocks ? "New block" : "New template"}
         </Button>
       </div>

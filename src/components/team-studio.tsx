@@ -108,6 +108,7 @@ export function TeamStudio({
         {owner && (
           <Button
             variant="primary"
+            className="studio-primary"
             onClick={() => {
               setError("");
               setDialog({ action: "invite" });

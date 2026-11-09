@@ -129,7 +129,12 @@ export function ProposalStyles({
     styleColour(selected.colour, settings?.accent_colour),
   );
   return (
-    <section className="proposal-styles stack" aria-label="Proposal styles">
+    <section
+      className="proposal-styles stack"
+      aria-label={
+        scope === "workspace" ? "Text and page styles" : "Proposal styles"
+      }
+    >
       {onCover && (
         <CoverSettings value={cover} onChange={onCover} settings={settings} />
       )}

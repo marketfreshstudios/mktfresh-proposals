@@ -429,6 +429,7 @@ function InlineEmailEditor({
         {editable && (
           <Button
             variant="primary"
+            className="studio-primary"
             disabled={!!validation || busy}
             onClick={save}
           >

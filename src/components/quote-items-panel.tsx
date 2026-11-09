@@ -119,12 +119,22 @@ export function QuoteItemsPanel({
         data-default={i.default_selected}
         data-optional={i.optional}
         key={i.id}
+        onKeyDown={(event) => {
+          if (!expanded || event.key !== "Escape" || event.defaultPrevented)
+            return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget
+            .querySelector<HTMLButtonElement>(".quote-row-toggle")
+            ?.focus();
+          setExpandedItem(null);
+        }}
       >
         <button
           type="button"
           className="quote-row-toggle"
           aria-expanded={expanded}
-          aria-controls={`quote-body-${i.id}`}
+          aria-controls={expanded ? `quote-body-${i.id}` : undefined}
           onClick={() => setExpandedItem(expanded ? null : i.id)}
         >
           <span className="quote-row-caption">
@@ -139,7 +149,11 @@ export function QuoteItemsPanel({
               title="AI price differs from product list"
             />
           )}
-          <strong className="quote-row-amount">{amount}</strong>
+          <strong className="quote-row-amount">
+            {amount}
+            {i.sublines.length === 1 &&
+              i.sublines[0].interval === "one_time" && <small> one-time</small>}
+          </strong>
           <DisclosureChevron open={expanded} />
         </button>
         {expanded && (
@@ -494,7 +508,7 @@ export function QuoteItemsPanel({
                   })
                 }
               >
-                + Sub-line
+                Sub-line
               </Button>
               <button
                 type="button"
@@ -515,6 +529,18 @@ export function QuoteItemsPanel({
               >
                 Remove
               </Button>
+              <Button
+                aria-label="Done editing quote line"
+                onClick={(event) => {
+                  event.currentTarget
+                    .closest(".quote-row")
+                    ?.querySelector<HTMLButtonElement>(".quote-row-toggle")
+                    ?.focus();
+                  setExpandedItem(null);
+                }}
+              >
+                Done
+              </Button>
             </footer>
           </div>
         )}
@@ -530,7 +556,7 @@ export function QuoteItemsPanel({
     <div className="quote-panel stack">
       <p className="muted">
         {intro ??
-          "Enter agreed prices. The app never sets prices. Drag ⋮⋮ to reorder; the client sees this order."}
+          "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}
       </p>
       <div className="quote-cards">
         <Reorder

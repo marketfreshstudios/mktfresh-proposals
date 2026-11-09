@@ -32,7 +32,7 @@ async function open(page: Page, width = 1440, long = false) {
     "true",
   );
   if (width < 960)
-    await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+    await page.getByRole("button", { name: /^Open Quote\b/ }).click();
   if (width < 960) await page.keyboard.press("Escape");
   return { ...f, blocks };
 }
@@ -156,7 +156,7 @@ test("924px preserves the modal tools drawer: scrim, focus trap and Escape", asy
   page,
 }) => {
   const f = await open(page, 924);
-  const trigger = page.getByRole("button", { name: "Open Quote", exact: true });
+  const trigger = page.getByRole("button", { name: /^Open Quote\b/ });
   const drawer = page.getByRole("dialog", {
     name: "Proposal tools",
     exact: true,
@@ -245,7 +245,7 @@ test("gutter insertion, menus, extra commands and AI review use existing actions
     check: getComputedStyle(el.querySelector(".editor-ai-check")!)
       .borderTopColor,
   }));
-  expect(colors.line).toBe("rgb(159, 136, 224)");
+  expect(colors.line).toBe("rgb(180, 83, 42)");
   expect(colors.check).toBe(colors.line);
   await frame
     .getByRole("button", { name: "More block actions", exact: true })

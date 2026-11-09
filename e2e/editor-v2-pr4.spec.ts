@@ -14,7 +14,9 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
   await expect(rows).toHaveCount(f.active().quote.length);
   await expect(
     rows.locator("[aria-expanded=true].quote-row-toggle"),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
+  await rows.first().locator(".quote-row-toggle").click();
+  await expect(rows.first().locator(".quote-row-body")).toBeVisible();
   await rows.nth(1).locator(".quote-row-toggle").click();
   await expect(rows.nth(0).locator(".quote-row-body")).toHaveCount(0);
   await expect(rows.nth(1).locator(".quote-row-body")).toBeVisible();
@@ -81,8 +83,12 @@ test("tablet tools overlay the page with a trapped focus and close on Escape", a
   const f = await editorFixture(page);
   await page.setViewportSize({ width: 768, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
+  await expect(page.locator(".editor-page-sheets")).toHaveAttribute(
+    "data-layout-settled",
+    "true",
+  );
   const before = await page.locator(".editor-paper").boundingBox();
-  await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+  await page.getByRole("button", { name: /^Open Quote\b/ }).click();
   const drawer = page.getByRole("dialog", {
     name: "Proposal tools",
     exact: true,
@@ -112,7 +118,7 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
     "height",
     "12px",
   );
-  await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+  await page.getByRole("button", { name: /^Open Quote\b/ }).click();
   const sheet = page.getByRole("dialog", {
     name: "Proposal tools",
     exact: true,

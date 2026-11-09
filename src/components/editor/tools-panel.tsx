@@ -1,4 +1,12 @@
 "use client";
+import {
+  Braces,
+  CircleDollarSign,
+  Ellipsis,
+  LayoutGrid,
+  Send,
+  SlidersHorizontal,
+} from "lucide-react";
 import { PanelChevron } from "../editor-header";
 import { useEffect, useRef, type ReactNode } from "react";
 export const editorTabs = [
@@ -10,12 +18,16 @@ export const editorTabs = [
 ] as const;
 export type EditorTab = (typeof editorTabs)[number];
 const glyphs = {
-  Quote: "$",
-  Fields: "{ }",
-  Blocks: "▦",
-  Styles: "Aa",
-  Send: "➝",
+  Quote: CircleDollarSign,
+  Fields: Braces,
+  Blocks: LayoutGrid,
+  Styles: SlidersHorizontal,
+  Send: Send,
 };
+function TabGlyph({ tab }: { tab: string }) {
+  const Glyph = glyphs[tab as EditorTab] ?? Ellipsis;
+  return <Glyph aria-hidden="true" size={16} />;
+}
 export function PanelRail<T extends string = EditorTab>({
   onTab,
   onToggle,
@@ -51,14 +63,17 @@ export function PanelRail<T extends string = EditorTab>({
           onClick={() => onTab(tab)}
         >
           <span aria-hidden="true">
-            {glyphs[tab as EditorTab] ?? (tab === "Default quote" ? "$" : "⋯")}
+            <TabGlyph tab={tab} />
           </span>
           <small>{tab}</small>
         </button>
       ))}
-      <p className="panel-rail-totals" aria-label={`Quote totals: ${totals}`}>
-        {totals}
-      </p>
+      {totals && (
+        <p className="panel-rail-totals">
+          <span className="sr-only">Quote totals: </span>
+          {totals}
+        </p>
+      )}
     </>
   );
 }
@@ -209,14 +224,17 @@ export function ToolsPanel<T extends string = EditorTab>({
                 key={value}
                 type="button"
                 onClick={() => onTab(value)}
-                aria-label={`Open ${value}`}
+                aria-label={
+                  value === "Quote" ? `Open Quote ${totals}` : `Open ${value}`
+                }
               >
-                <span aria-hidden="true">
-                  {value === "Quote"
-                    ? totals
-                    : (glyphs[value as EditorTab] ?? "⋯")}
-                </span>
+                {value !== "Quote" && (
+                  <span aria-hidden="true">
+                    <TabGlyph tab={value} />
+                  </span>
+                )}
                 <small>{value}</small>
+                {value === "Quote" && <span>{totals}</span>}
               </button>
             ))}
           </nav>
@@ -256,6 +274,33 @@ export function ToolsPanel<T extends string = EditorTab>({
           onCancel={(event) => {
             event.preventDefault();
             close();
+          }}
+          onKeyDown={(event) => {
+            if (event.key !== "Tab" || event.defaultPrevented) return;
+            const tabbable = Array.from(
+              event.currentTarget.querySelectorAll<HTMLElement>(
+                'button, input, select, textarea, a[href], summary, [tabindex], [contenteditable="true"]',
+              ),
+            ).filter(
+              (el) =>
+                el.tabIndex >= 0 &&
+                !el.matches(":disabled") &&
+                el.getClientRects().length > 0 &&
+                getComputedStyle(el).visibility === "visible",
+            );
+            const first = tabbable[0];
+            const last = tabbable.at(-1);
+            if (event.shiftKey && document.activeElement === first && last) {
+              event.preventDefault();
+              last.focus();
+            } else if (
+              !event.shiftKey &&
+              document.activeElement === last &&
+              first
+            ) {
+              event.preventDefault();
+              first.focus();
+            }
           }}
           onClick={(event) => {
             if (event.target === event.currentTarget) {

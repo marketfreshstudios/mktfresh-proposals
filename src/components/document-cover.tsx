@@ -463,7 +463,7 @@ export function DocumentCover({
                       aria-label="Edit cover logo"
                       onClick={() => setLogoMenu(!logoMenu)}
                     >
-                      {src ? "Edit logo" : "Add logo"}
+                      Edit cover logo
                     </button>
                     {logoMenu && (
                       <ToolbarPopover

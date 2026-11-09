@@ -165,6 +165,7 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   const f = await editorFixture(page);
   await page.goto(`/proposals/${f.draft.id}`);
   const panel = page.locator(".editor-v2-panel");
+  await panel.locator(".quote-row-toggle").first().click();
   const body = panel.locator(".quote-row-body").first();
   await expect(
     body.getByRole("textbox", { name: "Item name", exact: true }),
@@ -188,7 +189,7 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   await expect(
     body.getByRole("combobox", { name: "Link as alternative", exact: true }),
   ).toBeVisible();
-  await body.getByRole("button", { name: "+ Sub-line", exact: true }).click();
+  await body.getByRole("button", { name: "Sub-line", exact: true }).click();
   await expect(
     body.getByRole("textbox", { name: /^Sub-line label for/ }),
   ).toHaveCount(2);

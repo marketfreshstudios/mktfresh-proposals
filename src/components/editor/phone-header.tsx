@@ -1,5 +1,6 @@
 "use client";
 import { YeswellBrand } from "../yeswell-brand";
+import { ChevronLeft, Ellipsis } from "lucide-react";
 import { useRef, useState } from "react";
 import { ToolbarPopover } from "../toolbar-popover";
 import { useHistoryStatus } from "../editor-history";
@@ -54,9 +55,9 @@ export function PhoneEditorHeader({
         title={editingTitle ? "Done" : "Back to proposals"}
         onClick={editingTitle ? onDone : onBack}
       >
-        ‹
+        <ChevronLeft size={18} aria-hidden="true" />
       </button>
-      {!editingTitle && <YeswellBrand mark />}
+      {!editingTitle && <YeswellBrand mark reversed />}
       <div className="phone-header-title">
         <strong title={editingTitle ?? title}>{editingTitle ?? title}</strong>
         {!editingTitle && <small role="status">{status}</small>}
@@ -82,7 +83,7 @@ export function PhoneEditorHeader({
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        ⋯
+        <Ellipsis size={18} aria-hidden="true" />
       </button>
       {editingTitle && (
         <button type="button" className="phone-header-done" onClick={onDone}>

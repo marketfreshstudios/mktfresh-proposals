@@ -794,3 +794,318 @@ test("Studio carry-over provider pills, unwrapped status and guarded danger remo
       animations: "disabled",
     });
 });
+
+const stage3Shots = "docs/screenshots/ink-and-clay-editor-studio";
+async function captureStage3(page: Page, shot?: string) {
+  if (!shot || process.env.INK_CLAY_STAGE3_CAPTURE !== "1") return;
+  mkdirSync(stage3Shots, { recursive: true });
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({
+    path: `${stage3Shots}/${shot}.png`,
+    animations: "disabled",
+  });
+}
+
+test("all existing Workspace sections and settings stay reachable after the restyle", async ({
+  page,
+}) => {
+  await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/studio/workspace");
+  const nav = page.getByRole("navigation", { name: "Workspace sections" });
+  await expect(nav.getByRole("button")).toHaveText(
+    workspaceSections.map(([, label]) => label),
+  );
+  const settings: Record<(typeof workspaceSections)[number][0], RegExp[]> = {
+    brand: [
+      /Workspace name/,
+      /Logo · used/,
+      /Logo icon · square/,
+      /Brand colors/,
+      /Powered by Yeswell/,
+      /Owner contact name/,
+      /Contact email/,
+      /Phone/,
+      /Address/,
+      /Business state/,
+    ],
+    fonts: [
+      /Headings/,
+      /Body text/,
+      /Upload a font file/,
+      /licensed for PDF embedding/,
+    ],
+    money: [/Currency/, /Cents/, /Only when needed/, /Always/],
+    styles: [
+      /Body size/,
+      /Page margin preset/,
+      /Quote layout/,
+      /Text level/,
+      /Color choices/,
+      /Space above/,
+      /Space below/,
+      /Density choices/,
+      /Typography details/,
+    ],
+    billing: [
+      /Recurring services/,
+      /One-time fees/,
+      /Payment methods/,
+      /Collection method/,
+      /QuickBooks custom services item reference/,
+    ],
+    team: [/Invite/, /Workspace team/, /Display name/, /Change your password/],
+    signatory: [
+      /Signatory name/,
+      /Signatory title/,
+      /Signatory staff account/,
+      /Can countersign on/,
+      /Electronic signature consent/,
+    ],
+    "client-links": [
+      /Default link validity/,
+      /Workspace timezone/,
+      /Password by default/,
+    ],
+    "email-sending": [
+      /Verified sending domain/,
+      /Reply-to/,
+      /First client view · in-app note/,
+      /First client view · staff email/,
+      /Notify super admins about client questions/,
+      /Remind staff to countersign/,
+      /Automatic client reminders/,
+      /Not opened days/,
+      /Viewed, not signed days/,
+      /Stop after reminders/,
+    ],
+    "pricing-references": [/Reference name/, /Source/],
+  };
+  for (const [key, label] of workspaceSections) {
+    await nav.getByRole("button", { name: label, exact: true }).click();
+    const section = page.getByRole("region", { name: label, exact: true });
+    for (const disclosure of [
+      "Workspace contact details",
+      "More billing settings",
+    ]) {
+      const trigger = section.getByText(disclosure, { exact: true });
+      if (await trigger.isVisible()) await trigger.click();
+    }
+    for (const control of settings[key]) {
+      const candidates = section
+        .getByLabel(control)
+        .or(section.getByText(control))
+        .filter({ visible: true });
+      await expect(candidates.first(), `${label}: ${control}`).toBeVisible();
+    }
+  }
+});
+
+for (const width of [1440, 768, 375]) {
+  test(`Studio routes pass axe in light and dark at ${width}px`, async ({
+    page,
+  }) => {
+    test.setTimeout(150000);
+    page.setDefaultTimeout(8000);
+    await page.setViewportSize({ width, height: 1000 });
+    const f = await fixture(page);
+    const templates = await f.repo.entities<Template>("templates");
+    const blocks = await f.repo.entities<any>("content_library");
+    for (const [i, title] of [
+      "A website that works as hard as you do",
+      "Keeping your site healthy",
+      "Be found by customers nearby",
+    ].entries()) {
+      await f.repo.put("templates", {
+        ...templates[i],
+        cover: {
+          ...defaultCover(),
+          elements: [
+            {
+              id: "title",
+              kind: "title",
+              align: "left",
+              content: coverText(title),
+            },
+          ],
+        },
+      });
+    }
+    await f.repo.put("content_library", {
+      ...blocks[0],
+      used_in: {
+        templates: [
+          { id: templates[0].id, name: templates[0].name, edited: false },
+        ],
+        drafts: [
+          {
+            id: f.draft.id,
+            title: f.draft.title,
+            status: "draft",
+            owner: f.members[0].user_id,
+          },
+        ],
+      },
+    });
+    const product = (await f.repo.entities<any>("pricing_items")).find(
+      (item) => item.schedule,
+    );
+    for (const theme of ["light", "dark"]) {
+      await page.addInitScript(
+        (value) => localStorage.setItem("proposal-theme", value),
+        theme,
+      );
+      const audit = async (
+        name: string,
+        selector: string,
+        screenshot?: string,
+      ) => {
+        await expect(page.locator(selector).first()).toBeVisible();
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+          `${name} fits ${width}`,
+        ).toBeLessThanOrEqual(width + 1);
+        const result = await new AxeBuilder({ page })
+          .include(selector)
+          .exclude("iframe")
+          .analyze();
+        expect(
+          result.violations.map((v) => [v.id, v.nodes.map((n) => n.target)]),
+          `${name} · ${theme} · ${width}`,
+        ).toEqual([]);
+        const filled = page.locator(
+          `${selector} :is(.btn.action, .btn.studio-primary):visible:not(:disabled)`,
+        );
+        expect(
+          await filled.count(),
+          `${name} has one primary action`,
+        ).toBeLessThanOrEqual(1);
+        if (width === 1440 && theme === "light")
+          await captureStage3(page, screenshot);
+      };
+      for (const [route, selector, screenshot] of [
+        ["/studio/templates", ".studio-v3-list", "studio-templates-1440"],
+        [
+          "/studio/templates?view=blocks",
+          ".studio-v3-list",
+          "studio-saved-blocks-1440",
+        ],
+        ["/studio/emails", ".studio-v3-emails", "studio-emails-1440"],
+        [
+          "/studio/emails/proposal_sent",
+          ".studio-email-editor",
+          "studio-email-editor-1440",
+        ],
+        ["/studio/products", ".studio-products-v3", ""],
+        [
+          "/studio/connections",
+          ".studio-connections-v3",
+          "studio-connections-1440",
+        ],
+        ["/studio/activity", ".studio-activity-v3", "studio-activity-1440"],
+      ]) {
+        await page.goto(route);
+        await audit(route, selector, screenshot);
+        if (route === "/studio/products" && product) {
+          await page.goto(`/studio/products?item=${product.id}`);
+          await expect(
+            page.getByRole("heading", { name: "Plan terms", exact: true }),
+          ).toBeVisible();
+          await expect(
+            page.locator(".studio-product-client-copy"),
+          ).toBeVisible();
+          await audit(
+            "product details",
+            ".studio-products-v3",
+            "studio-products-1440",
+          );
+        }
+      }
+      await page.goto(`/studio/templates/${templates[0].id}`);
+      await expect(page.locator(".studio-template-editor")).toBeVisible();
+      const styles = page
+        .getByRole("tab", { name: "Styles", exact: true })
+        .filter({ visible: true });
+      if (width >= 960) await styles.click();
+      else if (width >= 700)
+        await page
+          .getByRole("button", { name: "Open Styles", exact: true })
+          .click();
+      else {
+        await page.getByRole("button", { name: "More editor actions" }).click();
+        await styles.click();
+      }
+      await expect(
+        page
+          .locator(".proposal-styles summary")
+          .filter({ hasText: /^Header$/ })
+          .filter({ visible: true }),
+      ).toBeVisible();
+      await audit(
+        "template editor",
+        ".studio-template-editor",
+        "studio-template-editor-1440",
+      );
+      await page.goto(`/studio/blocks/${blocks[0].id}`);
+      await expect(page.locator(".studio-saved-block-editor")).toBeVisible();
+      const usage = page.locator(".saved-block-usage");
+      if (width < 960 && !(await usage.isVisible())) {
+        const trigger = page.getByRole("button", {
+          name: "Open Used in",
+          exact: true,
+        });
+        if (await trigger.isVisible()) await trigger.click();
+        else {
+          await page
+            .getByRole("button", { name: "More editor actions" })
+            .click();
+          await page.getByRole("tab", { name: "Used in", exact: true }).click();
+        }
+      }
+      await expect(usage.getByText("WHEN YOU SAVE")).toBeVisible();
+      await expect(usage.getByText("Updates on save")).toBeVisible();
+      await audit(
+        "saved block editor",
+        ".studio-saved-block-editor",
+        "studio-block-editor-1440",
+      );
+      await page.goto("/studio/connections?view=imports");
+      await audit(
+        "Proposify import",
+        ".studio-import-summary",
+        "studio-import-1440",
+      );
+      await page.goto("/studio/workspace");
+      const workspaceShots: Partial<
+        Record<(typeof workspaceSections)[number][0], string>
+      > = {
+        brand: "studio-brand-1440",
+        fonts: "studio-fonts-1440",
+        billing: "studio-billing-1440",
+        "client-links": "studio-client-links-1440",
+        money: "studio-money-1440",
+        signatory: "studio-signatory-1440",
+      };
+      for (const [key, label] of workspaceSections) {
+        await page
+          .getByRole("navigation", { name: "Workspace sections" })
+          .getByRole("button", { name: label, exact: true })
+          .click();
+        await audit(label, ".studio-workspace-v3", workspaceShots[key]);
+        if (
+          key === "team" &&
+          width === 1440 &&
+          theme === "light" &&
+          process.env.INK_CLAY_STAGE3_CAPTURE === "1"
+        ) {
+          await page
+            .getByRole("button", { name: "Actions for Jamie Example" })
+            .click();
+          await captureStage3(page, "studio-team-1440");
+          await page.keyboard.press("Escape");
+        }
+      }
+    }
+  });
+}
