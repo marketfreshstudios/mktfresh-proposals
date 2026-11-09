@@ -271,9 +271,8 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   r = await request.post(`/api/proposals/${p.id}/jobs`, { headers });
   expect(r.ok(), await r.text()).toBe(true);
   p = await (await request.get(`/api/proposals/${p.id}`, { headers })).json();
-  expect(p.billing_links.map((l: { status: string }) => l.status)).toEqual([
-    "succeeded",
-    "succeeded",
+  expect(p.billing_links).toMatchObject([
+    { provider: "stripe", status: "succeeded" },
   ]);
   expect(
     p.files.filter((f: { kind: string }) => f.kind === "sealed"),
@@ -303,6 +302,13 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     .toBe(true);
   p = await (await request.get(`/api/proposals/${p.id}`, { headers })).json();
   expect(p.status).toBe("completed");
+  expect(p.billing_links).toHaveLength(2);
+  expect(p.billing_links).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ provider: "stripe", status: "succeeded" }),
+      expect.objectContaining({ provider: "qbo", status: "succeeded" }),
+    ]),
+  );
   const file = p.files.find(
     (f: { kind: string; stage: string }) =>
       f.kind === "sealed" && f.stage === "company",

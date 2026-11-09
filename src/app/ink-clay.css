@@ -191,8 +191,7 @@
   background: transparent;
   box-shadow: inset 0 -1px var(--border);
 }
-.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a),
-.staff-foundation.ink-clay .directory-views .more-views-trigger {
+.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a) {
   position: relative;
   border: 0;
   border-radius: 0;
@@ -202,10 +201,7 @@
 }
 .staff-foundation.ink-clay
   [data-tab-style="underline"]
-  > :is([aria-selected="true"], [aria-pressed="true"], [aria-current="page"]),
-.staff-foundation.ink-clay
-  .directory-views
-  .more-views-trigger[data-tab-selected="true"] {
+  > :is([aria-selected="true"], [aria-pressed="true"], [aria-current="page"]) {
   color: var(--ink-title);
 }
 .staff-foundation.ink-clay
@@ -214,10 +210,7 @@
     [aria-selected="true"],
     [aria-pressed="true"],
     [aria-current="page"]
-  )::after,
-.staff-foundation.ink-clay
-  .directory-views
-  .more-views-trigger[data-tab-selected="true"]::after {
+  )::after {
   content: "";
   position: absolute;
   inset: auto 0 0;
@@ -226,8 +219,7 @@
   background: currentColor;
   pointer-events: none;
 }
-.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a):hover,
-.staff-foundation.ink-clay .directory-views .more-views-trigger:hover {
+.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a):hover {
   background: transparent;
   color: var(--ink-title);
   text-decoration: none;

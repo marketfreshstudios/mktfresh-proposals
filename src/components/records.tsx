@@ -1021,8 +1021,7 @@ export function ProposalListV4({
           <button
             ref={moreTrigger}
             type="button"
-            className="more-views-trigger"
-            data-tab-selected={!!activeExtra || undefined}
+            className="btn more-views-trigger"
             aria-haspopup="dialog"
             aria-expanded={more}
             onClick={() => setMore(!more)}

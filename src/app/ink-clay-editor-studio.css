@@ -262,16 +262,7 @@
   border-radius: 6px;
 }
 .ink-clay .more-views-trigger {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  min-height: 40px;
-  padding: 0 var(--space-2);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ink);
-  font: 600 13px/20px var(--font-ui);
   white-space: nowrap;
 }
 
