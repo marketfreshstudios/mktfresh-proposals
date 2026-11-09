@@ -224,7 +224,10 @@ export function StudioTemplateList({
                     <TemplateThumbnail template={t} settings={data.settings} />
                     <div className="studio-template-card-footer">
                       <div>
-                        <strong data-testid="template-card-name">
+                        <strong
+                          className="studio-template-card-name"
+                          data-testid="template-card-name"
+                        >
                           {t.name}
                         </strong>
                         {t.starter_key && (
@@ -268,15 +271,15 @@ export function StudioTemplateList({
                         {templateUsage(
                           data.proposals.filter((p) => p.template_id === t.id)
                             .length,
-                        )}{" "}
+                        ).toLowerCase()}{" "}
                         ·{" "}
                         {t.starter_key
                           ? t.starter_edited
                             ? edited(t.id)
-                              ? lastEdit(t.id)
-                              : "Edited"
+                              ? lastEdit(t.id).replace(/^Edited/, "edited")
+                              : "edited"
                             : "Default"
-                          : lastEdit(t.id)}
+                          : lastEdit(t.id).replace(/^Edited/, "edited")}
                       </small>
                     </div>
                   </a>

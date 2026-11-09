@@ -103,10 +103,12 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await templates.hover();
   await expectStraightTabIndicator(templates);
   const thumbnail = page.locator(".template-thumbnail").first();
-  await expect(thumbnail).toHaveCSS("background-color", "rgb(238, 233, 224)");
+  await expect(thumbnail).toHaveCSS("background-color", "rgb(244, 247, 247)");
   const paper = thumbnail.locator(".template-thumbnail-paper");
-  await expect(paper).toHaveCSS("border-top-width", "1px");
-  await expect(paper).not.toHaveCSS("box-shadow", "none");
+  await expect(paper).toHaveCSS(
+    "box-shadow",
+    /rgb\(228, 222, 210\) 0px 0px 0px 1px/,
+  );
   await screenshot(page, "template-cards-1440");
 
   await page.goto("/studio/emails");

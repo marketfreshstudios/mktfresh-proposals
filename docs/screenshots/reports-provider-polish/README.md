@@ -22,3 +22,18 @@ The owner requested one combined Value signed and Pipeline card. The reference s
 | Connect to QuickBooks | ![Light QuickBooks connect](quickbooks-connect-light-1440.png) | ![Dark QuickBooks connect](quickbooks-connect-dark-1440.png) |
 
 The [Home checklist](setup-checklist-1440.png) uses the same original marks.
+
+## Template cards at 1440px
+
+| Light | Dark | Geometry reference |
+| --- | --- | --- |
+| ![Templates light](templates-light-1440.png) | ![Templates dark](templates-dark-1440.png) | ![Redesign 18 E1](reference-r18-e1.png) |
+
+The owner's updated values take precedence over the older preview fill in the checked-in frame.
+
+| Part | Updated spec |
+| --- | --- |
+| Card | 18px corners, staff surface, 1px staff border, clipped overflow |
+| Preview | 220px height, #F4F7F7 in light, #24343A in dark, 22px top and side padding, bottom-aligned sheet, 1px bottom divider |
+| Sheet | White, 3px top corners, 20px × 22px padding, #E4DED2 hairline and 0 6px 16px shadow at 8% ink |
+| Footer | 16px × 20px padding, 16px/600 Instrument Sans name in title ink, 13px/400 muted metadata |

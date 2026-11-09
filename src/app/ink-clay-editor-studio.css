@@ -283,13 +283,6 @@
   letter-spacing: normal;
   text-transform: none;
 }
-.ink-clay .template-thumbnail {
-  background: var(--surface-sunken);
-}
-.ink-clay .template-thumbnail-paper {
-  border-color: var(--border);
-  box-shadow: var(--shadow-sm);
-}
 .ink-clay .studio-template-card,
 .ink-clay .studio-product-detail,
 .ink-clay .workspace-section-card {

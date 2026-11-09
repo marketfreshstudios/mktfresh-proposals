@@ -19,6 +19,7 @@
   /* Surfaces */
   --surface-page: #f3efe7;
   --surface: #ffffff;
+  --surface-preview: #f4f7f7;
   --surface-sunken: #eee9e0;
   --surface-raised: #ffffff;
   --surface-deep: #dcd5c8; /* editor canvas behind the white pages */
@@ -101,6 +102,7 @@
   --chrome-on: rgba(255, 255, 255, 0.1);
   --surface-page: #11181b;
   --surface: #182226;
+  --surface-preview: #24343a;
   --surface-sunken: #0d1417;
   --surface-raised: #1f2b30;
   --surface-deep: #0a1013;
