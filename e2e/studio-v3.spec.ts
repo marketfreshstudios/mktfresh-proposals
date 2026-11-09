@@ -668,14 +668,11 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await page.goto("/studio/templates");
   const search = page.getByRole("searchbox", { name: "Search templates" });
   await expect(search).toHaveAttribute("placeholder", "Search templates");
-  await expect(page.locator(".studio-saved-preview>a>svg").first()).toHaveCSS(
-    "width",
-    "10px",
-  );
-  await expect(page.locator(".studio-saved-preview>a").first()).toHaveCSS(
-    "background-color",
-    "rgba(0, 0, 0, 0)",
-  );
+  const preview = page.locator(".studio-saved-preview .staff-table");
+  const openBlock = preview.getByRole("link", { name: /^Open / }).first();
+  await expect(openBlock).toHaveCSS("width", "44px");
+  await expect(openBlock).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(preview).toHaveCSS("background-color", "rgb(255, 255, 255)");
   const active = page.locator('.sidebar nav a[aria-current="page"]');
   await expect(active).toHaveCSS("color", "rgb(242, 245, 245)");
   await expect(page.locator(".sidebar footer").getByRole("button")).toHaveCount(

@@ -1,4 +1,5 @@
 "use client";
+import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ChevronDown } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
@@ -627,10 +628,11 @@ export function ProposalRows({
     );
   return (
     <>
-      <div
+      <StaffTable
+        inline={compact}
         className={`proposal-rows ${yearly ? "has-yearly" : ""} ${showOwner ? "has-owner" : ""} ${listActions ? "with-row-actions" : ""} ${compact ? "compact-proposal-rows" : ""}`}
       >
-        <div className="proposal-row-head staff-table-head">
+        <StaffTableHead className="proposal-row-head">
           <span>Proposal</span>
           {showOwner && !listActions && (
             <span>{reportSender ? "Owner (sender)" : "Owner"}</span>
@@ -643,9 +645,9 @@ export function ProposalRows({
           {showOwner && listActions && <span>Owner</span>}
           <span className="updated-cell">Updated</span>
           <span />
-        </div>
+        </StaffTableHead>
         {!visible.length ? (
-          <p className="empty-copy">No proposals in this view.</p>
+          <StaffTableEmpty>No proposals in this view.</StaffTableEmpty>
         ) : (
           visible.map((p) => {
             const t = totals(p.quote);
@@ -665,7 +667,10 @@ export function ProposalRows({
               </span>
             ) : null;
             return (
-              <article className="proposal-row clickable-row" key={p.id}>
+              <article
+                className="staff-table-row proposal-row clickable-row"
+                key={p.id}
+              >
                 <a
                   className="proposal-row-link"
                   href={`/proposals/${p.id}`}
@@ -757,7 +762,7 @@ export function ProposalRows({
             );
           })
         )}
-      </div>
+      </StaffTable>
       {undo && (
         <div className="phase4-toast" role="status">
           {undoError || "Proposal archived."}
@@ -2840,6 +2845,20 @@ export function ClientsV4({
       active = false;
     };
   }, [client?.id, client?.email, client?.stripe_customer_id]);
+  const visibleClients = data.clients.filter(
+    (c) =>
+      (clientView !== "stripe" || Boolean(c.stripe_customer_id)) &&
+      (clientView !== "open" ||
+        data.proposals.some(
+          (p) =>
+            p.client.id === c.id &&
+            inView(p, "all") &&
+            (inView(p, "sent") || needsCountersign(p)),
+        )) &&
+      `${c.company} ${c.email} ${c.first_name} ${c.last_name}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
   if (!client)
     return (
       <section className="clients-v4 clients-directory-v4 stack">
@@ -2875,15 +2894,15 @@ export function ClientsV4({
             ))}
           </fieldset>
         </div>
-        <div className="client-directory client-table">
-          <div className="client-table-head staff-table-head">
+        <StaffTable className="client-directory client-table">
+          <StaffTableHead className="client-table-head">
             {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
               (label) => (
                 <span key={label}>{label}</span>
               ),
             )}
-          </div>
-          {data.clients.map((c) => {
+          </StaffTableHead>
+          {visibleClients.map((c) => {
             const proposals = data.proposals.filter(
               (p) => p.client.id === c.id && inView(p, "all"),
             );
@@ -2899,16 +2918,11 @@ export function ClientsV4({
                   : drafts
                     ? `${drafts} ${drafts === 1 ? "draft" : "drafts"}`
                     : "—";
-            if (
-              (clientView === "stripe" && !c.stripe_customer_id) ||
-              (clientView === "open" && !open && !awaiting) ||
-              !`${c.company} ${c.email} ${c.first_name} ${c.last_name}`
-                .toLowerCase()
-                .includes(search.toLowerCase())
-            )
-              return null;
             return (
-              <article key={c.id} className="client-table-row clickable-row">
+              <article
+                key={c.id}
+                className="staff-table-row client-table-row clickable-row"
+              >
                 <a
                   className="whole-row-link"
                   href={`/clients/${c.id}`}
@@ -2948,12 +2962,14 @@ export function ClientsV4({
               </article>
             );
           })}
-          {!data.clients.length && (
-            <p className="empty-copy">
-              No clients yet. Create your first client to get started.
-            </p>
+          {!visibleClients.length && (
+            <StaffTableEmpty>
+              {data.clients.length
+                ? "No clients match this view."
+                : "No clients yet. Create your first client to get started."}
+            </StaffTableEmpty>
           )}
-        </div>
+        </StaffTable>
         {newClient && (
           <CreateClientModal
             onClose={() => setNewClient(false)}
@@ -3254,28 +3270,32 @@ export function ClientsV4({
       </section>
       <section className="client-activity">
         <h2>Activity</h2>
-        {activity.length ? (
-          <ol role="list">
-            {activity.map(({ proposal, entry }) => (
-              <li key={entry.id}>
-                <a
-                  href={`/proposals/${proposal.id}?view=evidence#event-${entry.id}`}
-                >
-                  <span>
-                    <strong>{eventTitle(entry, data)}</strong>
-                    <br />
-                    {proposal.title}
-                  </span>
-                  <time dateTime={entry.created_at}>
-                    {timestamp(entry.created_at, data)}
-                  </time>
-                </a>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>No recent proposal activity.</p>
-        )}
+        <StaffTable inline density="compact" className="client-activity-table">
+          <StaffTableHead>
+            <span>Event</span>
+            <span>Date</span>
+          </StaffTableHead>
+          {activity.length ? (
+            activity.map(({ proposal, entry }) => (
+              <a
+                className="staff-table-row"
+                key={entry.id}
+                href={`/proposals/${proposal.id}?view=evidence#event-${entry.id}`}
+              >
+                <span>
+                  <strong>{eventTitle(entry, data)}</strong>
+                  <br />
+                  {proposal.title}
+                </span>
+                <time dateTime={entry.created_at}>
+                  {timestamp(entry.created_at, data)}
+                </time>
+              </a>
+            ))
+          ) : (
+            <StaffTableEmpty>No recent proposal activity.</StaffTableEmpty>
+          )}
+        </StaffTable>
       </section>
       <section className="client-contact-card">
         <h2>Contact details</h2>

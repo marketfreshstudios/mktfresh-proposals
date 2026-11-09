@@ -1,4 +1,5 @@
 "use client";
+import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ProviderMark } from "./provider-brand";
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
@@ -345,16 +346,16 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         className={`studio-products-layout ${selected ? "with-detail" : ""}`}
       >
         <div>
-          <div className="studio-data-table product-table">
-            <div className="studio-table-head staff-table-head">
+          <StaffTable className="studio-data-table product-table">
+            <StaffTableHead className="studio-table-head">
               <span>Product</span>
               <span>Price</span>
               <span>Plan terms</span>
               <span>Source</span>
-            </div>
+            </StaffTableHead>
             {items.map((i) => (
               <a
-                className="studio-table-row catalog-row catalog-row-v3"
+                className="staff-table-row studio-table-row catalog-row catalog-row-v3"
                 href={`?item=${i.id}`}
                 key={i.id}
                 onClick={(e) => {
@@ -402,7 +403,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
             ))}
             {families.map((f) => (
               <a
-                className="studio-table-row"
+                className="staff-table-row studio-table-row"
                 href={`?item=${f.id}`}
                 key={f.id}
                 onClick={(e) => {
@@ -423,16 +424,14 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 <span className="studio-tag">Custom</span>
               </a>
             ))}
-          </div>
-          {!items.length && !families.length && (
-            <Empty
-              title={
-                query ? "No matching products" : "Your products start here"
-              }
-            >
-              Sync your Stripe products or create a custom family.
-            </Empty>
-          )}
+            {!items.length && !families.length && (
+              <StaffTableEmpty>
+                {query
+                  ? "No matching products."
+                  : "Your products start here. Sync your Stripe products or create a custom family."}
+              </StaffTableEmpty>
+            )}
+          </StaffTable>
           <Button onClick={() => setAdding(true)}>Add one-time product</Button>
         </div>
         {(item || custom) && (
@@ -3132,7 +3131,7 @@ function TemplatesStudioContent({
               </div>
             </div>
             {mode === "blocks" && (
-              <p className="saved-block-footer">
+              <p className="saved-block-footer staff-surface staff-surface-note">
                 Sent proposals that aren't signed yet update on the same link
                 when you save them; signed proposals never change.
               </p>

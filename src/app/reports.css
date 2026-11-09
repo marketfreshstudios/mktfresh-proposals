@@ -639,8 +639,7 @@
   color: var(--st-lost-ink);
 }
 .report-range-note {
-  background: var(--st-sent-soft);
-  color: var(--st-sent-ink);
+  color: var(--ink-muted);
 }
 .report-retry {
   color: inherit;

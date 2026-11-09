@@ -1,5 +1,6 @@
 "use client";
 
+import { StaffNativeTable } from "./staff-table";
 import { ChevronDown } from "lucide-react";
 import {
   useEffect,
@@ -369,7 +370,7 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
       {report && (
         <>
           {!empty && !report.sent && (
-            <p className="report-range-note">
+            <p className="report-range-note staff-surface staff-surface-note">
               No proposals were sent in this date range.
             </p>
           )}
@@ -816,7 +817,7 @@ function Trend({
             </div>
           </figure>
         ) : (
-          <table className="report-table">
+          <StaffNativeTable className="report-table">
             <caption className="sr-only">
               Monthly proposals sent and signed. {summary}
             </caption>
@@ -850,7 +851,7 @@ function Trend({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </StaffNativeTable>
         )}
       </div>
     </section>
@@ -944,7 +945,7 @@ function Breakdown({
       </div>
       {rows.length ? (
         <>
-          <table className="report-table report-breakdown-table">
+          <StaffNativeTable className="report-table report-breakdown-table">
             <caption className="sr-only">{heading}</caption>
             <thead className="staff-table-head">
               <tr>
@@ -1002,7 +1003,7 @@ function Breakdown({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </StaffNativeTable>
           <div className="report-breakdown-cards">
             {sorted.map((row) => {
               const values = cells(row);

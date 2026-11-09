@@ -1,4 +1,5 @@
 "use client";
+import { StaffTable, StaffTableEmpty, StaffNativeTable } from "./staff-table";
 import { Select } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
@@ -975,8 +976,8 @@ function Audit({ p }: { p: Proposal }) {
           </div>
         ))}
       </section>
-      <div className="table-wrap">
-        <table>
+      <StaffTable className="table-wrap">
+        <StaffNativeTable>
           <thead className="staff-table-head">
             <tr>
               <th>Time</th>
@@ -987,6 +988,13 @@ function Audit({ p }: { p: Proposal }) {
             </tr>
           </thead>
           <tbody>
+            {!p.events.length && (
+              <tr>
+                <td colSpan={5}>
+                  <StaffTableEmpty>No evidence recorded yet.</StaffTableEmpty>
+                </td>
+              </tr>
+            )}
             {p.events.map((e) => (
               <tr key={e.id} id={`event-${e.id}`}>
                 <td>{new Date(e.created_at).toLocaleString()}</td>
@@ -1005,8 +1013,8 @@ function Audit({ p }: { p: Proposal }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </StaffNativeTable>
+      </StaffTable>
     </div>
   );
 }

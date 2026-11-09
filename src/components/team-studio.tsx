@@ -1,4 +1,5 @@
 "use client";
+import { StaffTable, StaffTableHead } from "./staff-table";
 import { Select } from "./form-controls";
 import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
@@ -125,8 +126,13 @@ export function TeamStudio({
           {error}
         </Banner>
       )}
-      <div className="team-table" role="table" aria-label="Workspace team">
-        <div className="team-table-head staff-table-head" role="row">
+      <StaffTable
+        className="team-table"
+        inline={embedded}
+        role="table"
+        aria-label="Workspace team"
+      >
+        <StaffTableHead className="team-table-head" role="row">
           <span role="columnheader">Name & email</span>
           <span role="columnheader">Role</span>
           <span role="columnheader">Status</span>
@@ -134,11 +140,11 @@ export function TeamStudio({
           <span role="columnheader">
             <span className="sr-only">Actions</span>
           </span>
-        </div>
+        </StaffTableHead>
         {people.map((person) => (
           <div
             role="row"
-            className={`team-person ${person.status === "deactivated" ? "team-person-inactive" : ""}`}
+            className={`staff-table-row team-person ${person.status === "deactivated" ? "team-person-inactive" : ""}`}
             key={person.user_id}
           >
             <div role="cell">
@@ -236,7 +242,7 @@ export function TeamStudio({
             </div>
           </div>
         ))}
-      </div>
+      </StaffTable>
       {me && (
         <section className="team-profile stack">
           <Heading>Your profile</Heading>

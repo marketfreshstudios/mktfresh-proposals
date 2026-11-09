@@ -1,4 +1,10 @@
 "use client";
+import {
+  StaffTable,
+  StaffTableHead,
+  StaffTableEmpty,
+  StaffTableOpen,
+} from "./staff-table";
 import { useConnectorRestore } from "./connector-restore";
 import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
@@ -12,7 +18,7 @@ import {
   type ActivityRow,
 } from "../lib/studio-activity";
 import { eventLabel } from "../lib/event-label";
-import { api, Button, Banner, Empty } from "./ui";
+import { api, Button, Banner } from "./ui";
 import { Skeleton } from "./foundation";
 export function ActivityStudio({ data }: { data: Data }) {
   const [rows, setRows] = useState<ActivityRow[] | null>(null),
@@ -153,10 +159,15 @@ export function ActivityStudio({ data }: { data: Data }) {
                   : {}),
               })}
             </h2>
-            <div className="activity-day-rows">
+            <StaffTable className="activity-day-rows">
+              <StaffTableHead className="activity-table-head">
+                <span>Time</span>
+                <span>Activity</span>
+                <span className="sr-only">Actions</span>
+              </StaffTableHead>
               {events.map((e) => (
                 <article
-                  className={`activity-row-v3 activity-row ${e.proposal_id ? "clickable-row" : ""}`}
+                  className="staff-table-row activity-row-v3 activity-row"
                   key={e.id}
                 >
                   <time dateTime={e.created_at}>
@@ -196,9 +207,9 @@ export function ActivityStudio({ data }: { data: Data }) {
                       </Button>
                     )}
                   </div>
-                  <a
-                    className={
-                      e.proposal_id ? "activity-primary-link" : undefined
+                  <StaffTableOpen
+                    label={
+                      e.proposal_id ? "Open proposal" : "View activity source"
                     }
                     href={
                       e.metadata.entity_table === "templates"
@@ -215,24 +226,20 @@ export function ActivityStudio({ data }: { data: Data }) {
                                   ? "/studio/products"
                                   : "/studio/workspace"
                     }
-                  >
-                    {e.proposal_id ? "Open" : "View"}
-                  </a>
+                  />
                 </article>
               ))}
-            </div>
+            </StaffTable>
           </section>
         ))
       ) : (
-        <Empty
-          title={
-            query || filter !== "All"
-              ? "No activity matches these filters"
-              : "Nothing yet"
-          }
-        >
-          Proposal and Studio changes will appear here.
-        </Empty>
+        <StaffTable className="activity-day-rows">
+          <StaffTableEmpty>
+            {query || filter !== "All"
+              ? "No activity matches these filters."
+              : "Nothing yet. Proposal and Studio changes will appear here."}
+          </StaffTableEmpty>
+        </StaffTable>
       )}
       {filtered.length > limit && (
         <Button onClick={() => setLimit((n) => n + 50)}>Load more</Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { StaffTable, StaffTableHead } from "./staff-table";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
@@ -805,9 +806,13 @@ export function BillingConnectionDetail({
         id={`connection-queue-${queue}`}
       >
         {queues[queue].length ? (
-          <ul className="connection-activity" role="list">
+          <StaffTable inline density="compact" className="connection-activity">
+            <StaffTableHead>
+              <span>Proposal</span>
+              {queue === "waiting" && <span>Status</span>}
+            </StaffTableHead>
             {queues[queue].map((p) => (
-              <li key={p.id}>
+              <div className="staff-table-row" key={p.id}>
                 <span>
                   <a href={proposalLink(p)}>
                     <strong>{proposalLabel(p)}</strong>
@@ -830,9 +835,9 @@ export function BillingConnectionDetail({
                 {queue === "waiting" && (
                   <span className="pill warning">Waiting</span>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </StaffTable>
         ) : (
           <p className="connection-panel-body muted">
             No proposals are waiting.
@@ -865,7 +870,10 @@ export function BillingConnectionDetail({
     >
       {error && <Banner tone="danger" title={error} />}
       {notice && (
-        <p className="connection-notice" role="status">
+        <p
+          className="connection-notice staff-surface staff-surface-note"
+          role="status"
+        >
           {notice}
         </p>
       )}
@@ -1110,7 +1118,7 @@ export function BillingConnectionDetail({
                   )}
                 </div>
               </ConnectionPanel>
-              <p className="connection-setup-note">
+              <p className="connection-setup-note staff-surface staff-surface-note">
                 {qbo
                   ? "Until QuickBooks is connected, staff record the invoice number on the proposal by hand."
                   : "You can send proposals with custom lines. Clients need Stripe to set up recurring billing after signing."}
@@ -1334,9 +1342,17 @@ export function BillingConnectionDetail({
                         No activity recorded yet.
                       </p>
                     ) : (
-                      <ul className="connection-activity" role="list">
+                      <StaffTable
+                        inline
+                        density="compact"
+                        className="connection-activity"
+                      >
+                        <StaffTableHead>
+                          <span>Event</span>
+                          <span>Date</span>
+                        </StaffTableHead>
                         {activity.rows.map((event) => (
-                          <li key={event.id}>
+                          <div className="staff-table-row" key={event.id}>
                             <span>
                               <strong>{event.label}</strong>
                               {event.proposal_id && (
@@ -1348,9 +1364,9 @@ export function BillingConnectionDetail({
                             <time dateTime={event.created_at}>
                               {format(event.created_at)}
                             </time>
-                          </li>
+                          </div>
                         ))}
-                      </ul>
+                      </StaffTable>
                     )}
                     <footer>
                       <a href="/studio/activity">View Activity log</a>

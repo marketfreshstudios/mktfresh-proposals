@@ -1,7 +1,12 @@
 "use client";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { groupedEmails, emailWhen, studioDate } from "../lib/studio-v3";
-import { Icon } from "./ui";
+import {
+  StaffTable,
+  StaffTableHead,
+  StaffTableOpen,
+  StaffTableEmpty,
+} from "./staff-table";
 
 import { Disclosure } from "./ui";
 import { useEffect, useState } from "react";
@@ -105,13 +110,15 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
             aria-label={group.name}
           >
             <h2>{group.name}</h2>
-            <div className="studio-email-rows">
+            <StaffTable className="studio-email-rows">
+              <StaffTableHead className="studio-email-head">
+                <span>Email</span>
+                <span>Subject</span>
+                <span>Status</span>
+                <span className="sr-only">Actions</span>
+              </StaffTableHead>
               {group.templates.map((t) => (
-                <a
-                  className="email-list-row"
-                  key={t.key}
-                  href={`/studio/emails/${t.key}`}
-                >
+                <div className="staff-table-row email-list-row" key={t.key}>
                   <span>
                     <strong>{t.name}</strong>
                     <small>{emailWhen[t.key]}</small>
@@ -128,15 +135,17 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
                         ? `Edited ${studioDate(t.updated_at)} · ${data.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
                         : "Default"}
                   </span>
-                  <Icon name="chevron-right" />
-                  <span className="sr-only">Open {t.name}</span>
-                </a>
+                  <StaffTableOpen
+                    href={`/studio/emails/${t.key}`}
+                    label={`Open ${t.name}`}
+                  />
+                </div>
               ))}
-            </div>
+            </StaffTable>
           </section>
         ))}
       </section>
-      <p className="muted">
+      <p className="staff-surface staff-surface-note muted">
         Each proposal keeps an exact copy of every email it sent, on its record
         under Activity. Later edits here don’t change those copies.
       </p>
@@ -173,38 +182,41 @@ export function ProposalEmailLog({
         change these copies.
       </p>
       {error && <p role="alert">{error}</p>}
-      {logs.length
-        ? logs.map((log) => (
-            <details key={log.id}>
-              <Disclosure>
-                {log.snapshot.subject} · {date(log.sent_at)}
-              </Disclosure>
-              <dl>
-                <dt>To</dt>
-                <dd>{log.snapshot.to}</dd>
-                <dt>From</dt>
-                <dd>{log.snapshot.from}</dd>
-                <dt>Sent</dt>
-                <dd>{new Date(log.sent_at).toLocaleString()}</dd>
-              </dl>
-              <iframe
-                className="email-log-preview"
-                title={`Sent email: ${log.snapshot.subject}`}
-                sandbox=""
-                srcDoc={previewHtml(log.snapshot.html)}
-              />
-              <details>
-                <Disclosure>Plain text</Disclosure>
-                <pre className="email-plain-text">{log.snapshot.text}</pre>
+      <StaffTable inline density="compact" className="proposal-email-table">
+        <StaffTableHead>Sent email</StaffTableHead>
+        {logs.length
+          ? logs.map((log) => (
+              <details key={log.id} className="staff-table-row">
+                <Disclosure>
+                  {log.snapshot.subject} · {date(log.sent_at)}
+                </Disclosure>
+                <dl>
+                  <dt>To</dt>
+                  <dd>{log.snapshot.to}</dd>
+                  <dt>From</dt>
+                  <dd>{log.snapshot.from}</dd>
+                  <dt>Sent</dt>
+                  <dd>{new Date(log.sent_at).toLocaleString()}</dd>
+                </dl>
+                <iframe
+                  className="email-log-preview"
+                  title={`Sent email: ${log.snapshot.subject}`}
+                  sandbox=""
+                  srcDoc={previewHtml(log.snapshot.html)}
+                />
+                <details>
+                  <Disclosure>Plain text</Disclosure>
+                  <pre className="email-plain-text">{log.snapshot.text}</pre>
+                </details>
               </details>
-            </details>
-          ))
-        : !error && (
-            <p>
-              No saved email copies yet. Emails sent before template logging was
-              introduced are not reconstructed.
-            </p>
-          )}
+            ))
+          : !error && (
+              <StaffTableEmpty>
+                No saved email copies yet. Emails sent before template logging
+                was introduced are not reconstructed.
+              </StaffTableEmpty>
+            )}
+      </StaffTable>
     </section>
   );
 }

@@ -1,0 +1,196 @@
+/* One surface and row treatment for staff records, with page-specific columns. */
+.staff-foundation.ink-clay .staff-surface,
+.staff-foundation.ink-clay .staff-empty:not(.card *, .staff-surface *) {
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.staff-foundation.ink-clay .staff-surface-note {
+  padding: 12px 16px;
+}
+.staff-foundation.ink-clay .staff-table-inline {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.ink-clay .staff-table.staff-surface {
+  --staff-table-gutter: var(--space-4);
+  overflow: visible;
+}
+.ink-clay
+  .staff-table.staff-surface
+  > :is(.staff-table-head, .staff-table-row) {
+  padding-inline: var(--staff-table-gutter);
+}
+.staff-foundation.ink-clay
+  :is(
+    .staff-table > .staff-table-head,
+    .staff-native-table .staff-table-head th
+  ) {
+  background-color: var(--surface);
+  color: var(--ink-muted);
+  font: 600 11px/16px var(--font-ui);
+  letter-spacing: 0.06em;
+  padding-block: 10px;
+  text-transform: uppercase;
+}
+.ink-clay .staff-table > .staff-table-head {
+  border: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+.ink-clay .staff-native-table .staff-table-head button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.ink-clay .staff-table > .staff-table-row {
+  position: relative;
+  min-height: 76px;
+  padding-block: var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.ink-clay .staff-table-inline > .staff-table-head {
+  border-radius: 0;
+}
+.ink-clay .staff-table.staff-surface > .staff-table-row:last-child {
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+.ink-clay .staff-table > .staff-table-row:hover {
+  background: var(--row-hover);
+}
+.ink-clay .staff-table > .empty-copy {
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+/* The link covers its row, while the icon and tooltip retain their own hit area. */
+.ink-clay .staff-table-row:has(.staff-table-open) > .table-row-action {
+  position: static;
+}
+.ink-clay .staff-table-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.ink-clay .staff-table-row:has(.staff-table-open) .table-row-tooltip {
+  inset-inline-end: 12px;
+  bottom: calc(50% + 24px);
+}
+.ink-clay .staff-table-row:has(.staff-table-open) button {
+  position: relative;
+  z-index: 1;
+}
+
+.ink-clay .saved-block-table > :is(.studio-table-head, .studio-table-row) {
+  grid-template-columns:
+    minmax(0, 2fr) 64px minmax(110px, 1fr) minmax(0, 1fr)
+    44px;
+}
+.ink-clay .saved-preview-table > :is(.studio-table-head, .studio-table-row) {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 44px;
+}
+.ink-clay .studio-v3-emails :is(.studio-email-head, .email-list-row) {
+  display: grid;
+  align-items: center;
+  grid-template-columns:
+    minmax(0, 1.2fr) minmax(0, 1fr) minmax(80px, 140px)
+    44px;
+  gap: 14px;
+}
+.ink-clay .activity-day-rows > :is(.activity-table-head, .activity-row-v3) {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 72px 30px minmax(0, 1fr) 44px;
+  gap: 16px;
+}
+.ink-clay .activity-table-head > :nth-child(2) {
+  grid-column: 2 / 4;
+}
+.ink-clay
+  .workspace-section-card
+  .reference-document-section
+  + .reference-document-section {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+.ink-clay .studio-product-detail .studio-product-terms {
+  border-radius: 0;
+}
+@media (max-width: 699px) {
+  .ink-clay .saved-block-table > .studio-table-row {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .ink-clay .saved-block-table .studio-table-row > .table-row-action {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .ink-clay .studio-v3-emails .studio-email-head,
+  .ink-clay .activity-day-rows > .activity-table-head {
+    display: none;
+  }
+  .ink-clay .studio-v3-emails .email-list-row {
+    grid-template-columns: minmax(0, 1fr) 64px 44px;
+    gap: 8px;
+  }
+  .ink-clay .activity-day-rows > .activity-row-v3 {
+    grid-template-columns: 52px minmax(0, 1fr) 44px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 699px) {
+  .ink-clay .proposal-rows.staff-table {
+    gap: 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  .ink-clay .workspace-section-card .team-table-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 100px 130px 44px;
+    gap: 12px;
+    padding-inline: 0;
+  }
+  .ink-clay .workspace-section-card .team-person {
+    grid-template-columns: minmax(0, 1fr) 100px 130px 44px;
+  }
+  .ink-clay .workspace-section-card .team-table-head > :nth-child(2) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .ink-clay .workspace-section-card .team-table-head > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+  .ink-clay .workspace-section-card .team-table-head > :nth-child(4) {
+    display: none;
+  }
+}
+
+.ink-clay .staff-table[data-density="compact"] > .staff-table-row {
+  min-height: 44px;
+  padding-block: 10px;
+}
+.ink-clay .staff-table-inline > .empty-copy {
+  padding-inline: 0;
+}
+.ink-clay
+  :is(.connection-activity, .client-activity-table)
+  > :is(.staff-table-head, .staff-table-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.ink-clay
+  .connection-activity
+  > :is(.staff-table-head, .staff-table-row, .empty-copy) {
+  padding-inline: 20px;
+}
+.ink-clay .connection-activity .staff-table-row > span:first-child {
+  display: grid;
+  gap: 3px;
+}

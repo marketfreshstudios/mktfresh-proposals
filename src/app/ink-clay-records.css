@@ -752,24 +752,13 @@
   grid-row: 1;
 }
 
-.ink-clay .client-activity ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.ink-clay .client-activity li + li {
-  border-top: 1px solid var(--border);
-}
-.ink-clay .client-activity li a {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 10px;
-  min-height: 44px;
-  padding-block: var(--space-2);
-}
-.ink-clay .client-activity li time {
+.ink-clay .client-activity time {
   color: var(--ink-muted);
   font-size: 13px;
+}
+
+.ink-clay .record-v4 .questions-panel .question-thread {
+  border-width: 1px 0 0;
+  border-radius: 0;
+  padding-inline: 0;
 }

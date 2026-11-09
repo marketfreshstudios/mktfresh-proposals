@@ -12,7 +12,10 @@ export function ReferenceStatus({
 }) {
   if (!documents.length) return null;
   return (
-    <section className="card stack" aria-label="Pricing reference status">
+    <section
+      className="reference-document-section stack"
+      aria-label="Pricing reference status"
+    >
       <h2>Pricing references</h2>
       {documents.map((d) => (
         <div key={d.id}>
@@ -51,7 +54,7 @@ export function ReferenceDocuments({
   return (
     <section className="stack">
       <ReferenceStatus documents={documents} />
-      <section className="card stack">
+      <section className="reference-document-section stack">
         <h2>Pricing reference for assistants</h2>
         {documents.map((d) => (
           <div key={d.id} className="stack">

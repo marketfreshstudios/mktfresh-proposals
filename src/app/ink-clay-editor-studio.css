@@ -293,23 +293,6 @@
 .ink-clay .studio-template-card-footer {
   background: var(--surface);
 }
-.ink-clay .studio-data-table,
-.ink-clay .studio-email-rows,
-.ink-clay .activity-day-rows {
-  border-inline: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.ink-clay .studio-table-head {
-  color: var(--ink-muted);
-  font: 600 11px/16px var(--font-ui);
-  letter-spacing: 0.06em;
-}
-.ink-clay .studio-table-row,
-.ink-clay .studio-email-row,
-.ink-clay .activity-row-v3 {
-  border-radius: 0;
-}
 .ink-clay .studio-table-row :is(.studio-price-cell, .catalog-price),
 .ink-clay .studio-readonly-price,
 .ink-clay .studio-product-terms dd,

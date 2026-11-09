@@ -1,4 +1,10 @@
 "use client";
+import {
+  StaffTable,
+  StaffTableHead,
+  StaffTableEmpty,
+  StaffTableOpen,
+} from "./staff-table";
 import { StarterCardMenu } from "./starter-library";
 import type { Template } from "../lib/model";
 import { studioDate, templateUsage } from "../lib/studio-v3";
@@ -14,7 +20,7 @@ import { savedBlockLabel } from "../lib/saved-block-type";
 import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
 import { fontCss } from "../lib/proposal-fonts";
-import { api, post, Button, Empty, Icon, Banner } from "./ui";
+import { api, post, Button, Empty, Banner } from "./ui";
 import { TemplateWarnings } from "./template-warnings";
 const blockType = (b: Block) =>
   b.type === "contract"
@@ -146,6 +152,9 @@ export function StudioTemplateList({
       setBusy(false);
     }
   }
+  const matchingTemplates = templates
+    .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => (a.starter_order ?? 999) - (b.starter_order ?? 999));
   return (
     <div className="studio-v3-list">
       <div className="studio-list-intro">
@@ -202,101 +211,102 @@ export function StudioTemplateList({
         <>
           <TemplateWarnings templates={templates} catalog={data.catalog} />
           {templates.some((t) => t.starter_key) && (
-            <p className="muted">
+            <p className="staff-surface staff-surface-note muted">
               Starter terms are a starting point, not legal advice. Have an
               attorney review them before you use them.
             </p>
           )}
           <style>{fontCss(data.settings)}</style>
           <div className="studio-template-grid">
-            {[...templates]
-              .sort(
-                (a, b) => (a.starter_order ?? 999) - (b.starter_order ?? 999),
-              )
-              .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
-              .map((t) => (
-                <div className="studio-template-card-shell" key={t.id}>
-                  <a
-                    href={`/studio/templates/${t.id}`}
-                    className="studio-template-card"
-                    data-hidden={!t.active || undefined}
-                  >
-                    <TemplateThumbnail template={t} settings={data.settings} />
-                    <div className="studio-template-card-footer">
-                      <div>
-                        <strong
-                          className="studio-template-card-name"
-                          data-testid="template-card-name"
-                        >
-                          {t.name}
-                        </strong>
-                        {t.starter_key && (
-                          <span className="starter-pill">Starter</span>
-                        )}
-                      </div>
-                      {t.source_starter_key && (
-                        <p className="starter-source">
-                          Based on{" "}
-                          {t.source_starter_name ??
-                            templates.find(
-                              (s) => s.starter_key === t.source_starter_key,
-                            )?.name ??
-                            t.source_starter_key}
-                        </p>
+            {matchingTemplates.map((t) => (
+              <div className="studio-template-card-shell" key={t.id}>
+                <a
+                  href={`/studio/templates/${t.id}`}
+                  className="studio-template-card"
+                  data-hidden={!t.active || undefined}
+                >
+                  <TemplateThumbnail template={t} settings={data.settings} />
+                  <div className="studio-template-card-footer">
+                    <div>
+                      <strong
+                        className="studio-template-card-name"
+                        data-testid="template-card-name"
+                      >
+                        {t.name}
+                      </strong>
+                      {t.starter_key && (
+                        <span className="starter-pill">Starter</span>
                       )}
-                      {t.description && <p>{t.description}</p>}
-                      {t.connector_created && !t.active ? (
-                        <span className="studio-hidden-pill">
-                          Created by Claude — not yet available
-                        </span>
-                      ) : (
-                        !t.active && (
-                          <span className="studio-hidden-pill">
-                            Hidden from new proposals
-                          </span>
-                        )
-                      )}
-                      <small>
-                        {
-                          t.content.filter(
-                            (b) => b.type === "heading" && (b.level ?? 1) === 1,
-                          ).length
-                        }{" "}
-                        {t.content.filter(
-                          (b) => b.type === "heading" && (b.level ?? 1) === 1,
-                        ).length === 1
-                          ? "section"
-                          : "sections"}{" "}
-                        ·{" "}
-                        {templateUsage(
-                          data.proposals.filter((p) => p.template_id === t.id)
-                            .length,
-                        ).toLowerCase()}{" "}
-                        ·{" "}
-                        {t.starter_key
-                          ? t.starter_edited
-                            ? edited(t.id)
-                              ? lastEdit(t.id).replace(/^Edited/, "edited")
-                              : "edited"
-                            : "Default"
-                          : lastEdit(t.id).replace(/^Edited/, "edited")}
-                      </small>
                     </div>
-                  </a>
-                  {(t.starter_key || t.connector_restore_event_id) && (
-                    <StarterCardMenu
-                      template={t}
-                      owner={data.user.staff_role === "owner"}
-                      onChanged={refreshTemplates}
-                    />
-                  )}
-                </div>
-              ))}
+                    {t.source_starter_key && (
+                      <p className="starter-source">
+                        Based on{" "}
+                        {t.source_starter_name ??
+                          templates.find(
+                            (s) => s.starter_key === t.source_starter_key,
+                          )?.name ??
+                          t.source_starter_key}
+                      </p>
+                    )}
+                    {t.description && <p>{t.description}</p>}
+                    {t.connector_created && !t.active ? (
+                      <span className="studio-hidden-pill">
+                        Created by Claude — not yet available
+                      </span>
+                    ) : (
+                      !t.active && (
+                        <span className="studio-hidden-pill">
+                          Hidden from new proposals
+                        </span>
+                      )
+                    )}
+                    <small>
+                      {
+                        t.content.filter(
+                          (b) => b.type === "heading" && (b.level ?? 1) === 1,
+                        ).length
+                      }{" "}
+                      {t.content.filter(
+                        (b) => b.type === "heading" && (b.level ?? 1) === 1,
+                      ).length === 1
+                        ? "section"
+                        : "sections"}{" "}
+                      ·{" "}
+                      {templateUsage(
+                        data.proposals.filter((p) => p.template_id === t.id)
+                          .length,
+                      ).toLowerCase()}{" "}
+                      ·{" "}
+                      {t.starter_key
+                        ? t.starter_edited
+                          ? edited(t.id)
+                            ? lastEdit(t.id).replace(/^Edited/, "edited")
+                            : "edited"
+                          : "Default"
+                        : lastEdit(t.id).replace(/^Edited/, "edited")}
+                    </small>
+                  </div>
+                </a>
+                {(t.starter_key || t.connector_restore_event_id) && (
+                  <StarterCardMenu
+                    template={t}
+                    owner={data.user.staff_role === "owner"}
+                    onChanged={refreshTemplates}
+                  />
+                )}
+              </div>
+            ))}
           </div>
-          {!templates.length && (
+          {!matchingTemplates.length && (
             <Empty
-              title="Create your first template"
-              action={<Button onClick={create}>New template</Button>}
+              title={
+                query ? "No matching templates" : "Create your first template"
+              }
+              action={
+                query ? undefined : (
+                  <Button onClick={create}>New template</Button>
+                )
+              }
             />
           )}
           <section className="studio-saved-preview">
@@ -306,19 +316,33 @@ export function StudioTemplateList({
                 See all {data.library.length}
               </a>
             </header>
-            {recent.map((b) => (
-              <a href={`/studio/blocks/${b.id}`} key={b.id}>
-                <strong>{b.name}</strong>
-                <span className="muted">{blockType(b.block)}</span>
-                <Icon name="chevron-right" />
-              </a>
-            ))}
-            {!recent.length && (
-              <p className="muted">
-                No saved blocks yet. Select any block in a proposal or template
-                and choose ⋯ › Save for reuse.
-              </p>
-            )}
+            <StaffTable className="saved-preview-table">
+              <StaffTableHead className="studio-table-head">
+                <span>Name</span>
+                <span>Type</span>
+                <span className="sr-only">Actions</span>
+              </StaffTableHead>
+              {recent.map((b) => (
+                <div className="staff-table-row studio-table-row" key={b.id}>
+                  <strong>{b.name}</strong>
+                  <span className="muted">
+                    {b.type === "group"
+                      ? savedBlockLabel(b)
+                      : blockType(b.block)}
+                  </span>
+                  <StaffTableOpen
+                    href={`/studio/blocks/${b.id}`}
+                    label={`Open ${b.name}`}
+                  />
+                </div>
+              ))}
+              {!recent.length && (
+                <StaffTableEmpty>
+                  No saved blocks yet. Select any block in a proposal or
+                  template and choose ⋯ › Save for reuse.
+                </StaffTableEmpty>
+              )}
+            </StaffTable>
           </section>
         </>
       ) : (
@@ -339,60 +363,52 @@ export function StudioTemplateList({
               label: `${t} · ${data.library.filter((b) => t === "All" || (b.type === "group" ? "Group" : blockType(b.block)) === t).length}`,
             }))}
           />
-          <div className="studio-data-table saved-block-table">
-            <div className="studio-table-head staff-table-head">
-              <span>Block</span>
-              <span>Type</span>
+          <StaffTable className="studio-data-table saved-block-table">
+            <StaffTableHead className="studio-table-head">
+              <span>Name</span>
+              <span>Blocks</span>
               <span>Used in</span>
-              <span>Last edited</span>
-            </div>
-            {items.map((b) => (
-              <a
-                className="studio-table-row"
-                key={b.id}
-                href={`/studio/blocks/${b.id}`}
-              >
-                <span>
-                  <strong>{b.name}</strong>
-                  <small>{summary(b.block) || "Empty block"}</small>
-                  <small className="saved-block-phone-summary">
-                    {b.type === "group"
-                      ? savedBlockLabel(b)
-                      : blockType(b.block)}{" "}
-                    · In {b.used_in?.templates.length ?? 0}{" "}
-                    {b.used_in?.templates.length === 1
-                      ? "template"
-                      : "templates"}
-                  </small>
-                </span>
-                <span>
-                  {b.type === "group" ? savedBlockLabel(b) : blockType(b.block)}
-                </span>
-                <span>
-                  In {b.used_in?.templates.length ?? 0}{" "}
-                  {b.used_in?.templates.length === 1 ? "template" : "templates"}
-                </span>
-                <span>{lastEdit(b.id)}</span>
-                <Icon name="chevron-right" />
-              </a>
-            ))}
-          </div>
-          {!items.length && (
-            <Empty
-              title={
-                data.library.length
-                  ? "No matching blocks"
-                  : "No saved blocks yet"
-              }
-            >
-              Select any block in a proposal or template and choose ⋯ › Save for
-              reuse.
-            </Empty>
-          )}
-          <p className="muted">
-            To save a new block, select any block in a proposal or template and
-            choose ⋯ › Save for reuse.
-          </p>
+              <span>Updated</span>
+              <span className="sr-only">Actions</span>
+            </StaffTableHead>
+            {items.map((b) => {
+              const type = b.type === "group" ? "Group" : blockType(b.block);
+              const count = b.type === "group" ? (b.blocks?.length ?? 0) : 1;
+              const templates = b.used_in?.templates.length ?? 0;
+              const use = `In ${templates} ${templates === 1 ? "template" : "templates"}`;
+              return (
+                <div className="staff-table-row studio-table-row" key={b.id}>
+                  <span>
+                    <strong>{b.name}</strong>
+                    <small>
+                      {type} · {summary(b.block) || "Empty block"}
+                    </small>
+                    <small className="saved-block-phone-summary">
+                      {b.type === "group" ? savedBlockLabel(b) : type} · {use}
+                    </small>
+                  </span>
+                  <span
+                    aria-label={`${count} ${count === 1 ? "block" : "blocks"}`}
+                  >
+                    {count}
+                  </span>
+                  <span>{use}</span>
+                  <span>{lastEdit(b.id)}</span>
+                  <StaffTableOpen
+                    href={`/studio/blocks/${b.id}`}
+                    label={`Open ${b.name}`}
+                  />
+                </div>
+              );
+            })}
+            {!items.length && (
+              <StaffTableEmpty>
+                {data.library.length
+                  ? "No matching blocks."
+                  : "No saved blocks yet. Select any block in a proposal or template and choose ⋯ › Save for reuse."}
+              </StaffTableEmpty>
+            )}
+          </StaffTable>
         </>
       )}
     </div>
