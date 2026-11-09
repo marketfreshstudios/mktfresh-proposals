@@ -25,7 +25,12 @@ export async function openEditorPanel(
     await current.first().click();
     return;
   }
-  await page.getByRole("button", { name: `Open ${tab}`, exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: tab === "Quote" ? /^Open Quote\b/ : `Open ${tab}`,
+      exact: true,
+    })
+    .click();
 }
 export async function reviewEditorSections(page: Page) {
   await openEditorPanel(page, "Send");
