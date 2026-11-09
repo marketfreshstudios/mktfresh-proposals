@@ -1,4 +1,5 @@
 "use client";
+import { finalOiotClause, finalOiotVisibility } from "../lib/oiot";
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
@@ -44,7 +45,13 @@ import type { QuoteItem } from "../lib/model";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
-import { money, totals, renderBlocks, resolve } from "../lib/presentation";
+import {
+  contractClauseHtml,
+  money,
+  totals,
+  renderBlocks,
+  resolve,
+} from "../lib/presentation";
 import { PoweredByYeswell } from "./powered-by-yeswell";
 import { ClientWorkspaceIcon } from "./client-workspace-icon";
 import type { BillingLine } from "../lib/model";
@@ -426,6 +433,11 @@ function NewClientFlow({
     };
     setP({
       ...p,
+      pagination:
+        finalOiotVisibility(p.content, p.quote as QuoteItem[]) ===
+        finalOiotVisibility(p.content, quote)
+          ? p.pagination
+          : undefined,
       quote,
       totals: t,
       variables,
@@ -1745,14 +1757,35 @@ function FlowingDocument({
               {...blockProps(block, index)}
             >
               <h2>{block.text || "Statement of Work & Contract"}</h2>
-              {(block.clauses ?? []).map((c) => (
-                <details key={c.id}>
-                  <Disclosure>{resolve(c.heading, p.variables)}</Disclosure>
-                  <p style={{ whiteSpace: "pre-wrap" }}>
-                    {resolve(c.body, p.variables)}
-                  </p>
-                </details>
-              ))}
+              {(block.clauses ?? [])
+                .filter(
+                  (clause) =>
+                    !finalOiotClause(clause) ||
+                    !clause.show_when ||
+                    p.quote.some(
+                      (item) =>
+                        item.pricing_item_id ===
+                          clause.show_when?.pricing_item_id &&
+                        (!item.optional ||
+                          (item.selected ?? item.default_selected)),
+                    ),
+                )
+                .map((c) => (
+                  <details key={c.id}>
+                    <Disclosure>{resolve(c.heading, p.variables)}</Disclosure>
+                    {finalOiotClause(c) ? (
+                      <p
+                        dangerouslySetInnerHTML={{
+                          __html: contractClauseHtml(c, p.variables),
+                        }}
+                      />
+                    ) : (
+                      <p style={{ whiteSpace: "pre-wrap" }}>
+                        {resolve(c.body, p.variables)}
+                      </p>
+                    )}
+                  </details>
+                ))}
             </section>
           ) : block.type === "signature_block" ? (
             <div key={index} {...blockProps(block, index)}>

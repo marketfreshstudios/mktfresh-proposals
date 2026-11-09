@@ -25,6 +25,7 @@ export const ScheduleSchema = z.object({
   then: z.object({ amount: cents, lookup_key: z.string().min(1) }),
 });
 export const SublineSchema = z.object({
+  oiot_kickoff: z.literal(true).optional(),
   id: z.string().uuid(),
   label: z.string().max(200).optional(),
   amount: cents,
@@ -56,6 +57,7 @@ export const ItemSchema = z.object({
     .default(null),
 });
 export const QuoteItemSchema = z.object({
+  oiot_purchase_price: cents.optional(),
   id: z.string().uuid(),
   order: z.number().int().nonnegative(),
   name: z.string().min(1).max(200),
@@ -101,6 +103,7 @@ export const ContractClauseSchema = z.object({
   id: z.string().min(1).max(200),
   heading: z.string().min(1).max(300),
   body: z.string().max(30000),
+  body_format: z.literal("oiot_run_in").optional(),
   show_when: z
     .object({
       kind: z.literal("item_selected"),
@@ -144,6 +147,7 @@ export type Block = {
     id: string;
     heading: string;
     body: string;
+    body_format?: "oiot_run_in";
     show_when: null | { kind: "item_selected"; pricing_item_id: string };
     draft?: boolean;
   }[];

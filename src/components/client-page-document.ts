@@ -94,6 +94,8 @@ export function paginateClientDocument(
   const neutral = stage.ownerDocument.createElement("div");
   neutral.className = root.className;
   neutral.dataset.currentLayout = "true";
+  if (root.dataset.finalOiot)
+    neutral.dataset.finalOiot = root.dataset.finalOiot;
   neutral.append(...root.childNodes);
   root.replaceWith(neutral);
   root = neutral;

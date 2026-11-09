@@ -1,4 +1,5 @@
 "use client";
+import { clauseTextParts } from "../lib/oiot";
 import { editorFieldParts } from "../lib/editor-fields";
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
@@ -101,11 +102,17 @@ export function pageSpacers(values: () => Record<string, string>) {
 export function SourceParagraph({
   text,
   map,
+  boldRunIns,
 }: {
   text: string;
   map?: Record<string, string>;
+  boldRunIns?: boolean;
 }) {
-  const fields = map ? editorFieldParts(text, map) : [{ value: text }];
+  const fields = clauseTextParts(text, boldRunIns).flatMap((part) =>
+    (map ? editorFieldParts(part.text, map) : [{ value: part.text }]).map(
+      (field) => ({ ...field, bold: part.bold }),
+    ),
+  );
   const resolved = fields.map((part) => part.value).join("");
   const paint = (from: number, to: number) => {
     let offset = 0;
@@ -124,6 +131,8 @@ export function SourceParagraph({
         >
           {value}
         </span>
+      ) : part.bold ? (
+        <strong key={`${from}-${n}`}>{value}</strong>
       ) : (
         value
       );
