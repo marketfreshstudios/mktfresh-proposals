@@ -271,6 +271,13 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
   const item = data.catalog.find((i) => i.id === selected),
     custom = data.families.find((f) => f.id === selected);
   const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Custom");
+  const beforeStripe =
+    data.connections?.stripe === false &&
+    !data.catalog.length &&
+    !data.families.length &&
+    !data.catalog_error &&
+    filter === "All" &&
+    !query.trim();
   return (
     <div className="studio-products-v3">
       <div className="studio-list-intro">
@@ -278,12 +285,14 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           Services you can add to a quote. Stripe products keep their Stripe
           price; custom families are priced on each proposal.
         </p>
-        <Button
-          className={item || custom ? undefined : "studio-primary"}
-          onClick={() => setFamily(true)}
-        >
-          New custom family
-        </Button>
+        {!beforeStripe && (
+          <Button
+            className={item || custom ? undefined : "studio-primary"}
+            onClick={() => setFamily(true)}
+          >
+            New custom family
+          </Button>
+        )}
       </div>
       <div className="studio-sync-meta">
         <span
@@ -295,17 +304,22 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         {data.connections?.stripe
           ? `Synced with Stripe · ${data.connections.mode === "live" ? "live" : "test"} mode`
           : stripeStatus(data.connections)}{" "}
-        · {synced ? relativeTime(synced) : "No recorded sync yet"} ·{" "}
-        <Button
-          onClick={() =>
-            run(async () => {
-              const result = await post("/api/catalog-sync/stripe");
-              setSynced(result.synced_at);
-            }, "Products synced")
-          }
-        >
-          Sync now
-        </Button>
+        · {synced ? relativeTime(synced) : "No recorded sync yet"}
+        {!beforeStripe && (
+          <>
+            {" · "}
+            <Button
+              onClick={() =>
+                run(async () => {
+                  const result = await post("/api/catalog-sync/stripe");
+                  setSynced(result.synced_at);
+                }, "Products synced")
+              }
+            >
+              Sync now
+            </Button>
+          </>
+        )}
       </div>
       <TemplateWarnings templates={data.templates} catalog={data.catalog} />
       <div className="studio-list-tools">
@@ -343,167 +357,193 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           />
         </label>
       </div>
-      <div
-        className={`studio-products-layout ${selected ? "with-detail" : ""}`}
-      >
-        <div>
-          <StaffTable className="studio-data-table product-table">
-            <StaffTableHead className="studio-table-head">
-              <span>Product</span>
-              <span>Price</span>
-              <span>Plan terms</span>
-              <span>Source</span>
-            </StaffTableHead>
-            {items.map((i) => (
-              <a
-                className="staff-table-row studio-table-row catalog-row catalog-row-v3"
-                href={`?item=${i.id}`}
-                key={i.id}
-                onClick={(e) => {
-                  if (
-                    !e.metaKey &&
-                    !e.ctrlKey &&
-                    !e.shiftKey &&
-                    e.button === 0
-                  ) {
-                    e.preventDefault();
-                    pick(i.id);
-                  }
-                }}
-              >
-                <span>
-                  <strong>{itemDisplayName(i)}</strong>
-                  <small>{i.description}</small>
-                </span>
-                <span>
-                  <span className="catalog-price">
-                    {(i.sublines ?? [i])
-                      .map(
-                        (s) =>
-                          `${money(s.amount, data.settings?.currency)}${intervalSuffix(s.interval)}`,
-                      )
-                      .join(" + ")}
-                  </span>
-                </span>
-                <span>
-                  {i.schedule
-                    ? `${withCount(i.schedule.after_paid_invoices, "payment")}, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
-                    : "—"}
-                  {i.min_term_months && (
-                    <small>{i.min_term_months}-month minimum</small>
-                  )}
-                </span>
-                <span>
-                  <span
-                    className={`studio-tag ${source(i) === "Stripe" ? "studio-tag-stripe" : ""}`}
-                  >
-                    {source(i)}
-                  </span>
-                </span>
+      {beforeStripe ? (
+        <Empty
+          title="Connect Stripe to bring in your products"
+          action={
+            <div className="first-run-actions">
+              <a className="btn action" href="/studio/connections/stripe">
+                {data.user.staff_role === "owner"
+                  ? "Connect Stripe"
+                  : "View Stripe connection"}
               </a>
-            ))}
-            {families.map((f) => (
-              <a
-                className="staff-table-row studio-table-row"
-                href={`?item=${f.id}`}
-                key={f.id}
-                onClick={(e) => {
-                  if (
-                    !e.metaKey &&
-                    !e.ctrlKey &&
-                    !e.shiftKey &&
-                    e.button === 0
-                  ) {
-                    e.preventDefault();
-                    pick(f.id);
-                  }
-                }}
-              >
-                <strong>{f.name}</strong>
-                <span>Entered per proposal</span>
-                <span>—</span>
-                <span className="studio-tag">Custom</span>
-              </a>
-            ))}
-            {!items.length && !families.length && (
-              <StaffTableEmpty>
-                {query
-                  ? "No matching products."
-                  : "Your products start here. Sync your Stripe products or create a custom family."}
-              </StaffTableEmpty>
-            )}
-          </StaffTable>
-          <Button onClick={() => setAdding(true)}>Add one-time product</Button>
-        </div>
-        {(item || custom) && (
-          <aside className="studio-product-detail" aria-label="Product details">
-            <header>
-              <h2>{item ? itemDisplayName(item) : custom!.name}</h2>
-              <button
-                aria-label="Close product details"
-                className="btn"
-                onClick={() => pick(null)}
-              >
-                <Icon name="chevron-right" />
-              </button>
-            </header>
-            {item ? (
-              <>
-                <CatalogItem
-                  key={item.id}
-                  item={item}
-                  data={data}
-                  run={run}
-                  close={() => pick(null)}
-                />
-                <section className="studio-product-used">
-                  {" "}
-                  <h3>Used in</h3>
+              <Button onClick={() => setAdding(true)}>
+                Add one-time product
+              </Button>
+            </div>
+          }
+        >
+          Your services, care plans and retainers sync from Stripe. Until then,
+          you can still add custom lines and enter prices on a proposal.
+        </Empty>
+      ) : (
+        <div
+          className={`studio-products-layout ${selected ? "with-detail" : ""}`}
+        >
+          <div>
+            <StaffTable className="studio-data-table product-table">
+              <StaffTableHead className="studio-table-head">
+                <span>Product</span>
+                <span>Price</span>
+                <span>Plan terms</span>
+                <span>Source</span>
+              </StaffTableHead>
+              {items.map((i) => (
+                <a
+                  className="staff-table-row studio-table-row catalog-row catalog-row-v3"
+                  href={`?item=${i.id}`}
+                  key={i.id}
+                  onClick={(e) => {
+                    if (
+                      !e.metaKey &&
+                      !e.ctrlKey &&
+                      !e.shiftKey &&
+                      e.button === 0
+                    ) {
+                      e.preventDefault();
+                      pick(i.id);
+                    }
+                  }}
+                >
+                  <span>
+                    <strong>{itemDisplayName(i)}</strong>
+                    <small>{i.description}</small>
+                  </span>
+                  <span>
+                    <span className="catalog-price">
+                      {(i.sublines ?? [i])
+                        .map(
+                          (s) =>
+                            `${money(s.amount, data.settings?.currency)}${intervalSuffix(s.interval)}`,
+                        )
+                        .join(" + ")}
+                    </span>
+                  </span>
+                  <span>
+                    {i.schedule
+                      ? `${withCount(i.schedule.after_paid_invoices, "payment")}, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
+                      : "—"}
+                    {i.min_term_months && (
+                      <small>{i.min_term_months}-month minimum</small>
+                    )}
+                  </span>
+                  <span>
+                    <span
+                      className={`studio-tag ${source(i) === "Stripe" ? "studio-tag-stripe" : ""}`}
+                    >
+                      {source(i)}
+                    </span>
+                  </span>
+                </a>
+              ))}
+              {families.map((f) => (
+                <a
+                  className="staff-table-row studio-table-row"
+                  href={`?item=${f.id}`}
+                  key={f.id}
+                  onClick={(e) => {
+                    if (
+                      !e.metaKey &&
+                      !e.ctrlKey &&
+                      !e.shiftKey &&
+                      e.button === 0
+                    ) {
+                      e.preventDefault();
+                      pick(f.id);
+                    }
+                  }}
+                >
+                  <strong>{f.name}</strong>
+                  <span>Entered per proposal</span>
+                  <span>—</span>
+                  <span className="studio-tag">Custom</span>
+                </a>
+              ))}
+              {!items.length && !families.length && (
+                <StaffTableEmpty>
+                  {query
+                    ? "No matching products."
+                    : "Your products start here. Sync your Stripe products or create a custom family."}
+                </StaffTableEmpty>
+              )}
+            </StaffTable>
+            <Button onClick={() => setAdding(true)}>
+              Add one-time product
+            </Button>
+          </div>
+          {(item || custom) && (
+            <aside
+              className="studio-product-detail"
+              aria-label="Product details"
+            >
+              <header>
+                <h2>{item ? itemDisplayName(item) : custom!.name}</h2>
+                <button
+                  aria-label="Close product details"
+                  className="btn"
+                  onClick={() => pick(null)}
+                >
+                  <Icon name="chevron-right" />
+                </button>
+              </header>
+              {item ? (
+                <>
+                  <CatalogItem
+                    key={item.id}
+                    item={item}
+                    data={data}
+                    run={run}
+                    close={() => pick(null)}
+                  />
+                  <section className="studio-product-used">
+                    {" "}
+                    <h3>Used in</h3>
+                    <p>
+                      {data.templates
+                        .filter(
+                          (t) =>
+                            t.default_quote.some(
+                              (l) => l.pricing_item_id === item.id,
+                            ) ||
+                            t.default_items?.some(
+                              (q) => q.pricing_item_id === item.id,
+                            ),
+                        )
+                        .map((t) => t.name)
+                        .join(" · ") || "No templates"}{" "}
+                      ·{" "}
+                      {
+                        data.proposals.filter(
+                          (p) =>
+                            ![
+                              "completed",
+                              "declined",
+                              "expired",
+                              "archived",
+                            ].includes(p.status) &&
+                            p.quote.some((q) => q.pricing_item_id === item.id),
+                        ).length
+                      }{" "}
+                      open proposals
+                    </p>
+                  </section>
+                </>
+              ) : (
+                <>
+                  <span className="studio-tag">Custom family</span>
+                  <Field label="Family name">
+                    <input readOnly value={custom!.name} />
+                  </Field>
                   <p>
-                    {data.templates
-                      .filter(
-                        (t) =>
-                          t.default_quote.some(
-                            (l) => l.pricing_item_id === item.id,
-                          ) ||
-                          t.default_items?.some(
-                            (q) => q.pricing_item_id === item.id,
-                          ),
-                      )
-                      .map((t) => t.name)
-                      .join(" · ") || "No templates"}{" "}
-                    ·{" "}
-                    {
-                      data.proposals.filter(
-                        (p) =>
-                          ![
-                            "completed",
-                            "declined",
-                            "expired",
-                            "archived",
-                          ].includes(p.status) &&
-                          p.quote.some((q) => q.pricing_item_id === item.id),
-                      ).length
-                    }{" "}
-                    open proposals
+                    Entered per proposal. Use this family for a custom scope and
+                    the agreed price; the app never sets prices.
                   </p>
-                </section>
-              </>
-            ) : (
-              <>
-                <span className="studio-tag">Custom family</span>
-                <Field label="Family name">
-                  <input readOnly value={custom!.name} />
-                </Field>
-                <p>
-                  Entered per proposal. Use this family for a custom scope and
-                  the agreed price; the app never sets prices.
-                </p>
-              </>
-            )}
-          </aside>
-        )}
-      </div>
+                </>
+              )}
+            </aside>
+          )}
+        </div>
+      )}
       {adding && (
         <Sheet title="New product" onClose={() => setAdding(false)}>
           <CatalogItem

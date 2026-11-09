@@ -195,19 +195,32 @@ export async function bill(
       : lines;
   const choice = previous?.metadata?.customer_choice as
     QuickBooksCustomerChoice | undefined;
-  if (provider === "qbo" && quickbooks && !quickbooks.connected)
+  if (provider === "qbo" && quickbooks && !quickbooks.connected) {
+    const manual =
+      workspace?.qbo_manual_invoice && !previous?.external_object_id;
     return {
       ...base,
       status: "needs_review",
-      last_error:
-        "Connect or reconnect QuickBooks in Studio, then retry billing.",
-      metadata: previous?.metadata && {
-        ...previous.metadata,
-        customer_candidates: undefined,
-      },
+      last_error: manual
+        ? "Invoice manually"
+        : "Connect or reconnect QuickBooks in Studio, then retry billing.",
+      metadata:
+        manual || previous?.metadata
+          ? {
+              ...previous?.metadata,
+              customer_candidates: undefined,
+              ...(manual
+                ? {
+                    action: "Invoice manually",
+                    line_ids: lines.map((line) => line.id),
+                  }
+                : {}),
+            }
+          : undefined,
       external_object_id: previous?.external_object_id,
       external_customer_id: previous?.external_customer_id,
     };
+  }
   if (
     provider === "qbo" &&
     (adapter instanceof UnconfiguredBillingProvider ||

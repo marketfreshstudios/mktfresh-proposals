@@ -183,6 +183,7 @@ export type RichText = {
   attrs?: { path?: string; src?: string; alt?: string; height?: number };
 };
 export type Template = {
+  sample?: boolean;
   description?: string;
   starter_key?: string;
   revision?: string;

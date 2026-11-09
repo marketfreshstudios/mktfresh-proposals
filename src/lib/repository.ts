@@ -112,6 +112,7 @@ export interface Repository {
     audit: Audit,
   ): Promise<boolean>;
   removeSavedBlock(id: string): Promise<boolean>;
+  removeSampleTemplate(id: string): Promise<boolean>;
   saveReassignments(documents: Proposal[], actor: Actor): Promise<void>;
   saveEmailTemplate<T extends { id: string }>(
     template: T,
@@ -540,6 +541,12 @@ export class MemoryRepository implements Repository {
       this.catalog.set("workspace_events", new Map());
     this.catalog.get("workspace_events")!.set(audit.id, structuredClone(audit));
     return true;
+  }
+  async removeSampleTemplate(id: string) {
+    const row = this.catalog.get("templates")?.get(id) as Template | undefined;
+    return row?.sample === true && !row.starter_key
+      ? this.catalog.get("templates")!.delete(id)
+      : false;
   }
   async removeSavedBlock(id: string) {
     const row = this.catalog.get("content_library")?.get(id) as
@@ -1078,6 +1085,16 @@ export class LocalRepository extends MemoryRepository {
     });
     this.tail = operation.catch(() => {});
     return operation;
+  }
+  override async removeSampleTemplate(id: string) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const removed = await super.removeSampleTemplate(id);
+      if (removed) await this.persist();
+      return removed;
+    });
+    this.tail = run.catch(() => {});
+    return run;
   }
   override async removeSavedBlock(id: string) {
     await this.ready;
@@ -1688,6 +1705,18 @@ export class SupabaseRepository implements Repository {
     });
     if (error) throw error;
     return data === true;
+  }
+  async removeSampleTemplate(id: string) {
+    const { data, error } = await this.db
+      .from("templates")
+      .delete()
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", id)
+      .eq("data->>sample", "true")
+      .is("data->>starter_key", null)
+      .select("id");
+    if (error) throw error;
+    return !!data?.length;
   }
   async removeSavedBlock(id: string) {
     const { data, error } = await this.db

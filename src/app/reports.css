@@ -627,9 +627,6 @@
   font: 600 16px/22px var(--font-ui);
   margin: 0;
 }
-.report-empty ul {
-  margin-bottom: 0;
-}
 .report-error,
 .report-range-note {
   margin: 0;

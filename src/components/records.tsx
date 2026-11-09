@@ -1,5 +1,6 @@
 "use client";
 import { withCount } from "../lib/count-label";
+import { Empty } from "./ui";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ChevronDown } from "lucide-react";
 import { chromeIcons, SigningIcon } from "./staff-icons";
@@ -38,7 +39,7 @@ import { StripeBillingDetails } from "./billing-breakdown";
 import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
-import { workspaceSetup } from "../lib/workspace-setup";
+import { HomeSetup } from "./home-setup";
 import { ContactValue } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
@@ -90,7 +91,6 @@ import { Sheet, Skeleton } from "./foundation";
 import { useMoney } from "./money-context";
 import { CreateClientModal } from "./client-picker";
 import { TableRowAction } from "./table-row-action";
-import { ProviderMark } from "./provider-brand";
 function timestamp(value: string, data: Data) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -610,12 +610,14 @@ export function ProposalRows({
   listActions = false,
   compact = false,
   limit,
+  empty = "No proposals in this view.",
 }: {
   showOwner?: boolean;
   reportSender?: boolean;
   listActions?: boolean;
   compact?: boolean;
   limit?: number;
+  empty?: ReactNode;
   proposals: (Proposal & { question_summary?: QuestionSummary })[];
   data: Data;
   onChanged?: (p: Proposal) => void;
@@ -649,7 +651,7 @@ export function ProposalRows({
           <span />
         </StaffTableHead>
         {!visible.length ? (
-          <StaffTableEmpty>No proposals in this view.</StaffTableEmpty>
+          <StaffTableEmpty>{empty}</StaffTableEmpty>
         ) : (
           visible.map((p) => {
             const t = totals(p.quote);
@@ -953,6 +955,28 @@ export function ProposalListV4({
         Date.parse(b.updated_at ?? b.created_at) -
         Date.parse(a.updated_at ?? a.created_at),
     );
+  const firstProposal =
+    !data.total && view === "all" && !search.trim() && owner === "all";
+  const emptyView = search.trim()
+    ? {
+        title: `No results for “${search.trim()}”`,
+        detail: "Check the spelling, or search by client name or email.",
+      }
+    : view === "needs-countersign"
+      ? {
+          title: "Nothing to countersign",
+          detail:
+            "Proposals wait here for the company signature after the client signs.",
+        }
+      : view === "viewed"
+        ? {
+            title: "No proposals being read right now",
+            detail: "Proposals move here when a client opens the link.",
+          }
+        : {
+            title: "No proposals in this view.",
+            detail: "Choose another view or clear your filters.",
+          };
   function change(v: string) {
     setView(v);
     setMore(false);
@@ -1096,15 +1120,41 @@ export function ProposalListV4({
         aria-label={activeExtra ?? undefined}
         aria-labelledby={activeExtra ? undefined : `proposal-view-${view}`}
       >
-        <ProposalRows
-          showOwner
-          listActions
-          proposals={shown}
-          data={data}
-          onChanged={(next) =>
-            setRows((r) => r.map((p) => (p.id === next.id ? next : p)))
-          }
-        />
+        {firstProposal ? (
+          <Empty
+            title="No proposals yet"
+            action={
+              <div className="first-run-actions">
+                <a className="btn action" href="/proposals?new=1">
+                  New proposal
+                </a>
+                {data.user.staff_role === "owner" && (
+                  <a className="btn" href="/studio/connections/imports">
+                    Import from Proposify
+                  </a>
+                )}
+              </div>
+            }
+          >
+            Proposals you write and drafts Claude creates will appear here.
+            Start from a template or a blank page.
+          </Empty>
+        ) : (
+          <ProposalRows
+            showOwner
+            listActions
+            proposals={shown}
+            empty={
+              <>
+                <strong>{emptyView.title}</strong> {emptyView.detail}
+              </>
+            }
+            data={data}
+            onChanged={(next) =>
+              setRows((r) => r.map((p) => (p.id === next.id ? next : p)))
+            }
+          />
+        )}
       </div>
     </div>
   );
@@ -1112,10 +1162,12 @@ export function ProposalListV4({
 export function HomeV4({
   data,
   onNew,
+  onSetupChanged,
   deploymentNotice,
 }: {
   data: Data;
   onNew: () => void;
+  onSetupChanged: () => Promise<void>;
   deploymentNotice: ReactNode;
 }) {
   const money = useMoney();
@@ -1188,85 +1240,6 @@ export function HomeV4({
       setActionBusy(false);
     }
   }
-  if (!data.total) {
-    const setup = workspaceSetup(data);
-    return (
-      <div className="home-v4 first-run stack">
-        <section className="home-intro">
-          <div>
-            <p className="t-eyebrow">Getting started</p>
-            <h1 className="t-page-title">
-              {setup.complete
-                ? "Send your first proposal"
-                : `Welcome, ${firstName}.`}
-            </h1>
-            <p>
-              Set up your workspace before sending your first proposal. You can
-              come back to these steps in Studio.
-            </p>
-          </div>
-          <Button className="action" onClick={onNew}>
-            New proposal
-          </Button>
-        </section>
-        {deploymentNotice}
-        <div className="home-overview">
-          {!setup.complete && (
-            <section className="home-reference home-setup-card">
-              <header className="section-heading">
-                <h2>
-                  Set up {data.settings?.company_name ?? "your workspace"}
-                </h2>
-                <small>
-                  {setup.rows.filter((row) => row.complete).length} of{" "}
-                  {setup.rows.length} done
-                </small>
-              </header>
-              <progress
-                aria-label="Workspace setup progress"
-                max={setup.rows.length}
-                value={setup.rows.filter((row) => row.complete).length}
-              />
-              <ol className="setup-checklist">
-                {setup.rows.map((row) => (
-                  <li key={row.id} data-complete={row.complete}>
-                    {row.id === "stripe" || row.id === "qbo" ? (
-                      <ProviderMark provider={row.id} />
-                    ) : (
-                      <span className="setup-mark" aria-hidden="true">
-                        <Icon name={row.complete ? "verified" : "clock"} />
-                      </span>
-                    )}
-                    <div>
-                      <strong>{row.label}</strong>
-                      <p>{row.detail}</p>
-                    </div>
-                    {row.complete ? (
-                      <span className="pill success">Done</span>
-                    ) : (
-                      <a className="btn" href={row.href}>
-                        {row.action}
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-          <section className="home-reference home-import-card">
-            <h2>Moving from Proposify?</h2>
-            <p>
-              Bring your past proposals and clients with you. Imported proposals
-              are read-only and keep their PDFs.
-            </p>
-            <a className="btn" href="/studio/connections?view=imports">
-              Import from Proposify
-            </a>
-          </section>
-        </div>
-      </div>
-    );
-  }
   const hour = Number(
     new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
@@ -1275,7 +1248,7 @@ export function HomeV4({
     }).format(now),
   );
   return (
-    <div className="home-v4 stack">
+    <div className={`home-v4 stack${data.total ? "" : " first-run"}`}>
       <section className="home-intro">
         <div>
           <p className="t-eyebrow">
@@ -1287,8 +1260,9 @@ export function HomeV4({
             }).format(now)}
           </p>
           <h1 className="t-page-title">
-            Good {hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"},{" "}
-            {firstName}
+            {data.total
+              ? `Good ${hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"}, ${firstName}`
+              : `Welcome to Yeswell, ${firstName}`}
           </h1>
         </div>
         <Button className="action" onClick={onNew}>
@@ -1361,7 +1335,24 @@ export function HomeV4({
               );
             })
           ) : (
-            <p>No proposals in the pipeline yet.</p>
+            <>
+              <div className="home-pipeline-amounts home-pipeline-zero">
+                <div>
+                  <strong className="t-hero-number">
+                    {money(0, data.settings?.currency)}
+                    <small>/mo</small>
+                  </strong>
+                  <span>Recurring</span>
+                </div>
+                <div>
+                  <strong className="t-hero-number">
+                    {money(0, data.settings?.currency)}
+                  </strong>
+                  <span>One-time</span>
+                </div>
+              </div>
+              <p>Your pipeline fills in as you send proposals.</p>
+            </>
           )}
           <div className="home-pipeline-bar" aria-hidden="true">
             {stages.map(
@@ -1423,6 +1414,7 @@ export function HomeV4({
           )}
         </section>
       </div>
+      <HomeSetup data={data} onChanged={onSetupChanged} />
       <section className="home-attention" aria-labelledby="attention-title">
         <header className="section-heading">
           <h2 id="attention-title">Needs your attention</h2>
@@ -2893,82 +2885,101 @@ export function ClientsV4({
             ))}
           </fieldset>
         </div>
-        <StaffTable className="client-directory client-table">
-          <StaffTableHead className="client-table-head">
-            {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
-              (label) => (
-                <span key={label}>{label}</span>
-              ),
-            )}
-          </StaffTableHead>
-          {visibleClients.map((c) => {
-            const proposals = data.proposals.filter(
-              (p) => p.client.id === c.id && inView(p, "all"),
-            );
-            const open = proposals.filter((p) => inView(p, "sent")).length;
-            const awaiting = proposals.filter(needsCountersign).length;
-            const drafts = proposals.filter((p) => p.status === "draft").length;
-            const proposalStatus = awaiting
-              ? `${awaiting} to countersign`
-              : proposals.some(billingIssues)
-                ? "Billing issue"
-                : open
-                  ? `${open} open`
-                  : drafts
-                    ? `${drafts} ${drafts === 1 ? "draft" : "drafts"}`
-                    : "—";
-            return (
-              <article
-                key={c.id}
-                className="staff-table-row client-table-row clickable-row"
-              >
-                <a
-                  className="whole-row-link"
-                  href={`/clients/${c.id}`}
-                  aria-label={`Open ${c.company}`}
-                />
-                <strong data-label="Company">
-                  <ClientInitials company={c.company} />
-                  {c.company}
-                </strong>
-                <span data-label="Contact">
-                  {c.first_name} {c.last_name}
-                </span>
-                <span data-label="Proposals">{proposalStatus}</span>
-                <span data-label="Monthly now">
-                  {c.stripe_customer_id ? (
-                    <a
-                      className="inner-action"
-                      href={`/clients/${c.id}`}
-                      title="Open the client to see live billing"
-                      aria-label="Open the client to see live billing"
-                    >
-                      —
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </span>
-                <span data-label="Billing">
-                  <span
-                    className={`pill ${c.stripe_customer_id ? "info" : "neutral"}`}
-                  >
-                    {c.stripe_customer_id
-                      ? "Stripe linked"
-                      : "Not billed through Stripe"}
+        {!data.clients.length && !search.trim() && clientView === "all" ? (
+          <Empty
+            title="No clients yet"
+            action={
+              <div className="first-run-actions">
+                <Button className="action" onClick={() => setNewClient(true)}>
+                  New client
+                </Button>
+                {data.user.staff_role === "owner" && (
+                  <a className="btn" href="/studio/connections/imports">
+                    Import from Proposify
+                  </a>
+                )}
+              </div>
+            }
+          >
+            Clients appear here when you create a proposal for someone new or
+            add a client yourself.
+          </Empty>
+        ) : (
+          <StaffTable className="client-directory client-table">
+            <StaffTableHead className="client-table-head">
+              {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
+                (label) => (
+                  <span key={label}>{label}</span>
+                ),
+              )}
+            </StaffTableHead>
+            {visibleClients.map((c) => {
+              const proposals = data.proposals.filter(
+                (p) => p.client.id === c.id && inView(p, "all"),
+              );
+              const open = proposals.filter((p) => inView(p, "sent")).length;
+              const awaiting = proposals.filter(needsCountersign).length;
+              const drafts = proposals.filter(
+                (p) => p.status === "draft",
+              ).length;
+              const proposalStatus = awaiting
+                ? `${awaiting} to countersign`
+                : proposals.some(billingIssues)
+                  ? "Billing issue"
+                  : open
+                    ? `${open} open`
+                    : drafts
+                      ? `${drafts} ${drafts === 1 ? "draft" : "drafts"}`
+                      : "—";
+              return (
+                <article
+                  key={c.id}
+                  className="staff-table-row client-table-row clickable-row"
+                >
+                  <a
+                    className="whole-row-link"
+                    href={`/clients/${c.id}`}
+                    aria-label={`Open ${c.company}`}
+                  />
+                  <strong data-label="Company">
+                    <ClientInitials company={c.company} />
+                    {c.company}
+                  </strong>
+                  <span data-label="Contact">
+                    {c.first_name} {c.last_name}
                   </span>
-                </span>
-              </article>
-            );
-          })}
-          {!visibleClients.length && (
-            <StaffTableEmpty>
-              {data.clients.length
-                ? "No clients match this view."
-                : "No clients yet. Create your first client to get started."}
-            </StaffTableEmpty>
-          )}
-        </StaffTable>
+                  <span data-label="Proposals">{proposalStatus}</span>
+                  <span data-label="Monthly now">
+                    {c.stripe_customer_id ? (
+                      <a
+                        className="inner-action"
+                        href={`/clients/${c.id}`}
+                        title="Open the client to see live billing"
+                        aria-label="Open the client to see live billing"
+                      >
+                        —
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </span>
+                  <span data-label="Billing">
+                    <span
+                      className={`pill ${c.stripe_customer_id ? "info" : "neutral"}`}
+                    >
+                      {c.stripe_customer_id
+                        ? "Stripe linked"
+                        : "Not billed through Stripe"}
+                    </span>
+                  </span>
+                </article>
+              );
+            })}
+            {!visibleClients.length && (
+              <StaffTableEmpty>No clients match this view.</StaffTableEmpty>
+            )}
+          </StaffTable>
+        )}
         {newClient && (
           <CreateClientModal
             onClose={() => setNewClient(false)}

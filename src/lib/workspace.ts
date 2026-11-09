@@ -93,6 +93,7 @@ export const WorkspaceSettingsSchema = z.object({
     }
   }),
   qbo_custom_item_ref: z.string().nullable(),
+  qbo_manual_invoice: z.boolean().optional(),
   qbo_invoice_delivery: z.enum(["draft", "email"]).optional(),
   qbo_term_ref: z.string().nullable().optional(),
   collection_method: z.enum(["charge_automatically", "send_invoice"]),

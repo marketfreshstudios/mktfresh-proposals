@@ -8,6 +8,7 @@ export function settingsSnapshot(
   const parsed = WorkspaceSettingsSchema.parse(structuredClone(settings));
   return {
     ...parsed,
+    qbo_manual_invoice: undefined,
     default_password_hash: undefined,
     default_password_enabled: undefined,
     company_signatory: parsed.company_signatory

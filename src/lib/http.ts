@@ -154,8 +154,14 @@ import {
 import { publicRuntime, allRuntimes } from "./runtime";
 import { workspaceRuntime, stripeWebhookWorkspace } from "./workspace-runtime";
 import { publicResult, event } from "./service";
-import { mutate, type EntityTable } from "./repository";
-import { hashPassword, sha256 } from "./content";
+import {
+  mutate,
+  SupabaseRepository,
+  supabase,
+  type Repository,
+  type EntityTable,
+} from "./repository";
+import { CONSENT, hashPassword, sha256 } from "./content";
 import {
   readReport,
   reportCsv,
@@ -186,6 +192,37 @@ async function body(req: Request) {
 }
 const resolvedClientLinks = new WeakSet<Request>();
 type AfterResponse = (work: () => Promise<void>) => void;
+async function workspaceDefaults(
+  repo: Repository,
+  user: { staff_name?: string; staff_email?: string },
+) {
+  let company = "Your workspace";
+  if (repo instanceof SupabaseRepository) {
+    const { data, error } = await supabase()
+      .from("workspaces")
+      .select("name")
+      .eq("id", repo.workspaceId)
+      .single();
+    if (error) throw error;
+    company = data.name;
+  }
+  return WorkspaceSettingsSchema.parse({
+    id: repo.workspaceId,
+    company_name: company,
+    owner: user.staff_name ?? "",
+    email: user.staff_email,
+    phone: "",
+    address: "",
+    logo: null,
+    accent_colour: "#13303A",
+    consent_text: CONSENT,
+    reminder_days: [3, 7],
+    timezone: "UTC",
+    qbo_custom_item_ref: null,
+    collection_method: "charge_automatically",
+  });
+}
+
 export async function handle(
   req: Request,
   path: string[],
@@ -639,9 +676,35 @@ async function handleRoute(
               default_password_enabled: !!settings.default_password_hash,
             }
           : null,
+        workspace_defaults: settings
+          ? undefined
+          : await workspaceDefaults(rt.repo, user),
         signatory_version: signatoryVersion(settings),
         staff: await workspaceStaff(user.workspace_id),
       });
+    }
+    if (
+      path[0] === "workspace_settings" &&
+      path[1] === "manual-invoicing" &&
+      method === "POST"
+    ) {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      check(
+        user.staff_role === "owner",
+        "Only a super admin can choose manual invoicing",
+        403,
+      );
+      const current =
+        (await rt.repo.entities<WorkspaceSettings>("workspace_settings"))[0] ??
+        (await workspaceDefaults(rt.repo, user));
+      if (!current.qbo_manual_invoice) {
+        await rt.repo.put("workspace_settings", {
+          ...current,
+          qbo_manual_invoice: true,
+        });
+        await workspaceEvent(rt.repo, user, "qbo_manual_invoicing_chosen", {});
+      }
+      return json({ manual: true });
     }
     if (path[0] === "email-templates") {
       if (method === "GET" && !path[1])
@@ -1256,7 +1319,23 @@ async function handleRoute(
           "Starters cannot be deleted. Hide from new proposals instead.",
           403,
         );
-        throw new AppError(405, "Template deletion unavailable");
+        check(template?.sample, "Template deletion unavailable", 405);
+        check(
+          user.staff_role === "owner",
+          "Only a super admin can delete samples",
+          403,
+        );
+        check(sameOrigin(req), "Same-origin request required", 403);
+        check(
+          await rt.repo.removeSampleTemplate(template.id),
+          "Sample template not found",
+          404,
+        );
+        await workspaceEvent(rt.repo, user, "template_deleted", {
+          name: template.name,
+          entity_id: template.id,
+        });
+        return json({ deleted: true });
       }
       if (method === "POST" && path[2])
         return json(
@@ -1373,6 +1452,7 @@ async function handleRoute(
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          entity.qbo_manual_invoice = previous?.qbo_manual_invoice;
           const qboDeliveryChanged =
             (entity.qbo_invoice_delivery ?? "draft") !==
             (previous?.qbo_invoice_delivery ?? "draft");
@@ -1586,6 +1666,7 @@ async function handleRoute(
           const previousTemplate = (
             await rt.repo.entities<import("./model").Template>("templates")
           ).find((t) => t.id === savedTemplateId);
+          entity.sample = previousTemplate?.sample;
           delete entity.connector_created;
           if (previousTemplate?.connector_created)
             entity.connector_created = true;

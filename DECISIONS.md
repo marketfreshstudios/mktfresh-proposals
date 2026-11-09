@@ -972,3 +972,13 @@ Record lists share the staff table header, row spacing, in-table empty states, a
 ### Proposal table Edit and Countersign icons (Nov 9, 2026)
 
 Proposals and Home Recent proposals share the four existing action slots. Edit uses Lucide square-pen and Countersign uses pen-tool, with the same borderless icon treatment and tooltip as the other actions. Desktop targets and empty slots are 40px; tablet and phone cards and touch targets use 44px. The Countersign button only opens the existing record sheet and respects the existing signer permissions. Edit on an archived unsigned proposal still unarchives before opening the editor.
+
+### Redesign 21 B: workspace setup and empty states (Nov 9, 2026)
+
+Keep the Redesign 19 Home layout at every stage. The pipeline and Expiring this week remain first, with a full-width surface for setup between them and Needs your attention. Recent proposals keeps its shared table. The only filled Home action is New proposal. Staff see What you can do in the same slot; they cannot change workspace setup. Home does not show sample templates.
+
+Setup reflects saved state: a workspace logo or logo icon (the built-in fonts are valid); an active designated company signatory with a stored signature; a sending domain with the email transport configured; the platform Stripe connection or a completed Stripe Connect setup; and a connected QuickBooks company or an explicit decision to record invoices by hand. Optional steps reflect a pending invitation or a second active team member, an active Claude grant, and an imported Proposify proposal. The checklist does not add any Send readiness checks. Choosing manual invoicing uses the existing manual invoice-number action for future disconnected QuickBooks jobs that have no invoice yet. A connected company still handles invoices; an existing external invoice still requires reconnection. Stripe and the signature gates are unchanged.
+
+When the five needed steps are done, Show opens the details and Dismiss hides the summary in that browser for that member and workspace. Incomplete required setup is always visible to super admins. Workspace 1 only shows the owner checklist when a required step is incomplete; an optional step alone never makes it appear.
+
+New workspaces get three editable Sample templates with no preset prices: Website proposal, Care plan, and Monthly retainer. They appear in Studio beside the existing read-only starter library. A super admin can delete a sample without touching existing proposals or library starters. The insert trigger applies before deploy and never backfills existing workspaces, including workspace 1. Empty states and inline filtered messages use the shared card or table surface.

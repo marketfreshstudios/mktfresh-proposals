@@ -21,6 +21,8 @@ import { defaultCover, contentAfterCover } from "../lib/cover";
 import { defaultTemplateBands } from "../lib/page-bands";
 import { fontCss } from "../lib/proposal-fonts";
 import { api, post, Button, Empty, Banner } from "./ui";
+import { confirmDialog } from "./dialog-actions";
+import { withCount } from "../lib/count-label";
 import { TemplateWarnings } from "./template-warnings";
 const blockType = (b: Block) =>
   b.type === "contract"
@@ -152,9 +154,33 @@ export function StudioTemplateList({
       setBusy(false);
     }
   }
+  async function deleteSample(template: Template) {
+    if (
+      !(await confirmDialog({
+        title: `Delete “${template.name}”?`,
+        description:
+          "This removes the sample from Templates. Existing proposals keep their content.",
+        confirmLabel: "Delete sample",
+        cancelLabel: "Cancel",
+        destructive: true,
+      }))
+    )
+      return;
+    try {
+      await api(`/api/templates/${template.id}`, { method: "DELETE" });
+      await refreshTemplates();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete sample.");
+    }
+  }
+  const sampleCount = templates.filter((t) => t.sample).length;
   const matchingTemplates = templates
     .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => (a.starter_order ?? 999) - (b.starter_order ?? 999));
+    .sort(
+      (a, b) =>
+        Number(!!b.sample) - Number(!!a.sample) ||
+        (a.starter_order ?? 999) - (b.starter_order ?? 999),
+    );
   return (
     <div className="studio-v3-list">
       <div className="studio-list-intro">
@@ -216,6 +242,12 @@ export function StudioTemplateList({
               attorney review them before you use them.
             </p>
           )}
+          {sampleCount > 0 && (
+            <p className="staff-surface staff-surface-note">
+              {withCount(sampleCount, "sample template")} to start from. Edit or
+              delete the samples as needed. They have no preset prices.
+            </p>
+          )}
           <style>{fontCss(data.settings)}</style>
           <div className="studio-template-grid">
             {matchingTemplates.map((t) => (
@@ -237,6 +269,7 @@ export function StudioTemplateList({
                       {t.starter_key && (
                         <span className="starter-pill">Starter</span>
                       )}
+                      {t.sample && <span className="starter-pill">Sample</span>}
                     </div>
                     {t.source_starter_key && (
                       <p className="starter-source">
@@ -287,11 +320,18 @@ export function StudioTemplateList({
                     </small>
                   </div>
                 </a>
-                {(t.starter_key || t.connector_restore_event_id) && (
+                {(t.starter_key ||
+                  t.connector_restore_event_id ||
+                  t.sample) && (
                   <StarterCardMenu
                     template={t}
                     owner={data.user.staff_role === "owner"}
                     onChanged={refreshTemplates}
+                    onDelete={
+                      t.sample && data.user.staff_role === "owner"
+                        ? () => void deleteSample(t)
+                        : undefined
+                    }
                   />
                 )}
               </div>
