@@ -19,6 +19,7 @@ Kept from Redesign 15 · 1a: the Home layout (ink pipeline card) and the calm ed
 - `specs/tokens.css` — the design tokens (light and dark).
 - `specs/README.md` — the updated overall build spec (supersedes `design/redesign/specs/README.md`).
 - `specs/editor-v2.md` — updated editor spec (supersedes `design/editor-v2/specs/editor-v2.md`).
+- `Redesign 20 - Column Styles.dc.html` and `specs/column-styles.md` — column styling moves from the modal into Styles › Selection, plus copy/paste style (frames 1a–1f). Follows the Redesign 19 rules.
 - `specs/table-action-icons.json` — Lucide icons for the Proposals table row actions.
 - `Redesign 18 - All Desktop Screens.dc.html` — every desktop screen at 1440 (frames A1–F7), superseded by Redesign 19.
 - `Redesign 16 - Reports.dc.html` — Reports at 1440, empty, 1024 and 375.
