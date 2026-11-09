@@ -890,6 +890,14 @@ Section time uses the existing engagement aggregates, grouped by section label. 
 - The Sections header and list use the same surface, with the collapse control inset. The page sortable keeps a fixed-height end drop area so showing the hint cannot move later targets. “Move to end of page N” is visible during section dragging only, with no idle action or keyboard stop.
 - Round icon controls share a single size for both axes. In-column insert controls move inside the frame. Where a column has enough padding they stack in that gutter, and compact columns use a short row along the inner edge. Editor chrome stays outside the measured document content.
 
+## Final Own It Over Time terms (9 Nov)
+
+- MarketFresh’s clause 4.4 uses the approved 18-month term and 30-payment step-down wording. It appears when the Own It Over Time monthly option is selected. Its bold run-in labels use a limited string format that remains part of the frozen clause. Other contract text stays plain.
+- Staff enter the kickoff as a one-time sub-line of the Own It Over Time option. This keeps it tied to the client’s choice. The website purchase price is a separate quote value for the terms and is never charged. Both values are required whenever the option is offered, even when Own It Now is the default. Readiness checks that purchase price equals kickoff plus $2,250 and that the existing 30-payment step-down is configured.
+- The kickoff still routes to QuickBooks, and Stripe retains the automatic $100 step-down after 30 paid monthly payments. The signed proposal record shows the two amounts and explains that staff handle early buyouts and add-on credits manually.
+- A client choice that changes whether clause 4.4 is visible uses the shared automatic page layout so the long clause can reflow. The accepted text and resolved amounts freeze with the signature.
+- Deploy the application before applying the data migration. It only updates the exact old draft clause in MarketFresh templates and never-sent drafts. It can repair the known legacy predicate to the synced Own It Over Time SKU, and reports drafts with customized clauses. The hosted read-only preflight found one matching template, Website design & build, and zero matching or customized unsent drafts.
+
 ## Redesign 20 column styles — 9 November 2026
 
 - Proposal and template editors share the Selection scope. Column tabs, layout, and box controls edit the existing document fields. The layout card stays open or closed for the editing session. Phone uses the editor’s bottom sheet and keeps border, corners, and stacking spacing under More options.
@@ -907,11 +915,3 @@ Section time uses the existing engagement aggregates, grouped by section label. 
 
 - The proposal and template sidebars project the active section into the resolved drop slot while dragging. Rows close up on the source page and make room on the destination page by the measured height of the section and its subheadings. The page-end target uses the same gap. The original drag handle stays mounted so keyboard focus and live announcements survive the move.
 - The preview and drop share the resolved target and edge. Hovering the center of a row on a different page inserts before that row. The upper and lower edges let the pointer choose a side, and keyboard moves keep their existing ordered targets. The preview is visual state, so Escape discards it and only a drop records one document edit.
-
-## Final Own It Over Time terms (9 Nov)
-
-- MarketFresh’s clause 4.4 uses the approved 18-month term and 30-payment step-down wording. It appears when the Own It Over Time monthly option is selected. Its bold run-in labels use a limited string format that remains part of the frozen clause. Other contract text stays plain.
-- Staff enter the kickoff as a one-time sub-line of the Own It Over Time option. This keeps it tied to the client’s choice. The website purchase price is a separate quote value for the terms and is never charged. Both values are required whenever the option is offered, even when Own It Now is the default. Readiness checks that purchase price equals kickoff plus $2,250 and that the existing 30-payment step-down is configured.
-- The kickoff still routes to QuickBooks, and Stripe retains the automatic $100 step-down after 30 paid monthly payments. The signed proposal record shows the two amounts and explains that staff handle early buyouts and add-on credits manually.
-- A client choice that changes whether clause 4.4 is visible uses the shared automatic page layout so the long clause can reflow. The accepted text and resolved amounts freeze with the signature.
-- Deploy the application before applying the data migration. It only updates the exact old draft clause in MarketFresh templates and never-sent drafts. It can repair the known legacy predicate to the synced Own It Over Time SKU, and reports drafts with customized clauses. The hosted read-only preflight found one matching template, Website design & build, and zero matching or customized unsent drafts.
