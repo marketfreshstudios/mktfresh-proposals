@@ -17,12 +17,16 @@ export function templateUsage(count: number) {
 export const emailStages = [
   { name: "Send", keys: ["proposal_sent"] },
   { name: "Follow up", keys: ["reminder_unopened", "reminder_viewed"] },
+  { name: "Questions", keys: ["question_reply"] },
   { name: "Sign", keys: ["signed_copy", "completed"] },
   {
     name: "Billing",
     keys: ["billing_setup", "billing_complete", "billing_updated"],
   },
-  { name: "Client activity", keys: ["staff_viewed", "staff_declined"] },
+  {
+    name: "Client activity",
+    keys: ["staff_viewed", "staff_declined", "staff_question"],
+  },
   {
     name: "Signatures",
     keys: [
@@ -57,6 +61,8 @@ export const emailWhen: Record<string, string> = {
   billing_setup: "After signing, if billing setup is still needed",
   billing_complete: "When the client finishes billing setup",
   billing_updated: "When items are added to an existing subscription",
+  question_reply: "When staff reply to a client question",
+  staff_question: "When a client asks a question",
   staff_viewed: "When the client opens a proposal",
   staff_declined: "When the client declines",
   staff_signed: "When the client signs",

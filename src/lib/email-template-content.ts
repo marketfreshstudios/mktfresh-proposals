@@ -55,6 +55,21 @@ export const emailDefaults = [
     "View proposal",
   ),
   def(
+    "question_reply",
+    "Proposal question reply",
+    "You have a reply to your proposal question",
+    "You have a reply from {{workspace.name}}. Open your secure proposal link to read it.",
+    "View reply",
+  ),
+  def(
+    "staff_question",
+    "New proposal question",
+    "New question on {{proposal.title}}",
+    "A client asked a question about {{proposal.title}}. Open the proposal record to read it and reply.",
+    "Open question",
+    true,
+  ),
+  def(
     "reminder_unopened",
     "Reminder · unopened",
     "Reminder: {{proposal.title}}",
@@ -313,7 +328,7 @@ export function validateEmailBody(body: RichText) {
   );
   return body;
 }
-export function validateTemplate(input: unknown) {
+export function validateTemplate(input: unknown, key?: string) {
   const t = z
     .object({
       subject: z
@@ -334,6 +349,23 @@ export function validateTemplate(input: unknown) {
     .parse(input);
   resolveEmailText(t.subject);
   validateEmailBody(t.body);
+  if (key === "question_reply") {
+    const allowed = new Set(["workspace.name", "sender.name"]);
+    const fields = (text: string) => {
+      for (const match of text.matchAll(/{{\s*([^{}]*?)\s*}}/g))
+        check(
+          allowed.has(match[1].trim()),
+          "Question replies can use Workspace name and Sender name only.",
+        );
+    };
+    const visit = (node: RichText) => {
+      if (node.type === "variable") fields(`{{${String(node.attrs?.path)}}}`);
+      if (node.text) fields(node.text);
+      for (const child of node.content ?? []) visit(child);
+    };
+    fields(t.subject);
+    visit(t.body);
+  }
   return t;
 }
 export function renderEmailBody(

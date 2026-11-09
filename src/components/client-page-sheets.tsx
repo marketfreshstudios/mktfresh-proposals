@@ -57,6 +57,7 @@ export function ClientPageSheets({
   busy = false,
   frozen = false,
   onToggle,
+  onAsk,
   onReady,
   onError,
 }: {
@@ -66,6 +67,7 @@ export function ClientPageSheets({
   busy?: boolean;
   frozen?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
+  onAsk?: (section: string) => void;
   onReady?: () => void;
   onError?: () => void;
 }) {
@@ -96,6 +98,7 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
+    onAsk,
     onReady,
     onError,
   });
@@ -107,6 +110,7 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
+    onAsk,
     onReady,
     onError,
   };
@@ -381,11 +385,43 @@ export function ClientPageSheets({
           frame.append(paper);
           frames.push(frame);
         });
+        const rightMargin = pageGeometry(
+          current.p.resolved_styles,
+          current.p.header_footer,
+          1,
+        ).margins.right;
         for (const [index, block] of current.p.content.entries()) {
           const node = output.root.querySelector<HTMLElement>(
             `[data-print-block="${CSS.escape(block.id ?? String(index))}"]`,
           );
-          if (node) node.id = `section-${index}`;
+          if (!node) continue;
+          node.id = `section-${index}`;
+          if (
+            !current.onAsk ||
+            block.type !== "heading" ||
+            (block.level ?? 1) !== 1 ||
+            rightMargin < 54
+          )
+            continue;
+          const paper = node.closest(".client-letter-sheet");
+          const heading = node.querySelector("h2");
+          if (!paper || !heading) continue;
+          // This link is a page-margin action. The frozen content never measures it.
+          const link = document.createElement("a");
+          link.href = "#ask-question";
+          link.className = "client-section-question";
+          link.textContent = "Ask about this";
+          link.setAttribute(
+            "aria-label",
+            `Ask about this: ${heading.textContent?.trim() || "Section"}`,
+          );
+          link.setAttribute("aria-haspopup", "dialog");
+          link.style.top = `${heading.getBoundingClientRect().top - paper.getBoundingClientRect().top}px`;
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            latest.current.onAsk?.(`section:${block.id ?? index}`);
+          });
+          paper.append(link);
         }
         // Prepare every new frame before exposing it, avoiding a zero-height
         // intermediate document and scrollbar-driven width oscillation.
@@ -457,7 +493,7 @@ export function ClientPageSheets({
   }, []);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-layout-change"));
-  }, [projection.key, frozen]);
+  }, [projection.key, frozen, !!onAsk]);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-controls-change"));
   }, [busy, frozen]);
@@ -483,4 +519,7 @@ const sheetCss = `
 .client-interactive-card{cursor:pointer}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid #365c4a;outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
+.client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;width:52px;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.client-section-question:hover{background:#eef3f3}.client-section-question:focus-visible{outline:2px solid #365c4a;outline-offset:1px}
+@media print{.client-section-question{display:none}}
 `;

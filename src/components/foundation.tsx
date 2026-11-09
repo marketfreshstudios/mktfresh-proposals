@@ -29,6 +29,7 @@ export function Sheet({
   menu = false,
   anchor,
   className = "",
+  surface = "staff",
 }: {
   title: string;
   onClose: () => void;
@@ -36,13 +37,18 @@ export function Sheet({
   menu?: boolean;
   anchor?: HTMLElement | null;
   className?: string;
+  surface?: "staff" | "client";
 }) {
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
   const [host, setHost] = useState<Element | null>(null);
   useEffect(() => {
-    setHost(document.querySelector(".staff-foundation") ?? document.body);
-  }, []);
+    setHost(
+      document.querySelector(
+        surface === "client" ? ".client-flow" : ".staff-foundation",
+      ) ?? document.body,
+    );
+  }, [surface]);
   useEffect(() => {
     if (!host) return;
     const dialog = ref.current!;

@@ -147,15 +147,15 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       await page.setViewportSize({ width, height: 1000 });
       await page.goto("/studio/emails");
       await expect(
-        page.getByRole("tab", { name: "Client emails · 8", exact: true }),
+        page.getByRole("tab", { name: "Client emails · 9", exact: true }),
       ).toBeVisible();
-      await expect(page.locator(".email-list-row")).toHaveCount(8);
+      await expect(page.locator(".email-list-row")).toHaveCount(9);
       await page
-        .getByRole("tab", { name: "Staff notifications · 10", exact: true })
+        .getByRole("tab", { name: "Staff notifications · 11", exact: true })
         .click();
-      await expect(page.locator(".email-list-row")).toHaveCount(10);
+      await expect(page.locator(".email-list-row")).toHaveCount(11);
       await page
-        .getByRole("tab", { name: "Client emails · 8", exact: true })
+        .getByRole("tab", { name: "Client emails · 9", exact: true })
         .click();
       await shot("emails-list", width, theme);
       if (width === 768) {
@@ -192,7 +192,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
             ? "You're invited"
             : template.key === "team_password_reset"
               ? "Choose a new password"
-              : "Your next project",
+              : template.key === "question_reply"
+                ? "A reply to your question"
+                : "Your next project",
         );
         await expect(frame.locator("a.email-cta")).toHaveCount(1);
         await expect(frame.locator("a[href]")).toHaveCount(0);

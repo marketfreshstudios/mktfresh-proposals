@@ -317,18 +317,18 @@ test("template cards show cropped Letter sheets with resolved titles at every wi
   await expect(page).toHaveURL(`/studio/templates/${templates[0].id}`);
 });
 
-test("Studio v3 route lists, ten staff emails and Workspace autosave keep values on error", async ({
+test("Studio v3 route lists, eleven staff emails and Workspace autosave keep values on error", async ({
   page,
 }) => {
   const f = await fixture(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/emails");
   await expect(
-    page.getByRole("tab", { name: "Client emails · 8" }),
+    page.getByRole("tab", { name: "Client emails · 9" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 11" }).click();
   const list = page.locator(".studio-v3-emails");
-  await expect(list.locator(".email-list-row")).toHaveCount(10);
+  await expect(list.locator(".email-list-row")).toHaveCount(11);
   for (const label of [
     "Client activity",
     "Signatures",
@@ -550,7 +550,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
         page.getByText("3 templates · 9 saved blocks", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText("8 client emails · 0 edited", { exact: true }),
+        page.getByText("9 client emails · 0 edited", { exact: true }),
       ).toBeVisible();
       for (const status of await page.locator(".studio-home-list small").all())
         await expect(status).toHaveCSS("white-space", "nowrap");
@@ -585,7 +585,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
   await expect(page.getByLabel("Family name")).toHaveValue(family.name);
   await capture(page, "03-product-custom-1440");
   await page.goto("/studio/emails");
-  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 11" }).click();
   await capture(page, "02b-staff-emails-1440");
   await page
     .locator(".sidebar")
@@ -646,10 +646,10 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await expect(
     page.locator('.studio-email-subject [data-field="proposal.title"]').first(),
   ).toHaveText("Proposal title");
-  await page.getByRole("tab", { name: "Staff notifications · 10" }).click();
+  await page.getByRole("tab", { name: "Staff notifications · 11" }).click();
   await expect(
     page.locator(".studio-email-edited").filter({ hasText: "Read-only" }),
-  ).toHaveCount(7);
+  ).toHaveCount(8);
   const group = page.locator(".studio-email-stage").first();
   const title = await group.locator("h2").boundingBox(),
     card = await group.locator(".studio-email-rows").boundingBox();

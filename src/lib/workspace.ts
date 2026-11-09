@@ -60,6 +60,7 @@ export const WorkspaceSettingsSchema = z.object({
     .regex(/^$|^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/)
     .default(""),
   consent_text: z.string().min(20).max(10000),
+  question_notify_admins: z.boolean().optional(),
   engagement_notifications: z
     .object({ in_app: z.boolean(), email: z.boolean() })
     .strict()

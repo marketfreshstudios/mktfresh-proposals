@@ -108,9 +108,9 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/emails");
   await page
-    .getByRole("tab", { name: "Staff notifications · 10", exact: true })
+    .getByRole("tab", { name: "Staff notifications · 11", exact: true })
     .click();
-  await expect(page.locator(".email-list-row")).toHaveCount(10);
+  await expect(page.locator(".email-list-row")).toHaveCount(11);
   await expect(
     page.getByRole("link", { name: /Countersign reminder/ }),
   ).toBeVisible();

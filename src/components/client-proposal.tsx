@@ -1,6 +1,8 @@
 "use client";
+import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
+import { blockText } from "../lib/editor-document";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
 import { Disclosure } from "./ui";
@@ -178,6 +180,13 @@ function NewClientFlow({
   const [readSection, setReadSection] = useState<number | null>(null);
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
+  const [questionSection, setQuestionSection] = useState<string | null>(null);
+  const canAsk =
+    !!p &&
+    !preview &&
+    ["sent", "viewed"].includes(p.status) &&
+    !signed &&
+    !stale;
   const recurring =
     !!p &&
     quoteSublines(p.quote as QuoteItem[]).some(
@@ -1184,6 +1193,7 @@ function NewClientFlow({
                   frozen={stale}
                   busy={busy}
                   onToggle={toggle}
+                  onAsk={canAsk ? setQuestionSection : undefined}
                 />
                 <aside
                   className="flow-choices"
@@ -1206,14 +1216,25 @@ function NewClientFlow({
                         <ChosenItems proposal={p} />
                       </div>
                       <FlowTotals proposal={p} />
-                      <Button
-                        variant="primary"
-                        disabled={busy}
-                        note={busy ? "Saving your selection…" : undefined}
-                        onClick={() => go("sign")}
+                      <div
+                        className={
+                          canAsk ? "flow-review-actions" : "flow-review-sign"
+                        }
                       >
-                        Review and sign
-                      </Button>
+                        {canAsk && (
+                          <Button onClick={() => setQuestionSection("")}>
+                            Ask a question
+                          </Button>
+                        )}
+                        <Button
+                          variant="primary"
+                          disabled={busy}
+                          note={busy ? "Saving your selection…" : undefined}
+                          onClick={() => go("sign")}
+                        >
+                          Review and sign
+                        </Button>
+                      </div>
                       {p.valid_until && (
                         <small className="flow-desktop-choices">
                           Valid until {readableDate(p.valid_until, p.timezone)}
@@ -1281,6 +1302,15 @@ function NewClientFlow({
               </>
             )}
           </>
+        )}
+        {p && !preview && !ended && !locked && step !== "sign" && (
+          <ClientQuestions
+            proposal={p}
+            token={token}
+            password={password}
+            requested={questionSection}
+            close={() => setQuestionSection(null)}
+          />
         )}
         <Contact
           name={contact.name}
@@ -1435,6 +1465,7 @@ function FlowDocument(props: {
   frozen?: boolean;
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
+  onAsk?: (section: string) => void;
 }) {
   const [desktop, setDesktop] = useState(false);
   const [layoutFailed, setLayoutFailed] = useState(false);
@@ -1491,6 +1522,7 @@ function FlowingDocument({
   frozen = false,
   busy = false,
   onToggle,
+  onAsk,
 }: {
   logo?: string;
   logoIcon?: string;
@@ -1498,6 +1530,7 @@ function FlowingDocument({
   frozen?: boolean;
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
+  onAsk?: (section: string) => void;
 }) {
   const listRoot = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -1595,6 +1628,26 @@ function FlowingDocument({
                 proposal={p}
                 role={block.role ?? "client"}
               />
+            </div>
+          ) : onAsk && block.type === "heading" && (block.level ?? 1) === 1 ? (
+            <div
+              id={`section-${index}`}
+              key={index}
+              {...blockProps(block, index)}
+              className="flow-section-question"
+            >
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: renderBlocks([block], [], p.variables),
+                }}
+              />
+              <Button
+                variant="ghost"
+                aria-label={`Ask about this: ${resolve(blockText(block), p.variables) || "Section"}`}
+                onClick={() => onAsk(`section:${block.id ?? index}`)}
+              >
+                Ask about this
+              </Button>
             </div>
           ) : (
             <div

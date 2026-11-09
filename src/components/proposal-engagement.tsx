@@ -77,7 +77,7 @@ export function ProposalEngagement({
       {error && <p role="alert">{error}</p>}
       {!report ? (
         <p role="status">Loading engagement…</p>
-      ) : !report.views && !report.downloads ? (
+      ) : !report.views && !report.downloads && !report.questions ? (
         <div className="engagement-empty">
           <h3>
             {report.first_viewed_at
@@ -125,6 +125,12 @@ export function ProposalEngagement({
               <dt>PDF downloads</dt>
               <dd>{report.downloads}</dd>
             </div>
+            {!!report.questions && (
+              <div>
+                <dt>Questions asked</dt>
+                <dd>{report.questions}</dd>
+              </div>
+            )}
           </dl>
           {report.last_viewed_at && (
             <p className="engagement-last">

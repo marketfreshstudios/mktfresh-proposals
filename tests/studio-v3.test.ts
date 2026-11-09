@@ -64,10 +64,10 @@ describe("Studio v3 existing data and routes", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("lists exactly ten staff emails in the owner-approved groups without duplicating job failures", () => {
+  it("lists exactly eleven staff emails in the owner-approved groups without duplicating job failures", () => {
     const groups = groupedEmails(emailDefaults, true);
     expect(groups.map((g) => [g.name, g.templates.map((t) => t.key)])).toEqual([
-      ["Client activity", ["staff_viewed", "staff_declined"]],
+      ["Client activity", ["staff_viewed", "staff_declined", "staff_question"]],
       [
         "Signatures",
         [
@@ -83,10 +83,10 @@ describe("Studio v3 existing data and routes", () => {
         ["staff_billing_failed", "team_invite", "team_password_reset"],
       ],
     ]);
-    expect(groups.flatMap((g) => g.templates)).toHaveLength(10);
+    expect(groups.flatMap((g) => g.templates)).toHaveLength(11);
     expect(
       groupedEmails(emailDefaults, false).flatMap((g) => g.templates),
-    ).toHaveLength(8);
+    ).toHaveLength(9);
   });
   it("never labels a test connection as live", () => {
     expect(stripeStatus({ stripe: true, mock: false, mode: "test" })).toBe(

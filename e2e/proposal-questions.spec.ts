@@ -1,0 +1,292 @@
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import { setup } from "../tests/helpers";
+import type { EmailLog } from "../src/lib/email-templates";
+import type { Proposal } from "../src/lib/model";
+
+const staff = { Authorization: "Bearer e2e-staff-secret-only" };
+const client = { Origin: "http://127.0.0.1:3100" };
+const shots = "docs/screenshots/proposal-questions";
+async function capture(page: Page, name: string) {
+  if (process.env.CAPTURE_QUESTIONS !== "1") return;
+  mkdirSync(shots, { recursive: true });
+  await page.screenshot({
+    path: `${shots}/${name}.png`,
+    animations: "disabled",
+  });
+}
+
+async function sent(
+  request: APIRequestContext,
+  title: string,
+  password?: string,
+) {
+  const { settings } = await setup();
+  const uid = () => crypto.randomUUID();
+  const clientId = uid(),
+    template = uid(),
+    item = uid(),
+    scope = uid();
+  for (const [path, data] of [
+    ["workspace_settings", settings],
+    [
+      "clients",
+      {
+        id: clientId,
+        company: `Acme ${clientId.slice(0, 6)}`,
+        first_name: "Jane",
+        last_name: "Doe",
+        email: `jane-${clientId}@example.test`,
+      },
+    ],
+    [
+      "pricing_items",
+      {
+        id: item,
+        sku: `scope-${item}`,
+        name: "Project planning",
+        amount: 275000,
+        interval: "one_time",
+        qbo_item_ref: "mock-planning",
+      },
+    ],
+    [
+      "templates",
+      {
+        id: template,
+        name: `Q&A fixture ${title}`,
+        active: true,
+        content: [
+          { id: scope, type: "heading", text: "Scope", level: 1 },
+          {
+            id: uid(),
+            type: "paragraph",
+            text: "A clear plan for the first milestone, followed by a review of the work together.",
+          },
+          { id: uid(), type: "pricing_table" },
+          { id: uid(), type: "signature_block", role: "client" },
+          { id: uid(), type: "signature_block", role: "company" },
+        ],
+        default_quote: [
+          { pricing_item_id: item, qty: 1, optional: false, selected: true },
+        ],
+      },
+    ],
+  ] as const) {
+    const response = await request.post(`/api/${path}`, {
+      headers: staff,
+      data,
+    });
+    expect(response.ok(), await response.text()).toBe(true);
+  }
+  const creation = await request.post("/api/proposals", {
+    headers: staff,
+    data: { client_id: clientId, template_id: template, title },
+  });
+  expect(creation.status(), await creation.text()).toBe(201);
+  const p: Proposal = await creation.json();
+  const response = await request.post(`/api/proposals/${p.id}/send`, {
+    headers: staff,
+    data: {
+      revision: p.revision,
+      delivery_method: "manual",
+      ...(password ? { password } : {}),
+      pagination: {
+        format: 1,
+        pages: 2,
+        starts: [
+          {
+            page: 2,
+            block: scope,
+            marker: p.content[0].id,
+            explicit: true,
+            offset: 0,
+          },
+        ],
+      },
+    },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return { p: (await response.json()) as Proposal, scope };
+}
+
+test("client question reaches staff, receives a plain-text reply on the same link, and leaves review and signing intact", async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const { p, scope } = await sent(request, "Website project");
+  const clientUrl = `/p/${p.token}`,
+    staffUrl = `/proposals/${p.id}`;
+  const log = async () =>
+    (await (
+      await request.get(`/api/proposals/${p.id}/emails`, { headers: staff })
+    ).json()) as EmailLog[];
+  await page.goto(clientUrl);
+  await expect(
+    page.getByRole("button", { name: "Ask a question", exact: true }),
+  ).toBeVisible();
+  await capture(page, "client-ask-1440");
+  await page
+    .getByRole("link", { name: "Ask about this: Scope", exact: true })
+    .click();
+  const form = page.getByRole("dialog", { name: "Ask a question" });
+  await expect(
+    form.getByRole("combobox", { name: "Section", exact: true }),
+  ).toHaveValue(`section:${scope}`);
+  await expect(form.getByLabel("Your email")).toHaveCount(0);
+  const text = process.env.CAPTURE_QUESTIONS
+    ? "Can we review the first milestone together before moving to the next phase?"
+    : "Can we review the first milestone? <img src=x onerror=alert(1)>";
+  await form.getByLabel("Your question", { exact: true }).fill(text);
+  await form
+    .getByRole("button", { name: "Send question", exact: true })
+    .click();
+  const questions = page.getByRole("region", { name: "Your questions" });
+  await expect(questions.getByText(text, { exact: true })).toBeVisible();
+  await expect(questions.locator("img")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Review and sign", exact: true }),
+  ).toBeEnabled();
+  await expect
+    .poll(
+      async () =>
+        (await log()).filter(
+          (e) => e.snapshot.template_key === "staff_question",
+        ).length,
+    )
+    .toBe(1);
+  expect(
+    (await log()).find((e) => e.snapshot.template_key === "staff_question")
+      ?.snapshot.to,
+  ).toBe("staff@example.test");
+  await page.goto("/proposals");
+  await expect(
+    page.getByText("New client question · 1 open question", { exact: true }),
+  ).toBeVisible();
+  await capture(page, "proposals-badge-1440");
+  await page.goto(staffUrl);
+  const panel = page.getByRole("region", { name: "Questions", exact: true });
+  await expect(
+    panel.getByText("New client question", { exact: true }),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "Reply", exact: true }).click();
+  await panel
+    .getByLabel("Your reply")
+    .fill(
+      "Yes. We’ll set up a call to review it and confirm the next phase together.",
+    );
+  await capture(page, "staff-questions-1440");
+  await panel.getByRole("button", { name: "Send reply", exact: true }).click();
+  await expect(panel.getByText("Answered", { exact: true })).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        (await log()).filter(
+          (e) => e.snapshot.template_key === "question_reply",
+        ).length,
+    )
+    .toBe(1);
+  const reply = (await log()).find(
+    (e) => e.snapshot.template_key === "question_reply",
+  )!.snapshot;
+  expect(reply.to).toBe(p.client.email);
+  expect(reply.button_label).toBe("View reply");
+  expect(reply.text).not.toMatch(/2750|\$|milestone/);
+  expect(new URL(reply.button_url).pathname).toBe(clientUrl);
+  await page.goto(reply.button_url);
+  await expect(questions.getByText(/set up a call to review/)).toBeVisible();
+  await capture(page, "client-reply-1440");
+  await page.setViewportSize({ width: 375, height: 850 });
+  await page
+    .getByRole("button", { name: "Ask a question", exact: true })
+    .click();
+  await expect(form.getByLabel("Your question", { exact: true })).toBeVisible();
+  await form
+    .getByLabel("Your question", { exact: true })
+    .fill("Can we make the review call in the morning?");
+  await capture(page, "client-ask-375");
+  await form.getByRole("button", { name: "Cancel", exact: true }).click();
+  const stored: Proposal = await (
+    await request.get(`/api/proposals/${p.id}`, { headers: staff })
+  ).json();
+  expect(stored.versions.map((v) => v.content_hash)).toEqual(
+    p.versions.map((v) => v.content_hash),
+  );
+  expect(stored.revision).toBe(p.revision);
+  expect(stored.first_viewed_at).toBeNull();
+});
+
+test("question endpoints honor passwords, the hourly limit, proposal isolation, and closed links", async ({
+  request,
+}) => {
+  const { p } = await sent(request, "Protected proposal", "test-password");
+  const url = `/api/public/${p.token}/questions`;
+  const headers = { ...client, "x-proposal-password": "test-password" };
+  expect((await request.get(url, { headers: client })).status()).toBe(401);
+  expect(
+    (
+      await request.post(url, {
+        headers: client,
+        data: { id: crypto.randomUUID(), text: "Question" },
+      })
+    ).status(),
+  ).toBe(401);
+  const body = { id: crypto.randomUUID(), text: "Private question" };
+  expect((await request.post(url, { headers, data: body })).status()).toBe(201);
+  expect((await request.post(url, { headers, data: body })).status()).toBe(201);
+  const { p: other } = await sent(request, "Other proposal");
+  expect(
+    await (await request.get(`/api/public/${other.token}/questions`)).json(),
+  ).toMatchObject({ threads: [] });
+  expect(
+    (
+      await request.post(`/api/proposals/${other.id}/questions/${body.id}`, {
+        headers: staff,
+        data: { action: "resolve" },
+      })
+    ).status(),
+  ).toBe(404);
+  for (let i = 0; i < 9; i++)
+    expect(
+      (
+        await request.post(url, {
+          headers,
+          data: { ...body, id: crypto.randomUUID() },
+        })
+      ).status(),
+    ).toBe(201);
+  const limited = await request.post(url, {
+    headers,
+    data: { ...body, id: crypto.randomUUID() },
+  });
+  expect(limited.status()).toBe(429);
+  expect(limited.headers()["retry-after"]).toBe("3600");
+  const declined = await request.post(`/api/public/${p.token}/decline`, {
+    headers,
+    data: {},
+  });
+  expect(declined.ok(), await declined.text()).toBe(true);
+  expect((await request.get(url, { headers })).status()).toBe(410);
+  expect(
+    (
+      await request.post(url, {
+        headers,
+        data: { ...body, id: crypto.randomUUID() },
+      })
+    ).status(),
+  ).toBe(410);
+  const result = await (
+    await request.get(`/api/proposals/${p.id}/questions`, { headers: staff })
+  ).json();
+  expect(result).toMatchObject({
+    can_reply: false,
+    threads: expect.any(Array),
+  });
+  expect(result.threads).toHaveLength(10);
+});
