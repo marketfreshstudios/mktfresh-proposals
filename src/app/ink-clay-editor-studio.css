@@ -119,6 +119,10 @@
   color: var(--ink);
   border-radius: var(--radius-card);
 }
+.ink-clay .quote-panel .quote-row-caption strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .ink-clay .quote-row-amount {
   font-variant-numeric: tabular-nums;
 }
