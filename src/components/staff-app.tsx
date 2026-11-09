@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableEmpty, StaffNativeTable } from "./staff-table";
 import { Select } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
@@ -400,7 +401,7 @@ function StaffAppContent({
         <ReportProposalList data={data} drill={drill} filters={reportFilters} />
       );
     } else if (section === "proposals") {
-      subtitle = `${data.total} proposals`;
+      subtitle = withCount(data.total, "proposal");
       headerAction = (
         <div className="actions">
           <a className="btn" href="/reports">

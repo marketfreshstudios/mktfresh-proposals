@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ProviderMark } from "./provider-brand";
 import { chromeIcons } from "./staff-icons";
@@ -386,7 +387,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
                 </span>
                 <span>
                   {i.schedule
-                    ? `${i.schedule.after_paid_invoices} payments, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
+                    ? `${withCount(i.schedule.after_paid_invoices, "payment")}, then ${money(i.schedule.then.amount, data.settings?.currency)}/mo`
                     : "—"}
                   {i.min_term_months && (
                     <small>{i.min_term_months}-month minimum</small>
@@ -833,7 +834,7 @@ function CatalogItem({
             {minimum && <p>{minimum}-month minimum commitment.</p>}
             {count && (
               <p>
-                After {count} paid invoices:{" "}
+                After {withCount(Number(count), "paid invoice")}:{" "}
                 {money(Math.round(Number(then || 0) * 100))} per recurring
                 period.
               </p>
@@ -1354,7 +1355,7 @@ function TemplatesStudioContent({
     if (
       !(await confirmDialog({
         title: `Delete block “${value.name}”?`,
-        description: `Used in ${value.used_in?.templates.length ?? 0} linked templates. Removes it from Saved blocks and unlinks those copies. Copies already in templates and proposals stay as they are.`,
+        description: `Used in ${withCount(value.used_in?.templates.length ?? 0, "linked template")}. Removes it from Saved blocks and unlinks those copies. Copies already in templates and proposals stay as they are.`,
         confirmLabel: "Delete block",
         cancelLabel: "Cancel",
         destructive: true,
@@ -3623,7 +3624,7 @@ export function ConnectionsStudio({
               ? "Sandbox configured"
               : "Setup needed",
       line: "One-time invoices stay in review until a sandbox connection is ready.",
-      detail: `${data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length} proposals with invoices to review`,
+      detail: `${withCount(data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length, "proposal")} with invoices to review`,
       action:
         qbo?.state === "reconnect"
           ? "Reconnect QuickBooks"

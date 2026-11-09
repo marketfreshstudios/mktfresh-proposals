@@ -306,7 +306,7 @@ it("duplicate emails are offered safely and client deletion is staff-only, refer
     saveClient(repo, { ...c, id: randomUUID(), email: "NEW@example.test" }),
   ).rejects.toBeInstanceOf(DuplicateClient);
   await expect(repo.deleteClient(draft.client.id, staff)).rejects.toThrow(
-    "Has 1 proposals",
+    "Has 1 proposal — archive the proposal",
   );
   await expect(
     repo.deleteClient(c.id, { ...staff, actor: "ai:test" }),

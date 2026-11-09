@@ -113,7 +113,7 @@
   padding-block: var(--space-4);
 }
 .ink-clay .home-expiring,
-.ink-clay .home-attention-list:not(:empty) {
+.ink-clay .home-attention-list {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
@@ -139,6 +139,11 @@
 }
 .home-attention-list {
   overflow: hidden;
+}
+.home-attention-empty {
+  margin: 0;
+  padding: var(--space-5);
+  color: var(--ink-muted);
 }
 .home-attention-row:last-child,
 .ink-clay .home-expiring li:last-child a {

@@ -1,3 +1,4 @@
+import { withCount } from "./count-label";
 import {
   questionsReadable,
   questionsWritable,
@@ -36,6 +37,9 @@ import {
   type Template,
   type SavedBlock,
 } from "./model";
+const clientDeleteBlockedMessage = (count: number) =>
+  `Has ${withCount(count, "proposal")} — archive ${count === 1 ? "the proposal" : "them"} or keep the client`;
+
 export type EntityTable =
   | "email_templates"
   | "email_log"
@@ -690,11 +694,7 @@ export class MemoryRepository implements Repository {
     );
     if (!client) throw new AppError(404, "Client not found");
     const count = (await this.list()).filter((p) => p.client.id === id).length;
-    if (count)
-      throw new AppError(
-        409,
-        `Has ${count} proposals — archive them or keep the client`,
-      );
+    if (count) throw new AppError(409, clientDeleteBlockedMessage(count));
     this.catalog.get("clients")!.delete(id);
     await this.put("workspace_events", {
       id: crypto.randomUUID(),
@@ -976,11 +976,7 @@ export class LocalRepository extends MemoryRepository {
       const count = (await super.list()).filter(
         (p) => p.client.id === id,
       ).length;
-      if (count)
-        throw new AppError(
-          409,
-          `Has ${count} proposals — archive them or keep the client`,
-        );
+      if (count) throw new AppError(409, clientDeleteBlockedMessage(count));
       this.catalog.get("clients")!.delete(id);
       await super.put("workspace_events", {
         id: crypto.randomUUID(),
@@ -1576,7 +1572,10 @@ export class SupabaseRepository implements Repository {
     if (error)
       throw new AppError(
         error.code === "23503" ? 409 : error.code === "P0002" ? 404 : 400,
-        error.message,
+        error.code === "23503" &&
+          error.message === "Has 1 proposals — archive them or keep the client"
+          ? clientDeleteBlockedMessage(1)
+          : error.message,
       );
   }
   async get(id: string) {

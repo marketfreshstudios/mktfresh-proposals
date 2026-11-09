@@ -1,5 +1,6 @@
 "use client";
 
+import { withCount } from "../lib/count-label";
 import { StaffNativeTable } from "./staff-table";
 import { ChevronDown } from "lucide-react";
 import {
@@ -711,7 +712,7 @@ function Trend({
   const step = Math.ceil(max / 4),
     top = step * 4;
   const totals = report.trend.reduce((n, row) => n + row.signed, 0);
-  const summary = `${report.sent} sent and ${totals} client signatures across ${report.trend.length} ${report.trend.length === 1 ? "month" : "months"}.`;
+  const summary = `${report.sent} sent and ${withCount(totals, "client signature")} across ${report.trend.length} ${report.trend.length === 1 ? "month" : "months"}.`;
   const dataLink = (date: string, kind: "sent" | "signed", value: number) => (
     <a
       href={link({

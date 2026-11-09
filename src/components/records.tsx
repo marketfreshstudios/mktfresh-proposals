@@ -1,4 +1,5 @@
 "use client";
+import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ChevronDown } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
@@ -1426,16 +1427,13 @@ export function HomeV4({
           <h2 id="attention-title">Needs your attention</h2>
           <a href="/proposals">View all proposals</a>
         </header>
-        {attention.every((group) => !group.rows.length) && (
-          <div className="home-reference">
-            <h3>You’re all caught up.</h3>
-            <p>
-              Drafts to review, signatures to countersign and billing problems
-              will appear here.
-            </p>
-          </div>
-        )}
         <div className="home-attention-list">
+          {attention.every((group) => !group.rows.length) && (
+            <p className="home-attention-empty">
+              <strong>You’re all caught up.</strong> Drafts to review,
+              signatures to countersign and billing problems will appear here.
+            </p>
+          )}
           {attention.flatMap(({ kind, label, rows }) =>
             rows.map((p) => {
               const client = p.signers.find(
@@ -3324,7 +3322,8 @@ export function ClientsV4({
           </Button>
           {count > 0 && (
             <small id="client-delete-reason">
-              Has {count} proposals — archive them or keep the client
+              Has {withCount(count, "proposal")} — archive{" "}
+              {count === 1 ? "the proposal" : "them"} or keep the client
             </small>
           )}
         </DialogActions>

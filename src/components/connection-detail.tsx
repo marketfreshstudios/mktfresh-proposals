@@ -1,5 +1,6 @@
 "use client";
 
+import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead } from "./staff-table";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -225,8 +226,6 @@ const queueTitles: Record<Queue, string> = {
 };
 const proposalLink = (p: Proposal) => `/proposals/${p.id}`;
 const proposalLabel = (p: Proposal) => `${p.client.company} · ${p.title}`;
-const withCount = (count: number, singular: string, plural: string) =>
-  `${count} ${count === 1 ? singular : plural}`;
 
 export function BillingConnectionDetail({
   provider,

@@ -29,6 +29,8 @@ The [Home checklist](setup-checklist-1440.png) uses the same original marks.
 | --- | --- | --- |
 | ![Templates light](templates-light-1440.png) | ![Templates dark](templates-dark-1440.png) | ![Redesign 18 E1](reference-r18-e1.png) |
 
+![One template card at 2×](template-card-closeup.png)
+
 The owner's updated values take precedence over the older preview fill in the checked-in frame.
 
 | Part | Updated spec |

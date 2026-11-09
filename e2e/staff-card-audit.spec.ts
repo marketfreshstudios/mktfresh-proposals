@@ -156,6 +156,15 @@ test.describe("Staff content surfaces", () => {
     await page.goto("/");
     await table(page.locator(".proposal-rows.staff-table"));
     await surface(page.locator(".home-expiring"));
+    const attention = page.getByRole("region", {
+      name: "Needs your attention",
+    });
+    const attentionCard = attention.locator(".home-attention-list");
+    await surface(attentionCard);
+    await expect(attentionCard).toHaveCSS("border-top-width", "1px");
+    await expect(attentionCard).toHaveText(
+      "You’re all caught up. Drafts to review, signatures to countersign and billing problems will appear here.",
+    );
     await screenshot(page, "home-recent-1440");
 
     for (const view of listViews) {
@@ -165,6 +174,7 @@ test.describe("Staff content surfaces", () => {
     await screenshot(page, "proposals-empty-1440");
     await page.goto("/proposals?view=all");
     await table(page.locator(".proposal-rows.staff-table"));
+    await expect(page.getByText("1 proposal", { exact: true })).toBeVisible();
     await screenshot(page, "proposals-1440");
 
     await page.goto(`/proposals/${f.draft.id}?view=record`);
@@ -204,6 +214,20 @@ test.describe("Staff content surfaces", () => {
     for (const card of await page.locator(".report-card").all())
       await surface(card);
     await expect(page.locator(".report-card")).toHaveCount(6);
+
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.route("**/api/content_library", async (route) => {
+      const blocks = await f.repo.entities("content_library");
+      await route.fulfill({ json: blocks.slice(0, 1) });
+    });
+    await page.goto("/studio");
+    const studioNav = page.getByRole("navigation", {
+      name: "Studio navigation",
+    });
+    await expect(
+      studioNav.getByText("1 template · 1 saved block"),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 960 });
 
     await page.goto("/login");
     await surface(page.locator(".account-frame .card"));
