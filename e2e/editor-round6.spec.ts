@@ -47,7 +47,12 @@ async function ready(page: Page, template = false) {
     ),
   ).toHaveAttribute("data-approximate", "false");
 }
-async function drag(page: Page, from: Locator, to: Locator, after?: number) {
+async function drag(
+  page: Page,
+  from: Locator,
+  to: Locator,
+  aim?: number | "before" | "after",
+) {
   await from.scrollIntoViewIfNeeded();
   const a = (await from.boundingBox())!;
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
@@ -59,16 +64,52 @@ async function drag(page: Page, from: Locator, to: Locator, after?: number) {
   // Resolve the destination after scrolling during the drag, just as a pointer
   // user must. Measuring it before returning to the source produced offscreen drops.
   await to.evaluate((el) => el.scrollIntoView({ block: "center" }));
-  const b = (await to.boundingBox())!;
-  await page.mouse.move(
-    after !== undefined ? b.x - 20 : b.x + b.width / 2,
-    after !== undefined ? b.y + b.height + 8 : b.y + b.height / 2,
-    { steps: 24 },
-  );
-  if (after !== undefined)
-    await expect(
-      page.getByRole("status", { name: "Insert block here", exact: true }),
-    ).toHaveAttribute("data-drop-index", String(after));
+  if (typeof aim === "string") {
+    const row = to.locator("..");
+    const heading = row
+      .locator("xpath=ancestor::*[@data-outline-page]")
+      .locator(".outline-page-title");
+    const sidebar = page.getByRole("navigation", {
+      name: "Sections",
+      exact: true,
+    });
+    const b = (await heading.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    // Entering the page opens a gap and moves its rows. Aim at the painted
+    // section edge after that movement, then verify the gap before dropping.
+    await sidebar.evaluate(async (el) => {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      await Promise.allSettled(
+        el
+          .getAnimations({ subtree: true })
+          .map((animation) => animation.finished),
+      );
+    });
+    const live = (await row.boundingBox())!;
+    await page.mouse.move(
+      live.x + live.width / 2,
+      aim === "after" ? live.y + live.height - 3 : live.y + 3,
+    );
+    const gap = sidebar.locator("[data-section-drop-gap]");
+    await expect(gap).toHaveAttribute(
+      "data-section-drop-gap",
+      (await row.getAttribute("data-sortable-id"))!,
+    );
+    await expect(gap).toHaveAttribute("data-section-drop-edge", aim);
+  } else {
+    const b = (await to.boundingBox())!;
+    await page.mouse.move(
+      aim !== undefined ? b.x - 20 : b.x + b.width / 2,
+      aim !== undefined ? b.y + b.height + 8 : b.y + b.height / 2,
+      { steps: 24 },
+    );
+    if (aim !== undefined)
+      await expect(
+        page.getByRole("status", { name: "Insert block here", exact: true }),
+      ).toHaveAttribute("data-drop-index", String(aim));
+  }
   const scales = await page.locator(".quote-sortable").evaluateAll((els) =>
     els.map((el) => {
       const m = new DOMMatrix(getComputedStyle(el).transform);
@@ -135,12 +176,14 @@ test("Overview moves preserve every saved block and page marker through controls
     page,
     page.getByRole("button", { name: "Drag section Overview", exact: true }),
     page.getByRole("button", { name: "Drag section Acceptance", exact: true }),
+    "after",
   );
   await changed(blocks[4].id!, blocks[3].id!);
   await drag(
     page,
     page.getByRole("button", { name: "Drag section Acceptance", exact: true }),
     page.getByRole("button", { name: "Drag section Overview", exact: true }),
+    "before",
   );
   await changed(blocks[7].id!, blocks[6].id!);
   await drag(
