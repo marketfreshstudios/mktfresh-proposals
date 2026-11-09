@@ -94,6 +94,7 @@ export function TemplateHistoryControls({
         <button
           key={c.name}
           type="button"
+          className="round-icon"
           aria-label={c.name}
           title={c.title}
           disabled={c.disabled}

@@ -2972,13 +2972,14 @@
     background: var(--ai);
   }
   .sections-nav .outline-page-end {
-    min-height: 8px;
-  }
-  .sections-nav .outline-page-end[data-dragging] {
-    min-height: 28px;
+    /* Reserve the slot so showing its label cannot move later drop targets. */
+    height: 24px;
     display: grid;
     place-items: center;
-    border: 1px dashed var(--border-strong);
+    border: 1px dashed transparent;
+  }
+  .sections-nav .outline-page-end[data-dragging] {
+    border-color: var(--border-strong);
     color: var(--ink);
     background: var(--surface-sunken);
     font: 600 11px/16px var(--font-ui);
@@ -3827,6 +3828,7 @@
 
 .template-history-controls {
   display: none;
+  --round-icon-size: 36px;
 }
 @media (min-width: 700px) {
   .template-history-controls {
@@ -3839,12 +3841,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
-    padding: 0;
     border: 0;
-    border-radius: var(--radius-button);
     background: none;
     color: var(--ink-muted);
     font: 500 13px/18px var(--font-ui);
@@ -4934,10 +4931,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
     border: 0;
-    border-radius: var(--radius-button);
     background: none;
     color: var(--ink-muted);
   }
@@ -8737,9 +8731,8 @@ body:has(.studio-v3-editor) {
   .studio-saved-block-editor .studio-template-main {
     gap: 16px;
   }
-  .studio-phone-menu-actions .template-history-controls button {
-    width: 44px;
-    height: 44px;
+  .studio-phone-menu-actions .template-history-controls {
+    --round-icon-size: 44px;
   }
 }
 .studio-saved-block-editor .editor-save-status[data-state="dirty"] {
