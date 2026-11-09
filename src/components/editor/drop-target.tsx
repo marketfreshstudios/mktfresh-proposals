@@ -121,14 +121,19 @@ export function documentDropTarget(
   if (!sheet) return null;
   // Columns are new hit regions on the existing painted page. Drop edges
   // follow each column's child boxes and never change the sheet boundary.
-  const column = Array.from(
+  const columns = Array.from(
     paper.querySelectorAll<HTMLElement>(".editor-column[data-column-id]"),
-  ).find(
+  ).filter(
     (el) =>
       !el.closest("[data-page-measurement],[data-sheet-projection]") &&
-      !excluded.includes(el.dataset.columnsBlock!) &&
-      contains(el.getBoundingClientRect(), x, y),
+      !excluded.includes(el.dataset.columnsBlock!),
   );
+  const column =
+    columns.find((el) => contains(el.getBoundingClientRect(), x, y)) ??
+    columns.find((el) => {
+      const placeholder = el.querySelector(":scope > .column-drop-area");
+      return placeholder && contains(placeholder.getBoundingClientRect(), x, y);
+    });
   if (column) {
     const inside = {
       block: column.dataset.columnsBlock!,

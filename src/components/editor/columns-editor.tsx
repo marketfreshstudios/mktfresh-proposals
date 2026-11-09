@@ -148,7 +148,7 @@ export function ColumnsEditor({
         style={columnGridStyle(columns)}
       >
         {columns.items.map((c, n) => {
-          const spacing = documentSpacing(c.content, styles, 0);
+          const spacing = documentSpacing(c.content, styles, true);
           return (
             <div
               className="document-column editor-column"
@@ -331,6 +331,13 @@ export function ColumnsEditor({
                   </Sortable>
                 );
               })}
+              {onChange && !c.content.length && (
+                <span
+                  className="column-drop-area"
+                  data-editor-chrome
+                  aria-hidden="true"
+                />
+              )}
               {onChange && (
                 <div className="column-editor-actions" data-editor-chrome>
                   <Button

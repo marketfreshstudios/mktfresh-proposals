@@ -2,6 +2,8 @@ import { quoteTableCss } from "./quote-table";
 import { listMarkerCss } from "./list-markers";
 import { signatureCss } from "./signature-presentation";
 import { documentQuoteCss } from "./document-quote";
+import { blockContentCss } from "./block-style";
+import type { Block } from "./model";
 import { documentFlowCss } from "./document-spacing";
 import { z } from "zod";
 import {
@@ -250,8 +252,13 @@ export function textLineHeight(styles: ResolvedStyles, level: StyleLevel) {
         : 1.35;
 }
 /** Shared screen/print rules. Scope excludes the PDF completion certificate and app chrome. */
-export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
-  if (!styles) return "";
+export function documentStyleCss(
+  styles?: ResolvedStyles,
+  accent = "#365c4a",
+  content?: Block[],
+) {
+  const boxCss = blockContentCss(content);
+  if (!styles) return boxCss;
   const scope = ".proposal-typography.proposal-typography";
   const roots = [".document-reading", ".print-root", ".style-sample"];
   const selector = (level: StyleLevel) => {
@@ -307,6 +314,7 @@ export function documentStyleCss(styles?: ResolvedStyles, accent = "#365c4a") {
     listMarkerCss(
       scope,
       documentLayout(styles).density === "comfortable" ? ".4em" : ".25em",
-    )
+    ) +
+    boxCss
   );
 }

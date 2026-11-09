@@ -202,7 +202,7 @@ export async function sealedPdf(
     await page.setContent(
       htmlDocument(
         style +
-          `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour)}</style>` +
+          `<style>${printCss}${pageBandCss}${printPageCss(version.resolved_styles, version.header_footer)}${plannedPrintCss}${documentStyleCss(version.resolved_styles, brand?.settings?.accent_colour, version.content)}</style>` +
           printContent({
             cover: version.cover,
             legacyCover: version.cover === undefined,

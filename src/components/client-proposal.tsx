@@ -489,7 +489,7 @@ function NewClientFlow({
               ? `/api/workspace-fonts/${f.id}`
               : `/api/public/${token}/fonts/${f.id}`,
           )}
-          {documentStyleCss(p.resolved_styles, brand.accent_colour)}
+          {documentStyleCss(p.resolved_styles, brand.accent_colour, p.content)}
         </style>
       )}
       {preview && (
@@ -1517,11 +1517,17 @@ function FlowingDocument({
   const spaces = p.resolved_styles?.layout
     ? documentSpacing(content, p.resolved_styles)
     : {};
-  const spacing = (block: Block, n: number) =>
-    ({
-      "--block-space-before": `${spaces[block.id ?? String(n)] ?? 0}px`,
-      ...blockBoxStyle(block.style),
-    }) as CSSProperties;
+  const blockProps = (block: Block, n: number) => {
+    const box = blockBoxStyle(block.style);
+    return {
+      "data-document-block": block.id ?? n,
+      "data-block-box": box ? true : undefined,
+      style: {
+        "--block-space-before": `${spaces[block.id ?? String(n)] ?? 0}px`,
+        ...box,
+      } as CSSProperties,
+    };
+  };
   return (
     <article
       ref={listRoot}
@@ -1549,9 +1555,8 @@ function FlowingDocument({
           block.text === "{{proposal.title}}" ? null : block.type ===
             "pricing_table" ? (
             <section
-              data-document-block={block.id ?? index}
-              style={spacing(block, index)}
               key={index}
+              {...blockProps(block, index)}
               id={`section-${index}`}
             >
               <h2>Your investment</h2>
@@ -1572,8 +1577,7 @@ function FlowingDocument({
               key={index}
               id={`section-${index}`}
               className="flow-contract"
-              data-document-block={block.id ?? index}
-              style={spacing(block, index)}
+              {...blockProps(block, index)}
             >
               <h2>{block.text || "Statement of Work & Contract"}</h2>
               {(block.clauses ?? []).map((c) => (
@@ -1586,11 +1590,7 @@ function FlowingDocument({
               ))}
             </section>
           ) : block.type === "signature_block" ? (
-            <div
-              data-document-block={block.id ?? index}
-              style={spacing(block, index)}
-              key={index}
-            >
+            <div key={index} {...blockProps(block, index)}>
               <ClientSignatureBlock
                 proposal={p}
                 role={block.role ?? "client"}
@@ -1599,9 +1599,8 @@ function FlowingDocument({
           ) : (
             <div
               id={`section-${index}`}
-              data-document-block={block.id ?? index}
-              style={spacing(block, index)}
               key={index}
+              {...blockProps(block, index)}
               dangerouslySetInnerHTML={{
                 __html: renderBlocks(
                   [block],

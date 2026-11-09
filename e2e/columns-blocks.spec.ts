@@ -1,9 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { editorFixture } from "./editor-fixture";
 import { changeColumnLayout, createColumns } from "../src/lib/columns";
 import { ProposalService } from "../src/lib/service";
+import { printCss, printPageCss } from "../src/lib/document-print";
+import { plannedPrintCss } from "../src/lib/planned-print";
+import { documentStyleCss, resolveStyles } from "../src/lib/proposal-styles";
 import { staff } from "../tests/helpers";
 import type { Block, SavedBlock, Template } from "../src/lib/model";
 
@@ -161,7 +164,7 @@ for (const template of [false, true]) {
         {
           ...heading(id(), "Case study"),
           level: 2,
-          style: { background: "neutral", padding: "s" },
+          style: { background: "neutral" },
         },
         paragraph(
           id(),
@@ -193,12 +196,13 @@ for (const template of [false, true]) {
     await settled(paper);
     const first = paper.locator(`[data-column-id="${columns.items[0].id}"]`);
     const second = paper.locator(`[data-column-id="${columns.items[1].id}"]`);
-    await first.scrollIntoViewIfNeeded();
+    const emptyTarget = first.locator(".column-drop-area");
+    await emptyTarget.scrollIntoViewIfNeeded();
     await page.getByRole("tab", { name: "Blocks", exact: true }).click();
     const line = await drag(
       page,
       page.getByRole("menuitem", { name: group.name, exact: true }),
-      first,
+      emptyTarget,
     );
     await expect(line).toHaveAttribute("data-drop-column", columns.items[0].id);
     const lineBox = (await line.boundingBox())!,
@@ -239,7 +243,7 @@ for (const template of [false, true]) {
     const topHandle = topHeading
       .locator("xpath=..")
       .getByRole("button", { name: /^Drag block/ });
-    await expect(await drag(page, topHandle, first)).toHaveAttribute(
+    await expect(await drag(page, topHandle, emptyTarget)).toHaveAttribute(
       "data-drop-column",
       columns.items[0].id,
     );
@@ -291,16 +295,66 @@ for (const template of [false, true]) {
   });
 }
 
+/** Read line boxes, since headings and body text have different font ascenders. */
+const readColumnEdges = (box: Locator) =>
+  box.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const scale = rect.width / (element as HTMLElement).offsetWidth;
+    const css = getComputedStyle(element);
+    return {
+      height: rect.height / scale,
+      topInset: parseFloat(css.paddingTop) + parseFloat(css.borderTopWidth),
+      bottomInset:
+        parseFloat(css.paddingBottom) + parseFloat(css.borderBottomWidth),
+      columns: Array.from(
+        element.querySelectorAll(".document-column"),
+        (column) => {
+          const lines = Array.from(
+            column.querySelectorAll(
+              ".block-content > :is(h2,h3,h4),.block-content > .field-editor .tiptap > p,[data-column-block] > :is(h2,h3,h4,p)",
+            ),
+            (line) => line.getBoundingClientRect(),
+          );
+          return {
+            first: (lines[0].top - rect.top) / scale,
+            last: (lines.at(-1)!.bottom - rect.top) / scale,
+            bottom: (column.getBoundingClientRect().bottom - rect.top) / scale,
+            between: lines[1] ? (lines[1].top - lines[0].bottom) / scale : null,
+          };
+        },
+      ),
+    };
+  });
+function expectContentHeight(
+  edges: Awaited<ReturnType<typeof readColumnEdges>>,
+) {
+  for (const column of edges.columns) {
+    expect(Math.abs(column.first - edges.topInset)).toBeLessThanOrEqual(1);
+    expect(Math.abs(column.bottom - column.last)).toBeLessThanOrEqual(1);
+  }
+  expect(
+    Math.abs(
+      edges.height -
+        Math.max(...edges.columns.map((column) => column.last)) -
+        edges.bottomInset,
+    ),
+  ).toBeLessThanOrEqual(1);
+  // The heading's gap to the next block is still part of the column.
+  expect(edges.columns[0].between).toBeCloseTo(8.75, 0);
+}
 test("styled Columns share the frozen plan with PDF and desktop client and stack at 375", async ({
   page,
 }, testInfo) => {
   const columns = changeColumnLayout(createColumns(), "33-67");
   columns.items[0].content = [
-    heading("case-title", "Case study"),
-    paragraph(
-      "case",
-      "Local businesses are easier to find with a clear website.",
-    ),
+    { ...heading("case-title", "Case study"), style: { margin_above: "l" } },
+    {
+      ...paragraph(
+        "case",
+        "Local businesses are easier to find with a clear website.",
+      ),
+      style: { margin_below: "l" },
+    },
   ];
   columns.items[1].content = [
     paragraph(
@@ -309,7 +363,6 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
     ),
   ];
   columns.items[0].style = {
-    padding: "s",
     margin_above: "s",
     margin_below: "l",
   };
@@ -340,6 +393,8 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
   await expect(box).toHaveCSS("padding-top", "24px");
   await expect(box).toHaveCSS("border-top-width", "1px");
   await expect(box).toHaveCSS("background-color", "rgb(243, 240, 234)");
+  const editorEdges = await readColumnEdges(box);
+  expectContentHeight(editorEdges);
   await shot(page, "styled-block-editor-1440");
   await paper.locator('[data-block-id="block-columns"]').focus();
   await page
@@ -379,6 +434,37 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
       /background-color:\s*(?:#f3f0ea|rgb\(243, 240, 234\))/i.test(sheet.html),
     ),
   ).toBe(true);
+  const printSheet = pdf.layout.sheets!.find((sheet) =>
+    sheet.html.includes('data-print-kind="columns"'),
+  )!;
+  const pdfFragment = printSheet.fragments.find(
+    (fragment) => fragment.block === "columns",
+  )!;
+  // Inspect the same sheet HTML and Letter typography used by the PDF job.
+  const printPage = await page.context().newPage();
+  const styles = resolveStyles(
+    f.settings,
+    f.active().template_style_overrides,
+    f.active().style_overrides,
+  );
+  const font = readFileSync(
+    "public/fonts/SourceSerif4-Variable.woff2",
+  ).toString("base64");
+  await printPage.emulateMedia({ media: "print" });
+  await printPage.setContent(
+    `<style>@font-face{font-family:"Source Serif 4";src:url(data:font/woff2;base64,${font});font-weight:200 900}${printCss}${printPageCss(styles, f.active().header_footer)}${plannedPrintCss}${documentStyleCss(styles, f.settings.accent_colour, f.active().content)}</style>
+    <main class="print-root proposal-typography" data-current-layout="true" data-planned="true"><section class="print-sheet">${printSheet.html}</section></main>`,
+  );
+  await printPage.evaluate(() => document.fonts.ready);
+  const pdfEdges = await readColumnEdges(
+    printPage.locator('[data-print-kind="columns"]'),
+  );
+  expectContentHeight(pdfEdges);
+  expect(Math.abs(pdfEdges.height - pdfFragment.height)).toBeLessThanOrEqual(1);
+  expect(Math.abs(editorEdges.height - pdfFragment.height)).toBeLessThanOrEqual(
+    1,
+  );
+  await printPage.close();
   if (process.env.CAPTURE_COLUMNS) {
     const file = testInfo.outputPath("styled.pdf");
     mkdirSync(testInfo.outputDir, { recursive: true });
@@ -418,9 +504,7 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
   });
   await expect(clientGrid.locator("..")).toHaveCSS("padding-top", "24px");
   await expect(clientGrid).toHaveCSS("column-gap", "24px");
-  const pdfFragment = pdf.layout
-    .sheets!.flatMap((s) => s.fragments)
-    .find((fragment) => fragment.block === "columns")!;
+  expectContentHeight(await readColumnEdges(clientGrid.locator("..")));
   const clientHeight = await clientGrid
     .locator("..")
     .evaluate((node) => (node as HTMLElement).offsetHeight);

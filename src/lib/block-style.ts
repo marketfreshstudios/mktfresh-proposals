@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Block } from "./model";
 
 const hex = z.string().regex(/^#[\da-fA-F]{6}$/);
 const spacing = z.enum(["none", "s", "m", "l"]);
@@ -59,13 +60,43 @@ export const blockBoxCss = (style?: BlockStyle) =>
 export function columnBoxStyle(style?: BlockStyle) {
   return {
     display: "flow-root",
-    minHeight: "44px",
     ...blockBoxStyle(style),
     ...(style?.margin_above !== undefined
-      ? { marginTop: `${blockSpacing[style.margin_above]}px` }
+      ? { "--column-space-above": `${blockSpacing[style.margin_above]}px` }
       : {}),
     ...(style?.margin_below !== undefined
-      ? { marginBottom: `${blockSpacing[style.margin_below]}px` }
+      ? { "--column-space-below": `${blockSpacing[style.margin_below]}px` }
       : {}),
   };
+}
+
+/** Trim only the content edges of boxes. Inter-block spacing still comes from documentSpacing. */
+export function blockContentCss(content?: Block[]) {
+  if (
+    !content?.some(
+      (block) => block.type === "columns" || blockBoxStyle(block.style),
+    )
+  )
+    return "";
+  const box =
+    ".proposal-typography.proposal-typography.proposal-typography :is([data-block-box],.column-document-block,.editor-column .block-content)";
+  const parents = [
+    box,
+    `${box} > .field-editor > .field-editor-content > .tiptap`,
+    `${box} > :is(.editor-investment,.contract-editor,.contract)`,
+  ];
+  const edge = (child: "first" | "last") =>
+    parents
+      .map(
+        (parent) =>
+          `${parent} > :is(h2,h3,h4,p,ul,ol,blockquote,pre,hr):${child}-child`,
+      )
+      .join(",");
+  return `${edge("first")}{margin-top:0}${edge("last")}{margin-bottom:0}
+.flow-document .document-column:not(:first-child){margin-top:var(--column-space-above,0px)}
+.flow-document .document-column:not(:last-child){margin-bottom:var(--column-space-below,0px)}
+@media(max-width:699px){
+  .document-reading:not([data-page-measurement]) .editor-column:not(:first-child){margin-top:var(--column-space-above,0px)}
+  .document-reading:not([data-page-measurement]) .editor-column:not(:last-child){margin-bottom:var(--column-space-below,0px)}
+}`;
 }

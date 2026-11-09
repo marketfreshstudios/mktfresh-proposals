@@ -136,7 +136,13 @@ export function BlockStyleControls({
         </Select>
       </Field>
       {(["above", "below"] as const).map((edge) => (
-        <Field key={edge} label={`Margin ${edge}`}>
+        <Field
+          key={edge}
+          label={`Margin ${edge}`}
+          hint={
+            content && edge === "above" ? "Between stacked columns." : undefined
+          }
+        >
           <Select
             value={value[`margin_${edge}`] ?? ""}
             onChange={(e) =>

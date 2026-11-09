@@ -2205,6 +2205,7 @@ function TemplatesStudioContent({
                         {documentStyleCss(
                           templateStyles,
                           data.settings?.accent_colour,
+                          content,
                         )}
                       </style>
                       {mode === "templates" && (

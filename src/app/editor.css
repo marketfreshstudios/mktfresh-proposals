@@ -9100,9 +9100,13 @@ body:has(.studio-v3-editor) {
   position: relative;
   min-width: 0;
 }
-.editor-column[data-column-empty] {
+.column-drop-area {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 44px;
   outline: 1px dashed var(--border-strong);
   outline-offset: -1px;
+  pointer-events: none;
 }
 .column-editor-actions {
   position: absolute;

@@ -2776,6 +2776,7 @@ function QuoteEditorContent({
                         p.style_overrides,
                       ),
                       p.workspace_settings?.accent_colour,
+                      p.content,
                     )}
                   </style>
                   {p.content.length > 0 && (

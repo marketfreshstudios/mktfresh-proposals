@@ -41,6 +41,10 @@ test("block spacing replaces the matching style edge and retains pair-wise spaci
   blocks[0].style = { margin_below: "l" };
   blocks[1].style = { margin_above: "m" };
   expect(documentSpacing(blocks, styles).body).toBe(40);
+  expect(documentSpacing(blocks, styles, true)).toEqual({
+    heading: 0,
+    body: 40,
+  });
   blocks[0].style = { margin_below: "none" };
   expect(documentSpacing(blocks, styles).body).toBe(24);
   blocks[1].style = { margin_above: "none" };
@@ -80,19 +84,20 @@ test("background contrast checks use both actual colors", () => {
 
 test("an unstyled document keeps its exact pre-feature print source and CSS", () => {
   const styles = resolveStyles();
+  const content: Block[] = [
+    { id: "overview", type: "heading", text: "Overview" },
+    {
+      id: "intro",
+      type: "paragraph",
+      text: "This document has no block styles.",
+    },
+  ];
   const source = printContent({
     title: "Original proposal",
     company: "Client",
     sender: "Sender",
     validity: "",
-    content: [
-      { id: "overview", type: "heading", text: "Overview" },
-      {
-        id: "intro",
-        type: "paragraph",
-        text: "This document has no block styles.",
-      },
-    ],
+    content,
     quote: [],
     variables: {},
     currency: "USD",
@@ -102,6 +107,11 @@ test("an unstyled document keeps its exact pre-feature print source and CSS", ()
     planned: true,
   });
   expect(
-    sha256(printCss + printPageCss(styles) + documentStyleCss(styles) + source),
+    sha256(
+      printCss +
+        printPageCss(styles) +
+        documentStyleCss(styles, undefined, content) +
+        source,
+    ),
   ).toBe("a7e4ecd9eece557aa49ea277432c2ea8de163e59116fb2df7e40e023df45a4f3");
 });

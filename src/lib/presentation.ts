@@ -191,7 +191,7 @@ export function renderBlocks(
             .map((column, n) => {
               const reason = columnRejection(column.content);
               check(!reason, reason ?? "");
-              const spacing = documentSpacing(column.content, resolved, 0);
+              const spacing = documentSpacing(column.content, resolved, true);
               const children = column.content
                 .map((child, i) => {
                   const id = child.id ?? String(i);
