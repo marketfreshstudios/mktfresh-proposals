@@ -8,6 +8,7 @@ import { StaffAuthFrame } from "./staff-auth-frame";
 import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
+import { BillingConnectionDetail } from "./connection-detail";
 import { Disclosure } from "./ui";
 import { DialogActions } from "./dialog-actions";
 import {
@@ -129,6 +130,10 @@ function StaffAppContent({
   local?: boolean;
 }) {
   const { section, id, action } = staffRoute(path, query);
+  const connectionDetail =
+    (section === "integrations" && (!!id || query.view === "email")) ||
+    section === "imports" ||
+    (section === "settings" && id === "ai");
   const drill =
     section === "proposals" && !id
       ? reportDrillSchema.safeParse(query).data
@@ -439,18 +444,26 @@ function StaffAppContent({
       content = <ConnectionsStudio data={data} run={run} initial="imports" />;
     } else if (section === "integrations") {
       headerAction = null;
-      content = (
-        <ConnectionsStudio
-          data={data}
-          run={run}
-          initial={
-            typeof query.view === "string" &&
-            ["stripe", "qbo", "email"].includes(query.view)
-              ? query.view
-              : undefined
-          }
-        />
-      );
+      content =
+        id === "quickbooks" || id === "stripe" ? (
+          <BillingConnectionDetail
+            key={id}
+            provider={id === "quickbooks" ? "qbo" : "stripe"}
+            data={data}
+          />
+        ) : (
+          <ConnectionsStudio
+            data={data}
+            run={run}
+            initial={
+              id === "email" || id === "imports" || id === "assistants"
+                ? id
+                : query.view === "email"
+                  ? "email"
+                  : undefined
+            }
+          />
+        );
     } else if (section === "settings" && id === "team") {
       title = "Team";
       headerAction = null;
@@ -501,7 +514,7 @@ function StaffAppContent({
       }}
     >
       <ContactToast />
-      {section !== "reports" && section !== "clients" && (
+      {section !== "reports" && section !== "clients" && !connectionDetail && (
         <header className="page-header">
           <div>
             <h1>{title}</h1>

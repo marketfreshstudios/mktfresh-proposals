@@ -1,3 +1,4 @@
+import { connectionNames } from "./staff-routes";
 import type { Metadata } from "next";
 export function staffMetadata(page: string): Metadata {
   return {
@@ -27,6 +28,12 @@ export function staffMetadata(page: string): Metadata {
 }
 export function staffPageName(path: string[]) {
   if (!path.length) return "Home";
+  if (
+    path[0] === "studio" &&
+    path[1] === "connections" &&
+    connectionNames[path[2]]
+  )
+    return connectionNames[path[2]];
   if (path[0] === "studio")
     return (
       (

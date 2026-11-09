@@ -2,6 +2,7 @@
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
 import { QuickBooksPicker } from "./quickbooks-fields";
+import { ConnectionDetailLayout } from "./connection-detail";
 import type { ConnectionStatus } from "../lib/workspace-setup";
 import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
@@ -3570,37 +3571,8 @@ export function ConnectionsStudio({
   run: Runner;
   initial?: string;
 }) {
-  const [health, setHealth] = useState<ConnectionStatus | null>(null),
-    [qboBusy, setQboBusy] = useState(false),
-    [error, setError] = useState(""),
-    [open, setOpen] = useState(initial ?? "");
-  const load = () => {
-    setError("");
-    api<NonNullable<typeof health>>("/api/connections")
-      .then(setHealth)
-      .catch((e) => setError(e.message));
-  };
-  useEffect(load, []);
+  const health = data.connections;
   const qbo = health?.qbo_connection;
-  const manageQbo = async (action: "authorize" | "disconnect") => {
-    setError("");
-    setQboBusy(true);
-    try {
-      if (action === "authorize") {
-        const { url } = await post<{ url: string }>(
-          "/api/connections/qbo/authorize",
-        );
-        window.location.assign(url);
-      } else {
-        await post("/api/connections/qbo/disconnect");
-        load();
-      }
-    } catch (error) {
-      setError((error as Error).message);
-    } finally {
-      setQboBusy(false);
-    }
-  };
   const connected = data.assistants.filter((a) => !a.revoked),
     stale = connected.some(
       (a) =>
@@ -3679,10 +3651,81 @@ export function ConnectionsStudio({
       action: "Import details",
     },
   ];
+  if (initial === "assistants")
+    return (
+      <ConnectionDetailLayout
+        name="AI assistants"
+        mark="AI"
+        subtitle="Read reference data and draft proposals. A person always reviews and sends."
+      >
+        <AssistantConnections data={data} run={run} />
+      </ConnectionDetailLayout>
+    );
+  if (initial === "imports")
+    return (
+      <ConnectionDetailLayout
+        name="Import from Proposify"
+        mark="P"
+        subtitle="Past proposals are kept as read-only PDFs linked to their clients."
+      >
+        <section className="studio-import-summary">
+          <h2>Imported proposals</h2>
+          <dl>
+            <div className="connection-fact">
+              <dt>Imported records</dt>
+              <dd>{imports.length}</dd>
+            </div>
+            <div className="connection-fact">
+              <dt>Missing PDFs</dt>
+              <dd>{missing.length}</dd>
+            </div>
+          </dl>
+          <p>
+            Existing records and PDFs are read-only. Match each PDF by its
+            original proposal ID using the import guide.
+          </p>
+          <a className="btn" href="/proposals?view=imported">
+            View imported proposals
+          </a>
+        </section>
+      </ConnectionDetailLayout>
+    );
+  if (initial === "email")
+    return (
+      <ConnectionDetailLayout
+        name="Email sending"
+        mark="E"
+        subtitle="Proposals send from the selected staff member. Replies follow your workspace rules."
+        status={
+          health?.email && data.settings?.sending_domain
+            ? "Configured"
+            : "Setup needed"
+        }
+        tone={
+          health?.email && data.settings?.sending_domain ? "success" : "warning"
+        }
+      >
+        <section>
+          <h2>Connection</h2>
+          <dl>
+            <div className="connection-fact">
+              <dt>Provider</dt>
+              <dd>{health?.email ? "Configured" : "Not configured"}</dd>
+            </div>
+            <div className="connection-fact">
+              <dt>Sending domain</dt>
+              <dd>{data.settings?.sending_domain || "Not set"}</dd>
+            </div>
+          </dl>
+          <p>Verify SPF and DKIM with your email provider.</p>
+          <a className="btn" href="/studio/workspace?view=email-sending">
+            Open sending domain
+          </a>
+        </section>
+      </ConnectionDetailLayout>
+    );
   return (
     <div className="stack">
-      <SaveError error={error} />
-      {error && <Button onClick={load}>Try loading connections again</Button>}
       <p className="studio-description">
         Payments, invoicing, email delivery, AI assistants and imports. Each one
         shows if it's healthy and offers one fix when it isn't.
@@ -3729,167 +3772,99 @@ export function ConnectionsStudio({
                       <p>{c.line}</p>
                       <small>{c.detail}</small>
                     </div>
-                    <Button onClick={() => setOpen(c.id)}>{c.action}</Button>
+                    <a
+                      className="btn"
+                      href={
+                        c.id === "qbo"
+                          ? "/studio/connections/quickbooks"
+                          : c.id === "stripe"
+                            ? "/studio/connections/stripe"
+                            : `/studio/connections?view=${c.id}`
+                      }
+                    >
+                      {c.action}
+                    </a>
                   </section>
                 ))}
             </div>
           </section>
         ))}
       </div>
-      {open && (
-        <Sheet
-          title={cards.find((c) => c.id === open)?.name ?? "Connection"}
-          onClose={() => setOpen("")}
-        >
-          {open === "assistants" ? (
-            <AssistantConnections data={data} run={run} />
-          ) : open === "imports" ? (
-            <div className="stack studio-import-summary">
-              <Banner title="Imported proposals are read-only">
-                Existing imported records and PDFs are preserved.
-              </Banner>
-              <p>
-                {imports.length} imported records · {missing.length} missing
-                PDFs.
-              </p>
-              <p>
-                Run the CSV, PDF upload and reconciliation steps in the
-                repository’s import guide from your Mac. Match each PDF by its
-                original proposal ID and review missing files before another
-                batch.
-              </p>
-              <a className="btn" href="/proposals?view=imported">
-                View imported proposals
-              </a>
-            </div>
-          ) : open === "email" ? (
-            <div className="stack">
-              <p>
-                Configure your email provider with this deployment, then verify
-                your domain’s SPF and DKIM there. The app does not infer DNS
-                verification from the setting alone.
-              </p>
-              <a className="btn" href="/studio/workspace?view=email-sending">
-                Open sending domain
-              </a>
-            </div>
-          ) : open === "qbo" ? (
-            <div className="stack">
-              <p>
-                QuickBooks sandbox. Use synthetic clients and amounts for the
-                internal pilot.
-              </p>
-              {qbo?.state === "connected" && (
-                <p>Connected to {qbo.company} · sandbox</p>
-              )}
-              {qbo?.last_sync && <p>Last sync: {studioDate(qbo.last_sync)}</p>}
-              {error && <SaveError error={error} />}
-              {data.user?.staff_role === "owner" ? (
-                qbo?.state === "connected" ? (
-                  <Button
-                    disabled={qboBusy}
-                    onClick={() => void manageQbo("disconnect")}
-                  >
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={qboBusy || qbo?.available !== true}
-                    onClick={() => void manageQbo("authorize")}
-                  >
-                    {qbo?.state === "reconnect"
-                      ? "Reconnect QuickBooks"
-                      : "Connect QuickBooks"}
-                  </Button>
-                )
-              ) : (
-                <p>A super admin manages this connection.</p>
-              )}
-              {qbo?.available === false && (
-                <small>
-                  Sandbox OAuth credentials are required on this deployment.
-                </small>
-              )}
-              <a href="/studio/workspace?view=billing">Open billing defaults</a>
-            </div>
-          ) : (
-            <div className="stack">
-              <p>
-                Use a Stripe test-mode restricted key in this deployment. Sync
-                only after the test products have been copied.
-              </p>
-              <Button
-                onClick={() =>
-                  run(
-                    () => post("/api/catalog-sync/stripe"),
-                    "Test products synced",
-                  )
-                }
-              >
-                Sync Stripe test products
-              </Button>
-              <a href="/studio/products">Open products</a>
-            </div>
-          )}
-        </Sheet>
-      )}
     </div>
   );
 }
 function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
   return (
-    <div className="stack">
-      <Banner tone="ai" title="You stay in control">
-        Assistants can read your reference data, create clients and draft
-        proposals. With template access, they can create and edit templates and
-        saved blocks. New templates stay hidden for review. They cannot send,
-        sign, delete, choose the sender, change availability or change billing.
-      </Banner>
-      <h3>Connect or reconnect an assistant</h3>
-      <p>
-        Add this remote MCP endpoint in your assistant, choose automatic
-        registration, then sign in and approve its access:
-      </p>
-      <code className="endpoint">{data.app_url}/mcp</code>
-      <p>Available access: proposals:read · proposals:draft · templates:edit</p>
-      <p>
-        Existing connections must reconnect and approve template access before
-        using the new tools.
-      </p>
-      {data.assistants.length ? (
-        data.assistants.map((a) => (
-          <section className="studio-section" key={a.id}>
-            <h3>{a.name}</h3>
-            <p>
-              {a.revoked
-                ? "Access revoked"
-                : a.last_used
-                  ? `Last connected ${new Date(a.last_used).toLocaleString()}`
-                  : "Has not connected yet"}
-            </p>
-            {!a.revoked && (
-              <Button
-                variant="danger"
-                onClick={() =>
-                  run(
-                    () => post(`/api/assistants/${a.id}/revoke`),
-                    "Assistant access revoked",
-                  )
-                }
-              >
-                Revoke {a.name}
-              </Button>
-            )}
-          </section>
-        ))
-      ) : (
+    <>
+      <section>
+        <h2>Connect or reconnect an assistant</h2>
         <p>
-          No assistants connected. New connections appear after authorization.
+          Add this endpoint in your assistant, choose automatic registration,
+          then sign in and approve access.
         </p>
-      )}
-    </div>
+        <dl>
+          <div className="connection-fact">
+            <dt>Remote MCP endpoint</dt>
+            <dd>
+              <code className="endpoint">{data.app_url}/mcp</code>
+            </dd>
+          </div>
+          <div className="connection-fact">
+            <dt>Access</dt>
+            <dd>
+              Read proposals, draft proposals, and edit templates and saved
+              blocks.
+            </dd>
+          </div>
+        </dl>
+        <p>
+          New templates stay hidden for review. Assistants cannot send, sign, or
+          change billing. Existing connections must reconnect and approve
+          template access before using the new tools.
+        </p>
+      </section>
+      <section>
+        <h2>Connected assistants</h2>
+        {data.assistants.length ? (
+          <dl>
+            {data.assistants.map((a) => (
+              <div className="connection-fact" key={a.id}>
+                <dt>{a.name}</dt>
+                <dd>
+                  {a.revoked
+                    ? "Access revoked"
+                    : a.last_used
+                      ? `Last connected ${new Date(a.last_used).toLocaleString()}`
+                      : "Has not connected yet"}
+                </dd>
+                {!a.revoked && (
+                  <dd>
+                    <Button
+                      variant="danger"
+                      onClick={() =>
+                        run(
+                          () => post(`/api/assistants/${a.id}/revoke`),
+                          "Assistant access revoked",
+                        )
+                      }
+                    >
+                      Revoke {a.name}
+                    </Button>
+                  </dd>
+                )}
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p>
+            No assistants connected. New connections appear after authorization.
+          </p>
+        )}
+      </section>
+    </>
   );
 }
+
 export { ActivityStudio } from "./studio-activity";
 
 function ProductMappingDetails({

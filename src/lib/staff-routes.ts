@@ -89,3 +89,11 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
                 : action;
   return { section, id, action };
 }
+
+export const connectionNames: Record<string, string> = {
+  quickbooks: "QuickBooks",
+  stripe: "Stripe",
+  email: "Email sending",
+  assistants: "AI assistants",
+  imports: "Import from Proposify",
+};

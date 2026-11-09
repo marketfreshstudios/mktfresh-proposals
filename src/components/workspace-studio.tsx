@@ -802,7 +802,7 @@ export function WorkspaceStudio({
               added to their subscription, with no payment step.
             </p>
           </div>
-          <a href="/studio/connections?view=stripe">
+          <a href="/studio/connections/stripe">
             <span className={data.connections?.stripe ? "success" : "warning"}>
               ● {stripeStatus(data.connections)}
             </span>{" "}
@@ -821,7 +821,7 @@ export function WorkspaceStudio({
               proposal.
             </p>
           </div>
-          <a href="/studio/connections?view=qbo">
+          <a href="/studio/connections/quickbooks">
             <span className={data.connections?.qbo ? "success" : "warning"}>
               ● {data.connections?.qbo ? "Sandbox configured" : "Not connected"}
             </span>{" "}
@@ -885,7 +885,10 @@ export function WorkspaceStudio({
         <div className="workspace-setting-row workspace-billing-control">
           <div>
             <h3>One-time product mapping</h3>
-            <p>Custom lines and products without a mapping use this item.</p>
+            <p>
+              Invoice lines use this QuickBooks product or service unless the
+              Yeswell product has its own mapping in Studio › Products.
+            </p>
           </div>
           <QuickBooksPicker
             label="Default QuickBooks item"

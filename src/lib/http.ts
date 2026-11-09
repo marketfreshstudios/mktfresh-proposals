@@ -87,6 +87,7 @@ import {
 import { emailStudioPreview, sendEmailTest } from "./email-studio";
 import {
   activity,
+  providerActivity,
   activityCsv,
   uploadFont,
   uploadedFonts,
@@ -111,7 +112,11 @@ import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
 import { QBO_CALLBACK, QBO_STATE_COOKIE } from "./providers/qbo-connection";
-import { qboBillingEmail, proposalInvoiceRef } from "./qbo-mapping";
+import {
+  qboBillingEmail,
+  proposalInvoiceRef,
+  quickBooksCustomerReview,
+} from "./qbo-mapping";
 import { receiveStripeWebhook } from "./providers/webhook";
 import { syncStripeCatalog, createCustomFamily } from "./catalog";
 import { PlaybookDraftSchema } from "./playbook";
@@ -656,6 +661,13 @@ async function handleRoute(
         },
       );
     }
+    if (
+      path[0] === "connections" &&
+      path[2] === "activity" &&
+      (path[1] === "qbo" || path[1] === "stripe") &&
+      method === "GET"
+    )
+      return json(await providerActivity(rt.repo, path[1]));
     if (path[0] === "connections" && path[1] === "qbo") {
       const qbo = rt.worker.providers.qbo;
       if (path[2] === "items" || path[2] === "terms") {
@@ -665,6 +677,15 @@ async function handleRoute(
           "Connect QuickBooks to choose items or terms.",
           409,
         );
+        const ref = new URL(req.url).searchParams.get("ref");
+        if (path[2] === "items" && ref) {
+          check(
+            /^(?:\d{1,30}:)?\d{1,30}$/.test(ref),
+            "Invalid QuickBooks item.",
+            400,
+          );
+          return json(await qbo.item(ref));
+        }
         const search = new URL(req.url).searchParams.get("q")?.trim() ?? "";
         check(
           search.length <= 100 && !/[\x00-\x1f%_]/.test(search),
@@ -701,12 +722,14 @@ async function handleRoute(
           new URL(req.url),
           cookie(req, QBO_STATE_COOKIE) ?? "",
         );
-        await workspaceEvent(rt.repo, user, "qbo_connected", {});
+        await workspaceEvent(rt.repo, user, "qbo_connected", {
+          actor_name: user.staff_name,
+        });
         return new Response(null, {
           status: 303,
           headers: {
             ...headers,
-            Location: "/studio/connections?view=qbo",
+            Location: "/studio/connections/quickbooks",
             "Set-Cookie": `${QBO_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=${QBO_CALLBACK}; Max-Age=0${new URL(req.url).protocol === "https:" ? "; Secure" : ""}`,
           },
         });
@@ -731,6 +754,7 @@ async function handleRoute(
             };
       return json({
         stripe: rt.worker.providers.stripe instanceof StripeProvider,
+        stripe_webhooks_configured: !!process.env.STRIPE_WEBHOOK_SECRET,
         qbo: qbo_connection.state === "connected",
         qbo_connection,
         email: !!process.env.RESEND_API_KEY,
@@ -1953,17 +1977,22 @@ async function handleRoute(
             409,
           );
           const { customer } = z
-            .object({ customer: z.string().regex(/^\d+$/) })
+            .object({ customer: z.string().regex(/^\d+$/).nullable() })
             .strict()
             .parse(await body(req));
           const status = await qbo.connection.status();
           const candidates = link?.metadata?.customer_candidates as
             { id: string }[] | undefined;
           check(
-            status.state === "connected" &&
-              status.realm === link?.metadata?.realm &&
-              link?.metadata?.billing_email === email &&
-              candidates?.some((c) => c.id === customer),
+            link &&
+              quickBooksCustomerReview(link) &&
+              status.state === "connected" &&
+              status.realm === link.metadata?.realm &&
+              link.metadata?.billing_email === email &&
+              (customer === null
+                ? link.metadata.customer_review_reason === "name" ||
+                  link.metadata.customer_review_reason === "company"
+                : candidates?.some((c) => c.id === customer)),
             "Refresh the record to review the current QuickBooks matches.",
             409,
           );
@@ -1982,7 +2011,14 @@ async function handleRoute(
               ...current.metadata,
               customer_choice: { id: customer, realm: status.realm, email },
             };
-            event(proposal, "qbo_customer_chosen", user, { customer });
+            event(
+              proposal,
+              customer === null
+                ? "qbo_customer_creation_requested"
+                : "qbo_customer_chosen",
+              user,
+              customer === null ? {} : { customer },
+            );
           });
           await rt.worker.retry(id);
           return json(await rt.worker.drain(id));

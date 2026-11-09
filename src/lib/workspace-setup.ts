@@ -4,6 +4,7 @@ import type { WorkspaceSettings } from "./workspace";
 import type { Item, Template } from "./model";
 export type ConnectionStatus = {
   stripe: boolean;
+  stripe_webhooks_configured?: boolean;
   qbo: boolean;
   qbo_connection?: QboConnectionStatus;
   email: boolean;
@@ -52,7 +53,7 @@ export function workspaceSetup(data: {
           ? "Configured (test mode)"
           : "Not connected"
         : "Status unavailable",
-      href: "/studio/connections?view=stripe",
+      href: "/studio/connections/stripe",
       action: "Connect Stripe",
       required: true,
     },
@@ -103,7 +104,7 @@ export function workspaceSetup(data: {
           ? "Sandbox configured"
           : "Not connected; one-time items invoice manually"
         : "Status unavailable",
-      href: "/studio/connections?view=qbo",
+      href: "/studio/connections/quickbooks",
       action: "Set up QuickBooks (optional)",
       required: false,
     },

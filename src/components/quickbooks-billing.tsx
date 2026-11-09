@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { BillingLink, Proposal } from "../lib/model";
-import { proposalInvoiceRef, qboBillingEmail } from "../lib/qbo-mapping";
+import {
+  proposalInvoiceRef,
+  qboBillingEmail,
+  quickBooksCustomerReview,
+} from "../lib/qbo-mapping";
 import { useMoney } from "./money-context";
-import { Select } from "./form-controls";
-import { api, Button, Field, post } from "./ui";
+import { api, Button, post } from "./ui";
 
 type Invoice = {
   number: string;
@@ -34,6 +37,7 @@ export function QuickBooksBilling({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [customer, setCustomer] = useState("");
+  const radioName = useId();
   const money = useMoney();
   const endpoint = `/api/proposals/${proposal.id}/quickbooks`;
   useEffect(() => {
@@ -57,18 +61,21 @@ export function QuickBooksBilling({
   const candidates = (link.metadata?.customer_candidates ?? []) as {
     id: string;
     company: string;
+    display_name?: string;
     email: string;
   }[];
+  const review = quickBooksCustomerReview(link);
+  const canCreate =
+    link.metadata?.customer_review_reason === "name" ||
+    link.metadata?.customer_review_reason === "company";
   const reconnect =
     /connect.*quickbooks/i.test(link.last_error ?? "") ||
     /connect.*quickbooks/i.test(details?.refresh_error ?? "");
-  const run = async (choice?: string) => {
+  const run = async (choice: string | null) => {
     setBusy(true);
     setError("");
     try {
-      await (choice
-        ? post(endpoint, { customer: choice })
-        : post(`/api/proposals/${proposal.id}/retry`));
+      await post(endpoint, { customer: choice });
       await onRefresh();
     } catch (err) {
       setError((err as Error).message);
@@ -77,7 +84,7 @@ export function QuickBooksBilling({
     }
   };
   return (
-    <div className="stack">
+    <div className="quickbooks-billing">
       <p>
         Proposal reference{" "}
         {details?.reference ?? proposalInvoiceRef(proposal.id)}
@@ -90,7 +97,7 @@ export function QuickBooksBilling({
           )}
       </p>
       {invoice && (
-        <div className="stack">
+        <div className="quickbooks-invoice">
           <p>
             <strong>Invoice {invoice.number}</strong> · {invoice.status}
             {invoice.amount !== undefined &&
@@ -103,36 +110,47 @@ export function QuickBooksBilling({
       )}
       {details?.refresh_error && <p role="status">{details.refresh_error}</p>}
       {reconnect && (
-        <a href="/studio/connections?view=qbo">Reconnect QuickBooks</a>
+        <a href="/studio/connections/quickbooks">Reconnect QuickBooks</a>
       )}
-      {candidates.length > 0 ? (
+      {review && (
         <>
-          <Field label="Choose the QuickBooks customer">
-            <Select
-              value={customer}
-              onChange={(event) => setCustomer(event.currentTarget.value)}
-            >
-              <option value="">Choose a customer</option>
+          <fieldset className="quickbooks-customer-choices" disabled={busy}>
+            <legend>Choose a QuickBooks customer</legend>
+            <div className="quickbooks-customer-options">
               {candidates.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.company} · {c.email} · {c.id}
-                </option>
+                <label className="quickbooks-customer" key={c.id}>
+                  <input
+                    type="radio"
+                    name={radioName}
+                    value={c.id}
+                    checked={customer === c.id}
+                    onChange={() => setCustomer(c.id)}
+                  />
+                  <span>
+                    <strong>{c.display_name || c.company}</strong>
+                    {c.company &&
+                      c.company !== c.display_name &&
+                      c.display_name && <span>{c.company}</span>}
+                    <span>{c.email || "No email on file"}</span>
+                  </span>
+                </label>
               ))}
-            </Select>
-          </Field>
-          <Button
-            disabled={!customer || busy}
-            onClick={() => void run(customer)}
-          >
-            Use this customer and retry
-          </Button>
+            </div>
+          </fieldset>
+          <div className="quickbooks-customer-actions">
+            <Button
+              disabled={!candidates.some((c) => c.id === customer) || busy}
+              onClick={() => void run(customer)}
+            >
+              Use this customer
+            </Button>
+            {canCreate && (
+              <Button disabled={busy} onClick={() => void run(null)}>
+                Create new customer
+              </Button>
+            )}
+          </div>
         </>
-      ) : (
-        link.status !== "succeeded" && (
-          <Button disabled={busy} onClick={() => void run()}>
-            Retry QuickBooks
-          </Button>
-        )
       )}
       {error && <p role="alert">{error}</p>}
     </div>

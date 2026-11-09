@@ -60,7 +60,9 @@ export function eventLabel(
     invoice_created: "Invoice created",
     qbo_connected: "QuickBooks sandbox connected",
     qbo_disconnected: "QuickBooks sandbox disconnected",
+    qbo_token_refreshed: "QuickBooks connection refreshed",
     qbo_customer_chosen: "QuickBooks customer selected",
+    qbo_customer_creation_requested: "New QuickBooks customer requested",
     qbo_invoice_delivery_changed:
       e.metadata.delivery === "email"
         ? "QuickBooks invoices set to create and email"

@@ -316,6 +316,64 @@
   flex-basis: 100%;
   font-size: 12px;
 }
+.quickbooks-billing {
+  flex: 0 0 100%;
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  text-align: start;
+}
+.quickbooks-billing p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.quickbooks-invoice {
+  display: grid;
+  gap: 4px;
+}
+.quickbooks-customer-choices {
+  display: grid;
+  width: min(100%, 520px);
+  min-inline-size: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
+.quickbooks-customer-choices legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.quickbooks-customer-options {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.quickbooks-customer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.quickbooks-customer + .quickbooks-customer {
+  border-top: 1px solid var(--border);
+}
+.quickbooks-customer:has(input:checked) {
+  background: var(--surface-sunken);
+  box-shadow: inset 3px 0 var(--ink);
+}
+.quickbooks-customer > span {
+  display: grid;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.quickbooks-customer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .record-jobs {
   display: grid;
   gap: 8px;
