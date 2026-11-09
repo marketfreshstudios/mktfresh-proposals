@@ -7,11 +7,26 @@ const user = {
   aud: "authenticated",
   role: "authenticated",
   email: "staff@example.test",
-  app_metadata: {},
+  app_metadata: {} as Record<string, unknown>,
   user_metadata: {},
   created_at: new Date().toISOString(),
 };
+const staffAccounts = {
+  staff: {
+    ...user,
+    id: "00000000-0000-4000-8000-000000000002",
+    email: "member@example.test",
+    app_metadata: { provider: "email" } as Record<string, unknown>,
+  },
+  other: {
+    ...user,
+    id: "00000000-0000-4000-8000-000000000003",
+    email: "other-member@example.test",
+    app_metadata: {} as Record<string, unknown>,
+  },
+};
 type Fixture = {
+  identity: typeof user;
   id: string;
   access: string;
   refresh: string;
@@ -26,7 +41,7 @@ const sessions = new Map<string, Fixture>(),
 function rotate(s: Fixture) {
   const payload = Buffer.from(
     JSON.stringify({
-      sub: user.id,
+      sub: s.identity.id,
       session_id: s.id,
       exp: Math.floor(Date.now() / 1000) + 3600,
     }),
@@ -43,7 +58,7 @@ function pair(s: Fixture) {
     refresh_token: s.refresh,
     expires_in: 3600,
     token_type: "bearer",
-    user,
+    user: s.identity,
   };
 }
 const server = createServer(async (req, res) => {
@@ -57,6 +72,10 @@ const server = createServer(async (req, res) => {
   const body = text ? JSON.parse(text) : {};
   if (url.pathname === "/fixture" && req.method === "POST") {
     const s: Fixture = {
+      identity:
+        body.account === "staff" || body.account === "other"
+          ? staffAccounts[body.account as keyof typeof staffAccounts]
+          : user,
       id: randomUUID(),
       access: "",
       refresh: "",
@@ -90,6 +109,7 @@ const server = createServer(async (req, res) => {
       if (body.email !== user.email || body.password !== "fixture-password")
         return json({ message: "Invalid credentials" }, 400);
       const s: Fixture = {
+        identity: user,
         id: randomUUID(),
         access: "",
         refresh: "",
@@ -117,27 +137,48 @@ const server = createServer(async (req, res) => {
   }
   if (url.pathname === "/rest/v1/rpc/staff_session_exists") {
     const session = sessions.get(body.target_session);
-    return json(!!session && !session.revoked && body.target_user === user.id);
+    return json(
+      !!session && !session.revoked && body.target_user === session.identity.id,
+    );
   }
   const token = (req.headers.authorization ?? "").replace(/^Bearer /, ""),
     s = access.get(token);
   if (url.pathname === "/auth/v1/user")
     return s && !expiredAccess.has(token) && !s.revoked
-      ? json(user)
+      ? json(s.identity)
       : json({ message: "JWT expired", error_code: "bad_jwt" }, 401);
   if (url.pathname === "/auth/v1/logout") {
     if (s) s.revoked = true;
     return json({});
   }
-  if (url.pathname === "/rest/v1/staff_users")
+  if (
+    url.pathname.startsWith("/auth/v1/admin/users/") &&
+    req.method === "PUT"
+  ) {
+    const id = url.pathname.split("/").at(-1);
+    const target = Object.values(staffAccounts).find(
+      (account) => account.id === id,
+    );
+    if (!target || token !== "local-auth-fixture-service")
+      return json({ message: "Not allowed" }, 403);
+    Object.assign(target.app_metadata, body.app_metadata);
+    return json(target);
+  }
+  if (url.pathname === "/rest/v1/staff_users") {
+    const filter = url.searchParams.get("user_id");
+    const identity =
+      [user, ...Object.values(staffAccounts)].find(
+        (account) => filter === "eq." + account.id,
+      ) ?? user;
     return json([
       {
-        user_id: user.id,
+        user_id: identity.id,
         workspace_id: LOCAL_WORKSPACE_ID,
-        role: "owner",
-        display_name: "Alex Morgan",
+        role: identity === user ? "owner" : "member",
+        display_name: identity === user ? "Alex Morgan" : "Sam Lee",
       },
     ]);
+  }
   if (url.pathname === "/") return json({ ready: true });
   json({ error: "Unknown fixture endpoint" }, 404);
 });

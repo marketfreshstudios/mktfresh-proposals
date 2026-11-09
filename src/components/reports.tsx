@@ -381,18 +381,12 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
               <p className="t-eyebrow">Nothing to report yet</p>
               <h2>Reports fill in once you send proposals.</h2>
               <p>
-                Every number here comes from proposals you’ve sent. Send your
-                first proposal and this page starts counting.
+                After you send a proposal, you’ll see who viewed it, how long it
+                took to sign, and the one-time and monthly value signed.
               </p>
               <a className="btn action" href="/proposals?new=1">
                 New proposal
               </a>
-              <ul>
-                <li>Sent, viewed and signed counts</li>
-                <li>Win rate and time to sign</li>
-                <li>Value signed, one-time and monthly</li>
-                <li>Most-read sections and client questions</li>
-              </ul>
             </section>
           ) : (
             <>

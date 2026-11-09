@@ -1,8 +1,7 @@
 import type { StripeConnectionStatus } from "./stripe-connect-status";
 import type { QboConnectionStatus } from "./providers/qbo-connection";
-import { businessState, businessStateUrl } from "./business-state";
 import type { WorkspaceSettings } from "./workspace";
-import type { Item, Template } from "./model";
+import type { Item, Proposal } from "./model";
 export type ConnectionStatus = {
   stripe: boolean;
   stripe_connect?: StripeConnectionStatus;
@@ -28,93 +27,108 @@ export function connectionStatus(value: unknown): ConnectionStatus | null {
 export function workspaceSetup(data: {
   settings?: WorkspaceSettings | null;
   connections?: ConnectionStatus | null;
-  catalog: Item[];
-  templates: Template[];
+  staff: { user_id: string; status?: string }[];
   assistants: { revoked: boolean }[];
+  proposals: Pick<Proposal, "source">[];
 }) {
-  const count = data.catalog.filter(
-    (i) =>
-      i.active &&
-      !i.legacy &&
-      [i, ...(i.sublines ?? [])].some((s) => s.stripe_lookup_key),
-  ).length;
-  const template = data.templates.some(
-    (t) =>
-      t.active &&
-      t.content.some((b) => b.type === "pricing_table") &&
-      ["client", "company"].every((role) =>
-        t.content.some((b) => b.type === "signature_block" && b.role === role),
-      ),
+  const { settings, connections } = data;
+  const active = data.staff.filter(
+    (member) => !member.status || member.status === "active",
   );
-  const rows = [
+  const signatory = settings?.company_signatory;
+  const manual = settings?.qbo_manual_invoice === true;
+  const required = [
+    {
+      id: "brand",
+      label: "Brand and fonts",
+      complete: !!(settings?.logo || settings?.logo_icon),
+      detail: "Logo, accent color and the fonts clients see",
+      href: "/studio/workspace?view=brand",
+      action: "Set up",
+    },
+    {
+      id: "signatory",
+      label: "Company signatory",
+      complete:
+        !!signatory?.image &&
+        active.some((member) => member.user_id === signatory.user_id),
+      detail: "Whose name goes on the company signature",
+      href: "/studio/workspace?view=signatory",
+      action: "Set up",
+    },
+    {
+      id: "email",
+      label: "Email sending",
+      complete: !!settings?.sending_domain && connections?.email === true,
+      detail: settings?.sending_domain
+        ? `Send proposals from ${settings.sending_domain}`
+        : "Set the verified domain that proposals come from",
+      href: "/studio/workspace?view=email-sending",
+      action: "Set up",
+    },
     {
       id: "stripe",
-      label: "Stripe",
-      complete: data.connections?.stripe === true,
-      detail: data.connections
-        ? data.connections.stripe
-          ? "Configured (test mode)"
-          : "Not connected"
-        : "Status unavailable",
+      label: "Connect Stripe",
+      complete:
+        connections?.stripe === true &&
+        (!connections.stripe_connect ||
+          connections.stripe_connect.state === "connected"),
+      detail: !connections
+        ? "Connection status unavailable"
+        : "Sync products and collect recurring payments through Checkout",
       href: "/studio/connections/stripe",
-      action: "Connect Stripe",
-      required: true,
-    },
-    {
-      id: "products",
-      label: "Products synced",
-      complete: count > 0,
-      detail: String(count),
-      href: "/studio/products",
-      action: "Sync products",
-      required: true,
-    },
-    {
-      id: "template",
-      label: "Template",
-      complete: template,
-      detail: template ? "Ready" : "Not ready",
-      href: "/studio/templates",
-      action: "Prepare a template",
-      required: true,
-    },
-    {
-      id: "assistant",
-      label: "Assistant",
-      complete: data.assistants.some((a) => !a.revoked),
-      detail: data.assistants.some((a) => !a.revoked)
-        ? "Connected"
-        : "Not connected",
-      href: "/studio/connections?view=assistants",
-      action: "Connect an assistant",
-      required: true,
-    },
-    {
-      id: "business-state",
-      label: "Business state",
-      complete: !!businessState(data.settings ?? undefined),
-      detail: businessState(data.settings ?? undefined) || "Not set",
-      href: businessStateUrl,
-      action: "Add business state",
-      required: true,
+      action:
+        connections?.stripe_connect?.state === "setting_up"
+          ? "Finish setup"
+          : "Connect",
     },
     {
       id: "qbo",
-      label: "QuickBooks",
-      complete: data.connections?.qbo === true,
-      detail: data.connections
-        ? data.connections.qbo
-          ? "Sandbox configured"
-          : "Not connected; one-time items invoice manually"
-        : "Status unavailable",
+      label: "Connect QuickBooks",
+      complete: connections?.qbo === true || manual,
+      detail:
+        manual && connections?.qbo !== true
+          ? "Record invoice numbers by hand"
+          : "Use QuickBooks for one-time invoices, or record invoice numbers by hand",
       href: "/studio/connections/quickbooks",
-      action: "Set up QuickBooks (optional)",
-      required: false,
+      action:
+        connections?.qbo_connection?.state === "reconnect"
+          ? "Reconnect"
+          : "Connect",
     },
-  ];
+  ] as const;
+  const optional = [
+    {
+      id: "team",
+      label: "Invite your team",
+      complete:
+        active.length > 1 ||
+        data.staff.some((member) => member.status === "invited"),
+      detail: "Staff can draft, send and countersign",
+      href: "/studio/workspace?view=team",
+      action: "Invite",
+    },
+    {
+      id: "assistant",
+      label: "Connect Claude",
+      complete: data.assistants.some((a) => !a.revoked),
+      detail: "Claude can draft proposals for you to review",
+      href: "/studio/connections/assistants",
+      action: "Connect",
+    },
+    {
+      id: "imports",
+      label: "Import from Proposify",
+      complete: data.proposals.some((p) => p.source === "proposify_import"),
+      detail: "Bring over past proposals and their PDFs",
+      href: "/studio/connections/imports",
+      action: "Import",
+    },
+  ] as const;
   return {
-    rows,
-    complete: rows.filter((r) => r.required).every((r) => r.complete),
+    required,
+    optional,
+    complete: required.every((r) => r.complete),
   };
 }
 export function productMappings(item: Item, qboConnected: boolean | null) {

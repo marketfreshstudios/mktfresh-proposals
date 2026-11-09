@@ -86,7 +86,7 @@ const nav = [
 export type Data = {
   app_url: string;
   connections?: ConnectionStatus | null;
-  user: Actor;
+  user: Actor & { staff_home_banner_dismissed?: boolean };
   signatory_version: string;
   staff: {
     user_id: string;
@@ -97,6 +97,7 @@ export type Data = {
     status?: string;
   }[];
   settings: WorkspaceSettings | null;
+  workspace_defaults?: WorkspaceSettings;
   proposals: Proposal[];
   total: number;
   clients: Client[];
@@ -168,7 +169,8 @@ function StaffAppContent({
     try {
       const session = await api<{
         settings: WorkspaceSettings | null;
-        user: Actor;
+        workspace_defaults?: WorkspaceSettings;
+        user: Data["user"];
         signatory_version: string;
         app_url: string;
         staff: Data["staff"];
@@ -213,6 +215,7 @@ function StaffAppContent({
       ]);
       setData({
         settings: session.settings,
+        workspace_defaults: session.workspace_defaults,
         app_url: session.app_url,
         user: session.user,
         signatory_version: session.signatory_version,
@@ -334,6 +337,7 @@ function StaffAppContent({
         <HomeV4
           data={data}
           onNew={openNew}
+          onSetupChanged={() => load(true)}
           deploymentNotice={<DeploymentNotice enabled navigationKey="/" />}
         />
       );
@@ -407,7 +411,11 @@ function StaffAppContent({
           <a className="btn" href="/reports">
             Reports
           </a>
-          <Button variant="primary" className="action" onClick={openNew}>
+          <Button
+            variant={data.total ? "primary" : undefined}
+            className={data.total ? "action" : undefined}
+            onClick={openNew}
+          >
             New proposal
           </Button>
         </div>
@@ -506,7 +514,7 @@ function StaffAppContent({
     <StaffShell
       path={path}
       record={isValidElement(content) && content.type === RecordV4}
-      settings={data?.settings ?? null}
+      settings={data?.settings ?? data?.workspace_defaults ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}
       onNew={openNew}

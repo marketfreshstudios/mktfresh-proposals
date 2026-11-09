@@ -49,11 +49,13 @@ export function sameOrigin(request: Request) {
       }
     });
 }
+const staffHomeBannerPreference = "yeswell_staff_home_banner_dismissed";
 type StaffActor = Actor & {
   workspace_id: string;
   staff_role: "owner" | "member";
   staff_name: string;
   staff_email: string;
+  staff_home_banner_dismissed?: boolean;
 };
 const staffRequests = new WeakMap<Request, Promise<StaffActor>>();
 export function staff(request: Request) {
@@ -103,7 +105,20 @@ async function checkStaff(request: Request): Promise<StaffActor> {
     staff_role: member.data.role as "owner" | "member",
     staff_name: member.data.display_name || user.email || "Staff",
     staff_email: user.email ?? "",
+    staff_home_banner_dismissed:
+      user.app_metadata?.[staffHomeBannerPreference] === true,
   };
+}
+export async function dismissStaffHomeBanner(user: StaffActor) {
+  if (user.staff_role !== "member")
+    throw new AppError(403, "This message is for staff members");
+  if (user.staff_home_banner_dismissed) return;
+  const { error } = await supabase().auth.admin.updateUserById(
+    user.actor.slice("staff:".length),
+    { app_metadata: { [staffHomeBannerPreference]: true } },
+  );
+  if (error)
+    throw new AppError(503, "Could not dismiss the message. Try again.");
 }
 export async function login(email: string, password: string) {
   const db = authClient();

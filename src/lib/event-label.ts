@@ -58,6 +58,8 @@ export function eventLabel(
     reopened: "Proposal reopened",
     manual_invoice_recorded: "Manual invoice recorded",
     invoice_created: "Invoice created",
+    qbo_manual_invoicing_chosen: "Manual invoicing chosen",
+    template_deleted: "Template deleted",
     qbo_connected: "QuickBooks sandbox connected",
     qbo_disconnected: "QuickBooks sandbox disconnected",
     qbo_token_refreshed: "QuickBooks connection refreshed",

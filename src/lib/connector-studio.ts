@@ -706,6 +706,7 @@ export async function connectorStudioTool(
     });
     delete after.starter_key;
     delete after.starter_order;
+    delete after.sample;
     delete after.pagination;
     if (!after.signature_heading_defaulted)
       after.content = withSignatureHeadings(after.content);

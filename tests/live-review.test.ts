@@ -18,6 +18,7 @@ import {
 } from "../src/lib/staff-routes";
 import { setup, staff, signature, clientActor } from "./helpers";
 import { clientBilling } from "../src/lib/client-billing";
+import { bill, MockBillingProvider } from "../src/lib/billing";
 import { versionHash } from "../src/lib/content";
 import { toolDefinitions } from "../src/lib/ai-tools";
 import { readFile } from "node:fs/promises";
@@ -77,53 +78,64 @@ it("explains each interval independently for a product with several sub-lines", 
     "Invoice manually",
   ]);
 });
-it("Home uses real setup status and treats the disconnected QuickBooks/manual path as optional", async () => {
-  const { repo } = await setup();
-  const templates = await repo.entities<any>("templates");
+it("Home derives setup from workspace settings, provider status, and team activity", async () => {
+  const { settings, members } = await setup();
   const base = {
-    connections: { stripe: false, qbo: false, email: false, mock: true },
-    catalog: [],
-    templates: [],
+    settings: {
+      ...settings,
+      logo: null,
+      sending_domain: "",
+      company_signatory: null,
+    },
+    staff: members,
+    connections: { stripe: false, qbo: false, email: false, mock: false },
     assistants: [],
+    proposals: [],
   };
   const incomplete = workspaceSetup(base);
+  expect(incomplete.required).toHaveLength(5);
+  expect(incomplete.required.every((row) => !row.complete)).toBe(true);
+  expect(incomplete.optional).toHaveLength(3);
   expect(incomplete.complete).toBe(false);
-  expect(incomplete.rows.find((r) => r.id === "stripe")?.detail).toBe(
-    "Not connected",
-  );
-  expect(incomplete.rows.find((r) => r.id === "qbo")?.detail).toContain(
-    "invoice manually",
-  );
-  const complete = workspaceSetup({
+  const ready = {
     ...base,
-    settings: { business_state: { name: "New York", other: "" } } as any,
-    connections: { ...base.connections, stripe: true },
-    catalog: [item()],
-    templates,
-    assistants: [{ revoked: false }],
-  });
-  expect(complete.complete).toBe(true);
-  expect(complete.rows.filter((r) => r.required).every((r) => r.complete)).toBe(
+    settings: {
+      ...settings,
+      logo: "workspace/logo.png",
+      qbo_manual_invoice: true,
+    },
+    connections: { ...base.connections, stripe: true, email: true },
+  };
+  expect(workspaceSetup(ready).complete).toBe(true);
+  expect(workspaceSetup(ready).optional.every((row) => !row.complete)).toBe(
     true,
   );
-  expect(complete.rows.find((r) => r.id === "qbo")?.complete).toBe(false);
   expect(
     workspaceSetup({
-      ...base,
-      catalog: [
-        item({ legacy: true }),
-        item({ active: false }),
-        item({
-          interval: "one_time",
-          stripe_lookup_key: null,
-          qbo_item_ref: "manual",
-        }),
-      ],
-    }).rows.find((r) => r.id === "products")?.detail,
-  ).toBe("0");
-  expect(workspaceSetup({ ...base, connections: null }).rows[0].detail).toBe(
-    "Status unavailable",
-  );
+      ...ready,
+      settings: { ...ready.settings, qbo_manual_invoice: false },
+    }).required.find((row) => row.id === "qbo")?.complete,
+  ).toBe(false);
+  expect(
+    workspaceSetup({
+      ...ready,
+      staff: members.map((m) => ({ ...m, status: "inactive" })),
+    }).required.find((row) => row.id === "signatory")?.complete,
+  ).toBe(false);
+  const connected = workspaceSetup({
+    ...ready,
+    connections: { ...ready.connections, qbo: true },
+    staff: [...members, { user_id: randomUUID(), status: "active" }],
+    assistants: [{ revoked: false }],
+    proposals: [{ source: "proposify_import" }],
+  });
+  expect(connected.complete).toBe(true);
+  expect(connected.optional.every((row) => row.complete)).toBe(true);
+  expect(
+    workspaceSetup({ ...base, connections: null }).required.find(
+      (r) => r.id === "stripe",
+    )?.detail,
+  ).toBe("Connection status unavailable");
   expect(connectionStatus({ stripe: true })).toBeNull();
   expect(connectionStatus([])).toBeNull();
   expect(connectionStatus(base.connections)).toEqual(base.connections);
@@ -230,4 +242,46 @@ it("font assets are self-hosted, licensed, fingerprinted and use real variable r
   expect(await readFile("public/fonts/curated.css", "utf8")).not.toMatch(
     /https?:|googleapis|gstatic/,
   );
+});
+
+it("manual invoice setup routes disconnected QuickBooks to the existing manual action, without losing an existing invoice", async () => {
+  const { service, draft, settings } = await setup();
+  const proposal = await service.send(draft.id, staff);
+  const adapter = new MockBillingProvider("qbo");
+  const context = {
+    catalog: [],
+    workspace: { ...settings, qbo_manual_invoice: true },
+    connected: false,
+  };
+  const manual = await bill(proposal, "qbo", adapter, context);
+  expect(manual).toMatchObject({
+    provider: "qbo",
+    status: "needs_review",
+    metadata: { action: "Invoice manually", line_ids: expect.any(Array) },
+  });
+  expect(manual.metadata?.line_ids).not.toEqual([]);
+  const withExistingInvoice = await bill(
+    {
+      ...proposal,
+      billing_links: [
+        {
+          provider: "qbo",
+          status: "needs_review",
+          attempts: 1,
+          external_object_id: "existing-invoice",
+          external_customer_id: "existing-customer",
+        },
+      ],
+    },
+    "qbo",
+    adapter,
+    context,
+  );
+  expect(withExistingInvoice).toMatchObject({
+    external_object_id: "existing-invoice",
+    last_error:
+      "Connect or reconnect QuickBooks in Studio, then retry billing.",
+  });
+  expect(withExistingInvoice.metadata?.action).toBeUndefined();
+  expect(adapter.objects.size).toBe(0);
 });

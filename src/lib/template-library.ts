@@ -26,6 +26,7 @@ export const TemplateInputSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
   starter_key: z.string().max(100).optional(),
+  sample: z.boolean().optional(),
   starter_order: z.number().int().min(0).max(6).optional(),
   source_starter_key: z.string().max(100).optional(),
   connector_created: z.boolean().optional(),

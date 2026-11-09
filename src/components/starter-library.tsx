@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes } from "react";
+import { Ellipsis } from "lucide-react";
 import type { Template } from "../lib/model";
 import { useConnectorRestore } from "./connector-restore";
 import { post, Button, Field, Banner } from "./ui";
@@ -267,10 +268,12 @@ export function StarterCardMenu({
   template,
   owner,
   onChanged,
+  onDelete,
 }: {
   template: Template;
   owner: boolean;
   onChanged: () => Promise<void>;
+  onDelete?: () => void;
 }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const actions = useStarterActions(template, owner, onChanged);
@@ -284,7 +287,7 @@ export function StarterCardMenu({
         aria-haspopup="menu"
         onClick={(e) => setAnchor(anchor ? null : e.currentTarget)}
       >
-        ⋯
+        <Ellipsis size={18} aria-hidden="true" />
       </button>
       {anchor && (
         <ToolbarPopover
@@ -310,6 +313,11 @@ export function StarterCardMenu({
               New proposal from this
             </a>
             {template.starter_key && actions.items}
+            {onDelete && (
+              <button type="button" role="menuitem" onClick={onDelete}>
+                Delete sample
+              </button>
+            )}
             {template.connector_restore_event_id && (
               <button
                 type="button"

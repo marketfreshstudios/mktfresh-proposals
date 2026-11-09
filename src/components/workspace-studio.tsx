@@ -43,7 +43,9 @@ export function WorkspaceStudio({
         : initial
       : "brand",
   );
-  const [draft, setDraft] = useState(data.settings!);
+  const [draft, setDraft] = useState(
+    (data.settings ?? data.workspace_defaults)!,
+  );
   const [fonts, setFonts] = useState<ProposalFont[]>([]),
     [licensed, setLicensed] = useState(false),
     [uploading, setUploading] = useState(false),

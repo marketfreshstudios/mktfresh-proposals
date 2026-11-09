@@ -187,10 +187,8 @@ test("Live review: customer, contacts, setup, shared controls, products and font
           user: staff,
           settings: {
             ...settings,
-            business_state:
-              setupMode === "complete"
-                ? { name: "North Carolina", other: "" }
-                : undefined,
+            logo: setupMode === "complete" ? "workspace/logo.png" : null,
+            qbo_manual_invoice: setupMode === "complete",
           },
           staff: members,
           app_url: "http://127.0.0.1:3100",
@@ -507,26 +505,30 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         setupMode = mode;
         await page.goto("/");
         await expect(page.locator(".first-run")).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: /Welcome to Yeswell/ }),
+        ).toBeVisible();
+        await expect(page.locator(".home-pipeline")).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: "Expiring this week" }),
+        ).toBeVisible();
         if (mode === "complete") {
           await expect(
-            page.getByRole("heading", { name: "Send your first proposal" }),
+            page.getByRole("heading", { name: "You’re set up." }),
           ).toBeVisible();
-          await expect(page.locator(".setup-checklist")).toHaveCount(0);
+          await expect(
+            page.getByRole("progressbar", { name: "Workspace setup progress" }),
+          ).toBeHidden();
         } else {
-          await expect(page.locator(".setup-checklist li")).toHaveCount(6);
+          await expect(page.locator(".setup-checklist li")).toHaveCount(8);
           await expect(
             page.locator('.setup-checklist li[data-complete="true"] .btn'),
           ).toHaveCount(0);
-          await expect(page.locator(".setup-checklist")).toContainText(
-            "one-time items invoice manually",
-          );
-          await expect(page.locator(".setup-checklist")).toContainText(
-            "Business state",
-          );
-          if (mode === "partial")
-            await expect(page.locator(".setup-checklist")).toContainText(
-              "Configured (test mode)",
-            );
+          await expect(
+            page.getByRole("button", {
+              name: "Record invoice numbers by hand",
+            }),
+          ).toBeVisible();
         }
         await capture(`home-setup-${mode}`, "8a", width, theme, width < 700);
       }
