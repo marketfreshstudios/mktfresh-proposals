@@ -144,6 +144,18 @@ test("Reports uses scoped data, accessible trend and sortable breakdowns with ma
     "2 proposals",
   );
   await expect(page.getByText(/Median time to first reply 2 hr/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "See 1 open question", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator(".report-breakdowns")
+      .getByText("CA$950", { exact: true })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page.locator(".report-breakdowns").getByText(/CAD CA\$/),
+  ).toHaveCount(0);
   await expect(page.locator(".report-bar.sent > span").first()).toHaveCSS(
     "background-image",
     /repeating-linear-gradient/,

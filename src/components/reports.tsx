@@ -1008,6 +1008,13 @@ function BreakdownValues({
   filter: Partial<ReportFilters>;
 }) {
   const money = useMoney();
+  const symbols = values.map(
+    ({ currency }) =>
+      new Intl.NumberFormat("en-US", { style: "currency", currency })
+        .formatToParts(0)
+        .find((part) => part.type === "currency")?.value,
+  );
+  const display = new Set(symbols).size === values.length ? "symbol" : "code";
   const lines = values.flatMap((value) =>
     keys.flatMap((key) =>
       value[key] === null || (key === "yearly" && value.yearly === 0)
@@ -1026,9 +1033,8 @@ function BreakdownValues({
             filter,
           )}
         >
-          {values.length > 1 && `${value.currency} `}
           {key === "yearly" && "Yearly "}
-          {money(value[key]!, value.currency)}
+          {money(value[key]!, value.currency, display)}
           {signSuffix[key]}
         </a>
       ))}
@@ -1115,7 +1121,8 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
           )}
           <div className="report-question-links">
             <a className="btn" href={link({ report: "questions-open" })}>
-              See {questions.open} open questions
+              See {questions.open} open{" "}
+              {questions.open === 1 ? "question" : "questions"}
             </a>
             <a className="btn" href={link({ report: "questions" })}>
               All {questions.total}

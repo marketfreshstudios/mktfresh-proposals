@@ -1,3 +1,4 @@
+import { publicationState } from "../src/lib/editor-publication";
 import { expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { setup, staff, clientActor, signature } from "./helpers";
@@ -93,7 +94,10 @@ it("indefinite proposals remain signable, never auto-expire and are omitted from
   expect(
     expiringWithinSevenDays({
       ...fresh,
-      valid_until: new Date(Date.now() + 3 * 86400000).toISOString(),
+      published_state: {
+        ...fresh.published_state!,
+        valid_until: new Date(Date.now() + 3 * 86400000).toISOString(),
+      },
     }),
   ).toBe(true);
   expect(fresh.events.some((e) => e.type === "expired")).toBe(false);
@@ -714,4 +718,41 @@ it("shows a matching customer without automatically linking or showing it as the
   expect(
     (await repo.entities<any>("clients"))[0].stripe_customer_id,
   ).toBeNull();
+});
+
+it("lists open published links expiring within seven workspace calendar days across daylight saving", async () => {
+  const { draft } = await setup();
+  const timezone = "America/New_York";
+  const now = Date.parse("2026-10-30T16:00:00Z");
+  const sent = {
+    ...draft,
+    status: "sent" as const,
+    valid_until: "2026-11-06T17:00:00Z",
+  };
+  expect(expiringWithinSevenDays(sent, now, timezone)).toBe(true);
+  expect(
+    expiringWithinSevenDays(
+      { ...sent, valid_until: "2026-11-06T17:00:00.001Z" },
+      now,
+      timezone,
+    ),
+  ).toBe(false);
+  expect(
+    expiringWithinSevenDays(
+      { ...sent, archived_at: sent.created_at },
+      now,
+      timezone,
+    ),
+  ).toBe(false);
+  expect(
+    expiringWithinSevenDays({ ...sent, status: "declined" }, now, timezone),
+  ).toBe(false);
+  const published = { ...publicationState(sent), valid_until: null };
+  expect(
+    expiringWithinSevenDays(
+      { ...sent, published_state: published },
+      now,
+      timezone,
+    ),
+  ).toBe(false);
 });

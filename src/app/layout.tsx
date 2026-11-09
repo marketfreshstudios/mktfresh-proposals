@@ -20,6 +20,7 @@ import "./form-controls.css";
 import "./ink-clay-tokens.css";
 import "./ink-clay.css";
 import "./reports.css";
+import "./ink-clay-records.css";
 export default function RootLayout({
   children,
 }: {

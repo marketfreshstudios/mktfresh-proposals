@@ -265,9 +265,6 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await expect(
         page.getByRole("link", { name: `Open ${client.company}`, exact: true }),
       ).toBeVisible();
-      await expect(page.locator(".client-table-row").first()).toContainText(
-        "(704) 555-0123",
-      );
       const row = page.locator(".client-table-row").first(),
         link = page.getByRole("link", {
           name: `Open ${client.company}`,
@@ -286,10 +283,12 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         width,
         theme,
       );
-      await expect(
-        row.getByRole("link", { name: `Open in Mail: ${client.email}` }),
-      ).toHaveAttribute("href", `mailto:${client.email}`);
       await link.press("Enter");
+      const contact = page.locator(".client-identity-contact");
+      await expect(contact).toContainText("(704) 555-0123");
+      await expect(
+        contact.getByRole("link", { name: `Open in Mail: ${client.email}` }),
+      ).toHaveAttribute("href", `mailto:${client.email}`);
       await expect(page.locator(".client-contact-card")).toContainText(
         "123 Main Street",
       );
@@ -407,7 +406,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       );
       await page.goto("/");
       await expect(page.locator(".home-v4")).toBeVisible();
-      await page.locator(".home-primary-link").first().focus();
+      await page.locator(".home-attention-title").first().focus();
       await capture(
         "home-focus",
         width === 1440 ? "3d" : width === 768 ? "3e" : "3f",
