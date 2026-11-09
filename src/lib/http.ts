@@ -304,6 +304,12 @@ async function handleRoute(req: Request, path: string[]) {
             { headers: { ...headers, "Content-Type": "image/png" } },
           );
         }
+        const expiry = publishedExpiry(p);
+        const expired =
+          p.status === "expired" ||
+          (["sent", "viewed"].includes(p.status) &&
+            !!expiry &&
+            Date.parse(expiry) <= Date.now());
         return json({
           logo_icon: workspaceBrand?.logo_icon
             ? sha256(workspaceBrand.logo_icon.path).slice(0, 16)
@@ -315,16 +321,13 @@ async function handleRoute(req: Request, path: string[]) {
             name: p.sender?.display_name ?? settings?.owner ?? "",
             email: p.sender?.email ?? settings?.email ?? "",
           },
+          ...(expired ? { valid_until: expiry } : {}),
+          timezone: settings?.timezone,
+          proposal_fonts: settings?.proposal_fonts,
           ended:
-            p.status === "declined"
-              ? "declined"
-              : p.status === "expired" ||
-                  (["sent", "viewed"].includes(p.status) &&
-                    !!publishedExpiry(p) &&
-                    Date.parse(publishedExpiry(p)!) <= Date.now())
-                ? "expired"
-                : null,
+            p.status === "declined" ? "declined" : expired ? "expired" : null,
           email: settings?.email ?? "",
+          phone: settings?.phone,
           logo: settings?.logo ?? null,
           accent_colour: settings?.accent_colour ?? "#245547",
         });

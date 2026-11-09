@@ -123,7 +123,7 @@ export function SignatureForm({
       }}
     >
       <fieldset disabled={busy}>
-        <legend>Signing as</legend>
+        <legend>Who is signing</legend>
         <div className="grid">
           <Field label="Full name">
             <input
@@ -165,46 +165,50 @@ export function SignatureForm({
       <fieldset disabled={busy}>
         <legend>Your signature</legend>
         <div className="signature-pad">
-          <div className="tabs" role="tablist" aria-label="Signature method">
-            {(
-              [
-                ["drawn", "Draw"],
-                ["typed", "Type"],
-              ] as const
-            ).map(([value, text]) => (
-              <button
-                className={`btn ${mode === value ? "active" : "ghost"}`}
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={mode === value}
-                tabIndex={mode === value ? 0 : -1}
-                onKeyDown={(e) => {
-                  if (
-                    !["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
-                  )
-                    return;
-                  e.preventDefault();
-                  const next =
-                    e.key === "Home"
-                      ? "drawn"
-                      : e.key === "End"
-                        ? "typed"
-                        : mode === "drawn"
+          <div className="signature-method">
+            <div className="tabs" role="tablist" aria-label="Signature method">
+              {(
+                [
+                  ["drawn", "Draw"],
+                  ["typed", "Type"],
+                ] as const
+              ).map(([value, text]) => (
+                <button
+                  className={`btn ${mode === value ? "active" : "ghost"}`}
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === value}
+                  tabIndex={mode === value ? 0 : -1}
+                  onKeyDown={(e) => {
+                    if (
+                      !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
+                        e.key,
+                      )
+                    )
+                      return;
+                    e.preventDefault();
+                    const next =
+                      e.key === "Home"
+                        ? "drawn"
+                        : e.key === "End"
                           ? "typed"
-                          : "drawn";
-                  setMode(next);
-                  (
-                    e.currentTarget.parentElement!.querySelectorAll(
-                      "[role=tab]",
-                    )[next === "drawn" ? 0 : 1] as HTMLElement
-                  ).focus();
-                }}
-                onClick={() => setMode(value)}
-              >
-                {text}
-              </button>
-            ))}
+                          : mode === "drawn"
+                            ? "typed"
+                            : "drawn";
+                    setMode(next);
+                    (
+                      e.currentTarget.parentElement!.querySelectorAll(
+                        "[role=tab]",
+                      )[next === "drawn" ? 0 : 1] as HTMLElement
+                    ).focus();
+                  }}
+                  onClick={() => setMode(value)}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
             <button className="btn ghost" type="button" onClick={clear}>
               Clear
             </button>

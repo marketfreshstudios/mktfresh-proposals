@@ -92,7 +92,7 @@ export function CoverSettings({
     elements = coverElements(cover, ""),
     appearance = coverPresentation(cover, settings?.accent_colour),
     usesColor =
-      ["split", "bold", "photo"].includes(layout) ||
+      ["split", "bold", "photo", "side-photo"].includes(layout) ||
       ["solid", "waves", "orbits", "ring", "dots", "corners"].includes(b.type),
     text =
       layout === "split" && !appearance.backdrop
@@ -188,14 +188,16 @@ export function CoverSettings({
                 <p className="muted">
                   PNG/JPG under 700 KB. 2550 × 3300 recommended.
                 </p>
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={!!b.finished}
-                    onChange={(e) => change({ finished: e.target.checked })}
-                  />
-                  Finished full-page design
-                </label>
+                {layout !== "side-photo" && (
+                  <label className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={!!b.finished}
+                      onChange={(e) => change({ finished: e.target.checked })}
+                    />
+                    Finished full-page design
+                  </label>
+                )}
                 {b.image && (
                   <>
                     <div

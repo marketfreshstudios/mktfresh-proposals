@@ -3,7 +3,7 @@ import { Select } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
-import { YeswellBrand } from "./yeswell-brand";
+import { StaffAuthFrame } from "./staff-auth-frame";
 import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
@@ -582,112 +582,131 @@ function Login({ local }: { local: boolean }) {
   // Server HTML is visible before hydration. Never let the browser submit the
   // form natively (GET /login) before the credential POST handler is installed.
   const [ready, setReady] = useState(false);
-  useEffect(() => {
-    document.documentElement.dataset.theme =
-      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
-    setReady(true);
-  }, []);
+  useEffect(() => setReady(true), []);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [resumed, setResumed] = useState(false);
+    [resumed, setResumed] = useState(false),
+    [forgot, setForgot] = useState(false);
   if (resumed)
     return (
-      <main className="login staff-foundation yeswell-auth">
-        <div className="card stack">
-          <h1>You're signed in</h1>
-          <p>
-            Return to your editor and choose Retry to save your kept changes.
-          </p>
-        </div>
-      </main>
+      <StaffAuthFrame>
+        <h1>You're signed in</h1>
+        <p>Return to your editor and choose Retry to save your kept changes.</p>
+      </StaffAuthFrame>
+    );
+  if (forgot)
+    return (
+      <StaffAuthFrame>
+        <h1>Forgot password?</h1>
+        <p>
+          Ask your workspace administrator to send you a password reset email.
+          Use the link in that email to choose a new password.
+        </p>
+        <Button onClick={() => setForgot(false)}>Back to sign in</Button>
+      </StaffAuthFrame>
+    );
+  if (error.startsWith("Staff access deactivated"))
+    return (
+      <StaffAuthFrame>
+        <h1>Deactivated account</h1>
+        <p>Contact your workspace administrator if you need access again.</p>
+        <Button onClick={() => setError("")}>Back to sign in</Button>
+      </StaffAuthFrame>
     );
   return (
-    <main className="login staff-foundation yeswell-auth">
-      <div className="card stack">
-        <YeswellBrand />
-        <h1>Welcome back</h1>
-        <p className="muted">Sign in to your Yeswell workspace.</p>
-        {error && (
-          <Banner tone="danger" title="Unable to sign in">
-            {error}
-          </Banner>
-        )}
-        <form
-          className="form"
-          method="post"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            const f = new FormData(e.currentTarget);
-            try {
-              const result = await post("/api/auth/login", {
-                email: f.get("email"),
-                password: f.get("password"),
-              });
-              if (result.password_change_required) {
-                location.href = "/set-password";
-                return;
-              }
-              if (new URL(location.href).searchParams.get("resume") === "1") {
-                setResumed(true);
-                window.close();
-                return;
-              }
-              const next = new URL(location.href).searchParams.get("next");
-              location.href =
-                next?.startsWith("/") && !next.startsWith("//") ? next : "/";
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "Unable to sign in");
-            } finally {
-              setBusy(false);
+    <StaffAuthFrame>
+      <h1>Sign in</h1>
+      {error && (
+        <Banner tone="danger" title="Unable to sign in">
+          {error}
+        </Banner>
+      )}
+      <form
+        className="form"
+        method="post"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          const f = new FormData(e.currentTarget);
+          try {
+            const result = await post("/api/auth/login", {
+              email: f.get("email"),
+              password: f.get("password"),
+            });
+            if (result.password_change_required) {
+              location.href = "/set-password";
+              return;
             }
-          }}
+            if (new URL(location.href).searchParams.get("resume") === "1") {
+              setResumed(true);
+              window.close();
+              return;
+            }
+            const next = new URL(location.href).searchParams.get("next");
+            location.href =
+              next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Unable to sign in");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <Field label="Email address">
+          <input type="email" name="email" required autoComplete="username" />
+        </Field>
+        <Field label="Password">
+          <input
+            type="password"
+            name="password"
+            required
+            autoComplete="current-password"
+          />
+        </Field>
+        <button
+          className="account-forgot"
+          type="button"
+          onClick={() => setForgot(true)}
         >
-          <Field label="Email address">
-            <input type="email" name="email" required autoComplete="username" />
-          </Field>
-          <Field label="Password">
-            <input
-              type="password"
-              name="password"
-              required
-              autoComplete="current-password"
-            />
-          </Field>
-          <Button type="submit" variant="primary" busy={busy} disabled={!ready}>
-            Sign in
-          </Button>
-        </form>
-        {local && (
-          <details>
-            <Disclosure>Local development sign-in</Disclosure>
-            <form
-              className="form"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                try {
-                  await post("/api/auth/local", {
-                    token: new FormData(e.currentTarget).get("token"),
-                  });
-                  const next = new URL(location.href).searchParams.get("next");
-                  location.href =
-                    next?.startsWith("/") && !next.startsWith("//")
-                      ? next
-                      : "/";
-                } catch (e) {
-                  setError(String(e));
-                }
-              }}
-            >
-              <Field label="Local token">
-                <input name="token" type="password" required />
-              </Field>
-              <Button type="submit">Open local workspace</Button>
-            </form>
-          </details>
-        )}
-      </div>
-    </main>
+          Forgot password?
+        </button>
+        <Button
+          type="submit"
+          variant="primary"
+          className="action"
+          busy={busy}
+          disabled={!ready}
+        >
+          Sign in
+        </Button>
+      </form>
+      {local && (
+        <details>
+          <Disclosure>Local development sign-in</Disclosure>
+          <form
+            className="form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await post("/api/auth/local", {
+                  token: new FormData(e.currentTarget).get("token"),
+                });
+                const next = new URL(location.href).searchParams.get("next");
+                location.href =
+                  next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+              } catch (e) {
+                setError(String(e));
+              }
+            }}
+          >
+            <Field label="Local token">
+              <input name="token" type="password" required />
+            </Field>
+            <Button type="submit">Open local workspace</Button>
+          </form>
+        </details>
+      )}
+    </StaffAuthFrame>
   );
 }
 function NewProposal({

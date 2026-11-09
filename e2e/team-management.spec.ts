@@ -267,7 +267,7 @@ test("expired set-password link explains resend; blocked removal lists work and 
     .getByLabel("Type new password again")
     .fill("Replacement password!");
   await page.getByRole("button", { name: "Save password & sign in" }).click();
-  await expect(page.locator(".banner.danger")).toContainText(
+  await expect(page.locator(".account-screen")).toContainText(
     "Ask your admin to resend",
   );
   const p = (await f.repo.get(f.draft.id))!;

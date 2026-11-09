@@ -124,7 +124,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       if (state === "editor-live-preview")
         await expect(page.locator(".email-rendered")).toHaveCSS(
           "background-color",
-          theme === "dark" ? "rgb(22, 22, 20)" : "rgb(243, 241, 235)",
+          theme === "dark" ? "rgb(24, 23, 21)" : "rgb(243, 241, 235)",
         );
     }
     expect(

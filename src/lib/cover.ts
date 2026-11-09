@@ -66,7 +66,15 @@ export const CoverSchema = z
     byline: z.string().max(4000),
     prepared_for: z.string().max(2000).optional(),
     layout: z
-      .enum(["custom", "editorial", "split", "bold", "photo", "centered"])
+      .enum([
+        "custom",
+        "editorial",
+        "split",
+        "bold",
+        "photo",
+        "centered",
+        "side-photo",
+      ])
       .optional(),
     background: CoverBackgroundSchema.optional(),
     logo_mode: z.literal("brand").optional(),

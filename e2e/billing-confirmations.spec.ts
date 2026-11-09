@@ -112,16 +112,21 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
               name: /Continue to secure card setup — no charge today/,
             }),
           ).toBeVisible();
-        } else
+        } else {
+          const paymentToday = page.locator(".flow-payment-today");
           await expect(
-            page.getByText(
-              `You’ll be charged ${formatMoney(
+            paymentToday.getByText("First payment today", { exact: true }),
+          ).toBeVisible();
+          await expect(
+            paymentToday.getByText(
+              formatMoney(
                 f.lines.reduce((sum, l) => sum + l.amount * l.qty, 0),
                 f.p.currency,
-              )} today.`,
+              ),
               { exact: true },
             ),
           ).toBeVisible();
+        }
         await shot(`checkout-${mode}`, width, theme);
         await record(`record-waiting-${mode}`, width, theme);
         await expect(

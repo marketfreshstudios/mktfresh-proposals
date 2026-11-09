@@ -1,0 +1,471 @@
+/* Client chrome stays on the workspace palette; the preview bar is staff-only. */
+.client-flow {
+  --client-selection: color-mix(in srgb, var(--accent) 9%, var(--paper));
+  --client-frame: color-mix(in srgb, var(--accent) 30%, var(--paper-border));
+  --client-touch: 44px;
+}
+.client-flow .flow-header {
+  min-height: 64px;
+  padding: 12px clamp(16px, 3.33vw, 48px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.flow-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.flow-brand strong,
+.flow-header-end {
+  font-family: var(--client-font-body, var(--font-ui));
+}
+.flow-brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 13px/1 var(--font-ui);
+  overflow: hidden;
+}
+.flow-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.client-flow .flow-body:not(.flow-review) {
+  padding-top: 24px;
+}
+.client-flow :is(.flow-state, .flow-sign, .flow-result-summary, .flow-choices) {
+  font-family: var(--client-font-body, var(--font-ui));
+}
+.client-flow :is(.flow-state, .flow-sign, .flow-result-summary) h1 {
+  font-family: var(--client-font-heading, var(--font-doc-heading));
+}
+.client-flow :is(.flow-sign, .flow-result-summary) h2 {
+  font: 600 16px/1.4 var(--client-font-body, var(--font-ui));
+}
+.flow-top-progress,
+.flow-review-progress {
+  max-width: 760px;
+  margin: 24px auto 0;
+  padding-inline: 16px;
+}
+.flow-progress {
+  gap: 8px;
+  color: var(--ink-muted);
+  font: 600 12px/16px var(--client-font-body, var(--font-ui));
+}
+.flow-progress li {
+  height: auto;
+  background: none;
+}
+.flow-progress li::before {
+  content: "";
+  display: block;
+  height: 4px;
+  margin-bottom: 5px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.flow-progress li.reached {
+  background: none;
+  color: var(--ink);
+}
+.flow-progress li.reached::before {
+  background: var(--accent);
+}
+.flow-choices .flow-progress {
+  margin: 0 0 16px;
+}
+.flow-choices h2 {
+  margin: 0 0 10px;
+  font: 600 18px/1.35 var(--client-font-body, var(--font-ui));
+  text-transform: none;
+  letter-spacing: normal;
+}
+.flow-choices .flow-chosen {
+  margin-bottom: 12px;
+  font-family: var(--client-font-body, var(--font-ui));
+}
+.flow-choices .flow-chosen li {
+  padding-block: 6px;
+}
+.client-flow .flow-choices .flow-totals {
+  border-top: 1px solid var(--border);
+  margin: 12px 0 16px;
+  padding: 10px 0 0;
+  border-radius: 0;
+}
+.flow-choice-contact {
+  margin: 12px 0 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.client-flow
+  :is(
+    .flow-sender-contact,
+    .flow-sender-card,
+    .flow-state,
+    .flow-sign,
+    .flow-choice-contact
+  )
+  a:not(.btn) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (min-width: 1100px) {
+  .client-flow:not(.flow-phone-preview) .flow-review-progress {
+    display: none;
+  }
+  .client-flow:not(.flow-phone-preview) .flow-choices {
+    max-height: calc(100dvh - var(--preview-controls-h, 0px) - 48px);
+    overflow: auto;
+    box-shadow: none;
+  }
+}
+@media (max-width: 1099px) {
+  .client-flow .flow-choices .flow-totals {
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+  }
+  .flow-choice-contact {
+    display: none;
+  }
+}
+.client-flow .flow-stale {
+  grid-column: 1 / -1;
+  top: var(--preview-controls-h, 0px);
+  margin: 0;
+}
+.client-flow .flow-stale .banner {
+  margin: 0;
+}
+.client-flow
+  [data-stale="true"]
+  > :is(.flow-document, .client-document-sheets) {
+  filter: brightness(0.9);
+}
+.client-flow :is(.flow-state, .flow-result-summary) {
+  max-width: 600px;
+}
+.client-flow .flow-state {
+  margin-block: clamp(32px, 9vh, 84px);
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.flow-state > :is(h1, p) {
+  margin: 0;
+}
+.flow-state-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.flow-locked form {
+  width: min(100%, 430px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 20px;
+  text-align: start;
+}
+.client-flow .flow-password input,
+.client-flow .flow-password button {
+  min-height: 52px;
+}
+.flow-locked [role="alert"] {
+  color: var(--danger);
+  margin: 0;
+}
+.flow-sender-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 430px);
+  padding: 14px;
+  text-align: start;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.flow-sender-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font-size: 13px;
+}
+.client-flow .flow-sign {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.client-flow
+  :is(
+    .flow-acceptance,
+    .flow-signature fieldset,
+    .flow-checkout-group,
+    .flow-added-items,
+    .flow-checklist
+  ) {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.client-flow .flow-signature fieldset {
+  min-inline-size: 0;
+  margin: 0;
+}
+.flow-signature legend {
+  padding-inline: 6px;
+  color: var(--ink);
+  font: 600 16px/1.4 var(--client-font-body, var(--font-ui));
+}
+.flow-signature .signing-preview {
+  padding: 12px 0;
+}
+.flow-signature .signature-method {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.flow-signature .flow-consent {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+@media (min-width: 700px) {
+  .client-flow:not(.flow-phone-preview) .flow-sign {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+  .client-flow:not(.flow-phone-preview) .flow-sign > .flow-sign-intro,
+  .client-flow:not(.flow-phone-preview) .flow-signature > * {
+    grid-column: 1 / -1;
+  }
+  .client-flow:not(.flow-phone-preview) .flow-signature {
+    display: contents;
+  }
+  .client-flow:not(.flow-phone-preview)
+    .flow-signature
+    > fieldset:first-of-type {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .client-flow:not(.flow-phone-preview) .flow-signature > .btn,
+  .client-flow:not(.flow-phone-preview) .flow-signature > .button-wrap {
+    justify-self: end;
+  }
+}
+.flow-result-summary > .flow-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.client-flow .flow-billing-totals {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.client-flow .flow-checkout-group .btn {
+  width: auto;
+}
+.flow-payment-today {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.flow-result-summary:has(.flow-checklist) > :is(h1, p:not(.flow-success)) {
+  text-align: center;
+}
+.client-flow .flow-checklist {
+  padding-inline: 18px;
+}
+
+/* Paint the new client frame without moving any document boxes. */
+.client-flow .proposal-typography.proposal-typography .flow-choice-group {
+  border-color: var(--client-frame);
+  background: var(--paper);
+}
+.client-flow .proposal-typography.proposal-typography .flow-choice-group h3 {
+  color: var(--client-accent-text);
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-choice-group
+  .flow-quote-line {
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-choice-group
+  .flow-quote-line
+  + .flow-quote-line {
+  position: relative;
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-choice-group
+  .flow-quote-line
+  + .flow-quote-line::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0 auto;
+  height: 1px;
+  background: var(--paper-border);
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  label.flow-quote-line.selected,
+.client-flow .proposal-typography .quote-table tr:has(input:checked) {
+  background: var(--client-selection);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-quote-line
+  input:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-quote-line
+  input[type="radio"]:checked {
+  background: radial-gradient(circle, var(--accent) 0 5px, transparent 5.5px)
+    var(--paper);
+}
+.client-flow
+  .proposal-typography.proposal-typography
+  .flow-quote-line
+  input[type="checkbox"]:checked {
+  background-image: none;
+}
+.client-flow
+  .proposal-typography
+  .flow-quote-line
+  input[type="checkbox"]:checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  transform: rotate(-45deg);
+  border: solid var(--on-accent);
+  border-width: 0 0 2px 2px;
+  margin-top: -2px;
+}
+
+.client-flow .preview-controls {
+  --ink: var(--chrome-ink);
+  --link: var(--chrome-ink);
+  --border-strong: var(--chrome-muted);
+  --segment: var(--chrome-on);
+  --focus-outline: 2px solid var(--chrome-ink);
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+  background: var(--chrome);
+  color: var(--chrome-ink);
+  border-color: var(--chrome-line);
+  font-family: var(--font-ui);
+}
+.preview-identity,
+.preview-size,
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.preview-identity span {
+  color: var(--chrome-muted);
+  font-size: 13px;
+}
+.client-flow .preview-controls .preview-size .btn {
+  border-color: var(--chrome-muted);
+  background: transparent;
+  color: var(--chrome-ink);
+}
+.client-flow .preview-controls .preview-size .btn[aria-pressed="true"] {
+  background: var(--chrome-ink);
+  color: var(--chrome);
+}
+.preview-size .btn {
+  border-radius: var(--radius-md);
+}
+
+.login.yeswell-auth.account-screen {
+  background: var(--surface-page);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+.account-frame {
+  display: grid;
+  justify-items: center;
+  width: min(100%, 420px);
+  gap: 24px;
+}
+.account-frame > .card {
+  width: 100%;
+  padding: clamp(20px, 5vw, 32px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+.account-screen .account-frame .yeswell-brand {
+  margin: 0;
+}
+.account-screen .account-frame .yeswell-brand img {
+  width: 152px;
+}
+.account-screen h1 {
+  margin: 0;
+  color: var(--ink-title);
+  font: 400 36px/1.1 var(--font-title);
+}
+.account-screen .account-workspace {
+  margin: 0;
+  color: var(--ink-muted);
+  text-align: center;
+  font-size: 13px;
+}
+.account-screen .form > .button-wrap,
+.account-screen .form > .button-wrap > button {
+  width: 100%;
+}
+.account-screen .account-forgot {
+  margin-inline-start: auto;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font: 600 13px/1.4 var(--font-ui);
+}

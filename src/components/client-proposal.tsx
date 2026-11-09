@@ -2,6 +2,7 @@
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
+import { CircleAlert, LockKeyhole } from "lucide-react";
 import { blockText } from "../lib/editor-document";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
@@ -31,7 +32,7 @@ import {
 } from "./billing-breakdown";
 import { billingDisplay } from "../lib/billing-display";
 import { ContactToast, copyContactValue } from "./contact-value";
-import { fontCss } from "../lib/proposal-fonts";
+import { fontCss, fontFamily, type FontSettings } from "../lib/proposal-fonts";
 import { readableDate } from "../lib/validity";
 import {
   chooseItem,
@@ -55,16 +56,23 @@ import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
 import { Skeleton } from "./foundation";
-export type PublicProposal = ReturnType<typeof publicResult>;
+import { StaffIconContext } from "./staff-icons";
+export type PublicProposal = ReturnType<typeof publicResult> & {
+  preview_can_send?: boolean;
+};
 type Brand = {
   name: string;
   email: string;
+  phone?: string;
   show_powered_by?: boolean;
   logo?: string | null;
   logo_icon?: string | null;
   accent_colour?: string;
-  contact?: { name: string; email: string };
+  contact?: { name: string; email: string; phone?: string };
   ended?: string | null;
+  valid_until?: string | null;
+  timezone?: string;
+  proposal_fonts?: FontSettings["proposal_fonts"];
 };
 const emptyBrand: Brand = { name: "Proposal", email: "" };
 export function ClientProposal({
@@ -110,8 +118,22 @@ export function ClientProposal({
       active = false;
     };
   }, [token, preview]);
+  if (failure && preview)
+    return (
+      <main className="client-flow">
+        <section className="flow-state flow-ended">
+          <CircleAlert aria-hidden="true" />
+          <h1>Preview unavailable</h1>
+          <p>This preview can only be opened by workspace staff.</p>
+        </section>
+      </main>
+    );
   if (failure)
-    return <NewClientFlow token={token} preview={preview} brand={emptyBrand} />;
+    return (
+      <StaffIconContext.Provider value={true}>
+        <NewClientFlow token={token} preview={preview} brand={emptyBrand} />
+      </StaffIconContext.Provider>
+    );
   if (!route)
     return (
       <div className="client-flow">
@@ -121,7 +143,7 @@ export function ClientProposal({
       </div>
     );
   return (
-    <>
+    <StaffIconContext.Provider value={true}>
       <ClientWorkspaceIcon
         token={token}
         version={route.brand.logo_icon}
@@ -133,7 +155,7 @@ export function ClientProposal({
         brand={route.brand}
         initial={route.initial}
       />
-    </>
+    </StaffIconContext.Provider>
   );
 }
 function NewClientFlow({
@@ -227,8 +249,10 @@ function NewClientFlow({
       : undefined;
   const finishingReturn =
     checkoutReturned && signed && !returnConfirmed && !bankState;
-  const contact = p?.contact ??
-    brand.contact ?? { name: "", email: brand.email };
+  const contact = {
+    ...(p?.contact ?? brand.contact ?? { name: "", email: brand.email }),
+    phone: p?.company.phone ?? brand.phone ?? brand.contact?.phone,
+  };
   const engagement = useClientEngagement(
     p,
     token,
@@ -239,6 +263,12 @@ function NewClientFlow({
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
   const review = step === "read" && !signed;
   const activeStep = signed ? (step === "done" ? "done" : "billing") : step;
+  const fonts = p?.proposal_fonts ?? brand.proposal_fonts;
+  const logoIcon = brand.logo_icon
+    ? preview
+      ? `/api/workspace-icon?size=32&v=${encodeURIComponent(brand.logo_icon)}`
+      : `/api/public/${token}/brand/icon?size=32&v=${encodeURIComponent(brand.logo_icon)}`
+    : undefined;
   async function load() {
     setBusy(true);
     setError("");
@@ -483,28 +513,40 @@ function NewClientFlow({
             brand.accent_colour ?? "#365C4A",
           ),
           "--on-accent": accentText(brand.accent_colour ?? "#365C4A"),
+          "--client-font-heading": fontFamily(fonts?.heading),
+          "--client-font-body": fontFamily(fonts?.body),
         } as React.CSSProperties
       }
     >
-      {p && (
+      {(p || fonts) && (
         <style>
-          {fontCss({ proposal_fonts: p.proposal_fonts }, (f) =>
+          {fontCss({ proposal_fonts: fonts }, (f) =>
             preview
               ? `/api/workspace-fonts/${f.id}`
               : `/api/public/${token}/fonts/${f.id}`,
           )}
-          {styleFontFaces(p.resolved_styles, (f) =>
-            preview
-              ? `/api/workspace-fonts/${f.id}`
-              : `/api/public/${token}/fonts/${f.id}`,
-          )}
-          {documentStyleCss(p.resolved_styles, brand.accent_colour, p.content)}
+          {p &&
+            styleFontFaces(p.resolved_styles, (f) =>
+              preview
+                ? `/api/workspace-fonts/${f.id}`
+                : `/api/public/${token}/fonts/${f.id}`,
+            )}
+          {p &&
+            documentStyleCss(p.resolved_styles, brand.accent_colour, p.content)}
         </style>
       )}
-      {preview && (
+      {preview && initial && (
         <PreviewControls>
-          <strong>Preview, not sent</strong>
-          <div className="toolbar">
+          <div className="preview-identity">
+            <a href={`/proposals/${token}`}>
+              {p?.preview_can_send ? "Back to editor" : "Back to proposal"}
+            </a>
+            <strong>Preview, not sent</strong>
+            <span>
+              Previewing as {p?.recipient.name}. Choices aren’t recorded.
+            </span>
+          </div>
+          <div className="preview-toolbar">
             {(
               [
                 ["read", "Reading view"],
@@ -516,78 +558,78 @@ function NewClientFlow({
                 {label}
               </Button>
             ))}
-            <Button onClick={() => setPhone(false)}>Desktop width</Button>
-            <Button onClick={() => setPhone(true)}>Phone width</Button>
+            <div
+              className="preview-size segmented"
+              role="group"
+              aria-label="Preview width"
+            >
+              <Button
+                aria-label="Desktop width"
+                aria-pressed={!phone}
+                onClick={() => setPhone(false)}
+              >
+                Desktop
+              </Button>
+              <Button
+                aria-label="Phone width"
+                aria-pressed={phone}
+                onClick={() => setPhone(true)}
+              >
+                Phone
+              </Button>
+            </div>
+            {p?.preview_can_send && (
+              <a
+                className="btn action preview-send"
+                href={`/proposals/${token}?view=send`}
+              >
+                Send
+              </a>
+            )}
           </div>
         </PreviewControls>
       )}
       <header className="client-header flow-header">
-        <div>
-          {brand.logo ? (
-            <img
-              src={
-                preview
-                  ? `/api/proposals/${token}/preview-logo`
-                  : `/api/public/${token}/brand/logo`
-              }
-              alt={brand.name}
-            />
-          ) : (
-            <strong>{brand.name}</strong>
-          )}
+        <div className="flow-brand">
+          <span className="flow-brand-mark" aria-hidden="true">
+            {logoIcon ? (
+              <img src={logoIcon} alt="" />
+            ) : (
+              (brand.name || "Proposal").trim()[0]?.toUpperCase()
+            )}
+          </span>
+          <strong>{brand.name}</strong>
         </div>
         <div className="flow-header-end">
-          {p && !locked && !ended && (
-            <span>
-              {activeStep === "done"
-                ? "Done"
-                : `Step ${activeStep === "read" ? 1 : activeStep === "sign" ? 2 : 3} of ${recurring || requiresCheckout ? 3 : 2} · ${activeStep === "read" ? "Review" : activeStep === "sign" ? "Sign" : "Billing"}`}
-            </span>
+          {p && review && !locked && !ended && p.valid_until && (
+            <span>Valid until {readableDate(p.valid_until, p.timezone)}</span>
           )}
         </div>
       </header>
       {p && !locked && !ended && (
-        <nav aria-label="Proposal progress">
-          <ol className="flow-progress">
-            {[
-              "Review",
-              "Sign",
-              ...(recurring || requiresCheckout ? ["Billing"] : []),
-            ].map((label, index) => (
-              <li
-                key={label}
-                aria-current={
-                  activeStep === label.toLowerCase() ||
-                  (label === "Review" && activeStep === "read")
-                    ? "step"
-                    : undefined
-                }
-                className={
-                  activeStep === "done" ||
-                  index <=
-                    (activeStep === "read" ? 0 : activeStep === "sign" ? 1 : 2)
-                    ? "reached"
-                    : ""
-                }
-              >
-                <span className="sr-only">{label}</span>
-              </li>
-            ))}
-          </ol>
-        </nav>
+        <FlowProgress
+          step={activeStep}
+          billing={recurring || requiresCheckout}
+          className={review ? "flow-review-progress" : "flow-top-progress"}
+        />
       )}
       <main
         className={`client-body flow-body ${review ? "flow-review" : ""}`}
+        data-stale={stale || undefined}
         ref={main}
         tabIndex={-1}
         style={{ paddingBottom: barHeight + 32 }}
       >
         {ended ? (
-          <section className="flow-state">
-            <Icon name="lock" />
+          <section className="flow-state flow-ended">
+            <span className="flow-state-icon">
+              <CircleAlert aria-hidden="true" />
+            </span>
             <h1>
               {brand.ended === "expired"
-                ? "This proposal has expired"
+                ? brand.valid_until
+                  ? `This proposal expired on ${readableDate(brand.valid_until, brand.timezone)}`
+                  : "This proposal has expired"
                 : brand.ended === "declined"
                   ? "This proposal was declined"
                   : "This link is no longer active"}
@@ -599,10 +641,20 @@ function NewClientFlow({
                   ? "If your plans change, ask for a new proposal."
                   : "Check your email for the newest link, or ask the sender to send it again."}
             </p>
+            <SenderCard contact={contact} company={brand.name} />
+            {contact.email && (
+              <a className="btn primary" href={`mailto:${contact.email}`}>
+                {brand.ended === "expired"
+                  ? "Ask for a new proposal"
+                  : "Email the sender"}
+              </a>
+            )}
           </section>
         ) : locked ? (
-          <section className="flow-state">
-            <Icon name="lock" />
+          <section className="flow-state flow-locked">
+            <span className="flow-state-icon">
+              <LockKeyhole aria-hidden="true" />
+            </span>
             <h1>Enter the password to open your proposal</h1>
             <p>{brand.name} sent the password separately from the link.</p>
             <form
@@ -637,6 +689,17 @@ function NewClientFlow({
                 Open proposal
               </Button>
             </form>
+            <p className="muted">
+              Need the password? Ask{" "}
+              {contact.email ? (
+                <a href={`mailto:${contact.email}`}>
+                  {contact.name || "the sender"}
+                </a>
+              ) : (
+                contact.name || "the sender"
+              )}
+              .
+            </p>
           </section>
         ) : !p ? (
           <div className="flow-loading">
@@ -662,12 +725,12 @@ function NewClientFlow({
                 {error}
               </Banner>
             )}
-            {stale && !review && (
+            {stale && (
               <div className="flow-stale">
                 <Banner
                   tone="warning"
                   title="This proposal changed while you were reading it"
-                  action={<Button onClick={load}>Reload and review</Button>}
+                  action={<Button onClick={load}>Load latest version</Button>}
                 >
                   The pricing or wording is different from what is on your
                   screen. Reload to see the current version before you sign.
@@ -809,18 +872,19 @@ function NewClientFlow({
                               </p>
                             )}
                             {session.mode !== "setup" && (
-                              <p>
-                                You’ll be charged{" "}
-                                {formatMoney(
-                                  session.amount_due_today ??
-                                    session.lines.reduce(
-                                      (sum, l) => sum + l.amount * l.qty,
-                                      0,
-                                    ),
-                                  p.currency,
-                                  p.money_cents,
-                                )}{" "}
-                                today.
+                              <p className="flow-payment-today">
+                                <strong>First payment today</strong>
+                                <span>
+                                  {formatMoney(
+                                    session.amount_due_today ??
+                                      session.lines.reduce(
+                                        (sum, l) => sum + l.amount * l.qty,
+                                        0,
+                                      ),
+                                    p.currency,
+                                    p.money_cents,
+                                  )}
+                                </span>
                               </p>
                             )}
                             {session.lines.length ? (
@@ -1074,14 +1138,14 @@ function NewClientFlow({
               <section className="flow-sign">
                 <div className="flow-sign-intro">
                   <Button variant="ghost" onClick={() => go("read")}>
-                    ← Back to proposal
+                    Back to proposal
                   </Button>
                   <h1>Sign the proposal</h1>
                   <p>Check what you’re agreeing to, then add your signature.</p>
                 </div>
                 <section className="flow-acceptance">
-                  <p className="flow-eyebrow">You’re accepting</p>
-                  <h2>{p.title}</h2>
+                  <h2>What you’re agreeing to</h2>
+                  <p>{p.title}</p>
                   <ChosenItems proposal={p} terms />
                   <FlowTotals proposal={p} />
                   {hasContract && (
@@ -1200,48 +1264,53 @@ function NewClientFlow({
                   ref={bar}
                   aria-label="Your choices"
                 >
-                  {stale ? (
-                    <Banner
-                      tone="warning"
-                      title="This proposal changed while you were reading it"
-                      action={<Button onClick={load}>Reload and review</Button>}
+                  <div className="flow-desktop-choices">
+                    <FlowProgress
+                      step="read"
+                      billing={recurring || requiresCheckout}
+                    />
+                    <h2>Your choices</h2>
+                    <ChosenItems proposal={p} />
+                  </div>
+                  <FlowTotals proposal={p} />
+                  <div
+                    className={
+                      canAsk ? "flow-review-actions" : "flow-review-sign"
+                    }
+                  >
+                    {canAsk && (
+                      <Button onClick={() => setQuestionSection("")}>
+                        Ask a question
+                      </Button>
+                    )}
+                    <Button
+                      variant="primary"
+                      disabled={busy || stale}
+                      note={busy ? "Saving your selection…" : undefined}
+                      onClick={() => go("sign")}
                     >
-                      The pricing or wording is different from what is on your
-                      screen. Review the current version before signing.
-                    </Banner>
-                  ) : (
-                    <>
-                      <div className="flow-desktop-choices">
-                        <h2>Your choices</h2>
-                        <ChosenItems proposal={p} />
-                      </div>
-                      <FlowTotals proposal={p} />
-                      <div
-                        className={
-                          canAsk ? "flow-review-actions" : "flow-review-sign"
-                        }
-                      >
-                        {canAsk && (
-                          <Button onClick={() => setQuestionSection("")}>
-                            Ask a question
-                          </Button>
-                        )}
-                        <Button
-                          variant="primary"
-                          disabled={busy}
-                          note={busy ? "Saving your selection…" : undefined}
-                          onClick={() => go("sign")}
-                        >
-                          Review and sign
-                        </Button>
-                      </div>
-                      {p.valid_until && (
-                        <small className="flow-desktop-choices">
-                          Valid until {readableDate(p.valid_until, p.timezone)}
-                        </small>
-                      )}
-                    </>
-                  )}
+                      Review and sign
+                    </Button>
+                  </div>
+                  <p className="flow-desktop-choices flow-choice-contact">
+                    Questions?{" "}
+                    {contact.email ? (
+                      <a href={`mailto:${contact.email}`}>
+                        Email {contact.name || "the sender"}
+                      </a>
+                    ) : (
+                      "Ask the sender."
+                    )}
+                    {contact.phone && (
+                      <>
+                        {" "}
+                        or{" "}
+                        <a href={`tel:${contact.phone}`}>
+                          call {contact.phone}
+                        </a>
+                      </>
+                    )}
+                  </p>
                 </aside>
                 <div className="flow-document-footer">
                   {declining ? (
@@ -1312,11 +1381,13 @@ function NewClientFlow({
             close={() => setQuestionSection(null)}
           />
         )}
-        <Contact
-          name={contact.name}
-          email={contact.email}
-          company={brand.name}
-        />
+        {!ended && !locked && (
+          <Contact
+            name={contact.name}
+            email={contact.email}
+            company={brand.name}
+          />
+        )}
         <ContactToast />
         <p className="flow-engagement-privacy">
           The sender can see when and how this proposal was viewed.
@@ -1342,6 +1413,68 @@ export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
       cents={p.money_cents}
       className="totals flow-totals"
     />
+  );
+}
+
+function FlowProgress({
+  step,
+  billing,
+  className,
+}: {
+  step: "read" | "sign" | "billing" | "done";
+  billing: boolean;
+  className?: string;
+}) {
+  const current = { read: 0, sign: 1, billing: 2, done: 3 }[step];
+  return (
+    <nav className={className} aria-label="Proposal progress">
+      <ol className="flow-progress">
+        {["Review", "Sign", ...(billing ? ["Billing"] : [])].map((label, i) => (
+          <li
+            key={label}
+            aria-current={i === current ? "step" : undefined}
+            className={i <= current ? "reached" : undefined}
+          >
+            {label}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function SenderCard({
+  contact,
+  company,
+}: {
+  contact: NonNullable<Brand["contact"]>;
+  company: string;
+}) {
+  if (!contact.name && !contact.email && !contact.phone) return null;
+  const name = contact.name || company;
+  return (
+    <div className="flow-sender-card" aria-label="Sender contact">
+      <span className="flow-brand-mark" aria-hidden="true">
+        {name
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part) => part[0])
+          .join("")
+          .toUpperCase()}
+      </span>
+      <div>
+        <strong>{name}</strong>
+        <div className="flow-sender-details">
+          {contact.email && (
+            <a href={`mailto:${contact.email}`}>{contact.email}</a>
+          )}
+          {contact.phone && (
+            <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1431,7 +1564,6 @@ function Contact({
           onClick={() => void copyContactValue(email)}
         >
           {email}
-          <Icon name="copy" />
         </button>
       )}
     </footer>
@@ -1765,25 +1897,13 @@ function ClientItems({
   );
 }
 
-/** Staff-only preview bar. Publishes its height so sticky client panels sit below it. */
+/** Staff preview chrome never overlays the public reading surface. */
 function PreviewControls({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const root = document.documentElement;
-    const update = () =>
-      root.style.setProperty("--preview-controls-h", `${el.offsetHeight}px`);
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      root.style.removeProperty("--preview-controls-h");
-    };
-  }, []);
   return (
-    <aside ref={ref} className="preview-controls" aria-label="Preview controls">
+    <aside
+      className="preview-controls staff-foundation ink-clay"
+      aria-label="Preview controls"
+    >
       {children}
     </aside>
   );

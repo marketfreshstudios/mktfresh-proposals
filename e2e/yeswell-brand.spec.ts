@@ -104,7 +104,7 @@ test("Yeswell staff branding and install metadata stay separate from workspace c
       page.getByRole("button", { name: "Sign in", exact: true }),
     ).toHaveCSS(
       "background-color",
-      theme === "light" ? "rgb(19, 48, 58)" : "rgb(238, 243, 243)",
+      theme === "light" ? "rgb(180, 83, 42)" : "rgb(224, 122, 74)",
     );
     await shot(page, `login-${theme}-1440`);
     for (const [path, name] of [
