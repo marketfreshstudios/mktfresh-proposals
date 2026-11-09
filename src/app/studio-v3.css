@@ -1806,12 +1806,6 @@
   grid-column: 4;
   grid-row: 1;
 }
-.workspace-section-card .team-person .btn.ghost {
-  border: 0;
-  background: none;
-  min-width: 36px;
-  padding: 0;
-}
 .workspace-section-card .team-status-active {
   color: var(--success);
 }

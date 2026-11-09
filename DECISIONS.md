@@ -950,3 +950,5 @@ Apply the account digest index before deploy. Follow the [Stripe Connect sandbox
 ### Staff table header surfaces (Nov 9, 2026)
 
 Staff data table headers share the card surface, white in light mode and the card surface in dark mode. Their hairline dividers keep headers distinct from the first row without changing the table's spacing. Proposal document tables retain their own styling.
+
+Home Recent proposals uses the full Proposals table with the first six rows. Uppercase column labels sit inside the card. Icon actions across staff tables share a borderless 44px circle, with a surface tint and tooltip on hover or keyboard focus. Countersign rows keep a filled Sign button.
