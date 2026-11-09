@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E9E5DD;font-family:'Instrument Sans',system-ui,sans-serif;color:#1C1B18}a{color:#13303A}a:hover{color:#B4532A}button{font-family:inherit;color:inherit}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.6)}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55)}</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Studio v3 · Yeswell branding, roles, settings and tablet</span></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;max-width:1440px;margin:0 0 32px;font:400 14px/21px 'Instrument Sans';color:#3E3B35">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Patterns carried over</div>
+      <div><b style="color:#1C1B18">Two kinds of page.</b> List pages (Templates, Emails, Products, Connections, Workspace, Activity) sit in the normal app shell. Anything you edit (a template or an email) opens full-screen in the editor shell: one header bar, a canvas, and a collapsible right panel with tabs.</div>
+      <div><b style="color:#1C1B18">One primary action per page,</b> as a dark pill, top right. Everything else is a quiet outline button or a text link.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#5F5B53">Changes to how it works</div>
+      <div><b style="color:#13303A">Emails are edited in place.</b> Today there's a form on the left and a separate preview on the right. Now you type straight into the email as the client will see it, using the same floating edit bar as proposals. Fields show as chips, and a switch shows real values from a sample client or a chosen proposal.</div>
+      <div><b style="color:#13303A">Emails are ordered by when they go out</b> (Send, Follow up, Sign, Billing) rather than in one flat list, so it's clear what a client receives at each step.</div>
+      <div><b style="color:#B4532A">New in v3.</b> Yeswell branding on the app chrome (the workspace’s own brand stays on proposals and emails). Team roles are Super admin and Staff, and Claude lives in Connections. Three editable staff emails (Team and jobs). Workspace adds Proposal styles, Billing defaults and Email sending, plus the “Powered by Yeswell” switch in Brand. Templates get Default quote · Fields · Blocks · Styles, with header and footer defaults in Styles. Stripe shows its actual mode. Tablet frame <a class="dv-oid" href="#1g">1g</a>.</div>
+      <div><b style="color:#13303A">Workspace becomes one page with a section list</b> on the left, like Sections in the editor, instead of one long scroll.</div>
+    </div>
+  </div>
+
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><b style="color:#1C1B18">Studio · desktop 1440 · clickable.</b> Use the left nav. Click an email or a template to open its editor, and a product to open its details.</span></div>
+      <div style="width:1440px;height:900px;border:1px solid #C9C3B7;border-radius:12px;background:#F3F0EA;overflow:hidden;display:flex;box-shadow:0 24px 48px rgba(20,18,14,.10);position:relative">
+
+        <sc-if value="{{ inShell }}" hint-placeholder-val="{{ true }}">
+          <nav style="flex:none;width:232px;background:#FBFAF7;border-right:1px solid #E3DED4;padding:18px 12px;display:flex;flex-direction:column;gap:2px;box-sizing:border-box">
+            <div style="padding:2px 10px 16px"><img src="brand/svg/yeswell-logo.svg" alt="Yeswell" style="height:26px;display:block"></div>
+            <div style="display:flex;align-items:center;gap:8px;height:40px;margin:0 0 12px;padding:0 10px;border:1px solid #E3DED4;border-radius:10px;background:#fff"><span style="width:22px;height:22px;border-radius:6px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px 'Instrument Sans'">M</span><span style="flex:1;font:600 13px 'Instrument Sans'">MarketFresh Studios</span><span style="font-size:10px;color:#8A857B">▾</span></div>
+            <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:#3E3B35">Home</div>
+            <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:#3E3B35">Proposals</div>
+            <div style="font:500 14px/36px 'Instrument Sans';padding:0 12px;color:#3E3B35">Clients</div>
+            <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:20px 12px 8px">Studio</div>
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="6">
+              <button onClick="{{ n.go }}" aria-current="{{ n.cur }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:0;border-radius:8px;background:{{ n.bg }};font:{{ n.font }};color:#1C1B18;text-align:left;cursor:pointer">{{ n.name }}</button>
+            </sc-for>
+            <span style="flex:1"></span>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px"><span style="width:28px;height:28px;border-radius:14px;background:#E4DCCB;display:flex;align-items:center;justify-content:center;font:600 11px 'Instrument Sans'">JG</span><span style="font:500 13px 'Instrument Sans'">Jonathan Garces</span></div>
+          </nav>
+        </sc-if>
+
+        <sc-if value="{{ pg.templates }}" hint-placeholder-val="{{ false }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:22px">
+              <div style="display:flex;align-items:flex-end;gap:16px">
+                <div style="flex:1"><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Templates &amp; blocks</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">Starting points for new proposals, and content you can drop into any of them.</div></div>
+                <span style="height:40px;padding:0 18px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 14px 'Instrument Sans'">{{ newLabel }}</span>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center">
+                <div role="tablist" style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1"><sc-for list="{{ ttabs }}" as="t" hint-placeholder-count="2"><button role="tab" onClick="{{ t.go }}" aria-selected="{{ t.sel }}" style="height:32px;padding:0 16px;border:0;border-radius:8px;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.ink }};font:600 13px 'Instrument Sans';cursor:pointer">{{ t.label }}</button></sc-for></div>
+                <span style="flex:1"></span>
+                <span style="height:38px;width:260px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';color:#8A857B">{{ searchPh }}</span>
+              </div>
+              <sc-if value="{{ isTplTab }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+                <sc-for list="{{ templates }}" as="t" hint-placeholder-count="3">
+                  <button onClick="{{ t.open }}" style="display:flex;flex-direction:column;border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:0;overflow:hidden;text-align:left;cursor:pointer" style-hover="box-shadow:0 10px 28px rgba(20,18,14,.10);border-color:#C9C3B7">
+                    <span style="height:180px;background:#ECE8E1;display:flex;justify-content:center;align-items:flex-end;padding-top:20px;box-sizing:border-box">
+                      <span style="width:200px;height:160px;background:#fff;border-radius:3px 3px 0 0;box-shadow:0 2px 10px rgba(20,18,14,.08);padding:20px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:7px">
+                        <span style="width:46px;height:5px;border-radius:2px;background:#9DB3A8"></span>
+                        <span style="font:600 14px/17px 'Source Serif 4',Georgia,serif">{{ t.cover }}</span>
+                        <span style="height:4px;border-radius:2px;background:#ECE8E1;margin-top:6px"></span><span style="height:4px;width:80%;border-radius:2px;background:#ECE8E1"></span><span style="height:4px;width:90%;border-radius:2px;background:#ECE8E1"></span>
+                      </span>
+                    </span>
+                    <span style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:1px solid #E3DED4">
+                      <span style="font:600 15px 'Instrument Sans'">{{ t.name }}</span>
+                      <span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ t.meta }}</span>
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:0;margin-top:8px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid #E3DED4"><span style="font:600 17px 'Instrument Sans'">Saved blocks</span><button onClick="{{ showBlocks }}" style="border:0;background:none;padding:6px 0;font:600 13px 'Instrument Sans';color:#13303A;cursor:pointer">See all 9</button></div>
+                <sc-for list="{{ blocksTop }}" as="b" hint-placeholder-count="4">
+                  <button onClick="{{ b.open }}" style="display:grid;grid-template-columns:minmax(0,1fr) 140px 180px 16px;gap:16px;align-items:center;min-height:52px;border:0;border-bottom:1px solid #ECE8E1;background:none;padding:0;text-align:left;font:400 14px 'Instrument Sans';color:#1C1B18;cursor:pointer" style-hover="background:#F6F3EE"><span style="font-weight:600">{{ b.name }}</span><span style="color:#5F5B53">{{ b.kind }}</span><span style="color:#5F5B53">{{ b.used }}</span><span style="color:#8A857B">›</span></button>
+                </sc-for>
+              </div>
+              </sc-if>
+              <sc-if value="{{ isBlkTab }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:16px">
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <sc-for list="{{ blkFilters }}" as="f" hint-placeholder-count="5"><span style="height:32px;padding:0 14px;border-radius:999px;border:{{ f.border }};background:{{ f.bg }};color:{{ f.ink }};display:flex;align-items:center;font:600 13px 'Instrument Sans';box-sizing:border-box">{{ f.n }}</span></sc-for>
+                  </div>
+                  <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+                    <div style="display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px 16px;gap:16px;padding:0 20px;height:40px;align-items:center;border-bottom:1px solid #E3DED4;font:600 11px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B"><span>Block</span><span>Type</span><span>Used in</span><span>Last edited</span><span></span></div>
+                    <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="9">
+                      <button onClick="{{ b.open }}" style="width:100%;display:grid;grid-template-columns:minmax(0,1fr) 130px 170px 150px 16px;gap:16px;align-items:center;min-height:64px;padding:10px 20px;border:0;border-top:{{ b.line }};background:none;text-align:left;font:400 14px 'Instrument Sans';color:#1C1B18;cursor:pointer;box-sizing:border-box" style-hover="background:#fff">
+                        <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-weight:600">{{ b.name }}</span><span style="font-size:13px;color:#5F5B53;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.preview }}</span></span>
+                        <span style="color:#5F5B53">{{ b.kind }}</span><span style="color:#5F5B53">{{ b.used }}</span><span style="color:#5F5B53;font-size:13px">{{ b.ed }}</span><span style="color:#8A857B">›</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                  <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">To save a new block, select any block in a proposal or template and choose ⋯ › Save as block.</div>
+                </div>
+              </sc-if>
+            </div>
+          </main>
+        </sc-if>
+
+
+        <sc-if value="{{ pg.blkEditor }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <div style="height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+              <button onClick="{{ closeEditor }}" style="height:34px;padding:0 10px;border:0;background:none;border-radius:8px;font:500 13px 'Instrument Sans';color:#5F5B53;cursor:pointer">‹ Saved blocks</button>
+              <span style="width:1px;height:20px;background:#DDD8CE"></span>
+              <span style="font:600 15px 'Instrument Sans'">{{ bk.name }}</span>
+              <span style="height:24px;padding:0 9px;border-radius:999px;background:#ECE8E1;display:flex;align-items:center;font:600 12px 'Instrument Sans';color:#3E3B35">{{ bk.kind }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:#5F5B53"><span style="width:6px;height:6px;border-radius:3px;background:#B26A00"></span>Edited · not saved</span>
+              <span style="flex:1"></span>
+              <span style="height:36px;padding:0 14px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Duplicate</span>
+              <span style="height:36px;padding:0 16px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">{{ bk.saveLabel }}</span>
+            </div>
+            <div style="flex:1;min-height:0;display:flex">
+              <div style="flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding-top:28px;gap:14px">
+                <div style="width:640px;font:500 12px 'Instrument Sans';color:#5F5B53">Shown as it appears in a proposal. Fields fill in with each client’s details.</div>
+                <div style="width:640px;min-height:420px;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);padding:72px 72px 60px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+                  <h2 style="margin:0;font:600 22px/28px 'Source Serif 4',Georgia,serif">{{ bk.title }}</h2>
+                  <sc-if value="{{ bk.isImage }}" hint-placeholder-val="{{ false }}">
+                    <div style="height:280px;border-radius:10px;background:repeating-linear-gradient(135deg,#F6F4EF 0 10px,#F1EEE8 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">team photo</div>
+                    <p style="margin:0;font:400 14px/22px 'Instrument Sans';color:#5F5B53">The MarketFresh team at the studio.</p>
+                  </sc-if>
+                  <sc-for list="{{ bk.paras }}" as="p" hint-placeholder-count="2">
+                    <div style="position:relative;display:flex;gap:10px;padding:4px 8px;margin:{{ p.margin }};border-radius:8px;box-shadow:{{ p.ring }};font:400 16px/27px 'Source Serif 4',Georgia,serif">
+                      <sc-if value="{{ p.sel }}" hint-placeholder-val="{{ false }}"><div role="toolbar" aria-label="Formatting" style="position:absolute;left:-8px;bottom:calc(100% + 10px);height:40px;display:flex;align-items:center;gap:2px;padding:0 6px;border-radius:12px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap;box-shadow:0 10px 24px rgba(20,18,14,.28)"><span style="height:28px;padding:0 10px;display:flex;align-items:center">{{ p.style }} ▾</span><span style="width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px"></span><span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span><span style="width:32px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span><span style="width:32px;display:flex;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></span><span style="width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px"></span><span style="height:28px;padding:0 10px;display:flex;align-items:center;border-radius:8px;background:rgba(255,255,255,.12);font:500 12px 'IBM Plex Mono'">{ } Field</span></div></sc-if>
+                      <sc-if value="{{ p.li }}" hint-placeholder-val="{{ false }}"><span style="flex:none">•</span></sc-if>
+                      <span><sc-for list="{{ p.parts }}" as="x" hint-placeholder-count="1"><sc-if value="{{ x.f }}" hint-placeholder-val="{{ false }}"><span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;font:500 13px 'Instrument Sans';color:#3E3B35">{{ x.t }}</span></sc-if><sc-if value="{{ x.x }}" hint-placeholder-val="{{ true }}">{{ x.t }}</sc-if></sc-for></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="width:380px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column">
+                <div style="padding:14px 16px 10px;display:flex;gap:8px;align-items:center">
+                  <div role="tablist" style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1"><sc-for list="{{ btabs }}" as="t" hint-placeholder-count="3"><button role="tab" onClick="{{ t.go }}" aria-selected="{{ t.sel }}" style="flex:1;height:30px;border:0;border-radius:8px;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.ink }};font:600 13px 'Instrument Sans';cursor:pointer">{{ t.label }}</button></sc-for></div>
+                  <span style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">»</span>
+                </div>
+                <sc-if value="{{ bt.used }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:6px 20px 20px;display:flex;flex-direction:column;gap:18px;overflow:auto">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Templates · linked</span>
+                      <div style="border:1px solid #E3DED4;border-radius:12px;background:#fff">
+                        <sc-for list="{{ bk.tpls }}" as="t" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-top:{{ t.line }};font:600 14px 'Instrument Sans'"><span style="flex:1">{{ t.n }}</span><span style="font:500 12px 'Instrument Sans';color:#13303A">Updates on save</span></div></sc-for>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Drafts with a copy · {{ bk.draftN }}</span>
+                      <div style="border:1px solid #E3DED4;border-radius:12px;background:#fff">
+                        <sc-for list="{{ bk.drafts }}" as="d" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:52px;padding:6px 14px;border-top:{{ d.line }}"><span style="font:600 14px 'Instrument Sans'">{{ d.n }}</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ d.s }}</span></div></sc-for>
+                      </div>
+                    </div>
+                    <div role="radiogroup" aria-label="When you save" style="display:flex;flex-direction:column;gap:8px">
+                      <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">When you save</span>
+                      <sc-for list="{{ applyOpts }}" as="o" hint-placeholder-count="2">
+                        <button role="radio" aria-checked="{{ o.on }}" onClick="{{ o.go }}" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:{{ o.border }};border-radius:12px;background:{{ o.bg }};text-align:left;cursor:pointer;color:#1C1B18">
+                          <span style="flex:none;margin-top:2px;width:18px;height:18px;border-radius:9px;border:1.5px solid {{ o.ring }};display:flex;align-items:center;justify-content:center;box-sizing:border-box"><span style="width:8px;height:8px;border-radius:4px;background:{{ o.dot }}"></span></span>
+                          <span style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px 'Instrument Sans'">{{ o.t }}</span><span style="font:400 12.5px/18px 'Instrument Sans';color:#5F5B53">{{ o.d }}</span></span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <div style="font:400 12.5px/18px 'Instrument Sans';color:#5F5B53">{{ bk.sentNote }}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ bt.fields }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 20px 20px;display:flex;flex-direction:column;gap:8px">
+                    <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">Click a field to insert it where your cursor is.</div>
+                    <sc-for list="{{ blkFields }}" as="f" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid #E3DED4;border-radius:10px;background:#fff"><span style="background:#F0ECE4;border-radius:4px;padding:1px 6px;font:500 13px 'Instrument Sans';color:#3E3B35">{{ f.label }}</span><span style="flex:1"></span><span style="font:400 12px 'Instrument Sans';color:#8A857B">{{ f.val }}</span></div></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ bt.details }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 20px 20px;display:flex;flex-direction:column;gap:14px">
+                    <label style="display:flex;flex-direction:column;gap:6px;font:600 13px 'Instrument Sans'">Name<span style="height:40px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans'">{{ bk.name }}</span></label>
+                    <label style="display:flex;flex-direction:column;gap:6px;font:600 13px 'Instrument Sans'">Type<span style="height:40px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:400 14px 'Instrument Sans'">{{ bk.kind }}<span style="color:#8A857B;font-size:11px">▾</span></span></label>
+                    <div style="display:flex;flex-direction:column;gap:2px;font:400 13px/20px 'Instrument Sans';color:#5F5B53"><span>{{ bk.ed }}</span><span>Created Mar 4, 2026 by Jonathan Garces</span></div>
+                    <div style="height:1px;background:#E3DED4"></div>
+                    <div style="display:flex;flex-direction:column;gap:6px"><span style="height:40px;border:1px solid #E7C3BD;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans';color:#A3301F">Delete block</span><span style="font:400 12.5px/18px 'Instrument Sans';color:#5F5B53">{{ bk.deleteNote }}</span></div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ pg.tplEditor }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <div style="height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+              <button onClick="{{ closeEditor }}" style="height:34px;padding:0 10px;border:0;background:none;border-radius:8px;font:500 13px 'Instrument Sans';color:#5F5B53;cursor:pointer">‹ Templates</button>
+              <span style="width:1px;height:20px;background:#DDD8CE"></span>
+              <span style="font:600 15px 'Instrument Sans'">Website proposal</span>
+              <span style="display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:#5F5B53"><span style="width:6px;height:6px;border-radius:3px;background:#8A857B"></span>Saved · changes apply to new proposals</span>
+              <span style="flex:1"></span>
+              <span style="height:36px;padding:0 14px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Preview</span>
+              <span style="height:36px;padding:0 16px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">New proposal from this</span>
+            </div>
+            <div style="flex:1;min-height:0;display:flex">
+              <div style="width:220px;flex:none;padding:24px 16px;display:flex;flex-direction:column;gap:2px;font:500 13px/18px 'Instrument Sans'">
+                <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;margin:0 0 8px 12px">Sections</div>
+                <sc-for list="{{ tplSections }}" as="s" hint-placeholder-count="7"><span style="padding:7px 12px;border-radius:8px;background:{{ s.bg }};font-weight:{{ s.w }};color:#1C1B18">{{ s.name }}</span></sc-for>
+              </div>
+              <div style="flex:1;min-width:0;overflow:hidden;display:flex;justify-content:center;padding-top:28px">
+                <div style="width:640px;height:1000px;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08);padding:60px 72px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+                  <div style="font:600 12px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#365C4A">Proposal for <span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;letter-spacing:0;text-transform:none;font:500 12px 'Instrument Sans';color:#3E3B35">Client company</span></div>
+                  <h1 style="margin:0;font:600 34px/40px 'Source Serif 4',Georgia,serif">A website that works as hard as you do</h1>
+                  <div style="font:400 14px 'Instrument Sans';color:#5F5B53;margin-bottom:28px">From <span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;font-size:12px;font-weight:500;color:#3E3B35">Sender name</span> · Valid until <span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;font-size:12px;font-weight:500;color:#3E3B35">Valid until</span></div>
+                  <h2 style="margin:0;font:600 22px/28px 'Source Serif 4',Georgia,serif">Overview</h2>
+                  <p style="margin:0;font:400 16px/27px 'Source Serif 4',Georgia,serif"><span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;font:500 13px 'Instrument Sans';color:#3E3B35">Client first name</span>, thank you for the time you spent walking us through the business. This proposal sets out what we’ll build, how we’ll work together and what it costs.</p>
+                  <h2 style="margin:18px 0 0;font:600 22px/28px 'Source Serif 4',Georgia,serif">Your investment</h2>
+                  <div style="border:1px dashed #C9C3B7;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:6px;background:#FBFAF7">
+                    <span style="font:600 13px 'Instrument Sans'">Pricing table</span>
+                    <span style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">Filled from the default quote (right panel). Staff enter or confirm every price on each proposal.</span>
+                  </div>
+                  <h2 style="margin:18px 0 0;font:600 22px/28px 'Source Serif 4',Georgia,serif">Statement of Work &amp; Contract</h2>
+                  <div style="height:120px;border-radius:10px;background:repeating-linear-gradient(135deg,#F6F4EF 0 10px,#F1EEE8 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">contract clauses</div>
+                </div>
+              </div>
+              <div style="width:380px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column">
+                <div style="padding:14px 16px 10px;display:flex;gap:8px;align-items:center">
+                  <div role="tablist" style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1"><sc-for list="{{ tplTabs }}" as="t" hint-placeholder-count="4"><button role="tab" onClick="{{ t.go }}" aria-selected="{{ t.sel }}" style="flex:1;height:30px;padding:0 4px;border:0;border-radius:8px;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.ink }};font:600 12.5px 'Instrument Sans';white-space:nowrap;cursor:pointer">{{ t.label }}</button></sc-for></div>
+                  <span style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">»</span>
+                </div>
+                <sc-if value="{{ tt.quote }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:4px 16px;display:flex;flex-direction:column;gap:2px">
+                  <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 4px 10px">Lines added to every new proposal from this template. Prices are left blank or copied from the catalog; the app never fills them in for you.</div>
+                  <div style="border-left:2px solid #13303A;padding-left:10px;margin-bottom:4px">
+                    <div style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#13303A">Choose one</div>
+                    <div style="display:flex;align-items:center;min-height:48px;font:600 14px 'Instrument Sans'"><span style="flex:1">Website Build — Own It Over Time</span><span style="color:#8A857B;font-size:11px">▾</span></div>
+                    <div style="display:flex;align-items:center;min-height:48px;font:600 14px 'Instrument Sans'"><span style="flex:1">Website Build — Own It Now</span><span style="color:#8A857B;font-size:11px">▾</span></div>
+                  </div>
+                  <div style="display:flex;align-items:center;min-height:52px;border-top:1px solid #ECE8E1;font:600 14px 'Instrument Sans'"><span style="flex:1;display:flex;flex-direction:column">Care Standard<span style="font:500 12px 'Instrument Sans';color:#13303A">Optional · ticked for client</span></span><span style="color:#8A857B;font-size:11px">▾</span></div>
+                  <div style="display:flex;align-items:center;min-height:52px;border-top:1px solid #ECE8E1;font:600 14px 'Instrument Sans'"><span style="flex:1;display:flex;flex-direction:column">Local Visibility Core<span style="font:500 12px 'Instrument Sans';color:#5F5B53">Optional · not ticked</span></span><span style="color:#8A857B;font-size:11px">▾</span></div>
+                  <span style="margin-top:10px;height:38px;border:1px dashed #C9C3B7;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans';color:#5F5B53">+ Add product</span>
+                </div>
+                </sc-if>
+                <sc-if value="{{ tt.fields }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 16px 16px;display:flex;flex-direction:column;gap:8px">
+                    <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 4px">Click a field to insert it. Values fill in on each proposal.</div>
+                    <sc-for list="{{ blkFields }}" as="f" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid #E3DED4;border-radius:10px;background:#fff"><span style="background:#F0ECE4;border-radius:4px;padding:1px 6px;font:500 13px 'Instrument Sans';color:#3E3B35">{{ f.label }}</span><span style="flex:1"></span><span style="font:400 12px 'Instrument Sans';color:#8A857B">{{ f.val }}</span></div></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ tt.blocks }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 16px 16px;display:flex;flex-direction:column;gap:10px">
+                    <span style="height:38px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';color:#8A857B">Search blocks</span>
+                    <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 4px">Drag a block onto the page, or click Insert to add it below the selected section. Saved blocks stay linked to this template.</div>
+                    <div style="border:1px solid #E3DED4;border-radius:12px;background:#fff">
+                      <sc-for list="{{ blocksPhone }}" as="b" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 12px;border-top:{{ b.line }}"><span style="color:#B5AFA3;font-size:12px;letter-spacing:-1px">⋮⋮</span><span style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font:600 14px 'Instrument Sans'">{{ b.name }}</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">{{ b.kind }}</span></span><span style="font:600 13px 'Instrument Sans';color:#13303A">Insert</span></div></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ tt.styles }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 16px 16px;display:flex;flex-direction:column;gap:18px;overflow:auto">
+                    <div style="display:flex;flex-direction:column"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Fonts</span><div style="height:8px"></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Source Serif 4 · Instrument Sans</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">From Workspace › Proposal fonts</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Change</span></div></div>
+                    <div style="display:flex;flex-direction:column"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Header &amp; footer</span><div style="height:8px"></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Show header</span></span><span style="flex:none;width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Show footer</span></span><span style="flex:none;width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Header</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Workspace default · logo left, title right</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Edit</span></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Footer</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Workspace default · “Page 3 of 9” right</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Edit</span></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Band height</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Taken from the page’s content area</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">48px ▾</span></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Divider line</span></span><span style="flex:none;width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+                      <div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Cover page</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Starts without header and footer</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Hidden ▾</span></div>
+                      <div style="padding-top:10px;font:400 12.5px/18px 'Instrument Sans';color:#5F5B53">Editing the header here makes it unique to this template. Proposals made from it start with this version.</div>
+                      <span style="margin-top:8px;height:36px;border:1px solid #DDD8CE;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 13px 'Instrument Sans'">Reset to workspace default</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ pg.emails }}" hint-placeholder-val="{{ true }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:26px">
+              <div style="display:flex;align-items:flex-end;gap:16px">
+                <div style="flex:1"><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Emails</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px;max-width:620px">What clients and staff receive at each step. Client emails use your branding and come from the proposal’s sender. The proposal link is always added for you.</div></div>
+              </div>
+              <div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans';align-self:flex-start">
+                <sc-for list="{{ audTabs }}" as="a" hint-placeholder-count="2"><button onClick="{{ a.go }}" style="height:32px;padding:0 16px;border:0;border-radius:8px;background:{{ a.bg }};box-shadow:{{ a.sh }};font:600 13px 'Instrument Sans';color:{{ a.ink }};cursor:pointer">{{ a.label }}</button></sc-for>
+              </div>
+              <sc-for list="{{ emailGroups }}" as="g" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:24px">
+                  <div style="display:flex;gap:10px;padding-top:16px">
+                    <span style="width:10px;height:10px;border-radius:5px;border:2px solid #13303A;background:#F3F0EA;box-sizing:border-box;margin-top:3px;flex:none"></span>
+                    <span style="font:600 13px/16px 'Instrument Sans';color:#1C1B18">{{ g.name }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+                    <sc-for list="{{ g.items }}" as="e" hint-placeholder-count="2">
+                      <button onClick="{{ e.open }}" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) 150px 16px;gap:20px;align-items:center;min-height:68px;padding:12px 20px;border:0;border-top:{{ e.line }};background:transparent;text-align:left;cursor:pointer" style-hover="background:#fff">
+                        <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:600 15px/20px 'Instrument Sans'">{{ e.name }}</span><span style="font:400 13px/18px 'Instrument Sans';color:#5F5B53">{{ e.when }}</span></span>
+                        <span style="font:400 14px/22px 'Instrument Sans';color:#3E3B35;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><sc-for list="{{ e.subj }}" as="p" hint-placeholder-count="2"><sc-if value="{{ p.f }}"><span style="background:#F0ECE4;border-radius:4px;padding:1px 5px;font:500 12px 'Instrument Sans'">{{ p.t }}</span></sc-if><sc-if value="{{ p.x }}"><span>{{ p.t }}</span></sc-if></sc-for></span>
+                        <span style="font:500 12px 'Instrument Sans';color:{{ e.edInk }}">{{ e.edited }}</span>
+                        <span style="color:#8A857B;font:500 16px 'Instrument Sans'">›</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding-left:144px">Each proposal keeps an exact copy of every email it sent, on its record under Activity. Later edits here don’t change those copies.</div>
+            </div>
+          </main>
+        </sc-if>
+
+        <sc-if value="{{ pg.emailEditor }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <div style="height:56px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+              <button onClick="{{ closeEditor }}" style="height:34px;padding:0 10px;border:0;background:none;border-radius:8px;font:500 13px 'Instrument Sans';color:#5F5B53;cursor:pointer">‹ Emails</button>
+              <span style="width:1px;height:20px;background:#DDD8CE"></span>
+              <span style="font:600 15px 'Instrument Sans'">{{ em.name }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:#5F5B53"><span style="width:6px;height:6px;border-radius:3px;background:#8A857B"></span>{{ em.status }}</span>
+              <span style="flex:1"></span>
+              <sc-if value="{{ em.canEdit }}"><span style="height:36px;padding:0 12px;display:flex;align-items:center;font:600 13px 'Instrument Sans';color:#5F5B53">Reset to default</span></sc-if>
+              <span style="height:36px;padding:0 14px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Send me a test</span>
+              <sc-if value="{{ em.canEdit }}"><span style="height:36px;padding:0 18px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Save</span></sc-if>
+            </div>
+            <div style="flex:1;min-height:0;display:flex">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:{{ cv.outer }}">
+                <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 20px">
+                  <div style="display:flex;padding:3px;border-radius:10px;background:{{ cv.segBg }};font:600 12px 'Instrument Sans'">
+                    <sc-for list="{{ modeOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.go }}" style="height:28px;padding:0 12px;border:0;border-radius:8px;background:{{ o.bg }};color:{{ o.ink }};font:600 12px 'Instrument Sans';cursor:pointer">{{ o.label }}</button></sc-for>
+                  </div>
+                  <sc-if value="{{ showValues }}"><span style="height:34px;padding:0 10px;border:1px solid {{ cv.segBg }};border-radius:8px;display:flex;align-items:center;gap:6px;font:500 12px 'Instrument Sans';color:{{ cv.muted }};background:{{ cv.card }}">Brightline Foods · Website &amp; Care <span style="opacity:.6">▾</span></span></sc-if>
+                  <span style="flex:1"></span>
+                  <div style="display:flex;padding:3px;border-radius:10px;background:{{ cv.segBg }}">
+                    <sc-for list="{{ widthOpts }}" as="o" hint-placeholder-count="2"><button onClick="{{ o.go }}" style="height:28px;padding:0 12px;border:0;border-radius:8px;background:{{ o.bg }};color:{{ o.ink }};font:600 12px 'Instrument Sans';cursor:pointer">{{ o.label }}</button></sc-for>
+                  </div>
+                  <button onClick="{{ toggleDark }}" style="height:34px;padding:0 12px;border:1px solid {{ cv.segBg }};border-radius:8px;background:{{ cv.card }};color:{{ cv.ink }};font:600 12px 'Instrument Sans';cursor:pointer">{{ darkLabel }}</button>
+                </div>
+                <div style="flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;padding:12px 20px 40px">
+                  <div style="width:{{ cv.w }};display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;flex-direction:column;gap:4px;padding:0 4px;font:400 13px/19px 'Instrument Sans';color:{{ cv.muted }}">
+                      <span>From <b style="color:{{ cv.ink }};font-weight:600">Jonathan Garces</b> · MarketFresh Studios</span>
+                      <span style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;font:600 17px/26px 'Instrument Sans';color:{{ cv.ink }};padding:4px 6px;margin:0 -6px;border-radius:8px;box-shadow:{{ em.subjRing }}"><sc-for list="{{ em.subj }}" as="p" hint-placeholder-count="2"><sc-if value="{{ p.f }}"><span style="background:{{ cv.chip }};border-radius:5px;padding:0 6px;font:500 14px/24px 'Instrument Sans'">{{ p.t }}</span></sc-if><sc-if value="{{ p.x }}"><span>{{ p.t }}</span></sc-if></sc-for></span>
+                    </div>
+                    <div style="background:{{ cv.card }};border-radius:12px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 12px 28px rgba(20,18,14,.06);padding:{{ cv.pad }};display:flex;flex-direction:column;gap:18px;color:{{ cv.ink }}">
+                      <div style="display:flex;align-items:center;gap:10px;padding-bottom:18px;border-bottom:1px solid {{ cv.rule }}"><span style="width:28px;height:28px;border-radius:8px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Instrument Sans'">M</span><span style="font:600 15px 'Instrument Sans'">MarketFresh Studios</span></div>
+                      <sc-for list="{{ em.paras }}" as="pa" hint-placeholder-count="3">
+                        <div style="position:relative;padding:4px 8px;margin:0 -8px;border-radius:8px;box-shadow:{{ pa.ring }}">
+                          <sc-if value="{{ pa.bar }}">
+                            <div style="position:absolute;left:0;bottom:calc(100% + 8px);display:flex;align-items:center;height:38px;padding:0 4px;border-radius:12px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap;box-shadow:0 10px 28px rgba(20,18,14,.28);z-index:2">
+                              <span style="width:32px;text-align:center;font-weight:700">B</span><span style="width:32px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+                              <span style="width:32px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+                              <span style="width:32px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><text x="0" y="4.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">1</text><text x="0" y="9" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">2</text><text x="0" y="13.5" font-size="5" font-family="Instrument Sans,sans-serif" font-weight="700" fill="#fff">3</text><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+                              <span style="width:32px;display:flex;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></span>
+                              <span style="width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 2px"></span>
+                              <span style="padding:0 10px;font:500 12px 'IBM Plex Mono'">{ } Field</span>
+                            </div>
+                          </sc-if>
+                          <p style="margin:0;font:400 16px/26px 'Instrument Sans'"><sc-for list="{{ pa.parts }}" as="p" hint-placeholder-count="2"><sc-if value="{{ p.f }}"><span style="background:{{ cv.chip }};border-radius:5px;padding:1px 6px;font:500 14px 'Instrument Sans'">{{ p.t }}</span></sc-if><sc-if value="{{ p.x }}"><span>{{ p.t }}</span></sc-if></sc-for></p>
+                        </div>
+                      </sc-for>
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="height:46px;padding:0 22px;border-radius:10px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 15px 'Instrument Sans';box-shadow:{{ em.btnRing }}">{{ em.label }}</span>
+                        <sc-if value="{{ em.canEdit }}"><span style="font:500 12px 'Instrument Sans';color:{{ cv.muted }}">Button label · opens the secure proposal</span></sc-if>
+                      </div>
+                      <div style="padding-top:18px;border-top:1px solid {{ cv.rule }};font:400 12px/18px 'Instrument Sans';color:{{ cv.muted }}">Sent by MarketFresh Studios on behalf of Jonathan Garces. Reply to this email to reach Jonathan directly.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="width:360px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column">
+                <div style="padding:14px 16px 10px;display:flex;gap:8px;align-items:center">
+                  <div style="flex:1;display:flex;padding:3px;border-radius:10px;background:#ECE8E1">
+                    <sc-for list="{{ etabs }}" as="t" hint-placeholder-count="3"><button onClick="{{ t.go }}" style="flex:1;height:30px;border:0;border-radius:8px;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.ink }};font:600 13px 'Instrument Sans';cursor:pointer">{{ t.label }}</button></sc-for>
+                  </div>
+                  <span style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 15px 'Instrument Sans';color:#3E3B35;box-sizing:border-box">»</span>
+                </div>
+                <div style="flex:1;min-height:0;overflow:auto;padding:4px 16px 20px">
+                  <sc-if value="{{ et.fields }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-if value="{{ em.staff }}"><div style="padding:12px 14px;border-radius:12px;background:#ECE8E1;font:400 13px/19px 'Instrument Sans';color:#3E3B35"><b>Read-only.</b> Staff notifications are written by the app from proposal activity, so their wording can’t be changed.</div></sc-if>
+                      <sc-if value="{{ em.canEdit }}"><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 2px 4px">Click in the subject or body, then click a field to insert it. Pricing fields are optional and aren’t in the defaults.</div></sc-if>
+                      <span style="height:38px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';color:#8A857B">Search fields</span>
+                      <sc-for list="{{ fieldCards }}" as="f" hint-placeholder-count="8">
+                        <div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid #E3DED4;border-radius:10px;background:#fff">
+                          <span style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 13px 'Instrument Sans'">{{ f.label }}</span><span style="font:400 11px 'IBM Plex Mono';color:#8A857B">{{ f.token }}</span></span>
+                          <span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">{{ f.val }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ et.details }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column">
+                      <sc-for list="{{ em.details }}" as="d" hint-placeholder-count="5">
+                        <div style="display:flex;flex-direction:column;gap:3px;padding:12px 2px;border-bottom:1px solid #ECE8E1"><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">{{ d.k }}</span><span style="font:400 14px/20px 'Instrument Sans';color:#1C1B18">{{ d.v }}</span></div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ et.text }}" hint-placeholder-val="{{ false }}">
+                    <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 2px 10px">Sent alongside the designed email for mail apps that show plain text. It’s created from the body automatically.</div>
+                    <pre style="margin:0;padding:14px;border:1px solid #E3DED4;border-radius:10px;background:#fff;font:400 12px/19px 'IBM Plex Mono';white-space:pre-wrap;color:#3E3B35">{{ em.plain }}</pre>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ pg.products }}" hint-placeholder-val="{{ false }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:flex-end;gap:16px">
+                <div style="flex:1;min-width:0"><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Products</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">Services you can add to a quote. Stripe products keep their Stripe price; custom families are priced on each proposal.</div><div style="display:flex;align-items:center;gap:10px;margin-top:10px;font:500 12px 'Instrument Sans';color:#5F5B53;white-space:nowrap"><span style="width:7px;height:7px;border-radius:4px;background:#3C8A5F"></span>Synced with Stripe 4 min ago<span style="font:600 13px 'Instrument Sans';color:#13303A">Sync now</span></div></div>
+                <span style="flex:none;white-space:nowrap;height:40px;padding:0 18px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 14px 'Instrument Sans'">New custom family</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="height:32px;padding:0 14px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">All · 7</span>
+                <span style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #DDD8CE;display:flex;align-items:center;font:600 13px 'Instrument Sans';color:#3E3B35">Stripe · 5</span>
+                <span style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #DDD8CE;display:flex;align-items:center;font:600 13px 'Instrument Sans';color:#3E3B35">Custom families · 2</span>
+                <span style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #DDD8CE;display:flex;align-items:center;font:600 13px 'Instrument Sans';color:#3E3B35">Archived</span>
+                <span style="flex:1"></span>
+                <span style="height:38px;width:200px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';color:#8A857B">Search products</span>
+              </div>
+              <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+                <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(120px,.8fr) minmax(0,1fr) 72px;gap:16px;padding:10px 20px;font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;border-bottom:1px solid #E3DED4"><span>Product</span><span>Price</span><span>Plan terms</span><span>Source</span></div>
+                <sc-for list="{{ products }}" as="p" hint-placeholder-count="7">
+                  <button onClick="{{ p.open }}" style="width:100%;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(120px,.8fr) minmax(0,1fr) 72px;gap:16px;align-items:center;min-height:64px;padding:10px 20px;border:0;border-top:{{ p.line }};background:{{ p.bg }};text-align:left;cursor:pointer" style-hover="background:#fff">
+                    <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font:600 15px 'Instrument Sans'">{{ p.n }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ p.d }}</span></span>
+                    <span style="font:600 14px 'Instrument Sans';font-variant-numeric:tabular-nums">{{ p.p }}</span>
+                    <span style="font:400 13px/18px 'Instrument Sans';color:#3E3B35">{{ p.terms }}</span>
+                    <span style="justify-self:start;padding:2px 8px;border-radius:999px;background:{{ p.srcBg }};color:{{ p.srcInk }};font:600 11px/16px 'Instrument Sans'">{{ p.src }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </main>
+          <sc-if value="{{ prodOpen }}">
+            <aside style="width:360px;flex:none;border-left:1px solid #E3DED4;background:#FBFAF7;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:8px;padding:16px 16px 12px 20px;border-bottom:1px solid #E3DED4"><span style="flex:1;font:600 16px 'Instrument Sans'">{{ prod.n }}</span><button onClick="{{ closeProd }}" style="width:32px;height:32px;border:1px solid #DDD8CE;border-radius:8px;background:#fff;font:600 15px 'Instrument Sans';cursor:pointer">»</button></div>
+              <div style="flex:1;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Name on proposals</span><span style="height:40px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans'">{{ prod.n }}</span></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Description the client sees</span><span style="min-height:64px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;padding:10px 12px;font:400 14px/20px 'Instrument Sans';box-sizing:border-box">{{ prod.d }}</span></label>
+                <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Price</span><div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;background:#ECE8E1"><span style="font:600 15px 'Instrument Sans'">{{ prod.p }}</span><span style="font:600 13px 'Instrument Sans';color:#13303A">{{ prod.priceAct }}</span></div><span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53">{{ prod.priceNote }}</span></div>
+                <sc-if value="{{ prod.hasTerms }}">
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #E3DED4;border-radius:12px;background:#fff">
+                    <span style="font:600 14px 'Instrument Sans'">Own It Over Time plan</span>
+                    <sc-for list="{{ terms }}" as="t" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;gap:12px;font:400 14px/20px 'Instrument Sans'"><span style="color:#5F5B53">{{ t.k }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ t.v }}</span></div></sc-for>
+                    <span style="font:400 12px/17px 'Instrument Sans';color:#5F5B53;padding-top:6px;border-top:1px solid #ECE8E1">The client pays $175/mo for 30 months to own the site. If they stop before month 18, the minimum term still applies; if they stop before month 30, the site is taken down.</span>
+                  </div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Used in</span><span style="font:400 14px/20px 'Instrument Sans';color:#3E3B35">{{ prod.used }}</span></div>
+              </div>
+            </aside>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ pg.connections }}" hint-placeholder-val="{{ false }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:22px">
+              <div><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Connections</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">Payments, invoicing, email delivery, AI assistants and imports. Each one shows if it’s healthy and offers one fix when it isn’t.</div></div>
+              <sc-for list="{{ conns }}" as="g" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">{{ g.name }}</span>
+                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                    <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="2">
+                      <div style="display:flex;gap:14px;align-items:flex-start;padding:18px;border:1px solid {{ c.border }};border-radius:14px;background:{{ c.bg }}">
+                        <span style="width:40px;height:40px;border-radius:10px;background:#fff;border:1px solid #E3DED4;flex:none;display:flex;align-items:center;justify-content:center;font:700 14px 'Instrument Sans';color:#3E3B35">{{ c.mono }}</span>
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                          <span style="display:flex;align-items:center;gap:8px"><span style="font:600 15px 'Instrument Sans'">{{ c.n }}</span><span style="display:flex;align-items:center;gap:5px;font:600 12px 'Instrument Sans';color:{{ c.ink }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ c.dot }}"></span>{{ c.state }}</span></span>
+                          <span style="font:400 13px/19px 'Instrument Sans';color:#5F5B53">{{ c.d }}</span>
+                        </div>
+                        <span style="flex:none;height:34px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';background:{{ c.btnBg }};color:{{ c.btnInk }};border:{{ c.btnBorder }}">{{ c.act }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </main>
+        </sc-if>
+
+        <sc-if value="{{ pg.workspace }}" hint-placeholder-val="{{ false }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:24px">
+              <div style="display:flex;align-items:flex-end;gap:16px"><div style="flex:1"><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Workspace</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">How proposals look and who can send and sign them.</div></div><span style="font:500 12px 'Instrument Sans';color:#5F5B53">Changes save automatically</span></div>
+              <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;align-items:start">
+                <div style="display:flex;flex-direction:column;gap:2px;position:sticky;top:0">
+                  <sc-for list="{{ wsNav }}" as="w" hint-placeholder-count="7"><button onClick="{{ w.go }}" style="height:36px;padding:0 12px;border:0;border-left:2px solid {{ w.line }};background:none;text-align:left;font:{{ w.font }};color:{{ w.ink }};cursor:pointer">{{ w.name }}</button></sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:16px">
+                  <sc-if value="{{ ws.brand }}" hint-placeholder-val="{{ true }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:20px">
+                      <div><div style="font:600 18px 'Instrument Sans'">Brand</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53;margin-top:4px">Shown on client pages, emails and PDFs.</div></div>
+                      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px">
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Workspace name</span><span style="height:42px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans'">MarketFresh Studios</span></label>
+                        <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Logo</span><div style="height:42px;border:1px dashed #C9C3B7;border-radius:10px;display:flex;align-items:center;gap:10px;padding:0 6px 0 6px"><span style="width:30px;height:30px;border-radius:8px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Instrument Sans'">M</span><span style="flex:1;font:400 13px 'Instrument Sans';color:#5F5B53">logo.svg · 4 KB</span><span style="font:600 13px 'Instrument Sans';color:#13303A;padding:0 8px">Replace</span></div></div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:8px"><span style="font:600 13px 'Instrument Sans'">Accent color</span><div style="display:flex;gap:10px;align-items:center"><span style="width:36px;height:36px;border-radius:18px;background:#365C4A;box-shadow:0 0 0 2px #FBFAF7,0 0 0 4px #1C1B18"></span><span style="width:36px;height:36px;border-radius:18px;background:#2F4E7A"></span><span style="width:36px;height:36px;border-radius:18px;background:#7A3F2F"></span><span style="width:36px;height:36px;border-radius:18px;background:#1C1B18"></span><span style="height:36px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'IBM Plex Mono'">#365C4A</span><span style="font:600 12px 'Instrument Sans';color:#13303A">✓ Readable on white (7.1:1)</span></div></div>
+                      <div style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Show “Powered by Yeswell”</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">A small line at the bottom of client pages and emails. Never shown on the PDF.</span></span><span style="flex:none;width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ws.fonts }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:20px">
+                      <div><div style="font:600 18px 'Instrument Sans'">Proposal fonts</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53;margin-top:4px">Used on the client page and in the PDF. The app itself keeps its own fonts.</div></div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Headings</span><span style="height:42px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:600 15px 'Source Serif 4',serif">Source Serif 4<span style="font:400 12px 'Instrument Sans';color:#8A857B">▾</span></span></label>
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Body</span><span style="height:42px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:400 15px 'Instrument Sans'">Instrument Sans<span style="font:400 12px 'Instrument Sans';color:#8A857B">▾</span></span></label>
+                      </div>
+                      <div style="background:#fff;border-radius:10px;border:1px solid #E3DED4;padding:22px 26px"><div style="font:600 24px/30px 'Source Serif 4',Georgia,serif">A website that takes catering orders</div><div style="font:400 15px/24px 'Instrument Sans';color:#3E3B35;margin-top:8px">Rowan, thank you for walking us through the new menu and the catering side of the business.</div></div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ ws.styles }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:14px"><div><div style="font:600 18px 'Instrument Sans'">Proposal styles</div><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;margin-top:4px">Defaults for every new proposal and template. Each template can override them in its Styles tab.</div></div><div style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Heading color</span></span><span style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:11px;background:#365C4A"></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Accent ▾</span></span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Body size</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">16px ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Page margins</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Letter pages, same as the PDF</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Normal · 0.9in ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Quote layout</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">How line items appear to the client</span></span><div style="flex:none;display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="height:32px;padding:0 12px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center">Cards</span><span style="height:32px;padding:0 12px;display:flex;align-items:center;color:#5F5B53">Table</span></div></div><div style="height:14px"></div><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Header &amp; footer</span><div style="height:6px"></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Header</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Logo left · proposal title right · divider on</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Edit</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Footer</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Workspace name left · “Page 3 of 9” right</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Edit</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Band height</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">48px ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Cover page</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Header and footer hidden on the cover</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Hidden ▾</span></div></div></div>
+                  </sc-if>
+                  <sc-if value="{{ ws.billing }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:14px"><div><div style="font:600 18px 'Instrument Sans'">Billing defaults</div><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;margin-top:4px">Where each kind of charge is billed after a client signs.</div></div><div style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 0;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="display:flex;align-items:center;gap:8px;font:600 14px 'Instrument Sans'">Recurring services<span style="height:20px;padding:0 7px;border-radius:5px;background:#E8E4F7;color:#3E2A80;display:inline-flex;align-items:center;font:600 11px 'Instrument Sans'">Stripe</span></span><span style="font:400 12.5px/18px 'Instrument Sans';color:#5F5B53;max-width:520px">Hosting, care and other monthly or yearly services. New clients pay through Stripe Checkout; existing subscribers have the items added to their subscription, with no payment step.</span></span><span style="flex:none;font:500 13px 'Instrument Sans';color:#2F6B4A">Connected · <a href="#" style="font-weight:600;color:#13303A">Manage</a></span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Existing Stripe subscribers</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Add the new items to their subscription. No payment step.</span></span><span style="flex:none;width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div><div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 0;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="display:flex;align-items:center;gap:8px;font:600 14px 'Instrument Sans'">One-time fees<span style="height:20px;padding:0 7px;border-radius:5px;background:#E3F1EA;color:#2F6B4A;display:inline-flex;align-items:center;font:600 11px 'Instrument Sans'">QuickBooks</span></span><span style="font:400 12.5px/18px 'Instrument Sans';color:#5F5B53;max-width:520px">Project fees, including the Own It Over Time kickoff. Until QuickBooks is connected, staff record the invoice number on the proposal.</span></span><span style="flex:none;font:500 13px 'Instrument Sans';color:#7A4800">Not connected · <a href="#" style="font-weight:600;color:#13303A">Connect</a></span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Payment methods</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Shown in Stripe Checkout for recurring services.</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Card, bank transfer ▾</span></div></div></div>
+                  </sc-if>
+                  <sc-if value="{{ ws.emails }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:14px"><div><div style="font:600 18px 'Instrument Sans'">Email sending</div><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;margin-top:4px">Where client emails come from and when reminders go out. Edit the wording in Studio › Emails.</div></div><div style="display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Sending domain</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">proposals@mktfresh.com · SPF and DKIM verified</span></span><span style="flex:none;font:600 13px 'Instrument Sans';color:#13303A">Change</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Reply-to</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Replies go to the proposal’s sender</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Sender ▾</span></div><div style="height:14px"></div><span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B">Reminders</span><div style="height:6px"></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Not opened</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Sends “Reminder · unopened”</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">After 3 days ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Viewed, not signed</span><span style="font:400 12.5px/17px 'Instrument Sans';color:#5F5B53">Sends “Reminder · viewed, not signed”</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">After 4 days ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Stop after</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">2 reminders ▾</span></div><div style="display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font:600 14px 'Instrument Sans'">Remind staff to countersign</span></span><span style="flex:none;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">Next morning ▾</span></div></div></div>
+                  </sc-if>
+                  <sc-if value="{{ ws.team }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:12px">
+                      <div style="display:flex;align-items:flex-end;gap:12px"><div style="flex:1"><div style="font:600 18px 'Instrument Sans'">Team</div><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;margin-top:4px">Super admins manage Studio, billing and the team. Staff draft, edit, send and countersign.</div></div><span style="height:36px;padding:0 16px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Invite</span></div>
+                      <sc-for list="{{ team }}" as="m" hint-placeholder-count="4"><div style="position:relative;display:flex;align-items:center;gap:12px;min-height:60px;border-top:1px solid #ECE8E1;opacity:{{ m.op }}"><span style="flex:none;width:34px;height:34px;border-radius:17px;background:#E4DCCB;display:flex;align-items:center;justify-content:center;font:600 12px 'Instrument Sans'">{{ m.i }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font:600 14px 'Instrument Sans'">{{ m.n }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ m.e }}</span></span><span style="font:500 12.5px 'Instrument Sans';color:{{ m.sInk }}">{{ m.s }}</span><span style="flex:none;width:120px;height:34px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;font:500 13px 'Instrument Sans';box-sizing:border-box">{{ m.r }}<span style="font-size:10px;color:#8A857B">▾</span></span><span aria-label="More actions" style="flex:none;width:36px;height:36px;border-radius:8px;background:{{ m.mBg }};display:flex;align-items:center;justify-content:center;font:700 16px 'Instrument Sans';color:#3E3B35">⋯</span>
+                        <sc-if value="{{ m.menu }}" hint-placeholder-val="{{ false }}"><div role="menu" style="position:absolute;right:0;top:52px;z-index:3;width:250px;padding:6px;border:1px solid #E3DED4;border-radius:12px;background:#fff;box-shadow:0 14px 32px rgba(20,18,14,.16);display:flex;flex-direction:column">
+                          <span role="menuitem" style="height:40px;padding:0 10px;border-radius:8px;display:flex;align-items:center;font:500 14px 'Instrument Sans';background:#F3F0EA">Set password…</span>
+                          <span role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:4px 10px;font:500 14px 'Instrument Sans'">Reassign proposals…<span style="font:400 12px 'Instrument Sans';color:#5F5B53">6 open proposals</span></span>
+                          <span style="height:1px;background:#ECE8E1;margin:4px 6px"></span>
+                          <span role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:4px 10px;font:500 14px 'Instrument Sans'">Deactivate<span style="font:400 12px 'Instrument Sans';color:#5F5B53">Blocks sign-in. History is kept.</span></span>
+                          <span style="height:1px;background:#ECE8E1;margin:4px 6px"></span>
+                          <span role="menuitem" style="display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:4px 10px;font:500 14px 'Instrument Sans';color:#A3301F">Remove from team<span style="font:400 12px 'Instrument Sans';color:#5F5B53">Reassign proposals first</span></span>
+                        </div></sc-if>
+                      </div></sc-for>
+                      <div style="padding-top:12px;border-top:1px solid #ECE8E1;font:400 13px 'Instrument Sans';color:#5F5B53">AI assistants like Claude are managed in <span style="font-weight:600;color:#13303A">Connections</span>, not here.</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ws.signatory }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:16px">
+                      <div><div style="font:600 18px 'Instrument Sans'">Company signatory</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53;margin-top:4px">The company signature always reads this name. The audit trail records who actually applied it.</div></div>
+                      <div style="display:flex;gap:20px;align-items:center;padding:18px;border-radius:12px;background:#fff;border:1px solid #E3DED4"><span style="font:italic 400 30px 'Source Serif 4',Georgia,serif;flex:1">Jonathan Garces</span><span style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font:600 14px 'Instrument Sans'">Jonathan Garces</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">Owner, MarketFresh Studios</span></span></div>
+                      <div style="display:flex;flex-direction:column;gap:0"><span style="font:600 13px 'Instrument Sans';padding-bottom:6px">Can countersign on Jonathan’s behalf</span>
+                        <div style="display:flex;align-items:center;min-height:48px;border-top:1px solid #ECE8E1;font:500 14px 'Instrument Sans'"><span style="flex:1">Jonathan Garces</span><span style="font:500 12px 'Instrument Sans';color:#5F5B53">Always</span></div>
+                        <div style="display:flex;align-items:center;min-height:48px;border-top:1px solid #ECE8E1;font:500 14px 'Instrument Sans'"><span style="flex:1">Franz</span><span style="width:40px;height:24px;border-radius:12px;background:#13303A;position:relative"><span style="position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:#fff"></span></span></div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ws.money }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:16px">
+                      <div style="font:600 18px 'Instrument Sans'">Money</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Currency</span><span style="height:42px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:400 14px 'Instrument Sans'">USD · $<span style="color:#8A857B;font-size:12px">▾</span></span></label>
+                        <div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px 'Instrument Sans'">Cents</span><div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:34px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center">Only when needed</span><span style="flex:1;height:34px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Always</span></div></div>
+                      </div>
+                      <div style="font:400 13px 'Instrument Sans';color:#5F5B53">Preview: $4,700 one-time · $195/mo · $1,250.50 one-time</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ws.links }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:0">
+                      <div style="font:600 18px 'Instrument Sans';padding-bottom:12px">Client links</div>
+                      <sc-for list="{{ linkRows }}" as="l" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid #ECE8E1"><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px 'Instrument Sans'">{{ l.k }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ l.d }}</span></span><span style="height:36px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;font:500 13px 'Instrument Sans'">{{ l.v }}</span></div></sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ws.pricing }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:24px;display:flex;flex-direction:column;gap:14px">
+                      <div><div style="font:600 18px 'Instrument Sans'">Pricing references</div><div style="font:400 13px 'Instrument Sans';color:#5F5B53;margin-top:4px">Internal documents staff and assistants can read while writing a quote. They never set prices.</div></div>
+                      <div style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #E3DED4;border-radius:12px;background:#fff"><span style="width:36px;height:44px;border-radius:4px;background:repeating-linear-gradient(135deg,#F1EEE8 0 6px,#E8E4DC 6px 12px);flex:none"></span><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 14px 'Instrument Sans'">MarketFresh pricing playbook</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">PDF · updated Oct 2 · shared with Claude</span></span><span style="font:600 13px 'Instrument Sans';color:#13303A">Replace</span></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </main>
+        </sc-if>
+
+        <sc-if value="{{ pg.activity }}" hint-placeholder-val="{{ false }}">
+          <main style="flex:1;min-width:0;overflow:auto;padding:36px 48px">
+            <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:flex-end;gap:16px"><div style="flex:1"><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Activity log</h1><div style="font:400 14px/20px 'Instrument Sans';color:#5F5B53;margin-top:6px">Everything that happened in the workspace, by whom. Proposal records keep their own full audit trail.</div></div><span style="height:40px;padding:0 16px;border:1px solid #DDD8CE;border-radius:999px;display:flex;align-items:center;font:600 14px 'Instrument Sans'">Export CSV</span></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <sc-for list="{{ actFilters }}" as="f" hint-placeholder-count="6"><span style="height:32px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';background:{{ f.bg }};color:{{ f.ink }};border:{{ f.border }}">{{ f.n }}</span></sc-for>
+                <span style="flex:1"></span>
+                <span style="height:38px;width:240px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font:400 14px 'Instrument Sans';color:#8A857B">Search activity</span>
+              </div>
+              <sc-for list="{{ activity }}" as="d" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column">
+                  <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:8px 0">{{ d.day }}</span>
+                  <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+                    <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="3">
+                      <div style="display:grid;grid-template-columns:64px 34px minmax(0,1fr) auto;gap:14px;align-items:center;min-height:56px;padding:6px 20px;border-top:{{ r.line }}">
+                        <span style="font:500 13px 'Instrument Sans';color:#5F5B53;font-variant-numeric:tabular-nums">{{ r.t }}</span>
+                        <span style="width:30px;height:30px;border-radius:15px;background:{{ r.avBg }};color:{{ r.avInk }};display:flex;align-items:center;justify-content:center;font:600 11px 'Instrument Sans'">{{ r.who }}</span>
+                        <span style="font:400 14px/20px 'Instrument Sans'"><b style="font-weight:600">{{ r.actor }}</b> {{ r.what }}</span>
+                        <span style="font:600 13px 'Instrument Sans';color:#13303A">{{ r.link }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </main>
+        </sc-if>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#1b">1b</a><span><b style="color:#1C1B18">Phone · Studio.</b> Studio is a tab in the bottom bar. Each area gets one row with a one-line status, so problems show up before you open it.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#F3F0EA;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:1;overflow:hidden;padding:56px 16px 16px;display:flex;flex-direction:column;gap:16px">
+          <h1 style="margin:0 4px;font:400 32px/38px 'DM Serif Display',Georgia,serif;color:#13303A">Studio</h1>
+          <div style="border:1px solid #E3DED4;border-radius:16px;background:#FBFAF7;overflow:hidden">
+            <sc-for list="{{ phoneStudio }}" as="s" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 16px;border-top:{{ s.line }}"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:600 16px 'Instrument Sans'">{{ s.n }}</span><span style="font:400 13px 'Instrument Sans';color:{{ s.ink }}">{{ s.d }}</span></span><span style="color:#8A857B;font:500 18px 'Instrument Sans'">›</span></div>
+            </sc-for>
+          </div>
+          <div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;padding:0 4px">Templates and Products work best on a larger screen, but they open and can be edited here.</div>
+        </div>
+        <div style="flex:none;height:76px;padding:0 8px 14px;border-top:1px solid #E3DED4;background:#FBFAF7;display:grid;grid-template-columns:repeat(4,1fr);font:600 11px 'Instrument Sans';color:#5F5B53">
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px;border-radius:2px;background:transparent"></span>Home</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px;border-radius:2px;background:transparent"></span>Proposals</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px;border-radius:2px;background:transparent"></span>Clients</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#13303A"><span style="width:20px;height:3px;border-radius:2px;background:#13303A"></span>Studio</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#1c">1c</a><span><b style="color:#1C1B18">Phone · Emails.</b> The same stages as desktop. Each row shows the name and when it’s sent; the subject is one tap away.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#F3F0EA;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;padding:52px 8px 8px;display:flex;align-items:center"><span style="height:44px;padding:0 10px;display:flex;align-items:center;font:500 15px 'Instrument Sans';color:#5F5B53">‹ Studio</span></div>
+        <div style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:14px">
+          <h1 style="margin:0 4px;font:400 32px/38px 'DM Serif Display',Georgia,serif;color:#13303A">Emails</h1>
+          <div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:36px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">Client · 8</span><span style="flex:1;height:36px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Staff · 10</span></div>
+          <sc-for list="{{ phoneGroups }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:600 11px/16px 'Instrument Sans';letter-spacing:.08em;text-transform:uppercase;color:#8A857B;padding:0 4px">{{ g.name }}</span>
+              <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+                <sc-for list="{{ g.items }}" as="e" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 14px;border-top:{{ e.line }}"><span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font:600 15px 'Instrument Sans'">{{ e.name }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ e.when }}</span></span><span style="font:500 11px 'Instrument Sans';color:{{ e.edInk }}">{{ e.short }}</span><span style="color:#8A857B">›</span></div></sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#1d">1d</a><span><b style="color:#1C1B18">Phone · editing an email.</b> Edit in place, the same as desktop. The edit bar docks above the keyboard, and Fields, Details and Plain text open as a sheet from the ⋯ menu.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#ECE9E3;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;padding:46px 10px 0 4px;height:98px;box-sizing:border-box;display:flex;align-items:center;gap:6px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font:500 20px 'Instrument Sans';color:#5F5B53">‹</span>
+          <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px/19px 'Instrument Sans'">Proposal sent</span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">Edited · not saved</span></span>
+          <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:700 18px 'Instrument Sans';color:#3E3B35">⋯</span>
+          <span style="height:36px;padding:0 16px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Save</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:14px 12px 0;display:flex;flex-direction:column;gap:10px">
+          <div style="font:600 16px/24px 'Instrument Sans';padding:0 4px"><span style="background:#F0ECE4;border-radius:5px;padding:1px 6px;font:500 13px 'Instrument Sans'">Proposal title</span></div>
+          <div style="background:#fff;border-radius:12px;padding:22px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 3px rgba(20,18,14,.08)">
+            <div style="display:flex;align-items:center;gap:8px;padding-bottom:14px;border-bottom:1px solid #ECE8E1"><span style="width:24px;height:24px;border-radius:7px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px 'Instrument Sans'">M</span><span style="font:600 14px 'Instrument Sans'">MarketFresh Studios</span></div>
+            <p style="margin:0;font:400 16px/25px 'Instrument Sans'">Hi <span style="background:#F0ECE4;border-radius:5px;padding:1px 6px;font:500 13px 'Instrument Sans'">Client first name</span>,</p>
+            <p style="margin:0;padding:4px 8px;margin:0 -8px;border-radius:8px;box-shadow:0 0 0 1.5px #9DB3A8;font:400 16px/25px 'Instrument Sans'">Your proposal is ready. It sets out the scope, the next steps and the agreement.<span style="display:inline-block;width:2px;height:19px;background:#13303A;vertical-align:-4px;margin-left:1px"></span></p>
+          </div>
+        </div>
+        <div style="flex:none;height:48px;display:flex;align-items:center;padding:0 4px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap">
+          <span style="width:40px;text-align:center;font-weight:700">B</span><span style="width:40px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+          <span style="width:40px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+          <span style="width:40px;display:flex;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6.8 9.2l2.4-2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M7.4 4.6l1.1-1.1a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1M8.6 11.4l-1.1 1.1a2.6 2.6 0 0 1-3.7-3.7l1.1-1.1" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path></svg></span>
+          <span style="flex:1"></span>
+          <span style="height:34px;padding:0 10px;margin-right:4px;display:flex;align-items:center;border-radius:8px;background:rgba(255,255,255,.12);font:500 12px 'IBM Plex Mono'">{ } Field</span>
+        </div>
+        <div style="flex:none;height:210px;background:repeating-linear-gradient(135deg,#D9D5CD 0 10px,#D2CEC5 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">system keyboard</div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1e">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#1e">1e</a><span><b style="color:#1C1B18">Phone · Saved blocks.</b> The same tabs as desktop. Each row shows the type and where the block is used.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#F3F0EA;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;padding:52px 8px 8px;display:flex;align-items:center"><span style="height:44px;padding:0 10px;display:flex;align-items:center;font:500 15px 'Instrument Sans';color:#5F5B53">‹ Studio</span></div>
+        <div style="flex:1;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:14px">
+          <h1 style="margin:0 4px;font:400 32px/38px 'DM Serif Display',Georgia,serif;color:#13303A">Templates &amp; blocks</h1>
+          <div style="display:flex;padding:3px;border-radius:10px;background:#ECE8E1;font:600 13px 'Instrument Sans'"><span style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;color:#5F5B53">Templates · 3</span><span style="flex:1;height:38px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center">Saved blocks · 9</span></div>
+          <span style="height:44px;border:1px solid #DDD8CE;border-radius:12px;background:#fff;display:flex;align-items:center;padding:0 14px;font:400 15px 'Instrument Sans';color:#8A857B">Search blocks</span>
+          <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;overflow:hidden">
+            <sc-for list="{{ blocksPhone }}" as="b" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 14px;border-top:{{ b.line }}"><span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font:600 15px 'Instrument Sans'">{{ b.name }}</span><span style="font:400 13px 'Instrument Sans';color:#5F5B53">{{ b.kind }} · {{ b.used }}</span></span><span style="color:#8A857B">›</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1f">
+      <div class="dv-olabel" style="max-width:375px"><a class="dv-oid" href="#1f">1f</a><span><b style="color:#1C1B18">Phone · editing a saved block.</b> Edit in place. The “Used in” row opens a sheet with the same list and the “When you save” choice as desktop.</span></div>
+      <div style="width:375px;height:780px;border:1px solid #C9C3B7;border-radius:38px;background:#ECE9E3;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;padding:46px 10px 0 4px;height:98px;box-sizing:border-box;display:flex;align-items:center;gap:6px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font:500 20px 'Instrument Sans';color:#5F5B53">‹</span>
+          <span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px/19px 'Instrument Sans'">Care plan terms</span><span style="font:500 11px 'Instrument Sans';color:#5F5B53">Contract clause · not saved</span></span>
+          <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:700 18px 'Instrument Sans';color:#3E3B35">⋯</span>
+          <span style="height:36px;padding:0 16px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 13px 'Instrument Sans'">Save</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:12px 12px 0;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 14px;border:1px solid #E3DED4;border-radius:12px;background:#FBFAF7"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:600 14px 'Instrument Sans'">Used in 2 templates · 4 drafts</span><span style="font:400 12px 'Instrument Sans';color:#5F5B53">On save: templates and new proposals</span></span><span style="color:#8A857B">›</span></div>
+          <div style="background:#fff;border-radius:12px;padding:22px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(20,18,14,.08)">
+            <h2 style="margin:0;font:600 20px/26px 'Source Serif 4',Georgia,serif">Care plan terms</h2>
+            <p style="margin:0;font:400 16px/25px 'Source Serif 4',Georgia,serif">Care plans renew monthly. Either party can cancel with 30 days’ written notice to <span style="background:#F0ECE4;border-radius:5px;padding:1px 6px;font:500 13px 'Instrument Sans'">Workspace name</span>.</p>
+            <p style="margin:0 -8px;padding:4px 8px;border-radius:8px;box-shadow:0 0 0 1.5px #9DB3A8;font:400 16px/25px 'Source Serif 4',Georgia,serif">Plan time doesn’t roll over to the next month. Work beyond plan time is quoted before we start.<span style="display:inline-block;width:2px;height:19px;background:#13303A;vertical-align:-4px;margin-left:1px"></span></p>
+          </div>
+        </div>
+        <div style="flex:none;height:48px;display:flex;align-items:center;padding:0 4px;background:#1C1B18;color:#fff;font:500 13px 'Instrument Sans';white-space:nowrap">
+          <span style="width:44px;text-align:center;font-weight:700">B</span><span style="width:44px;text-align:center;font:italic 16px 'Source Serif 4',serif">I</span>
+          <span style="width:44px;display:flex;justify-content:center"><svg width="16" height="14" viewBox="0 0 16 14"><circle cx="2" cy="2.5" r="1.4" fill="#fff"></circle><circle cx="2" cy="7" r="1.4" fill="#fff"></circle><circle cx="2" cy="11.5" r="1.4" fill="#fff"></circle><rect x="5.5" y="1.8" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="6.3" width="10" height="1.5" rx=".75" fill="#fff"></rect><rect x="5.5" y="10.8" width="10" height="1.5" rx=".75" fill="#fff"></rect></svg></span>
+          <span style="flex:1"></span>
+          <span style="height:34px;padding:0 10px;margin-right:4px;display:flex;align-items:center;border-radius:8px;background:rgba(255,255,255,.12);font:500 12px 'IBM Plex Mono'">{ } Field</span>
+        </div>
+        <div style="flex:none;height:210px;background:repeating-linear-gradient(135deg,#D9D5CD 0 10px,#D2CEC5 10px 20px);display:flex;align-items:center;justify-content:center;font:500 12px 'IBM Plex Mono';color:#5F5B53">system keyboard</div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1g">
+      <div class="dv-olabel" style="max-width:768px"><a class="dv-oid" href="#1g">1g</a><span><b style="color:#13303A">Tablet 768 · Workspace › Team.</b> The left nav becomes a scrolling row of Studio areas under the header, and the Workspace section list becomes chips. Same bottom bar as phone. Tables stay as rows; the role picker and ⋯ keep 44px targets.</span></div>
+      <div style="width:768px;height:1024px;border:1px solid #C9C3B7;border-radius:28px;background:#F3F0EA;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(20,18,14,.10)">
+        <div style="flex:none;height:64px;padding:12px 20px 0;box-sizing:border-box;display:flex;align-items:center;gap:12px;background:#FBFAF7;border-bottom:1px solid #E3DED4">
+          <img src="brand/svg/yeswell-logo.svg" alt="Yeswell" style="height:24px">
+          <span style="flex:1"></span>
+          <span style="height:36px;padding:0 10px;border:1px solid #E3DED4;border-radius:10px;background:#fff;display:flex;align-items:center;gap:8px;font:600 13px 'Instrument Sans'"><span style="width:20px;height:20px;border-radius:6px;background:#365C4A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px 'Instrument Sans'">M</span>MarketFresh Studios<span style="font-size:10px;color:#8A857B">▾</span></span>
+          <span style="width:36px;height:36px;border-radius:18px;background:#E4DCCB;display:flex;align-items:center;justify-content:center;font:600 12px 'Instrument Sans'">JG</span>
+        </div>
+        <div style="flex:none;display:flex;gap:8px;padding:12px 20px;overflow:hidden;background:#FBFAF7;border-bottom:1px solid #E3DED4"><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Templates &amp; blocks</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Emails</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Products</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Connections</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;background:#13303A;color:#fff">Workspace</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Activity log</span></div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:28px 32px;display:flex;flex-direction:column;gap:18px">
+          <div><h1 style="margin:0;font:400 36px/42px 'DM Serif Display',Georgia,serif;color:#13303A">Workspace</h1><div style="font:400 14px 'Instrument Sans';color:#5F5B53;margin-top:4px">Brand, team and defaults for MarketFresh Studios.</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Brand</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Proposal fonts</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Money</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Proposal styles</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Billing defaults</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;background:#13303A;color:#fff">Team</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Signatory</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Client links</span><span style="flex:none;height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font:600 13px 'Instrument Sans';white-space:nowrap;border:1px solid #DDD8CE;color:#3E3B35;box-sizing:border-box">Email sending</span></div>
+          <div style="border:1px solid #E3DED4;border-radius:14px;background:#FBFAF7;padding:22px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:flex-end;gap:12px"><div style="flex:1"><div style="font:600 18px 'Instrument Sans'">Team</div><div style="font:400 13px/19px 'Instrument Sans';color:#5F5B53;margin-top:4px">Super admins manage Studio, billing and the team. Staff draft, edit, send and countersign.</div></div><span style="height:44px;padding:0 18px;border-radius:999px;background:#13303A;color:#fff;display:flex;align-items:center;font:600 14px 'Instrument Sans'">Invite</span></div>
+            <sc-for list="{{ teamTab }}" as="m" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;min-height:68px;border-top:1px solid #ECE8E1;opacity:{{ m.op }}"><span style="flex:none;width:36px;height:36px;border-radius:18px;background:#E4DCCB;display:flex;align-items:center;justify-content:center;font:600 12px 'Instrument Sans'">{{ m.i }}</span><span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font:600 15px 'Instrument Sans'">{{ m.n }}</span><span style="font:400 13px 'Instrument Sans';color:{{ m.sInk }}">{{ m.s }}</span></span><span style="flex:none;width:130px;height:44px;padding:0 12px;border:1px solid #DDD8CE;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:space-between;font:500 14px 'Instrument Sans';box-sizing:border-box">{{ m.r }}<span style="font-size:10px;color:#8A857B">▾</span></span><span style="flex:none;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 18px 'Instrument Sans';color:#3E3B35">⋯</span></div></sc-for>
+            <div style="padding-top:12px;border-top:1px solid #ECE8E1;font:400 13px 'Instrument Sans';color:#5F5B53">AI assistants like Claude are managed in <span style="font-weight:600;color:#13303A">Connections</span>.</div>
+          </div>
+        </div>
+        <div style="flex:none;height:72px;padding:0 60px 10px;border-top:1px solid #E3DED4;background:#FBFAF7;display:grid;grid-template-columns:repeat(4,1fr);font:600 12px 'Instrument Sans';color:#5F5B53">
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px"></span>Home</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px"></span>Proposals</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><span style="width:20px;height:3px"></span>Clients</span>
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#13303A"><span style="width:20px;height:3px;border-radius:2px;background:#13303A"></span>Studio</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “add a tablet frame of the email editor” · “add an empty state for Saved blocks” · “write the build spec for Studio v2 like the editor one”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { page: 'emails', email: null, tpl: false, aud: 'client', mode: 'fields', width: 'desktop', dark: false, etab: 'fields', prod: 0, prodOpen: true, ws: 'brand', ttab: 'templates', blk: null, btab: 'used', apply: 'new', ttab2: 'quote' };
+  renderVals() {
+    const S = this.state, set = (o) => () => this.setState(o);
+    const F = { 'client.first_name': 'Client first name', 'client.full_name': 'Client full name', 'client.company': 'Client company', 'sender.name': 'Sender name', 'workspace.name': 'Workspace name', 'proposal.title': 'Proposal title', 'proposal.validity': 'Validity sentence', 'proposal.date': 'Proposal date', 'quote.one_time_total': 'One-time total', 'quote.monthly_total': 'Monthly total', 'quote.yearly_total': 'Yearly total', 'quote.selected_items': 'Selected products' };
+    const V = { 'client.first_name': 'Rowan', 'client.full_name': 'Rowan Price', 'client.company': 'Brightline Foods', 'sender.name': 'Jonathan Garces', 'workspace.name': 'MarketFresh Studios', 'proposal.title': 'Website & Care for Brightline Foods', 'proposal.validity': 'This proposal is valid until November 28, 2026.', 'proposal.date': 'October 29, 2026', 'quote.one_time_total': '$1,150 one-time', 'quote.monthly_total': '$260/mo', 'quote.yearly_total': '$0/yr', 'quote.selected_items': 'Website Build — Own It Over Time, Care Standard' };
+    const vals = S.mode === 'values';
+    const parts = (s, useVals) => s.split(/({{[^}]+}})/).filter(Boolean).map(x => { const m = x.match(/^{{\s*(.+?)\s*}}$/); return m ? { f: true, x: false, t: useVals ? V[m[1]] : F[m[1]] } : { f: false, x: true, t: x }; });
+    const E = [
+      ['proposal_sent', 'Proposal sent', '{{proposal.title}}', 'Hi {{client.first_name}},\n\nYour proposal is ready. It sets out the scope, the next steps and the agreement.\n\n{{proposal.validity}}\n\nPlease take a look, and reply if you have any questions.', 'View proposal', 0, 'When you send a proposal', 'Edited Oct 12 · Jonathan', 'Send'],
+      ['reminder_unopened', 'Reminder · unopened', 'Reminder: {{proposal.title}}', 'Hi {{client.first_name}},\n\nHere’s a reminder that your proposal is ready whenever you are.\n\n{{proposal.validity}}\n\nPlease reply if you have any questions.', 'View proposal', 0, 'If the client hasn’t opened it', 'Default', 'Follow up'],
+      ['reminder_viewed', 'Reminder · viewed, not signed', 'Any questions about {{proposal.title}}?', 'Hi {{client.first_name}},\n\nI’m following up on the proposal you viewed. If anything needs clarification, just reply to this email.\n\n{{proposal.validity}}', 'View proposal', 0, 'If the client viewed it but hasn’t signed', 'Edited Oct 2 · Franz', 'Follow up'],
+      ['signed_copy', 'Signed copy (client)', 'Your signed copy: {{proposal.title}}', 'Hi {{client.first_name}},\n\nThank you for signing. Your signed copy is attached, and our company countersignature is next.\n\nYou can also open the secure proposal to read or download your copy.', 'View signed copy', 0, 'Right after the client signs', 'Default', 'Sign'],
+      ['completed', 'Countersigned / completed', 'Your completed agreement: {{proposal.title}}', 'Hi {{client.first_name}},\n\nYour proposal is now signed by both parties. The completed copy is attached for your records.\n\nThank you for choosing {{workspace.name}}.', 'View completed copy', 0, 'When both parties have signed', 'Default', 'Sign'],
+      ['billing_setup', 'Finish billing setup', 'Finish billing setup: {{proposal.title}}', 'Hi {{client.first_name}},\n\nYour proposal is signed. There’s one more step to finish setting up the recurring services you chose.\n\nOpen the secure proposal to review the billing details and continue.', 'Finish billing setup', 0, 'After signing, if billing setup is still needed', 'Default', 'Billing'],
+      ['billing_complete', 'Billing setup completed', 'Billing is set up: {{proposal.title}}', 'Hi {{client.first_name}},\n\nYour recurring services are set up. The confirmed details are below.', 'View your signed proposal', 0, 'When the client finishes billing setup', 'Default', 'Billing'],
+      ['billing_updated', 'Subscription updated', 'Billing updated: {{proposal.title}}', 'Hi {{client.first_name}},\n\nThe recurring services in your signed proposal have been added to your subscription. You can review the agreed services in your proposal.\n\nAny one-time fees are invoiced separately.', 'View proposal', 0, 'When items are added to an existing subscription', 'Default', 'Billing'],
+      ['staff_viewed', 'Client opened proposal', 'Client opened {{proposal.title}}', '{{client.full_name}} at {{client.company}} opened the proposal.', 'Review proposal', 1, 'The client opens the proposal', 'Read-only', 'Client activity'],
+      ['staff_declined', 'Client declined', 'Client declined {{proposal.title}}', '{{client.full_name}} at {{client.company}} declined the proposal.', 'Review proposal', 1, 'The client declines (includes their note)', 'Read-only', 'Client activity'],
+      ['staff_signed', 'Client signed', 'Client signed {{proposal.title}}', '{{client.full_name}} signed the proposal. Review the agreement and apply the company countersignature when you’re ready.', 'Review and countersign', 1, 'The client signs', 'Read-only', 'Signatures'],
+      ['staff_completed', 'Agreement completed', 'Agreement completed: {{proposal.title}}', 'The client and company signatures have been recorded. The completed agreement is available on the proposal record.', 'Review proposal', 1, 'Both parties have signed', 'Read-only', 'Signatures'],
+      ['staff_copy', 'Signed document copy', 'Signed copy: {{proposal.title}}', 'A signed document copy is attached. The proposal record contains the signatures and full evidence.', 'Review proposal', 1, 'A signed PDF is ready', 'Read-only', 'Signatures'],
+      ['staff_billing_complete', 'Client completed billing setup', 'Billing setup completed: {{proposal.title}}', '{{client.full_name}} at {{client.company}} completed billing setup. The confirmed details are below.', 'Review proposal', 1, 'The client finishes billing setup', 'Read-only', 'Billing'],
+      ['staff_billing_failed', 'Billing needs attention', 'Billing needs attention: {{proposal.title}}', 'Background work needs attention. Open the proposal record to review the billing or document job and retry when ready.', 'Review proposal', 1, 'A billing or document job fails', 'Read-only', 'Billing'],
+      ['staff_job', 'Job needs attention', 'A job needs attention: {{proposal.title}}', 'A background job for {{proposal.title}} didn’t finish after two tries.\n\nOpen the proposal record to see what happened and retry when you’re ready.', 'Open proposal record', 2, 'A background job fails twice', 'Default', 'Team and jobs · editable'],
+      ['team_invite', 'Team invite', 'You’re invited to join {{workspace.name}}', 'Hi,\n\n{{sender.name}} invited you to join {{workspace.name}} on Yeswell, where the team writes and sends proposals.\n\nThis invite works for 7 days.', 'Accept invite', 2, 'When someone is invited to the team', 'Default', 'Team and jobs · editable'],
+      ['team_reset', 'Team password reset', 'Reset your password for {{workspace.name}}', 'Hi,\n\nSomeone asked to reset the password for your {{workspace.name}} account. If it was you, use the button below. The link works for 1 hour.\n\nIf it wasn’t you, you can ignore this email.', 'Set a new password', 2, 'When a team member resets their password', 'Default', 'Team and jobs · editable'],
+    ].map(([key, name, subject, body, label, staff, when, edited, stage]) => ({ key, name, subject, body, label, staff: !!staff, editable: staff !== 1, when, edited, stage }));
+    const open = (key) => () => this.setState({ email: key, page: 'emails', etab: 'fields' });
+    const groupsFor = (staff) => { const out = []; E.filter(e => e.staff === staff).forEach(e => { let g = out.find(g => g.name === e.stage); if (!g) out.push(g = { name: e.stage, items: [] }); g.items.push(e); }); return out.map(g => ({ name: g.name, items: g.items.map((e, i) => ({ ...e, open: open(e.key), line: i ? '1px solid #ECE8E1' : '0', subj: parts(e.subject, false), edInk: e.edited.startsWith('Edited') ? '#13303A' : '#8A857B', short: e.edited.startsWith('Edited') ? 'Edited' : (e.editable ? 'Default' : '') })) })); };
+    const pages = [['templates', 'Templates & blocks'], ['emails', 'Emails'], ['products', 'Products'], ['connections', 'Connections'], ['workspace', 'Workspace'], ['activity', 'Activity log']];
+    const nav = pages.map(([k, name]) => { const on = S.page === k; return { name, cur: on ? 'page' : undefined, bg: on ? '#ECE8E1' : 'transparent', font: (on ? '600' : '500') + " 14px 'Instrument Sans'", go: set({ page: k, email: null, tpl: false, blk: null }) }; });
+    const em0 = E.find(e => e.key === S.email) || E[0];
+    const canEdit = em0.editable;
+    const paras = em0.body.split(/\n\s*\n/).map((p, i) => ({ parts: parts(p, vals), bar: canEdit && i === 1, ring: canEdit && i === 1 ? '0 0 0 1.5px #9DB3A8' : 'none' }));
+    const plain = em0.body.replace(/{{\s*(.+?)\s*}}/g, (_, k) => V[k]) + '\n\n' + em0.label + ': https://proposals.mktfresh.com/p/…';
+    const attach = ['signed_copy', 'completed', 'staff_copy'].includes(em0.key) ? 'The signed PDF is attached' : 'None';
+    const em = {
+      name: em0.name, label: em0.label, staff: !em0.editable, canEdit,
+      status: !em0.editable ? 'Staff notification · read-only' : (em0.edited.startsWith('Edited') ? em0.edited.replace(' · ', ' by ') : 'Workspace default'),
+      subj: parts(em0.subject, vals), paras, plain,
+      subjRing: canEdit ? 'inset 0 0 0 1px rgba(0,0,0,.0)' : 'none',
+      btnRing: canEdit ? '0 0 0 2px #F3F0EA, 0 0 0 3.5px #9DB3A8' : 'none',
+      details: [
+        { k: 'Sent when', v: em0.when },
+        { k: 'To', v: ['team_invite', 'team_reset'].includes(em0.key) ? 'The team member it’s about' : em0.staff ? 'Staff who follow this proposal' : 'The client contact on the proposal' },
+        { k: 'From', v: em0.staff ? 'Yeswell, on behalf of MarketFresh Studios' : 'The proposal’s sender (Jonathan Garces on this sample)' },
+        { k: 'Button opens', v: em0.staff ? 'The staff proposal record. Managed for you.' : 'The client’s secure proposal link. Managed for you.' },
+        { k: 'Attachments', v: attach },
+        { k: 'Test emails', v: 'Go only to you: jonathan@mktfresh.com. No client is contacted.' },
+      ],
+    };
+    const dark = S.dark;
+    const cv = dark ? { outer: '#1A1A18', card: '#262522', ink: '#EDEBE6', muted: '#A9A59C', rule: '#3A3934', chip: '#3A3730', segBg: '#33322D' } : { outer: '#ECE9E3', card: '#FFFFFF', ink: '#1C1B18', muted: '#5F5B53', rule: '#ECE8E1', chip: '#F0ECE4', segBg: '#DDD8CE' };
+    cv.w = S.width === 'phone' ? '360px' : '600px'; cv.pad = S.width === 'phone' ? '24px 20px' : '36px 40px';
+    const seg = (on) => ({ bg: on ? (dark ? '#4A4842' : '#FFFFFF') : 'transparent', ink: on ? cv.ink : cv.muted });
+    const modeOpts = [['fields', 'Show fields'], ['values', 'Show values']].map(([k, label]) => ({ label, ...seg(S.mode === k), go: set({ mode: k }) }));
+    const widthOpts = [['desktop', 'Desktop'], ['phone', 'Phone']].map(([k, label]) => ({ label, ...seg(S.width === k), go: set({ width: k }) }));
+    const tabSeg = (on) => ({ bg: on ? '#fff' : 'transparent', sh: on ? '0 1px 2px rgba(0,0,0,.08)' : 'none', ink: on ? '#1C1B18' : '#5F5B53' });
+    const etabs = [['fields', 'Fields'], ['details', 'Details'], ['text', 'Plain text']].map(([k, label]) => ({ label, ...tabSeg(S.etab === k), go: set({ etab: k }) }));
+    const audTabs = [['client', 'Client emails · 8'], ['staff', 'Staff notifications · 10']].map(([k, label]) => ({ label, ...tabSeg(S.aud === k), go: set({ aud: k }) }));
+    const fieldCards = Object.keys(F).map(k => ({ label: F[k], token: '{{' + k + '}}', val: V[k] }));
+    const P = [
+      { n: 'Website Build — Own It Over Time', d: 'Design and build, paid over time', p: '$500 + $175/mo', terms: '30 payments, then $100/mo · 18-month minimum', src: 'Stripe', used: 'Website proposal template · 11 open proposals' },
+      { n: 'Website Build — Own It Now', d: 'Design and build, paid upfront', p: '$2,750 one-time', terms: '—', src: 'Stripe', used: 'Website proposal template · 9 open proposals' },
+      { n: 'Care Standard', d: 'Updates, backups and security', p: '$85/mo', terms: '—', src: 'Stripe', used: 'Website proposal, Care plan renewal · 14 open proposals' },
+      { n: 'Local Visibility Core', d: 'Local search listings and reviews', p: '$295/mo', terms: '—', src: 'Stripe', used: 'Local visibility template · 4 open proposals' },
+      { n: 'AI Search Readiness Audit', d: 'One-time audit and report', p: '$250 one-time', terms: '—', src: 'Stripe', used: '3 open proposals' },
+      { n: 'Photography', d: 'Custom family · priced per proposal', p: 'Entered per proposal', terms: '—', src: 'Custom', used: '2 open proposals' },
+      { n: 'Copywriting', d: 'Custom family · priced per proposal', p: 'Entered per proposal', terms: '—', src: 'Custom', used: '1 open proposal' },
+    ];
+    const products = P.map((p, i) => ({ ...p, line: i ? '1px solid #ECE8E1' : '0', bg: S.prodOpen && S.prod === i ? '#fff' : 'transparent', srcBg: p.src === 'Stripe' ? '#E8E4F7' : '#ECE8E1', srcInk: p.src === 'Stripe' ? '#3E2A80' : '#3E3B35', open: set({ prod: i, prodOpen: true }) }));
+    const pr = P[S.prod];
+    const prod = { ...pr, hasTerms: S.prod === 0, priceAct: pr.src === 'Stripe' ? 'Edit in Stripe ↗' : '', priceNote: pr.src === 'Stripe' ? 'Synced from Stripe. Change the price there and it updates here.' : 'Staff enter the price on each proposal. Nothing is suggested.' };
+    const terms = [{ k: 'Kickoff', v: '$500 one-time' }, { k: 'Monthly', v: '$175/mo' }, { k: 'Payments to own', v: '30 months' }, { k: 'After that', v: '$100/mo' }, { k: 'Minimum term', v: '18 months' }];
+    const C = (n, mono, ok, state, d, act) => ({ n, mono, state, d, act, border: ok ? '#E3DED4' : '#E8C48A', bg: ok ? '#FBFAF7' : '#FBF3E4', dot: ok ? '#3C8A5F' : '#B26A00', ink: ok ? '#2F6B4A' : '#7A4800', btnBg: ok ? '#fff' : '#1C1B18', btnInk: ok ? '#1C1B18' : '#fff', btnBorder: ok ? '1px solid #DDD8CE' : '0' });
+    const conns = [
+      { name: 'Billing', items: [C('Stripe', 'S', 1, 'Connected · test mode', 'Test mode: no real charges. Products synced 4 min ago · webhooks healthy. Switch to live in Stripe settings.', 'Manage'), C('QuickBooks', 'QB', 0, 'Reconnect needed', 'Access expired Oct 30. Proposals marked “invoice manually” can’t be recorded until you reconnect.', 'Reconnect')] },
+      { name: 'Email', items: [C('Email sending', '@', 1, 'Verified', 'Sending from mktfresh.com · SPF and DKIM pass', 'Settings')] },
+      { name: 'AI assistants', items: [C('Claude', 'C', 1, 'Connected', 'Can create drafts only. It can never send or sign. 6 drafts this month.', 'Manage access')] },
+      { name: 'Imports', items: [C('Proposify', 'P', 1, 'Imported', '142 proposals and 38 clients imported Sep 14', 'Import more')] },
+    ];
+    const wsList = [['brand', 'Brand'], ['fonts', 'Proposal fonts'], ['money', 'Money'], ['styles', 'Proposal styles'], ['billing', 'Billing defaults'], ['team', 'Team'], ['signatory', 'Signatory'], ['links', 'Client links'], ['emails', 'Email sending'], ['pricing', 'Pricing references']];
+    const wsNav = wsList.map(([k, name]) => { const on = S.ws === k; return { name, line: on ? '#13303A' : 'transparent', ink: on ? '#1C1B18' : '#5F5B53', font: (on ? '600' : '500') + " 14px 'Instrument Sans'", go: set({ ws: k }) }; });
+    const ws = Object.fromEntries(wsList.map(([k]) => [k, S.ws === k]));
+    const team = [['JG', 'Jonathan Garces', 'jonathan@mktfresh.com', 'Super admin', 'You', '#5F5B53'], ['F', 'Franz', 'franz@mktfresh.com', 'Staff', 'Active', '#2F6B4A', 1], ['MC', 'Maya Chen', 'maya@mktfresh.com', 'Staff', 'Invite sent Nov 2 · Resend', '#7A4800'], ['SO', 'Sam Ortiz', 'sam@mktfresh.com', 'Staff', 'Deactivated', '#5F5B53', 0, 1]].map(([i, n, e, r, s, sInk, menu, off]) => ({ i, n, e, r, s, sInk, menu: !!menu, mBg: menu ? '#ECE8E1' : 'transparent', op: off ? '.6' : '1' }));
+    const linkRows = [{ k: 'Links stay valid for', d: 'Clients see a calm “expired” page after this', v: '30 days ▾' }, { k: 'Default password', d: 'Off unless you turn it on for a proposal', v: 'Off ▾' }, { k: 'Link domain', d: 'Where client links point', v: 'proposals.mktfresh.com' }];
+    const tplSections = ['Cover', 'Overview', 'What we’ll do', 'Timeline', 'Your investment', 'Statement of Work', 'Signatures'].map((name, i) => ({ name, bg: i === 1 ? '#ECE8E1' : 'transparent', w: i === 1 ? 600 : 500 }));
+    const templates = [{ name: 'Website proposal', cover: 'A website that works as hard as you do', meta: '7 sections · used 14 times · edited Oct 21' }, { name: 'Care plan renewal', cover: 'Keeping your site healthy', meta: '4 sections · used 9 times · edited Sep 30' }, { name: 'Local visibility', cover: 'Be found by customers nearby', meta: '5 sections · used 6 times · edited Aug 12' }].map(t => ({ ...t, open: set({ tpl: true }) }));
+    const blocksOld = [{ name: 'About MarketFresh', kind: 'Text', used: 'In 3 templates' }, { name: 'Our process', kind: 'List', used: 'In 2 templates' }, { name: 'Care plan terms', kind: 'Contract clause', used: 'In 2 templates' }, { name: 'Team photo', kind: 'Image', used: 'In 1 template' }];
+    const actFilters = ['All', 'Proposals', 'Signatures', 'Billing', 'Emails', 'Studio changes'].map((n, i) => ({ n, bg: i ? 'transparent' : '#13303A', ink: i ? '#3E3B35' : '#fff', border: i ? '1px solid #DDD8CE' : '0' }));
+    const av = (w) => w === 'AI' ? { avBg: '#EEE8FB', avInk: '#3E2A80' } : w === '•' ? { avBg: '#ECE8E1', avInk: '#5F5B53' } : { avBg: '#E4DCCB', avInk: '#1C1B18' };
+    const activity = [
+      { day: 'Today · November 3', rows: [['10:42', 'JG', 'Jonathan Garces', 'countersigned Website & Care for Brightline Foods on behalf of Jonathan Garces', 'Open'], ['10:15', '•', 'Rowan Price', 'signed Website & Care for Brightline Foods', 'Open'], ['9:30', 'F', 'Franz', 'updated the email template “Reminder · viewed, not signed”', 'View'], ['8:02', 'AI', 'Claude', 'created a draft for Harbor Dental from an email', 'Review']] },
+      { day: 'Yesterday · November 2', rows: [['4:18', 'JG', 'Jonathan Garces', 'changed the accent color in Workspace', ''], ['2:51', '•', 'Stripe', 'synced 5 products', ''], ['11:07', 'F', 'Franz', 'sent Care Plan Renewal to Oak & Pine Bakery', 'Open']] },
+    ].map(d => ({ day: d.day, rows: d.rows.map(([t, who, actor, what, link], i) => ({ t, who, actor, what, link, line: i ? '1px solid #ECE8E1' : '0', ...av(who) })) }));
+    const phoneStudio = [['Templates & blocks', '3 templates · 9 saved blocks', 0], ['Emails', '8 client emails · 2 edited', 0], ['Products', '7 products · synced 4 min ago', 0], ['Connections', 'QuickBooks needs reconnecting', 1], ['Workspace', 'Brand, team and signatory', 0], ['Activity log', 'Last: Jonathan countersigned', 0]].map(([n, d, warn], i) => ({ n, d, ink: warn ? '#7A4800' : '#5F5B53', line: i ? '1px solid #ECE8E1' : '0' }));
+    const B = [
+      ['About MarketFresh', 'Text', 'About {{workspace.name}}', ['We’re a small studio that builds websites for local businesses. Every site is designed, written and supported by the same team.', 'You’ll work directly with {{sender.name}} from the first call to launch day, and after.'], 3, 5, 'Edited Oct 21 · Jonathan'],
+      ['Our process', 'List', 'How we’ll work', ['*Discovery: a call to learn about {{client.company}} and your customers.', '*Design: we design the key pages and share them with you for feedback.', '*Build and launch: we build, test and go live on the date we agree.'], 2, 3, 'Edited Oct 2 · Franz'],
+      ['Care plan terms', 'Contract clause', 'Care plan terms', ['Care plans renew monthly. Either party can cancel with 30 days’ written notice to {{workspace.name}}.', 'Plan time doesn’t roll over to the next month. Work beyond plan time is quoted before we start.'], 2, 4, 'Edited Sep 18 · Jonathan'],
+      ['Team photo', 'Image', 'Meet the team', [], 1, 2, 'Edited Aug 30 · Franz'],
+      ['Website timeline', 'List', 'Timeline', ['*Week 1: kickoff call and content gathering.', '*Weeks 2–4: design and your feedback.', '*Weeks 5–7: build, test and launch.'], 1, 3, 'Edited Oct 9 · Jonathan'],
+      ['What we’ll need from you', 'List', 'What we’ll need from you', ['*Your logo and brand colors.', '*Photos of your team and space, or permission to use stock photos.', '*Your final Privacy Policy and Terms of Service.'], 1, 2, 'Edited Oct 21 · Jonathan'],
+      ['Hosting and care', 'Text', 'Hosting and care', ['Your site is hosted on our managed servers, with daily backups and security updates.', '{{client.first_name}}, a care plan adds monthly time for changes. Choose one in the quote, or skip it.'], 2, 4, 'Default'],
+      ['Statement of Work & Contract', 'Contract clause', 'Statement of Work & Contract', ['This Statement of Work is an agreement between {{workspace.name}} and {{client.company}}, dated {{proposal.date}}.', 'By signing, both parties agree to the scope, the schedule and the prices in the quote above.'], 3, 6, 'Edited Sep 2 · Jonathan'],
+      ['Next steps', 'Text', 'Next steps', ['Review this proposal and reply with any questions. When you’re ready, choose your options, then sign below.'], 3, 5, 'Default'],
+    ];
+    const tplNames = ['Website proposal', 'Care plan renewal', 'Local visibility'];
+    const draftNames = [['Harbor Dental — Website', 'AI draft · not reviewed'], ['Oak & Pine — Care renewal', 'Draft · Franz'], ['Northside Gym — Website', 'Draft · Jonathan'], ['Lumen Yoga — Local visibility', 'Draft · Jonathan'], ['Bay Street Books — Website', 'Draft · Franz'], ['Kestrel Plumbing — Website', 'AI draft · not reviewed']];
+    const openBlk = (i) => () => this.setState({ blk: i, page: 'templates', btab: 'used' });
+    const strip = (s) => s.replace(/^\*/, '').replace(/{{\s*(.+?)\s*}}/g, (_, k) => F[k]);
+    const blocks = B.map(([name, kind, title, paras, t, d, ed], i) => ({ name, kind, used: 'In ' + t + (t > 1 ? ' templates' : ' template'), preview: kind === 'Image' ? 'Team photo with caption' : paras.map(strip).join(' '), ed, line: i ? '1px solid #ECE8E1' : '0', open: openBlk(i) }));
+    const blocksTop = blocks.slice(0, 4);
+    const blocksPhone = blocks.slice(0, 7);
+    const tsg = (on) => ({ bg: on ? '#fff' : 'transparent', sh: on ? '0 1px 2px rgba(0,0,0,.08)' : 'none', ink: on ? '#1C1B18' : '#5F5B53', sel: on ? 'true' : 'false' });
+    const ttabs = [['templates', 'Templates · 3'], ['blocks', 'Saved blocks · 9']].map(([k, label]) => ({ label, ...tsg(S.ttab === k), go: set({ ttab: k }) }));
+    const blkFilters = ['All · 9', 'Text · 3', 'List · 3', 'Contract clause · 2', 'Image · 1'].map((n, i) => ({ n, bg: i ? 'transparent' : '#13303A', ink: i ? '#3E3B35' : '#fff', border: i ? '1px solid #DDD8CE' : '0' }));
+    const b0 = B[S.blk ?? 0];
+    const selI = b0[3].length > 1 ? 1 : 0;
+    const bk = {
+      name: b0[0], kind: b0[1], title: parts(b0[2], false).map(p => p.t).join(''), isImage: b0[1] === 'Image', ed: b0[6] === 'Default' ? 'Not edited since it was added' : b0[6],
+      paras: b0[3].map((s, i) => ({ li: s.startsWith('*'), parts: parts(s.replace(/^\*/, ''), false), sel: i === selI, ring: i === selI ? '0 0 0 1.5px #9DB3A8' : 'none', margin: i === selI ? '52px -8px 0' : '0 -8px', style: s.startsWith('*') ? 'Bulleted list' : 'Paragraph' })),
+      tpls: tplNames.slice(0, b0[4]).map((n, i) => ({ n, line: i ? '1px solid #ECE8E1' : '0' })),
+      draftN: b0[5], drafts: draftNames.slice(0, b0[5]).map(([n, s], i) => ({ n, s, line: i ? '1px solid #ECE8E1' : '0' })),
+      saveLabel: S.apply === 'drafts' ? 'Save and update ' + b0[5] + ' drafts' : 'Save changes',
+      sentNote: 'Sent and signed proposals keep the version the client saw. To update a sent proposal, open it and use ⋯ › Replace with latest block, then send the update.',
+      deleteNote: 'Removes it from ' + b0[4] + (b0[4] > 1 ? ' templates' : ' template') + '. Copies already in proposals stay as they are.',
+    };
+    const btabs = [['used', 'Used in'], ['fields', 'Fields'], ['details', 'Details']].map(([k, label]) => ({ label, ...tsg(S.btab === k), go: set({ btab: k }) }));
+    const bt = { used: S.btab === 'used', fields: S.btab === 'fields', details: S.btab === 'details' };
+    const applyOpts = [['new', 'Templates and new proposals', 'Drafts keep their current copy. This is the safe default.'], ['drafts', 'Also update ' + b0[5] + ' drafts', 'Replaces this block in the drafts listed above. Any edits made to it in those drafts are lost.']].map(([k, t, d]) => { const on = S.apply === k; return { t, d, on: on ? 'true' : 'false', border: on ? '1.5px solid #13303A' : '1px solid #E3DED4', bg: on ? '#fff' : 'transparent', ring: on ? '#13303A' : '#B5AFA3', dot: on ? '#13303A' : 'transparent', go: set({ apply: k }) }; });
+    const blkFields = ['client.first_name', 'client.company', 'sender.name', 'workspace.name', 'proposal.date', 'quote.monthly_total'].map(k => ({ label: F[k], val: V[k] }));
+    const isBlkTab = S.ttab === 'blocks';
+    const tplTabs = [['quote', 'Default quote'], ['fields', 'Fields'], ['blocks', 'Blocks'], ['styles', 'Styles']].map(([k, label]) => ({ label, ...tsg(S.ttab2 === k), go: set({ ttab2: k }) }));
+    const tt = { quote: S.ttab2 === 'quote', fields: S.ttab2 === 'fields', blocks: S.ttab2 === 'blocks', styles: S.ttab2 === 'styles' };
+    const page = S.page;
+    const pg = { templates: page === 'templates' && !S.tpl && S.blk === null, tplEditor: page === 'templates' && S.tpl, blkEditor: page === 'templates' && S.blk !== null, emails: page === 'emails' && !S.email, emailEditor: page === 'emails' && !!S.email, products: page === 'products', connections: page === 'connections', workspace: page === 'workspace', activity: page === 'activity' };
+    return {
+      nav, pg, inShell: !(pg.tplEditor || pg.emailEditor || pg.blkEditor),
+      closeEditor: set({ email: null, tpl: false, blk: null }),
+      ttabs, isBlkTab, isTplTab: !isBlkTab, showBlocks: set({ ttab: 'blocks' }), searchPh: isBlkTab ? 'Search blocks' : 'Search templates', newLabel: isBlkTab ? 'New block' : 'New template',
+      blocksTop, blocksPhone, tplTabs, tt, teamTab: team.map(m => ({ ...m, menu: false })), blkFilters, bk, btabs, bt, applyOpts, blkFields,
+      audTabs, emailGroups: groupsFor(S.aud === 'staff'), phoneGroups: groupsFor(false).slice(0, 3),
+      em, cv, modeOpts, widthOpts, showValues: vals, toggleDark: set({ dark: !dark }), darkLabel: dark ? 'Light' : 'Dark',
+      etabs, et: { fields: S.etab === 'fields', details: S.etab === 'details', text: S.etab === 'text' }, fieldCards,
+      products, prod, prodOpen: S.prodOpen, closeProd: set({ prodOpen: false }), terms,
+      conns, wsNav, ws, team, linkRows,
+      templates, blocks, tplSections,
+      actFilters, activity, phoneStudio,
+    };
+  }
+}
+</script>
+</body>
+</html>
