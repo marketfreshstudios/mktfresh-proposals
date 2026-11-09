@@ -1,6 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import { Sheet } from "./foundation";
+import { Select } from "./form-controls";
+import { api, Button } from "./ui";
+import { chromeIcons } from "./staff-icons";
+import { useMoney } from "./money-context";
 import {
   reportFiltersSchema,
   reportParams,
@@ -17,704 +29,799 @@ import {
   type ReportValue,
 } from "../lib/report-metrics";
 import type { StaffQuery } from "../lib/staff-routes";
-import { Select } from "./form-controls";
-import { Skeleton } from "./foundation";
-import { api, Banner, Button, Empty, Icon } from "./ui";
-import { useMoney } from "./money-context";
 
-const defaultSort: ReportSort = { key: "sent", direction: "desc" };
-const filterLabels = {
-  owner: "Owner (sender)",
-  template: "Template",
-  client: "Client",
-};
-const formula =
-  "Win rate = signed ÷ (signed + declined + expired), among proposals sent in this range.";
-const number = new Intl.NumberFormat("en-US");
-const proposalCount = (value: number) =>
-  `${number.format(value)} ${value === 1 ? "proposal" : "proposals"}`;
-const percent = new Intl.NumberFormat("en-US", {
+const count = new Intl.NumberFormat("en-US");
+const rate = new Intl.NumberFormat("en-US", {
   style: "percent",
   maximumFractionDigits: 1,
 });
-const monthLabel = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
-  month: "short",
-  year: "numeric",
-});
-const dateLabel = new Intl.DateTimeFormat("en-US", {
+const day = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
   month: "short",
   day: "numeric",
+});
+const year = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
   year: "numeric",
 });
-const dateOf = (day: string) => new Date(day + "T00:00:00Z");
-function duration(ms: number | null) {
-  if (ms === null) return "—";
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 1) return ms < 1000 ? "<1 sec" : `${Math.round(ms / 1000)} sec`;
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60),
-    rest = minutes % 60;
-  if (hours < 24) return `${hours} hr${rest ? ` ${rest} min` : ""}`;
-  const days = Math.floor(hours / 24),
-    remainder = hours % 24;
-  return `${days} ${days === 1 ? "day" : "days"}${remainder ? ` ${remainder} hr` : ""}`;
+const month = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  month: "short",
+});
+const fullMonth = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  month: "short",
+  year: "numeric",
+});
+const dateOf = (value: string) => new Date(value + "T00:00:00Z");
+const defaultSort: ReportSort = { key: "sent", direction: "desc" };
+const dimensions = {
+  owner: "Owner",
+  template: "Template",
+  client: "Client",
+} as const;
+const periods = {
+  one_time: "One-time",
+  monthly: "Monthly",
+  yearly: "Yearly",
+} as const;
+const signSuffix = { one_time: "", monthly: "/mo", yearly: "/yr" } as const;
+type Link = (metric: ReportDrill, extra?: Partial<ReportFilters>) => string;
+
+function duration(ms: number | null | undefined, seconds = false) {
+  if (ms == null) return "—";
+  const s = Math.round(ms / 1000);
+  if (seconds && s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  if (s < 60) return s ? `${s} sec` : "<1 sec";
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  if (s < 86400) return `${countFraction(s / 3600)} hr`;
+  return `${countFraction(s / 86400)} ${s === 86400 ? "day" : "days"}`;
+}
+function countFraction(value: number) {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
+function dateCaption(range: Report["range"]) {
+  const from = dateOf(range.from),
+    to = dateOf(range.to);
+  const sameYear = from.getUTCFullYear() === to.getUTCFullYear();
+  const first = day.format(from) + (sameYear ? "" : `, ${year.format(from)}`);
+  return `${first} – ${day.format(to)}, ${year.format(to)}`;
+}
+function arrowTabs(
+  event: KeyboardEvent,
+  selected: number,
+  length: number,
+  change: (index: number) => void,
+) {
+  const direction =
+    event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+  if (!direction && event.key !== "Home" && event.key !== "End") return;
+  event.preventDefault();
+  const next =
+    event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? length - 1
+        : (selected + direction + length) % length;
+  change(next);
+  event.currentTarget
+    .querySelectorAll<HTMLButtonElement>("button")
+    [next]?.focus();
 }
 
-type LinkTo = (
-  metric: ReportDrill,
-  children: ReactNode,
-  label?: string,
-  filters?: Partial<ReportFilters>,
-) => ReactNode;
-
 export function ReportsPage({ query }: { query: StaffQuery }) {
-  const [filters, setFilters] = useState<ReportFilters>(() => {
-    const result = reportFiltersSchema.safeParse(query);
-    return result.success ? result.data : { range: "month" };
-  });
-  const [pending, setPending] = useState(filters);
-  const [report, setReport] = useState<Report | null>(null);
+  const [filters, setFilters] = useState<ReportFilters>(
+    () => reportFiltersSchema.safeParse(query).data ?? { range: "month" },
+  );
+  const [result, setResult] = useState<{
+    report: Report;
+    filters: ReportFilters;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [invalid, setInvalid] = useState("");
+  const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [table, setTable] = useState(false);
+  const [editing, setEditing] = useState<ReportFilters | null>(null);
+  const [invalid, setInvalid] = useState(false);
+  const [trendView, setTrendView] = useState<"chart" | "table">("chart");
   const [templateSort, setTemplateSort] = useState(defaultSort);
   const [ownerSort, setOwnerSort] = useState(defaultSort);
-  const queryString = reportParams(filters).toString();
+  const key = reportParams(filters).toString();
   useEffect(() => {
     const request = new AbortController();
     setLoading(true);
-    setError("");
-    api<Report>("/api/reports?" + queryString, { signal: request.signal })
-      .then((data) => {
-        if (!request.signal.aborted) setReport(data);
+    setError(false);
+    api<Report>("/api/reports?" + key, { signal: request.signal })
+      .then((report) => {
+        if (!request.signal.aborted) setResult({ report, filters });
       })
-      .catch((err: Error) => {
-        if (!request.signal.aborted) setError(err.message);
+      .catch(() => {
+        if (!request.signal.aborted) setError(true);
       })
       .finally(() => {
         if (!request.signal.aborted) setLoading(false);
       });
     return () => request.abort();
-  }, [queryString, retry]);
-
-  function apply(next: ReportFilters) {
-    const result = reportFiltersSchema.safeParse(next);
-    if (!result.success) {
-      setInvalid("Choose a valid start and end date under 100 years.");
-      return;
-    }
-    setInvalid("");
-    setFilters(result.data);
-    setPending(result.data);
-    history.replaceState(null, "", "/reports?" + reportParams(result.data));
-  }
-  function field<K extends keyof ReportFilters>(
-    name: K,
-    value: ReportFilters[K],
-  ) {
-    setPending((prev) => ({ ...prev, [name]: value }));
-    setInvalid("");
-  }
-
-  const exact = report
+  }, [key, retry]);
+  const report = result?.report;
+  const empty = !!report && !report.workspaceHasProposals;
+  const exact = result
     ? {
-        ...filters,
+        ...result.filters,
         range: "custom" as const,
-        from: report.range.from,
-        to: report.range.to,
+        from: result.report.range.from,
+        to: result.report.range.to,
       }
     : filters;
-  const link: LinkTo = (metric, children, label, extra) => (
-    <a
-      className="report-number"
-      href={"/proposals?" + reportParams({ ...exact, ...extra }, metric)}
-      aria-label={
-        label && typeof children === "string" && !label.includes(children)
-          ? `${children} · ${label}`
-          : label
-      }
-    >
-      {children}
-    </a>
-  );
+  const link: Link = (metric, extra) =>
+    "/proposals?" + reportParams({ ...exact, ...extra }, metric);
   const csv = reportParams(exact);
-  for (const [kind, sorting] of [
+  for (const [kind, sort] of [
     ["template", templateSort],
     ["owner", ownerSort],
   ] as const) {
-    csv.set(kind + "_sort", sorting.key);
-    csv.set(kind + "_direction", sorting.direction);
+    csv.set(kind + "_sort", sort.key);
+    csv.set(kind + "_direction", sort.direction);
   }
-  const summary = report
-    ? `${dateLabel.format(dateOf(report.range.from))} – ${dateLabel.format(dateOf(report.range.to))} · ${report.range.timezone}`
-    : "";
-  return (
-    <div className="reports stack">
-      <form
-        className="card report-filter"
-        aria-label="Report filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          apply(pending);
-        }}
+  function apply(next: ReportFilters) {
+    const parsed = reportFiltersSchema.safeParse(next);
+    if (!parsed.success) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    setEditing(null);
+    setFilters(parsed.data);
+    history.replaceState(null, "", "/reports?" + reportParams(parsed.data));
+  }
+  function openFilters(range = filters.range) {
+    setInvalid(false);
+    setEditing({
+      ...filters,
+      range,
+      from: filters.from ?? report?.range.from,
+      to: filters.to ?? report?.range.to,
+    });
+  }
+  function changeRange(index: number) {
+    const [range] = reportRanges[index];
+    if (range === "custom") openFilters(range);
+    else apply({ ...filters, range, from: undefined, to: undefined });
+  }
+  function rangeTabs(location: string) {
+    const selected = reportRanges.findIndex(([key]) => key === filters.range);
+    return (
+      <div
+        className={`report-ranges ${location}`}
+        role="group"
+        aria-label="Date range"
+        onKeyDown={(event) =>
+          arrowTabs(event, selected, reportRanges.length, changeRange)
+        }
       >
-        <div className="report-filter-fields">
-          <label className="ui-small-strong">
-            Date range
-            <Select
-              aria-label="Date range"
-              value={pending.range}
-              onChange={(e) => {
-                const range = e.target.value as ReportFilters["range"];
-                const next = {
-                  ...pending,
-                  range,
-                  from: undefined,
-                  to: undefined,
-                };
-                setPending(
-                  range === "custom"
-                    ? {
-                        ...next,
-                        from: report?.range.from,
-                        to: report?.range.to,
-                      }
-                    : next,
-                );
-                setInvalid("");
-              }}
-            >
-              {reportRanges.map(([key, name]) => (
-                <option key={key} value={key}>
-                  {name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          {(["owner", "template", "client"] as const).map((key) => (
-            <label className="ui-small-strong" key={key}>
-              {filterLabels[key]}
-              <Select
-                aria-label={filterLabels[key]}
-                value={pending[key] ?? ""}
-                onChange={(e) => field(key, e.target.value || undefined)}
-              >
-                <option value="">
-                  {key === "owner"
-                    ? "All senders"
-                    : key === "template"
-                      ? "All templates"
-                      : "All clients"}
-                </option>
-                {report?.dimensions[key].map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          ))}
-          <Button type="submit" variant="primary">
-            Apply filters
-          </Button>
+        {reportRanges.map(([key, label], i) => (
+          <button
+            type="button"
+            key={key}
+            disabled={empty}
+            aria-pressed={filters.range === key}
+            onClick={() => changeRange(i)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  function fields(
+    value: ReportFilters,
+    onChange: (value: ReportFilters) => void,
+  ) {
+    return (Object.keys(dimensions) as (keyof typeof dimensions)[]).map(
+      (name) => (
+        <label key={name}>
+          {dimensions[name]}
+          <Select
+            aria-label={dimensions[name]}
+            disabled={empty}
+            value={value[name] ?? ""}
+            onChange={(event) =>
+              onChange({ ...value, [name]: event.target.value || undefined })
+            }
+          >
+            <option value="">All</option>
+            {report?.dimensions[name].map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+      ),
+    );
+  }
+  const scoped = [filters.owner, filters.template, filters.client].filter(
+    Boolean,
+  ).length;
+  const proposalCount =
+    report?.pipeline.reduce((sum, stage) => sum + stage.count, 0) ?? 0;
+
+  return (
+    <div className="reports" aria-busy={loading}>
+      <header className="report-header">
+        <div>
+          {report && (
+            <p className="t-eyebrow">
+              {dateCaption(report.range)} · {count.format(proposalCount)}{" "}
+              {proposalCount === 1 ? "proposal" : "proposals"}
+            </p>
+          )}
+          <h1 className="t-page-title">Reports</h1>
         </div>
-        {pending.range === "custom" && (
-          <div className="report-custom-dates">
-            <label className="ui-small-strong">
-              Start date
-              <input
-                type="date"
-                required
-                value={pending.from ?? ""}
-                onChange={(e) => field("from", e.target.value)}
-              />
-            </label>
-            <label className="ui-small-strong">
-              End date
-              <input
-                type="date"
-                required
-                value={pending.to ?? ""}
-                onChange={(e) => field("to", e.target.value)}
-              />
-            </label>
-          </div>
-        )}
-        {invalid && <p role="alert">{invalid}</p>}
-        {summary && <small className="report-date-summary">{summary}</small>}
-      </form>
-      {error && (
-        <Banner
-          title="Unable to load Reports"
-          tone="danger"
-          action={<Button onClick={() => setRetry((n) => n + 1)}>Retry</Button>}
+        <div className="report-phone-ranges">{rangeTabs("phone-ranges")}</div>
+      </header>
+      <div
+        className={`report-filterbar ${empty ? "empty-filters" : ""}`}
+        aria-label="Report filters"
+      >
+        {rangeTabs("wide-ranges")}
+        <div className="report-filter-fields">{fields(filters, apply)}</div>
+        <Button
+          className="report-filter-trigger"
+          disabled={empty}
+          onClick={() => openFilters()}
         >
-          {error}
-        </Banner>
-      )}
-      {loading ? (
-        <Skeleton />
-      ) : (
-        report &&
-        !error && (
-          <>
-            {!report.workspaceHasProposals ? (
-              <section className="card report-empty">
-                <Empty
-                  title="No proposal activity yet"
-                  action={
-                    <a className="btn" href="/proposals?new=1">
-                      New proposal
-                    </a>
-                  }
-                >
-                  Send your first proposal to see views, signatures, and signed
-                  value here.
-                </Empty>
-              </section>
-            ) : (
-              <>
-                {!report.sent && (
-                  <Banner title="No proposals were sent in this date range">
-                    Try a longer date range or different filters. The trend can
-                    still include signatures from earlier sends.
-                  </Banner>
-                )}
-                <section aria-labelledby="report-overview">
-                  <h2 className="sr-only" id="report-overview">
-                    Overview
-                  </h2>
-                  <div className="report-cards">
-                    <Metric
-                      title="Proposals sent"
-                      value={link(
-                        { report: "sent" },
-                        number.format(report.sent),
-                        `${proposalCount(report.sent)} sent`,
-                      )}
-                    />
-                    <Metric
-                      title="Viewed"
-                      value={link(
-                        { report: "viewed" },
-                        number.format(report.viewed),
-                        `${number.format(report.viewed)} viewed ${report.viewed === 1 ? "proposal" : "proposals"}`,
-                      )}
-                    >
-                      {report.viewedRate !== null
-                        ? link(
-                            { report: "viewed" },
-                            percent.format(report.viewedRate) + " of sent",
-                          )
-                        : "No sends in range"}
-                    </Metric>
-                    <Metric
-                      title="Signed"
-                      value={link(
-                        { report: "signed" },
-                        number.format(report.signed),
-                        `${number.format(report.signed)} signed ${report.signed === 1 ? "proposal" : "proposals"}`,
-                      )}
-                    >
-                      <span className="report-tooltip">
-                        <a
-                          className="report-number"
-                          href={
-                            "/proposals?" +
-                            reportParams(exact, { report: "outcomes" })
-                          }
-                          aria-describedby="report-win-rate-formula"
-                        >
-                          {report.winRate === null
-                            ? "—"
-                            : percent.format(report.winRate)}{" "}
-                          win rate
-                        </a>
-                        <span role="tooltip" id="report-win-rate-formula">
-                          {formula}
-                        </span>
-                      </span>
-                    </Metric>
-                    <Metric
-                      title="Median time to first view"
-                      value={link(
-                        { report: "first-view-time" },
-                        duration(report.medianView),
-                        "Proposals with a recorded time to first view",
-                      )}
-                    />
-                    <Metric
-                      title="Median time to sign"
-                      value={link(
-                        { report: "sign-time" },
-                        duration(report.medianSign),
-                        "Proposals with a recorded time to sign",
-                      )}
-                    />
-                    <Metric
-                      title="Open now"
-                      value={link(
-                        { report: "open" },
-                        number.format(report.open),
-                        `${proposalCount(report.open)} open now`,
-                      )}
-                    >
-                      Sent or viewed, not expired
-                    </Metric>
-                  </div>
-                </section>
-                <section
-                  className="card report-panel"
-                  aria-labelledby="report-value"
-                >
-                  <h2 id="report-value">Value signed</h2>
-                  <p className="muted">
-                    Accepted totals from signed versions. Amounts stay separate
-                    by currency and billing period.
-                  </p>
-                  {report.values.length ? (
-                    <div className="report-value-rows">
-                      {report.values.map((value) => (
-                        <div className="report-value-row" key={value.currency}>
-                          <strong>{value.currency}</strong>
-                          <div>
-                            <small>One-time</small>
-                            <Values
-                              values={[value]}
-                              intervals={["one_time"]}
-                              link={link}
-                            />
-                          </div>
-                          <div>
-                            <small>Monthly</small>
-                            <Values
-                              values={[value]}
-                              intervals={["monthly"]}
-                              link={link}
-                            />
-                          </div>
-                          {(value.yearly ?? 0) !== 0 && (
-                            <div>
-                              <small>Yearly</small>
-                              <Values
-                                values={[value]}
-                                intervals={["yearly"]}
-                                link={link}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="empty-copy">No signed value in this range.</p>
-                  )}
-                  {!!report.missingValue && (
-                    <small className="report-data-note">
-                      Totals are unavailable for some signed records. Only
-                      recorded amounts are included.
-                    </small>
-                  )}
-                </section>
-                <section
-                  className="card report-panel"
-                  aria-labelledby="report-pipeline"
-                >
-                  <h2 id="report-pipeline">Pipeline by status</h2>
-                  <p className="muted">
-                    Current stage of proposals sent in this range. Drafts use
-                    their creation date.
-                  </p>
-                  <ul className="report-pipeline">
-                    {report.pipeline.map(({ id, label, count }) => (
-                      <li key={id}>
-                        <span>{label}</span>
-                        {link(
-                          { report: "stage", stage: id },
-                          number.format(count),
-                          `${label}: ${proposalCount(count)}`,
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-                <section
-                  className="card report-panel"
-                  aria-labelledby="report-trend"
-                >
-                  <div className="report-panel-heading">
-                    <div>
-                      <h2 id="report-trend">Sent and signed over time</h2>
-                      <p className="muted">
-                        Sends use the send date. Signatures use the client
-                        signature date.
-                      </p>
-                    </div>
-                    <Button
-                      aria-pressed={table}
-                      onClick={() => setTable(!table)}
-                    >
-                      {table ? "Show chart" : "Show data table"}
-                    </Button>
-                  </div>
-                  <Trend report={report} table={table} link={link} />
-                </section>
-                <section
-                  className="report-breakdowns"
-                  aria-labelledby="report-breakdowns"
-                >
-                  <div className="report-panel-heading">
-                    <div>
-                      <h2 id="report-breakdowns">Breakdowns</h2>
-                      <p className="muted">
-                        Results for proposals sent in the selected date range.
-                      </p>
-                    </div>
-                    <a
-                      className="btn"
-                      href={"/api/reports/export?" + csv}
-                      download
-                    >
-                      <Icon name="download" /> Export CSV
-                    </a>
-                  </div>
-                  <Breakdown
-                    title="By template"
-                    group="template"
-                    rows={report.byTemplate}
-                    sort={templateSort}
-                    setSort={setTemplateSort}
-                    link={link}
+          {scoped ? `Filters · ${scoped}` : "Filters"}
+        </Button>
+        <div className="report-export">
+          {empty || !report ? (
+            <Button disabled>Export CSV</Button>
+          ) : (
+            <a className="btn" download href={"/api/reports/export?" + csv}>
+              Export CSV
+            </a>
+          )}
+        </div>
+      </div>
+      {editing && (
+        <Sheet
+          title="Filters"
+          className="report-filter-sheet"
+          onClose={() => setEditing(null)}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              apply(editing);
+            }}
+          >
+            {editing.range === "custom" && (
+              <div className="report-custom-dates">
+                <label>
+                  Start date
+                  <input
+                    type="date"
+                    required
+                    value={editing.from ?? ""}
+                    onChange={(event) =>
+                      setEditing({ ...editing, from: event.target.value })
+                    }
                   />
-                  <Breakdown
-                    title="By owner"
-                    group="owner"
-                    rows={report.byOwner}
-                    sort={ownerSort}
-                    setSort={setOwnerSort}
-                    link={link}
+                </label>
+                <label>
+                  End date
+                  <input
+                    type="date"
+                    required
+                    value={editing.to ?? ""}
+                    onChange={(event) =>
+                      setEditing({ ...editing, to: event.target.value })
+                    }
                   />
-                </section>
-                <div className="report-engagement">
-                  <section
-                    className="card report-panel"
-                    aria-labelledby="report-sections"
-                  >
-                    <h2 id="report-sections">Top engagement</h2>
-                    <p className="muted">
-                      Time spent on sections across viewed proposals.
-                    </p>
-                    {report.sections.length ? (
-                      <ol className="report-sections">
-                        {report.sections.map((s) => (
-                          <li key={s.label}>
-                            <span>{s.label}</span>
-                            {link(
-                              { report: "section", section: s.label },
-                              duration(s.ms),
-                              `${s.label}: ${duration(s.ms)} across ${proposalCount(s.proposals)}`,
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="empty-copy">
-                        No section time recorded yet.
-                      </p>
-                    )}
-                  </section>
-                  <section
-                    className="card report-panel"
-                    aria-labelledby="report-questions"
-                  >
-                    <h2 id="report-questions">Client questions</h2>
-                    <dl className="report-questions">
-                      <div>
-                        <dt>Asked</dt>
-                        <dd>
-                          {link(
-                            { report: "questions" },
-                            number.format(report.questions.total),
-                            "Proposals with client questions",
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Open</dt>
-                        <dd>
-                          {link(
-                            { report: "questions-open" },
-                            number.format(report.questions.open),
-                            "Proposals with open questions",
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Answered</dt>
-                        <dd>
-                          {link(
-                            { report: "questions-answered" },
-                            number.format(report.questions.answered),
-                            "Proposals with answered questions",
-                          )}
-                        </dd>
-                      </div>
-                      {!!report.questions.closedWithoutReply && (
-                        <div>
-                          <dt>Resolved without reply</dt>
-                          <dd>
-                            {link(
-                              { report: "questions-closed" },
-                              number.format(
-                                report.questions.closedWithoutReply,
-                              ),
-                            )}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </section>
-                </div>
-              </>
+                </label>
+              </div>
             )}
-          </>
-        )
+            <div className="report-sheet-fields">
+              {fields(editing, setEditing)}
+            </div>
+            {invalid && (
+              <p role="alert">
+                Choose a valid start and end date under 100 years.
+              </p>
+            )}
+            <Button type="submit">Apply filters</Button>
+          </form>
+        </Sheet>
+      )}
+      {error && (
+        <div className="report-error" role="alert">
+          <span>
+            Couldn't load reports.{" "}
+            <button
+              type="button"
+              className="report-retry"
+              onClick={() => setRetry((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </span>
+        </div>
+      )}
+      {loading && !report && <ReportSkeleton />}
+      {report && (
+        <>
+          {!empty && !report.sent && (
+            <p className="report-range-note">
+              No proposals were sent in this date range.
+            </p>
+          )}
+          <Headline report={report} link={link} empty={empty} />
+          {empty ? (
+            <section className="report-empty">
+              <p className="t-eyebrow">Nothing to report yet</p>
+              <h2>Reports fill in once you send proposals.</h2>
+              <p>
+                Every number here comes from proposals you’ve sent. Send your
+                first proposal and this page starts counting.
+              </p>
+              <a className="btn action" href="/proposals?new=1">
+                New proposal
+              </a>
+              <ul>
+                <li>Sent, viewed and signed counts</li>
+                <li>Win rate and time to sign</li>
+                <li>Value signed, one-time and monthly</li>
+                <li>Most-read sections and client questions</li>
+              </ul>
+            </section>
+          ) : (
+            <>
+              <div
+                className={`report-stages ${report.values.length === 1 && !report.values[0].yearly ? "compact-stages" : ""}`}
+              >
+                <ValueSigned report={report} link={link} />
+                <Pipeline report={report} link={link} />
+              </div>
+              <Trend
+                report={report}
+                link={link}
+                view={trendView}
+                setView={setTrendView}
+              />
+              <section
+                className="report-breakdowns"
+                aria-labelledby="report-breakdowns"
+              >
+                <h2 className="t-section-title" id="report-breakdowns">
+                  Breakdowns
+                </h2>
+                <Breakdown
+                  group="template"
+                  rows={report.byTemplate}
+                  sort={templateSort}
+                  setSort={setTemplateSort}
+                  link={link}
+                />
+                <Breakdown
+                  group="owner"
+                  rows={report.byOwner}
+                  sort={ownerSort}
+                  setSort={setOwnerSort}
+                  link={link}
+                />
+              </section>
+              <Engagement report={report} link={link} />
+            </>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function Metric({
-  title,
-  value,
-  children,
-}: {
-  title: string;
-  value: ReactNode;
-  children?: ReactNode;
-}) {
+function ReportSkeleton() {
   return (
-    <div className="card report-metric">
-      <span>{title}</span>
-      <strong>{value}</strong>
-      {children && <small>{children}</small>}
+    <div className="report-skeleton" role="status" aria-label="Loading reports">
+      <div className="report-cards" aria-hidden="true">
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} />
+        ))}
+      </div>
+      <div className="report-skeleton-track" aria-hidden="true" />
     </div>
   );
 }
-function Values({
-  values,
-  intervals,
+
+function Headline({
+  report,
   link,
-  filters,
+  empty,
 }: {
-  values: ReportValue[];
-  intervals: ReportInterval[];
-  link: LinkTo;
-  filters?: Partial<ReportFilters>;
+  report: Report;
+  link: Link;
+  empty: boolean;
 }) {
-  const money = useMoney();
-  const entries = values.flatMap((v) =>
-    intervals.flatMap((key) =>
-      v[key] === null || (key === "yearly" && v[key] === 0) ? [] : [{ v, key }],
-    ),
-  );
-  if (!entries.length) return <span className="muted">—</span>;
+  const tooltipId = useId();
+  const declined = report.pipeline.find((x) => x.id === "declined")?.count ?? 0;
+  const expired = report.pipeline.find((x) => x.id === "expired")?.count ?? 0;
+  const metrics: [ReportDrill["report"], string, string, string][] = [
+    [
+      "sent",
+      "Proposals sent",
+      count.format(report.sent),
+      dateCaption(report.range),
+    ],
+    [
+      "viewed",
+      "Viewed",
+      count.format(report.viewed),
+      report.viewedRate === null
+        ? "— of sent"
+        : `${rate.format(report.viewedRate)} of sent`,
+    ],
+    [
+      "signed",
+      "Signed",
+      count.format(report.signed),
+      report.winRate === null
+        ? "— win rate"
+        : `${rate.format(report.winRate)} win rate`,
+    ],
+    [
+      "first-view-time",
+      "Median time to first view",
+      duration(report.medianView),
+      "From send to first open",
+    ],
+    [
+      "sign-time",
+      "Median time to sign",
+      duration(report.medianSign),
+      "From send to client signature",
+    ],
+    [
+      "open",
+      "Open now",
+      count.format(report.open),
+      `${report.openSent} sent · ${report.openViewed} viewed`,
+    ],
+  ];
   return (
-    <span className="report-value-links">
-      {entries.map(({ v, key }) => (
-        <span key={v.currency + key}>
-          {link(
-            { report: "value", currency: v.currency, interval: key },
-            money(v[key]!, v.currency) +
-              (key === "monthly" ? "/mo" : key === "yearly" ? "/yr" : ""),
-            undefined,
-            filters,
-          )}
+    <section aria-label="Overview" className="report-cards">
+      {metrics.map(([metric, title, value, note]) => {
+        if (empty)
+          return (
+            <div key={metric} className="report-metric report-metric-empty">
+              <strong>{title}</strong>
+              <span className="t-number">—</span>
+            </div>
+          );
+        return (
+          <div className="report-metric" key={metric}>
+            <a href={link({ report: metric })}>
+              <strong className="report-metric-label">{title}</strong>
+              <span className="t-number">{value}</span>
+              <small>{note}</small>
+              <span className="report-metric-link">View proposals</span>
+            </a>
+            {metric === "signed" && (
+              <div className="report-tooltip">
+                <button
+                  className="report-info"
+                  type="button"
+                  aria-label="About win rate"
+                  aria-describedby={tooltipId}
+                >
+                  <chromeIcons.info size={16} aria-hidden="true" />
+                </button>
+                <div id={tooltipId} role="tooltip">
+                  <strong>Signed ÷ (signed + declined + expired)</strong>
+                  <p>
+                    {report.signed} ÷ ({report.signed} + {declined} + {expired})
+                    = {report.signed} ÷ {report.closed}
+                  </p>
+                  <p>Proposals still open aren’t counted.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+function ValueSigned({ report, link }: { report: Report; link: Link }) {
+  const money = useMoney();
+  return (
+    <section className="report-section" aria-labelledby="report-value">
+      <div className="report-section-heading">
+        <h2 className="t-section-title" id="report-value">
+          Value signed
+        </h2>
+        <span>
+          {count.format(report.signed)} signed{" "}
+          {report.signed === 1 ? "proposal" : "proposals"}
         </span>
-      ))}
-    </span>
+      </div>
+      {report.values.length ? (
+        report.values.map((value) => {
+          const keys: ReportInterval[] = value.yearly
+            ? ["one_time", "monthly", "yearly"]
+            : ["one_time", "monthly"];
+          return (
+            <div
+              className="report-currency-group"
+              key={value.currency}
+              aria-label={value.currency}
+            >
+              {report.values.length > 1 && (
+                <p className="t-col-head">{value.currency}</p>
+              )}
+              <div className="report-value-tiles">
+                {keys.map((key) => {
+                  const amount = value[key];
+                  const contents = (
+                    <>
+                      <span>{periods[key]}</span>
+                      <strong className="t-hero-number">
+                        {amount === null
+                          ? "—"
+                          : money(amount, value.currency) + signSuffix[key]}
+                      </strong>
+                      <small>
+                        {key === "one_time"
+                          ? "Project fees and kickoffs"
+                          : key === "monthly"
+                            ? "Monthly plans"
+                            : "Yearly plans"}
+                      </small>
+                    </>
+                  );
+                  return amount === null ? (
+                    <div className="report-value-tile" key={key}>
+                      {contents}
+                    </div>
+                  ) : (
+                    <a
+                      className="report-value-tile"
+                      key={key}
+                      href={link({
+                        report: "value",
+                        interval: key,
+                        currency: value.currency,
+                      })}
+                    >
+                      {contents}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })
+      ) : (
+        <p className="muted">No signed value in this range.</p>
+      )}
+      <p className="t-ui-note">
+        From proposals signed by clients in this range. Amounts are as signed.
+      </p>
+      {!!report.missingValue && (
+        <p className="t-ui-note">
+          Totals are unavailable for some signed records.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Pipeline({ report, link }: { report: Report; link: Link }) {
+  const max = Math.max(1, ...report.pipeline.map((stage) => stage.count));
+  return (
+    <section className="report-section" aria-labelledby="report-pipeline">
+      <div className="report-section-heading">
+        <h2 className="t-section-title" id="report-pipeline">
+          Pipeline by stage
+        </h2>
+        <span>Where each proposal is now · click a stage to open it</span>
+      </div>
+      <div className="report-pipeline">
+        {[report.pipeline.slice(0, 6), report.pipeline.slice(6)].map(
+          (stages, i) => (
+            <div className={i ? "pipeline-exited" : ""} key={i}>
+              <h3 className="t-col-head">
+                {i ? "Exited" : "In progress and won"} ·{" "}
+                {stages.reduce((n, s) => n + s.count, 0)}
+              </h3>
+              <div className="pipeline-track">
+                {stages.map(
+                  (stage) =>
+                    stage.count > 0 && (
+                      <a
+                        href={link({ report: "stage", stage: stage.id })}
+                        aria-label={`${stage.count} · ${stage.label}`}
+                        key={stage.id}
+                        data-stage={stage.id}
+                        style={{ flex: stage.count }}
+                      >
+                        {stage.count}
+                      </a>
+                    ),
+                )}
+              </div>
+              <ul className="pipeline-legend" role="list">
+                {stages.map((stage) => (
+                  <li key={stage.id} data-stage={stage.id}>
+                    <a href={link({ report: "stage", stage: stage.id })}>
+                      <span>{stage.label}</span>
+                      <i
+                        aria-hidden="true"
+                        style={
+                          {
+                            "--stage-width": `${(stage.count / max) * 100}%`,
+                          } as CSSProperties
+                        }
+                      />
+                      <strong>{stage.count}</strong>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ),
+        )}
+      </div>
+    </section>
   );
 }
 
 function Trend({
   report,
-  table,
   link,
+  view,
+  setView,
 }: {
   report: Report;
-  table: boolean;
-  link: LinkTo;
+  link: Link;
+  view: "chart" | "table";
+  setView: (v: "chart" | "table") => void;
 }) {
+  const id = useId();
   const max = Math.max(1, ...report.trend.flatMap((r) => [r.sent, r.signed]));
-  const signed = report.trend.reduce((sum, r) => sum + r.signed, 0);
-  const summary = `${report.sent} sent and ${signed} client signatures across ${report.trend.length} ${report.trend.length === 1 ? "month" : "months"}.`;
-  const cell = (month: string, kind: "sent" | "signed", count: number) =>
-    link(
-      { report: kind === "sent" ? "trend-sent" : "trend-signed", month },
-      number.format(count),
-      `${monthLabel.format(dateOf(month + "-01"))}: ${count} ${kind}`,
-    );
-  if (table)
-    return (
-      <table className="report-table report-trend-table">
-        <caption className="sr-only">
-          Monthly proposals sent and signed. {summary}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Month</th>
-            <th scope="col">Sent</th>
-            <th scope="col">Signed</th>
-          </tr>
-        </thead>
-        <tbody>
-          {report.trend.map(({ month, sent, signed }) => (
-            <tr key={month}>
-              <th scope="row">{monthLabel.format(dateOf(month + "-01"))}</th>
-              <td>{cell(month, "sent", sent)}</td>
-              <td>{cell(month, "signed", signed)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
+  const step = Math.ceil(max / 4),
+    top = step * 4;
+  const totals = report.trend.reduce((n, row) => n + row.signed, 0);
+  const summary = `${report.sent} sent and ${totals} client signatures across ${report.trend.length} ${report.trend.length === 1 ? "month" : "months"}.`;
+  const dataLink = (date: string, kind: "sent" | "signed", value: number) => (
+    <a
+      href={link({
+        report: kind === "sent" ? "trend-sent" : "trend-signed",
+        month: date,
+      })}
+      aria-label={`${fullMonth.format(dateOf(date + "-01"))}: ${value} ${kind}`}
+    >
+      {count.format(value)}
+    </a>
+  );
   return (
-    <figure className="report-chart" aria-labelledby="report-chart-caption">
-      <figcaption id="report-chart-caption" className="sr-only">
-        {summary} Each month lists sent followed by signed. Use Show data table
-        for a tabular view.
-      </figcaption>
-      <ul className="report-legend" aria-hidden="true">
-        <li>Sent</li>
-        <li>Signed</li>
-      </ul>
-      <ol className="report-chart-months">
-        {report.trend.map(({ month, sent, signed }) => (
-          <li key={month}>
-            <strong>{monthLabel.format(dateOf(month + "-01"))}</strong>
-            <div>
-              {(
-                [
-                  ["sent", sent],
-                  ["signed", signed],
-                ] as const
-              ).map(([kind, count]) => (
-                <div className={"report-bar-row " + kind} key={kind}>
-                  <span className="report-bar" aria-hidden="true">
-                    <i style={{ width: `${(count / max) * 100}%` }} />
-                  </span>
-                  {cell(month, kind, count)}
+    <section className="report-section" aria-labelledby="report-trend">
+      <div className="report-section-heading">
+        <h2 className="t-section-title" id="report-trend">
+          Sent vs signed by month
+        </h2>
+        <div
+          className="report-trend-tabs"
+          role="tablist"
+          aria-label="Trend display"
+          onKeyDown={(event) =>
+            arrowTabs(event, view === "chart" ? 0 : 1, 2, (i) =>
+              setView(i ? "table" : "chart"),
+            )
+          }
+        >
+          {(["chart", "table"] as const).map((tab) => (
+            <button
+              type="button"
+              key={tab}
+              role="tab"
+              id={id + tab}
+              aria-controls={id + "panel"}
+              aria-selected={view === tab}
+              tabIndex={view === tab ? 0 : -1}
+              onClick={() => setView(tab)}
+            >
+              {tab === "chart" ? "Chart" : "View as table"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div role="tabpanel" id={id + "panel"} aria-labelledby={id + view}>
+        {view === "chart" ? (
+          <figure aria-labelledby={id + "caption"} className="report-chart">
+            <figcaption id={id + "caption"} className="sr-only">
+              {summary} Sent bars are outlined and hatched. Signed bars are
+              solid.
+            </figcaption>
+            <ul className="report-legend" role="list">
+              <li>Sent (hatched)</li>
+              <li>Signed (solid)</li>
+            </ul>
+            <div className="report-chart-scroll">
+              <div
+                className="report-plot"
+                style={{ "--months": report.trend.length } as CSSProperties}
+              >
+                <div className="report-gridlines" aria-hidden="true">
+                  {[4, 3, 2, 1, 0].map((i) => (
+                    <span key={i}>
+                      <b>{step * i}</b>
+                    </span>
+                  ))}
                 </div>
-              ))}
+                <ol className="report-chart-months" role="list">
+                  {report.trend.map((r) => (
+                    <li key={r.month}>
+                      <div className="report-bar-pair">
+                        {(["sent", "signed"] as const).map((kind) => (
+                          <div
+                            key={kind}
+                            className={`report-bar ${kind}`}
+                            style={
+                              {
+                                "--bar": `${(r[kind] / top) * 100}%`,
+                              } as CSSProperties
+                            }
+                          >
+                            {dataLink(r.month, kind, r[kind])}
+                            <span aria-hidden="true" />
+                          </div>
+                        ))}
+                      </div>
+                      <span>{month.format(dateOf(r.month + "-01"))}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
-          </li>
-        ))}
-      </ol>
-    </figure>
+          </figure>
+        ) : (
+          <table className="report-table">
+            <caption className="sr-only">
+              Monthly proposals sent and signed. {summary}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col">Sent</th>
+                <th scope="col">Signed</th>
+                <th scope="col">Signed ÷ sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.trend.map((r) => (
+                <tr key={r.month}>
+                  <th scope="row">
+                    {fullMonth.format(dateOf(r.month + "-01"))}
+                  </th>
+                  <td>{dataLink(r.month, "sent", r.sent)}</td>
+                  <td>{dataLink(r.month, "signed", r.signed)}</td>
+                  <td>
+                    {r.sent ? (
+                      <a
+                        href={link({ report: "trend-signed", month: r.month })}
+                      >
+                        {rate.format(r.signed / r.sent)}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -723,152 +830,299 @@ const columns: [ReportSort["key"], string][] = [
   ["sent", "Sent"],
   ["signed", "Signed"],
   ["winRate", "Win rate"],
-  ["medianSign", "Median time to sign"],
-  ["one_time", "One-time value"],
-  ["recurring", "Recurring value"],
+  ["medianSign", "Median to sign"],
+  ["one_time", "One-time"],
+  ["recurring", "Monthly"],
 ];
 function Breakdown({
-  title,
   group,
   rows,
   sort,
   setSort,
   link,
 }: {
-  title: string;
   group: "template" | "owner";
   rows: ReportBreakdown[];
   sort: ReportSort;
-  setSort: (sort: ReportSort) => void;
-  link: LinkTo;
+  setSort: (s: ReportSort) => void;
+  link: Link;
 }) {
+  const heading = `By ${group}`,
+    sorted = sortBreakdown(rows, sort);
+  const groupName = group === "template" ? "Template" : "Owner";
+  function cells(row: ReportBreakdown) {
+    const filter = { [group]: row.id };
+    return [
+      <a key="name" href={link({ report: "sent" }, filter)}>
+        {row.name}
+      </a>,
+      <a key="sent" href={link({ report: "sent" }, filter)}>
+        {row.sent}
+      </a>,
+      <a key="signed" href={link({ report: "signed" }, filter)}>
+        {row.signed}
+      </a>,
+      <a key="winRate" href={link({ report: "outcomes" }, filter)}>
+        {row.winRate === null ? "—" : rate.format(row.winRate)}
+      </a>,
+      <a key="medianSign" href={link({ report: "sign-time" }, filter)}>
+        {duration(row.medianSign)}
+      </a>,
+      <BreakdownValues
+        key="one_time"
+        values={row.values}
+        keys={["one_time"]}
+        link={link}
+        filter={filter}
+      />,
+      <BreakdownValues
+        key="recurring"
+        values={row.values}
+        keys={["monthly", "yearly"]}
+        link={link}
+        filter={filter}
+      />,
+    ];
+  }
   return (
-    <section
-      className="card report-panel"
-      aria-labelledby={`report-by-${group}`}
-    >
-      <h3 id={`report-by-${group}`}>{title}</h3>
-      {!rows.length ? (
-        <p className="empty-copy">No sends to compare.</p>
-      ) : (
-        <div
-          className="report-table-scroll"
-          role="region"
-          aria-label={title + " table"}
-          tabIndex={0}
-        >
-          <table className="report-table">
-            <caption className="sr-only">
-              {title} · Select a column header to sort.
-            </caption>
+    <section className="report-section report-breakdown" aria-label={heading}>
+      <div className="report-section-heading">
+        <h3 className="t-section-title">{heading}</h3>
+        <span className="report-sort-hint">Click a column to sort</span>
+        <label className="report-sort-phone">
+          Sort{" "}
+          <Select
+            aria-label={`Sort ${heading.toLowerCase()}`}
+            value={sort.key}
+            onChange={(e) => {
+              const key = e.target.value as ReportSort["key"];
+              setSort({ key, direction: key === "name" ? "asc" : "desc" });
+            }}
+          >
+            {columns.map(([key, label]) => (
+              <option key={key} value={key}>
+                {key === "name" ? groupName : label}
+              </option>
+            ))}
+          </Select>
+        </label>
+      </div>
+      {rows.length ? (
+        <>
+          <table className="report-table report-breakdown-table">
+            <caption className="sr-only">{heading}</caption>
             <thead>
               <tr>
-                {columns.map(([key, name]) => (
-                  <th
-                    key={key}
-                    scope="col"
-                    aria-sort={
-                      sort.key === key
-                        ? sort.direction === "asc"
-                          ? "ascending"
-                          : "descending"
-                        : undefined
-                    }
-                  >
-                    <button
-                      className="btn ghost report-sort"
-                      onClick={() =>
-                        setSort({
-                          key,
-                          direction:
-                            sort.key === key && sort.direction === "desc"
-                              ? "asc"
-                              : key === "name" && sort.key !== key
-                                ? "asc"
-                                : "desc",
-                        })
+                {columns.map(([key, label]) => {
+                  const active = sort.key === key;
+                  const Direction =
+                    sort.direction === "asc"
+                      ? chromeIcons.ascending
+                      : chromeIcons.descending;
+                  return (
+                    <th
+                      key={key}
+                      scope="col"
+                      aria-sort={
+                        active
+                          ? sort.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : undefined
                       }
                     >
-                      {key === "name"
-                        ? group === "template"
-                          ? "Template"
-                          : "Owner"
-                        : name}
-                      {sort.key === key && (
-                        <span aria-hidden="true">
-                          {sort.direction === "asc" ? " ↑" : " ↓"}
-                        </span>
-                      )}
-                    </button>
-                  </th>
-                ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSort({
+                            key,
+                            direction:
+                              (active && sort.direction === "desc") ||
+                              (!active && key === "name")
+                                ? "asc"
+                                : "desc",
+                          })
+                        }
+                      >
+                        {key === "name" ? groupName : label}
+                        {active && <Direction size={13} aria-hidden="true" />}
+                      </button>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {sortBreakdown(rows, sort).map((row) => {
-                const filter = { [group]: row.id };
-                return (
-                  <tr key={row.id}>
-                    <th scope="row">
-                      {link({ report: "sent" }, row.name, undefined, filter)}
-                    </th>
-                    <td>
-                      {link(
-                        { report: "sent" },
-                        number.format(row.sent),
-                        `${row.name}: ${row.sent} sent`,
-                        filter,
-                      )}
-                    </td>
-                    <td>
-                      {link(
-                        { report: "signed" },
-                        number.format(row.signed),
-                        `${row.name}: ${row.signed} signed`,
-                        filter,
-                      )}
-                    </td>
-                    <td>
-                      {link(
-                        { report: "outcomes" },
-                        row.winRate === null
-                          ? "—"
-                          : percent.format(row.winRate),
-                        undefined,
-                        filter,
-                      )}
-                    </td>
-                    <td>
-                      {link(
-                        { report: "sign-time" },
-                        duration(row.medianSign),
-                        undefined,
-                        filter,
-                      )}
-                    </td>
-                    <td>
-                      <Values
-                        values={row.values}
-                        intervals={["one_time"]}
-                        link={link}
-                        filters={filter}
-                      />
-                    </td>
-                    <td>
-                      <Values
-                        values={row.values}
-                        intervals={["monthly", "yearly"]}
-                        link={link}
-                        filters={filter}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+              {sorted.map((row) => (
+                <tr key={row.id}>
+                  {cells(row).map((cell, i) =>
+                    i === 0 ? (
+                      <th scope="row" key={i}>
+                        {cell}
+                      </th>
+                    ) : (
+                      <td key={i}>{cell}</td>
+                    ),
+                  )}
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
+          <div className="report-breakdown-cards">
+            {sorted.map((row) => {
+              const values = cells(row);
+              return (
+                <article key={row.id}>
+                  <strong>{values[0]}</strong>
+                  <dl>
+                    {columns.slice(1).map(([, label], i) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{values[i + 1]}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p className="muted">No sends to compare.</p>
       )}
+      <p className="t-ui-note">
+        One-time and monthly values are totaled separately and never combined.
+      </p>
+    </section>
+  );
+}
+function BreakdownValues({
+  values,
+  keys,
+  link,
+  filter,
+}: {
+  values: ReportValue[];
+  keys: ReportInterval[];
+  link: Link;
+  filter: Partial<ReportFilters>;
+}) {
+  const money = useMoney();
+  const lines = values.flatMap((value) =>
+    keys.flatMap((key) =>
+      value[key] === null || (key === "yearly" && value.yearly === 0)
+        ? []
+        : [{ value, key }],
+    ),
+  );
+  if (!lines.length) return <span className="muted">—</span>;
+  return (
+    <span className="report-money-lines">
+      {lines.map(({ value, key }) => (
+        <a
+          key={value.currency + key}
+          href={link(
+            { report: "value", currency: value.currency, interval: key },
+            filter,
+          )}
+        >
+          {values.length > 1 && `${value.currency} `}
+          {key === "yearly" && "Yearly "}
+          {money(value[key]!, value.currency)}
+          {signSuffix[key]}
+        </a>
+      ))}
+    </span>
+  );
+}
+function Engagement({ report, link }: { report: Report; link: Link }) {
+  const { questions, sections } = report;
+  const largest = Math.max(1, ...sections.map((s) => s.ms / s.proposals));
+  return (
+    <section className="report-section" aria-labelledby="report-engagement">
+      <h2 className="t-section-title" id="report-engagement">
+        Engagement
+      </h2>
+      <div className="report-engagement">
+        <section aria-labelledby="report-sections">
+          <h3 className="t-section-title" id="report-sections">
+            Most-read sections
+          </h3>
+          <p className="t-ui-note">
+            Average time per proposal where the section was read
+          </p>
+          {sections.length ? (
+            <ol className="report-sections" role="list">
+              {sections.map((s) => (
+                <li key={s.label}>
+                  <a href={link({ report: "section", section: s.label })}>
+                    <span>{s.label}</span>
+                    <span className="report-reading-time">
+                      <strong>{duration(s.ms / s.proposals, true)}</strong>
+                      <small className="t-ui-note">
+                        {s.proposals}{" "}
+                        {s.proposals === 1 ? "proposal" : "proposals"}
+                      </small>
+                    </span>
+                    <i
+                      aria-hidden="true"
+                      style={
+                        {
+                          "--reading": `${(s.ms / s.proposals / largest) * 100}%`,
+                        } as CSSProperties
+                      }
+                    />
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="muted">No section time recorded yet.</p>
+          )}
+        </section>
+        <section aria-labelledby="report-questions">
+          <h3 className="t-section-title" id="report-questions">
+            Client questions
+          </h3>
+          <dl className="report-questions">
+            {(
+              [
+                ["Asked", "questions", questions.total],
+                ["Open", "questions-open", questions.open],
+                ["Answered", "questions-answered", questions.answered],
+              ] as const
+            ).map(([label, metric, n]) => (
+              <div
+                className={label === "Open" && n ? "review" : ""}
+                key={label}
+              >
+                <dt>{label}</dt>
+                <dd>
+                  <a href={link({ report: metric })}>{n}</a>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {report.medianReply != null && (
+            <p className="t-ui-note">
+              Median time to first reply {duration(report.medianReply)}.
+            </p>
+          )}
+          {!!questions.closedWithoutReply && (
+            <p className="t-ui-note">
+              {questions.closedWithoutReply} resolved without reply.
+            </p>
+          )}
+          <div className="report-question-links">
+            <a className="btn" href={link({ report: "questions-open" })}>
+              See {questions.open} open questions
+            </a>
+            <a className="btn" href={link({ report: "questions" })}>
+              All {questions.total}
+            </a>
+          </div>
+        </section>
+      </div>
     </section>
   );
 }

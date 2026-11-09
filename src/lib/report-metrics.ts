@@ -38,6 +38,8 @@ export type ReportQuestion = {
   proposal_id: string;
   status: "open" | "answered" | "resolved";
   answered: boolean;
+  asked_at?: string | null;
+  first_reply_at?: string | null;
 };
 export type ReportEngagement = {
   id: string;
@@ -203,6 +205,7 @@ type Row = {
     answered: number;
     closedWithoutReply: number;
   };
+  replyTimes: number[];
 };
 
 export function reportRows(
@@ -219,6 +222,7 @@ export function reportRows(
   const pending = new Set(facts.pendingBilling);
   const engagement = new Map(facts.engagement.map((x) => [x.id, x]));
   const questions = new Map<string, Row["questions"]>();
+  const replyTimes = new Map<string, number[]>();
   for (const q of facts.questions) {
     const count = questions.get(q.proposal_id) ?? {
       total: 0,
@@ -231,6 +235,12 @@ export function reportRows(
     if (q.status === "open") count.open++;
     else if (q.answered || q.status === "answered") count.answered++;
     else count.closedWithoutReply++;
+    const elapsed = duration(q.asked_at ?? null, q.first_reply_at ?? null);
+    if (elapsed !== null && inRange(q.first_reply_at ?? null, range)) {
+      const times = replyTimes.get(q.proposal_id) ?? [];
+      times.push(elapsed);
+      replyTimes.set(q.proposal_id, times);
+    }
   }
 
   return proposals.map((p) => {
@@ -305,6 +315,7 @@ export function reportRows(
         : null,
       value: values(p, versions.get(p.id)),
       sections,
+      replyTimes: replyTimes.get(p.id) ?? [],
       questions: questions.get(p.id) ?? {
         total: 0,
         open: 0,
@@ -454,6 +465,11 @@ export function buildReport(
     range,
     dimensions,
     ...summaries(cohort),
+    openSent: cohort.filter((r) => r.open && r.proposal.status === "sent")
+      .length,
+    openViewed: cohort.filter((r) => r.open && r.proposal.status === "viewed")
+      .length,
+    medianReply: median(cohort.flatMap((r) => r.replyTimes)),
     workspaceHasProposals: dimensions.client.length > 0,
     pipeline: reportStages.map(([id, label]) => ({
       id,
@@ -464,7 +480,11 @@ export function buildReport(
     byTemplate: breakdown("template"),
     byOwner: breakdown("owner"),
     sections: [...sections.values()]
-      .sort((a, b) => b.ms - a.ms || a.label.localeCompare(b.label))
+      .sort(
+        (a, b) =>
+          b.ms / b.proposals - a.ms / a.proposals ||
+          a.label.localeCompare(b.label),
+      )
       .slice(0, 10),
     questions,
   };

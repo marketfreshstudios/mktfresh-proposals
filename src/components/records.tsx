@@ -1,4 +1,5 @@
 "use client";
+import { chromeIcons } from "./staff-icons";
 import { ProposalQuestions } from "./proposal-questions";
 import type { QuestionSummary } from "../lib/proposal-questions";
 import { Select, Switch } from "./form-controls";
@@ -29,7 +30,7 @@ import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   reportMetricLabel,
@@ -205,7 +206,7 @@ export function ProposalMenu({
           setOpen(true);
         }}
       >
-        ⋯
+        <chromeIcons.more size={18} aria-hidden="true" />
       </button>
       {reassign && (
         <ReassignDialog
@@ -782,7 +783,15 @@ export function ProposalListV4({
     </div>
   );
 }
-export function HomeV4({ data }: { data: Data }) {
+export function HomeV4({
+  data,
+  onNew,
+  deploymentNotice,
+}: {
+  data: Data;
+  onNew: () => void;
+  deploymentNotice: ReactNode;
+}) {
   const money = useMoney(),
     [rows, setRows] = useState(data.proposals),
     [actionError, setActionError] = useState(""),
@@ -872,7 +881,7 @@ export function HomeV4({ data }: { data: Data }) {
       <div className="home-v4 stack">
         <ReferenceStatus documents={data.documents} />
         <section className="first-run card stack">
-          <h1>
+          <h1 className="t-page-title">
             {setup.complete
               ? "Send your first proposal"
               : `Welcome, ${(data.user.staff_name || "team").split(" ")[0]}. Let’s get ready for Yeswell.`}
@@ -910,10 +919,11 @@ export function HomeV4({ data }: { data: Data }) {
               ))}
             </ol>
           )}
-          <a className="btn primary" href="/proposals?new=1">
+          <a className="btn primary action" href="/proposals?new=1">
             New proposal
           </a>
         </section>
+        {deploymentNotice}
       </div>
     );
   }
@@ -930,13 +940,17 @@ export function HomeV4({ data }: { data: Data }) {
               timeZone: data.settings?.timezone ?? "UTC",
             }).format(new Date())}
           </span>
-          <h1>
+          <h1 className="t-page-title">
             {count
               ? `${count} thing${count === 1 ? "" : "s"} need you, ${(data.user.staff_name || "").split(" ")[0] || "team"}.`
               : "You’re all caught up."}
           </h1>
         </div>
+        <Button className="action" onClick={onNew}>
+          New proposal
+        </Button>
       </section>
+      {deploymentNotice}
       {actionError && (
         <Banner tone="danger" title="Action could not be completed">
           {actionError}

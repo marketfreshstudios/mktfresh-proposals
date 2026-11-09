@@ -65,6 +65,7 @@ export function ToastSurface({
           data-editor-chrome
           className={`block-feedback-toast ${className}`}
           role={role}
+          aria-live={role === "status" ? "polite" : undefined}
         >
           {children}
         </div>,

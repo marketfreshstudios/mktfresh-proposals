@@ -509,24 +509,37 @@ test("client redesign: every responsive state, safe preview and signature retrie
         page.locator(".proposal-row-head").getByText("Yearly", { exact: true }),
       ).toHaveCount(0);
       if (width >= 700) {
+        await page.getByRole("button", { name: /Account menu/ }).click();
+        const account = page.getByRole("dialog", { name: "Account" });
         for (const label of [
           theme === "dark" ? "Light mode" : "Dark mode",
           "Sign out",
         ])
           await expect(
-            page
-              .locator(".sidebar")
-              .getByRole("button", { name: label, exact: true }),
-          ).toHaveCSS("border-top-style", "solid");
+            account.getByRole("button", { name: label, exact: true }),
+          ).toBeVisible();
+        await page.keyboard.press("Escape");
       }
       await capture("home", width, theme, "3d/3e/3f");
       if (width === 768) {
-        await page.getByRole("button", { name: "Studio", exact: true }).click();
-        await expect(page.locator(".studio-popover")).toBeVisible();
-      } else if (width === 375) {
+        await page.getByRole("button", { name: "Open navigation" }).click();
+        await expect(
+          page.getByRole("dialog", { name: "Navigation" }),
+        ).toBeVisible();
+        await page
+          .getByRole("dialog", { name: "Navigation" })
+          .getByRole("link", { name: "Studio", exact: true })
+          .click();
+      } else {
         await page.getByRole("link", { name: "Studio", exact: true }).click();
-        await expect(page.locator(".studio-page")).toBeVisible();
-      } else await expect(page.locator(".desktop-studio")).toBeVisible();
+      }
+      await expect(page.locator(".studio-page")).toBeVisible();
+      if (width === 1440)
+        await expect(
+          page
+            .locator(".sidebar")
+            .getByRole("navigation", { name: "Studio navigation" }),
+        ).toBeVisible();
       await capture("studio-menu", width, theme, "04");
       await page.keyboard.press("Escape");
       await page.goto(`/clients/${sent.client.id}`);

@@ -47,7 +47,7 @@
 }
 .block-ai-marker {
   font-size: 10px;
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
   padding-inline: 4px;
   flex: none;
 }

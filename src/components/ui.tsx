@@ -1,4 +1,5 @@
 "use client";
+import { StaffIconContext, staffIcons } from "./staff-icons";
 import { DisclosureChevron } from "./disclosure-chevron";
 import {
   STAFF_SIGNED_OUT,
@@ -10,6 +11,7 @@ import { quoteSublines } from "../lib/quote-model";
 import { useMoney } from "./money-context";
 import { statusDisplay } from "../lib/status-display";
 import {
+  useContext,
   useEffect,
   useState,
   useId,
@@ -26,6 +28,13 @@ export function Icon({
   name: keyof typeof icons;
   className?: string;
 }) {
+  const staff = useContext(StaffIconContext);
+  if (staff) {
+    const Glyph = staffIcons[name];
+    return (
+      <Glyph className={className} width={18} height={16} aria-hidden="true" />
+    );
+  }
   const i = icons[name];
   return (
     <svg
@@ -53,15 +62,21 @@ export function Button({
   note?: string;
   icon?: keyof typeof icons;
 }) {
+  const staff = useContext(StaffIconContext);
+  const iconOnly = !!icon && !children && !busy;
   return (
     <span className="button-wrap">
       <button
         type="button"
         {...props}
         disabled={props.disabled || busy}
-        className={`btn ${variant} ${props.className ?? ""}`}
+        title={
+          props.title ?? (staff && iconOnly ? props["aria-label"] : undefined)
+        }
+        className={`btn ${variant} ${staff && iconOnly ? "icon-only" : ""} ${props.className ?? ""}`}
       >
-        {icon && <Icon name={icon} />} {busy ? "Working…" : children}
+        {icon && (!staff || iconOnly) && <Icon name={icon} />}{" "}
+        {busy ? "Working…" : children}
       </button>
       {note && <small className="muted">{note}</small>}
     </span>
@@ -124,7 +139,7 @@ export function Status({
   };
   return (
     <span className="pills">
-      <span className={`pill ${s.tone}`}>
+      <span className={`pill ${s.tone}`} data-proposal-status={status}>
         <Icon name={s.icon} />
         {s.name}
       </span>

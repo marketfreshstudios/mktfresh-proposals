@@ -9,5 +9,6 @@ Inter: Inter-OFL.txt
 Montserrat: Montserrat-OFL.txt
 Poppins: Poppins-OFL.txt
 DM Sans: DMSans-OFL.txt
+DM Serif Display (staff display type): DMSerifDisplay-OFL.txt
 Space Grotesk: SpaceGrotesk-OFL.txt
 Pinned upstream commit: 6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec. Source URLs, SHA-256 fingerprints, weight ranges and retained axes are in GOOGLE-FONTS-SOURCES.json. Assets are served locally and embedded as data URLs in PDFs; no Google requests occur at runtime.

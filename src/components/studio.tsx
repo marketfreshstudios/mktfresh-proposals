@@ -1,4 +1,5 @@
 "use client";
+import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
 import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
@@ -1985,7 +1986,7 @@ function TemplatesStudioContent({
                 } else setMoreAnchor(e.currentTarget);
               }}
             >
-              ⋯
+              <chromeIcons.more size={18} aria-hidden="true" />
             </button>
           )}
           {mode === "templates" ? (

@@ -82,6 +82,8 @@ test("visible staff tabs detect builds, poll every five minutes, snooze thirty m
   await expect(notice(page)).toHaveCount(0);
   await page.clock.setFixedTime(until + 1);
   await focus(page);
+  await expect(notice(page)).toHaveCount(0);
+  await page.goto("/proposals");
   await expect(notice(page)).toBeVisible();
 });
 test("a focus during the initial build check queues a fresh check instead of dropping the update", async ({
@@ -353,7 +355,7 @@ for (const width of [1440, 768, 375])
         await focusedBefore.dispose();
         await expect(n).toHaveCSS(
           "background-color",
-          theme === "dark" ? "rgb(28, 27, 25)" : "rgb(251, 250, 247)",
+          theme === "dark" ? "rgb(242, 245, 245)" : "rgb(28, 27, 24)",
         );
         expect(
           (
@@ -393,11 +395,13 @@ for (const width of [1440, 768, 375])
         });
         expect(box.x).toBeGreaterThanOrEqual(Math.max(0, bounds.left));
         expect(box.x + box.width).toBeLessThanOrEqual(bounds.right + 1);
-        expect(box.y).toBeGreaterThanOrEqual(bounds.headerBottom + 15);
+        if (width >= 700)
+          expect(box.y).toBeGreaterThanOrEqual(bounds.headerBottom + 15);
         expect(box.width).toBeLessThanOrEqual(560);
         if (width === 375) {
-          expect(box.x).toBeCloseTo(16, 0);
-          expect(box.width).toBeCloseTo(width - 32, 0);
+          const gutter = surface === "home" ? 18 : 16;
+          expect(box.x).toBeCloseTo(gutter, 0);
+          expect(box.width).toBeCloseTo(width - gutter * 2, 0);
         }
         await expect(n).toHaveCSS("animation-name", "none");
         await page.evaluate(() =>

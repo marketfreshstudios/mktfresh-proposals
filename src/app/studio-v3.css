@@ -1630,7 +1630,7 @@
     70px;
 }
 .product-table .studio-tag-stripe {
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
   background: var(--ai-soft);
   border-color: transparent;
 }
@@ -2045,7 +2045,7 @@
 
 /* Studio owner carry-over: provider badges and destructive Team action. */
 .studio-tag-stripe {
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
   background: var(--ai-soft);
   border-color: transparent;
 }

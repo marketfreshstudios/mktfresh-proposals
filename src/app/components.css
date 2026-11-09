@@ -168,7 +168,7 @@
 }
 .ps-tone-ai {
   background: var(--ai-soft);
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
 }
 
 /* ---------- banner ---------- */

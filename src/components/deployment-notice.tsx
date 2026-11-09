@@ -4,12 +4,19 @@ import { appBuildId, buildPollMs, buildSnoozeMs } from "../lib/app-build";
 import { ToastSurface } from "./toast-surface";
 import { Button } from "./ui";
 import { useReloadSafety } from "./reload-safety";
-export function DeploymentNotice({ enabled }: { enabled: boolean }) {
+export function DeploymentNotice({
+  enabled,
+  navigationKey,
+}: {
+  enabled: boolean;
+  navigationKey: string;
+}) {
   const [available, setAvailable] = useState(false),
     [busy, setBusy] = useState(false),
     [failed, setFailed] = useState(false),
     { prepare, blocked, revision } = useReloadSafety(),
     snooze = useRef(0),
+    hiddenOnPage = useRef(false),
     mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -32,20 +39,12 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
     try {
       snooze.current = Number(sessionStorage.getItem(key)) || 0;
     } catch {}
-    const show = () =>
-      active && setAvailable(newer && Date.now() >= snooze.current);
+    hiddenOnPage.current = Date.now() < snooze.current;
+    const show = () => active && setAvailable(newer && !hiddenOnPage.current);
     const schedule = () => {
       clearTimeout(timer);
       if (document.visibilityState === "visible")
-        timer = setTimeout(
-          () => void check(),
-          Math.min(
-            buildPollMs,
-            snooze.current > Date.now()
-              ? snooze.current - Date.now()
-              : buildPollMs,
-          ),
-        );
+        timer = setTimeout(() => void check(), buildPollMs);
     };
     const check = async () => {
       if (!active || document.visibilityState !== "visible") return;
@@ -93,14 +92,22 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("focus", focus);
     };
-  }, [enabled]);
+  }, [enabled, navigationKey]);
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = matchMedia("(max-width: 699px)");
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const [position, setPosition] = useState<{
     left: number;
     top: number;
     width: number;
   } | null>(null);
   useLayoutEffect(() => {
-    if (!enabled || !available) return;
+    if (!enabled || !available || mobile) return;
     const watched = new Set<Element>();
     const resize = new ResizeObserver(() => place());
     const place = () => {
@@ -114,10 +121,10 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
       const width = Math.max(0, Math.min(560, right - left - 32));
       let top = 16;
       for (const header of document.querySelectorAll<HTMLElement>(
-        ".editor-document-header,.band-phone-header,.staff-mobile-brand,.studio-tablet-header",
+        ".editor-document-header,.template-editor-header,.page-header,.home-intro,.report-header,.report-filterbar,.shell-tablet-header",
       )) {
         const r = header.getBoundingClientRect();
-        if (r.height > 0 && r.width > 0 && r.bottom > 0 && r.top < 120)
+        if (r.height > 0 && r.width > 0 && r.bottom > 0 && r.top < 180)
           top = Math.max(top, r.bottom + 16);
         if (!watched.has(header)) {
           watched.add(header);
@@ -149,27 +156,25 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [enabled, available]);
+  }, [enabled, available, mobile]);
   if (!enabled || !available) return null;
-  return (
-    <ToastSurface
-      stableLayer
-      className="deployment-notice staff-foundation"
-      style={
-        position
-          ? { ...position, visibility: "visible" }
-          : { visibility: "hidden" }
-      }
-    >
+  const contents = (
+    <>
       <div>
         <strong>A new version of Yeswell is available.</strong>
-        {(blocked || failed) && <p>Save your changes first.</p>}
+        <p>
+          {blocked || failed
+            ? "Save your changes first."
+            : "Your work is saved first, then the page reloads."}
+        </p>
       </div>
       <div className="deployment-notice-actions">
         <Button
           variant="secondary"
+          className="notice-later"
           disabled={busy}
           onClick={() => {
+            hiddenOnPage.current = true;
             snooze.current = Date.now() + buildSnoozeMs;
             try {
               sessionStorage.setItem(
@@ -184,6 +189,7 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
         </Button>
         <Button
           variant="primary"
+          className="notice-reload"
           disabled={busy || blocked || failed}
           onClick={async () => {
             setBusy(true);
@@ -202,6 +208,27 @@ export function DeploymentNotice({ enabled }: { enabled: boolean }) {
           {busy ? "Saving…" : "Reload"}
         </Button>
       </div>
+    </>
+  );
+  return mobile ? (
+    <div
+      className="deployment-notice deployment-inline"
+      role="status"
+      aria-live="polite"
+    >
+      {contents}
+    </div>
+  ) : (
+    <ToastSurface
+      stableLayer
+      className="deployment-notice staff-foundation ink-clay"
+      style={
+        position
+          ? { ...position, visibility: "visible" }
+          : { visibility: "hidden" }
+      }
+    >
+      {contents}
     </ToastSurface>
   );
 }

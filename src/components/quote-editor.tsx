@@ -1288,6 +1288,7 @@ function QuoteEditorContent({
           </Button>
           <Button
             variant="primary"
+            className="action"
             disabled={
               !ready.ready ||
               (delivery === "email" &&

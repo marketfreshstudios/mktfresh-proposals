@@ -59,6 +59,7 @@ it("uses actual views and signatures, excludes open proposals from the win denom
     open: 2,
     medianView: 3 * 3600000,
     medianSign: 36 * 3600000,
+    medianReply: 2 * 3600000,
   });
   expect(result.viewedRate).toBe(5 / 6);
   expect(
@@ -243,4 +244,32 @@ it("CSV matches the same breakdown rows, sort order, currency and median units a
   ]);
   result.byOwner[0].name = "=2+2";
   expect(reportCsv(result, sort, sort)).toContain('"\'=2+2"');
+});
+
+it("ranks sections by the average and omits reply time when first replies are outside the range", () => {
+  const { rows, range } = fixture({
+    range: "custom",
+    from: "2026-11-01",
+    to: "2026-11-02",
+  });
+  expect(
+    buildReport(rows, range, reportDimensions(sampleProposals, sampleNames))
+      .medianReply,
+  ).toBeNull();
+  expect(
+    fixture({ range: "custom", from: "2026-11-01", to: "2026-11-04" }).result
+      .medianReply,
+  ).toBe(3600000);
+  const all = fixture();
+  const measured = all.rows.filter((row) => row.sections.has("Scope"));
+  measured[0].sections.set("Shorter total", 900000);
+  const result = buildReport(
+    all.rows,
+    all.range,
+    reportDimensions(sampleProposals, sampleNames),
+  );
+  expect(result.sections.slice(0, 2)).toEqual([
+    { label: "Shorter total", ms: 900000, proposals: 1 },
+    { label: "Scope", ms: 1540000, proposals: 2 },
+  ]);
 });
