@@ -67,17 +67,13 @@ test("starter descriptions, order, approved covers and Terms remain readable in 
   mkdirSync(shots, { recursive: true });
   await page.goto("/studio/templates");
   await expect(page.locator(".studio-template-card")).toHaveCount(8);
-  expect(
-    await page.locator(".studio-template-card strong").allTextContents(),
-  ).toContain("General project proposal");
+  const names = await page.getByTestId("template-card-name").allTextContents();
+  expect(names).toContain("General project proposal");
   await expect(
     page.getByText(
       "Starter terms are a starting point, not legal advice. Have an attorney review them before you use them.",
     ),
   ).toBeVisible();
-  const names = await page
-    .locator(".studio-template-card > div:last-child > strong")
-    .allTextContents();
   expect(names.slice(0, 7)).toEqual(f.templates.map((t) => t.name));
   await page.screenshot({
     path: `${shots}/templates-1440.png`,

@@ -218,7 +218,9 @@ export function StudioTemplateList({
                     <TemplateThumbnail template={t} settings={data.settings} />
                     <div className="studio-template-card-footer">
                       <div>
-                        <strong>{t.name}</strong>
+                        <strong data-testid="template-card-name">
+                          {t.name}
+                        </strong>
                         {t.starter_key && (
                           <span className="starter-pill">Starter</span>
                         )}
