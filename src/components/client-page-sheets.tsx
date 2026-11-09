@@ -527,7 +527,7 @@ const sheetCss = `
 .client-interactive-card{cursor:pointer}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
-.client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;width:52px;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;inline-size:max-content;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px 4px;white-space:nowrap;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .client-section-question:hover{background:var(--client-selection)}.client-section-question:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:1px}
 /* These rules apply only after pagination. Preserve every shared print box. */
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--paper);border-color:var(--client-frame)}

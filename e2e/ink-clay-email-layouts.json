@@ -5,7 +5,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -15,7 +15,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -25,7 +25,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -35,7 +35,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -45,7 +45,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -55,7 +55,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -65,7 +65,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -75,7 +75,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -85,7 +85,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -95,7 +95,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -105,7 +105,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -115,7 +115,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -125,7 +125,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -135,7 +135,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -145,7 +145,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -155,7 +155,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -165,7 +165,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -175,7 +175,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -185,7 +185,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -195,7 +195,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -205,7 +205,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(36, 35, 31)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -215,7 +215,7 @@
     "brand": "rgb(40, 88, 71)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif",
-    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", \"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(40, 88, 71)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -225,7 +225,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -235,7 +235,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -245,7 +245,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -255,7 +255,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -265,7 +265,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -275,7 +275,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -285,7 +285,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -295,7 +295,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -305,7 +305,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -315,7 +315,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -325,7 +325,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -335,7 +335,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -345,7 +345,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -355,7 +355,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -365,7 +365,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -375,7 +375,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   },
@@ -385,7 +385,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(19, 48, 58)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(180, 83, 42)",
     "buttonText": "rgb(255, 255, 255)"
   },
@@ -395,7 +395,7 @@
     "brand": "rgb(19, 48, 58)",
     "title": "rgb(244, 242, 237)",
     "headingFont": "\"DM Serif Display\", Georgia, serif",
-    "bodyFont": "\"Instrument Sans\", -apple-system, \"system-ui\", \"Segoe UI\", Arial, sans-serif",
+    "bodyFont": "\"Instrument Sans\", -apple-system, system-ui, \"Segoe UI\", Arial, sans-serif",
     "button": "rgb(224, 122, 74)",
     "buttonText": "rgb(0, 0, 0)"
   }

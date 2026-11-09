@@ -164,6 +164,7 @@ const buttonShapeExclusions = [
   ".studio-account-trigger",
   ".color-picker-trigger",
   ".client-choice-target",
+  ".preview-size.segmented button",
 ].join(",");
 async function audit(page: Page) {
   const controls = await page
@@ -342,6 +343,11 @@ for (const width of [1440, 375])
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(`/p/${f.draft.id}?preview=1`);
     await expect(page.locator(".client-flow")).toBeVisible();
+    const previewWidth = page.getByRole("group", { name: "Preview width" });
+    for (const label of ["Desktop width", "Phone width"])
+      await expect(
+        previewWidth.getByRole("button", { name: label, exact: true }),
+      ).toHaveCSS("border-radius", "10px");
     await audit(page);
     await page
       .getByRole("button", { name: "Review and sign", exact: true })

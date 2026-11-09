@@ -97,7 +97,7 @@ async function clientFixture(page: Page) {
         { type: "page_break", id: "investment-page" },
         {
           type: "heading",
-          text: "Your investment",
+          text: "Choose your plan",
           level: 1,
           id: "investment",
         },
@@ -268,7 +268,7 @@ async function clientFixture(page: Page) {
   };
 }
 
-for (const width of [1440, 768, 375]) {
+for (const width of [1440, 1024, 768, 375]) {
   test(`tenant client screens, controls and flows are accessible at ${width}px`, async ({
     page,
   }) => {
@@ -293,6 +293,22 @@ for (const width of [1440, 768, 375]) {
       "position",
       width === 1440 ? "sticky" : "fixed",
     );
+    await expect(
+      page.getByRole("heading", { name: "Your investment", exact: true }),
+    ).toHaveCount(1);
+    if (width === 1440 || width === 1024) {
+      const ask = page.getByRole(width === 1440 ? "link" : "button", {
+        name: "Ask about this: Choose your plan",
+      });
+      await expect(ask).toBeVisible();
+      expect(
+        await ask.evaluate((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          return range.getClientRects().length;
+        }),
+      ).toBe(1);
+    }
     const sign = choices.getByRole("button", {
       name: "Review and sign",
       exact: true,
@@ -519,7 +535,11 @@ test("every email template preserves its content and uses accessible light and d
           brand: style(".email-card").borderTopColor,
           title: style(".email-title").color,
           headingFont: style(".email-title").fontFamily,
-          bodyFont: style(".email-body").fontFamily,
+          // Chromium serializes the same Apple system fallback differently on Linux.
+          bodyFont: style(".email-body").fontFamily.replace(
+            /, BlinkMacSystemFont,|, "system-ui",/,
+            ", system-ui,",
+          ),
           button: style(".email-action").backgroundColor,
           buttonText: style(".email-cta").color,
         };
