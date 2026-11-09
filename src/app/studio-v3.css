@@ -2135,16 +2135,16 @@
   }
 }
 
-.workspace-payment-methods {
+.workspace-billing-control {
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   align-items: center;
 }
-.workspace-payment-methods select {
+.workspace-billing-control select {
   width: 100%;
   min-height: 44px;
 }
 @media (max-width: 699px) {
-  .workspace-payment-methods {
+  .workspace-billing-control {
     grid-template-columns: 1fr;
   }
 }

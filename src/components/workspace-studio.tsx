@@ -828,7 +828,7 @@ export function WorkspaceStudio({
             · {data.connections?.qbo ? "Manage" : "Connect"}
           </a>
         </div>
-        <div className="workspace-setting-row workspace-payment-methods">
+        <div className="workspace-setting-row workspace-payment-methods workspace-billing-control">
           <div>
             <h3 id="payment-methods-label">Payment methods</h3>
             <p id="payment-methods-hint">
@@ -856,7 +856,7 @@ export function WorkspaceStudio({
             <option value="card_ach">Card + US bank account (ACH)</option>
           </Select>
         </div>
-        <div className="workspace-setting-row">
+        <div className="workspace-setting-row workspace-billing-control">
           <div>
             <h3 id="qbo-delivery-label">QuickBooks invoices</h3>
             <p>
@@ -882,7 +882,7 @@ export function WorkspaceStudio({
             <option value="email">Create and email to the client</option>
           </Select>
         </div>
-        <div className="workspace-setting-row">
+        <div className="workspace-setting-row workspace-billing-control">
           <div>
             <h3>One-time product mapping</h3>
             <p>Custom lines and products without a mapping use this item.</p>
