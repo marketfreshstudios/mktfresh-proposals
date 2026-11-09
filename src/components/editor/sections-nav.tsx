@@ -14,6 +14,7 @@ import {
 import { assertBlockMove, documentSectionRanges } from "../../lib/editor-moves";
 import { computedPages, moveComputedSection } from "../../lib/computed-pages";
 import { useDndContext } from "@dnd-kit/core";
+import { columnStyleKey } from "./style-clipboard";
 import { Reorder, Sortable } from "../sortable";
 import {
   SortableContext,
@@ -90,6 +91,9 @@ export function SectionsNav({
         (child) =>
           selected === `block-${child.id}` ||
           selected === `template-${child.id}`,
+      ) ||
+      b.columns?.items.some(
+        (column) => columnStyleKey(column.id) === selected,
       ) ||
       b.clauses?.some(
         (c) =>

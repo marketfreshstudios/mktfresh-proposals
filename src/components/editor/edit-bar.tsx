@@ -263,7 +263,9 @@ function BlockEditBar({
     remove = all.find((n) => /delete|remove/i.test(label(n))),
     settings = all.find((n) => /settings/i.test(label(n))),
     extras = all.filter((n) =>
-      /add clause|block style|unwrap columns/i.test(label(n)),
+      /add clause|block style|unwrap columns|copy style|paste style/i.test(
+        label(n),
+      ),
     ),
     page = usePageBreakAvailable(id),
     prohibited = ["pricing_table", "signature_block"].includes(blockType);

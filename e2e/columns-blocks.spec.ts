@@ -28,7 +28,8 @@ const signatures: Block[] = [
   { id: "client-sig", type: "signature_block", role: "client" },
   { id: "company-sig", type: "signature_block", role: "company" },
 ];
-const evidence = "docs/screenshots/columns-block";
+const evidence =
+  process.env.COLUMNS_EVIDENCE_DIR ?? "docs/screenshots/columns-block";
 const settled = (paper: Locator) =>
   expect(paper.locator(".editor-page-sheets")).toHaveAttribute(
     "data-layout-settled",
@@ -88,19 +89,19 @@ test("Columns layout, add menu, narrowing and unwrap each use one Undo", async (
   const undo = page.getByRole("button", { name: "Undo", exact: true }).first();
   await expect(grid.getByRole("group", { name: /^Column \d$/ })).toHaveCount(2);
   await frame.focus();
-  await page
-    .getByRole("button", { name: "Columns settings", exact: true })
-    .click();
-  const style = page.getByRole("dialog", { name: "Block style" });
-  const layout = style.getByRole("combobox", { name: "Column layout" });
-  for (const value of ["33-67", "67-33", "33-33-33"]) {
-    await layout.selectOption(value);
+  await page.getByRole("button", { name: "Layout", exact: true }).click();
+  const layout = page.getByRole("radiogroup", { name: "Column layout" });
+  const setLayout = (name: string) =>
+    layout.getByRole("radio", { name, exact: true }).locator("..").click();
+  for (const value of ["33 / 67", "67 / 33", "33 / 33 / 33"]) {
+    await setLayout(value);
     await expect(grid.getByRole("group", { name: /^Column \d$/ })).toHaveCount(
-      value === "33-33-33" ? 3 : 2,
+      value === "33 / 33 / 33" ? 3 : 2,
     );
   }
   await page.keyboard.press("Escape");
   const third = grid.getByRole("group", { name: "Column 3", exact: true });
+  await third.getByRole("button", { name: "Select Column 3" }).press("Enter");
   await third.getByRole("button", { name: "Add block to column 3" }).click();
   const menu = page.locator(".block-popover:popover-open");
   await expect(
@@ -113,10 +114,8 @@ test("Columns layout, add menu, narrowing and unwrap each use one Undo", async (
   await menu.getByRole("menuitem", { name: "Text", exact: true }).click();
   await third.locator(".tiptap").fill("Content from column three");
   await frame.focus();
-  await page
-    .getByRole("button", { name: "Columns settings", exact: true })
-    .click();
-  await layout.selectOption("50-50");
+  await page.getByRole("button", { name: "Layout", exact: true }).click();
+  await setLayout("50 / 50");
   await expect(
     grid.getByRole("group", { name: "Column 2", exact: true }),
   ).toContainText("Content from column three");
@@ -124,12 +123,7 @@ test("Columns layout, add menu, narrowing and unwrap each use one Undo", async (
   await undo.click();
   await expect(third).toContainText("Content from column three");
   await frame.focus();
-  await page
-    .getByRole("button", { name: "More block actions", exact: true })
-    .click();
-  await page
-    .getByRole("menuitem", { name: "Unwrap columns", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Unwrap", exact: true }).click();
   await expect(grid).toHaveCount(0);
   await expect(
     paper.getByText("Content from column three", { exact: true }),
@@ -397,28 +391,32 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
   expectContentHeight(editorEdges);
   await shot(page, "styled-block-editor-1440");
   await paper.locator('[data-block-id="block-columns"]').focus();
-  await page
-    .getByRole("button", { name: "Columns settings", exact: true })
-    .click();
-  const panel = page.getByRole("dialog", { name: "Block style" });
+  await page.getByRole("button", { name: "Layout", exact: true }).click();
+  const panel = page.getByRole("tabpanel", { name: "Styles", exact: true });
+  await panel.getByRole("button", { name: "Edit", exact: true }).click();
+  const background = panel.getByRole("radiogroup", {
+    name: "Background",
+    exact: true,
+  });
   await expect(
-    panel.getByRole("combobox", { name: "Background", exact: true }),
-  ).toHaveValue("neutral");
+    background.getByRole("radio", { name: "Light neutral" }),
+  ).toBeChecked();
   await shot(page, "block-style-panel-1440");
   await panel
-    .getByRole("combobox", { name: "Background", exact: true })
-    .selectOption("custom");
-  await panel
-    .getByRole("button", { name: "Edit background color", exact: true })
+    .getByRole("button", { name: "Custom background color", exact: true })
     .click();
   await page
     .getByRole("textbox", { name: "Hex color", exact: true })
     .fill("#25241f");
   await expect(panel.getByText(/1\.0:1 with block text/).first()).toBeVisible();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
-  await panel
-    .getByRole("combobox", { name: "Background", exact: true })
-    .selectOption("neutral");
+  await page
+    .getByRole("dialog", { name: "Background color picker" })
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
+  await background
+    .getByRole("radio", { name: "Light neutral" })
+    .locator("..")
+    .click();
   await page.keyboard.press("Escape");
   await settled(paper);
   const plan = JSON.parse((await paper.getAttribute("data-pagination"))!);
@@ -509,6 +507,11 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
     .locator("..")
     .evaluate((node) => (node as HTMLElement).offsetHeight);
   expect(Math.abs(clientHeight - pdfFragment.height)).toBeLessThanOrEqual(1);
+  if (process.env.CAPTURE_COLUMNS)
+    await clientGrid.locator("..").screenshot({
+      path: `${evidence}/columns-client-desktop.png`,
+      animations: "disabled",
+    });
   await page.setViewportSize({ width: 375, height: 900 });
   const flow = page
     .locator(".flow-document")
@@ -523,6 +526,11 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
     375,
   );
   await flow.scrollIntoViewIfNeeded();
+  if (process.env.CAPTURE_COLUMNS)
+    await flow.locator("..").screenshot({
+      path: `${evidence}/columns-client-phone.png`,
+      animations: "disabled",
+    });
   await shot(page, "columns-client-stacked-375");
 });
 

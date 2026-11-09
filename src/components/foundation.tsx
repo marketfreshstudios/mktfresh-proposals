@@ -104,7 +104,7 @@ export function Sheet({
   return createPortal(
     <dialog
       aria-labelledby={titleId}
-      className={`foundation-sheet ${["Block settings", "Block style", "Edit block", "Add a block", "Column style"].includes(title) ? "block-owned-dialog" : ""} ${menu ? "foundation-action-menu" : ""} ${className}`}
+      className={`foundation-sheet ${["Block settings", "Block style", "Edit block", "Add a block"].includes(title) ? "block-owned-dialog" : ""} ${menu ? "foundation-action-menu" : ""} ${className}`}
       ref={ref}
       onClick={(e) => {
         if (menu && innerWidth >= 700 && e.target === e.currentTarget) {

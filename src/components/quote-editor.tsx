@@ -10,7 +10,10 @@ import {
   insertAuthoringBlocks,
   insertColumnBlocks,
 } from "../lib/block-insertion";
-import { ColumnsEditor, ColumnsSettings } from "./editor/columns-editor";
+import { ColumnsEditor } from "./editor/columns-editor";
+import { ColumnActionBar } from "./editor/column-action-bar";
+import { SelectionStyles } from "./editor/column-styles-panel";
+import { columnStyleKey, isColumnStyleKey } from "./editor/style-clipboard";
 import {
   documentBlocks,
   columnsOverflowMessage,
@@ -285,7 +288,13 @@ function QuoteEditorContent({
       JSON.stringify(old) === JSON.stringify(value) ? old : value,
     );
   };
-  const panels = useEditorPanels(user?.actor ?? "local", paper, true, true);
+  const panels = useEditorPanels(
+    user?.actor ?? "local",
+    paper,
+    true,
+    true,
+    tab === "Styles" ? 380 : 400,
+  );
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
   const outlineOpen =
@@ -1357,7 +1366,11 @@ function QuoteEditorContent({
     (b) =>
       documentBlocks([b]).some(
         (child) => `block-${child.id}` === selection.selected,
-      ) || b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
+      ) ||
+      b.columns?.items.some(
+        (column) => columnStyleKey(column.id) === selection.selected,
+      ) ||
+      b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
   );
   useEffect(() => {
     // Return from isolated phone editing to the complete existing sheet projection.
@@ -1434,6 +1447,12 @@ function QuoteEditorContent({
       />
     </>
   );
+  const styleDocument = {
+    content: p.content,
+    prefix: "block-",
+    onChange: (content: Block[]) => change({ content }),
+    onOpenStyles: () => openTools("Styles"),
+  };
   const panelBody = (
     <ReadOnlyRegion locked={stale || locked}>
       {tab === "Quote" ? (
@@ -1499,44 +1518,52 @@ function QuoteEditorContent({
           }}
         />
       ) : tab === "Styles" ? (
-        <ProposalStyles
-          cover={p.cover}
-          onCover={(cover) => change({ cover })}
-          settings={p.workspace_settings}
-          headerFooter={bands}
-          bandPages={
-            bands
-              ? resolvedBandPages(
-                  bands,
-                  bandPages(
-                    p.content,
-                    browserPages?.plan,
-                    browserPages?.assignments,
-                  ),
-                )
-              : undefined
-          }
-          onHeaderFooter={(header_footer) => change({ header_footer })}
-          onResetBands={async () => {
-            const templates =
-              await api<import("../lib/model").Template[]>("/api/templates");
-            const saved = templates.find(
-              (t) => t.id === latest.current.template_id,
-            )?.header_footer;
-            change({
-              header_footer: resetBandSettings(
-                latest.current.header_footer ?? defaultHeaderFooter(),
-                saved,
-              ),
-            });
-          }}
-          pageCount={browserPages?.plan.pages ?? 1}
-          inherited={p.template_style_overrides}
-          value={p.style_overrides}
-          onChange={(style_overrides) => change({ style_overrides })}
-          resetLabel="Reset to template"
-          onReset={() => change({ style_overrides: {} })}
-        />
+        <SelectionStyles
+          document={styleDocument}
+          settings={current.workspace_settings}
+          styles={resolvedStyles}
+          phone={panels.phone}
+          locked={locked || stale}
+        >
+          <ProposalStyles
+            cover={p.cover}
+            onCover={(cover) => change({ cover })}
+            settings={p.workspace_settings}
+            headerFooter={bands}
+            bandPages={
+              bands
+                ? resolvedBandPages(
+                    bands,
+                    bandPages(
+                      p.content,
+                      browserPages?.plan,
+                      browserPages?.assignments,
+                    ),
+                  )
+                : undefined
+            }
+            onHeaderFooter={(header_footer) => change({ header_footer })}
+            onResetBands={async () => {
+              const templates =
+                await api<import("../lib/model").Template[]>("/api/templates");
+              const saved = templates.find(
+                (t) => t.id === latest.current.template_id,
+              )?.header_footer;
+              change({
+                header_footer: resetBandSettings(
+                  latest.current.header_footer ?? defaultHeaderFooter(),
+                  saved,
+                ),
+              });
+            }}
+            pageCount={browserPages?.plan.pages ?? 1}
+            inherited={p.template_style_overrides}
+            value={p.style_overrides}
+            onChange={(style_overrides) => change({ style_overrides })}
+            resetLabel="Reset to template"
+            onReset={() => change({ style_overrides: {} })}
+          />
+        </SelectionStyles>
       ) : (
         sendPanel
       )}
@@ -1579,6 +1606,28 @@ function QuoteEditorContent({
       change({ content: unwrapColumns(latest.current.content, b.id!) });
       selection.clear();
     };
+    const removeColumns = () =>
+      blockFeedback.remove(
+        b,
+        () => {
+          change({
+            content: latest.current.content.filter(
+              (block) => block.id !== b.id,
+            ),
+          });
+          selection.clear();
+        },
+        () => {
+          const next = [...latest.current.content];
+          next.splice(Math.min(n, next.length), 0, b);
+          change({ content: next });
+        },
+      );
+    const duplicateColumns = () => {
+      const content = [...latest.current.content];
+      content.splice(n + 1, 0, duplicateBlock(b));
+      change({ content });
+    };
     return (
       <Sortable
         block
@@ -1595,13 +1644,51 @@ function QuoteEditorContent({
           id={`block-${b.id ?? n}`}
           label={`Proposal block ${n + 1}`}
           blockType={b.type}
-          layoutControls={
-            b.columns && (
-              <ColumnsSettings
-                value={b.columns}
-                onChange={(columns) => patchBlock({ ...b, columns })}
-              />
-            )
+          selectionBar={
+            b.columns
+              ? (owner) =>
+                  selection.selected === `block-${b.id}` && (
+                    <ColumnActionBar
+                      owner={owner}
+                      itemKey={`block-${b.id}`}
+                      label={`Columns · ${b.columns!.items.length}`}
+                      onStyle={() => selection.selectStyle(`block-${b.id}`)}
+                      onUnwrap={unwrap}
+                      onDelete={removeColumns}
+                      tools={
+                        <>
+                          {([-1, 1] as const).map((direction) => (
+                            <BlockAction
+                              key={direction}
+                              menuLabel
+                              disabled={
+                                !canMoveAdjacentBlock(
+                                  p.content,
+                                  b.id!,
+                                  direction,
+                                )
+                              }
+                              onClick={() =>
+                                move((content) =>
+                                  moveAdjacentBlock(content, b.id!, direction),
+                                )
+                              }
+                            >
+                              {direction === -1 ? "Move up" : "Move down"}
+                            </BlockAction>
+                          ))}
+                          <BlockAction
+                            menuLabel
+                            onClick={() => duplicateColumns()}
+                          >
+                            Duplicate block
+                          </BlockAction>
+                          {blockFeedback.reuseButton(b)}
+                        </>
+                      }
+                    />
+                  )
+              : undefined
           }
           appearance={{
             value: b.style,
@@ -1840,6 +1927,7 @@ function QuoteEditorContent({
               saved={library}
               onChange={locked ? undefined : patchBlock}
               onUnwrap={unwrap}
+              onDelete={removeColumns}
               excess={
                 browserPages?.overflowColumns?.find(
                   (item) => item.block === b.id,
@@ -2390,9 +2478,7 @@ function QuoteEditorContent({
       )}
       <EditorControlConfig
         document={{
-          content: p.content,
-          prefix: "block-",
-          onChange: (content) => change({ content }),
+          ...styleDocument,
           reuse: blockFeedback.reuse,
           remove: blockFeedback.remove,
         }}
@@ -2917,6 +3003,13 @@ function QuoteEditorContent({
             mode={panels.phone ? "sheet" : panels.mode}
             onTab={openTools}
             onToggle={toggleRight}
+            sheetTitle={
+              tab === "Styles" &&
+              selection.selected &&
+              isColumnStyleKey(selection.selected)
+                ? "Column style"
+                : undefined
+            }
             totals={`${money(totals(items).one_time_total, p.currency)} · ${money(totals(items).monthly_total, p.currency)}/mo`}
             onCloseComplete={() => {
               const path = pendingField.current;
