@@ -8,6 +8,7 @@ import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
 import { Disclosure } from "./ui";
+import { DialogActions } from "./dialog-actions";
 import {
   connectionStatus,
   type ConnectionStatus,
@@ -38,7 +39,7 @@ import { Sheet, Skeleton } from "./foundation";
 import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
 import { withDraftSettings } from "../lib/proposal-settings";
 import type { ReferenceDocument } from "../lib/documents";
-import { useEffect, useState, type ReactNode } from "react";
+import { isValidElement, useEffect, useState, type ReactNode } from "react";
 import {
   api,
   post,
@@ -136,6 +137,14 @@ function StaffAppContent({
     : undefined;
   const reportShell = section === "reports" || (!!drill && !!reportFilters);
   const [newOpen, setNewOpen] = useState(query.new === "1");
+  function closeNew() {
+    setNewOpen(false);
+    if (query.new === "1") {
+      const url = new URL(location.href);
+      url.searchParams.delete("new");
+      history.replaceState(null, "", url.pathname + url.search);
+    }
+  }
   function openNew() {
     if (reportShell) location.href = "/proposals?new=1";
     else setNewOpen(true);
@@ -479,6 +488,7 @@ function StaffAppContent({
   return (
     <StaffShell
       path={path}
+      record={isValidElement(content) && content.type === RecordV4}
       settings={data?.settings ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}
@@ -489,7 +499,7 @@ function StaffAppContent({
       }}
     >
       <ContactToast />
-      {section !== "reports" && (
+      {section !== "reports" && section !== "clients" && (
         <header className="page-header">
           <div>
             <h1>{title}</h1>
@@ -547,13 +557,10 @@ function StaffAppContent({
       {newOpen && data && (
         <Sheet
           title="New proposal"
-          onClose={() => {
-            setNewOpen(false);
-            if (query.new === "1")
-              history.replaceState(null, "", location.pathname);
-          }}
+          className="new-proposal-sheet"
+          onClose={closeNew}
         >
-          <NewProposal data={data} />
+          <NewProposal data={data} onCancel={closeNew} />
         </Sheet>
       )}
     </StaffShell>
@@ -683,7 +690,13 @@ function Login({ local }: { local: boolean }) {
     </main>
   );
 }
-function NewProposal({ data }: { data: Data }) {
+function NewProposal({
+  data,
+  onCancel,
+}: {
+  data: Data;
+  onCancel?: () => void;
+}) {
   const [error, setError] = useState(""),
     [payload, setPayload] = useState<ReturnType<
       typeof PlaybookDraftSchema.parse
@@ -707,8 +720,9 @@ function NewProposal({ data }: { data: Data }) {
       }
   }, []);
   return (
-    <div className="grid">
-      <section className="card stack">
+    <div className="new-proposal-content stack">
+      <p>Pick a client and a starting point. You can change both later.</p>
+      <section className="stack">
         {payload && (
           <Banner tone="info" title={`From playbook ${payload.source_version}`}>
             Entered prices and the original payload will be preserved.
@@ -790,44 +804,60 @@ function NewProposal({ data }: { data: Data }) {
                 ))}
             </Select>
           </Field>
-          <Field label="Valid until">
-            <ValidityField
-              timezone={data.settings?.timezone ?? "UTC"}
-              defaultValue={defaultValidUntil(
-                data.settings ?? { timezone: "UTC", default_validity_days: 30 },
-              )}
-            />
-          </Field>
-          <Field label="Proposal password (optional)">
-            <input
-              type="password"
-              name="password"
-              minLength={8}
-              autoComplete="new-password"
-            />
-          </Field>
-          <Button
-            variant="primary"
-            type="submit"
-            busy={busy}
-            disabled={
-              !data.settings ||
-              !data.templates.length ||
-              error.startsWith("The playbook draft")
-            }
-            note={
-              !data.settings
-                ? "Complete workspace settings first."
-                : !data.templates.length
-                  ? "Create an active template first."
-                  : undefined
-            }
-          >
-            Create draft
-          </Button>
+          <details>
+            <Disclosure>Link settings</Disclosure>
+            <div className="form">
+              <Field label="Valid until">
+                <ValidityField
+                  timezone={data.settings?.timezone ?? "UTC"}
+                  defaultValue={defaultValidUntil(
+                    data.settings ?? {
+                      timezone: "UTC",
+                      default_validity_days: 30,
+                    },
+                  )}
+                />
+              </Field>
+              <Field label="Proposal password (optional)">
+                <input
+                  type="password"
+                  name="password"
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </Field>
+            </div>
+          </details>
+          <DialogActions>
+            {onCancel && (
+              <Button disabled={busy} onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              className="action"
+              type="submit"
+              busy={busy}
+              disabled={
+                !data.settings ||
+                !data.templates.length ||
+                error.startsWith("The playbook draft")
+              }
+              note={
+                !data.settings
+                  ? "Complete workspace settings first."
+                  : !data.templates.length
+                    ? "Create an active template first."
+                    : undefined
+              }
+            >
+              Create draft
+            </Button>
+          </DialogActions>
         </form>
       </section>
-      <aside className="card">
+      <aside className="new-proposal-note">
         <h2>What happens next</h2>
         <ol>
           <li>The template and default quote are copied into a draft.</li>

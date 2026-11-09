@@ -168,6 +168,7 @@
   --radius-pill: 999px;
   /* Shapes: buttons are pills. Nav items, tabs and segmented controls use --radius-md; inputs and selects use --radius-md; cards use --radius-card. */
   --control-staff: 44px;
+  --button-padding-inline: var(--space-4);
   --control-sm: 40px;
   --control-client: 52px;
   --tap-min: 44px;

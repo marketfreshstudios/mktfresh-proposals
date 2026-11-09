@@ -8,11 +8,13 @@ export function CopyClientLink({
   token,
   appUrl,
   menu = false,
+  buttonOnly = false,
   label = "Copy link",
 }: {
   token: string;
   appUrl: string;
   menu?: boolean;
+  buttonOnly?: boolean;
   label?: string;
 }) {
   const [copied, setCopied] = useState(false),
@@ -58,9 +60,15 @@ export function CopyClientLink({
     );
   return (
     <div className="client-link-control">
-      <Field label="Client link">
-        <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} />
-      </Field>
+      {(!buttonOnly || error) && (
+        <Field label="Client link">
+          <input
+            readOnly
+            value={url}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        </Field>
+      )}
       <Button onClick={() => void copy()}>{copied ? "Copied" : label}</Button>
       {copied && (
         <span className="sr-only" role="status">

@@ -63,6 +63,16 @@
   background: var(--action-hover);
   border-color: var(--action-hover);
 }
+.staff-foundation.ink-clay
+  .btn:not(
+    .icon-only,
+    .more-control,
+    .action-menu *,
+    .segmented *,
+    [role="tab"]
+  ) {
+  padding-inline: var(--button-padding-inline);
+}
 .staff-foundation.ink-clay .btn.icon-only {
   display: inline-grid;
   place-items: center;

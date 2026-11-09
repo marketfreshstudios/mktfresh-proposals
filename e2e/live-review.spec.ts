@@ -390,10 +390,22 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       setupMode = "partial";
       qbo = false;
       await page.goto("/clients");
-      const row = page
-        .locator(".client-table-row")
-        .filter({ hasText: client.company });
-      await row
+      const search = page.getByRole("textbox", { name: "Search clients" });
+      expect((await search.boundingBox())!.height).toBe(44);
+      expect(
+        (await page
+          .getByRole("button", { name: "New client", exact: true })
+          .boundingBox())!.height,
+      ).toBe(44);
+      await capture(
+        "contact-list",
+        width === 1440 ? "6a" : width === 768 ? "6b" : "6c",
+        width,
+        theme,
+      );
+      await page.goto(`/clients/${client.id}`);
+      const contact = page.locator(".client-identity-contact");
+      await contact
         .getByRole("button", {
           name: `Copy email ${client.email}`,
           exact: true,
@@ -406,10 +418,10 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         client.email,
       );
       await expect(
-        row.getByRole("link", { name: `Open in Mail: ${client.email}` }),
+        contact.getByRole("link", { name: `Open in Mail: ${client.email}` }),
       ).toHaveAttribute("href", `mailto:${client.email}`);
       await page.evaluate(() => navigator.clipboard.writeText(""));
-      await row
+      await contact
         .getByRole("button", {
           name: `Copy email: ${client.email}`,
           exact: true,
@@ -419,7 +431,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
         client.email,
       );
       if (width >= 700) {
-        await row
+        await contact
           .getByRole("button", {
             name: "Copy phone (704) 555-0123",
             exact: true,
@@ -429,32 +441,18 @@ test("Live review: customer, contacts, setup, shared controls, products and font
           "(704) 555-0123",
         );
         await expect(
-          row.getByRole("link", { name: "Dial phone: (704) 555-0123" }),
+          contact.getByRole("link", { name: "Dial phone: (704) 555-0123" }),
         ).toHaveAttribute("href", "tel:+17045550123");
       } else {
-        await expect(row.locator(".phone-dial")).toBeVisible();
-        await expect(row.locator(".phone-dial")).toHaveAttribute(
+        await expect(contact.locator(".phone-dial")).toBeVisible();
+        await expect(contact.locator(".phone-dial")).toHaveAttribute(
           "href",
           "tel:+17045550123",
         );
         await expect(
-          row.getByRole("button", { name: /Copy phone/ }),
+          contact.getByRole("button", { name: /Copy phone/ }),
         ).toBeHidden();
       }
-      const search = page.getByRole("textbox", { name: "Search clients" });
-      expect((await search.boundingBox())!.height).toBe(44);
-      expect(
-        (await page
-          .getByRole("button", { name: "New client", exact: true })
-          .boundingBox())!.height,
-      ).toBe(44);
-      await capture(
-        "contact-list-copy",
-        width === 1440 ? "6a" : width === 768 ? "6b" : "6c",
-        width,
-        theme,
-      );
-      await page.goto(`/clients/${client.id}`);
       await expect(page.locator(".stripe-candidate")).toHaveCount(3);
       await page
         .getByRole("button", { name: "Link this customer", exact: true })

@@ -1,5 +1,6 @@
 import type { Actor, Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
+import { afterLocalDays } from "./reminder-time";
 export const listViews = [
   "All",
   "Drafts",
@@ -81,12 +82,25 @@ export function nextAction(p: Proposal) {
   return "Nothing left to do";
 }
 
-export const expiringWithinSevenDays = (p: Proposal, now = Date.now()) =>
-  !p.archived_at &&
-  !!p.valid_until &&
-  ["sent", "viewed"].includes(p.status) &&
-  Date.parse(p.valid_until) > now &&
-  Date.parse(p.valid_until) <= now + 7 * 86400000;
+export function expiringWithinSevenDays(
+  p: Proposal,
+  now = Date.now(),
+  timezone = p.workspace_settings?.timezone ?? "UTC",
+) {
+  const expiry = Date.parse(
+    p.published_state
+      ? (p.published_state.valid_until ?? "")
+      : (p.valid_until ?? ""),
+  );
+  return (
+    p.source === "native" &&
+    !p.archived_at &&
+    ["sent", "viewed"].includes(p.status) &&
+    expiry > now &&
+    expiry <=
+      Date.parse(afterLocalDays(new Date(now).toISOString(), 7, timezone))
+  );
+}
 
 export const unfinishedJobs = (p: Proposal) =>
   p.jobs.filter((j) => j.status !== "done");

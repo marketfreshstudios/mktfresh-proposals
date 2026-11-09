@@ -334,6 +334,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       await page
         .getByRole("combobox", { name: "Template", exact: true })
         .selectOption(draft.template_id!);
+      await page.getByText("Link settings", { exact: true }).click();
       await expect(page.getByLabel("Valid until", { exact: true })).toHaveValue(
         calendarDate(defaultValidUntil(settings), settings.timezone),
       );
@@ -574,9 +575,10 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   // Archived rows disappear from All but the undo toast survives their removal.
   await page.goto("/proposals?view=drafts");
   await page
-    .getByRole("button", { name: `More actions for ${ai.client.company}` })
+    .locator(".proposal-row")
+    .filter({ hasText: ai.client.company })
+    .getByRole("button", { name: "Archive", exact: true })
     .click();
-  await page.getByRole("button", { name: "Archive", exact: true }).click();
   await expect(page.locator(".phase4-toast")).toBeVisible();
   await expect(
     page.getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` }),
@@ -589,9 +591,10 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     page.getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: `More actions for ${ai.client.company}` })
+    .locator(".proposal-row")
+    .filter({ hasText: ai.client.company })
+    .getByRole("button", { name: "Archive", exact: true })
     .click();
-  await page.getByRole("button", { name: "Archive", exact: true }).click();
   await page.goto("/proposals?view=archived");
   await page
     .getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` })
@@ -599,9 +602,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await expect(page.locator(".record-v4")).toBeVisible();
   await expect(page.locator(".quote-workspace")).toHaveCount(0);
   await page
-    .getByRole("button", { name: `More actions for ${ai.client.company}` })
+    .locator(".record-toolbar")
+    .getByRole("button", { name: "Unarchive", exact: true })
     .click();
-  await page.getByRole("button", { name: "Unarchive", exact: true }).click();
   await expect(page.locator(".quote-workspace")).toBeVisible();
   await page.goto(`/clients/${draft.client.id}`);
   await expect(
@@ -621,7 +624,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await page
     .getByRole("button", { name: `More actions for ${draft.client.company}` })
     .click();
-  const reopen = page.getByRole("button", { name: /^Reopen/ });
+  const reopen = page.getByRole("button", { name: /^Mark as sent again/ });
   await expect(reopen).toBeEnabled();
   await reopen.click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

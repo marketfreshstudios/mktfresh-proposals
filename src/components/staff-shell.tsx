@@ -27,6 +27,7 @@ export function StaffShell({
   onNew,
   onSignout,
   children,
+  record = false,
 }: {
   path: string[];
   settings: WorkspaceSettings | null;
@@ -35,6 +36,7 @@ export function StaffShell({
   onNew: () => void;
   onSignout: () => void;
   children: ReactNode;
+  record?: boolean;
 }) {
   useEffect(() => {
     document.documentElement.dataset.theme =
@@ -128,7 +130,7 @@ export function StaffShell({
             </footer>
           </aside>
           <main className="workspace" id="workspace-content" tabIndex={-1}>
-            {!insideProposal && (!studio || studioPage) && (
+            {(!insideProposal || record) && (!studio || studioPage) && (
               <div
                 className={`shell-tablet-header ${studioPage ? "studio-tablet-header" : ""}`}
               >

@@ -84,6 +84,8 @@ export function staffRoute(path: string[], query: StaffQuery = {}) {
             ? "send"
             : query.view === "evidence"
               ? "audit"
-              : action;
+              : query.view === "record"
+                ? "record"
+                : action;
   return { section, id, action };
 }
