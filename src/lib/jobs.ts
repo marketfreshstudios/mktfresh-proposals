@@ -18,6 +18,7 @@ import {
   type EmailSnapshot,
 } from "./email-templates";
 import { StripeProvider } from "./providers/stripe";
+import { QboProvider } from "./providers/qbo";
 import { executeStripeWebhook } from "./providers/webhook";
 import { randomUUID } from "node:crypto";
 import { sha256, versionHash, money } from "./content";
@@ -357,14 +358,35 @@ export class Worker {
             stripe_customer_id: currentClient.stripe_customer_id,
             qbo_customer_id: currentClient.qbo_customer_id,
           };
-        const link = await bill(fresh, provider, this.providers[provider]);
+        const adapter = this.providers[provider];
+        let quickbooks: Parameters<typeof bill>[3];
+        if (adapter instanceof QboProvider) {
+          if (currentClient)
+            fresh.client.billing_email = currentClient.billing_email;
+          const status = await adapter.connection.status();
+          quickbooks = {
+            workspace: (
+              await this.repo.entities<import("./workspace").WorkspaceSettings>(
+                "workspace_settings",
+              )
+            )[0],
+            catalog:
+              await this.repo.entities<import("./model").Item>("pricing_items"),
+            connected: status.state === "connected",
+            realm:
+              status.company === "Local QuickBooks sandbox"
+                ? undefined
+                : status.realm,
+          };
+        }
+        const link = await bill(fresh, provider, adapter, quickbooks);
         await mutate(this.repo, p.id, (p) => {
           // A retry may have read this link before a payment webhook settled it.
           // Never replace the durable Stripe payment/completion ledger with that old copy.
           if (
-            provider === "stripe" &&
+            (provider === "stripe" || provider === "qbo") &&
             p.billing_links.some(
-              (l) => l.provider === "stripe" && l.status === "succeeded",
+              (l) => l.provider === provider && l.status === "succeeded",
             )
           )
             return;

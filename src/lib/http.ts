@@ -110,6 +110,8 @@ import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
+import { QBO_CALLBACK, QBO_STATE_COOKIE } from "./providers/qbo-connection";
+import { qboBillingEmail, proposalInvoiceRef } from "./qbo-mapping";
 import { receiveStripeWebhook } from "./providers/webhook";
 import { syncStripeCatalog, createCustomFamily } from "./catalog";
 import { PlaybookDraftSchema } from "./playbook";
@@ -305,9 +307,13 @@ async function handleRoute(
         !cookie(req, "proposal_session") &&
         !cookie(req, "proposal_refresh") &&
         !req.headers.has("authorization");
+      const qbo = rt.worker?.providers?.qbo;
+      const qboConnected =
+        qbo instanceof QboProvider &&
+        (await qbo.connection.status()).state === "connected";
       const clientResult = (p: import("./model").Proposal) =>
         publicResult(p, {
-          qboConnected: rt.worker.providers.qbo instanceof QboProvider,
+          qboConnected,
           showPoweredBy: workspaceBrand?.show_powered_by !== false,
           engagementAllowed,
         });
@@ -650,10 +656,83 @@ async function handleRoute(
         },
       );
     }
+    if (path[0] === "connections" && path[1] === "qbo") {
+      const qbo = rt.worker.providers.qbo;
+      if (path[2] === "items" || path[2] === "terms") {
+        check(method === "GET", "Method not allowed", 405);
+        check(
+          qbo instanceof QboProvider,
+          "Connect QuickBooks to choose items or terms.",
+          409,
+        );
+        const search = new URL(req.url).searchParams.get("q")?.trim() ?? "";
+        check(
+          search.length <= 100 && !/[\x00-\x1f%_]/.test(search),
+          "Enter a QuickBooks item name.",
+          400,
+        );
+        return json(
+          path[2] === "items" ? await qbo.items(search) : await qbo.terms(),
+        );
+      }
+      check(
+        user.staff_role === "owner",
+        "Only a super admin can manage QuickBooks",
+        403,
+      );
+      check(
+        qbo instanceof QboProvider,
+        "QuickBooks sandbox OAuth is not configured",
+        503,
+      );
+      if (path[2] === "authorize" && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const result = await qbo.connection.authorize(
+          user.actor,
+          new URL(req.url).origin,
+        );
+        const response = json({ url: result.url });
+        response.headers.append("Set-Cookie", result.cookie);
+        return response;
+      }
+      if (path[2] === "callback" && method === "GET") {
+        await qbo.connection.callback(
+          user.actor,
+          new URL(req.url),
+          cookie(req, QBO_STATE_COOKIE) ?? "",
+        );
+        await workspaceEvent(rt.repo, user, "qbo_connected", {});
+        return new Response(null, {
+          status: 303,
+          headers: {
+            ...headers,
+            Location: "/studio/connections?view=qbo",
+            "Set-Cookie": `${QBO_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=${QBO_CALLBACK}; Max-Age=0${new URL(req.url).protocol === "https:" ? "; Secure" : ""}`,
+          },
+        });
+      }
+      if (path[2] === "disconnect" && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        await qbo.connection.disconnect();
+        await workspaceEvent(rt.repo, user, "qbo_disconnected", {});
+        return json(await qbo.connection.status());
+      }
+      throw new AppError(405, "QuickBooks connection action unavailable");
+    }
     if (path[0] === "connections" && method === "GET") {
+      const qbo = rt.worker.providers.qbo;
+      const qbo_connection =
+        qbo instanceof QboProvider
+          ? await qbo.connection.status()
+          : {
+              state: "not_connected",
+              available: false,
+              environment: "sandbox",
+            };
       return json({
         stripe: rt.worker.providers.stripe instanceof StripeProvider,
-        qbo: rt.worker.providers.qbo instanceof QboProvider,
+        qbo: qbo_connection.state === "connected",
+        qbo_connection,
         email: !!process.env.RESEND_API_KEY,
         mock: process.env.APP_MODE === "local",
         mode:
@@ -865,7 +944,7 @@ async function handleRoute(
         "QuickBooks sandbox credentials required",
         503,
       );
-      return json(await rt.worker.providers.qbo.syncCatalog());
+      return json({ items: await rt.worker.providers.qbo.items("") });
     }
     if (path[0] === "custom-families" && method === "POST") {
       check(
@@ -1151,6 +1230,20 @@ async function handleRoute(
           const previous = (
             await rt.repo.entities<WorkspaceSettings>("workspace_settings")
           )[0];
+          const qboDeliveryChanged =
+            (entity.qbo_invoice_delivery ?? "draft") !==
+            (previous?.qbo_invoice_delivery ?? "draft");
+          if (
+            qboDeliveryChanged ||
+            entity.qbo_custom_item_ref !==
+              (previous?.qbo_custom_item_ref ?? null) ||
+            (entity.qbo_term_ref ?? null) !== (previous?.qbo_term_ref ?? null)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change QuickBooks billing defaults",
+              403,
+            );
           if (
             (entity.payment_methods ?? "card") !==
             (previous?.payment_methods ?? "card")
@@ -1299,6 +1392,18 @@ async function handleRoute(
             !entity.logo || entity.logo.startsWith(rt.repo.workspaceId + "/"),
             "Logo must belong to this workspace",
           );
+          if (qboDeliveryChanged) {
+            await rt.repo.put("workspace_settings", entity);
+            await workspaceEvent(
+              rt.repo,
+              user,
+              "qbo_invoice_delivery_changed",
+              {
+                delivery: entity.qbo_invoice_delivery ?? "draft",
+              },
+            );
+            return json({ ...entity, default_password_hash: undefined }, 201);
+          }
         } else if (table === "custom_families") {
           throw new AppError(
             405,
@@ -1827,6 +1932,87 @@ async function handleRoute(
       if (method === "POST" && action === "retry") {
         await rt.worker.retry(id);
         return json(await rt.worker.drain(id));
+      }
+      if (action === "quickbooks" && (method === "GET" || method === "POST")) {
+        const p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        const link = p.billing_links.find((l) => l.provider === "qbo");
+        const client = (
+          await rt.repo.entities<import("./model").Client>("clients")
+        ).find((c) => c.id === p.client.id);
+        const email = qboBillingEmail({
+          ...p.client,
+          billing_email: client ? client.billing_email : p.client.billing_email,
+        });
+        const qbo = rt.worker.providers.qbo;
+        if (method === "POST") {
+          check(sameOrigin(req), "Same-origin request required", 403);
+          check(
+            qbo instanceof QboProvider,
+            "Reconnect QuickBooks to choose a customer.",
+            409,
+          );
+          const { customer } = z
+            .object({ customer: z.string().regex(/^\d+$/) })
+            .strict()
+            .parse(await body(req));
+          const status = await qbo.connection.status();
+          const candidates = link?.metadata?.customer_candidates as
+            { id: string }[] | undefined;
+          check(
+            status.state === "connected" &&
+              status.realm === link?.metadata?.realm &&
+              link?.metadata?.billing_email === email &&
+              candidates?.some((c) => c.id === customer),
+            "Refresh the record to review the current QuickBooks matches.",
+            409,
+          );
+          await mutate(rt.repo, id, (proposal) => {
+            const current = proposal.billing_links.find(
+              (l) => l.provider === "qbo",
+            );
+            check(
+              current?.status === "needs_review" &&
+                JSON.stringify(current.metadata) ===
+                  JSON.stringify(link?.metadata),
+              "The billing record changed. Refresh and try again.",
+              409,
+            );
+            current.metadata = {
+              ...current.metadata,
+              customer_choice: { id: customer, realm: status.realm, email },
+            };
+            event(proposal, "qbo_customer_chosen", user, { customer });
+          });
+          await rt.worker.retry(id);
+          return json(await rt.worker.drain(id));
+        }
+        let invoice = link?.metadata?.invoice;
+        let refresh_error: string | undefined;
+        if (
+          qbo instanceof QboProvider &&
+          link?.external_object_id &&
+          typeof link.metadata?.realm === "string" &&
+          !link.metadata?.manual_invoice
+        ) {
+          try {
+            invoice = await qbo.invoice(
+              link.external_object_id,
+              link.metadata.realm,
+            );
+          } catch (error) {
+            refresh_error =
+              error instanceof AppError
+                ? error.message
+                : "Could not refresh the QuickBooks invoice.";
+          }
+        }
+        return json({
+          email: link?.metadata?.billing_email ?? email,
+          reference: proposalInvoiceRef(p.id),
+          invoice,
+          refresh_error,
+        });
       }
       if (method === "POST" && action === "jobs")
         return json(await rt.worker.drain(id));

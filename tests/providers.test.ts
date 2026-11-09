@@ -292,10 +292,11 @@ it("encrypts OAuth state with workspace binding and creates only an unsent QBO i
     "invoice",
     { proposal_id: draft.id },
   );
-  const invoice = JSON.parse(calls[1].init.body);
+  const created = calls.find(({ url }) => /\/invoice\?/.test(url))!;
+  const invoice = JSON.parse(created.init.body);
   expect(invoice.EmailStatus).toBe("NotSet");
-  expect(invoice.BillingLine).toHaveLength(1);
-  expect(calls[1].url).toContain("sandbox-quickbooks");
+  expect(invoice.Line).toHaveLength(1);
+  expect(created.url).toContain("sandbox-quickbooks");
   expect(
     JSON.stringify(await repo.entities("provider_credentials")),
   ).not.toContain("rotated");

@@ -12,6 +12,12 @@ export const ClientSchema = z.object({
   last_name: z.string().max(100),
   title: z.string().max(200).optional(),
   email: z.email(),
+  billing_email: z
+    .email()
+    .max(254)
+    .or(z.literal("").transform(() => null))
+    .nullable()
+    .optional(),
   phone: z.string().max(80).default(""),
   address: z.record(z.string(), z.string()).default({}),
   notes: z.string().max(10000).default(""),

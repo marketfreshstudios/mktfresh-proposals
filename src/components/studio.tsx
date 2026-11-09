@@ -1,6 +1,8 @@
 "use client";
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
+import { QuickBooksPicker } from "./quickbooks-fields";
+import type { ConnectionStatus } from "../lib/workspace-setup";
 import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
@@ -715,6 +717,17 @@ function CatalogItem({
           </div>
         </section>
       )}
+      {(!i ||
+        i.interval === "one_time" ||
+        i.sublines?.some((line) => line.interval === "one_time")) && (
+        <QuickBooksPicker
+          label="QuickBooks item"
+          name="qbo_item_ref"
+          initial={i?.qbo_item_ref}
+          enabled={data.connections?.qbo_connection?.state === "connected"}
+          emptyLabel="Use workspace default"
+        />
+      )}
       <details open={!i}>
         <Disclosure>More product details</Disclosure>
         <div className="stack">
@@ -722,7 +735,6 @@ function CatalogItem({
             ["name", "Synced name"],
             ["sku", "SKU"],
             ["stripe_lookup_key", "Stripe lookup key"],
-            ["qbo_item_ref", "QuickBooks item reference"],
           ].map(([key, label]) => (
             <Field key={key} label={label}>
               <input
@@ -3558,13 +3570,8 @@ export function ConnectionsStudio({
   run: Runner;
   initial?: string;
 }) {
-  const [health, setHealth] = useState<{
-      stripe: boolean;
-      qbo: boolean;
-      email: boolean;
-      mock: boolean;
-      mode?: "test" | "live" | "mock";
-    } | null>(null),
+  const [health, setHealth] = useState<ConnectionStatus | null>(null),
+    [qboBusy, setQboBusy] = useState(false),
     [error, setError] = useState(""),
     [open, setOpen] = useState(initial ?? "");
   const load = () => {
@@ -3574,6 +3581,26 @@ export function ConnectionsStudio({
       .catch((e) => setError(e.message));
   };
   useEffect(load, []);
+  const qbo = health?.qbo_connection;
+  const manageQbo = async (action: "authorize" | "disconnect") => {
+    setError("");
+    setQboBusy(true);
+    try {
+      if (action === "authorize") {
+        const { url } = await post<{ url: string }>(
+          "/api/connections/qbo/authorize",
+        );
+        window.location.assign(url);
+      } else {
+        await post("/api/connections/qbo/disconnect");
+        load();
+      }
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setQboBusy(false);
+    }
+  };
   const connected = data.assistants.filter((a) => !a.revoked),
     stale = connected.some(
       (a) =>
@@ -3596,10 +3623,22 @@ export function ConnectionsStudio({
     {
       id: "qbo",
       name: "QuickBooks",
-      state: health?.qbo ? "Sandbox configured" : "Setup needed",
+      state:
+        qbo?.state === "reconnect"
+          ? "Reconnect needed"
+          : qbo?.state === "connected"
+            ? `Connected to ${qbo.company ?? "QuickBooks"} · sandbox`
+            : health?.qbo
+              ? "Sandbox configured"
+              : "Setup needed",
       line: "One-time invoices stay in review until a sandbox connection is ready.",
       detail: `${data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length} proposals with invoices to review`,
-      action: "Set up QuickBooks",
+      action:
+        qbo?.state === "reconnect"
+          ? "Reconnect QuickBooks"
+          : qbo?.state === "connected"
+            ? "Manage QuickBooks"
+            : "Connect QuickBooks",
     },
     {
       id: "email",
@@ -3734,28 +3773,60 @@ export function ConnectionsStudio({
                 Open sending domain
               </a>
             </div>
+          ) : open === "qbo" ? (
+            <div className="stack">
+              <p>
+                QuickBooks sandbox. Use synthetic clients and amounts for the
+                internal pilot.
+              </p>
+              {qbo?.state === "connected" && (
+                <p>Connected to {qbo.company} · sandbox</p>
+              )}
+              {qbo?.last_sync && <p>Last sync: {studioDate(qbo.last_sync)}</p>}
+              {error && <SaveError error={error} />}
+              {data.user?.staff_role === "owner" ? (
+                qbo?.state === "connected" ? (
+                  <Button
+                    disabled={qboBusy}
+                    onClick={() => void manageQbo("disconnect")}
+                  >
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={qboBusy || qbo?.available !== true}
+                    onClick={() => void manageQbo("authorize")}
+                  >
+                    {qbo?.state === "reconnect"
+                      ? "Reconnect QuickBooks"
+                      : "Connect QuickBooks"}
+                  </Button>
+                )
+              ) : (
+                <p>A super admin manages this connection.</p>
+              )}
+              {qbo?.available === false && (
+                <small>
+                  Sandbox OAuth credentials are required on this deployment.
+                </small>
+              )}
+              <a href="/studio/workspace?view=billing">Open billing defaults</a>
+            </div>
           ) : (
             <div className="stack">
               <p>
-                {open === "stripe"
-                  ? "Use a Stripe test-mode restricted key in this deployment. Sync only after the test products have been copied."
-                  : "QuickBooks sandbox credentials must be added to the deployment by a super admin. Invoices remain in review until then."}
+                Use a Stripe test-mode restricted key in this deployment. Sync
+                only after the test products have been copied.
               </p>
               <Button
                 onClick={() =>
                   run(
-                    () =>
-                      post(
-                        `/api/catalog-sync/${open === "stripe" ? "stripe" : "qbo"}`,
-                      ),
+                    () => post("/api/catalog-sync/stripe"),
                     "Test products synced",
                   )
                 }
               >
-                Sync{" "}
-                {open === "stripe"
-                  ? "Stripe test products"
-                  : "QuickBooks sandbox items"}
+                Sync Stripe test products
               </Button>
               <a href="/studio/products">Open products</a>
             </div>

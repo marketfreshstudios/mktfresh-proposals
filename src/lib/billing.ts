@@ -6,9 +6,22 @@ import {
   type Client,
   type BillingLine,
   type Proposal,
+  type Item,
 } from "./model";
 import { sha256 } from "./content";
+import type { WorkspaceSettings } from "./workspace";
+import { qboBillingEmail, qboItemMapping } from "./qbo-mapping";
 export class NeedsReview extends Error {}
+export class BillingProgressError extends Error {
+  constructor(
+    message: string,
+    readonly customerId: string,
+    readonly objectId: string,
+    readonly metadata: Record<string, unknown>,
+  ) {
+    super(message);
+  }
+}
 export type Customer = { id: string; email: string; company: string };
 export interface BillingProvider {
   findCustomers(client: Client): Promise<Customer[]>;
@@ -108,6 +121,12 @@ export async function bill(
   p: Proposal,
   provider: "qbo" | "stripe",
   adapter: BillingProvider,
+  quickbooks?: {
+    workspace?: WorkspaceSettings;
+    catalog: Item[];
+    connected: boolean;
+    realm?: string;
+  },
 ): Promise<BillingLink> {
   const lines = billingLines(p.versions.at(-1)!.quote).filter((l) =>
     provider === "qbo" ? l.interval === "one_time" : l.interval !== "one_time",
@@ -125,41 +144,119 @@ export async function bill(
       status: "succeeded",
       metadata: { skipped: "No selected items" },
     };
+  const workspace = quickbooks?.workspace ?? p.workspace_settings;
+  const pendingInvoice =
+    provider === "qbo" &&
+    previous?.external_object_id &&
+    previous.external_customer_id
+      ? {
+          id: previous.external_customer_id,
+          company: p.client.company,
+          email: String(
+            previous.metadata?.billing_email ?? qboBillingEmail(p.client),
+          ),
+        }
+      : undefined;
+  const invoiceLines =
+    provider === "qbo" && quickbooks
+      ? lines.map((line) => ({
+          ...line,
+          qbo_item_ref: qboItemMapping(
+            line,
+            quickbooks.catalog,
+            workspace?.qbo_custom_item_ref,
+            quickbooks.realm,
+          ),
+        }))
+      : lines;
+  const choice = previous?.metadata?.customer_choice as
+    { id: string; realm?: string; email: string } | undefined;
+  if (provider === "qbo" && quickbooks && !quickbooks.connected)
+    return {
+      ...base,
+      status: "needs_review",
+      last_error:
+        "Connect or reconnect QuickBooks in Studio, then retry billing.",
+      metadata: previous?.metadata,
+      external_object_id: previous?.external_object_id,
+      external_customer_id: previous?.external_customer_id,
+    };
   if (
     provider === "qbo" &&
     (adapter instanceof UnconfiguredBillingProvider ||
-      lines.some(
-        (l) => !l.qbo_item_ref && !p.workspace_settings?.qbo_custom_item_ref,
-      ))
+      (!pendingInvoice &&
+        invoiceLines.some(
+          (l) =>
+            !l.qbo_item_ref && (quickbooks || !workspace?.qbo_custom_item_ref),
+        )))
   )
     return {
       ...base,
       status: "needs_review",
-      last_error: "Invoice manually",
+      last_error: quickbooks
+        ? "Choose a QuickBooks item or default, then retry billing."
+        : "Invoice manually",
       metadata: {
-        action: "Invoice manually",
+        ...(quickbooks ? previous?.metadata : { action: "Invoice manually" }),
+        ...(choice ? { customer_choice: choice } : {}),
         line_ids: lines.map((l) => l.id),
       },
     };
+  const billingEmail =
+    provider === "qbo"
+      ? (pendingInvoice?.email ?? qboBillingEmail(p.client))
+      : p.client.email;
+  const client =
+    provider === "qbo"
+      ? {
+          ...p.client,
+          email: billingEmail,
+          qbo_customer_id:
+            choice &&
+            choice.realm === quickbooks?.realm &&
+            choice.email === billingEmail
+              ? choice.id
+              : quickbooks?.realm
+                ? null
+                : p.client.qbo_customer_id,
+        }
+      : p.client;
   try {
-    const matches = await adapter.findCustomers(p.client),
+    const matches = pendingInvoice
+        ? [pendingInvoice]
+        : await adapter.findCustomers(client),
       emailMatches = matches.filter(
-        (x) => x.email.toLowerCase() === p.client.email.toLowerCase(),
+        (x) => x.email.toLowerCase() === client.email.toLowerCase(),
       );
     if (
       emailMatches.length > 1 &&
       !(provider === "stripe"
-        ? p.client.stripe_customer_id
-        : p.client.qbo_customer_id)
-    )
+        ? client.stripe_customer_id
+        : client.qbo_customer_id)
+    ) {
+      if (provider === "qbo" && quickbooks)
+        return {
+          ...base,
+          status: "needs_review",
+          last_error:
+            "Several QuickBooks customers have the billing email. Choose the correct customer.",
+          metadata: {
+            customer_candidates: emailMatches,
+            billing_email: billingEmail,
+            realm: quickbooks.realm,
+          },
+        };
       throw new NeedsReview("Multiple customers with recipient email");
+    }
     const storedId =
       provider === "stripe"
-        ? p.client.stripe_customer_id
-        : p.client.qbo_customer_id;
-    let customer = storedId
-      ? emailMatches.find((c) => c.id === storedId)
-      : emailMatches[0];
+        ? client.stripe_customer_id
+        : client.qbo_customer_id;
+    let customer =
+      pendingInvoice ??
+      (storedId
+        ? emailMatches.find((c) => c.id === storedId)
+        : emailMatches[0]);
     if (storedId && !customer)
       throw new NeedsReview(
         "Linked customer is missing or its email differs; review customer mapping",
@@ -175,12 +272,18 @@ export async function bill(
       );
     if (!customer)
       customer = await adapter.createCustomer(
-        p.client,
+        client,
         p.id + ":" + provider + ":customer",
       );
     const metadata: Record<string, unknown> =
       provider === "qbo"
-        ? { email_status: "NotSet", send_invoice: false }
+        ? {
+            email_status: "NotSet",
+            send_invoice: workspace?.qbo_invoice_delivery === "email",
+            billing_email: billingEmail,
+            term_ref: workspace?.qbo_term_ref ?? null,
+            ...(choice ? { customer_choice: choice } : {}),
+          }
         : { billing_start: "on_signature", trial_days: 0 };
     metadata.proposal_id = p.id;
     if (provider === "stripe") {
@@ -194,14 +297,12 @@ export async function bill(
       .map((l) => ({ line_id: l.id, ...paidInvoiceProgress(l, []) }));
     const result = await adapter.createObject(
       customer,
-      lines.map((l) =>
-        provider === "qbo"
+      invoiceLines.map((l) =>
+        provider === "qbo" && !quickbooks
           ? {
               ...l,
               qbo_item_ref:
-                l.qbo_item_ref ??
-                p.workspace_settings?.qbo_custom_item_ref ??
-                null,
+                l.qbo_item_ref ?? workspace?.qbo_custom_item_ref ?? null,
             }
           : l,
       ),
@@ -219,6 +320,20 @@ export async function bill(
     return {
       ...base,
       status: e instanceof NeedsReview ? "needs_review" : "failed",
+      ...(provider === "qbo"
+        ? {
+            external_object_id: previous?.external_object_id,
+            external_customer_id: previous?.external_customer_id,
+            metadata: previous?.metadata,
+          }
+        : {}),
+      ...(e instanceof BillingProgressError
+        ? {
+            external_customer_id: e.customerId,
+            external_object_id: e.objectId,
+            metadata: e.metadata,
+          }
+        : {}),
       last_error: e instanceof Error ? e.message : "Provider failed",
     };
   }

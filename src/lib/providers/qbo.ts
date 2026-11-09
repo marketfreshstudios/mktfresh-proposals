@@ -1,29 +1,42 @@
 import { qboAddress, normalizedPhone } from "../client-contact";
-import { randomUUID } from "node:crypto";
-import {
-  check,
-  ItemSchema,
-  type Client,
-  type BillingLine,
-  type Item,
-} from "../model";
+import { AppError, check, type Client, type BillingLine } from "../model";
 import { canonical, sha256 } from "../content";
-import { type BillingProvider, type Customer } from "../billing";
+import { proposalInvoiceRef } from "../qbo-mapping";
+import {
+  BillingProgressError,
+  NeedsReview,
+  type BillingProvider,
+  type Customer,
+} from "../billing";
 import type { Repository } from "../repository";
-import { encryptSecret, decryptSecret } from "./secrets";
-export type QboConfig = {
-  clientId: string;
-  clientSecret: string;
-  refreshToken?: string;
-  realm: string;
-  environment: string;
-  encryptionKey: string;
-};
+import { QboConnection, qboUuid, type QboConfig } from "./qbo-connection";
+export type { QboConfig } from "./qbo-connection";
+
 type QCustomer = {
   Id: string;
   DisplayName: string;
   CompanyName?: string;
   PrimaryEmailAddr?: { Address: string };
+};
+type QInvoice = {
+  Id: string;
+  DocNumber?: string;
+  EmailStatus?: string;
+  TotalAmt?: number;
+  Balance?: number;
+  CurrencyRef?: { value: string };
+  PrivateNote?: string;
+};
+type InvoiceReceipt = { Invoice: QInvoice };
+type InvoiceAttempt = {
+  id: string;
+  realm: string;
+  customer: string;
+  body: object;
+  fingerprint: string;
+  send: boolean;
+  email: string;
+  invoice?: QInvoice;
 };
 const customer = (c: QCustomer): Customer => ({
   id: c.Id,
@@ -32,136 +45,43 @@ const customer = (c: QCustomer): Customer => ({
 });
 const literal = (s: string) =>
   "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
+const recordRef = (realm: string, id: string) => realm + ":" + id;
+
 export class QboProvider implements BillingProvider {
-  private refreshing?: Promise<string>;
+  readonly connection: QboConnection;
   constructor(
     private repo: Repository,
     private config: QboConfig,
-    private fetcher: typeof fetch = fetch,
+    fetcher: typeof fetch = fetch,
   ) {
-    check(
-      config.environment === "sandbox",
-      "Only QuickBooks sandbox is permitted",
-      503,
-    );
-    check(/^\d+$/.test(config.realm), "QuickBooks sandbox realm required", 503);
+    this.connection = new QboConnection(repo, config, fetcher);
   }
-  private async accessToken() {
-    if (this.refreshing) return this.refreshing;
-    this.refreshing = this.refresh();
-    try {
-      return await this.refreshing;
-    } finally {
-      this.refreshing = undefined;
-    }
+  async request<T>(
+    path: string,
+    body?: unknown,
+    key?: string,
+    realm?: string,
+  ): Promise<T> {
+    const auth = await this.connection.access();
+    check(
+      !realm || realm === auth.realm,
+      "QuickBooks company changed. Reconnect the original sandbox to continue.",
+      409,
+    );
+    return this.connection.request<T>(
+      auth,
+      path,
+      body,
+      key && this.repo.workspaceId + ":" + key,
+    );
   }
-  private async refresh() {
-    const id = this.repo.workspaceId;
-    const old = (
-      await this.repo.entities<{ id: string; ciphertext: string }>(
-        "provider_credentials",
-      )
-    ).find((c) => c.id === id);
-    const stored = old
-      ? JSON.parse(decryptSecret(old.ciphertext, this.config.encryptionKey, id))
-      : null;
-    if (stored?.expires_at > Date.now() + 60000)
-      return stored.access_token as string;
-    const refreshToken = stored?.refresh_token ?? this.config.refreshToken;
-    check(refreshToken, "QuickBooks refresh token required", 503);
-    const response = await this.fetcher(
-      "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
-      {
-        method: "POST",
-        headers: {
-          Authorization:
-            "Basic " +
-            Buffer.from(
-              this.config.clientId + ":" + this.config.clientSecret,
-            ).toString("base64"),
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams({
-          grant_type: "refresh_token",
-          refresh_token: refreshToken,
-        }),
-        signal: AbortSignal.timeout(30000),
-      },
+  private query<T>(query: string, realm?: string) {
+    return this.request<{ QueryResponse: T }>(
+      "query?query=" + encodeURIComponent(query),
+      undefined,
+      undefined,
+      realm,
     );
-    check(
-      response.ok,
-      `QuickBooks token refresh failed (${response.status})`,
-      502,
-    );
-    const token = await response.json();
-    check(
-      token.access_token && token.refresh_token,
-      "QuickBooks returned incomplete tokens",
-      502,
-    );
-    await this.repo.put("provider_credentials", {
-      id,
-      ciphertext: encryptSecret(
-        JSON.stringify({
-          ...token,
-          expires_at: Date.now() + token.expires_in * 1000,
-        }),
-        this.config.encryptionKey,
-        id,
-      ),
-    });
-    return token.access_token as string;
-  }
-  async request<T>(path: string, body?: unknown, key?: string): Promise<T> {
-    check(
-      this.config.environment === "sandbox",
-      "Only QuickBooks sandbox is permitted",
-      503,
-    );
-    const id = key
-      ? sha256(this.repo.workspaceId + ":qbo:" + key)
-          .slice(0, 32)
-          .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5")
-      : null;
-    const fingerprint = sha256(canonical({ path, body: body ?? null }));
-    if (id) {
-      const prior = (
-        await this.repo.entities<{
-          id: string;
-          fingerprint: string;
-          response: T;
-        }>("provider_actions")
-      ).find((a) => a.id === id);
-      if (prior) {
-        check(
-          prior.fingerprint === fingerprint,
-          "QuickBooks idempotency payload changed",
-        );
-        return prior.response;
-      }
-    }
-    const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${this.config.realm}/${path}${path.includes("?") ? "&" : "?"}minorversion=75${key ? "&requestid=" + sha256(key).slice(0, 40) : ""}`;
-    const response = await this.fetcher(url, {
-      method: body ? "POST" : "GET",
-      headers: {
-        Authorization: "Bearer " + (await this.accessToken()),
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(30000),
-    });
-    check(response.ok, `QuickBooks request failed (${response.status})`, 502);
-    const data = await response.json();
-    check(!data.Fault, "QuickBooks rejected the request", 502);
-    if (id)
-      await this.repo.put("provider_actions", {
-        id,
-        fingerprint,
-        response: data,
-      });
-    return data as T;
   }
   async findCustomers(c: Client) {
     if (c.qbo_customer_id) {
@@ -170,26 +90,17 @@ export class QboProvider implements BillingProvider {
       );
       return [customer(r.Customer)];
     }
-    const exact = await this.request<{
-      QueryResponse: { Customer?: QCustomer[] };
-    }>(
-      "query?query=" +
-        encodeURIComponent(
-          `select * from Customer where PrimaryEmailAddr = ${literal(c.email)} maxresults 1000`,
-        ),
+    const exact = await this.query<{ Customer?: QCustomer[] }>(
+      `select * from Customer where PrimaryEmailAddr = ${literal(c.email)} maxresults 1000`,
     );
     if (exact.QueryResponse.Customer?.length)
       return exact.QueryResponse.Customer.map(customer);
-    const company = await this.request<{
-      QueryResponse: { Customer?: QCustomer[] };
-    }>(
-      "query?query=" +
-        encodeURIComponent(
-          `select * from Customer where CompanyName = ${literal(c.company)} maxresults 1000`,
-        ),
+    const company = await this.query<{ Customer?: QCustomer[] }>(
+      `select * from Customer where CompanyName = ${literal(c.company)} maxresults 1000`,
     );
     return (company.QueryResponse.Customer ?? []).map(customer);
   }
+
   async createCustomer(c: Client, key: string) {
     const r = await this.request<{ Customer: QCustomer }>(
       "customer",
@@ -208,88 +119,260 @@ export class QboProvider implements BillingProvider {
     );
     return customer(r.Customer);
   }
+
+  async items(search: string) {
+    const { realm } = await this.connection.access();
+    const filter = search
+      ? ` and Name like ${literal("%" + search + "%")}`
+      : "";
+    const { QueryResponse } = await this.query<{
+      Item?: { Id: string; Name: string }[];
+    }>(
+      `select * from Item where Active = true and Type in ('Service','Inventory','NonInventory')${filter} orderby Name maxresults 100`,
+      realm,
+    );
+    return (QueryResponse.Item ?? []).map((item) => ({
+      id: recordRef(realm, item.Id),
+      name: item.Name,
+    }));
+  }
+  async terms() {
+    const { realm } = await this.connection.access();
+    const { QueryResponse } = await this.query<{
+      Term?: { Id: string; Name: string }[];
+    }>(
+      "select * from Term where Active = true orderby Name maxresults 100",
+      realm,
+    );
+    return (QueryResponse.Term ?? []).map((term) => ({
+      id: recordRef(realm, term.Id),
+      name: term.Name,
+    }));
+  }
+
+  private reference(ref: string | null, realm: string) {
+    if (ref?.startsWith(realm + ":")) return ref.slice(realm.length + 1);
+    if (this.config.realm === realm && ref && !ref.includes(":")) return ref;
+    throw new NeedsReview(
+      "Choose a QuickBooks item or default for the connected sandbox, then retry billing.",
+    );
+  }
+
+  private async findExisting(attempt: InvoiceAttempt, note: string) {
+    for (let start = 1; ; start += 1000) {
+      const { QueryResponse } = await this.query<{ Invoice?: QInvoice[] }>(
+        `select * from Invoice where CustomerRef = ${literal(attempt.customer)} startposition ${start} maxresults 1000`,
+        attempt.realm,
+      );
+      const invoices = QueryResponse.Invoice ?? [];
+      const matched = invoices.filter((i) => i.PrivateNote === note);
+      if (matched.length > 1)
+        throw new NeedsReview(
+          "More than one QuickBooks invoice has this proposal reference. Review the invoices in QuickBooks.",
+        );
+      if (matched.length || invoices.length < 1000) return matched[0];
+    }
+  }
+
   async createObject(
     c: Customer,
     lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
   ) {
-    check(
-      lines.every((l) => l.qbo_item_ref),
-      "QuickBooks item reference required",
-    );
-    const result = await this.request<{
-      Invoice: { Id: string; EmailStatus: string };
-    }>(
-      "invoice",
-      {
+    const { realm } = await this.connection.access();
+    const id = qboUuid(this.repo.workspaceId + ":qbo-invoice:" + key);
+    const reference = proposalInvoiceRef(String(metadata.proposal_id));
+    const note = `Yeswell proposal ${reference} (${String(metadata.proposal_id)})`;
+    const prior = (
+      await this.repo.entities<InvoiceAttempt>("provider_actions")
+    ).find((a) => a.id === id && a.body);
+    if (prior && (prior.realm !== realm || prior.customer !== c.id))
+      throw new NeedsReview(
+        "An invoice already started for a different QuickBooks company or customer. Review it in QuickBooks.",
+      );
+    const email = String(metadata.billing_email || c.email);
+    const send = metadata.send_invoice === true;
+    let attempt = prior;
+    if (!attempt) {
+      const { Preferences } = await this.request<{
+        Preferences?: {
+          SalesFormsPrefs?: {
+            CustomTxnNumbers?: boolean;
+            DefaultTerms?: { value: string };
+          };
+          CurrencyPrefs?: {
+            MultiCurrencyEnabled?: boolean;
+            HomeCurrency?: { value?: string };
+          };
+        };
+      }>("preferences", undefined, undefined, realm);
+      const prefs = Preferences?.SalesFormsPrefs;
+      const currency = String(metadata.currency ?? "").toUpperCase();
+      const home = Preferences?.CurrencyPrefs?.HomeCurrency?.value;
+      if (
+        currency &&
+        home &&
+        currency !== home &&
+        !Preferences?.CurrencyPrefs?.MultiCurrencyEnabled
+      )
+        throw new NeedsReview(
+          "This proposal currency differs from the QuickBooks company currency. Review the company settings.",
+        );
+      const terms = metadata.term_ref
+        ? this.reference(String(metadata.term_ref), realm)
+        : prefs?.DefaultTerms?.value;
+      const body = {
         CustomerRef: { value: c.id },
         EmailStatus: "NotSet",
-        PrivateNote: String(metadata.proposal_id),
-        BillingLine: lines.map((l) => ({
+        PrivateNote: note,
+        ...(prefs?.CustomTxnNumbers ? { DocNumber: reference } : {}),
+        ...(email ? { BillEmail: { Address: email } } : {}),
+        ...(terms ? { SalesTermRef: { value: terms } } : {}),
+        ...(currency && Preferences?.CurrencyPrefs?.MultiCurrencyEnabled
+          ? { CurrencyRef: { value: currency } }
+          : {}),
+        Line: lines.map((l) => ({
           Amount: (l.amount * l.qty) / 100,
-          Description: l.name + "\n" + l.description,
+          Description: l.description || l.name,
           DetailType: "SalesItemLineDetail",
           SalesItemLineDetail: {
-            ItemRef: { value: l.qbo_item_ref },
+            ItemRef: { value: this.reference(l.qbo_item_ref, realm) },
             Qty: l.qty,
             UnitPrice: l.amount / 100,
           },
         })),
-      },
-      key,
-    );
-    check(
-      result.Invoice.EmailStatus !== "EmailSent",
-      "QuickBooks unexpectedly marked the invoice emailed",
-      502,
-    );
+      };
+      attempt = {
+        id,
+        realm,
+        customer: c.id,
+        body,
+        fingerprint: sha256(canonical(body)),
+        send,
+        email,
+      };
+      await this.repo.put("provider_actions", attempt);
+    }
+    let invoice = attempt.invoice;
+    if (!invoice) {
+      invoice = prior ? await this.findExisting(attempt, note) : undefined;
+      if (!invoice) {
+        try {
+          invoice = (
+            await this.request<InvoiceReceipt>(
+              "invoice",
+              attempt.body,
+              key + ":create:" + attempt.fingerprint,
+              realm,
+            )
+          ).Invoice;
+        } catch (error) {
+          if (error instanceof AppError && error.status === 422)
+            await this.repo.put("provider_actions", {
+              id,
+              realm,
+              rejected: true,
+            });
+          throw error;
+        }
+      }
+      check(
+        invoice?.Id,
+        "QuickBooks did not return an invoice number. Retry to check its status.",
+        502,
+      );
+      await this.repo.put("provider_actions", { ...attempt, invoice });
+    }
+    const snapshot = () => ({
+      ...metadata,
+      reference,
+      billing_email: attempt.email,
+      realm,
+      invoice: this.invoiceDetails(invoice!, realm),
+      email_status: invoice!.EmailStatus,
+    });
+    if (!attempt.send && invoice.EmailStatus === "EmailSent")
+      throw new BillingProgressError(
+        "QuickBooks marked the draft as emailed. Review its automatic delivery settings.",
+        c.id,
+        invoice.Id,
+        snapshot(),
+      );
+    if (attempt.send && invoice.EmailStatus !== "EmailSent") {
+      try {
+        // Check the current status before retrying a potentially delivered send.
+        if (prior)
+          invoice = (
+            await this.request<InvoiceReceipt>(
+              "invoice/" + encodeURIComponent(invoice.Id),
+              undefined,
+              undefined,
+              realm,
+            )
+          ).Invoice;
+        if (invoice.EmailStatus !== "EmailSent") {
+          invoice = (
+            await this.request<InvoiceReceipt>(
+              "invoice/" +
+                encodeURIComponent(invoice.Id) +
+                "/send?sendTo=" +
+                encodeURIComponent(attempt.email),
+              null,
+              key + ":send",
+              realm,
+            )
+          ).Invoice;
+        }
+        check(
+          invoice.EmailStatus === "EmailSent",
+          "QuickBooks created the invoice but did not confirm email delivery.",
+          502,
+        );
+        await this.repo.put("provider_actions", { ...attempt, invoice });
+      } catch (error) {
+        throw new BillingProgressError(
+          error instanceof AppError
+            ? error.message
+            : "QuickBooks created the invoice, but email delivery could not be confirmed.",
+          c.id,
+          invoice.Id,
+          snapshot(),
+        );
+      }
+    }
+    return { id: invoice.Id, metadata: snapshot() };
+  }
+
+  private invoiceDetails(invoice: QInvoice, realm: string) {
     return {
-      id: result.Invoice.Id,
-      metadata: { ...metadata, email_status: result.Invoice.EmailStatus },
+      number: invoice.DocNumber || invoice.Id,
+      amount:
+        typeof invoice.TotalAmt === "number"
+          ? Math.round(invoice.TotalAmt * 100)
+          : undefined,
+      status:
+        invoice.TotalAmt && invoice.Balance === 0
+          ? "Paid"
+          : invoice.EmailStatus === "EmailSent"
+            ? "Sent"
+            : "Draft",
+      currency: invoice.CurrencyRef?.value,
+      url: `https://sandbox.qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
+      realm,
     };
   }
-  async syncCatalog() {
-    const existing = await this.repo.entities<Item>("pricing_items");
-    let imported = 0;
-    for (let start = 1; ; start += 1000) {
-      const result = await this.request<{
-        QueryResponse: {
-          Item?: {
-            Id: string;
-            Name: string;
-            Description?: string;
-            UnitPrice?: number;
-            Active: boolean;
-          }[];
-        };
-      }>(
-        "query?query=" +
-          encodeURIComponent(
-            `select * from Item where Active = true startposition ${start} maxresults 1000`,
-          ),
-      );
-      const items = result.QueryResponse.Item ?? [];
-      for (const i of items) {
-        const old = existing.find((x) => x.qbo_item_ref === i.Id);
-        await this.repo.put(
-          "pricing_items",
-          ItemSchema.parse({
-            ...old,
-            id: old?.id ?? randomUUID(),
-            sku: "qbo-" + i.Id,
-            name: i.Name,
-            description: i.Description ?? "",
-            amount: Math.round((i.UnitPrice ?? 0) * 100),
-            interval: "one_time",
-            qbo_item_ref: i.Id,
-            active: i.Active,
-          }),
-        );
-        imported++;
-      }
-      if (items.length < 1000) break;
-    }
-    return { imported, synced_at: new Date().toISOString() };
+  async invoice(id: string, realm?: string) {
+    const auth = await this.connection.access();
+    check(
+      !realm || auth.realm === realm,
+      "This invoice belongs to a different QuickBooks sandbox.",
+      409,
+    );
+    const { Invoice } = await this.connection.request<InvoiceReceipt>(
+      auth,
+      "invoice/" + encodeURIComponent(id),
+    );
+    return this.invoiceDetails(Invoice, auth.realm);
   }
 }

@@ -134,7 +134,9 @@ The create API accepts the validated payload as `playbook` alongside selected `c
 
 ### Test-only billing adapters
 
-Keep `BILLING_MODE=mock` until test credentials are ready. Set it to `test` to enable the Stripe/QuickBooks adapters for workspace 1. Stripe accepts only `sk_test_` or `rk_test_`; the shell's `STRIPE_KEY` is never read. QuickBooks requires `QBO_ENVIRONMENT=sandbox` and a base64 32-byte `INTEGRATION_ENCRYPTION_KEY` for its encrypted refresh-token store. Run catalog sync with:
+Keep `BILLING_MODE=mock` until test credentials are ready. Stripe test credentials apply to workspace 1 and must begin with `sk_test_` or `rk_test_`. In `BILLING_MODE=test`, a super admin can connect a sandbox company per workspace under **Studio → Connections**. Configure `QBO_CLIENT_ID`, `QBO_CLIENT_SECRET`, `QBO_ENVIRONMENT=sandbox` and a base64 32-byte `INTEGRATION_ENCRYPTION_KEY`. Register the exact `/api/connections/qbo/callback` URL for the `APP_URL` origin in Intuit's Development settings. A fixed `QBO_REDIRECT_URI` can override it. Use a fixed preview domain registered separately for Preview. Use only synthetic clients and amounts with the sandbox.
+
+Stripe catalog sync:
 
 ```sh
 node --env-file=.env.local --import tsx scripts/sync-stripe-catalog.ts

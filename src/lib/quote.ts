@@ -2,6 +2,7 @@ import { businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
+import { qboItemMapping } from "./qbo-mapping";
 import { pendingSections } from "./ai-review";
 import { renderBlocks, variables } from "./presentation";
 
@@ -11,6 +12,11 @@ export function readiness(
   catalog: Item[],
   now = new Date(),
   confirmAiReview = false,
+  quickbooks?: {
+    connected: boolean;
+    realm?: string;
+    defaultItem?: string | null;
+  },
 ) {
   const errors: string[] = authoringErrors(p),
     warnings: string[] = [];
@@ -74,7 +80,16 @@ export function readiness(
         .length !== 1
     )
       errors.push(`Exactly one ${role} signature block required`);
-  for (const raw of quoteSublines(p.quote)) {
+  const allLines = quoteSublines(p.quote);
+  if (
+    quickbooks &&
+    !quickbooks.connected &&
+    allLines.some((line) => line.interval === "one_time")
+  )
+    warnings.push(
+      "QuickBooks is not connected. Connect the sandbox in Studio before one-time billing.",
+    );
+  for (const raw of allLines) {
     const parsed = BillingLineSchema.safeParse(raw);
     if (!parsed.success) {
       errors.push(`${raw.name}: invalid quote line`);
@@ -104,12 +119,16 @@ export function readiness(
       warnings.push(`${l.name}: custom — check scope and price`);
     if (
       l.interval === "one_time" &&
-      !l.qbo_item_ref &&
-      !p.workspace_settings?.qbo_custom_item_ref
+      (quickbooks
+        ? !qboItemMapping(l, catalog, quickbooks.defaultItem, quickbooks.realm)
+        : !l.qbo_item_ref && !p.workspace_settings?.qbo_custom_item_ref)
     )
       warnings.push(
-        `${l.name}: Invoice manually if QuickBooks is not connected or mapped`,
+        quickbooks
+          ? `${l.name}: Choose a QuickBooks item or a workspace default.`
+          : `${l.name}: Invoice manually if QuickBooks is not connected or mapped`,
       );
+
     if (l.interval !== "one_time") {
       if (!l.stripe_lookup_key && !l.custom_family_id)
         errors.push(

@@ -136,6 +136,12 @@ export interface Repository {
   list(search?: string): Promise<Proposal[]>;
   save(p: Proposal, expected: number): Promise<void>;
   entities<T>(table: EntityTable): Promise<T[]>;
+  providerCredential<T>(id: string): Promise<T | null>;
+  replaceProviderCredential<T extends { id: string }>(
+    id: string,
+    expected: T | null,
+    replacement: T | null,
+  ): Promise<boolean>;
   put<T extends { id: string }>(table: EntityTable, entity: T): Promise<void>;
 }
 type ReportFactRequest = Partial<
@@ -750,6 +756,23 @@ export class MemoryRepository implements Repository {
       ...(this.catalog.get(table)?.values() ?? []),
     ]) as T[];
   }
+  async providerCredential<T>(id: string) {
+    return structuredClone(
+      this.catalog.get("provider_credentials")?.get(id) ?? null,
+    ) as T | null;
+  }
+  async replaceProviderCredential<T extends { id: string }>(
+    id: string,
+    expected: T | null,
+    replacement: T | null,
+  ) {
+    const table = this.catalog.get("provider_credentials") ?? new Map();
+    if (!isDeepStrictEqual(table.get(id) ?? null, expected)) return false;
+    if (replacement) table.set(id, structuredClone(replacement));
+    else table.delete(id);
+    this.catalog.set("provider_credentials", table);
+    return true;
+  }
   async finishDocumentRefresh<T extends { id: string }>(
     document: T,
     attempt: string,
@@ -981,6 +1004,19 @@ export class LocalRepository extends MemoryRepository {
     await this.ready;
     return super.entities<T>(t);
   }
+  override async providerCredential<T>(id: string) {
+    await this.ready;
+    return super.providerCredential<T>(id);
+  }
+  override async replaceProviderCredential<T extends { id: string }>(
+    id: string,
+    expected: T | null,
+    replacement: T | null,
+  ) {
+    return this.questionTransaction(() =>
+      super.replaceProviderCredential(id, expected, replacement),
+    );
+  }
   override async save(p: Proposal, e: number) {
     await this.ready;
     const run = this.tail.then(async () => {
@@ -1099,6 +1135,32 @@ type HostedReportProposal = Omit<
   expiry: string | null;
 };
 export class SupabaseRepository implements Repository {
+  async providerCredential<T>(id: string) {
+    const { data, error } = await this.db
+      .from("provider_credentials")
+      .select("data")
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", id)
+      .maybeSingle();
+    if (error)
+      throw new AppError(503, "QuickBooks connection storage is unavailable");
+    return (data?.data ?? null) as T | null;
+  }
+  async replaceProviderCredential<T extends { id: string }>(
+    id: string,
+    expected: T | null,
+    replacement: T | null,
+  ) {
+    const { data, error } = await this.db.rpc("replace_provider_credential", {
+      target_workspace: this.workspaceId,
+      target_id: id,
+      expected_data: expected,
+      replacement_data: replacement,
+    });
+    if (error)
+      throw new AppError(503, "QuickBooks connection storage is unavailable");
+    return data === true;
+  }
   async reportNames() {
     const names = (table: "templates" | "clients", key: "name" | "company") =>
       readReportPages<{ id: string; name: string }>((from) =>

@@ -58,6 +58,13 @@ export function eventLabel(
     reopened: "Proposal reopened",
     manual_invoice_recorded: "Manual invoice recorded",
     invoice_created: "Invoice created",
+    qbo_connected: "QuickBooks sandbox connected",
+    qbo_disconnected: "QuickBooks sandbox disconnected",
+    qbo_customer_chosen: "QuickBooks customer selected",
+    qbo_invoice_delivery_changed:
+      e.metadata.delivery === "email"
+        ? "QuickBooks invoices set to create and email"
+        : "QuickBooks invoices set to draft for review",
     subscription_created: "Subscription created",
     sync_failed: (() => {
       const id = String(e.metadata.job ?? "");

@@ -1,9 +1,11 @@
+import type { QboConnectionStatus } from "./providers/qbo-connection";
 import { businessState, businessStateUrl } from "./business-state";
 import type { WorkspaceSettings } from "./workspace";
 import type { Item, Template } from "./model";
 export type ConnectionStatus = {
   stripe: boolean;
   qbo: boolean;
+  qbo_connection?: QboConnectionStatus;
   email: boolean;
   mock: boolean;
   mode?: "test" | "live" | "mock";
