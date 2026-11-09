@@ -7,7 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { blockSpacing, columnBoxStyle } from "../../lib/block-style";
+import { columnBoxStyle } from "../../lib/block-style";
 import { insertAuthoringBlocks } from "../../lib/block-insertion";
 import {
   columnGridStyle,
@@ -95,7 +95,6 @@ export function ColumnsEditor({
       >
         {columns.items.map((c, n) => {
           const spacing = documentSpacing(c.content, styles, true);
-          const padding = blockSpacing[c.style?.padding ?? "none"];
           return (
             <EditorColumn
               blockId={block.id!}
@@ -110,13 +109,7 @@ export function ColumnsEditor({
               }
               className="document-column editor-column"
               key={c.id}
-              data-column-has-gutter={padding >= 24 || undefined}
-              style={
-                {
-                  ...columnBoxStyle(c.style),
-                  "--column-editing-padding": `${padding}px`,
-                } as CSSProperties
-              }
+              style={columnBoxStyle(c.style)}
             >
               {c.content.map((child, index) => {
                 const id = prefix + child.id;
@@ -359,7 +352,6 @@ function EditorColumn({
   children: ReactNode;
   className: string;
   style: CSSProperties;
-  "data-column-has-gutter"?: boolean;
 }) {
   const selection = useBlockSelection();
   const clipboard = useStyleClipboard();

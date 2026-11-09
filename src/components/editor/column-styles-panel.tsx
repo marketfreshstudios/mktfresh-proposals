@@ -4,6 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import {
   blockBackground,
+  blockBorderWidth,
   blockNeutral,
   blockRadius,
   blockSpacing,
@@ -103,21 +104,29 @@ const layoutLabel = (layout: Columns["layout"]) =>
   layout.replaceAll("-", " / ");
 const gapLabel = { s: "small", m: "medium", l: "large" };
 
+function StyleLabel({ label, detail }: { label: string; detail?: ReactNode }) {
+  return (
+    <div className="column-style-label">
+      <strong>{label}</strong>
+      {detail !== undefined && <small>{detail}</small>}
+    </div>
+  );
+}
+
 function StyleRow({
   label,
   detail,
+  inline = false,
   children,
 }: {
   label: string;
   detail?: ReactNode;
+  inline?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="column-style-row">
-      <span>
-        {label}
-        {detail !== undefined && <small>{detail}</small>}
-      </span>
+    <div className="column-style-row" data-inline={inline || undefined}>
+      <StyleLabel label={label} detail={detail} />
       {children}
     </div>
   );
@@ -132,17 +141,16 @@ function LayoutControls({
 }) {
   return (
     <div className="column-layout-controls">
-      <strong>Layout</strong>
-      <StyleChoices
-        label="Column layout"
-        value={value.layout}
-        change={(layout) => change(changeColumnLayout(value, layout))}
-        kind="layout"
-        options={layouts.map((layout) => ({
-          value: layout,
-          label: layoutLabel(layout),
-          content: (
-            <>
+      <StyleRow label="Layout">
+        <StyleChoices
+          label="Column layout"
+          value={value.layout}
+          change={(layout) => change(changeColumnLayout(value, layout))}
+          kind="layout"
+          options={layouts.map((layout) => ({
+            value: layout,
+            label: layoutLabel(layout),
+            content: (
               <span
                 className="column-layout-preview"
                 style={{ gridTemplateColumns: columnTracks[layout] }}
@@ -151,11 +159,10 @@ function LayoutControls({
                   <i key={n} />
                 ))}
               </span>
-              {layoutLabel(layout)}
-            </>
-          ),
-        }))}
-      />
+            ),
+          }))}
+        />
+      </StyleRow>
       <StyleRow label="Gap" detail={`${columnGaps[value.gap]}px`}>
         <StyleChoices
           label="Column gap"
@@ -164,7 +171,10 @@ function LayoutControls({
           change={(gap) => change({ ...value, gap })}
         />
       </StyleRow>
-      <StyleRow label="Align columns">
+      <StyleRow
+        label="Align columns"
+        detail={value.align === "top" ? "Top" : "Center"}
+      >
         <StyleChoices
           label="Align columns"
           value={value.align}
@@ -213,10 +223,10 @@ function ColorRow({
   const active = options.find((option) => option.value === value)?.label;
   return (
     <div className="column-color-row">
-      <div className="column-style-label">
-        <strong>{label}</strong>
-        <small>{custom ? value.toUpperCase() : active}</small>
-      </div>
+      <StyleLabel
+        label={label}
+        detail={custom ? value.toUpperCase() : active}
+      />
       <div className="column-color-options">
         <StyleChoices
           label={label}
@@ -245,6 +255,7 @@ function ColorRow({
           contrastAgainst={against}
         />
       </div>
+      {against && value && <ContrastNote color={fallback} against={against} />}
     </div>
   );
 }
@@ -281,7 +292,7 @@ function BoxControls({
     const label = edge === "above" ? "Above" : "Below";
     const key = `margin_${edge}` as const;
     return (
-      <StyleRow key={edge} label={label}>
+      <StyleRow key={edge} label={label} inline={!!target.column}>
         <StyleChoices
           label={target.column ? label : `Margin ${edge}`}
           value={style[key] ?? ""}
@@ -296,10 +307,13 @@ function BoxControls({
       {phone && (
         <div className="column-style-actions">
           <Button onClick={() => actions.copy(target.key)}>Copy style</Button>
-          <Button onClick={() => actions.reset(target.key)}>Reset</Button>
+          <ResetStyleButton onClick={() => actions.reset(target.key)} />
         </div>
       )}
-      <StyleRow label="Border">
+      <StyleRow
+        label="Border"
+        detail={style.border ? `${blockBorderWidth[style.border]}px` : "None"}
+      >
         <StyleChoices
           label="Border"
           value={style.border ?? ""}
@@ -371,7 +385,6 @@ function BoxControls({
         against={against}
         change={(value) => change("background", value || undefined)}
       />
-      {bg && <ContrastNote color={bg} against={against} />}
       <StyleRow
         label="Padding"
         detail={`${blockSpacing[style.padding ?? "none"]}px`}
@@ -390,7 +403,7 @@ function BoxControls({
           <summary>
             More options <ChevronRight size={16} aria-hidden="true" />
           </summary>
-          {more}
+          <div className="column-more-settings">{more}</div>
         </details>
       ) : (
         more
@@ -416,6 +429,18 @@ function styleSummary(style?: BlockStyle, settings?: WorkspaceSettings | null) {
     ]
       .filter(Boolean)
       .join(" · ") || "No style"
+  );
+}
+
+function ResetStyleButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="column-text-action column-reset-action"
+      onClick={onClick}
+    >
+      <span>Reset</span>
+    </button>
   );
 }
 
@@ -609,24 +634,27 @@ export function SelectionStyles({
               <LayoutControls value={columns} change={patch} />
             )}
           </section>
-          <div className="column-style-breadcrumb">
-            <button
-              type="button"
-              className="column-text-action"
-              onClick={() => choose(groupKey)}
-            >
-              <span>Columns</span>
-            </button>
-            <ChevronRight size={12} aria-hidden="true" />
-            <strong>{active.label}</strong>
+          <div className="column-style-navigation">
+            <div className="column-style-breadcrumb">
+              <button
+                type="button"
+                className="column-text-action"
+                onClick={() => choose(groupKey)}
+              >
+                <span>Columns</span>
+              </button>
+              <ChevronRight size={12} aria-hidden="true" />
+              <strong>{active.label}</strong>
+            </div>
+            <ColumnTabs
+              columns={columns}
+              current={active.column!.id}
+              choose={(id) => choose(columnStyleKey(id))}
+            />
           </div>
-          <ColumnTabs
-            columns={columns}
-            current={active.column!.id}
-            choose={(id) => choose(columnStyleKey(id))}
-          />
           <div
             id="column-style-tab-panel"
+            className="column-style-tab-panel"
             role="tabpanel"
             aria-label={active.label}
           >
@@ -647,12 +675,7 @@ export function SelectionStyles({
                   : "Paste style"}
               </PasteStyleButton>
               {!phone && (
-                <Button
-                  variant="ghost"
-                  onClick={() => clipboard.reset(active.key)}
-                >
-                  Reset
-                </Button>
+                <ResetStyleButton onClick={() => clipboard.reset(active.key)} />
               )}
             </div>
             {clip && (
@@ -750,9 +773,7 @@ export function SelectionStyles({
               empty={!clip}
               onClick={() => clipboard.paste(active.key)}
             />
-            <Button variant="ghost" onClick={() => clipboard.reset(active.key)}>
-              Reset
-            </Button>
+            <ResetStyleButton onClick={() => clipboard.reset(active.key)} />
           </div>
           {clip && (
             <p className="column-clipboard-card">
