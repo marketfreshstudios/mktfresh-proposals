@@ -127,7 +127,10 @@ for (const width of [1440, 1024, 375])
       await page.goto(path);
       trigger = page
         .getByRole("button", {
-          name: `More actions for ${sent.client.company}`,
+          name:
+            path === "/proposals"
+              ? "More actions"
+              : `More actions for ${sent.client.company}`,
           exact: true,
         })
         .first();

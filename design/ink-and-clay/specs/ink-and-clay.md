@@ -143,18 +143,18 @@ Route `/reports`. Every count and amount links to `/proposals` with the matching
 
 - **No icons inside text buttons.** Write "Edit", "New proposal", "Sub-line", never "✎ Edit" or "+ New proposal".
 - **Icon-only buttons** are allowed only where space is tight: Proposals table row actions, editor undo/redo, and ⋯ menus. Each is 40×40 (44×44 on touch), has an `aria-label`, and shows a tooltip on hover or focus. Icons come from `specs/table-action-icons.json` (Lucide, 18px, stroke 2, `currentColor`).
-- **Proposals table actions column**, 196px, right-aligned, in fixed slots from left to right: [Edit or Sign] [Duplicate] [Archive] [⋯]. If an action doesn't apply, its slot stays empty so the icons line up down the table.
+- **Proposals table actions column**, 196px, right-aligned, in fixed slots from left to right: [Edit or Sign] [Duplicate] [Archive] [⋯]. An inapplicable action keeps a 40×40 spacer (44×44 on touch and in tablet/phone row cards) so the icons line up. Row icons are borderless circles with `--ink-muted` on transparent, `--ink-title` on `--segment` on hover or focus, and the shared focus ring.
 
 | Status | Slot 1 | Duplicate | Archive |
 |---|---|---|---|
-| Draft, AI draft, Sent, Viewed, Lost, Expired | Edit (pencil) | ✓ | ✓ |
-| Won + Needs countersign | **Sign** pill (opens the record with the countersign sheet) | ✓ | ✓ |
+| Draft, AI draft, Sent, Viewed, Lost, Expired | Edit (`square-pen`) | ✓ | ✓ |
+| Won + Needs countersign | Sign (`pen-tool`, tooltip and accessible name “Countersign”; opens the record with the countersign sheet) | ✓ | ✓ |
 | Won (countersigned, billing or completed) | empty | ✓ | ✓ |
-| Archived view | Edit if unsigned (unarchives first) | ✓ | Unarchive (archive-restore icon) |
+| Archived view | Edit (`square-pen`) if unsigned (unarchives first) | ✓ | Unarchive (archive-restore icon) |
 | Proposify import | empty | empty | ✓ |
 
 - The **⋯ menu** keeps: Open record, Preview as client, Download PDF, Mark as sent again / won / lost, Copy client link.
-- Row buttons stop click propagation. The rest of the row opens the proposal.
+- Row buttons stop click propagation and activate with Enter or Space. The rest of the row opens the proposal. Home Recent proposals and mobile/tablet row cards use the same actions.
 
 ## 8. Client screens (Redesign 17 · 1a–1d)
 

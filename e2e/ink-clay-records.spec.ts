@@ -340,7 +340,7 @@ test("Home, list views and action slots use the existing proposal states", async
     [f.viewed, "Edit"],
     [f.lost, "Edit"],
     [f.expired, "Edit"],
-    [f.countersign, "Sign"],
+    [f.countersign, "Countersign"],
     [f.completed, ""],
     [f.billing, ""],
     [f.manual, ""],
@@ -349,14 +349,25 @@ test("Home, list views and action slots use the existing proposal states", async
     await expect(actions).toHaveCSS("width", "196px");
     const slots = actions.locator(":scope > *");
     await expect(slots).toHaveCount(4);
-    if (first)
-      await expect(slots.nth(0).locator(".btn")).toHaveAccessibleName(
-        new RegExp(`^${first}`),
-      );
-    else await expect(slots.nth(0).locator(".btn")).toHaveCount(0);
+    if (first) {
+      const action = slots
+        .nth(0)
+        .getByRole("button", { name: first, exact: true });
+      await expect(action).toBeVisible();
+      await expect(
+        action.locator(
+          first === "Edit" ? "svg.lucide-square-pen" : "svg.lucide-pen-tool",
+        ),
+      ).toBeVisible();
+      await expect(action).toHaveText("");
+    } else {
+      await expect(slots.nth(0)).toHaveClass("proposal-action-spacer");
+      await expect(slots.nth(0)).toHaveCSS("width", "40px");
+      await expect(slots.nth(0).locator(".btn")).toHaveCount(0);
+    }
     await expect(
       slots.nth(1).getByRole("button", { name: "Duplicate" }),
-    ).toHaveCSS("width", "44px");
+    ).toHaveCSS("width", "40px");
     await expect(
       slots.nth(2).getByRole("button", { name: "Archive" }),
     ).toBeVisible();
@@ -397,7 +408,7 @@ test("Home, list views and action slots use the existing proposal states", async
     .getByRole("button", { name: "Archived 1" })
     .click();
   await expect(
-    row(page, f.archived).getByRole("button", { name: "Unarchive and edit" }),
+    row(page, f.archived).getByRole("button", { name: "Edit", exact: true }),
   ).toBeVisible();
   await expect(
     row(page, f.archived).getByRole("button", {
@@ -427,7 +438,7 @@ test("Home, list views and action slots use the existing proposal states", async
   await expect(page).toHaveURL(/\/proposals$/);
   expect(f.actions).toEqual(["archive"]);
   await row(page, f.countersign)
-    .getByRole("link", { name: /^Sign / })
+    .getByRole("button", { name: "Countersign", exact: true })
     .click();
   await expect(
     page.getByRole("dialog", { name: /^Countersign/ }),
@@ -701,21 +712,26 @@ test("Home recent proposals and Proposals share their table and row actions", as
         ).toHaveAttribute("href", "/proposals");
       }
       const editable = rows
-        .filter({ has: page.getByRole("link", { name: "Edit", exact: true }) })
+        .filter({
+          has: page.getByRole("button", { name: "Edit", exact: true }),
+        })
         .first();
       await editable.scrollIntoViewIfNeeded();
       const icons = editable.locator(".table-icon-action");
       await expect(icons).toHaveCount(4);
       for (const icon of await icons.all()) {
-        await expect(icon).toHaveCSS("width", "44px");
-        await expect(icon).toHaveCSS("height", "44px");
+        await expect(icon).toHaveCSS("width", "40px");
+        await expect(icon).toHaveCSS("height", "40px");
         await expect(icon).toHaveCSS("border-radius", "50%");
         await expect(icon).toHaveCSS("border-top-width", "0px");
         await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
         await expect(icon.locator("svg.lucide")).toHaveCount(1);
       }
-      const sign = table.getByRole("link", { name: /^Sign / }).first();
-      await expect(sign).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      const sign = table
+        .getByRole("button", { name: "Countersign", exact: true })
+        .first();
+      await expect(sign).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(sign.locator("svg.lucide-pen-tool")).toBeVisible();
       if (screenshots) {
         await page.evaluate(() => document.fonts.ready);
         if (name === "home")
@@ -743,7 +759,7 @@ test("Home recent proposals and Proposals share their table and row actions", as
           animations: "disabled",
         });
       await page.mouse.move(5, 5);
-      await editable.getByRole("link", { name: "Edit", exact: true }).focus();
+      await editable.getByRole("button", { name: "Edit", exact: true }).focus();
       await page.keyboard.press("Tab");
       await expect(duplicate).toBeFocused();
       await expect(duplicate).not.toHaveCSS(
@@ -751,6 +767,112 @@ test("Home recent proposals and Proposals share their table and row actions", as
         "rgba(0, 0, 0, 0)",
       );
       await expect(tooltip).toBeVisible();
+    }
+  }
+});
+
+test("proposal Edit and Countersign icons keep their slots, styling, and keyboard actions", async ({
+  page,
+}) => {
+  const f = await scenario(page);
+  const folder = "docs/screenshots/proposal-row-action-icons";
+  const screenshots = process.env.CAPTURE_PROPOSAL_ACTION_ICONS === "1";
+  if (screenshots) await mkdir(folder, { recursive: true });
+  for (const width of [1440, 1024, 768, 375]) {
+    await page.setViewportSize({ width, height: width === 375 ? 850 : 1000 });
+    await page.goto("/proposals");
+    const counterRow = row(page, f.countersign);
+    const counter = counterRow.getByRole("button", {
+      name: "Countersign",
+      exact: true,
+    });
+    const edit = row(page, f.viewed).getByRole("button", {
+      name: "Edit",
+      exact: true,
+    });
+    const size = width === 1440 ? "40px" : "44px";
+    await expect(counter).toBeVisible();
+    await expect(counterRow.getByRole("button", { name: "Edit" })).toHaveCount(
+      0,
+    );
+    await expect(counter.locator("svg.lucide-pen-tool")).toBeVisible();
+    await expect(edit.locator("svg.lucide-square-pen")).toBeVisible();
+    await expect(counter).toHaveText("");
+    for (const icon of [counter, edit]) {
+      await expect(icon).toHaveCSS("width", size);
+      await expect(icon).toHaveCSS("height", size);
+      await expect(icon).toHaveCSS("border-radius", "50%");
+      await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(icon).toHaveCSS("color", "rgb(95, 91, 83)");
+    }
+    const spacer = row(page, f.completed).locator(".proposal-action-spacer");
+    await expect(spacer).toHaveCSS("width", size);
+    await expect(spacer).toHaveCSS("height", size);
+    expect((await spacer.boundingBox())!.x).toBeCloseTo(
+      (await counter.boundingBox())!.x,
+    );
+    expect((await edit.boundingBox())!.x).toBeCloseTo(
+      (await counter.boundingBox())!.x,
+    );
+    for (const proposal of [f.viewed, f.completed]) {
+      const duplicate = (p: Proposal) =>
+        row(page, p).getByRole("button", { name: "Duplicate" }).boundingBox();
+      expect((await duplicate(proposal))!.x).toBeCloseTo(
+        (await duplicate(f.countersign))!.x,
+      );
+    }
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+    if (screenshots && (width === 1440 || width === 375)) {
+      await page.evaluate(() => document.fonts.ready);
+      await counter.evaluate((button) =>
+        button.scrollIntoView({ block: "center" }),
+      );
+      await page.screenshot({
+        path: `${folder}/proposals-${width}-rest.png`,
+        animations: "disabled",
+      });
+    }
+    if (width === 1440) {
+      await counter.hover();
+      const tooltip = counterRow.getByRole("tooltip", {
+        name: "Countersign",
+        exact: true,
+      });
+      await expect(tooltip).toBeVisible();
+      await expect(counter).toHaveCSS("background-color", "rgb(238, 233, 224)");
+      await expect(counter).toHaveCSS("color", "rgb(19, 48, 58)");
+      if (screenshots)
+        await page.screenshot({
+          path: `${folder}/proposals-1440-countersign-hover.png`,
+          animations: "disabled",
+        });
+      await page.mouse.move(2, 2);
+      await counterRow.getByRole("link", { name: /^Open / }).focus();
+      await page.keyboard.press("Tab");
+      await expect(counter).toBeFocused();
+      await expect(counter).toHaveCSS("outline-style", "solid");
+      await expect(counter).toHaveCSS("outline-width", "2px");
+      await expect(tooltip).toBeVisible();
+      for (const name of ["Duplicate", "Archive", "More actions"]) {
+        await page.keyboard.press("Tab");
+        await expect(
+          counterRow.getByRole("button", { name, exact: true }),
+        ).toBeFocused();
+      }
+      await edit.press("Enter");
+      await expect(page).toHaveURL(`/proposals/${f.viewed.id}?action=edit`);
+    }
+    if (width === 375) {
+      await counter.press("Space");
+      await expect(page).toHaveURL(
+        `/proposals/${f.countersign.id}?action=countersign`,
+      );
+      await expect(
+        page.getByRole("dialog", { name: /^Countersign/ }),
+      ).toBeVisible();
+      expect(f.actions).toEqual([]);
     }
   }
 });

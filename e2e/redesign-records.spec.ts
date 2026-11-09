@@ -510,12 +510,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   await page.keyboard.press("Escape");
   stale = false;
   await page.goto("/proposals?view=needs-countersign");
-  const signLink = page.getByRole("link", { name: /^Sign Acme/ });
-  await expect(signLink).toHaveAttribute(
-    "href",
-    `/proposals/${signed.id}?action=countersign`,
-  );
-  await signLink.click();
+  await page.getByRole("button", { name: "Countersign", exact: true }).click();
+  await expect(page).toHaveURL(`/proposals/${signed.id}?action=countersign`);
+  expect(signCalls).toBe(1);
   await expect(page.locator(".record-v4")).toBeVisible();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("dialog").getByRole("checkbox").nth(0).check();
@@ -535,7 +532,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     .getByRole("link", { name: "Back to proposals", exact: false })
     .click();
   await expect(page).toHaveURL(/view=needs-countersign/);
-  await expect(page.getByRole("link", { name: /^Sign Acme/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Countersign", exact: true }),
+  ).toHaveCount(0);
   await page.goto(`/proposals/${signed.id}?action=countersign`);
   await expect(
     page.getByText(/Riley Adams already countersigned this at/),
@@ -613,15 +612,11 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await page.goto("/proposals?view=viewed");
-  await page
-    .getByRole("button", { name: `More actions for ${draft.client.company}` })
-    .click();
+  await page.getByRole("button", { name: "More actions" }).click();
   await page.getByRole("button", { name: "Mark as lost", exact: true }).click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await page.goto("/proposals?view=lost");
-  await page
-    .getByRole("button", { name: `More actions for ${draft.client.company}` })
-    .click();
+  await page.getByRole("button", { name: "More actions" }).click();
   const reopen = page.getByRole("button", { name: /^Mark as sent again/ });
   await expect(reopen).toBeEnabled();
   await reopen.click();

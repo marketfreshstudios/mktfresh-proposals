@@ -177,9 +177,7 @@ test("manual publish exposes one copyable link, no email, record/list access and
     .locator(".proposal-row")
     .filter({ hasText: p.client.company })
     .filter({ hasText: p.title });
-  await row
-    .getByRole("button", { name: `More actions for ${p.client.company}` })
-    .click();
+  await row.getByRole("button", { name: "More actions", exact: true }).click();
   await page
     .getByRole("button", { name: "Copy client link", exact: true })
     .click();

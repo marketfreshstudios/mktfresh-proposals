@@ -158,7 +158,7 @@ type QuoteItem = {
 
 ## 10. Lists and row actions
 
-- **Rows:** the whole row (or card) is a link: drafts open the editor, everything else opens the record. The row action buttons (Edit, Sign, Duplicate, Archive, ⋯) are separate targets that stop propagation. See `ink-and-clay.md` §7a for which show on each status.
+- **Rows:** the whole row (or card) is a link: drafts open the editor, everything else opens the record. The row action buttons (Edit, Sign, Duplicate, Archive, ⋯) are separate targets that stop propagation. Edit uses the Lucide `square-pen` icon; Sign uses the `pen-tool` icon with the tooltip and accessible name “Countersign”. See `ink-and-clay.md` §7a for which show on each status.
 - **⋯ menu** (a bottom sheet on phone):
   - **Edit:** opens the editor for anything not yet signed (Draft, Sent, Viewed, Lost, Expired). Edits to a sent proposal stay unpublished until **Send update**. It's disabled once either party has signed, with the reason "Signed proposals are locked. Duplicate to make changes."
   - **Duplicate:** creates a new draft.
