@@ -45,6 +45,7 @@ export function staffPageName(path: string[]) {
       {
         login: "Sign in",
         proposals: "Proposals",
+        reports: "Reports",
         clients: "Clients",
         billing: "Billing",
       } as Record<string, string>

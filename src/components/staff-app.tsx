@@ -14,7 +14,15 @@ import {
 } from "../lib/workspace-setup";
 import { EmailsStudio } from "./email-studio";
 import { ContactToast } from "./contact-value";
-import { HomeV4, ProposalListV4, RecordV4, ClientsV4 } from "./records";
+import {
+  HomeV4,
+  ProposalListV4,
+  ReportProposalList,
+  RecordV4,
+  ClientsV4,
+} from "./records";
+import { ReportsPage } from "./reports";
+import { reportDrillSchema, reportFiltersSchema } from "../lib/report-filters";
 import {
   WorkspaceStudio,
   CatalogStudio,
@@ -59,6 +67,7 @@ import type { WorkspaceSettings } from "../lib/workspace";
 const nav = [
   ["", "Dashboard"],
   ["proposals", "Proposals"],
+  ["reports", "Reports"],
   ["clients", "Clients"],
   ["catalogue", "Products"],
   ["templates", "Templates"],
@@ -122,7 +131,19 @@ function StaffAppContent({
   local?: boolean;
 }) {
   const { section, id, action } = staffRoute(path, query);
+  const drill =
+    section === "proposals" && !id
+      ? reportDrillSchema.safeParse(query).data
+      : undefined;
+  const reportFilters = drill
+    ? reportFiltersSchema.safeParse(query).data
+    : undefined;
+  const reportShell = section === "reports" || (!!drill && !!reportFilters);
   const [newOpen, setNewOpen] = useState(query.new === "1");
+  function openNew() {
+    if (reportShell) location.href = "/proposals?new=1";
+    else setNewOpen(true);
+  }
   const [data, setData] = useState<Data | null>(null),
     [p, setP] = useState<Proposal | null>(null),
     [error, setError] = useState(""),
@@ -139,6 +160,21 @@ function StaffAppContent({
         app_url: string;
         staff: Data["staff"];
       }>("/api/auth/session");
+      if (reportShell) {
+        setData({
+          ...session,
+          total: 0,
+          proposals: [],
+          clients: [],
+          catalog: [],
+          templates: [],
+          library: [],
+          families: [],
+          documents: [],
+          assistants: [],
+        });
+        return;
+      }
       const [
         proposals,
         clients,
@@ -209,7 +245,7 @@ function StaffAppContent({
   }, [section, p?.title, path.join("/")]);
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
-  }, [section, id, action]);
+  }, [section, id, action, reportShell]);
   useEffect(() => {
     function key(event: KeyboardEvent) {
       const target = event.target as HTMLElement;
@@ -224,12 +260,12 @@ function StaffAppContent({
         )
       ) {
         event.preventDefault();
-        setNewOpen(true);
+        openNew();
       }
     }
     if (section !== "login") window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [section]);
+  }, [section, reportShell]);
   if (section === "login") return <Login local={local} />;
   if (section === "billing")
     return (
@@ -337,8 +373,21 @@ function StaffAppContent({
       ) : (
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
       );
+    } else if (section === "reports") {
+      subtitle = "Track proposals from send to signature.";
+      content = <ReportsPage query={query} />;
+    } else if (section === "proposals" && drill && reportFilters) {
+      subtitle = "Filtered from Reports";
+      content = (
+        <ReportProposalList data={data} drill={drill} filters={reportFilters} />
+      );
     } else if (section === "proposals") {
       subtitle = `${data.total} proposals`;
+      headerAction = (
+        <a className="btn" href="/reports">
+          <Icon name="reports" /> Reports
+        </a>
+      );
       content = (
         <ProposalListV4
           data={data}
@@ -427,7 +476,7 @@ function StaffAppContent({
       settings={data?.settings ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}
-      onNew={() => setNewOpen(true)}
+      onNew={openNew}
       onSignout={async () => {
         await post("/api/auth/logout");
         location.href = "/login";

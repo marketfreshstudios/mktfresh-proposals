@@ -48,6 +48,9 @@ function fromLocal(wall: number, timezone: string) {
     throw new Error("Cannot resolve reminder time in workspace timezone");
   return new Date(after[0]);
 }
+export function localDateStart(day: string, timezone: string) {
+  return fromLocal(Date.parse(day + "T00:00:00Z"), timezone).toISOString();
+}
 export function afterLocalDays(
   instant: string,
   days: number,

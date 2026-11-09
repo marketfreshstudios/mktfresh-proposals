@@ -12,6 +12,7 @@ import type { WorkspaceSettings } from "../lib/workspace";
 const primary = [
   ["/", "Home", "home"],
   ["/proposals", "Proposals", "proposals"],
+  ["/reports", "Reports", "reports"],
   ["/clients", "Clients", "clients"],
 ] as const;
 export function StaffShell({
@@ -59,14 +60,17 @@ export function StaffShell({
   function nav(
     href: string,
     label: string,
-    icon: "home" | "proposals" | "clients" | "studio",
+    icon: "home" | "proposals" | "reports" | "clients" | "studio",
+    phone = false,
   ) {
     const active = href === "/" ? current === "/" : current.startsWith(href);
+    const currentTab =
+      active || (phone && href === "/proposals" && current === "/reports");
     return (
       <a
         href={href}
-        className={active ? "active" : ""}
-        aria-current={active ? "page" : undefined}
+        className={currentTab ? "active" : ""}
+        aria-current={active ? "page" : currentTab ? "location" : undefined}
       >
         <Icon name={icon} />
         <span>{label}</span>
@@ -199,7 +203,7 @@ export function StaffShell({
         {!insideProposal && (
           <nav className="bottom-tabs" aria-label="Phone navigation">
             {nav("/", "Home", "home")}
-            {nav("/proposals", "Proposals", "proposals")}
+            {nav("/proposals", "Proposals", "proposals", true)}
             <button
               className="bottom-new"
               onClick={onNew}

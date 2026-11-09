@@ -16,6 +16,14 @@ import type {
 import { isDeepStrictEqual } from "node:util";
 import { sameClientContact, unsignedClientProposal } from "./clients";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
+import {
+  projectReportProposal,
+  type ReportEngagement,
+  type ReportFacts,
+  type ReportProposal,
+  type ReportQuestion,
+  type ReportVersion,
+} from "./report-metrics";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -56,6 +64,13 @@ export type LinkedBlockCommit = {
   events: Audit[];
 };
 export interface Repository {
+  reportNames(): Promise<{
+    templates: Map<string, string>;
+    clients: Map<string, string>;
+  }>;
+  reportProposals(): Promise<ReportProposal[]>;
+  reportFacts(request: ReportFactRequest): Promise<ReportFacts>;
+  reportPage(ids: string[]): Promise<Proposal[]>;
   questionThreads(id: string): Promise<QuestionThread[]>;
   questionCounts(
     ids: string[],
@@ -123,10 +138,83 @@ export interface Repository {
   entities<T>(table: EntityTable): Promise<T[]>;
   put<T extends { id: string }>(table: EntityTable, entity: T): Promise<void>;
 }
+type ReportFactRequest = Partial<
+  Record<"sections" | "questions" | "values" | "billing", string[]>
+>;
+
 export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async reportNames() {
+    return {
+      templates: new Map(
+        (await this.entities<Template>("templates")).map((t) => [t.id, t.name]),
+      ),
+      clients: new Map(
+        (await this.entities<Client>("clients")).map((c) => [c.id, c.company]),
+      ),
+    };
+  }
+  async reportProposals() {
+    return [...this.rows.values()]
+      .filter(
+        (p) =>
+          (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId &&
+          p.source === "native",
+      )
+      .map(projectReportProposal);
+  }
+  async reportFacts({
+    sections,
+    questions,
+    values,
+    billing,
+  }: ReportFactRequest) {
+    const sectionIds = new Set(sections),
+      questionIds = new Set(questions);
+    const valueIds = new Set(values),
+      billingIds = new Set(billing);
+    return {
+      engagement: (
+        await this.entities<EngagementAggregate>("proposal_engagement_totals")
+      )
+        .filter((row) => sectionIds.has(row.id))
+        .map(({ id, targets }) => ({ id, targets })),
+      questions: (await this.entities<QuestionThread>("proposal_questions"))
+        .filter((row) => questionIds.has(row.proposal_id))
+        .map(({ proposal_id, status, replies }) => ({
+          proposal_id,
+          status,
+          answered: replies.length > 0,
+        })),
+      versions: [...valueIds].flatMap((id) => {
+        const p = this.rows.get(id);
+        if (!p || (p.workspace_id ?? LOCAL_WORKSPACE_ID) !== this.workspaceId)
+          return [];
+        return p.versions
+          .filter((v) => v.frozen)
+          .map((v) => ({
+            proposal_id: id,
+            version_no: v.version_no,
+            variables: v.variables_resolved,
+          }));
+      }),
+      pendingBilling: [...billingIds].filter((id) => {
+        const p = this.rows.get(id);
+        return (
+          p &&
+          (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId &&
+          p.jobs.some((j) => j.kind === "billing" && j.status !== "done")
+        );
+      }),
+    };
+  }
+  async reportPage(ids: string[]) {
+    return (await Promise.all(ids.map((id) => this.get(id)))).filter(
+      (p): p is Proposal => !!p,
+    );
+  }
   async questionThreads(id: string) {
     return (await this.entities<QuestionThread>("proposal_questions"))
       .filter((row) => row.proposal_id === id)
@@ -682,6 +770,10 @@ export class MemoryRepository implements Repository {
 }
 // Local development only, single Node process. Production always uses database CAS.
 export class LocalRepository extends MemoryRepository {
+  override async reportProposals() {
+    await this.ready;
+    return super.reportProposals();
+  }
   private async questionTransaction<T>(operation: () => Promise<T>) {
     await this.ready;
     const run = this.tail.then(async () => {
@@ -963,7 +1055,194 @@ export class LocalRepository extends MemoryRepository {
     await run;
   }
 }
+type ReportPageResult = { data: unknown[] | null; error: unknown };
+async function readReportPages<T>(
+  read: (from: number) => PromiseLike<ReportPageResult>,
+) {
+  const all: T[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await read(from);
+    if (error) throw error;
+    const page = (data ?? []) as T[];
+    all.push(...page);
+    if (page.length < 500) return all;
+  }
+}
+async function readReportBatches<T>(
+  ids: string[] = [],
+  read: (ids: string[], from: number) => PromiseLike<ReportPageResult>,
+) {
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += 120) batches.push(ids.slice(i, i + 120));
+  const all: T[] = [];
+  for (let i = 0; i < batches.length; i += 3)
+    for (const batch of await Promise.all(
+      batches
+        .slice(i, i + 3)
+        .map((ids) => readReportPages<T>((from) => read(ids, from))),
+    ))
+      all.push(...batch);
+  return all;
+}
+type HostedReportProposal = Omit<
+  ReportProposal,
+  "owner_id" | "owner_name" | "archived" | "expiry"
+> & {
+  sender: Proposal["sender"];
+  owner: Proposal["owner"];
+  created_by: string;
+  archived_at: string | null;
+  published_title: string | null;
+  published_expiry: string | null;
+  expiry: string | null;
+};
 export class SupabaseRepository implements Repository {
+  async reportNames() {
+    const names = (table: "templates" | "clients", key: "name" | "company") =>
+      readReportPages<{ id: string; name: string }>((from) =>
+        this.db
+          .from(table)
+          .select("id,name:data->>" + key)
+          .eq("workspace_id", this.workspaceId)
+          .order("id")
+          .range(from, from + 499),
+      ).then((rows) => new Map(rows.map(({ id, name }) => [id, name])));
+    const [templates, clients] = await Promise.all([
+      names("templates", "name"),
+      names("clients", "company"),
+    ]);
+    return { templates, clients };
+  }
+  async reportProposals() {
+    const rows = await readReportPages<HostedReportProposal>((from) =>
+      this.db
+        .from("proposals")
+        .select(
+          [
+            "id",
+            "status",
+            "created_at",
+            "updated_at",
+            "client_id",
+            "client_name:state->client->>company",
+            "template_id:state->>template_id",
+            "currency:state->>currency",
+            "sender:state->sender",
+            "owner:state->owner",
+            "created_by:state->>created_by",
+            "archived_at:state->>archived_at",
+            "sent_at:state->>sent_at",
+            "first_viewed_at:state->>first_viewed_at",
+            "client_signed_at:state->>client_signed_at",
+            "completed_at:state->>completed_at",
+            "expiry:state->>valid_until",
+            "published_title:state->published_state->>title",
+            "published_expiry:state->published_state->>valid_until",
+            "billing_links:state->billing_links",
+          ].join(","),
+        )
+        .eq("workspace_id", this.workspaceId)
+        .eq("source", "native")
+        .order("id")
+        .range(from, from + 499),
+    );
+    return rows.map(
+      ({
+        sender,
+        owner,
+        created_by,
+        archived_at,
+        published_title,
+        published_expiry,
+        ...p
+      }): ReportProposal => {
+        const person = sender ?? owner;
+        return {
+          ...p,
+          owner_id:
+            person?.user_id ??
+            (created_by?.startsWith("staff:") ? created_by.slice(6) : null),
+          owner_name: person?.display_name ?? null,
+          archived: !!archived_at || p.status === "archived",
+          expiry: published_title !== null ? published_expiry : p.expiry,
+          billing_links: p.billing_links ?? [],
+        };
+      },
+    );
+  }
+  async reportFacts({
+    sections,
+    questions,
+    values,
+    billing,
+  }: ReportFactRequest) {
+    const [engagement, threadRows, versions, billingRows] = await Promise.all([
+      readReportBatches<ReportEngagement>(sections, (ids, from) =>
+        this.db
+          .from("proposal_engagement_totals")
+          .select("id,targets:data->targets")
+          .eq("workspace_id", this.workspaceId)
+          .in("id", ids)
+          .order("id")
+          .range(from, from + 499),
+      ),
+      readReportBatches<
+        Omit<ReportQuestion, "answered"> & { first_reply: string | null }
+      >(questions, (ids, from) =>
+        this.db
+          .from("proposal_questions")
+          .select("proposal_id,status,first_reply:data->replies->0->>id")
+          .eq("workspace_id", this.workspaceId)
+          .in("proposal_id", ids)
+          .order("id")
+          .range(from, from + 499),
+      ),
+      readReportBatches<ReportVersion>(values, (ids, from) =>
+        this.db
+          .from("proposal_versions")
+          .select("proposal_id,version_no,variables:data->variables_resolved")
+          .eq("workspace_id", this.workspaceId)
+          .eq("data->>frozen", "true")
+          .in("proposal_id", ids)
+          .order("id")
+          .range(from, from + 499),
+      ),
+      readReportBatches<{ proposal_id: string }>(billing, (ids, from) =>
+        this.db
+          .from("jobs")
+          .select("proposal_id")
+          .eq("workspace_id", this.workspaceId)
+          .in("proposal_id", ids)
+          .eq("data->>kind", "billing")
+          .neq("status", "done")
+          .order("id")
+          .range(from, from + 499),
+      ),
+    ]);
+    return {
+      engagement,
+      versions,
+      pendingBilling: billingRows.map((r) => r.proposal_id),
+      questions: threadRows.map(({ proposal_id, status, first_reply }) => ({
+        proposal_id,
+        status,
+        answered: !!first_reply,
+      })),
+    };
+  }
+  async reportPage(ids: string[]) {
+    if (!ids.length) return [];
+    const { data, error } = await this.db
+      .from("proposals")
+      .select("state")
+      .eq("workspace_id", this.workspaceId)
+      .in("id", ids);
+    if (error) throw error;
+    const rows = new Map(
+      data.map(({ state }) => [(state as Proposal).id, state as Proposal]),
+    );
+    return ids.flatMap((id) => (rows.has(id) ? [rows.get(id)!] : []));
+  }
   private async questionRows(filters: { proposal?: string; open?: string[] }) {
     const rows: QuestionThread[] = [];
     for (let from = 0; ; from += 500) {
