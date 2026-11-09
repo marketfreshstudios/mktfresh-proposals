@@ -240,7 +240,7 @@ test("the Sections rail keeps its header inset and shows the page end only durin
     .toEqual(["Second section", "First section"]);
 });
 
-test("round controls and both column insertion buttons fit their boxes", async ({
+test("the column insertion gutter is vertical, circular and left of the text", async ({
   page,
 }) => {
   const f = await editorFixture(page, false, {
@@ -257,18 +257,19 @@ test("round controls and both column insertion buttons fit their boxes", async (
           items: [
             {
               id: "first-col",
-              style: { border: "thin", padding: "m" },
+              style: { border: "thin" },
               content: [
                 {
-                  id: "first-paragraph",
-                  type: "paragraph",
-                  text: "The first column introduces the project. We’ll agree the launch plan and the people who will review it.",
+                  id: "first-heading",
+                  type: "heading",
+                  level: 3,
+                  text: "Edlin School, Northern Virginia",
                 },
               ],
             },
             {
               id: "second-col",
-              style: { border: "thin" },
+              style: { border: "thin", padding: "m" },
               content: [
                 {
                   id: "second-paragraph",
@@ -284,38 +285,42 @@ test("round controls and both column insertion buttons fit their boxes", async (
   });
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto(`/proposals/${f.draft.id}/edit`);
-  const column = page.getByRole("group", { name: "Column 1", exact: true });
-  await column.locator(".tiptap").hover();
-  const controls = column.locator(".editor-gutter-add:visible");
-  await expect(controls).toHaveCount(2);
-  const frame = (await column.locator(".block-frame").boundingBox())!;
-  for (const control of await controls.all()) {
-    const [button, box] = await Promise.all([
-      control.boundingBox(),
-      column.boundingBox(),
+  for (const n of [1, 2]) {
+    const column = page.getByRole("group", {
+      name: `Column ${n}`,
+      exact: true,
+    });
+    const copy = column.locator(".tiptap");
+    await copy.hover();
+    const gutter = column.locator(".editor-insert-gutter");
+    const controls = gutter.getByRole("button");
+    await expect(controls).toHaveCount(3);
+    const [g, text] = await Promise.all([
+      gutter.boundingBox(),
+      copy.boundingBox(),
     ]);
-    expect(button!.width).toBe(button!.height);
-    expect(button!.x).toBeGreaterThan(box!.x + box!.width - 26);
-    expect(button!.x).toBeGreaterThan(frame.x + frame.width + 1.5);
-    expect(button!.y).toBeGreaterThan(box!.y + 1);
-    expect(button!.x + button!.width).toBeLessThan(box!.x + box!.width - 1);
-    expect(button!.y + button!.height).toBeLessThan(box!.y + box!.height - 1);
-    await expect(control).toHaveCSS("aspect-ratio", "1 / 1");
-    await expect(control).toHaveCSS("flex-shrink", "0");
-  }
-  await screenshot(page, "column-add-buttons-1440");
-  await controls.first().click();
-  await expect(page.locator(".block-popover:popover-open")).toBeVisible();
-  await page.keyboard.press("Escape");
-  const compact = page.getByRole("group", { name: "Column 2", exact: true });
-  await compact.locator(".tiptap").hover();
-  const compactControls = compact.locator(".editor-gutter-add:visible");
-  await expect(compactControls).toHaveCount(2);
-  const bounds = (await compact.boundingBox())!;
-  for (const control of await compactControls.all()) {
-    const box = (await control.boundingBox())!;
-    expect(box.width).toBe(box.height);
-    expect(box.x).toBeGreaterThan(bounds.x);
-    expect(box.x + box.width).toBeLessThan(bounds.x + bounds.width);
+    expect(g!.x + g!.width).toBeLessThanOrEqual(text!.x);
+    await expect(gutter).toHaveCSS("flex-direction", "column");
+    const boxes = await Promise.all(
+      (await controls.all()).map((item) => item.boundingBox()),
+    );
+    for (const index of [0, 2]) {
+      const plus = controls.nth(index);
+      await expect(plus).toHaveClass(/editor-gutter-add/);
+      await expect(plus).toHaveCSS("aspect-ratio", "1 / 1");
+      await expect(plus).toHaveCSS("flex-shrink", "0");
+      expect(boxes[index]!.width).toBe(20);
+      expect(boxes[index]!.height).toBe(20);
+    }
+    await expect(controls.nth(1)).toHaveClass(/drag-handle/);
+    expect(boxes[0]!.x).toBe(boxes[2]!.x);
+    expect(boxes[0]!.y + boxes[0]!.height).toBeLessThanOrEqual(boxes[1]!.y);
+    expect(boxes[1]!.y + boxes[1]!.height).toBeLessThanOrEqual(boxes[2]!.y);
+    if (n === 1) {
+      await screenshot(page, "column-add-buttons-1440");
+      await controls.first().click();
+      await expect(page.locator(".block-popover:popover-open")).toBeVisible();
+      await page.keyboard.press("Escape");
+    }
   }
 });

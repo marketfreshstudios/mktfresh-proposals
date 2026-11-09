@@ -2984,6 +2984,9 @@
     background: var(--surface-sunken);
     font: 600 11px/16px var(--font-ui);
   }
+  .sections-nav .outline-page-end[data-drop-target] {
+    border-color: var(--ink);
+  }
   .sections-nav .sections-add-page {
     width: 100%;
     margin-top: 14px;
@@ -5984,6 +5987,21 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 }
 .quote-row-caption small {
   line-height: 16px;
+}
+.section-drag-preview {
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 13px/18px var(--font-ui);
+  white-space: nowrap;
+  cursor: grabbing;
 }
 .editor-v2 .editor-layout > .editor-outline,
 .editor-v2-sections-drawer {
@@ -9122,38 +9140,14 @@ body:has(.studio-v3-editor) {
 }
 
 @media (min-width: 700px) {
-  /* Account for the frame's 10px negative margin, then leave 4px inside the column. */
-  .editor-column .editor-gutter.editor-insert-gutter {
-    inset: 50% 14px auto auto;
-    transform: translateY(-50%);
-    width: max-content;
-    min-height: 0;
-    flex-direction: row;
-    gap: 4px;
+  .editor-column .editor-gutter.editor-gutter {
+    left: -22px;
+    width: 20px;
     z-index: var(--z-block-controls);
   }
-  .editor-column .editor-insert-gutter .editor-gutter-add {
-    margin: 0;
-  }
-  .editor-column .editor-insert-gutter .drag-handle {
+  .editor-column .editor-gutter .drag-handle {
     width: 20px;
     min-width: 20px;
-  }
-  .document-reading
-    .editor-column[data-column-has-gutter]
-    .block-frame[data-controls="v2"].block-frame.block-frame {
-    /* Keep the selection outline out of the column's authored padding. */
-    margin-inline: 0;
-    padding-inline: 0;
-  }
-  .editor-column[data-column-has-gutter] .editor-gutter.editor-insert-gutter {
-    inset-inline-end: calc(2px - var(--column-editing-padding));
-    flex-direction: column;
-    gap: 2px;
-  }
-  .editor-column[data-column-has-gutter] .editor-insert-gutter .drag-handle {
-    height: 14px;
-    min-height: 14px;
   }
 }
 

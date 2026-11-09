@@ -130,6 +130,75 @@ async function capture(page: Page, id: string) {
 const panelButton = (panel: Locator, name: string) =>
   panel.getByRole("button", { name, exact: true });
 
+async function expectStackedControls(root: Locator, names: string[]) {
+  for (const name of names) {
+    const control = root.getByRole("radiogroup", { name, exact: true });
+    await expect(control).toBeVisible();
+    const layout = await control.evaluate((el) => {
+      const row = el.closest(".column-style-row")!;
+      const container = row.parentElement!;
+      const css = getComputedStyle(container);
+      const contentWidth =
+        container.clientWidth -
+        parseFloat(css.paddingLeft) -
+        parseFloat(css.paddingRight);
+      const label = row.querySelector(".column-style-label")!;
+      const bounds = el.getBoundingClientRect();
+      const labelBounds = label.getBoundingClientRect();
+      const options = [...el.querySelectorAll(":scope > label")].map(
+        (item) => item.getBoundingClientRect().width,
+      );
+      return {
+        widthDifference: Math.abs(bounds.width - contentWidth),
+        labelGap: bounds.top - labelBounds.bottom,
+        widthRange: Math.max(...options) - Math.min(...options),
+        labelSize: getComputedStyle(label.querySelector("strong")!).fontSize,
+        labelWeight: getComputedStyle(label.querySelector("strong")!)
+          .fontWeight,
+      };
+    });
+    expect(layout.widthDifference, name).toBeLessThanOrEqual(2);
+    expect(layout.labelGap, name).toBeCloseTo(8, 0);
+    expect(layout.widthRange, name).toBeLessThanOrEqual(1);
+    expect(layout.labelSize, name).toBe("13px");
+    expect(layout.labelWeight, name).toBe("600");
+  }
+}
+
+async function expectColumnSegmentsAndReset(panel: Locator) {
+  const tabs = panel.getByRole("tablist", { name: "Columns" });
+  const selected = tabs.getByRole("tab", { selected: true });
+  expect(
+    await selected.evaluate((el) => getComputedStyle(el, "::after").content),
+  ).toBe("none");
+  await expect(tabs).toHaveCSS("box-shadow", "none");
+  const tabsGeometry = await tabs.evaluate((el) => {
+    const widths = [...el.children].map(
+      (tab) => tab.getBoundingClientRect().width,
+    );
+    return {
+      range: Math.max(...widths) - Math.min(...widths),
+      inset: Math.abs(
+        el.getBoundingClientRect().width - el.parentElement!.clientWidth,
+      ),
+    };
+  });
+  expect(tabsGeometry.range).toBeLessThanOrEqual(1);
+  expect(tabsGeometry.inset).toBeLessThanOrEqual(2);
+  const reset = panelButton(panel, "Reset");
+  await expect(reset).toHaveCSS("text-decoration-line", "underline");
+  await expect(reset).toHaveCSS("border-width", "0px");
+  await expect(reset).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(
+    await reset.evaluate((el) =>
+      Math.abs(
+        el.getBoundingClientRect().right -
+          el.parentElement!.getBoundingClientRect().right,
+      ),
+    ),
+  ).toBeLessThanOrEqual(2);
+}
+
 async function expectFocusRing(control: Locator, textOnly = false) {
   await expect(control).toBeFocused();
   const result = await control.evaluate((el, text) => {
@@ -214,6 +283,39 @@ test("column selection writes the existing style fields and returns to proposal 
     "outline-style",
     "none",
   );
+  await expectStackedControls(styles, [
+    "Column layout",
+    "Column gap",
+    "Align columns",
+    "Padding",
+    "Border",
+    "Corner radius",
+  ]);
+  await expectColumnSegmentsAndReset(styles);
+  const tiles = styles.getByRole("radiogroup", { name: "Column layout" });
+  await expect(tiles.getByRole("radio")).toHaveCount(4);
+  expect(await tiles.innerText()).toBe("");
+  const shapes = await tiles.evaluate((el) =>
+    [...el.querySelectorAll("label")].map((tile) =>
+      [...tile.querySelectorAll("i")].map(
+        (shape) => shape.getBoundingClientRect().width,
+      ),
+    ),
+  );
+  expect(shapes.map((tile) => tile.length)).toEqual([2, 2, 2, 3]);
+  expect(shapes.flat().every((width) => width > 8)).toBe(true);
+  await expect(
+    tiles.getByRole("radio", { name: "33 / 33 / 33" }),
+  ).toBeChecked();
+  const [cardBounds, breadcrumbBounds, backgroundBounds] = await Promise.all([
+    card.locator("..").boundingBox(),
+    styles.locator(".column-style-breadcrumb").boundingBox(),
+    styles.locator(".column-color-row").first().boundingBox(),
+  ]);
+  expect(Math.abs(cardBounds!.x - backgroundBounds!.x)).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs(breadcrumbBounds!.x - backgroundBounds!.x),
+  ).toBeLessThanOrEqual(2);
   await capture(page, "1a-column-selected");
   expect(
     (await new AxeBuilder({ page }).include(".selection-styles").analyze())
@@ -375,6 +477,11 @@ test("column clipboard replaces styles, names canvas targets, and pastes to all 
   expect(
     layoutBox!.y - (introBox!.y + introBox!.height),
   ).toBeGreaterThanOrEqual(12);
+  await expectStackedControls(styles, [
+    "Column layout",
+    "Column gap",
+    "Align columns",
+  ]);
   await capture(page, "1e-columns-scope");
   await choose(styles, "Column gap", "S");
   await choose(styles, "Align columns", "Center");
@@ -445,6 +552,7 @@ test("phone column style sheet keeps copy and paste handy and groups the remaini
   await expect(
     sheet.getByRole("heading", { name: "Column style" }),
   ).toBeFocused();
+  await expectStackedControls(sheet, ["Padding"]);
   await capture(page, "1f-phone-copy");
   await page.keyboard.press("Tab");
   expect(await expectFocusRing(panelButton(sheet, "Done"), true)).toBe("0px");
@@ -466,4 +574,6 @@ test("phone column style sheet keeps copy and paste handy and groups the remaini
   await expect(
     sheet.getByRole("radiogroup", { name: "Border", exact: true }),
   ).toBeVisible();
+  await expectStackedControls(sheet, ["Border", "Corner radius"]);
+  await expectColumnSegmentsAndReset(sheet);
 });

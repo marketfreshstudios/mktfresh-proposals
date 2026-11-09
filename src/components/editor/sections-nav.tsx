@@ -13,7 +13,7 @@ import {
 } from "../../lib/editor-pages";
 import { assertBlockMove, documentSectionRanges } from "../../lib/editor-moves";
 import { computedPages, moveComputedSection } from "../../lib/computed-pages";
-import { useDndContext } from "@dnd-kit/core";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
 import { columnStyleKey } from "./style-clipboard";
 import { Reorder, Sortable } from "../sortable";
 import {
@@ -156,10 +156,17 @@ export function SectionsNav({
       <Reorder
         ids={ids}
         pages
+        sectionDragLabel={(id) => {
+          const section = pages
+            .flatMap((p) => p.sections)
+            .find((s) => `section:${s.id}` === id);
+          return section ? display(section.title) : "";
+        }}
         onMove={(from, to, edge) => {
           const target = pages.find(
             (p) =>
               `page:${p.id}` === to ||
+              `page-end:${p.id}` === to ||
               p.sections.some((s) => `section:${s.id}` === to),
           );
           if (!target) return;
@@ -175,6 +182,7 @@ export function SectionsNav({
                   : undefined;
               const following = pages[target.number];
               const after =
+                to.startsWith("page-end:") ||
                 edge === "after" ||
                 (edge === undefined &&
                   !!targetSection &&
@@ -188,7 +196,9 @@ export function SectionsNav({
                     ]?.id
                   : targetSection
                 : after
-                  ? following?.first
+                  ? following?.explicit
+                    ? following.id
+                    : following?.first
                   : target.first;
               let next = moveComputedSection(
                 content,
@@ -360,7 +370,7 @@ export function SectionsNav({
                     onClick={() => onPage?.(p.number)}
                   />
                 )}
-              <PageEndDropHint page={p.number} />
+              <PageEndDropHint id={p.id} page={p.number} />
             </div>
           </Sortable>
         ))}
@@ -373,12 +383,19 @@ export function SectionsNav({
   );
 }
 
-// The page sortable already owns this drop area. The hint never takes focus.
-function PageEndDropHint({ page }: { page: number }) {
+// The slot stays mounted and never takes focus. Its ID distinguishes the
+// bottom of this page from the first section after the following page break.
+function PageEndDropHint({ id, page }: { id: string; page: number }) {
   const { active } = useDndContext();
+  const { isOver, setNodeRef } = useDroppable({ id: `page-end:${id}` });
   const dragging = String(active?.id ?? "").startsWith("section:");
   return (
-    <div className="outline-page-end" data-dragging={dragging || undefined}>
+    <div
+      ref={setNodeRef}
+      className="outline-page-end"
+      data-dragging={dragging || undefined}
+      data-drop-target={(dragging && isOver) || undefined}
+    >
       {dragging ? `Move to end of page ${page}` : null}
     </div>
   );

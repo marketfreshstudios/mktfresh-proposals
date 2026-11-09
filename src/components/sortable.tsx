@@ -15,6 +15,8 @@ import { BlockDragHandle, useControlLayout } from "./editor/control-layout";
 import { useBlockSelection } from "./block-controls";
 import {
   DndContext,
+  DragOverlay,
+  useDndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -152,17 +154,39 @@ export function Sortable({
     </div>
   );
 }
+// A section's sortable context contains only its own page. dnd-kit stops
+// translating that source row when the target is in a different context.
+// Keep the preview in the sidebar's DndContext, independent of those groups.
+function SectionDragOverlay({ label }: { label: (id: string) => string }) {
+  const { active } = useDndContext();
+  const id = String(active?.id ?? "");
+  return (
+    <DragOverlay dropAnimation={null} style={{ pointerEvents: "none" }}>
+      {id.startsWith("section:") && (
+        <div
+          className="section-drag-preview"
+          data-section-drag-preview
+          aria-hidden="true"
+        >
+          {label(id)}
+        </div>
+      )}
+    </DragOverlay>
+  );
+}
 export function Reorder({
   ids,
   onMove,
   children,
   pages = false,
+  sectionDragLabel,
   documentDrop,
 }: {
   ids: string[];
   onMove: (from: string, to: string, edge?: "before" | "after") => void;
   children: ReactNode;
   pages?: boolean;
+  sectionDragLabel?: (id: string) => string;
   documentDrop?: {
     paper: RefObject<HTMLElement | null>;
     content: Block[];
@@ -181,6 +205,7 @@ export function Reorder({
   );
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const pointerDrag = useRef(false);
+  const keyboardSectionTarget = useRef<string | null>(null);
   useEffect(() => {
     const track = (event: PointerEvent) => {
       if (pointerDrag.current)
@@ -209,18 +234,18 @@ export function Reorder({
       return sortableKeyboardCoordinates(event, args);
     const { active, over, droppableRects, collisionRect } = args.context;
     if (!active || !collisionRect) return;
+    const movingSection = pages && String(active.id).startsWith("section:");
     const targets =
       pages && String(active.id).startsWith("page:")
         ? ids.filter(
             (id) => id.startsWith("page:") && !id.startsWith("page:computed-"),
           )
-        : pages && String(active.id).startsWith("section:")
-          ? ids.filter((id) => !id.startsWith("page:computed-"))
-          : ids;
+        : ids;
     const index = targets.indexOf(String(over?.id ?? active.id));
     const target = targets[index + (event.code === "ArrowDown" ? 1 : -1)];
     const rect = target && droppableRects.get(target);
     if (!rect || index < 0) return;
+    if (movingSection) keyboardSectionTarget.current = target;
     event.preventDefault();
     return {
       x: rect.left + (rect.width - collisionRect.width) / 2,
@@ -246,19 +271,33 @@ export function Reorder({
             !String(d.id).startsWith("page:computed-")),
       ),
     };
-    if (page || !args.pointerCoordinates) return closestCenter(filtered);
+    if (page) return closestCenter(filtered);
+    if (!args.pointerCoordinates) {
+      // The center of a page target can also fall inside its section row.
+      // Honor the keyboard's ordered target instead of re-guessing by geometry.
+      return [{ id: keyboardSectionTarget.current ?? args.active.id }];
+    }
     const inside = pointerWithin(filtered);
-    return inside.filter((d) => String(d.id).startsWith("section:")).length
-      ? inside.filter((d) => String(d.id).startsWith("section:"))
+    const end = inside.find((d) => String(d.id).startsWith("page-end:"));
+    if (end) return [end];
+    const sections = inside.filter((d) => String(d.id).startsWith("section:"));
+    return sections.length
+      ? sections
       : inside.length
         ? inside
-        : closestCenter(filtered);
+        : closestCenter({
+            ...filtered,
+            droppableContainers: filtered.droppableContainers.filter(
+              (d) => !String(d.id).startsWith("page-end:"),
+            ),
+          });
   };
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={collision}
       onDragStart={({ activatorEvent }) => {
+        keyboardSectionTarget.current = null;
         const e = activatorEvent as PointerEvent;
         pointerDrag.current = typeof e.clientX === "number";
         pointer.current =
@@ -324,6 +363,7 @@ export function Reorder({
       >
         {children}
       </SortableContext>
+      {sectionDragLabel && <SectionDragOverlay label={sectionDragLabel} />}
       {indicator.line}
     </DndContext>
   );
