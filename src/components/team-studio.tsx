@@ -5,7 +5,8 @@ import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
-import { ApiError, api, post, Button, Field, Banner, date, Icon } from "./ui";
+import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
+import { chromeIcons } from "./staff-icons";
 import { Sheet } from "./foundation";
 import {
   staffRoleLabel,
@@ -223,7 +224,7 @@ export function TeamStudio({
                     });
                   }}
                 >
-                  <Icon name="more" />
+                  <chromeIcons.more size={18} aria-hidden="true" />
                 </Button>
               )}
             </div>
