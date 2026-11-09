@@ -20,7 +20,7 @@ export function GutterInsert({
       {onAdd && (
         <button
           type="button"
-          className="editor-gutter-add"
+          className={`editor-gutter-add${layout === "gutter" ? " round-icon" : ""}`}
           aria-label="Add a block above"
           title="Add a block above"
           data-insert-edge="above"
@@ -34,7 +34,7 @@ export function GutterInsert({
       {onAdd && (
         <button
           type="button"
-          className="editor-gutter-add"
+          className={`editor-gutter-add${layout === "gutter" ? " round-icon" : ""}`}
           aria-label="Add a block below"
           title="Add a block below"
           data-insert-edge="below"

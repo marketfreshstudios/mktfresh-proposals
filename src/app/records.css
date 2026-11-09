@@ -610,9 +610,7 @@
   font-variant-numeric: tabular-nums;
 }
 .more-control {
-  padding: 2px !important;
-  width: 32px;
-  min-height: 32px !important;
+  --round-icon-size: 32px;
   font-size: 24px !important;
 }
 .empty-copy {

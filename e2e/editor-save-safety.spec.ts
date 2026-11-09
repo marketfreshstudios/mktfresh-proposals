@@ -203,7 +203,7 @@ test("back waits for an in-flight save; Escape stays in the editor", async ({
     .fill("Save me before leaving.");
   await expect.poll(() => f.patches.length).toBe(1);
   await page
-    .getByRole("button", { name: "Back to proposals", exact: true })
+    .getByRole("link", { name: "Back to proposals", exact: true })
     .click();
   await expect(page.locator(".editor-save-status")).toHaveText("Saving…");
   await expect(page).toHaveURL(new RegExp(`/proposals/${f.draft.id}$`));
@@ -237,7 +237,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
     }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Back to proposals", exact: true })
+    .getByRole("link", { name: "Back to proposals", exact: true })
     .click();
   const confirm = page.getByRole("dialog", { name: "Leave the editor?" });
   await expect(confirm).toContainText("could not be saved");
@@ -306,7 +306,7 @@ test("proposal and template headers share save states and centred fixed-size pan
     const proposal = path.startsWith("/proposals");
     await expect(page.locator(".editor-document-header")).toBeVisible();
     await expect(
-      page.getByRole("button", {
+      page.getByRole(proposal ? "link" : "button", {
         name: proposal ? "Back to proposals" : "Back to templates",
         exact: true,
       }),

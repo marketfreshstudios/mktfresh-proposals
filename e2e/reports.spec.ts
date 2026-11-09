@@ -1,3 +1,4 @@
+import { expectStraightTabIndicator } from "./tab-indicator";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
@@ -115,6 +116,11 @@ test("Reports uses scoped data, accessible trend and sortable breakdowns with ma
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("link", { name: "Reports" }),
   ).toHaveAttribute("aria-current", "page");
+  await expectStraightTabIndicator(
+    page
+      .getByRole("tablist", { name: "Trend display" })
+      .locator('[aria-selected="true"]'),
+  );
   await expect(page.getByRole("figure")).toHaveAccessibleName(
     /11 sent and 4 client signatures across 4 months/,
   );
