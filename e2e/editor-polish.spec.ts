@@ -241,6 +241,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await text.press("Control+z");
   await expect.poll(() => active.quote.map((i) => i.id)).toEqual(quoteIds);
   // A plain amount input keeps native undo: the document handler must not consume it.
+  await page.locator(".editor-sidepanel .quote-row-toggle").first().click();
   const native = await page.evaluate(() => {
     const input = document.querySelector<HTMLInputElement>(
       ".editor-sidepanel input:not([type=checkbox]):not([type=radio])",

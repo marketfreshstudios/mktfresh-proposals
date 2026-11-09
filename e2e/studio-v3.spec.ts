@@ -981,7 +981,16 @@ for (const width of [1440, 768, 375]) {
           await filled.count(),
           `${name} has one primary action`,
         ).toBeLessThanOrEqual(1);
-        if (width === 1440 && theme === "light")
+        if (
+          width === 1440 &&
+          theme === "light" &&
+          screenshot === "studio-products-1440" &&
+          process.env.INK_CLAY_STAGE3_CAPTURE === "1"
+        ) {
+          await page.setViewportSize({ width, height: 1300 });
+          await captureStage3(page, screenshot);
+          await page.setViewportSize({ width, height: 1000 });
+        } else if (width === 1440 && theme === "light")
           await captureStage3(page, screenshot);
       };
       for (const [route, selector, screenshot] of [
@@ -1102,6 +1111,9 @@ for (const width of [1440, 768, 375]) {
           await page
             .getByRole("button", { name: "Actions for Jamie Example" })
             .click();
+          await expect(
+            page.getByRole("button", { name: "Edit name", exact: true }),
+          ).toBeVisible();
           await captureStage3(page, "studio-team-1440");
           await page.keyboard.press("Escape");
         }

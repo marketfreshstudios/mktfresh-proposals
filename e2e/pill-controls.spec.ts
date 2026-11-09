@@ -243,7 +243,7 @@ for (const width of [1440, 375])
       if (width === 375) {
         await expect(
           page.locator('.workspace-section-list button[aria-current="page"]'),
-        ).toHaveCSS("border-radius", "999px");
+        ).toHaveCSS("border-radius", "10px");
         await expect(page.locator(".bottom-tabs a.active")).toHaveCSS(
           "border-radius",
           "10px",

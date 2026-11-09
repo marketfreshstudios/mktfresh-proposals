@@ -5,7 +5,7 @@ import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
-import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
+import { ApiError, api, post, Button, Field, Banner, date, Icon } from "./ui";
 import { Sheet } from "./foundation";
 import {
   staffRoleLabel,
@@ -213,6 +213,7 @@ export function TeamStudio({
                 <Button
                   variant="ghost"
                   aria-label={`Actions for ${person.display_name}`}
+                  title={`Actions for ${person.display_name}`}
                   onClick={(e) => {
                     setError("");
                     setDialog({
@@ -222,7 +223,7 @@ export function TeamStudio({
                     });
                   }}
                 >
-                  ⋯
+                  <Icon name="more" />
                 </Button>
               )}
             </div>
