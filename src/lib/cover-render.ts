@@ -3,6 +3,7 @@ import {
   coverDecorationHtml,
   coverLayoutStyle,
   coverLayoutCss,
+  sidePhotoCoverCss,
 } from "./cover-graphics";
 import { brandIconHeight, coverBrand } from "./workspace-brand";
 import { fieldNodes, editorFieldValue } from "./editor-fields";
@@ -119,6 +120,9 @@ export function editableCoverHtml(
   if (!cover.layout || cover.layout === "custom") return nodes.join("");
   const visible = elements.filter((e) => visibleCoverElement(e, cover, map));
   return (
+    (cover.layout === "side-photo"
+      ? `<style>${sidePhotoCoverCss}</style>`
+      : "") +
     coverDecorationHtml(
       cover,
       accent,

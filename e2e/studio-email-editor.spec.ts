@@ -171,7 +171,7 @@ test("real renderer values, widths, dark, plain text and self-only test emails",
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   await expect(page.locator(".email-rendered")).toHaveCSS(
     "background-color",
-    "rgb(22, 22, 20)",
+    "rgb(24, 23, 21)",
   );
   await page.getByRole("tab", { name: "Plain text", exact: true }).click();
   await expect
@@ -332,7 +332,7 @@ test("email editor references, accessible panels, save failure recovery and lega
   await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
   await expect(page.locator(".email-rendered")).toHaveCSS(
     "background-color",
-    "rgb(22, 22, 20)",
+    "rgb(24, 23, 21)",
   );
   await shot(page, "email-dark-1440");
   await page.evaluate(() => (document.documentElement.dataset.theme = "light"));

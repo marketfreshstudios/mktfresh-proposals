@@ -19,6 +19,7 @@ const artboards = {
   bold: "Bold",
   photo: "Photo",
   centered: "Centered",
+  "side-photo": "Photo",
 };
 for (const layout of coverLayouts)
   test(`${layout} cover uses the same layout and plain metadata in editor, client sheets and actual PDF`, async ({
@@ -46,7 +47,7 @@ for (const layout of coverLayouts)
       ])
       .png()
       .toBuffer();
-    if (layout === "photo")
+    if (layout === "photo" || layout === "side-photo")
       cover.background = {
         type: "image",
         image: `data:image/png;base64,${photo.toString("base64")}`,
@@ -127,7 +128,14 @@ for (const layout of coverLayouts)
         "hidden",
       );
     }
-    const titleInk = ["bold", "photo"].includes(layout)
+    if (layout === "side-photo") {
+      const image = root.locator(".cover-background-image");
+      await expect(image).toHaveCSS("object-position", "70% 35%");
+      expect((await image.boundingBox())!.x).toBeGreaterThan(
+        (await root.locator("h1").boundingBox())!.x,
+      );
+    }
+    const titleInk = ["bold", "photo", "side-photo"].includes(layout)
       ? "rgb(255, 255, 255)"
       : "rgb(27, 31, 29)";
     await expect(root.locator("h1")).toHaveCSS("color", titleInk);
@@ -139,7 +147,7 @@ for (const layout of coverLayouts)
         "{}",
     );
     p = { ...f.active(), pagination: plan, workspace_settings: f.settings };
-    if (process.env.CAPTURE_COVERS) {
+    if (process.env.CAPTURE_COVERS && layout !== "side-photo") {
       await mkdir(shots, { recursive: true });
       await page
         .locator('[data-editor-page="1"]')

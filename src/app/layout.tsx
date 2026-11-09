@@ -1,4 +1,4 @@
-import { coverLayoutCss } from "../lib/cover-graphics";
+import { coverLayoutCss, sidePhotoCoverCss } from "../lib/cover-graphics";
 import { coverBrandCss } from "../lib/cover-render";
 import "./globals.css";
 import "./foundation.css";
@@ -22,6 +22,7 @@ import "./ink-clay.css";
 import "./reports.css";
 import "./ink-clay-records.css";
 import "./ink-clay-editor-studio.css";
+import "./ink-clay-client-account.css";
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <style>{coverBrandCss + coverLayoutCss}</style>
+        <style>{coverBrandCss + coverLayoutCss + sidePhotoCoverCss}</style>
       </head>
       <body>{children}</body>
     </html>

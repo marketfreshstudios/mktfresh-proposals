@@ -7,6 +7,7 @@ export const coverLayouts = [
   "bold",
   "photo",
   "centered",
+  "side-photo",
 ] as const;
 export const coverLayoutNames = {
   editorial: "Editorial",
@@ -14,6 +15,7 @@ export const coverLayoutNames = {
   bold: "Full color",
   photo: "Photo / uploaded design",
   centered: "Centered minimal",
+  "side-photo": "Photo beside title",
 };
 export { coverPatterns, defaultCoverBackground } from "./cover-background";
 import { defaultCoverBackground } from "./cover-background";
@@ -29,6 +31,7 @@ export function coverImageBackdrop(cover: Cover) {
   return (
     !!cover.layout &&
     cover.layout !== "custom" &&
+    cover.layout !== "side-photo" &&
     cover.background?.type === "image" &&
     (cover.layout !== "photo" || !!cover.background.finished)
   );

@@ -35,7 +35,12 @@ export const CoverBackgroundSchema = z
 export type CoverBackground = z.infer<typeof CoverBackgroundSchema>;
 export function defaultCoverBackground(layout: string): CoverBackground {
   return {
-    type: layout === "bold" ? "waves" : layout === "photo" ? "image" : "plain",
+    type:
+      layout === "bold"
+        ? "waves"
+        : layout === "photo" || layout === "side-photo"
+          ? "image"
+          : "plain",
     graphic: layout === "editorial" || layout === "split" ? "auto" : "none",
   };
 }

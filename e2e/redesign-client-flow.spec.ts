@@ -371,12 +371,12 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await open("stale");
       await page.getByRole("checkbox").first().click();
       await expect(
-        page.getByRole("button", { name: "Reload and review", exact: true }),
+        page.getByRole("button", { name: "Load latest version", exact: true }),
       ).toBeVisible();
       const staleGets = gets;
       await expect(
         page.getByRole("button", { name: "Review and sign", exact: true }),
-      ).toHaveCount(0);
+      ).toBeDisabled();
       await capture("stale", width, theme, "1h");
       expect(gets).toBe(staleGets);
       await open("password");
@@ -399,7 +399,9 @@ test("client redesign: every responsive state, safe preview and signature retrie
         await open(dead);
         await expect(page.locator(".flow-state")).toBeVisible();
         await expect(
-          page.getByRole("link", { name: "Alex Morgan", exact: true }),
+          page
+            .locator(".flow-sender-card")
+            .getByText("Alex Morgan", { exact: true }),
         ).toBeVisible();
         await capture(dead, width, theme, dead === "replaced" ? "8p" : "1i");
       }
@@ -723,7 +725,7 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
   stale = true;
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Reload and review", exact: true }),
+    page.getByRole("button", { name: "Load latest version", exact: true }),
   ).toBeVisible();
   const before = reads;
   expect(await pad.evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(
@@ -736,7 +738,7 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
   stale = false;
   fail = false;
   await page
-    .getByRole("button", { name: "Reload and review", exact: true })
+    .getByRole("button", { name: "Load latest version", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Review and sign", exact: true })

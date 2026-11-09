@@ -1499,6 +1499,7 @@ export function publicResult(
             : null,
           accent_colour: p.workspace_settings.accent_colour,
           email: p.workspace_settings.email,
+          phone: p.workspace_settings.phone,
         }
       : {
           name: v.variables_resolved["company.name"] ?? "",
@@ -1506,6 +1507,7 @@ export function publicResult(
           logo_icon: null,
           accent_colour: "#365C4A",
           email: "",
+          phone: "",
         },
     invoice_method: p.billing_links.some(
       (l) =>

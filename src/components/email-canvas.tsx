@@ -75,6 +75,8 @@ export function EmailCanvas({
     wrap.dataset.dark = String(dark);
     wrap.style.cssText = parsed.body.getAttribute("style") ?? "";
     wrap.innerHTML = parsed.body.innerHTML;
+    // The editor already has a main landmark. The sent document has its own.
+    wrap.querySelector(".email-content")?.removeAttribute("role");
     wrap.querySelectorAll("a").forEach((link) => {
       link.dataset.previewHref = link.getAttribute("href") ?? "";
       link.removeAttribute("href");

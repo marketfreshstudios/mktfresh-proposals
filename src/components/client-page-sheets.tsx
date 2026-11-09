@@ -205,8 +205,16 @@ export function ClientPageSheets({
       for (const unit of root.querySelectorAll<HTMLElement>(
         ".print-choice-group",
       )) {
-        unit.setAttribute("role", "radiogroup");
-        unit.setAttribute("aria-label", "Choose one");
+        if (current.frozen || !current.onToggle) continue;
+        // A section cannot have the radiogroup role. This wrapper is installed
+        // after layout, so the shared print structure and breaks stay intact.
+        const group = document.createElement("div");
+        for (const attr of [...unit.attributes])
+          group.setAttribute(attr.name, attr.value);
+        group.setAttribute("role", "radiogroup");
+        group.setAttribute("aria-label", "Choose one");
+        group.append(...unit.childNodes);
+        unit.replaceWith(group);
       }
       const retained = new Map(
         [
@@ -515,11 +523,21 @@ const sheetCss = `
 .client-sheet-gap{height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f2efe9);color:var(--ink-muted,#5f5b53);font:600 11px/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
 .proposal-typography.proposal-typography .flow-quote-line>.quote-control-slot{position:relative}
 .proposal-typography.proposal-typography .flow-quote-line .client-sheet-input{position:absolute;left:10px;top:10px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));margin:0;padding:0;border:0;opacity:0;z-index:1;cursor:pointer}
-.proposal-typography.proposal-typography .quote-table .client-sheet-input{position:absolute;left:22px;top:22px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));border:0;opacity:0;z-index:1;cursor:pointer}.quote-table .quote-control-slot:focus-within>.print-selection{outline:3px solid #365c4a;outline-offset:3px}
+.proposal-typography.proposal-typography .quote-table .client-sheet-input{position:absolute;left:22px;top:22px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));border:0;opacity:0;z-index:1;cursor:pointer}.quote-table .quote-control-slot:focus-within>.print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-interactive-card{cursor:pointer}
-.client-sheet-input:focus-visible + .print-selection{outline:3px solid #365c4a;outline-offset:3px}
+.client-sheet-input:focus-visible + .print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
 .client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;width:52px;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.client-section-question:hover{background:#eef3f3}.client-section-question:focus-visible{outline:2px solid #365c4a;outline-offset:1px}
+.client-section-question:hover{background:var(--client-selection)}.client-section-question:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:1px}
+/* These rules apply only after pagination. Preserve every shared print box. */
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--paper);border-color:var(--client-frame)}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group>h3{color:var(--client-accent-text)}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line{border-radius:0;box-shadow:none;background:transparent}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line{position:relative}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line::before{content:"";position:absolute;inset:-4px 0 auto;height:1px;background:var(--paper-border)}
+.client-pages-root.proposal-typography.proposal-typography .client-interactive-card.selected{background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
+.client-pages-root .quote-table-row:has(input:checked){background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
+.client-pages-root .print-selection[data-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.client-pages-root .print-radio[data-checked=true]{background:var(--paper);color:var(--accent)}
 @media print{.client-section-question{display:none}}
 `;

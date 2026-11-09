@@ -314,6 +314,16 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   const pdf = await (
     await request.get(`/api/public/${p.token}/files/${file.id}`)
   ).body();
+  const frozen = structuredClone(p.versions.at(-1));
+  await page.goto(`/p/${p.token}`);
+  await expect(page.getByText("Completed copy", { exact: true })).toBeVisible();
+  const afterReading = await (
+    await request.get(`/api/proposals/${p.id}`, { headers })
+  ).json();
+  expect(afterReading.versions.at(-1)).toEqual(frozen);
+  expect(
+    await (await request.get(`/api/public/${p.token}/files/${file.id}`)).body(),
+  ).toEqual(pdf);
   const document = await PDFDocument.load(pdf);
   expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
   await mkdir(".data/evidence", { recursive: true });

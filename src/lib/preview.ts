@@ -55,7 +55,10 @@ export function previewProposal(
 }
 
 export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
-  return publicResult(previewProposal(proposal, settings), {
-    showPoweredBy: settings.show_powered_by !== false,
-  });
+  return {
+    ...publicResult(previewProposal(proposal, settings), {
+      showPoweredBy: settings.show_powered_by !== false,
+    }),
+    preview_can_send: proposal.status === "draft" && !proposal.archived_at,
+  };
 }

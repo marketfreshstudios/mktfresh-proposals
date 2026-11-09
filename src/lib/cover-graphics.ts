@@ -43,6 +43,7 @@ export function coverPresentation(
   const filled =
     layout === "bold" ||
     layout === "photo" ||
+    layout === "side-photo" ||
     b.type === "solid" ||
     b.type === "waves" ||
     b.type === "orbits";
@@ -148,6 +149,16 @@ export const coverLayoutCss = `
 @media(max-width:699px){.document-cover:not([data-page-measurement] *)[data-cover-layout]:not([data-cover-layout=custom]){min-height:780px;height:auto;--cover-inset-left:var(--editor-sheet-left,16px)!important;--cover-inset-right:var(--editor-sheet-right,16px)!important;--cover-inset-top:24px!important;--cover-inset-bottom:28px!important}.document-cover:not([data-page-measurement] *)[data-cover-layout]:not([data-cover-layout=custom]){--cover-title-size:36px}.document-cover:not([data-page-measurement] *) .cover-meta-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.document-cover:not([data-page-measurement] *)[data-cover-layout]:not([data-cover-layout=custom]) .cover-logo:not(:has(img)) .cover-brand-name{margin-left:0}
 [data-cover-layout=split]{--cover-padding:0}.document-cover:not([data-page-measurement] *)[data-cover-layout=split] .cover-panel{width:100%}.document-cover:not([data-page-measurement] *)[data-cover-layout=split] .cover-brand-group,.document-cover:not([data-page-measurement] *)[data-cover-layout=split] .cover-meta-group,.document-cover:not([data-page-measurement] *)[data-cover-layout=split] .cover-meta-group>[data-cover-kind=prepared_for]{position:relative;left:auto;bottom:auto;top:auto;width:auto;color:var(--cover-panel-text)}.document-cover:not([data-page-measurement] *)[data-cover-layout=split] .cover-main-group{color:var(--cover-panel-text);min-height:420px}.document-cover:not([data-page-measurement] *) .cover-main-group{min-height:420px}.document-cover:not([data-page-measurement] *) .cover-brand-group{flex-wrap:wrap}.document-cover:not([data-page-measurement] *)[data-cover-layout=photo] .cover-brand-group{margin:0;max-width:100%}}
 @media print{.cover-meta-label{letter-spacing:0}}
+`;
+export const sidePhotoCoverCss = `
+[data-cover-layout=side-photo]{--cover-padding:0 35% 0 0;--cover-eyebrow-color:var(--cover-text);--cover-title-size:52px;--cover-title-leading:1.06}
+[data-cover-layout=side-photo] .cover-main-group{justify-content:center;padding-bottom:0}
+[data-cover-layout=side-photo] .cover-main-group:after{display:none}
+[data-cover-layout=side-photo] .cover-meta-group{grid-template-columns:repeat(2,minmax(0,1fr));border-top-color:currentColor;gap:20px}
+[data-cover-layout=side-photo] .cover-decoration>.cover-panel{display:block;position:absolute;inset:0 0 0 auto;width:36%;background:repeating-linear-gradient(135deg,transparent 0 12px,rgba(255,255,255,.055) 12px 24px)}
+[data-cover-layout=side-photo] .cover-background-image{inset:0 0 0 auto;width:36%;height:100%}
+[data-cover-layout=side-photo]:has(.cover-background-image) .cover-panel{display:none}
+@media(max-width:699px){.document-cover:not([data-page-measurement] *)[data-cover-layout=side-photo]{--cover-padding:0;--cover-title-size:36px;min-height:0}.document-cover:not([data-page-measurement] *)[data-cover-layout=side-photo] .cover-main-group{min-height:240px}.document-cover:not([data-page-measurement] *)[data-cover-layout=side-photo] .cover-decoration>:is(.cover-background-image,.cover-panel){position:absolute;inset:auto 0 0;width:100%;height:180px}.document-cover:not([data-page-measurement] *)[data-cover-layout=side-photo] .cover-meta-group{margin-bottom:180px}}
 `;
 /** Same final decision in editor, public sheets and Chromium print, including old icons without dimension metadata. */
 export function resolveCoverGraphics(root: ParentNode) {
