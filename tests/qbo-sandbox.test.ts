@@ -293,13 +293,19 @@ for (const delivery of ["draft", "email"] as const) {
 
 it("warns about disconnected and unmapped one-time lines and requires a staff choice for multiple matches", async () => {
   const f = await setup();
-  const quote = f.draft.quote.map((line) => ({ ...line, qbo_item_ref: null }));
+  const quote = f.draft.quote.map((item) => ({
+    ...item,
+    sublines: item.sublines.map((line) => ({ ...line, qbo_item_ref: null })),
+  }));
   const warned = readiness({ ...f.draft, quote }, [], new Date(), true, {
     connected: false,
     defaultItem: null,
   });
-  expect(warned.warnings.join(" ")).toMatch(
-    /QuickBooks is not connected.*Choose a QuickBooks item/,
+  expect(warned.warnings).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("QuickBooks is not connected"),
+      expect.stringContaining("Choose a QuickBooks item"),
+    ]),
   );
   const mock = sandbox(),
     qbo = new QboProvider(f.repo, config, mock.fetcher);
