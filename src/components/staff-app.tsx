@@ -68,6 +68,7 @@ import type {
   Template,
   Block,
 } from "../lib/model";
+import { inView } from "../lib/proposal-state";
 import type { WorkspaceSettings } from "../lib/workspace";
 const nav = [
   ["", "Dashboard"],
@@ -405,7 +406,10 @@ function StaffAppContent({
         <ReportProposalList data={data} drill={drill} filters={reportFilters} />
       );
     } else if (section === "proposals") {
-      subtitle = withCount(data.total, "proposal");
+      subtitle = withCount(
+        data.proposals.filter((proposal) => inView(proposal, "all")).length,
+        "proposal",
+      );
       headerAction = (
         <div className="actions">
           <a className="btn" href="/reports">
@@ -424,6 +428,17 @@ function StaffAppContent({
         <ProposalListV4
           data={data}
           initialView={typeof query.view === "string" ? query.view : "all"}
+          onChanged={(next) =>
+            setData(
+              (current) =>
+                current && {
+                  ...current,
+                  proposals: current.proposals.map((proposal) =>
+                    proposal.id === next.id ? next : proposal,
+                  ),
+                },
+            )
+          }
         />
       );
     } else if (section === "clients") {

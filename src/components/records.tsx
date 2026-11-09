@@ -907,12 +907,14 @@ const otherViews = listViews.filter(
 export function ProposalListV4({
   data,
   initialView = "all",
+  onChanged,
 }: {
   data: Data;
   initialView?: string;
+  onChanged: (proposal: Proposal) => void;
 }) {
+  const rows = data.proposals;
   const router = useRouter(),
-    [rows, setRows] = useState(data.proposals),
     [view, setView] = useState(
       listViews.some((name) => viewKey(name) === initialView)
         ? initialView
@@ -1150,9 +1152,7 @@ export function ProposalListV4({
               </>
             }
             data={data}
-            onChanged={(next) =>
-              setRows((r) => r.map((p) => (p.id === next.id ? next : p)))
-            }
+            onChanged={onChanged}
           />
         )}
       </div>

@@ -969,6 +969,10 @@ Primary staff content uses the shared surface, 1px hairline and card radius. Pag
 
 Record lists share the staff table header, row spacing, in-table empty states, and existing borderless Lucide action targets. Each screen keeps its own columns and breakpoints. Saved blocks show the name, type and preview, block count, template use, last edit and Open action. Template thumbnails stay visual cards. Email stage groups and Activity dates keep their section headings over shared tables. Reports and proposal evidence keep native table semantics with the same header treatment.
 
+### Proposals header count (Nov 9, 2026)
+
+The Proposals header counts the same records as All, excluding archived proposals and Proposify imports. The header and tabs use the same list state so an archive or undo updates both.
+
 ### Proposal table Edit and Countersign icons (Nov 9, 2026)
 
 Proposals and Home Recent proposals share the four existing action slots. Edit uses Lucide square-pen and Countersign uses pen-tool, with the same borderless icon treatment and tooltip as the other actions. Desktop targets and empty slots are 40px; tablet and phone cards and touch targets use 44px. The Countersign button only opens the existing record sheet and respects the existing signer permissions. Edit on an archived unsigned proposal still unarchives before opening the editor.
