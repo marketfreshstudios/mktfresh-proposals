@@ -294,14 +294,12 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
           await page.keyboard.press("Escape");
         }
         if (name === "record") {
-          await page
-            .getByRole("button", { name: "Mark as invoiced", exact: true })
-            .click();
           await expect(
-            page.getByRole("dialog", { name: "Mark as invoiced", exact: true }),
+            page.getByText("Waiting for countersignature", { exact: true }),
           ).toBeVisible();
-          await capture("manual-invoice", frame, width, theme);
-          await page.keyboard.press("Escape");
+          await expect(
+            page.getByRole("button", { name: "Mark as invoiced", exact: true }),
+          ).toHaveCount(0);
         }
       }
       await page.goto(`/proposals/${signed.id}?action=countersign`);

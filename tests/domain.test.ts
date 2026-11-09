@@ -59,7 +59,9 @@ describe("proposal lifecycle", () => {
     expect(p.status).toBe("completed");
     expect(canonical(p.versions)).toBe(frozen);
     expect(p.signers).toHaveLength(2);
-    expect(p.jobs.filter((j) => j.kind === "billing")).toHaveLength(1);
+    expect(
+      p.jobs.filter((j) => j.kind === "billing").map((j) => j.payload.provider),
+    ).toEqual(["stripe", "qbo"]);
     expect(
       (await repo.get(p.id))!.events.some((e) => e.type === "counter_signed"),
     ).toBe(true);

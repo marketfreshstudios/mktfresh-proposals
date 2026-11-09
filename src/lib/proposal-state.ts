@@ -1,6 +1,7 @@
 import type { Actor, Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
 import { afterLocalDays } from "./reminder-time";
+import { quoteSublines } from "./quote-model";
 export const listViews = [
   "All",
   "Drafts",
@@ -21,13 +22,41 @@ export const needsCountersign = (p: Proposal) =>
   !p.signers.some((s) => s.role === "company") &&
   p.source === "native" &&
   !p.archived_at;
-export const billingIssues = (p: Proposal) =>
-  p.billing_links.some(
-    (l) => l.status === "failed" || l.status === "needs_review",
-  ) ||
-  p.jobs.some(
-    (j) => j.kind === "billing" && !!j.last_error && j.status !== "done",
+export const quickBooksInvoiceTiming =
+  "After both sides sign, one-time fees are invoiced from QuickBooks.";
+export const oneTimeInvoiceLines = (p: Proposal) =>
+  quoteSublines(p.versions.at(-1)?.quote ?? p.quote, true).filter(
+    (line) => line.interval === "one_time",
   );
+export const waitingForInvoiceCountersignature = (p: Proposal) =>
+  !!p.client_signed_at &&
+  !p.signers.some((signer) => signer.role === "company") &&
+  p.source === "native" &&
+  oneTimeInvoiceLines(p).length > 0 &&
+  !p.billing_links.some(
+    (link) =>
+      link.provider === "qbo" &&
+      (link.status === "succeeded" || link.external_object_id),
+  );
+export const billingIssues = (p: Proposal) => {
+  const waiting = waitingForInvoiceCountersignature(p);
+  return (
+    p.billing_links.some(
+      (l) =>
+        (!waiting || l.provider !== "qbo") &&
+        (l.status === "failed" || l.status === "needs_review"),
+    ) ||
+    p.jobs.some(
+      (j) =>
+        j.kind === "billing" &&
+        !!j.last_error &&
+        j.status !== "done" &&
+        (!waiting ||
+          (j.payload.provider !== "qbo" &&
+            j.last_error !== "Billing failed: qbo")),
+    )
+  );
+};
 export const billingOpen = (p: Proposal) =>
   p.billing_links.some(
     (l) => l.status !== "succeeded" || l.metadata?.requires_checkout === true,

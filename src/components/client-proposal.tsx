@@ -1,4 +1,5 @@
 "use client";
+import { quickBooksInvoiceTiming } from "../lib/proposal-state";
 import { finalOiotClause, finalOiotVisibility } from "../lib/oiot";
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
@@ -1594,7 +1595,7 @@ function SeparateInvoice({
       <BillingItems lines={lines} currency={p.currency} cents={p.money_cents} />
       <p>
         {p.invoice_method === "quickbooks"
-          ? "You'll receive a QuickBooks invoice for these one-time fees."
+          ? quickBooksInvoiceTiming
           : "We'll send you an invoice for these one-time fees."}
       </p>
     </section>

@@ -484,7 +484,12 @@ function ColumnTabs({
 }) {
   const clipboard = useStyleClipboard()!;
   return (
-    <div className="column-style-tabs" role="tablist" aria-label="Columns">
+    <div
+      className="column-style-tabs"
+      data-tab-style="segment"
+      role="tablist"
+      aria-label="Columns"
+    >
       {columns.items.map((column, n) => (
         <button
           key={column.id}

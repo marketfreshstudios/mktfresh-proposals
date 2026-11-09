@@ -26,13 +26,14 @@ it("renderer import failure cannot break auth or email; PDF failure is recorded 
   const { handle } = await import("../src/lib/http");
   const { Worker, MockMailer } = await import("../src/lib/jobs");
   const { MockBillingProvider } = await import("../src/lib/billing");
-  const { setup, staff, clientActor, signature } = await import("./helpers");
+  const { setup, staff, clientActor, signature, companyConsent } =
+    await import("./helpers");
   const response = await handle(
     new Request("http://localhost/api/auth/session"),
     ["auth", "session"],
   );
   expect(response.status).toBe(401); // An auth response, not a module-loading crash.
-  const { repo, service, draft } = await setup();
+  const { repo, service, draft, settings } = await setup();
   let p = await service.send(draft.id, staff);
   const mailer = new MockMailer();
   const worker = new Worker(
@@ -62,5 +63,17 @@ it("renderer import failure cannot break auth or email; PDF failure is recorded 
   expect(updated.billing_links.every((l) => l.status === "succeeded")).toBe(
     true,
   );
-  expect(updated.billing_links).toHaveLength(2);
+  expect(updated.billing_links.map((link) => link.provider)).toEqual([
+    "stripe",
+  ]);
+  await service.sign(
+    p.id,
+    companyConsent(updated.revision, settings),
+    "company",
+    staff,
+  );
+  await worker.drain(p.id);
+  expect(
+    (await repo.get(p.id))!.billing_links.map((link) => link.provider),
+  ).toEqual(["stripe", "qbo"]);
 });

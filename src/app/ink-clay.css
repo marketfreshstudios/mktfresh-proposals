@@ -183,34 +183,56 @@
   --round-icon-size: 20px;
 }
 
-/* Keep tab corners and the selection rule independent. The rule meets the rail. */
-.staff-foundation.ink-clay :is([role="tablist"], .studio-segments) {
+/* Text tabs share one straight underline. Segmented controls keep their fill. */
+.staff-foundation.ink-clay [data-tab-style="underline"] {
   padding-block-end: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: inset 0 -1px var(--border);
 }
-.staff-foundation.ink-clay
-  :is([role="tablist"], .studio-segments)
-  > :is([role="tab"], a[aria-current="page"]) {
+.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a),
+.staff-foundation.ink-clay .directory-views .more-views-trigger {
   position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-muted);
 }
 .staff-foundation.ink-clay
-  :is([role="tablist"], .studio-segments)
-  > :is([role="tab"][aria-selected="true"], a[aria-current="page"])::after {
+  [data-tab-style="underline"]
+  > :is([aria-selected="true"], [aria-pressed="true"], [aria-current="page"]),
+.staff-foundation.ink-clay
+  .directory-views
+  .more-views-trigger[data-tab-selected="true"] {
+  color: var(--ink-title);
+}
+.staff-foundation.ink-clay
+  [data-tab-style="underline"]
+  > :is(
+    [aria-selected="true"],
+    [aria-pressed="true"],
+    [aria-current="page"]
+  )::after,
+.staff-foundation.ink-clay
+  .directory-views
+  .more-views-trigger[data-tab-selected="true"]::after {
   content: "";
   position: absolute;
   inset: auto 0 0;
   height: 2px;
   border-radius: 0;
-  background: var(--ink-title);
+  background: currentColor;
   pointer-events: none;
 }
-/* The editor sidebar's tab sets are segmented controls: the filled segment marks the selection, no underline. */
-.staff-foundation.ink-clay :is(.editor-tabs, .column-style-tabs) {
-  box-shadow: none;
+.staff-foundation.ink-clay [data-tab-style="underline"] > :is(button, a):hover,
+.staff-foundation.ink-clay .directory-views .more-views-trigger:hover {
+  background: transparent;
+  color: var(--ink-title);
+  text-decoration: none;
 }
-.staff-foundation.ink-clay
-  :is(.editor-tabs, .column-style-tabs)
-  > [role="tab"][aria-selected="true"]::after {
+.staff-foundation.ink-clay [data-tab-style="segment"] > button::after {
   content: none;
 }
 .staff-foundation.ink-clay
@@ -231,7 +253,11 @@
     .studio-segments,
     .studio-segments > *,
     .studio-area-chips a
-  ):not(.proposal-typography *) {
+  ):not(
+    .proposal-typography *,
+    [data-tab-style="underline"],
+    [data-tab-style="underline"] > *
+  ) {
   border-radius: var(--radius-md);
 }
 .staff-foundation.ink-clay

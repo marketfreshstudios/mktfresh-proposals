@@ -1,5 +1,11 @@
 import { it, expect } from "vitest";
-import { setup, staff } from "./helpers";
+import {
+  setup,
+  staff,
+  companyConsent,
+  signature,
+  clientActor,
+} from "./helpers";
 import { Worker, MockMailer } from "../src/lib/jobs";
 import { MockBillingProvider, NeedsReview } from "../src/lib/billing";
 import { mutate } from "../src/lib/repository";
@@ -87,9 +93,21 @@ it("five failed PDF attempts send one specific alert; retrying the same error ne
   ).toHaveLength(10);
 });
 it("a billing decision sends one alert and preserves it across retries", async () => {
-  const { repo, service, draft } = await setup();
-  const p = await service.send(draft.id, staff);
-  await mutate(repo, p.id, (p) => queue(p, "billing", "billing", {}));
+  const { repo, service, draft, settings } = await setup();
+  const sent = await service.send(draft.id, staff);
+  const signed = await service.sign(
+    sent.id,
+    signature(sent.revision),
+    "client",
+    clientActor,
+    { token: sent.token!, password: "" },
+  );
+  const p = await service.sign(
+    signed.id,
+    companyConsent(signed.revision, settings),
+    "company",
+    staff,
+  );
   const qbo = new MockBillingProvider("qbo");
   qbo.failure = new NeedsReview("Review the invoice mapping");
   const mailer = new MockMailer(),

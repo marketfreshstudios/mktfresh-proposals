@@ -1,19 +1,31 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
-import { setup, staff, clientActor, signature } from "../tests/helpers";
+import {
+  setup,
+  staff,
+  clientActor,
+  signature,
+  companyConsent,
+} from "../tests/helpers";
 import { proposalInvoiceRef } from "../src/lib/qbo-mapping";
 import type { Item } from "../src/lib/model";
 
 async function fixture(page: Page) {
   const f = await setup();
   const sent = await f.service.send(f.draft.id, staff);
-  const proposal = await f.service.sign(
+  const clientSigned = await f.service.sign(
     sent.id,
     signature(sent.revision),
     "client",
     clientActor,
     { token: sent.token!, password: "" },
+  );
+  const proposal = await f.service.sign(
+    clientSigned.id,
+    companyConsent(clientSigned.revision, f.settings),
+    "company",
+    staff,
   );
   const reference = proposalInvoiceRef(proposal.id);
   await f.repo.put("clients", {
@@ -31,6 +43,37 @@ async function fixture(page: Page) {
   let failed = false;
   let review = false;
   let stripe = true;
+  let stripeSynced = true;
+  let finishSync: (() => void) | undefined;
+  let syncGate: Promise<void> | undefined;
+  let overviewReview = false;
+  let awaiting = false;
+  const drafts = ["Website and care", "Accessibility audit"].map(
+    (title, i) => ({
+      ...proposal,
+      id: crypto.randomUUID(),
+      title,
+      client: {
+        ...proposal.client,
+        company: i ? "Brightline Foods" : "Harbor Dental",
+      },
+      billing_links: [
+        {
+          provider: "qbo",
+          status: "succeeded",
+          attempts: 1,
+          external_object_id: String(i + 100),
+          metadata: { invoice },
+        },
+      ],
+    }),
+  );
+  const waiting = ["Local visibility", "Website build"].map((title, i) => ({
+    ...proposal,
+    id: crypto.randomUUID(),
+    title,
+    client: { ...proposal.client, company: i ? "Cedar Law" : "Lumen Yoga" },
+  }));
   let syncs = 0;
   let member = false;
   let retries = 0;
@@ -64,13 +107,23 @@ async function fixture(page: Page) {
           last_sync: state === "not_connected" ? null : "2026-11-09T17:00:00Z",
         },
       };
-    else if (path === "/api/connections/qbo/disconnect") {
+    else if (path === "/api/connections/qbo/refresh") {
+      writes.push({ path, body: null });
+      json = {
+        state,
+        available: true,
+        company: "Example Sandbox Company",
+        last_sync: "2026-11-09T17:00:00Z",
+      };
+    } else if (path === "/api/connections/qbo/disconnect") {
       writes.push({ path, body: null });
       state = "not_connected";
       json = { state, available: true };
     } else if (path === "/api/catalog-sync/stripe") {
       syncs++;
-      json = {};
+      await syncGate;
+      stripeSynced = true;
+      json = { imported: products.length };
     } else if (
       path.endsWith("/activity") &&
       path.startsWith("/api/connections/")
@@ -83,7 +136,10 @@ async function fixture(page: Page) {
                 name: "Alex Morgan",
                 created_at: "2026-11-09T15:04:00Z",
               },
-              lastSync: "2026-11-09T17:00:00Z",
+              lastSync: stripeSynced ? "2026-11-09T17:00:00Z" : undefined,
+              lastBillingEvent: path.includes("/stripe/")
+                ? "2026-11-09T16:58:00Z"
+                : undefined,
               rows: [
                 {
                   id: "invoice",
@@ -143,47 +199,75 @@ async function fixture(page: Page) {
       failed = false;
       json = {};
     } else if (path === `/api/proposals/${proposal.id}`)
-      json = {
-        ...proposal,
-        billing_links: [
-          {
-            provider: "qbo",
-            status: review ? "needs_review" : failed ? "failed" : "succeeded",
-            attempts: 1,
-            external_object_id: failed || review ? null : "89",
-            last_error: review
-              ? "A QuickBooks customer named Jane Martin exists with a different email. Choose that customer or create a new one."
-              : failed
-                ? "QuickBooks is temporarily unavailable. Try again."
-                : null,
-            metadata: {
-              billing_email: "billing@example.test",
-              invoice: failed || review ? null : invoice,
-              ...(review
-                ? {
-                    customer_review_reason: "name",
-                    customer_candidates: [
-                      {
-                        id: "10",
-                        display_name: "Jane Martin",
-                        company: "Example Studio",
-                        email: "jane.old@example.test",
-                      },
-                      {
-                        id: "11",
-                        display_name: "Jane at Northwind",
-                        company: "Northwind Design",
-                        email: "jane@northwind.example.test",
-                      },
-                    ],
-                  }
-                : {}),
-            },
-          },
-        ],
-      };
-    else if (path === "/api/proposals") json = { items: [], total: 0 };
-    else if (path === "/api/clients") json = await f.repo.entities("clients");
+      json = awaiting
+        ? clientSigned
+        : {
+            ...proposal,
+            billing_links: [
+              {
+                provider: "qbo",
+                status: review
+                  ? "needs_review"
+                  : failed
+                    ? "failed"
+                    : "succeeded",
+                attempts: 1,
+                external_object_id: failed || review ? null : "89",
+                last_error: review
+                  ? "A QuickBooks customer named Jane Martin exists with a different email. Choose that customer or create a new one."
+                  : failed
+                    ? "QuickBooks is temporarily unavailable. Try again."
+                    : null,
+                metadata: {
+                  billing_email: "billing@example.test",
+                  invoice: failed || review ? null : invoice,
+                  ...(review
+                    ? {
+                        customer_review_reason: "name",
+                        customer_candidates: [
+                          {
+                            id: "10",
+                            display_name: "Jane Martin",
+                            company: "Example Studio",
+                            email: "jane.old@example.test",
+                          },
+                          {
+                            id: "11",
+                            display_name: "Jane at Northwind",
+                            company: "Northwind Design",
+                            email: "jane@northwind.example.test",
+                          },
+                        ],
+                      }
+                    : {}),
+                },
+              },
+            ],
+          };
+    else if (path === "/api/proposals") {
+      const items = [
+        ...drafts,
+        sent,
+        { ...sent, id: crypto.randomUUID(), status: "viewed" },
+        ...(state === "reconnect" ? waiting : []),
+        ...(overviewReview
+          ? [
+              {
+                ...waiting[1],
+                billing_links: [
+                  {
+                    provider: "qbo",
+                    status: "needs_review",
+                    attempts: 1,
+                    metadata: { customer_candidates: [{ id: "10" }] },
+                  },
+                ],
+              },
+            ]
+          : []),
+      ];
+      json = { items, total: items.length };
+    } else if (path === "/api/clients") json = await f.repo.entities("clients");
     else if (path === "/api/templates")
       json = await f.repo.entities("templates");
     await route.fulfill({ json });
@@ -200,13 +284,25 @@ async function fixture(page: Page) {
     syncs: () => syncs,
     settings: f.settings,
     staffView: () => (member = true),
+    awaiting: () => (awaiting = true),
+    overviewReview: (value: boolean) => (overviewReview = value),
+    startUnsynced: () => {
+      stripeSynced = false;
+      syncGate = new Promise<void>((resolve) => {
+        finishSync = resolve;
+      });
+      return () => finishSync?.();
+    },
     retries: () => retries,
   };
 }
 
 async function capture(page: Page, name: string, fullPage = false) {
-  if (process.env.CAPTURE_QBO === "1") {
-    const path = "docs/screenshots/quickbooks-customer-review";
+  if (
+    process.env.CAPTURE_R21 === "1" &&
+    /^(3[a-k]-|connection-|home-|invoice-awaiting-)/.test(name)
+  ) {
+    const path = "docs/screenshots/redesign-21-a";
     mkdirSync(path, { recursive: true });
     await page.screenshot({ path: `${path}/${name}.png`, fullPage });
   }
@@ -392,111 +488,240 @@ test("customer review shows candidate details and sends the selected or create-n
   await expect(chooser).toHaveCount(0);
 });
 
-for (const width of [1440, 375]) {
-  test(`connection details use the Studio shell and show provider states at ${width}`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: 1080 });
-    const f = await fixture(page);
-    Object.assign(f.settings, {
-      qbo_custom_item_ref: "123:45",
-      qbo_term_ref: "123:50",
-    });
-    await page.goto("/studio/connections");
-    await page
-      .getByRole("link", { name: "Connect QuickBooks", exact: true })
-      .click();
-    await expect(page).toHaveURL(/\/studio\/connections\/quickbooks$/);
-    await expect(
-      page.getByRole("heading", { level: 1, name: "QuickBooks" }),
-    ).toBeVisible();
-    for (const [state, label] of [
-      ["not_connected", "Not connected"],
-      ["connected", "Connected · sandbox"],
-      ["reconnect", "Reconnect needed"],
-    ]) {
-      f.state(state);
-      await page.goto("/studio/connections?view=qbo");
-      await expect(page).toHaveURL(/\/studio\/connections\/quickbooks$/);
-      const detail = page.locator(".studio-connection-detail");
-      await expect(detail.locator(".pill")).toHaveText(label);
-      await expect(
-        detail.getByRole("heading", { name: "Recent activity" }),
-      ).toBeVisible();
-      if (state === "connected") {
-        await expect(
-          detail.getByText(/Nov 9, .*:00 [AP]M/).first(),
-        ).toBeVisible();
-        await expect(
-          detail.getByText("Web design services", { exact: true }),
-        ).toBeVisible();
-        await expect(detail.getByText("Net 30", { exact: true })).toBeVisible();
-        await expect(
-          detail.getByRole("link", { name: f.proposal.title }),
-        ).toHaveAttribute("href", `/proposals/${f.proposal.id}`);
-        expect((await new AxeBuilder({ page }).analyze()).violations).toEqual(
-          [],
-        );
-      }
-      await capture(page, `quickbooks-${state}-${width}`);
-    }
-    await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-    const confirm = page.getByRole("dialog", {
-      name: "Disconnect QuickBooks?",
-    });
-    await expect(confirm.getByRole("button", { name: "Cancel" })).toBeFocused();
-    if (width === 1440)
-      await capture(page, "quickbooks-disconnect-confirm-1440");
-    await confirm.getByRole("button", { name: "Disconnect" }).click();
-    await expect(page.locator(".connection-detail-title .pill")).toHaveText(
-      "Not connected",
-    );
-    await expect
-      .poll(() => f.writes.at(-1)?.path)
-      .toBe("/api/connections/qbo/disconnect");
-    for (const connected of [true, false]) {
-      f.stripe(connected);
-      await page.goto("/studio/connections?view=stripe");
-      await expect(page).toHaveURL(/\/studio\/connections\/stripe$/);
-      await expect(
-        page.getByRole("heading", { level: 1, name: "Stripe" }),
-      ).toBeVisible();
-      await expect(page.locator(".connection-detail-title .pill")).toHaveText(
-        connected ? "Connected · test mode" : "Not connected",
-      );
-      if (connected) {
-        await page
-          .getByRole("button", { name: "Sync now", exact: true })
-          .click();
-        await expect.poll(f.syncs).toBe(1);
-        await expect(
-          page.getByText("Stripe test products synced."),
-        ).toBeVisible();
-        expect((await new AxeBuilder({ page }).analyze()).violations).toEqual(
-          [],
-        );
-        await page.reload();
-        await expect(
-          page.getByText("Products synced", { exact: true }),
-        ).toBeVisible();
-      }
-      await capture(
-        page,
-        `stripe-${connected ? "connected" : "not_connected"}-${width}`,
-      );
-    }
-    if (width === 1440) {
-      for (const key of ["email", "assistants", "imports"]) {
-        await page.goto(`/studio/connections?view=${key}`);
-        await expect(
-          page.locator(".studio-connection-detail h1"),
-        ).toBeVisible();
-        await expect(page.getByRole("dialog")).toHaveCount(0);
-        await capture(page, `connection-${key}-1440`);
-      }
-    }
+test("Home keeps the three areas in place and shows one compact Expiring message", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await fixture(page);
+  await page.goto("/");
+  const pipeline = page.getByRole("region", { name: /Open pipeline/ });
+  const expiring = page.getByRole("region", { name: "Expiring this week" });
+  await expect(pipeline).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Pricing references" }),
+  ).toHaveCount(0);
+  await expect(
+    expiring.getByRole("link", { name: "All proposals" }),
+  ).toBeVisible();
+  await expect(
+    expiring.getByText("Nothing closes in the next 7 days."),
+  ).toBeVisible();
+  await expect(expiring.locator("p")).toHaveCount(1);
+  await expect(expiring.locator("svg.lucide-check")).toHaveCount(1);
+  const bar = pipeline.locator(".home-pipeline-bar");
+  await expect(bar).toHaveCSS("column-gap", "3px");
+  await expect(bar.locator("span")).toHaveCount(3);
+  await expect(bar.locator("span").first()).toHaveCSS("border-radius", "4px");
+  expect((await expiring.boundingBox())!.height).toBeLessThan(
+    (await pipeline.boundingBox())!.height,
+  );
+  expect((await expiring.boundingBox())!.x).toBeGreaterThan(
+    (await pipeline.boundingBox())!.x,
+  );
+  await capture(page, "home-1440");
+});
+
+test("The signed proposal record shows the invoice waiting for the company without a billing error", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  const f = await fixture(page);
+  f.awaiting();
+  await page.goto(`/proposals/${f.proposal.id}`);
+  const billing = page.locator(".record-billing");
+  await expect(
+    billing.getByText("Waiting for countersignature", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    billing.getByText(
+      "After both sides sign, one-time fees are invoiced from QuickBooks.",
+    ),
+  ).toBeVisible();
+  await expect(
+    billing.getByRole("button", { name: "Retry billing" }),
+  ).toHaveCount(0);
+  await billing.scrollIntoViewIfNeeded();
+  await capture(page, "invoice-awaiting-countersignature-1440");
+});
+
+test("R21 desktop connection states use actual actions and link to affected proposals", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  const f = await fixture(page);
+  Object.assign(f.settings, {
+    qbo_custom_item_ref: "123:45",
+    qbo_term_ref: "123:50",
   });
-}
+  const detail = page.locator(".studio-connection-detail");
+  const headerChip = detail.locator(".connection-detail-title .pill");
+  await page.goto("/studio/connections");
+  await page
+    .getByRole("link", { name: "Connect QuickBooks", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/studio\/connections\/quickbooks$/);
+  await expect(headerChip).toHaveText("Not connected");
+  await expect(
+    detail.getByRole("button", { name: "Connect QuickBooks" }),
+  ).toBeEnabled();
+  await capture(page, "3i-quickbooks-not-connected");
+
+  f.state("connected");
+  f.overviewReview(true);
+  await page.goto("/studio/connections?view=qbo");
+  await expect(headerChip).toHaveText("Connected · sandbox");
+  await expect(detail.locator(".connection-tile")).toHaveCount(3);
+  await expect(detail.getByText("2 drafts to review")).toBeVisible();
+  await expect(detail.getByText("1 to choose")).toBeVisible();
+  await expect(detail.getByText(/Web design services/)).toBeVisible();
+  await expect(
+    detail.getByText("Net 30", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
+  await expect(
+    detail.getByRole("link", { name: f.proposal.title }),
+  ).toHaveAttribute("href", `/proposals/${f.proposal.id}`);
+  await capture(page, "3e-quickbooks-connected");
+  await detail.getByRole("link", { name: "Choose customer" }).click();
+  await expect(
+    detail.getByRole("link", { name: "Cedar Law · Website build" }),
+  ).toBeVisible();
+  await detail.getByRole("link", { name: "Review drafts" }).click();
+  await expect(
+    detail.getByRole("link", { name: "Harbor Dental · Website and care" }),
+  ).toBeVisible();
+
+  f.overviewReview(false);
+  await page.reload();
+  await detail.getByRole("button", { name: "QuickBooks actions" }).click();
+  const menu = page.getByRole("dialog", { name: "QuickBooks actions" });
+  await expect(
+    menu.getByRole("button", { name: "Refresh connection" }),
+  ).toBeVisible();
+  await capture(page, "3f-quickbooks-menu");
+  await menu.getByRole("button", { name: "Refresh connection" }).click();
+  await expect
+    .poll(() => f.writes.at(-1)?.path)
+    .toBe("/api/connections/qbo/refresh");
+  await expect(
+    detail.getByText("QuickBooks connection refreshed.", { exact: true }),
+  ).toBeVisible();
+
+  f.state("reconnect");
+  await page.reload();
+  await expect(headerChip).toHaveText("Reconnect needed");
+  await expect(
+    detail.getByRole("heading", { name: "Waiting on QuickBooks" }),
+  ).toBeVisible();
+  await expect(
+    detail.getByRole("link", { name: "Lumen Yoga · Local visibility" }),
+  ).toBeVisible();
+  await capture(page, "3h-quickbooks-reconnect");
+  await detail.getByRole("button", { name: "QuickBooks actions" }).click();
+  await menu.getByRole("button", { name: "Disconnect QuickBooks…" }).click();
+  const confirm = page.getByRole("dialog", { name: "Disconnect QuickBooks?" });
+  await expect(confirm.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await expect(
+    confirm.getByText("2 proposals are waiting on an invoice"),
+  ).toBeVisible();
+  await capture(page, "3g-quickbooks-disconnect");
+  await confirm.getByRole("button", { name: "Disconnect" }).click();
+  await expect(headerChip).toHaveText("Not connected");
+  await expect
+    .poll(() => f.writes.at(-1)?.path)
+    .toBe("/api/connections/qbo/disconnect");
+
+  await page.goto("/studio/connections?view=stripe");
+  await expect(page).toHaveURL(/\/studio\/connections\/stripe$/);
+  await expect(headerChip).toHaveText("Connected · test mode");
+  await expect(detail.getByText("Receiving", { exact: true })).toBeVisible();
+  await expect(
+    detail.getByRole("link", { name: "Edit in Billing defaults" }),
+  ).toHaveCount(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await capture(page, "3a-stripe-connected");
+  await detail.getByRole("button", { name: "Stripe actions" }).click();
+  const stripeMenu = page.getByRole("dialog", { name: "Stripe actions" });
+  await expect(
+    stripeMenu.getByRole("button", { name: "Sync products now" }),
+  ).toBeVisible();
+  await expect(
+    stripeMenu.getByText(/Switch to live|Disconnect Stripe/),
+  ).toHaveCount(0);
+  await capture(page, "3b-stripe-menu");
+  await page.keyboard.press("Escape");
+
+  const finish = f.startUnsynced();
+  try {
+    await page.reload();
+    await detail.getByRole("button", { name: "Sync now", exact: true }).click();
+    await expect(
+      detail.getByRole("heading", { name: "Setting up Stripe products" }),
+    ).toBeVisible();
+    await capture(page, "3d-stripe-sync");
+  } finally {
+    finish();
+  }
+  await expect.poll(f.syncs).toBe(1);
+  await expect(detail.getByText("Stripe test products synced.")).toBeVisible();
+  f.stripe(false);
+  await page.reload();
+  await expect(headerChip).toHaveText("Not connected");
+  await expect(
+    detail.getByText("Stripe is set up by your Yeswell administrator."),
+  ).toBeVisible();
+  await capture(page, "3c-stripe-not-connected");
+
+  f.staffView();
+  await page.goto("/studio/connections/quickbooks");
+  await expect(
+    detail.getByRole("heading", { name: "A super admin connects QuickBooks" }),
+  ).toBeVisible();
+  await expect(
+    detail.getByRole("link", { name: "Email Alex" }),
+  ).toHaveAttribute("href", "mailto:staff@example.test");
+  await capture(page, "3j-quickbooks-staff");
+  for (const key of ["email", "assistants", "imports"]) {
+    await page.goto(`/studio/connections?view=${key}`);
+    await expect(detail.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(detail.locator(".connection-tile")).toHaveCount(3);
+    await capture(page, `connection-${key}-1440`);
+  }
+});
+
+test("R21 phone tiles stack and the QuickBooks menu opens from the bottom", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  const f = await fixture(page);
+  f.state("connected");
+  Object.assign(f.settings, {
+    qbo_custom_item_ref: "123:45",
+    qbo_term_ref: "123:50",
+  });
+  await page.goto("/studio/connections/quickbooks");
+  const detail = page.locator(".studio-connection-detail");
+  const tiles = detail.locator(".connection-tile");
+  await expect(tiles).toHaveCount(3);
+  expect((await tiles.nth(1).boundingBox())!.y).toBeGreaterThan(
+    (await tiles.first().boundingBox())!.y,
+  );
+  await expect(
+    detail.getByText("Net 30", { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    375,
+  );
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await capture(page, "3k-quickbooks-phone");
+  await detail.getByRole("button", { name: "QuickBooks actions" }).click();
+  const sheet = page.getByRole("dialog", { name: "QuickBooks actions" });
+  await expect(
+    sheet.getByRole("button", { name: "Refresh connection" }),
+  ).toBeVisible();
+  const box = (await sheet.boundingBox())!;
+  expect(box.y + box.height).toBeCloseTo(812, 0);
+  await capture(page, "3k-quickbooks-phone-menu");
+});
 
 for (const width of [1440, 375]) {
   test(`QuickBooks Studio controls are accessible at ${width} and restricted for Staff`, async ({

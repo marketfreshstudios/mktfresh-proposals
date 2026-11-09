@@ -16,6 +16,8 @@ export function jobName(
       : "Client-signed PDF";
   if (job.kind === "email") return "Email delivery";
   if (job.kind === "stripe_webhook") return "Stripe billing";
+  if (job.payload.provider === "qbo") return "QuickBooks invoice";
+  if (job.payload.provider === "stripe") return "Stripe billing";
   return providers.length === 1
     ? providers[0] === "qbo"
       ? "QuickBooks invoice"

@@ -1,15 +1,37 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  ChevronLeft,
+  CircleAlert,
+  CircleCheck,
+  Clock3,
+  CreditCard,
+  FileText,
+  LockKeyhole,
+  Package,
+  RefreshCw,
+  UsersRound,
+} from "lucide-react";
 import type { Data } from "./staff-app";
 import type { ConnectionStatus } from "../lib/workspace-setup";
-import { staffIcons } from "./staff-icons";
+import type { Item, Proposal } from "../lib/model";
+import {
+  oneTimeInvoiceLines,
+  quickBooksInvoiceTiming,
+} from "../lib/proposal-state";
+import { quickBooksCustomerReview } from "../lib/qbo-mapping";
+import { publicBankState } from "../lib/billing-confirmation";
+import { chromeIcons } from "./staff-icons";
 import { confirmDialog } from "./dialog-actions";
+import { Sheet } from "./foundation";
 import { api, Banner, Button, post } from "./ui";
+import { useMoney } from "./money-context";
 import { useQuickBooksItemName } from "./quickbooks-fields";
 
 const billingDefaults = "/studio/workspace?view=billing";
-const ChevronLeft = staffIcons["chevron-left"];
+const stripeDashboard = "https://dashboard.stripe.com/test";
+const quickBooksDashboard = "https://sandbox.qbo.intuit.com/app/homepage";
 
 export function ConnectionDetailLayout({
   name,
@@ -17,32 +39,154 @@ export function ConnectionDetailLayout({
   status,
   tone,
   subtitle,
+  actions,
   children,
 }: {
   name: string;
   mark: string;
-  status?: string;
+  status: string;
   tone?: "success" | "warning" | "info";
   subtitle: string;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <article className="studio-connection-detail">
-      <a className="connection-back" href="/studio/connections">
-        <ChevronLeft size={16} aria-hidden="true" /> Connections
-      </a>
-      <header className="connection-detail-header">
-        <div className="connection-detail-title">
+      <div className="connection-hero">
+        <a className="connection-back" href="/studio/connections">
+          <ChevronLeft size={16} aria-hidden="true" /> Connections
+        </a>
+        <header className="connection-detail-header">
           <span className="connection-monogram" aria-hidden="true">
             {mark}
           </span>
-          <h1 className="t-page-title">{name}</h1>
-          {status && <span className={`pill ${tone ?? ""}`}>{status}</span>}
-        </div>
-        <p>{subtitle}</p>
-      </header>
+          <div>
+            <div className="connection-detail-title">
+              <h1 className="t-page-title">{name}</h1>
+              <span className={`pill ${tone ?? ""}`}>{status}</span>
+            </div>
+            <p>{subtitle}</p>
+          </div>
+          {actions && (
+            <div className="connection-detail-actions">{actions}</div>
+          )}
+        </header>
+      </div>
       {children}
     </article>
+  );
+}
+
+export type ConnectionTile = {
+  label: string;
+  value: ReactNode;
+  tone?: "success" | "warning";
+  detail?: ReactNode;
+  action?: ReactNode;
+};
+export function ConnectionTiles({ tiles }: { tiles: ConnectionTile[] }) {
+  return (
+    <dl className="connection-tiles">
+      {tiles.map(({ label, value, tone, detail, action }) => (
+        <div className="connection-tile" key={label}>
+          <dt>{label}</dt>
+          <dd>
+            <strong className={tone}>
+              {tone === "success" ? (
+                <CircleCheck size={16} aria-hidden="true" />
+              ) : tone === "warning" ? (
+                <CircleAlert size={16} aria-hidden="true" />
+              ) : null}
+              {value}
+            </strong>
+            {detail && <small>{detail}</small>}
+            {action && <span className="connection-tile-action">{action}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function ConnectionColumns({
+  main,
+  aside,
+}: {
+  main: ReactNode;
+  aside: ReactNode;
+}) {
+  return (
+    <div className="connection-detail-columns">
+      <div>{main}</div>
+      <div>{aside}</div>
+    </div>
+  );
+}
+
+export function ConnectionPanel({
+  title,
+  subtitle,
+  action,
+  children,
+  className = "",
+  id,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  id?: string;
+}) {
+  return (
+    <section className={`connection-panel ${className}`} id={id}>
+      <header>
+        <div>
+          <h2>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+export function ConnectionFact({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="connection-fact">
+      <dt>{label}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+export type ConnectionStep = {
+  title: string;
+  detail: ReactNode;
+  icon: typeof CreditCard;
+};
+export function ConnectionSteps({ steps }: { steps: ConnectionStep[] }) {
+  return (
+    <ul className="connection-steps" role="list">
+      {steps.map(({ title, detail, icon: Icon }) => (
+        <li key={title}>
+          <span className="connection-step-icon">
+            <Icon size={17} aria-hidden="true" />
+          </span>
+          <div>
+            <strong>{title}</strong>
+            <p>{detail}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -56,29 +200,20 @@ type Activity = {
   }[];
   connected?: { actor: string; name?: string; created_at: string };
   lastSync?: string;
+  lastBillingEvent?: string;
 };
-
-function Fact({
-  label,
-  children,
-  link,
-}: {
-  label: string;
-  children: ReactNode;
-  link?: ReactNode;
-}) {
-  return (
-    <div className="connection-fact">
-      <dt>{label}</dt>
-      <dd>{children}</dd>
-      {link && <dd>{link}</dd>}
-    </div>
-  );
-}
-
-function ChangeBilling() {
-  return <a href={billingDefaults}>Change in Billing defaults</a>;
-}
+type Action = "authorize" | "disconnect" | "refresh" | "sync";
+type Queue = "waiting" | "drafts" | "customers" | "stripe";
+const queueTitles: Record<Queue, string> = {
+  waiting: "Waiting on QuickBooks",
+  drafts: "Draft invoices to review",
+  customers: "QuickBooks customers to choose",
+  stripe: "Proposals with Stripe billing to finish",
+};
+const proposalLink = (p: Proposal) => `/proposals/${p.id}`;
+const proposalLabel = (p: Proposal) => `${p.client.company} · ${p.title}`;
+const withCount = (count: number, singular: string, plural: string) =>
+  `${count} ${count === 1 ? singular : plural}`;
 
 export function BillingConnectionDetail({
   provider,
@@ -94,45 +229,122 @@ export function BillingConnectionDetail({
   const [activityError, setActivityError] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<Action>();
+  const [menu, setMenu] = useState(false);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const [openQueue, setOpenQueue] = useState<Queue>();
+  const [refreshedCatalog, setRefreshedCatalog] = useState<Item[]>();
   const settings = data.settings;
   const owner = data.user.staff_role === "owner";
+  const admin = data.staff.find(
+    (member) =>
+      member.role === "owner" && (!member.status || member.status === "active"),
+  );
   const connection = health?.qbo_connection;
   const connected = qbo ? connection?.state === "connected" : health?.stripe;
   const reconnect = qbo && connection?.state === "reconnect";
   const mode = health?.mode === "live" ? "live" : "test";
+  const canSync = !qbo && connected && mode === "test";
   const status = connected
     ? `Connected · ${qbo ? "sandbox" : mode + " mode"}`
     : reconnect
       ? "Reconnect needed"
       : health
         ? "Not connected"
-        : "Loading status…";
+        : "Status unavailable";
   const itemName = useQuickBooksItemName(
     settings?.qbo_custom_item_ref,
     qbo && !!connected,
   );
   const [termName, setTermName] = useState<string>();
+  const money = useMoney();
+  const timezone = settings?.timezone ?? "UTC";
   const format = (value: string) =>
     new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      timeZone: settings?.timezone ?? "UTC",
+      timeZone: timezone,
     }).format(new Date(value));
-  const loadActivity = (signal?: AbortSignal) =>
-    api<Activity>(`/api/connections/${provider}/activity`, { signal })
-      .then((result) => {
-        if (signal?.aborted) return;
-        if (!Array.isArray(result?.rows))
-          throw new Error("Activity unavailable");
-        setActivity(result);
-        setActivityError(false);
-      })
-      .catch(() => {
-        if (!signal?.aborted) setActivityError(true);
-      });
+  const time = (value: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
+    }).format(new Date(value));
+
+  const proposals = data.proposals.filter(
+    (p) => p.source === "native" && !p.archived_at,
+  );
+  const countersigned = proposals.filter((p) =>
+    p.signers.some((signer) => signer.role === "company"),
+  );
+  const drafts = countersigned.filter((p) =>
+    p.billing_links.some(
+      (link) =>
+        link.provider === "qbo" &&
+        (link.metadata?.invoice as { status?: string } | undefined)?.status ===
+          "Draft",
+    ),
+  );
+  const customers = countersigned.filter((p) =>
+    p.billing_links.some(quickBooksCustomerReview),
+  );
+  const waiting = countersigned.filter(
+    (p) =>
+      oneTimeInvoiceLines(p).length &&
+      !p.billing_links.some(
+        (link) =>
+          link.provider === "qbo" &&
+          (link.external_object_id || link.status === "succeeded"),
+      ),
+  );
+  const invoiceWaiting = reconnect
+    ? waiting
+    : waiting.filter((p) => !p.billing_links.some(quickBooksCustomerReview));
+  const stripeIssues = proposals.filter((p) =>
+    p.billing_links.some(
+      (link) =>
+        link.provider === "stripe" &&
+        (link.status === "failed" ||
+          link.status === "needs_review" ||
+          link.metadata?.requires_checkout === true ||
+          publicBankState(link) === "failed"),
+    ),
+  );
+  const catalog = (refreshedCatalog ?? data.catalog).filter(
+    (item) => item.active && !item.legacy,
+  );
+  const recurring = catalog.filter(
+    (item) => item.interval !== "one_time",
+  ).length;
+  const queues: Record<Queue, Proposal[]> = {
+    waiting: invoiceWaiting,
+    drafts,
+    customers,
+    stripe: stripeIssues,
+  };
+  const queueLink = (queue: Queue, label: string) => (
+    <a href={`#connection-queue-${queue}`} onClick={() => setOpenQueue(queue)}>
+      {label}
+    </a>
+  );
+
+  async function loadActivity(signal?: AbortSignal) {
+    try {
+      const result = await api<Activity>(
+        `/api/connections/${provider}/activity`,
+        { signal },
+      );
+      if (signal?.aborted) return;
+      if (!Array.isArray(result?.rows)) throw new Error("Activity unavailable");
+      setActivity(result);
+      setActivityError(false);
+    } catch {
+      if (!signal?.aborted) setActivityError(true);
+    }
+  }
 
   useEffect(() => {
     const abort = new AbortController();
@@ -151,9 +363,19 @@ export function BillingConnectionDetail({
     return () => abort.abort();
   }, [provider, connected, settings?.qbo_term_ref]);
 
-  const manage = async (action: "authorize" | "disconnect" | "sync") => {
+  useEffect(() => {
+    if (openQueue)
+      document
+        .getElementById(`connection-queue-${openQueue}`)
+        ?.scrollIntoView({ block: "start" });
+  }, [openQueue]);
+
+  const [syncedCount, setSyncedCount] = useState<number>();
+
+  async function manage(action: Action) {
     if (busy) return;
-    setBusy(true);
+    setMenu(false);
+    setBusy(action);
     setError("");
     setNotice("");
     try {
@@ -163,6 +385,22 @@ export function BillingConnectionDetail({
             title: "Disconnect QuickBooks?",
             description:
               "New one-time invoices will wait until QuickBooks is connected again. Existing invoices stay in QuickBooks.",
+            details: (
+              <div className="connection-disconnect-impact">
+                <strong>
+                  {withCount(waiting.length, "proposal is", "proposals are")}{" "}
+                  waiting on an invoice
+                </strong>
+                {waiting.length > 0 && (
+                  <ul>
+                    {waiting.slice(0, 5).map((p) => (
+                      <li key={p.id}>{proposalLabel(p)}</li>
+                    ))}
+                  </ul>
+                )}
+                {waiting.length > 5 && <p>And {waiting.length - 5} more.</p>}
+              </div>
+            ),
             confirmLabel: "Disconnect",
             destructive: true,
           }))
@@ -182,17 +420,39 @@ export function BillingConnectionDetail({
         );
         window.location.assign(url);
         return;
+      } else if (action === "refresh") {
+        const next = await post<
+          NonNullable<ConnectionStatus["qbo_connection"]>
+        >("/api/connections/qbo/refresh");
+        setHealth(
+          (previous) => previous && { ...previous, qbo_connection: next },
+        );
+        setNotice("QuickBooks connection refreshed.");
       } else {
-        await post("/api/catalog-sync/stripe");
+        const result = await post<{ imported?: number; synced_at?: string }>(
+          "/api/catalog-sync/stripe",
+        );
+        if (typeof result?.imported === "number")
+          setSyncedCount(result.imported);
+        await api<Item[]>("/api/pricing_items")
+          .then((items) => {
+            if (Array.isArray(items)) setRefreshedCatalog(items);
+          })
+          .catch(() => {});
         setNotice("Stripe test products synced.");
       }
       await loadActivity();
     } catch (err) {
       setError((err as Error).message);
+      if (action === "refresh")
+        await api<ConnectionStatus>("/api/connections")
+          .then(setHealth)
+          .catch(() => {});
     } finally {
-      setBusy(false);
+      setBusy(undefined);
     }
-  };
+  }
+
   const lastSync = qbo ? connection?.last_sync : activity?.lastSync;
   const connectedBy =
     qbo && (connected || reconnect) ? activity?.connected : undefined;
@@ -203,188 +463,618 @@ export function BillingConnectionDetail({
         (member) => `staff:${member.user_id}` === connectedBy.actor,
       )?.display_name ??
       "Staff member");
+  const eventStatus = activity?.lastBillingEvent
+    ? "Receiving"
+    : health?.stripe_webhooks_configured
+      ? "Configured"
+      : "Not configured";
+  const totalProducts = catalog.length;
+  const item =
+    itemName ??
+    (settings?.qbo_custom_item_ref ? "Mapped in Billing defaults" : "Not set");
+  const terms = settings?.qbo_term_ref
+    ? (termName ?? "Set in Billing defaults")
+    : "Use QuickBooks default";
+  const paymentMethods =
+    settings?.payment_methods === "card_ach"
+      ? "Card + US bank account (ACH)"
+      : "Card";
+  const emailInvoices = settings?.qbo_invoice_delivery === "email";
+  const billingSteps: ConnectionStep[] = qbo
+    ? [
+        {
+          title: "Invoice",
+          icon: FileText,
+          detail: emailInvoices
+            ? "Created and emailed to the client from QuickBooks."
+            : "Draft for review. QuickBooks creates the invoice for you to review and send.",
+        },
+        {
+          title: "Default item",
+          icon: Package,
+          detail: (
+            <>
+              {item}. Products can map to their own item in{" "}
+              <a href="/studio/products">Products</a>.
+            </>
+          ),
+        },
+        { title: "Terms", icon: Clock3, detail: terms },
+        {
+          title: "Customers",
+          icon: UsersRound,
+          detail:
+            "Matched by billing email. When the match isn’t clear, the proposal asks you to choose.",
+        },
+      ]
+    : [
+        {
+          title: "New clients",
+          icon: CreditCard,
+          detail:
+            "Pay monthly and yearly items through Stripe Checkout right after signing.",
+        },
+        {
+          title: "Existing subscribers",
+          icon: UsersRound,
+          detail:
+            "New items are added to the current subscription without a new payment step.",
+        },
+        {
+          title: "Payment methods",
+          icon: LockKeyhole,
+          detail: `${paymentMethods}. Shown in Stripe Checkout.`,
+        },
+      ];
+  const aboutSteps: ConnectionStep[] = qbo
+    ? [
+        {
+          title: "Invoices one-time fees",
+          icon: FileText,
+          detail: quickBooksInvoiceTiming,
+        },
+        {
+          title: "Uses your customers",
+          icon: UsersRound,
+          detail:
+            "Clients are matched to QuickBooks customers by billing email.",
+        },
+        {
+          title: "Keeps status in sync",
+          icon: RefreshCw,
+          detail: "Open a proposal record to see its current invoice status.",
+        },
+      ]
+    : [
+        {
+          title: "Brings in your products",
+          icon: Package,
+          detail:
+            "Recurring products and plan terms sync from Stripe. You still type every amount on a proposal.",
+        },
+        {
+          title: "Takes the first payment",
+          icon: CreditCard,
+          detail:
+            "New clients pay recurring items through Stripe Checkout right after signing.",
+        },
+        {
+          title: "Recognizes subscribers",
+          icon: UsersRound,
+          detail:
+            "Existing subscribers have new items added to their subscription without a payment step.",
+        },
+      ];
+  const tiles: ConnectionTile[] = [
+    {
+      label: "Connection",
+      value: reconnect ? "Reconnect needed" : "Healthy",
+      tone: reconnect ? "warning" : "success",
+      detail: qbo
+        ? connection?.company
+        : mode === "test"
+          ? "Test mode"
+          : "Live mode",
+    },
+    qbo
+      ? {
+          label: "Invoices",
+          value:
+            reconnect || invoiceWaiting.length
+              ? `${invoiceWaiting.length} waiting`
+              : drafts.length
+                ? withCount(
+                    drafts.length,
+                    "draft to review",
+                    "drafts to review",
+                  )
+                : "Up to date",
+          tone:
+            reconnect || invoiceWaiting.length || drafts.length
+              ? "warning"
+              : "success",
+          detail: reconnect
+            ? "Needs a QuickBooks connection"
+            : "Created after countersignature",
+          action: invoiceWaiting.length
+            ? queueLink("waiting", "See proposals")
+            : drafts.length
+              ? queueLink("drafts", "Review drafts")
+              : undefined,
+        }
+      : {
+          label: "Products",
+          value: lastSync
+            ? `Synced ${time(lastSync)}`
+            : busy === "sync"
+              ? "Syncing products…"
+              : "Ready to sync",
+          tone: lastSync ? "success" : undefined,
+          detail: withCount(totalProducts, "product", "products"),
+        },
+    qbo
+      ? {
+          label: "Customers",
+          value: reconnect
+            ? "Paused"
+            : customers.length
+              ? `${customers.length} to choose`
+              : "No matches to review",
+          tone: reconnect
+            ? undefined
+            : customers.length
+              ? "warning"
+              : "success",
+          detail: reconnect
+            ? "Paused until reconnected"
+            : (customers[0]?.client.company ?? "Matched by billing email"),
+          action:
+            !reconnect && customers.length
+              ? queueLink("customers", "Choose customer")
+              : undefined,
+        }
+      : {
+          label: "Billing events",
+          value: eventStatus,
+          tone: activity?.lastBillingEvent
+            ? "success"
+            : health?.stripe_webhooks_configured
+              ? undefined
+              : "warning",
+          detail: "Signing and payments update proposals",
+          action: stripeIssues.length
+            ? queueLink("stripe", "See proposals")
+            : undefined,
+        },
+  ];
+  const showMenu = qbo ? owner && (connected || reconnect) : canSync;
+  const sync = (
+    <Button disabled={!!busy} onClick={() => void manage("sync")}>
+      Sync now
+    </Button>
+  );
+  const actions = (
+    <>
+      {connected && (
+        <a
+          className="btn connection-open-provider"
+          href={qbo ? quickBooksDashboard : stripeDashboard}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open {name}
+        </a>
+      )}
+      {reconnect && owner && (
+        <Button
+          className="studio-primary"
+          disabled={!!busy}
+          onClick={() => void manage("authorize")}
+        >
+          Reconnect QuickBooks
+        </Button>
+      )}
+      {showMenu && (
+        <button
+          type="button"
+          className="btn icon-only connection-more"
+          ref={menuTrigger}
+          title={`${name} actions`}
+          aria-label={`${name} actions`}
+          aria-haspopup="dialog"
+          aria-expanded={menu}
+          onClick={() => setMenu(true)}
+        >
+          <chromeIcons.more size={18} aria-hidden="true" />
+        </button>
+      )}
+    </>
+  );
+
+  function renderQueue(queue: Queue) {
+    return (
+      <ConnectionPanel
+        title={queueTitles[queue]}
+        id={`connection-queue-${queue}`}
+      >
+        {queues[queue].length ? (
+          <ul className="connection-activity" role="list">
+            {queues[queue].map((p) => (
+              <li key={p.id}>
+                <span>
+                  <a href={proposalLink(p)}>
+                    <strong>{proposalLabel(p)}</strong>
+                  </a>
+                  {queue === "waiting" && (
+                    <small>
+                      {money(
+                        oneTimeInvoiceLines(p).reduce(
+                          (sum, line) => sum + line.amount * line.qty,
+                          0,
+                        ),
+                        p.currency,
+                      )}{" "}
+                      one-time
+                      {p.client_signed_at &&
+                        ` · signed ${format(p.client_signed_at)}`}
+                    </small>
+                  )}
+                </span>
+                {queue === "waiting" && (
+                  <span className="pill warning">Waiting</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="connection-panel-body muted">
+            No proposals are waiting.
+          </p>
+        )}
+      </ConnectionPanel>
+    );
+  }
 
   return (
     <ConnectionDetailLayout
       name={name}
       mark={qbo ? "qb" : "S"}
       status={status}
-      tone={connected ? "success" : reconnect ? "warning" : "info"}
+      tone={connected ? "success" : reconnect ? "warning" : undefined}
       subtitle={
         qbo
-          ? "Create one-time invoices for signed proposals."
-          : "Take recurring payments and sync products from Stripe."
+          ? "One-time invoices for signed proposals."
+          : "Recurring payments, subscriptions and your product list."
       }
+      actions={connected || reconnect ? actions : undefined}
     >
       {error && <Banner tone="danger" title={error} />}
-      {notice && <p role="status">{notice}</p>}
-      <section aria-labelledby="provider-connection">
-        <h2 id="provider-connection">Connection</h2>
-        <dl>
-          <Fact label={qbo ? "Company" : "Account"}>
-            {qbo
-              ? ((connected || reconnect) && connection?.company) ||
-                "Not connected"
-              : connected
-                ? "Configured for this deployment"
-                : "Not connected"}
-          </Fact>
-          <Fact label="Environment">
-            {qbo
-              ? "Sandbox — synthetic clients and amounts only"
-              : mode === "live"
-                ? "Live mode"
-                : "Test mode — no real charges"}
-          </Fact>
-          <Fact label="Last sync">
-            {lastSync ? (
-              <time dateTime={lastSync}>{format(lastSync)}</time>
-            ) : (
-              "Not recorded"
-            )}
-          </Fact>
-          <Fact label="Connected by">
-            {connectedBy ? (
-              <>
-                {staffName} ·{" "}
-                <time dateTime={connectedBy.created_at}>
-                  {format(connectedBy.created_at)}
-                </time>
-              </>
-            ) : connected ? (
-              "Not recorded"
-            ) : (
-              "—"
-            )}
-          </Fact>
-          {!qbo && (
-            <>
-              <Fact label="Webhooks">
-                {health?.stripe_webhooks_configured
-                  ? "Configured"
-                  : "Not configured"}
-              </Fact>
-              <Fact
-                label="Product sync"
-                link={
-                  connected && mode === "test" ? (
-                    <Button disabled={busy} onClick={() => void manage("sync")}>
-                      Sync now
-                    </Button>
-                  ) : undefined
-                }
+      {notice && (
+        <p className="connection-notice" role="status">
+          {notice}
+        </p>
+      )}
+      {menu && (
+        <Sheet
+          title={`${name} actions`}
+          menu
+          anchor={menuTrigger.current}
+          onClose={() => setMenu(false)}
+        >
+          <div className="action-menu">
+            {connected && (
+              <a
+                className="connection-mobile-menu-link"
+                href={qbo ? quickBooksDashboard : stripeDashboard}
+                target="_blank"
+                rel="noreferrer"
               >
-                {lastSync ? "Synced" : "No sync recorded"} ·{" "}
-                <a href="/studio/products">Open products</a>
-              </Fact>
-            </>
-          )}
-        </dl>
-        {qbo && owner && (
-          <div className="connection-detail-actions">
-            {connected || reconnect ? (
-              <>
-                <Button
-                  disabled={busy}
-                  variant={reconnect ? "primary" : ""}
-                  onClick={() => void manage("authorize")}
-                >
-                  Reconnect
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => void manage("disconnect")}
-                >
-                  Disconnect
-                </Button>
-              </>
-            ) : (
-              <Button
-                disabled={busy || connection?.available !== true}
-                onClick={() => void manage("authorize")}
+                Open {name}
+              </a>
+            )}
+            {qbo && (
+              <button type="button" onClick={() => void manage("refresh")}>
+                Refresh connection
+              </button>
+            )}
+            {canSync && (
+              <button type="button" onClick={() => void manage("sync")}>
+                Sync products now
+              </button>
+            )}
+            {qbo && (
+              <button
+                type="button"
+                className="connection-danger"
+                onClick={() => void manage("disconnect")}
               >
-                Connect QuickBooks
-              </Button>
+                Disconnect QuickBooks…
+              </button>
             )}
           </div>
-        )}
-        {qbo && !owner && (
-          <p className="muted">A super admin manages this connection.</p>
-        )}
-        {qbo && connection?.available === false && (
-          <p className="muted">
-            Sandbox OAuth credentials are required on this deployment.
-          </p>
-        )}
-      </section>
-      <section aria-labelledby="provider-billing">
-        <h2 id="provider-billing">How billing uses it</h2>
-        <dl>
-          {qbo ? (
+        </Sheet>
+      )}
+      {!connected && !reconnect ? (
+        <ConnectionColumns
+          main={
+            <ConnectionPanel title={`What ${name} does in Yeswell`}>
+              <ConnectionSteps steps={aboutSteps} />
+            </ConnectionPanel>
+          }
+          aside={
             <>
-              <Fact label="Invoices" link={<ChangeBilling />}>
-                {settings?.qbo_invoice_delivery === "email"
-                  ? "Email to client"
-                  : "Draft for review"}
-              </Fact>
-              <Fact label="Default item" link={<ChangeBilling />}>
-                {itemName ??
-                  (settings?.qbo_custom_item_ref
-                    ? "Name unavailable"
-                    : "Not set")}
-              </Fact>
-              <Fact label="Terms" link={<ChangeBilling />}>
-                {settings?.qbo_term_ref
-                  ? (termName ?? "Name unavailable")
-                  : "Use QuickBooks default"}
-              </Fact>
-            </>
-          ) : (
-            <>
-              <Fact label="New clients">Checkout for recurring payments</Fact>
-              <Fact label="Existing clients">
-                Add items to their subscription
-              </Fact>
-              <Fact label="Payment methods" link={<ChangeBilling />}>
-                {settings?.payment_methods === "card_ach"
-                  ? "Card + US bank account (ACH)"
-                  : "Card"}
-              </Fact>
-            </>
-          )}
-        </dl>
-      </section>
-      <section aria-labelledby="provider-activity">
-        <h2 id="provider-activity">Recent activity</h2>
-        {activityError ? (
-          <p className="muted">Recent activity is temporarily unavailable.</p>
-        ) : !activity ? (
-          <p className="muted" role="status">
-            Loading activity…
-          </p>
-        ) : !activity.rows.length ? (
-          <p className="muted">No activity recorded yet.</p>
-        ) : (
-          <ul className="connection-activity">
-            {activity.rows.map((event) => (
-              <li key={event.id}>
-                <span>
-                  <strong>{event.label}</strong>
-                  {event.proposal_id && (
-                    <a href={`/proposals/${event.proposal_id}`}>
-                      {event.detail}
-                    </a>
+              <ConnectionPanel
+                title={
+                  qbo && !owner
+                    ? "A super admin connects QuickBooks"
+                    : `Connect ${name}`
+                }
+              >
+                <div className="connection-panel-body stack">
+                  {!qbo ? (
+                    <p>Stripe is set up by your Yeswell administrator.</p>
+                  ) : owner ? (
+                    <>
+                      <Button
+                        className="studio-primary"
+                        disabled={!!busy || connection?.available !== true}
+                        onClick={() => void manage("authorize")}
+                      >
+                        Connect QuickBooks
+                      </Button>
+                      <p>
+                        {connection?.available === false
+                          ? "A Yeswell administrator must configure sandbox OAuth first."
+                          : "Sign in to QuickBooks Online and choose the company. Then set the invoice item and terms in Billing defaults."}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        {admin
+                          ? `Ask ${admin.display_name} to connect it.`
+                          : "Ask a super admin to connect it."}{" "}
+                        Until then, record invoice numbers on the proposal by
+                        hand.
+                      </p>
+                      {admin?.email && (
+                        <a className="btn" href={`mailto:${admin.email}`}>
+                          Email {admin.display_name.split(" ")[0]}
+                        </a>
+                      )}
+                    </>
                   )}
-                </span>
-                <time dateTime={event.created_at}>
-                  {format(event.created_at)}
-                </time>
-              </li>
-            ))}
-          </ul>
-        )}
-        <a href="/studio/activity">View Activity log</a>
-      </section>
+                </div>
+              </ConnectionPanel>
+              <p className="connection-setup-note">
+                {qbo
+                  ? "Until QuickBooks is connected, staff record the invoice number on the proposal by hand."
+                  : "You can send proposals with custom lines. Clients need Stripe to set up recurring billing after signing."}
+              </p>
+            </>
+          }
+        />
+      ) : (
+        <>
+          {reconnect && (
+            <Banner tone="warning" title="QuickBooks needs to reconnect">
+              Your billing defaults and invoice history are kept.
+            </Banner>
+          )}
+          <ConnectionTiles tiles={tiles} />
+          <ConnectionColumns
+            main={
+              <>
+                {reconnect && renderQueue("waiting")}
+                {openQueue &&
+                  !(reconnect && openQueue === "waiting") &&
+                  renderQueue(openQueue)}
+                {!qbo && busy === "sync" && !lastSync && (
+                  <ConnectionPanel
+                    title="Setting up Stripe products"
+                    subtitle="You can stay here while the test catalog syncs."
+                  >
+                    <ConnectionSteps
+                      steps={[
+                        {
+                          title: "Account configured",
+                          icon: CircleCheck,
+                          detail: "Test mode",
+                        },
+                        {
+                          title: "Syncing products",
+                          icon: RefreshCw,
+                          detail: (
+                            <span role="status">
+                              Reading Stripe products and prices…
+                            </span>
+                          ),
+                        },
+                        {
+                          title: "Billing events",
+                          icon: CircleCheck,
+                          detail: eventStatus,
+                        },
+                      ]}
+                    />
+                  </ConnectionPanel>
+                )}
+                <ConnectionPanel
+                  className={qbo ? "connection-billing-compact" : undefined}
+                  title={
+                    qbo ? (
+                      <>
+                        <span className="connection-billing-desktop">
+                          How billing uses QuickBooks
+                        </span>
+                        <span className="connection-billing-phone">
+                          How billing uses it
+                        </span>
+                      </>
+                    ) : (
+                      "How billing uses Stripe"
+                    )
+                  }
+                  subtitle={
+                    qbo
+                      ? quickBooksInvoiceTiming
+                      : "After a client signs, recurring services bill through Stripe."
+                  }
+                  action={
+                    <a
+                      className="connection-billing-link"
+                      href={billingDefaults}
+                    >
+                      Edit in Billing defaults
+                    </a>
+                  }
+                >
+                  <ConnectionSteps steps={billingSteps} />
+                  {qbo && (
+                    <dl className="connection-billing-phone">
+                      <ConnectionFact label="Invoice">
+                        {emailInvoices ? "Email to client" : "Draft for review"}
+                      </ConnectionFact>
+                      <ConnectionFact label="Default item">
+                        {item}
+                      </ConnectionFact>
+                      <ConnectionFact label="Terms">{terms}</ConnectionFact>
+                    </dl>
+                  )}
+                </ConnectionPanel>
+                {!qbo && (
+                  <ConnectionPanel title="Products">
+                    <div className="connection-panel-body connection-product-summary">
+                      <div>
+                        <strong>
+                          {withCount(totalProducts, "product", "products")}
+                        </strong>
+                        <p>
+                          {recurring} recurring · {totalProducts - recurring}{" "}
+                          one-time{lastSync && ` · synced ${format(lastSync)}`}.
+                        </p>
+                        {syncedCount !== undefined && (
+                          <p>
+                            {withCount(
+                              syncedCount,
+                              "Stripe price read",
+                              "Stripe prices read",
+                            )}{" "}
+                            in the last sync.
+                          </p>
+                        )}
+                        <p>
+                          Prices change in Stripe. You still type every amount
+                          on a proposal.
+                        </p>
+                      </div>
+                      <div>
+                        {canSync && sync}
+                        <a className="btn" href="/studio/products">
+                          Open products
+                        </a>
+                      </div>
+                    </div>
+                  </ConnectionPanel>
+                )}
+              </>
+            }
+            aside={
+              <>
+                <ConnectionPanel title="Connection">
+                  <dl>
+                    {qbo && connection?.company && (
+                      <ConnectionFact label="Company">
+                        {connection.company}
+                      </ConnectionFact>
+                    )}
+                    <ConnectionFact label="Environment">
+                      {qbo
+                        ? "Sandbox. Synthetic clients and amounts only."
+                        : mode === "test"
+                          ? "Test mode. No real charges."
+                          : "Live mode"}
+                    </ConnectionFact>
+                    {connectedBy && (
+                      <ConnectionFact label="Connected by">
+                        {staffName} ·{" "}
+                        <time dateTime={connectedBy.created_at}>
+                          {format(connectedBy.created_at)}
+                        </time>
+                      </ConnectionFact>
+                    )}
+                    {qbo ? (
+                      <>
+                        {lastSync && (
+                          <ConnectionFact label="Last sync">
+                            <time dateTime={lastSync}>{format(lastSync)}</time>
+                          </ConnectionFact>
+                        )}
+                        <ConnectionFact label="Access renews">
+                          {reconnect
+                            ? "Reconnect needed"
+                            : "Automatically. Reconnect if prompted."}
+                        </ConnectionFact>
+                      </>
+                    ) : (
+                      <ConnectionFact label="Billing events">
+                        {eventStatus}
+                        {activity?.lastBillingEvent && (
+                          <>
+                            {" "}
+                            · last received{" "}
+                            <time dateTime={activity.lastBillingEvent}>
+                              {time(activity.lastBillingEvent)}
+                            </time>
+                          </>
+                        )}
+                      </ConnectionFact>
+                    )}
+                  </dl>
+                </ConnectionPanel>
+                {!reconnect && (
+                  <ConnectionPanel title="Recent activity">
+                    {activityError ? (
+                      <p className="connection-panel-body muted">
+                        Recent activity is temporarily unavailable.
+                      </p>
+                    ) : !activity ? (
+                      <p className="connection-panel-body muted" role="status">
+                        Loading activity…
+                      </p>
+                    ) : !activity.rows.length ? (
+                      <p className="connection-panel-body muted">
+                        No activity recorded yet.
+                      </p>
+                    ) : (
+                      <ul className="connection-activity" role="list">
+                        {activity.rows.map((event) => (
+                          <li key={event.id}>
+                            <span>
+                              <strong>{event.label}</strong>
+                              {event.proposal_id && (
+                                <a href={`/proposals/${event.proposal_id}`}>
+                                  {event.detail}
+                                </a>
+                              )}
+                            </span>
+                            <time dateTime={event.created_at}>
+                              {format(event.created_at)}
+                            </time>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <footer>
+                      <a href="/studio/activity">View Activity log</a>
+                    </footer>
+                  </ConnectionPanel>
+                )}
+              </>
+            }
+          />
+        </>
+      )}
     </ConnectionDetailLayout>
   );
 }
