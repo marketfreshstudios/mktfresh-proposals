@@ -25,6 +25,13 @@ import {
 } from "../lib/columns";
 import { blockBoxStyle } from "../lib/block-style";
 import {
+  columnStyleKey,
+  StyleClipboardProvider,
+  styleTarget,
+  useStyleClipboard,
+  type StyleDocument,
+} from "./editor/style-clipboard";
+import {
   BlockStyleControls,
   type BlockStyleControlProps,
 } from "./editor/block-style-controls";
@@ -81,15 +88,14 @@ const Selection = createContext({
   hover: (_id: string | null) => {},
   ids: [] as string[],
   selectMode: false,
+  styleRequest: 0,
+  selectStyle: (_id: string) => {},
   selectMore: () => {},
   select: (_id: string, _mode?: "range" | "toggle") => {},
   clear: () => {},
 });
-type DocumentBinding = {
-  content: Block[];
-  prefix: string;
+type DocumentBinding = StyleDocument & {
   source?: "proposal" | "template" | "library";
-  onChange: (blocks: Block[]) => void;
   reuse: (blocks: Block[]) => void;
   remove?: (
     block: Pick<Block, "type">,
@@ -128,6 +134,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     onField?: () => void;
     locked?: boolean;
   }>({ compact: false, map: {} });
+  const [styleRequest, requestStyles] = useState(0);
   const [selected, setSelected] = useState<string | null>(null),
     [hovered, setHovered] = useState<string | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null),
@@ -188,6 +195,13 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       lastText.current = null;
     setSelected(id);
   };
+  const selectStyle = (id: string) => {
+    const binding = documentBinding.current;
+    if (!binding || config.locked || !styleTarget(binding, id)) return;
+    select(id);
+    requestStyles((request) => request + 1);
+    binding.onOpenStyles?.();
+  };
   const insert = (path: string) => {
     const remembered =
       lastText.current && targets.current.get(lastText.current);
@@ -242,6 +256,17 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
       const frame = target.closest<HTMLElement>(".block-frame");
       if (frame) {
         if (target.closest("[data-editor-chrome]")) return;
+        const column = target.closest<HTMLElement>(
+          ".editor-column[data-column-editable]",
+        );
+        if (column?.dataset.columnId && !column.contains(frame)) {
+          // Keep the browser from focusing the enclosing Columns block.
+          event.preventDefault();
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur();
+          selectStyle(columnStyleKey(column.dataset.columnId));
+          return;
+        }
         if (frame.dataset.blockId) {
           if (event.shiftKey || event.metaKey || event.ctrlKey || selectMode)
             event.preventDefault();
@@ -284,7 +309,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
     };
     document.addEventListener("pointerdown", outside, true);
     return () => document.removeEventListener("pointerdown", outside, true);
-  }, [selectMode]);
+  }, [selectMode, config.locked]);
   return (
     <ControlConfig.Provider value={setConfig}>
       <ControlLayout.Provider
@@ -298,132 +323,140 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
         }}
       >
         <EditorHistoryProvider>
-          <Formatting.Provider
-            value={{
-              target,
-              setTarget,
-              owner,
-              hasTextTarget: !!lastText.current || !!textStyle,
-              textStyle,
-              activate: (id) => {
-                activate(id);
-                if (!id) setTextStyle(undefined);
-              },
-              insert,
-              register: (id, target) => {
-                targets.current.set(id, target);
-                return () => {
-                  targets.current.delete(id);
-                  activate((current) => (current === id ? null : current));
-                  if (lastText.current === id) lastText.current = null;
-                };
-              },
-              remember: (id) => {
-                lastText.current = id;
-                setTextStyle(targets.current.get(id)?.textStyle?.());
-                activate(targets.current.get(id)?.rich ? id : null);
-              },
-            }}
+          <StyleClipboardProvider
+            binding={documentBinding}
+            selected={ids.length <= 1 && !selectMode ? selected : null}
+            locked={!!config.locked}
           >
-            <DocumentBindingContext.Provider value={documentBinding}>
-              <Selection.Provider
-                value={{
-                  active: selected ?? hovered,
-                  selected,
-                  ids,
-                  selectMode,
-                  selectMore: () => setSelectMode(true),
-                  hover: setHovered,
-                  select,
-                  clear,
-                }}
-              >
-                <div
-                  className="block-scope"
-                  onPointerDownCapture={(e) => {
-                    if (
-                      !(e.target as Element).closest(
-                        ".field-editor,[data-editor-chrome],[role=dialog]",
-                      )
-                    )
-                      activate(null);
-                  }}
-                  onFocusCapture={(e) => {
-                    if (
-                      !(e.target as Element).closest(
-                        ".field-editor,[data-editor-chrome],[role=dialog]",
-                      )
-                    )
-                      activate(null);
-                  }}
-                  onPointerLeave={() => setHovered(null)}
-                  onKeyDownCapture={(e) => {
-                    if (
-                      desktop &&
-                      e.altKey &&
-                      !e.metaKey &&
-                      !e.ctrlKey &&
-                      /^Digit[0-3]$/.test(e.code) &&
-                      (e.target as Element).closest(
-                        ".block-content .tiptap,.block-content [data-document-text]",
-                      ) &&
-                      textStyle
-                    ) {
-                      e.preventDefault();
-                      textStyle.change(
-                        Number(e.code.slice(-1)) as 0 | 1 | 2 | 3,
-                      );
-                      return;
-                    }
-                    if (e.key === "Escape") {
-                      // The first Escape belongs to the open tool, which restores its
-                      // trigger. A subsequent Escape in the document deselects it.
-                      if (
-                        (e.target as Element).closest(
-                          ".toolbar-popover,.block-popover",
-                        )
-                      )
-                        return;
-                      clear();
-                      if ((e.target as Element).closest(".block-frame")) {
-                        (e.target as HTMLElement).blur();
-                      }
-                    }
+            <Formatting.Provider
+              value={{
+                target,
+                setTarget,
+                owner,
+                hasTextTarget: !!lastText.current || !!textStyle,
+                textStyle,
+                activate: (id) => {
+                  activate(id);
+                  if (!id) setTextStyle(undefined);
+                },
+                insert,
+                register: (id, target) => {
+                  targets.current.set(id, target);
+                  return () => {
+                    targets.current.delete(id);
+                    activate((current) => (current === id ? null : current));
+                    if (lastText.current === id) lastText.current = null;
+                  };
+                },
+                remember: (id) => {
+                  lastText.current = id;
+                  setTextStyle(targets.current.get(id)?.textStyle?.());
+                  activate(targets.current.get(id)?.rich ? id : null);
+                },
+              }}
+            >
+              <DocumentBindingContext.Provider value={documentBinding}>
+                <Selection.Provider
+                  value={{
+                    active: selected ?? hovered,
+                    selected,
+                    ids,
+                    selectMode,
+                    styleRequest,
+                    selectStyle,
+                    selectMore: () => setSelectMode(true),
+                    hover: setHovered,
+                    select,
+                    clear,
                   }}
                 >
-                  <BandEditingProvider
-                    renderNotices={(notices, undo) =>
-                      notices.length ? (
-                        <ToastSurface className="band-notices">
-                          {notices.map((notice) => (
-                            <div key={notice.key} className="band-notice-row">
-                              <span>{notice.text} · </span>
-                              <button
-                                type="button"
-                                onClick={() => undo(notice)}
-                              >
-                                Undo
-                              </button>
-                            </div>
-                          ))}
-                        </ToastSurface>
-                      ) : null
-                    }
+                  <div
+                    className="block-scope"
+                    onPointerDownCapture={(e) => {
+                      if (
+                        !(e.target as Element).closest(
+                          ".field-editor,[data-editor-chrome],[role=dialog]",
+                        )
+                      )
+                        activate(null);
+                    }}
+                    onFocusCapture={(e) => {
+                      if (
+                        !(e.target as Element).closest(
+                          ".field-editor,[data-editor-chrome],[role=dialog]",
+                        )
+                      )
+                        activate(null);
+                    }}
+                    onPointerLeave={() => setHovered(null)}
+                    onKeyDownCapture={(e) => {
+                      if (
+                        desktop &&
+                        e.altKey &&
+                        !e.metaKey &&
+                        !e.ctrlKey &&
+                        /^Digit[0-3]$/.test(e.code) &&
+                        (e.target as Element).closest(
+                          ".block-content .tiptap,.block-content [data-document-text]",
+                        ) &&
+                        textStyle
+                      ) {
+                        e.preventDefault();
+                        textStyle.change(
+                          Number(e.code.slice(-1)) as 0 | 1 | 2 | 3,
+                        );
+                        return;
+                      }
+                      if (e.key === "Escape") {
+                        // The first Escape belongs to the open tool, which restores its
+                        // trigger. A subsequent Escape in the document deselects it.
+                        if (
+                          (e.target as Element).closest(
+                            ".toolbar-popover,.block-popover",
+                          )
+                        )
+                          return;
+                        clear();
+                        if ((e.target as Element).closest(".block-frame")) {
+                          (e.target as HTMLElement).blur();
+                        }
+                      }
+                    }}
                   >
-                    {children}
-                  </BandEditingProvider>
-                </div>
-                {guidance &&
-                  typeof document !== "undefined" &&
-                  createPortal(
-                    <ToastSurface>
-                      Click into a paragraph first, then choose a field
-                    </ToastSurface>,
-                    document.body,
-                  )}
-              </Selection.Provider>
-            </DocumentBindingContext.Provider>
-          </Formatting.Provider>
+                    <BandEditingProvider
+                      renderNotices={(notices, undo) =>
+                        notices.length ? (
+                          <ToastSurface className="band-notices">
+                            {notices.map((notice) => (
+                              <div key={notice.key} className="band-notice-row">
+                                <span>{notice.text} · </span>
+                                <button
+                                  type="button"
+                                  onClick={() => undo(notice)}
+                                >
+                                  Undo
+                                </button>
+                              </div>
+                            ))}
+                          </ToastSurface>
+                        ) : null
+                      }
+                    >
+                      {children}
+                    </BandEditingProvider>
+                  </div>
+                  {guidance &&
+                    typeof document !== "undefined" &&
+                    createPortal(
+                      <ToastSurface>
+                        Click into a paragraph first, then choose a field
+                      </ToastSurface>,
+                      document.body,
+                    )}
+                </Selection.Provider>
+              </DocumentBindingContext.Provider>
+            </Formatting.Provider>
+          </StyleClipboardProvider>
         </EditorHistoryProvider>
       </ControlLayout.Provider>
     </ControlConfig.Provider>
@@ -554,11 +587,11 @@ export function BlockFrame({
   reviewBusy = false,
   plainText = false,
   appearance,
-  layoutControls,
+  selectionBar,
 }: {
   plainText?: boolean;
   appearance?: BlockStyleControlProps;
-  layoutControls?: ReactNode;
+  selectionBar?: (frame: React.RefObject<HTMLDivElement | null>) => ReactNode;
   id: string;
   label: string;
   children: ReactNode;
@@ -581,6 +614,7 @@ export function BlockFrame({
   const [showAppearance, setShowAppearance] = useState(false);
   const boxStyle = blockBoxStyle(appearance?.value);
   const selection = useBlockSelection();
+  const clipboard = useStyleClipboard();
   const documentBinding = useContext(DocumentBindingContext);
   const orderedIds =
       documentBlocks(documentBinding.current?.content ?? []).map(
@@ -770,37 +804,54 @@ export function BlockFrame({
           !selection.selectMode &&
           selection.active === id && (
             <>
-              <EditBar
-                id={id}
-                frame={frame}
-                tools={
-                  <>
-                    {tools}
-                    {appearance?.onChange && blockType !== "page_break" && (
-                      <BlockAction
-                        menuLabel
-                        onClick={() => setShowAppearance(true)}
-                      >
-                        Block style
-                      </BlockAction>
-                    )}
-                  </>
-                }
-                blockType={blockType}
-                objectAction={
-                  layoutControls ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAppearance(true)}
-                    >
-                      Columns settings
-                    </button>
-                  ) : (
-                    objectAction
-                  )
-                }
-                plainText={plainText}
-              />
+              {selectionBar ? (
+                selectionBar(frame)
+              ) : (
+                <EditBar
+                  id={id}
+                  frame={frame}
+                  tools={
+                    <>
+                      {tools}
+                      {appearance?.onChange && blockType !== "page_break" && (
+                        <>
+                          {clipboard && appearance.block && (
+                            <>
+                              <BlockAction
+                                menuLabel
+                                onClick={() => clipboard.copy(id)}
+                              >
+                                Copy style
+                              </BlockAction>
+                              <BlockAction
+                                menuLabel
+                                disabled={!clipboard.styleClipboard}
+                                title={
+                                  clipboard.styleClipboard
+                                    ? "Paste style"
+                                    : "Copy a style first"
+                                }
+                                onClick={() => clipboard.paste(id)}
+                              >
+                                Paste style
+                              </BlockAction>
+                            </>
+                          )}
+                          <BlockAction
+                            menuLabel
+                            onClick={() => setShowAppearance(true)}
+                          >
+                            Block style
+                          </BlockAction>
+                        </>
+                      )}
+                    </>
+                  }
+                  blockType={blockType}
+                  objectAction={objectAction}
+                  plainText={plainText}
+                />
+              )}
               <GutterInsert
                 onAdd={insert}
                 dragHandle={dragHandle}
@@ -819,17 +870,12 @@ export function BlockFrame({
           />
         )}
       </div>
-      {appearance && showAppearance && !layout.locked && (
+      {appearance && showAppearance && !layout.locked && !selectionBar && (
         <Sheet
           title="Block style"
           className="block-style-sheet"
           onClose={() => setShowAppearance(false)}
         >
-          {layoutControls && (
-            <div className="columns-settings-controls" data-editor-chrome>
-              {layoutControls}
-            </div>
-          )}
           <BlockStyleControls {...appearance} />
         </Sheet>
       )}

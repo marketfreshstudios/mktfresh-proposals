@@ -36,18 +36,14 @@ function spaceOptions(withDefault = false) {
   );
 }
 
-export function BlockStyleControls({
-  value = {},
-  onChange,
+export function blockStyleTextColor({
+  value,
   settings,
   styles,
   block,
   content,
 }: BlockStyleControlProps) {
   const accent = settings?.accent_colour ?? "#365c4a";
-  const palette = [...new Set([accent, ...(settings?.brand_palette ?? [])])];
-  const ink = styleColour("ink");
-  const legal = block?.type === "contract" || block?.type === "signature_block";
   const bg = blockBackground(value);
   const members = block?.columns
     ? documentBlocks([block]).slice(1)
@@ -61,12 +57,34 @@ export function BlockStyleControls({
     return textStyle.size < 24 ? accessibleAccent(color) : color;
   });
   if (block?.type === "heading") colors.shift();
-  const textColor = colors.reduce((lowest, color) =>
+  return colors.reduce((lowest, color) =>
     colorContrast(color, bg ?? "#ffffff") <
     colorContrast(lowest, bg ?? "#ffffff")
       ? color
       : lowest,
   );
+}
+
+export function BlockStyleControls({
+  value = {},
+  onChange,
+  settings,
+  styles,
+  block,
+  content,
+}: BlockStyleControlProps) {
+  const accent = settings?.accent_colour ?? "#365c4a";
+  const palette = [...new Set([accent, ...(settings?.brand_palette ?? [])])];
+  const ink = styleColour("ink");
+  const legal = block?.type === "contract" || block?.type === "signature_block";
+  const bg = blockBackground(value);
+  const textColor = blockStyleTextColor({
+    value,
+    settings,
+    styles,
+    block,
+    content,
+  });
   const [customBackground, setCustomBackground] = useState(false);
   const [customBorder, setCustomBorder] = useState(false);
   const isCustomBackground =

@@ -5,7 +5,7 @@ import {
 export function placeEditorToolbar(
   owner: HTMLElement,
   bar: HTMLElement,
-  options: { below?: boolean; gap?: number } = {},
+  options: { below?: boolean; gap?: number; withinCanvas?: boolean } = {},
 ) {
   if (innerWidth < 700) {
     delete bar.dataset.toolbarPlaced;
@@ -40,8 +40,11 @@ export function placeEditorToolbar(
       };
   }
   const bounds: ToolbarRect = {
-    left: 8,
-    right: innerWidth - 8,
+    left: options.withinCanvas && region ? Math.max(8, region.left + 8) : 8,
+    right:
+      options.withinCanvas && region
+        ? Math.min(innerWidth - 8, region.right - 8)
+        : innerWidth - 8,
     top: Math.max(8, region?.top ?? 0),
     bottom: innerHeight - 8,
   };

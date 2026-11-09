@@ -57,7 +57,9 @@ export function PanelRail<T extends string = EditorTab>({
           type="button"
           key={tab}
           className="panel-rail-tab"
-          data-preserve-block-selection={tab === "Blocks" ? "" : undefined}
+          data-preserve-block-selection={
+            ["Blocks", "Styles"].includes(tab) ? "" : undefined
+          }
           aria-label={`Open ${tab}`}
           title={tab}
           onClick={() => onTab(tab)}
@@ -115,7 +117,9 @@ export function PanelTabs<T extends string = EditorTab>({
       {tabs.map((value) => (
         <button
           type="button"
-          data-preserve-block-selection={value === "Blocks" ? "" : undefined}
+          data-preserve-block-selection={
+            ["Blocks", "Styles"].includes(value) ? "" : undefined
+          }
           role="tab"
           key={value}
           aria-selected={tab === value}
@@ -142,6 +146,7 @@ export function ToolsPanel<T extends string = EditorTab>({
   label = "Proposal tools",
   phoneDock = true,
   actions,
+  sheetTitle,
 }: {
   tab: T;
   open: boolean;
@@ -152,6 +157,7 @@ export function ToolsPanel<T extends string = EditorTab>({
   label?: string;
   phoneDock?: boolean;
   actions?: ReactNode;
+  sheetTitle?: string;
   onToggle: () => void;
   onCloseComplete?: () => void;
   children: ReactNode;
@@ -165,6 +171,8 @@ export function ToolsPanel<T extends string = EditorTab>({
     handledClose.current = false;
     openedCallbacks.current = { onToggle, onCloseComplete };
     el?.showModal();
+    if (mode === "sheet" && sheetTitle)
+      el?.querySelector("h2")?.focus({ preventScroll: true });
     return () => el?.close();
   }, [mode, open]);
   const close = () => {
@@ -186,11 +194,22 @@ export function ToolsPanel<T extends string = EditorTab>({
       {mode === "sheet" && (
         <div className="editor-sheet-grabber" aria-hidden="true" />
       )}
-      <div className="editor-tools-header">
-        <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
+      <div
+        className="editor-tools-header"
+        data-preserve-block-selection={tab === "Styles" ? "" : undefined}
+      >
+        {mode === "sheet" && sheetTitle ? (
+          <h2 tabIndex={-1}>{sheetTitle}</h2>
+        ) : (
+          <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
+        )}
         {mode === "sheet" && (
-          <button type="button" onClick={close}>
-            Done
+          <button
+            type="button"
+            onClick={close}
+            className={sheetTitle ? "column-text-action" : undefined}
+          >
+            <span>Done</span>
           </button>
         )}
       </div>
@@ -260,7 +279,8 @@ export function ToolsPanel<T extends string = EditorTab>({
       {mode !== "docked" && open && (
         <dialog
           ref={dialog}
-          aria-label={label}
+          aria-label={mode === "sheet" && sheetTitle ? sheetTitle : label}
+          data-style-sheet={(mode === "sheet" && !!sheetTitle) || undefined}
           className={`${mode === "sheet" ? "editor-v2-sheet" : "editor-v2-drawer"} tools-sheet`}
           onClose={(event) => {
             if (event.currentTarget.open) return;

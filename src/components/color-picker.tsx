@@ -38,6 +38,7 @@ export function ColorPicker({
   onClose,
   initialOpen = false,
   contrastAgainst,
+  triggerText,
 }: {
   label: string;
   value: string;
@@ -50,6 +51,7 @@ export function ColorPicker({
   onClose?: () => void;
   initialOpen?: boolean;
   contrastAgainst?: string;
+  triggerText?: string;
 }) {
   const [open, setOpen] = useState(false),
     [raw, setRaw] = useState(value),
@@ -102,11 +104,17 @@ export function ColorPicker({
       <button
         ref={trigger}
         type="button"
-        className="color-picker-trigger"
+        className={
+          triggerText
+            ? "color-picker-trigger color-picker-text-trigger column-text-action"
+            : "color-picker-trigger"
+        }
         aria-label={
-          label.startsWith("Color ")
-            ? `Edit ${label.toLowerCase()}`
-            : `Edit ${label.toLowerCase()} color`
+          triggerText
+            ? `${triggerText} ${label.toLowerCase()} color`
+            : label.startsWith("Color ")
+              ? `Edit ${label.toLowerCase()}`
+              : `Edit ${label.toLowerCase()} color`
         }
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -119,8 +127,15 @@ export function ColorPicker({
           }
         }}
       >
-        <span className="color-trigger-swatch" style={{ background: value }} />
-        {variant === "compact" && (
+        {triggerText ? (
+          <span>{triggerText}</span>
+        ) : (
+          <span
+            className="color-trigger-swatch"
+            style={{ background: value }}
+          />
+        )}
+        {!triggerText && variant === "compact" && (
           <span>
             {label} · {value.toUpperCase()}
           </span>

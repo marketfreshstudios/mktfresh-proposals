@@ -9095,25 +9095,6 @@ body:has(.studio-v3-editor) {
   outline-offset: -1px;
   pointer-events: none;
 }
-.column-editor-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: var(--z-formatting);
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  pointer-events: none;
-}
-.editor-column:is(:hover, :focus-within, [data-column-empty])
-  > .column-editor-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-.column-editor-actions .btn {
-  background: var(--surface);
-  color: var(--ink);
-}
 .columns-overflow-notice {
   position: absolute;
   left: 0;
@@ -9134,10 +9115,6 @@ body:has(.studio-v3-editor) {
 @media (max-width: 699px) {
   .document-reading:not([data-page-measurement]) .document-columns {
     grid-template-columns: minmax(0, 1fr) !important;
-  }
-  .column-editor-actions .btn {
-    min-width: 44px;
-    min-height: 44px;
   }
   .columns-overflow-notice {
     flex-wrap: wrap;
@@ -9178,26 +9155,16 @@ body:has(.studio-v3-editor) {
     height: 14px;
     min-height: 14px;
   }
-  .editor-column:has(.editor-insert-gutter) > .column-editor-actions {
-    inset-inline: 4px auto;
-  }
 }
 
 dialog.foundation-sheet.block-style-sheet {
   width: min(440px, calc(100% - 24px));
 }
-.block-style-controls,
-.columns-settings-controls {
+.block-style-controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.columns-settings-controls {
-  padding-bottom: 16px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-.columns-settings-controls > :first-child,
 .block-background-controls {
   grid-column: 1 / -1;
 }

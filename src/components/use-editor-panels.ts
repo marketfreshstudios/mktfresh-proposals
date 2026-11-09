@@ -5,6 +5,7 @@ export function useEditorPanels(
   paper: RefObject<HTMLElement | null>,
   fullDocument: boolean,
   shellV2 = false,
+  dockedToolsWidth = 400,
 ) {
   const container = useRef<HTMLDivElement>(null),
     [width, setWidth] = useState(0),
@@ -95,7 +96,7 @@ export function useEditorPanels(
     left = v2 ? current.left : preferences.left && canLeft && !phone;
   const rightWidth = v2
     ? canRight && right
-      ? 400
+      ? dockedToolsWidth
       : canRight
         ? 56
         : 64

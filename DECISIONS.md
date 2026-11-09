@@ -889,3 +889,10 @@ Section time uses the existing engagement aggregates, grouped by section label. 
 - Staff actions use paired foreground and background colors for outline, ghost, filled ink, and clay states. Ink surfaces provide the shared white label and translucent hover paint. The proposal editor's Proposals breadcrumb is a real link with a Lucide chevron. Regular navigation still goes through the editor's save and leave guard.
 - The Sections header and list use the same surface, with the collapse control inset. The page sortable keeps a fixed-height end drop area so showing the hint cannot move later targets. “Move to end of page N” is visible during section dragging only, with no idle action or keyboard stop.
 - Round icon controls share a single size for both axes. In-column insert controls move inside the frame. Where a column has enough padding they stack in that gutter, and compact columns use a short row along the inner edge. Editor chrome stays outside the measured document content.
+
+## Redesign 20 column styles — 9 November 2026
+
+- Proposal and template editors share the Selection scope. Column tabs, layout, and box controls edit the existing document fields. The layout card stays open or closed for the editing session. Phone uses the editor’s bottom sheet and keeps border, corners, and stacking spacing under More options.
+- The style clipboard lives in editor memory and stores a copy of the style. Paste replaces the destination, including clearing it when the source has no style. Group paste and Match all write the document once, so Undo restores every target together. Contracts and signatures accept padding and spacing and skip box paint and corners. The toast undoes the specific paste for six seconds.
+- Column actions are editor chrome. Selecting text in a column switches to the text toolbar. The layout migration, column drop targets, schema, and output renderers are unchanged.
+- The canvas puts Paste style alongside the column tab above the outline. Selection and paste outlines sit 3px outside the column. Focus uses the shared outline, with text actions drawing it around the label inside their touch target.

@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { blockSpacing, columnBoxStyle } from "../../lib/block-style";
 import { insertAuthoringBlocks } from "../../lib/block-insertion";
 import {
-  changeColumnLayout,
   columnGridStyle,
   columnsOverflowMessage,
   columnRejection,
@@ -22,72 +27,13 @@ import type { WorkspaceSettings } from "../../lib/workspace";
 import { BlockAction, BlockFrame, useBlockSelection } from "../block-controls";
 import { BlockMenu } from "../block-menu";
 import { FieldEditor } from "../field-editor";
-import { Select } from "../form-controls";
-import { Sheet } from "../foundation";
 import { SelectableImage } from "./selectable-image";
 import { Sortable } from "../sortable";
-import { Button, Field } from "../ui";
-import { BlockStyleControls } from "./block-style-controls";
+import { Button } from "../ui";
+import { ColumnActionBar } from "./column-action-bar";
+import { useControlLayout } from "./control-layout";
+import { columnStyleKey, useStyleClipboard } from "./style-clipboard";
 import { HeadingElement, HeadingTokens } from "./heading-tokens";
-
-const layouts: [Columns["layout"], string][] = [
-  ["50-50", "50 / 50"],
-  ["33-67", "33 / 67"],
-  ["67-33", "67 / 33"],
-  ["33-33-33", "33 / 33 / 33"],
-];
-
-export function ColumnsSettings({
-  value,
-  onChange,
-}: {
-  value: Columns;
-  onChange: (next: Columns) => void;
-}) {
-  return (
-    <>
-      <Field label="Column layout">
-        <Select
-          value={value.layout}
-          onChange={(e) =>
-            onChange(
-              changeColumnLayout(value, e.target.value as Columns["layout"]),
-            )
-          }
-        >
-          {layouts.map(([key, title]) => (
-            <option key={key} value={key}>
-              {title}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field label="Column gap">
-        <Select
-          value={value.gap}
-          onChange={(e) =>
-            onChange({ ...value, gap: e.target.value as Columns["gap"] })
-          }
-        >
-          <option value="s">Small</option>
-          <option value="m">Medium</option>
-          <option value="l">Large</option>
-        </Select>
-      </Field>
-      <Field label="Vertical alignment">
-        <Select
-          value={value.align}
-          onChange={(e) =>
-            onChange({ ...value, align: e.target.value as Columns["align"] })
-          }
-        >
-          <option value="top">Top</option>
-          <option value="center">Center</option>
-        </Select>
-      </Field>
-    </>
-  );
-}
 
 export function ColumnsEditor({
   block,
@@ -98,6 +44,7 @@ export function ColumnsEditor({
   saved,
   onChange,
   onUnwrap,
+  onDelete,
   excess,
   reuse,
   renderLink,
@@ -110,6 +57,7 @@ export function ColumnsEditor({
   saved: SavedBlock[];
   onChange?: (block: Block) => void;
   onUnwrap: () => void;
+  onDelete?: () => void;
   excess?: number;
   reuse?: (block: Block) => void;
   renderLink?: (block: Block) => ReactNode;
@@ -121,8 +69,6 @@ export function ColumnsEditor({
     at: number;
     anchor: HTMLElement;
   } | null>(null);
-  const [styleColumn, setStyleColumn] = useState<string | null>(null);
-  const column = columns.items.find(({ id }) => id === styleColumn);
   const update = (id: string, patch: Partial<Columns["items"][number]>) =>
     onChange?.({
       ...block,
@@ -151,15 +97,20 @@ export function ColumnsEditor({
           const spacing = documentSpacing(c.content, styles, true);
           const padding = blockSpacing[c.style?.padding ?? "none"];
           return (
-            <div
+            <EditorColumn
+              blockId={block.id!}
+              prefix={prefix}
+              column={c}
+              index={n}
+              editable={!!onChange}
+              onUnwrap={onUnwrap}
+              onDelete={onDelete}
+              onAdd={(anchor) =>
+                setMenu({ column: c.id, at: c.content.length, anchor })
+              }
               className="document-column editor-column"
               key={c.id}
-              data-column-id={c.id}
-              data-columns-block={block.id}
-              data-column-empty={!c.content.length || undefined}
               data-column-has-gutter={padding >= 24 || undefined}
-              role="group"
-              aria-label={`Column ${n + 1}`}
               style={
                 {
                   ...columnBoxStyle(c.style),
@@ -345,30 +296,7 @@ export function ColumnsEditor({
                   aria-hidden="true"
                 />
               )}
-              {onChange && (
-                <div className="column-editor-actions" data-editor-chrome>
-                  <Button
-                    variant="ghost"
-                    icon="plus"
-                    aria-label={`Add block to column ${n + 1}`}
-                    onClick={(event) =>
-                      setMenu({
-                        column: c.id,
-                        at: c.content.length,
-                        anchor: event.currentTarget,
-                      })
-                    }
-                  />
-                  <Button
-                    variant="ghost"
-                    aria-label={`Style column ${n + 1}`}
-                    onClick={() => setStyleColumn(c.id)}
-                  >
-                    Style
-                  </Button>
-                </div>
-              )}
-            </div>
+            </EditorColumn>
           );
         })}
       </div>
@@ -404,21 +332,112 @@ export function ColumnsEditor({
           }}
         />
       )}
-      {column && (
-        <Sheet
-          title="Column style"
-          className="block-style-sheet"
-          onClose={() => setStyleColumn(null)}
-        >
-          <BlockStyleControls
-            value={column.style}
-            content={column.content}
-            styles={styles}
-            settings={settings}
-            onChange={(style) => update(column.id, { style })}
-          />
-        </Sheet>
-      )}
     </>
+  );
+}
+
+function EditorColumn({
+  blockId,
+  column,
+  index,
+  prefix,
+  editable,
+  onAdd,
+  onUnwrap,
+  onDelete,
+  children,
+  ...props
+}: {
+  blockId: string;
+  column: Columns["items"][number];
+  index: number;
+  prefix: string;
+  editable: boolean;
+  onAdd: (anchor: HTMLButtonElement) => void;
+  onUnwrap: () => void;
+  onDelete?: () => void;
+  children: ReactNode;
+  className: string;
+  style: CSSProperties;
+  "data-column-has-gutter"?: boolean;
+}) {
+  const selection = useBlockSelection();
+  const clipboard = useStyleClipboard();
+  const owner = useRef<HTMLDivElement>(null);
+  const { phone } = useControlLayout();
+  const key = columnStyleKey(column.id);
+  const label = `Column ${index + 1}`;
+  const selected =
+    editable && selection.selected === key && !selection.selectMode;
+  const activeChild = column.content.some(
+    (item) => selection.active === prefix + item.id,
+  );
+  const selectedChild = column.content.some(
+    (item) => selection.selected === prefix + item.id,
+  );
+  const copied = clipboard?.sourceKey === key;
+  const pasteTarget = editable && !!clipboard?.styleClipboard && !copied;
+  useEffect(() => {
+    if (!selected || !phone) return;
+    const frame = requestAnimationFrame(() =>
+      owner.current?.scrollIntoView({ block: "start", inline: "nearest" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [selected, phone]);
+  const choose = () => selection.selectStyle(key);
+  return (
+    <div
+      ref={owner}
+      {...props}
+      data-column-id={column.id}
+      data-columns-block={blockId}
+      data-column-empty={!column.content.length || undefined}
+      data-column-editable={editable || undefined}
+      data-column-selected={selected || undefined}
+      data-column-paste-target={pasteTarget || undefined}
+      data-column-active-child={activeChild || undefined}
+      data-column-selected-child={selectedChild || undefined}
+      role="group"
+      aria-label={label}
+    >
+      {children}
+      {editable && (
+        <div className="column-canvas-actions" data-editor-chrome>
+          <button
+            type="button"
+            className="column-canvas-label"
+            aria-label={`Select ${label}${copied ? " · style copied" : ""}`}
+            aria-pressed={selected}
+            onClick={choose}
+          >
+            {label}
+            {copied && " · style copied"}
+          </button>
+          {pasteTarget && !selectedChild && (
+            <button
+              type="button"
+              className="btn column-canvas-paste"
+              aria-label={`Paste style into ${label}`}
+              onClick={() => clipboard.paste(key)}
+            >
+              Paste style
+            </button>
+          )}
+        </div>
+      )}
+      {selected && clipboard && (
+        <ColumnActionBar
+          owner={owner}
+          itemKey={key}
+          label={label}
+          group={blockId}
+          onStyle={choose}
+          onAdd={onAdd}
+          onLayout={() => selection.selectStyle(prefix + blockId)}
+          onUnwrap={onUnwrap}
+          onDelete={onDelete}
+        />
+      )}
+    </div>
   );
 }

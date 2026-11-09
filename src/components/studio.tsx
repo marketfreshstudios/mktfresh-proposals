@@ -31,7 +31,10 @@ import {
   insertAuthoringBlocks,
   insertColumnBlocks,
 } from "../lib/block-insertion";
-import { ColumnsEditor, ColumnsSettings } from "./editor/columns-editor";
+import { ColumnsEditor } from "./editor/columns-editor";
+import { ColumnActionBar } from "./editor/column-action-bar";
+import { SelectionStyles } from "./editor/column-styles-panel";
+import { columnStyleKey, isColumnStyleKey } from "./editor/style-clipboard";
 import {
   documentBlocks,
   moveBlocksAcrossColumns,
@@ -985,6 +988,7 @@ function TemplatesStudioContent({
     templatePaper,
     true,
     true,
+    tab === "Styles" ? 380 : 400,
   );
   function openTab(value: string) {
     setTab(value);
@@ -1005,6 +1009,9 @@ function TemplatesStudioContent({
             (n) =>
               documentBlocks([content[n]]).some(
                 (block) => `template-${block.id ?? n}` === selection.selected,
+              ) ||
+              content[n].columns?.items.some(
+                (column) => columnStyleKey(column.id) === selection.selected,
               ) ||
               content[n].clauses?.some(
                 (c) => `template-clause-${c.id}` === selection.selected,
@@ -1675,6 +1682,29 @@ function TemplatesStudioContent({
       : ["Used in", "Fields", "Details"];
   const usage = data.library.find((b) => b.id === saved?.id)?.used_in ??
     saved?.used_in ?? { templates: [], drafts: [] };
+  const styleDocument = {
+    content,
+    prefix: "template-",
+    onChange: patch,
+    onOpenStyles: () => openTab("Styles"),
+  };
+  const unwrapGroup = (id: string) => {
+    patch(unwrapColumns(currentContent.current, id));
+    selection.clear();
+  };
+  const deleteGroup = (block: Block, index: number) =>
+    blockFeedback.remove(
+      block,
+      () => {
+        patch(currentContent.current.filter((item) => item.id !== block.id));
+        selection.clear();
+      },
+      () => {
+        const next = [...currentContent.current];
+        next.splice(Math.min(index, next.length), 0, block);
+        patch(next);
+      },
+    );
   const panelBody =
     mode === "blocks" && tab === "Used in" ? (
       <section className="saved-block-usage stack" aria-label="Used in">
@@ -1821,7 +1851,15 @@ function TemplatesStudioContent({
     ) : tab === "Blocks" ? (
       templateBlocks
     ) : tab === "Styles" ? (
-      templateTools
+      <SelectionStyles
+        document={styleDocument}
+        settings={data.settings}
+        styles={templateStyles}
+        phone={templatePanels.phone}
+        template
+      >
+        {templateTools}
+      </SelectionStyles>
     ) : mode === "templates" ? (
       <section id="template-default-quote">
         <TemplateWarnings templates={[draft!]} catalog={data.catalog} />
@@ -1858,10 +1896,8 @@ function TemplatesStudioContent({
       {blockDrop.line}
       <EditorControlConfig
         document={{
-          content,
-          prefix: "template-",
+          ...styleDocument,
           source: mode === "templates" ? "template" : "library",
-          onChange: patch,
           reuse: blockFeedback.reuse,
           remove: blockFeedback.remove,
         }}
@@ -2323,19 +2359,74 @@ function TemplatesStudioContent({
                             id={`template-${b.id ?? n}`}
                             label={`Template block ${n + 1}`}
                             blockType={b.type}
-                            layoutControls={
-                              b.columns && (
-                                <ColumnsSettings
-                                  value={b.columns}
-                                  onChange={(columns) =>
-                                    patch(
-                                      currentContent.current.map((v) =>
-                                        v.id === b.id ? { ...v, columns } : v,
-                                      ),
+                            selectionBar={
+                              b.columns
+                                ? (owner) =>
+                                    selection.selected ===
+                                      `template-${b.id}` && (
+                                      <ColumnActionBar
+                                        owner={owner}
+                                        itemKey={`template-${b.id}`}
+                                        label={`Columns · ${b.columns!.items.length}`}
+                                        onStyle={() =>
+                                          selection.selectStyle(
+                                            `template-${b.id}`,
+                                          )
+                                        }
+                                        onUnwrap={() => unwrapGroup(b.id!)}
+                                        onDelete={() => deleteGroup(b, n)}
+                                        tools={
+                                          <>
+                                            {([-1, 1] as const).map(
+                                              (direction) => (
+                                                <BlockAction
+                                                  key={direction}
+                                                  menuLabel
+                                                  disabled={
+                                                    !canMoveAdjacentBlock(
+                                                      content,
+                                                      b.id!,
+                                                      direction,
+                                                    )
+                                                  }
+                                                  onClick={() =>
+                                                    move((blocks) =>
+                                                      moveAdjacentBlock(
+                                                        blocks,
+                                                        b.id!,
+                                                        direction,
+                                                      ),
+                                                    )
+                                                  }
+                                                >
+                                                  {direction === -1
+                                                    ? "Move up"
+                                                    : "Move down"}
+                                                </BlockAction>
+                                              ),
+                                            )}
+                                            <BlockAction
+                                              menuLabel
+                                              onClick={() => {
+                                                const next = [
+                                                  ...currentContent.current,
+                                                ];
+                                                next.splice(
+                                                  n + 1,
+                                                  0,
+                                                  duplicateBlock(b),
+                                                );
+                                                patch(next);
+                                              }}
+                                            >
+                                              Duplicate block
+                                            </BlockAction>
+                                            {blockFeedback.reuseButton(b)}
+                                          </>
+                                        }
+                                      />
                                     )
-                                  }
-                                />
-                              )
+                                : undefined
                             }
                             appearance={{
                               value: b.style,
@@ -2534,8 +2625,11 @@ function TemplatesStudioContent({
                           >
                             <div
                               className="block-open"
-                              onClick={() =>
-                                selection.select(`template-${b.id ?? n}`)
+                              onClick={
+                                b.columns
+                                  ? undefined
+                                  : () =>
+                                      selection.select(`template-${b.id ?? n}`)
                               }
                             >
                               {b.type === "paragraph" ? (
@@ -2661,15 +2755,8 @@ function TemplatesStudioContent({
                                       ),
                                     )
                                   }
-                                  onUnwrap={() => {
-                                    patch(
-                                      unwrapColumns(
-                                        currentContent.current,
-                                        b.id!,
-                                      ),
-                                    );
-                                    selection.clear();
-                                  }}
+                                  onUnwrap={() => unwrapGroup(b.id!)}
+                                  onDelete={() => deleteGroup(b, n)}
                                   excess={
                                     browserPages?.overflowColumns?.find(
                                       (item) => item.block === b.id,
@@ -3043,6 +3130,13 @@ function TemplatesStudioContent({
       <ToolsPanel
         tab={tab}
         tabs={panelTabs}
+        sheetTitle={
+          tab === "Styles" &&
+          selection.selected &&
+          isColumnStyleKey(selection.selected)
+            ? "Column style"
+            : undefined
+        }
         label={mode === "templates" ? "Template tools" : "Block tools"}
         open={
           templatePanels.phone || !templatePanels.canRight

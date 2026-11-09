@@ -1,0 +1,603 @@
+/* Column styling is editor chrome. It must never enter the document's flow. */
+.editor-column[data-column-editable] {
+  --column-outline-offset: 3px;
+}
+.editor-column[data-column-selected] {
+  outline: 2px solid var(--ink-title);
+  outline-offset: var(--column-outline-offset);
+  z-index: var(--z-block-controls);
+}
+.editor-column[data-column-paste-target]:not([data-column-selected]) {
+  outline: 2px dashed #9db5a8;
+  outline-offset: var(--column-outline-offset);
+}
+.editor-column[data-column-paste-target]:not([data-column-selected]):hover {
+  outline-color: var(--accent);
+}
+.column-canvas-actions {
+  position: absolute;
+  inset: auto 0 100%;
+  z-index: var(--z-block-controls);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  padding-block-end: calc(var(--column-outline-offset) + 2px);
+  pointer-events: none;
+}
+.column-canvas-actions > button {
+  opacity: 0;
+  pointer-events: none;
+}
+.column-canvas-label {
+  min-height: 20px;
+  padding: 0 8px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  font: 600 11px/1 var(--font-ui);
+  white-space: nowrap;
+}
+.editor-column[data-column-selected] .column-canvas-label {
+  color: var(--chrome-ink);
+  background: var(--chrome);
+  border-color: var(--chrome);
+}
+.editor-column[data-column-paste-target]:is(:hover, :focus-within):not(
+    [data-column-selected],
+    [data-column-selected-child]
+  )
+  > .column-canvas-actions {
+  pointer-events: auto;
+}
+.editor-column:is([data-column-selected], [data-column-empty], :hover)
+  .column-canvas-label,
+.column-canvas-actions > button:focus-visible,
+.editor-column[data-column-paste-target]:is(:hover, :focus-within):not(
+    [data-column-selected],
+    [data-column-selected-child]
+  )
+  .column-canvas-paste {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Move the label away from a text toolbar, and give a hovered paste target
+   the top edge until the user selects one of its text blocks. */
+.editor-column[data-column-active-child]:not([data-column-paste-target])
+  > .column-canvas-actions,
+.editor-column[data-column-selected-child] > .column-canvas-actions {
+  inset: 100% 0 auto;
+  padding-block: calc(var(--column-outline-offset) + 2px) 0;
+}
+.editor-column[data-column-active-child]:not([data-column-paste-target])
+  .column-canvas-label,
+.editor-column[data-column-selected-child] .column-canvas-label {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.editor-column[data-column-paste-target]:not([data-column-selected-child])
+  .block-frame[data-selected="false"]
+  > .editor-edit-bar {
+  visibility: hidden;
+}
+.column-canvas-actions > .column-canvas-paste {
+  height: 26px;
+  min-height: 26px;
+  padding-block: 0;
+  padding-inline: 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.staff-foundation.ink-clay .column-canvas-actions > .column-canvas-paste {
+  background: var(--surface);
+}
+.staff-foundation.ink-clay .column-canvas-actions > .column-canvas-paste:hover {
+  background: var(--segment);
+}
+.editor-edit-bar.editor-edit-bar.column-action-bar {
+  min-height: 42px;
+  height: 42px;
+  max-height: 42px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: #1c1b18;
+  color: white;
+  gap: 3px;
+  font: 500 12px/18px var(--font-ui);
+}
+.column-action-bar > strong {
+  padding-inline: 7px;
+  white-space: nowrap;
+}
+.editor-edit-bar.editor-edit-bar.column-action-bar
+  button:not(:where([role^="menuitem"], [role="option"])) {
+  width: auto;
+  padding-inline: 8px;
+  font: inherit;
+}
+.editor-edit-bar.editor-edit-bar.column-action-bar
+  button[aria-haspopup="menu"] {
+  width: 32px;
+  padding-inline: 0;
+}
+.column-action-bar .style-paste-button {
+  pointer-events: auto;
+}
+.column-action-menu .column-action-menu-items,
+.column-action-menu .column-action-menu-items > div {
+  display: grid;
+  min-width: max-content;
+}
+.column-action-menu .column-action-menu-items button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  font: 500 13px/1.3 var(--font-ui);
+  text-align: left;
+}
+.column-action-menu .column-action-menu-items button:hover:not(:disabled) {
+  background: var(--segment);
+}
+.column-action-menu .column-action-menu-items button:disabled,
+.column-action-menu .column-action-menu-items kbd {
+  color: var(--ink-muted);
+}
+.column-action-menu .column-action-menu-items button.danger {
+  color: var(--st-lost-ink);
+}
+.column-action-menu .column-action-menu-items hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-block-start: 1px solid var(--border);
+}
+
+.selection-styles {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  color: var(--ink);
+  font: 500 13px/1.4 var(--font-ui);
+}
+.editor-tab-content:has(> .selection-styles),
+.editor-tab-content:has(
+  > .editor-readonly-region > fieldset > .selection-styles
+) {
+  padding: 0;
+}
+.selection-styles :is(h2, h3, p) {
+  margin: 0;
+}
+.selection-styles :is(h2, h3) {
+  font: 600 16px/1.3 var(--font-ui);
+}
+.selection-styles small,
+.selection-styles p:not(.color-contrast) {
+  color: var(--ink-muted);
+}
+.selection-styles .btn {
+  min-height: 32px;
+  font-size: 12px;
+}
+.selection-styles .column-choices {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 2px;
+}
+.column-choices > label {
+  position: relative;
+  cursor: pointer;
+}
+.column-choices > label:has(input:disabled) {
+  cursor: default;
+  color: var(--ink-muted);
+}
+.column-choices > label:has(:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: 1px;
+  z-index: 1;
+}
+.column-choices > label > span {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+.column-choices-segments {
+  min-height: 32px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--segment);
+}
+.column-choices-segments > label {
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 2px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+.column-choices-segments > label[data-active="true"] {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.column-layout-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+.column-layout-card > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  text-align: left;
+}
+.column-layout-card > button span,
+.column-clipboard-card > div,
+.column-style-list-row > span,
+.column-group-box header > span,
+.selection-styles .column-style-row > span {
+  display: grid;
+}
+.column-layout-card > button[aria-expanded="true"] svg,
+.column-more-options[open] summary svg {
+  transform: rotate(90deg);
+}
+.column-layout-card > .column-layout-controls {
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+.column-layout-controls,
+.column-box-controls {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.column-style-row,
+.column-style-label,
+.column-style-breadcrumb,
+.column-style-list header,
+.column-group-box header,
+.column-more-options summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.column-style-row > .column-choices {
+  grid-auto-columns: minmax(25px, max-content);
+}
+.column-layout-preview {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+}
+.column-layout-preview i {
+  display: block;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.column-choices-layout > label {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.column-choices-layout > label[data-active="true"] {
+  border-color: var(--ink-title);
+  background: var(--segment);
+}
+.column-choices-layout > label[data-active="true"] i {
+  background: var(--ink-title);
+}
+.column-style-breadcrumb {
+  justify-content: flex-start;
+  gap: 5px;
+}
+.column-style-breadcrumb > button,
+.selection-styles .color-picker-text-trigger {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 32px;
+}
+.column-style-breadcrumb > button {
+  padding: 0;
+}
+.columns-overview {
+  display: grid;
+  gap: 6px;
+}
+.columns-overview > .column-layout-controls {
+  margin-block-start: 6px;
+}
+.selection-styles .column-style-tabs {
+  display: flex;
+  gap: 2px;
+}
+.column-style-tabs > button {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ink);
+  font: 600 12px/1 var(--font-ui);
+}
+.column-style-tabs > button[aria-selected="true"] {
+  background: var(--segment);
+}
+.column-tab-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.column-tab-main > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-title);
+  flex: none;
+}
+.column-copy-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.column-style-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.column-style-actions + :is(.column-clipboard-card, .column-box-controls),
+.column-clipboard-card + .column-box-controls {
+  margin-top: 12px;
+}
+.column-clipboard-card,
+.column-group-box,
+.column-style-list,
+.column-stack-options {
+  display: grid;
+  gap: 8px;
+  padding-block: 10px;
+  border-block-start: 1px solid var(--border);
+}
+.column-clipboard-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-sunken);
+  padding-inline: 10px;
+}
+.column-style-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border);
+}
+.column-style-list-row > span {
+  flex: 1;
+}
+.column-style-list-row > i {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.column-color-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.selection-styles .column-choices-swatches {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.column-choices-swatches > label {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.column-choices-swatches > label > span {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+.column-choices-swatches > label > span[data-empty] {
+  background: linear-gradient(
+    135deg,
+    transparent 47%,
+    var(--ink-muted) 49%,
+    var(--ink-muted) 51%,
+    transparent 53%
+  );
+}
+.column-choices-swatches > label[data-active="true"] > span {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--ink-title);
+}
+.column-layout-note {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.column-more-options summary {
+  min-height: 44px;
+  border-top: 1px solid var(--border);
+  color: var(--ink);
+  cursor: pointer;
+}
+.column-more-options summary::-webkit-details-marker {
+  display: none;
+}
+.style-paste-toast {
+  gap: 12px;
+}
+.tools-sheet[data-style-sheet] .editor-tools-header h2:focus {
+  outline: none;
+}
+
+/* Native outlines use the control's own corners. Text actions keep a
+   full-size hit area and put that same outline around their text. */
+.staff-foundation
+  :is(
+    .selection-styles,
+    .column-action-bar,
+    .column-action-menu,
+    .column-canvas-actions,
+    [data-style-sheet] .editor-tools-header
+  )
+  :is(button, summary):focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 0;
+}
+.staff-foundation
+  :is(.selection-styles, [data-style-sheet] .editor-tools-header)
+  button.column-text-action {
+  border-radius: 0;
+}
+.staff-foundation
+  :is(.selection-styles, [data-style-sheet] .editor-tools-header)
+  button.column-text-action:focus-visible {
+  outline: none;
+}
+.column-text-action > span {
+  border-radius: inherit;
+}
+.column-text-action:focus-visible > span {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+.tools-sheet[data-style-sheet] .editor-tools-header h2 {
+  font: 600 16px/1.3 var(--font-ui);
+  margin: 0;
+  padding-inline-start: 8px;
+}
+
+@media (min-width: 700px) {
+  .editor-v2-drawer.tools-sheet:has(.selection-styles) {
+    width: min(380px, 100vw);
+  }
+}
+
+@media (max-width: 699px) {
+  .editor-v2-sheet.tools-sheet[data-style-sheet] {
+    height: auto;
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+  .tools-sheet[data-style-sheet] .editor-tools-header {
+    justify-content: space-between;
+  }
+  .tools-sheet[data-style-sheet] .editor-tab-content {
+    flex: 0 1 auto;
+  }
+  .selection-styles[data-column-phone]
+    .column-style-actions[data-main-paste]
+    > .button-wrap,
+  .selection-styles[data-column-phone]
+    .column-clipboard-card
+    > :not(.button-wrap) {
+    display: none;
+  }
+  .selection-styles[data-column-phone] .column-clipboard-card {
+    justify-content: center;
+    padding: 0;
+    margin-block-start: 4px;
+    background: transparent;
+    border: 0;
+  }
+  .staff-foundation.ink-clay
+    .selection-styles[data-column-phone]
+    .column-clipboard-card
+    > .button-wrap
+    > .btn {
+    flex: none;
+    border-color: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .selection-styles {
+    padding: 12px 16px 18px;
+    gap: 10px;
+  }
+  .selection-styles[data-column-phone]
+    :is(
+      .column-layout-card,
+      .column-style-breadcrumb,
+      .column-tab-long,
+      .column-copy-label
+    ) {
+    display: none;
+  }
+  .selection-styles[data-column-phone] .column-style-tabs > button {
+    min-height: 38px;
+  }
+  .selection-styles .btn,
+  .column-choices-segments,
+  .selection-styles .color-picker-text-trigger {
+    min-height: 44px;
+  }
+  .selection-styles .column-choices-swatches > label > span {
+    width: 36px;
+    height: 36px;
+  }
+  .column-style-actions:has(+ .column-clipboard-card) > .style-paste-button {
+    flex: 1 0 auto;
+  }
+  .column-style-actions:has(+ .column-clipboard-card)
+    > .style-paste-button
+    > button {
+    width: 100%;
+  }
+  .editor-edit-bar.column-action-bar[data-dock="keyboard"] {
+    position: fixed;
+    min-height: 54px;
+    overflow-x: auto;
+  }
+  .editor-edit-bar.column-action-bar button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .editor-column[data-column-selected] {
+    scroll-margin-top: 84px;
+  }
+  .column-canvas-actions > .column-canvas-label {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .column-canvas-actions > .column-canvas-paste {
+    min-height: 44px;
+  }
+}
