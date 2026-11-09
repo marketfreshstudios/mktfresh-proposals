@@ -371,7 +371,7 @@ export function SectionsNav({
       </Reorder>
       {!content.length && <p className="muted">No sections yet</p>}
       <button type="button" className="sections-add-page" onClick={() => add()}>
-        + Add page
+        Add page
       </button>
     </nav>
   );

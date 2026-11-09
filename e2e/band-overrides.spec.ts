@@ -20,7 +20,7 @@ test("cover margin pills enable each shared band independently through undo hist
   await zone.hover();
   await capture(page, "1h-1440-cover-pill");
   const button = zone.getByRole("button", {
-    name: "+ Use shared header",
+    name: "Use shared header",
     exact: true,
   });
   const box = await button.boundingBox();
@@ -34,7 +34,7 @@ test("cover margin pills enable each shared band independently through undo hist
   ).toHaveCount(0);
   await page
     .locator('[data-cover-band="footer"]')
-    .getByRole("button", { name: "+ Use shared footer", exact: true })
+    .getByRole("button", { name: "Use shared footer", exact: true })
     .click();
   await expect(
     page.locator('[data-band-frame="footer"][data-band-page="1"]'),
@@ -249,6 +249,7 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
     .getByRole("menuitem", { name: "Use shared header", exact: true })
     .click();
   await page
+    .locator(".band-popover-confirm")
     .getByRole("button", { name: "Use shared header", exact: true })
     .click();
   await expect(band).toHaveAttribute("data-band-source", "shared");

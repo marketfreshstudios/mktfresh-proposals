@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
 import { editorFixture } from "./editor-fixture";
+import { openQuoteRow } from "./editor-ui";
 
 const shotDir = "docs/screenshots/ink-and-clay-editor-studio";
 async function capture(page: Page, name: string) {
@@ -128,7 +129,6 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   const toggles = rows.locator(".quote-row-toggle");
   await toggles.nth(1).press("Enter");
   await expect(toggles.nth(1)).toHaveAttribute("aria-expanded", "true");
-  await capture(page, "editor-quote-expanded-1440");
   const amount = rows
     .nth(1)
     .getByRole("spinbutton", { name: /^Amount/ })
@@ -188,6 +188,66 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
     page.getByRole("tab", { name: "Quote", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
 });
+
+for (const width of [1440, 1024, 768]) {
+  test(`expanded quote fields stay readable and totals don't cover rows at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1050 });
+    const f = await scenario(page);
+    await page.goto(`/proposals/${f.draft.id}`);
+    await expect(page.locator(".quote-workspace")).toHaveAttribute(
+      "data-panels-ready",
+      "true",
+    );
+    const row = await openQuoteRow(page, "Website Build — Own It Over Time");
+    const quote = page.locator(".quote-panel").filter({ visible: true });
+    const next = quote.locator(".quote-row-toggle").filter({
+      hasText: "Hosting and care",
+    });
+    const footer = quote.locator(":scope > footer");
+    await expect(row.locator(".quote-row-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    const label = row.getByRole("textbox", { name: /^Sub-line label/ }).last();
+    const amount = row.getByRole("spinbutton", { name: /^Amount/ }).first();
+    await expect(amount).toHaveValue("500");
+    await expect(
+      row.getByRole("spinbutton", { name: /^Amount/ }).last(),
+    ).toHaveValue("175");
+    await label.scrollIntoViewIfNeeded();
+    if (width !== 1024 && process.env.INK_CLAY_STAGE3_CAPTURE === "1") {
+      await page.setViewportSize({ width, height: 1190 });
+      await capture(page, `editor-quote-expanded-${width}`);
+      await page.setViewportSize({ width, height: 1050 });
+    }
+    for (const value of ["999999.99", "1000000"]) {
+      await amount.fill(value);
+      await expect(amount).toHaveValue(value);
+      expect(
+        await amount.evaluate((input) => input.scrollWidth - input.clientWidth),
+      ).toBeLessThanOrEqual(0);
+    }
+    const line =
+      "Subscription and support for the complete website plan, including monthly maintenance, hosting, and help with website updates";
+    await label.fill(line);
+    await expect(label).toHaveValue(line);
+    expect(
+      await label.evaluate((input) => input.scrollHeight - input.clientHeight),
+    ).toBeLessThanOrEqual(0);
+    await expect.poll(() => f.active().quote[1].sublines[1].label).toBe(line);
+
+    await next.evaluate((element) => element.scrollIntoView({ block: "end" }));
+    await expect(next).toBeInViewport({ ratio: 0.99 });
+    expect((await footer.boundingBox())!.y).toBeGreaterThanOrEqual(
+      (await next.boundingBox())!.y + (await next.boundingBox())!.height - 1,
+    );
+    await next.click({ trial: true });
+    await footer.scrollIntoViewIfNeeded();
+    await expect(footer).toBeInViewport({ ratio: 0.99 });
+  });
+}
 
 for (const width of [1440, 768, 375]) {
   test(`editor chrome passes axe in light and dark at ${width}px`, async ({

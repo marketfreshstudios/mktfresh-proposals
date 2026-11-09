@@ -27,7 +27,7 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("above", e.currentTarget)}
         >
-          {layout === "edges" ? "+ Add above" : <Icon name="plus" />}
+          {layout === "edges" ? "Add above" : <Icon name="plus" />}
         </button>
       )}
       {layout === "gutter" && dragHandle}
@@ -41,7 +41,7 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("below", e.currentTarget)}
         >
-          {layout === "edges" ? "+ Add below" : <Icon name="plus" />}
+          {layout === "edges" ? "Add below" : <Icon name="plus" />}
         </button>
       )}
     </div>

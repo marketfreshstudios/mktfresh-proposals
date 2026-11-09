@@ -3449,7 +3449,7 @@ function BlockPanel({
           setClause(b.clauses?.length ?? 0);
         }}
       >
-        + Add clause
+        Add clause
       </Button>
       {saveAction}
     </div>

@@ -42,7 +42,7 @@ export function CoverBandPill({
           );
         }}
       >
-        + Use shared {kind}
+        Use shared {kind}
       </button>
     </div>
   );

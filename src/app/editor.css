@@ -2105,7 +2105,8 @@
   position: static;
   flex: none;
 }
-.editor-round3 .editor-sidepanel :is(.quote-panel, .quote-cards) {
+:is(.editor-round3 .editor-sidepanel, .editor-v2-drawer, .editor-v2-sheet)
+  :is(.quote-panel, .quote-cards) {
   position: static;
   height: auto;
   max-height: none;
@@ -4118,22 +4119,26 @@
   margin: 0;
 }
 .quote-panel .quote-row-body .subline-grid {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 40px 104px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  align-items: end;
+  align-items: center;
 }
 .quote-row-body .subline-label {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
-.quote-row-body .subline-label input {
-  width: 100%;
-  min-width: 0;
-  font-size: 12px;
+.quote-row-body .subline-amount {
+  flex: 2 0 140px;
 }
-.quote-row-body .subline-label button {
-  min-height: 28px;
-  font-size: 10px;
+.quote-row-body .subline-quantity {
+  flex: 0 0 56px;
+}
+.quote-row-body .subline-interval {
+  flex: 1 0 90px;
 }
 .quote-panel .quote-row-body .subline-grid .field {
   min-width: 0;
@@ -4224,9 +4229,6 @@
   text-transform: uppercase;
 }
 .quote-panel > footer {
-  position: sticky;
-  bottom: -16px;
-  z-index: 2;
   background: var(--surface);
   padding: 16px 0;
   border-top: 1px solid var(--border);
@@ -4914,9 +4916,6 @@
     flex: none;
     width: 30px;
   }
-  .editor-v2-sheet .quote-panel > footer {
-    bottom: -24px;
-  }
 }
 @media (max-width: 699px) {
   .quote-workspace.editor-v2 .editor-paper[data-sheet-view="true"] {
@@ -5038,19 +5037,6 @@
     display: block;
     background: #9f88e0;
   }
-}
-.quote-panel .quote-row-body .subline-label {
-  display: block;
-}
-.quote-panel .quote-row-body .subline-label input {
-  width: 100%;
-}
-.quote-panel .quote-row-body .subline-label button {
-  display: none;
-}
-.quote-panel .quote-row[data-details="true"] .subline-label button {
-  display: block;
-  width: 100%;
 }
 .send-panel-footer .actions > .button-wrap:last-child {
   flex: 1;
@@ -5401,9 +5387,6 @@
   padding: 8px 10px;
   font: 400 13px/18px var(--font-ui);
 }
-.quote-panel .quote-row-body .subline-grid {
-  align-items: center;
-}
 .subline-grid .field > span:first-child:not(.currency-input) {
   position: absolute;
   width: 1px;
@@ -5419,9 +5402,37 @@
   font: 500 12px/17px var(--font-ui);
   color: var(--ink-muted);
 }
-.quote-panel .subline-grid .subline-label input {
-  padding-inline: 6px;
-  font-size: 13px;
+.quote-row-body .subline-label-edit {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+/* Size the label to its wrapped text without changing the stored single-line value. */
+.quote-panel .quote-row-body .subline-label-edit > textarea,
+.quote-row-body .subline-label-edit::after {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  font: 400 13px/18px var(--font-ui);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.quote-panel .quote-row-body .subline-label-edit > textarea {
+  height: auto;
+  resize: none;
+}
+.quote-row-body .subline-label-edit::after {
+  content: attr(data-label) " ";
+  border: 1px solid transparent;
+  visibility: hidden;
+}
+@media (max-width: 699px) {
+  .quote-panel .quote-row-body .subline-label-edit > textarea,
+  .quote-row-body .subline-label-edit::after {
+    min-height: 44px;
+  }
 }
 .quote-panel .subline-grid .currency-input {
   display: flex;
@@ -6130,9 +6141,6 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   .quote-panel .subline-grid input[aria-label^="Quantity"] {
     font-size: 13px;
   }
-  .quote-panel .subline-grid .subline-label input {
-    font-size: 12px;
-  }
 }
 
 /* A section handle occupies its own gutter and centers on the first title line. */
@@ -6232,16 +6240,8 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   bottom: auto;
   margin: 0;
 }
-.quote-row-body .subline {
-  position: relative;
-}
-.quote-row-body .subline:has(.subline-remove) {
-  padding-right: 36px;
-}
 .quote-row-body .subline-remove {
-  position: absolute;
-  right: 0;
-  top: 10px;
+  flex: none;
   width: 32px;
   height: 32px;
   min-height: 32px;
@@ -6258,6 +6258,13 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .quote-row-body .subline-remove:hover {
   color: var(--danger);
   background: var(--danger-soft);
+}
+@media (max-width: 699px) {
+  .quote-row-body .subline-remove {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
 }
 .quote-panel .subline-warning {
   margin: 4px 0 10px;

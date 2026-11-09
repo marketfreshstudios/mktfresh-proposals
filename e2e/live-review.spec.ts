@@ -671,7 +671,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       if (!(await quotePanel.isVisible())) await openQuote.click();
       await expect(
         page
-          .getByRole("combobox", { name: "+ Add product", exact: true })
+          .getByRole("combobox", { name: "Add product", exact: true })
           .filter({ visible: true }),
       ).toBeVisible();
       await capture(

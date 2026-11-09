@@ -280,7 +280,7 @@ test("style, quote and insert attempts prompt without changing the library; phon
   expect(f.writes).toEqual([]);
   await page.reload();
   await page.getByRole("tab", { name: "Quote", exact: true }).click();
-  await page.getByRole("button", { name: "+ Custom", exact: true }).click();
+  await page.getByRole("button", { name: "Custom line", exact: true }).click();
   await expect(page.locator(".starter-edit-notice")).toBeVisible();
   expect(f.writes).toEqual([]);
   await page.reload();

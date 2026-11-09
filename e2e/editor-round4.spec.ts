@@ -318,7 +318,7 @@ test("page add/delete and undo use normal authoring history; templates use the s
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(`/proposals/${f.draft.id}`);
   const before = JSON.stringify(f.active().content);
-  await page.getByRole("button", { name: "+ Add page", exact: true }).click();
+  await page.getByRole("button", { name: "Add page", exact: true }).click();
   await expect
     .poll(
       () => f.active().content.filter((b) => b.type === "page_break").length,
