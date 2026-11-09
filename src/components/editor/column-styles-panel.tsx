@@ -610,8 +610,12 @@ export function SelectionStyles({
             )}
           </section>
           <div className="column-style-breadcrumb">
-            <button type="button" onClick={() => choose(groupKey)}>
-              Columns
+            <button
+              type="button"
+              className="column-text-action"
+              onClick={() => choose(groupKey)}
+            >
+              <span>Columns</span>
             </button>
             <ChevronRight size={12} aria-hidden="true" />
             <strong>{active.label}</strong>
@@ -657,8 +661,11 @@ export function SelectionStyles({
                   <strong>Copied from {clip.source}</strong>
                   <small>{styleSummary(clip.style, settings)}</small>
                 </div>
-                <Button onClick={() => clipboard.pasteAll(active.block.id!)}>
-                  Paste to all columns
+                <Button
+                  className={phone ? "column-text-action" : undefined}
+                  onClick={() => clipboard.pasteAll(active.block.id!)}
+                >
+                  <span>Paste to all columns</span>
                 </Button>
                 {clipboard.sourceKey !== active.key &&
                   sameStyle(active.style, clip.style) && (

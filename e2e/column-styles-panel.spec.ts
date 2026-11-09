@@ -130,11 +130,72 @@ async function capture(page: Page, id: string) {
 const panelButton = (panel: Locator, name: string) =>
   panel.getByRole("button", { name, exact: true });
 
+async function expectFocusRing(control: Locator, textOnly = false) {
+  await expect(control).toBeFocused();
+  const result = await control.evaluate((el, text) => {
+    const style = getComputedStyle(el);
+    const paint = text ? el.querySelector("span")! : el;
+    const ring = getComputedStyle(paint);
+    const shared = document.createElement("i");
+    shared.style.outline = "var(--focus-outline)";
+    el.append(shared);
+    const expected = getComputedStyle(shared);
+    const matchesToken =
+      ring.outlineColor === expected.outlineColor &&
+      ring.outlineStyle === expected.outlineStyle &&
+      ring.outlineWidth === expected.outlineWidth;
+    shared.remove();
+    return {
+      visible: el.matches(":focus-visible"),
+      matchesToken,
+      radius: ring.borderRadius,
+      controlRadius: style.borderRadius,
+      compact:
+        !text ||
+        (style.outlineStyle === "none" &&
+          paint.getBoundingClientRect().height <
+            el.getBoundingClientRect().height),
+    };
+  }, textOnly);
+  expect(result).toEqual({
+    visible: true,
+    matchesToken: true,
+    radius: result.controlRadius,
+    controlRadius: result.controlRadius,
+    compact: true,
+  });
+  return result.radius;
+}
+
+test("focus follows the shape of the column tab, text links and pill buttons", async ({
+  page,
+}) => {
+  const { select, styles, group } = await fixture(page);
+  await select(1);
+  const label = panelButton(group(1), "Select Column 1");
+  const radius = await expectFocusRing(label);
+  expect(radius.split(" ").slice(-2)).toEqual(["0px", "0px"]);
+  const toolbar = page.getByRole("toolbar", { name: "Column 1 tools" });
+  for (const control of [
+    panelButton(toolbar, "Style"),
+    panelButton(styles, "Copy style"),
+    styles.getByRole("tab", { name: "Column 1", exact: true }),
+  ]) {
+    await control.focus();
+    await expectFocusRing(control);
+  }
+  for (const name of ["Columns", "Custom background color"]) {
+    const link = panelButton(styles, name);
+    await link.focus();
+    expect(await expectFocusRing(link, true)).toBe("0px");
+  }
+});
+
 test("column selection writes the existing style fields and returns to proposal scope", async ({
   page,
 }) => {
-  const { select, styles, group, columnStyle, paper } = await fixture(page);
-  await select(1);
+  const { styles, group, columnStyle, paper } = await fixture(page);
+  await group(1).click({ position: { x: 8, y: 8 } });
   await expect(radio(styles, "Styles scope", "Selection")).toBeChecked();
   await expect(
     page.getByRole("dialog", { name: /^(Column|Block) style$/ }),
@@ -148,6 +209,10 @@ test("column selection writes the existing style fields and returns to proposal 
   await expect(panelButton(styles, "Paste style")).toHaveAttribute(
     "title",
     "Copy a style first",
+  );
+  await expect(panelButton(group(1), "Select Column 1")).toHaveCSS(
+    "outline-style",
+    "none",
   );
   await capture(page, "1a-column-selected");
   expect(
@@ -248,6 +313,16 @@ test("column clipboard replaces styles, names canvas targets, and pastes to all 
     styles.boundingBox(),
   ]);
   expect(barBox!.x + barBox!.width).toBeLessThanOrEqual(stylesBox!.x);
+  const [pasteBox, columnBox, labelBox] = await Promise.all([
+    hoverPaste.boundingBox(),
+    group(2).boundingBox(),
+    panelButton(group(2), "Select Column 2").boundingBox(),
+  ]);
+  expect(pasteBox!.y + pasteBox!.height).toBeLessThan(columnBox!.y);
+  expect(pasteBox!.x).toBeGreaterThan(labelBox!.x + labelBox!.width);
+  expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(pasteBox!.y + 1);
+  await expect(group(2)).toHaveCSS("outline-offset", "3px");
+  await expect(group(3)).toHaveCSS("outline-offset", "3px");
   await capture(page, "1b-style-copied");
   await panelButton(styles, "Paste to all columns").click();
   await expect
@@ -263,7 +338,11 @@ test("column clipboard replaces styles, names canvas targets, and pastes to all 
     .poll(() => [columnStyle(1), columnStyle(2), columnStyle(3)])
     .toEqual([sourceStyle, { border: "thin", margin_above: "s" }, undefined]);
 
+  await page.keyboard.press("Escape");
   await group(2).hover();
+  await expect(
+    group(2).getByRole("toolbar", { name: "Text tools" }),
+  ).toBeHidden();
   await hoverPaste.click();
   await expect.poll(() => columnStyle(2)).toEqual(sourceStyle);
   await select(3);
@@ -287,6 +366,15 @@ test("column clipboard replaces styles, names canvas targets, and pastes to all 
   await page.keyboard.press("Escape");
   await panelButton(styles, "Columns").click();
   await expect(styles.getByText("Group box")).toBeVisible();
+  const [introBox, layoutBox] = await Promise.all([
+    styles
+      .getByText("Layout for the whole group. Style each column below.")
+      .boundingBox(),
+    styles.getByText("Layout", { exact: true }).boundingBox(),
+  ]);
+  expect(
+    layoutBox!.y - (introBox!.y + introBox!.height),
+  ).toBeGreaterThanOrEqual(12);
   await capture(page, "1e-columns-scope");
   await choose(styles, "Column gap", "S");
   await choose(styles, "Align columns", "Center");
@@ -354,7 +442,12 @@ test("phone column style sheet keeps copy and paste handy and groups the remaini
   await expect(
     sheet.getByRole("radiogroup", { name: "Border", exact: true }),
   ).toBeHidden();
+  await expect(
+    sheet.getByRole("heading", { name: "Column style" }),
+  ).toBeFocused();
   await capture(page, "1f-phone-copy");
+  await page.keyboard.press("Tab");
+  expect(await expectFocusRing(panelButton(sheet, "Done"), true)).toBe("0px");
   await panelButton(sheet, "Copy style").click();
   await sheet.getByRole("tab", { name: "Column 2" }).click();
   const paste = panelButton(sheet, "Paste style from Column 1");

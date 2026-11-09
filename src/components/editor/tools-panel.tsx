@@ -171,6 +171,8 @@ export function ToolsPanel<T extends string = EditorTab>({
     handledClose.current = false;
     openedCallbacks.current = { onToggle, onCloseComplete };
     el?.showModal();
+    if (mode === "sheet" && sheetTitle)
+      el?.querySelector("h2")?.focus({ preventScroll: true });
     return () => el?.close();
   }, [mode, open]);
   const close = () => {
@@ -197,13 +199,17 @@ export function ToolsPanel<T extends string = EditorTab>({
         data-preserve-block-selection={tab === "Styles" ? "" : undefined}
       >
         {mode === "sheet" && sheetTitle ? (
-          <h2>{sheetTitle}</h2>
+          <h2 tabIndex={-1}>{sheetTitle}</h2>
         ) : (
           <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
         )}
         {mode === "sheet" && (
-          <button type="button" onClick={close}>
-            Done
+          <button
+            type="button"
+            onClick={close}
+            className={sheetTitle ? "column-text-action" : undefined}
+          >
+            <span>Done</span>
           </button>
         )}
       </div>

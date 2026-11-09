@@ -44,13 +44,14 @@ export function ColumnActionBar({
   const { phone } = useControlLayout();
   const hasStyle = !!clipboard.styleClipboard;
   const pasteTitle = hasStyle ? "Paste style" : "Copy a style first";
+  const gap = onAdd ? (hasStyle ? 36 : 28) : 6;
   useLayoutEffect(() => {
     const target = owner.current;
     const surface = bar.current;
     if (!target || !surface || phone) return;
     const place = () =>
       placeEditorToolbar(target, surface, {
-        gap: onAdd ? 24 : 6,
+        gap,
         withinCanvas: true,
       });
     const observer = new ResizeObserver(place);
@@ -64,7 +65,7 @@ export function ColumnActionBar({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [owner, phone, !!onAdd]);
+  }, [owner, phone, gap]);
 
   const command = (fn: () => void) => () => {
     setMore(false);

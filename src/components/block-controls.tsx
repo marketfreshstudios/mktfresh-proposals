@@ -260,6 +260,10 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
           ".editor-column[data-column-editable]",
         );
         if (column?.dataset.columnId && !column.contains(frame)) {
+          // Keep the browser from focusing the enclosing Columns block.
+          event.preventDefault();
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur();
           selectStyle(columnStyleKey(column.dataset.columnId));
           return;
         }

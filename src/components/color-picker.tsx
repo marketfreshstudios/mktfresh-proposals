@@ -106,7 +106,7 @@ export function ColorPicker({
         type="button"
         className={
           triggerText
-            ? "color-picker-trigger color-picker-text-trigger"
+            ? "color-picker-trigger color-picker-text-trigger column-text-action"
             : "color-picker-trigger"
         }
         aria-label={

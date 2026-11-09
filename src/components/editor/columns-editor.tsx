@@ -372,6 +372,9 @@ function EditorColumn({
   const activeChild = column.content.some(
     (item) => selection.active === prefix + item.id,
   );
+  const selectedChild = column.content.some(
+    (item) => selection.selected === prefix + item.id,
+  );
   const copied = clipboard?.sourceKey === key;
   const pasteTarget = editable && !!clipboard?.styleClipboard && !copied;
   useEffect(() => {
@@ -393,33 +396,34 @@ function EditorColumn({
       data-column-selected={selected || undefined}
       data-column-paste-target={pasteTarget || undefined}
       data-column-active-child={activeChild || undefined}
+      data-column-selected-child={selectedChild || undefined}
       role="group"
       aria-label={label}
     >
       {children}
       {editable && (
-        <button
-          type="button"
-          data-editor-chrome
-          className="column-canvas-label"
-          aria-label={`Select ${label}${copied ? " · style copied" : ""}`}
-          aria-pressed={selected}
-          onClick={choose}
-        >
-          {label}
-          {copied && " · style copied"}
-        </button>
-      )}
-      {pasteTarget && (
-        <button
-          type="button"
-          data-editor-chrome
-          className="btn column-canvas-paste"
-          aria-label={`Paste style into ${label}`}
-          onClick={() => clipboard.paste(key)}
-        >
-          Paste style
-        </button>
+        <div className="column-canvas-actions" data-editor-chrome>
+          <button
+            type="button"
+            className="column-canvas-label"
+            aria-label={`Select ${label}${copied ? " · style copied" : ""}`}
+            aria-pressed={selected}
+            onClick={choose}
+          >
+            {label}
+            {copied && " · style copied"}
+          </button>
+          {pasteTarget && !selectedChild && (
+            <button
+              type="button"
+              className="btn column-canvas-paste"
+              aria-label={`Paste style into ${label}`}
+              onClick={() => clipboard.paste(key)}
+            >
+              Paste style
+            </button>
+          )}
+        </div>
       )}
       {selected && clipboard && (
         <ColumnActionBar
