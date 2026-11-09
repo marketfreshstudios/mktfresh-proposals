@@ -593,9 +593,10 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         await capture(name, frame, width, theme);
       }
       await page.goto("/studio/connections?view=assistants");
-      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "AI assistants", level: 1 }),
+      ).toBeVisible();
       await capture("assistant-offline", "8k", width, theme);
-      await page.keyboard.press("Escape");
       await page.goto(`/proposals/${editing.id}?view=send`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
       await expect(

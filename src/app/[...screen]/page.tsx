@@ -27,6 +27,15 @@ export default async function Page({
     query.view === "reference"
   )
     redirect("/studio/workspace?view=pricing-references");
+  if (
+    screen[0] === "studio" &&
+    screen[1] === "connections" &&
+    screen.length === 2 &&
+    (query.view === "qbo" || query.view === "stripe")
+  )
+    redirect(
+      "/studio/connections/" + (query.view === "qbo" ? "quickbooks" : "stripe"),
+    );
   const destination = legacyStaffRedirect(screen);
   if (destination) redirect(destination);
   return (

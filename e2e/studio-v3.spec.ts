@@ -343,9 +343,9 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
   ).toHaveCount(0);
   await page.goto("/studio/connections?view=stripe");
   await expect(
-    page.getByRole("dialog", { name: "Stripe", exact: true }),
+    page.getByRole("heading", { name: "Stripe", level: 1, exact: true }),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/studio\/connections\/stripe$/);
   await page.goto("/studio/workspace?view=brand");
   const name = page.getByRole("textbox", {
     name: "Workspace name",
@@ -700,8 +700,10 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   const monogram = await connected
       .locator(".connection-monogram")
       .boundingBox(),
-    button = await connected.getByRole("button").boundingBox();
-  expect(button!.x).toBeGreaterThan(monogram!.x + monogram!.width);
+    settingsLink = await connected
+      .getByRole("link", { name: "Settings" })
+      .boundingBox();
+  expect(settingsLink!.x).toBeGreaterThan(monogram!.x + monogram!.width);
   // Positive configured states are healthy regardless of capitalization; disconnected stays neutral/amber.
   await page.route("**/api/connections", (route) =>
     route.fulfill({

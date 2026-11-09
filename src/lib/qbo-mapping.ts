@@ -1,4 +1,4 @@
-import type { BillingLine, Item } from "./model";
+import type { BillingLine, BillingLink, Item } from "./model";
 
 export const proposalInvoiceRef = (id: string) =>
   "YW-" + id.slice(0, 8).toUpperCase();
@@ -27,5 +27,15 @@ export function qboItemMapping(
     [mapped, fallback].find(
       (ref) => !!ref && (!realm || ref.startsWith(realm + ":")),
     ) ?? null
+  );
+}
+
+export function quickBooksCustomerReview(link: BillingLink) {
+  return (
+    link.provider === "qbo" &&
+    link.status === "needs_review" &&
+    Array.isArray(link.metadata?.customer_candidates) &&
+    link.metadata.customer_candidates.length > 0 &&
+    !link.metadata.customer_choice
   );
 }

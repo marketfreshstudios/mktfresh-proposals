@@ -11,6 +11,7 @@ import type { Storage } from "./storage";
 import { check, type Actor, type Audit } from "./model";
 import { FontSchema, type ProposalFont } from "./proposal-fonts";
 import { sha256 } from "./content";
+import { eventLabel } from "./event-label";
 export async function workspaceEvent(
   repo: Repository,
   actor: Actor,
@@ -147,6 +148,44 @@ export async function activity(repo: Repository): Promise<Activity[]> {
   return [...workspace, ...proposal].sort((a, b) =>
     b.created_at.localeCompare(a.created_at),
   );
+}
+export async function providerActivity(
+  repo: Repository,
+  provider: "qbo" | "stripe",
+) {
+  const rows = (await activity(repo)).filter(
+    (row) =>
+      row.metadata.provider === provider ||
+      (provider === "qbo"
+        ? row.type.startsWith("qbo_") || row.type === "invoice_created"
+        : row.type.startsWith("stripe_") ||
+          row.type === "subscription_created"),
+  );
+  const connected =
+    provider === "qbo"
+      ? rows.find((row) => row.type === "qbo_connected")
+      : undefined;
+  return {
+    rows: rows.slice(0, 5).map((row) => ({
+      id: row.id,
+      label: eventLabel(row),
+      created_at: row.created_at,
+      proposal_id: row.proposal_id,
+      detail: row.detail,
+    })),
+    connected: connected && {
+      actor: connected.actor,
+      name:
+        typeof connected.metadata.actor_name === "string"
+          ? connected.metadata.actor_name
+          : undefined,
+      created_at: connected.created_at,
+    },
+    lastSync:
+      provider === "stripe"
+        ? rows.find((row) => row.type === "catalog_synced")?.created_at
+        : undefined,
+  };
 }
 export { activityCsv } from "./studio-activity";
 

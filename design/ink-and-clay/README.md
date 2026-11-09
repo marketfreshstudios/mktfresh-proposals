@@ -31,3 +31,12 @@ Kept from Redesign 15 · 1a: the Home layout (ink pipeline card) and the calm ed
 Open the `.dc.html` files in a browser next to `support.js`. Sample names, emails and amounts in the frames are fictional placeholders.
 
 Rule carried over from the spec: client view and proposal pages keep the tenant's brand (`--accent`, `paper-*`); ink and clay never leak into them except the optional "Powered by Yeswell" footer.
+
+## Screens without a wireframe
+
+Use the ink-and-clay spec and the eight Redesign 19 rules for new screens,
+dialogs, and panels. Choose the closest designed frame and reuse its shared
+components and structure: connection marks and status chips (2e8), Workspace
+label/value rows and hairlines (2e10–2e13), and pill actions. Avoid bare stacks of
+paragraphs. For every new or revised surface without a wireframe, include a
+screenshot in the PR and name the frame or pattern it follows.

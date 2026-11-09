@@ -34,6 +34,7 @@ import {
 } from "../lib/billing-confirmation";
 import { StripeBillingDetails } from "./billing-breakdown";
 import { QuickBooksBilling } from "./quickbooks-billing";
+import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
@@ -1875,6 +1876,20 @@ export function RecordV4({
     signature = needsCountersign(p),
     issues = billingIssues(p),
     native = p.source === "native";
+  const qboIssue = p.billing_links.find(
+    (link) => link.provider === "qbo" && link.status !== "succeeded",
+  );
+  const qboCustomerReview = !!qboIssue && quickBooksCustomerReview(qboIssue);
+  const retryInBilling =
+    issues &&
+    (!qboCustomerReview ||
+      p.billing_links.some(
+        (link) =>
+          link.provider !== "qbo" &&
+          (link.status === "failed" ||
+            link.status === "needs_review" ||
+            publicBankState(link) === "failed"),
+      ));
   useEffect(() => {
     try {
       const saved = JSON.parse(
@@ -2183,7 +2198,7 @@ export function RecordV4({
                   Invoice manually
                 </Button>
               )}
-              {(!resend || !manual) && (
+              {!qboIssue && (!resend || !manual) && (
                 <Button onClick={() => void retryBilling()}>
                   Retry billing
                 </Button>
@@ -2428,6 +2443,7 @@ export function RecordV4({
                       }
                       attempts={j.attempts}
                       onRetry={
+                        !(qboIssue && j.kind === "billing") &&
                         j.status !== "running" &&
                         (j.status === "failed" || j.last_error)
                           ? () => {
@@ -2441,19 +2457,8 @@ export function RecordV4({
                   </div>
                 ))}
             </div>
-            {issues && (
-              <Button
-                onClick={async () => {
-                  try {
-                    await post(`/api/proposals/${p.id}/retry`);
-                    await onRefresh();
-                  } catch (e) {
-                    setError((e as Error).message);
-                  }
-                }}
-              >
-                Retry billing
-              </Button>
+            {retryInBilling && (
+              <Button onClick={() => void retryBilling()}>Retry billing</Button>
             )}
           </section>
           <ProposalEmailLog id={p.id} revision={p.revision} />

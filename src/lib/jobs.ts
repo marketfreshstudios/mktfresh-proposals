@@ -373,10 +373,8 @@ export class Worker {
             catalog:
               await this.repo.entities<import("./model").Item>("pricing_items"),
             connected: status.state === "connected",
-            realm:
-              status.company === "Local QuickBooks sandbox"
-                ? undefined
-                : status.realm,
+            realm: status.realm,
+            localLegacyItems: status.company === "Local QuickBooks sandbox",
           };
         }
         const link = await bill(fresh, provider, adapter, quickbooks);

@@ -9,6 +9,7 @@ import { bill, MockBillingProvider } from "../src/lib/billing";
 import { readiness } from "../src/lib/quote";
 import { billingLines } from "../src/lib/quote-model";
 import { proposalInvoiceRef } from "../src/lib/qbo-mapping";
+import { providerActivity } from "../src/lib/studio";
 import type { Client, Item } from "../src/lib/model";
 import { postgresFixture } from "./postgres-fixture";
 import { setup, staff, clientActor, signature } from "./helpers";
@@ -21,8 +22,16 @@ const config: QboConfig = {
   encryptionKey: Buffer.alloc(32, 3).toString("base64"),
   redirectUri: origin + QBO_CALLBACK,
 };
+type FixtureCustomer = {
+  Id: string;
+  DisplayName: string;
+  CompanyName?: string;
+  GivenName?: string;
+  FamilyName?: string;
+  PrimaryEmailAddr?: { Address: string };
+};
 function sandbox() {
-  let matches = [
+  let matches: FixtureCustomer[] = [
     {
       Id: "10",
       DisplayName: "Acme Sandbox",
@@ -30,6 +39,12 @@ function sandbox() {
     },
   ];
   let invoice: any;
+  let loseCustomerResponse = false;
+  const customerCreates: {
+    body: Record<string, unknown>;
+    requestId: string | null;
+  }[] = [];
+  const customerReads: string[] = [];
   let emailDown = false;
   let loseCreateResponse = false;
   const tokenBodies: URLSearchParams[] = [];
@@ -67,11 +82,46 @@ function sandbox() {
         return Response.json({
           QueryResponse: query.includes("from Invoice")
             ? { Invoice: invoice ? [invoice] : [] }
-            : { Customer: matches },
+            : {
+                Customer: matches.filter((entry) =>
+                  query.includes("PrimaryEmailAddr")
+                    ? !!entry.PrimaryEmailAddr
+                    : query.includes("CompanyName")
+                      ? !!entry.CompanyName
+                      : query.includes("FamilyName")
+                        ? !!entry.FamilyName
+                        : query.includes("DisplayName =")
+                          ? query.includes(entry.DisplayName)
+                          : !!entry.DisplayName,
+                ),
+              },
         });
       }
-      if (path === "customer/10")
-        return Response.json({ Customer: matches[0] });
+      if (path.startsWith("customer/")) {
+        const id = path.slice("customer/".length);
+        customerReads.push(id);
+        return Response.json({
+          Customer: matches.find((entry) => entry.Id === id),
+        });
+      }
+      if (path === "customer") {
+        const body = JSON.parse(String(init?.body));
+        customerCreates.push({
+          body,
+          requestId: url.searchParams.get("requestid"),
+        });
+        const entry = { Id: String(50 + customerCreates.length), ...body };
+        matches.push(entry);
+        if (loseCustomerResponse) {
+          loseCustomerResponse = false;
+          throw new Error("Fixture connection lost");
+        }
+        return Response.json({ Customer: entry });
+      }
+      if (path === "item/45")
+        return Response.json({
+          Item: { Id: "45", Name: "Web design services" },
+        });
       if (path === "invoice") {
         const body = JSON.parse(String(init?.body));
         creates.push({ body, requestId: url.searchParams.get("requestid") });
@@ -100,6 +150,12 @@ function sandbox() {
     fetcher,
     tokenBodies,
     creates,
+    customerCreates,
+    customerReads,
+    setCustomers: (entries: FixtureCustomer[]) => (matches = entries),
+    loseCustomer: () => {
+      loseCustomerResponse = true;
+    },
     deliveries,
     revocations,
     queries,
@@ -357,6 +413,265 @@ it("warns about disconnected and unmapped one-time lines and requires a staff ch
     status: "succeeded",
     external_customer_id: "10",
   });
+});
+
+async function matchingFixture() {
+  const f = await setup();
+  const mock = sandbox();
+  const qbo = new QboProvider(f.repo, config, mock.fetcher);
+  await connect(qbo);
+  const sent = await f.service.send(f.draft.id, staff);
+  const p = await f.service.sign(
+    sent.id,
+    signature(sent.revision),
+    "client",
+    clientActor,
+    { token: sent.token!, password: "" },
+  );
+  p.client = {
+    ...p.client,
+    company: "Example Studio",
+    first_name: "  Jane ",
+    last_name: " O'Neil ",
+    billing_email: "billing@example.test",
+  };
+  const opts = {
+    catalog: [],
+    connected: true,
+    realm: "123",
+    workspace: { ...f.settings, qbo_custom_item_ref: "123:45" },
+  };
+  const run = () => bill(p, "qbo", qbo, opts);
+  return { p, mock, qbo, run, repo: f.repo };
+}
+
+it("uses a single billing email match before company or name, then reuses the realm-specific linked ID", async () => {
+  const { mock, run, p, qbo } = await matchingFixture();
+  mock.setCustomers([
+    {
+      Id: "10",
+      DisplayName: "Different name",
+      PrimaryEmailAddr: { Address: "BILLING@EXAMPLE.TEST" },
+    },
+    {
+      Id: "11",
+      DisplayName: "Jane O'Neil",
+      CompanyName: "Example Studio",
+      PrimaryEmailAddr: { Address: "different@example.test" },
+    },
+  ]);
+  expect(await run()).toMatchObject({
+    status: "succeeded",
+    external_customer_id: "10",
+  });
+  expect(
+    mock.queries.filter((query) => query.includes("from Customer")),
+  ).toEqual([expect.stringContaining("PrimaryEmailAddr")]);
+  mock.queries.length = 0;
+  expect(
+    await qbo.resolveQuickBooksCustomer(
+      { ...p.client, email: "changed@example.test" },
+      "123",
+    ),
+  ).toMatchObject({ customer: { id: "10" } });
+  expect(mock.customerReads).toEqual(["10"]);
+  expect(mock.queries).toEqual([]);
+  expect(mock.customerCreates).toEqual([]);
+  expect(await qbo.item("999:45")).toBeNull();
+  expect(await qbo.item("123:45")).toEqual({
+    id: "123:45",
+    name: "Web design services",
+  });
+});
+
+it("lists exact normalized name and company candidates once, and uses a confirmed customer with a different email", async () => {
+  const { mock, run, p } = await matchingFixture();
+  mock.setCustomers([
+    {
+      Id: "10",
+      DisplayName: "Jane at Example",
+      CompanyName: "Example Studio",
+      GivenName: "  JANE ",
+      FamilyName: " O'NEIL ",
+      PrimaryEmailAddr: { Address: "old@example.test" },
+    },
+    {
+      Id: "11",
+      DisplayName: " jane o'neil ",
+      CompanyName: "Other Studio",
+      PrimaryEmailAddr: { Address: "other@example.test" },
+    },
+    {
+      Id: "12",
+      DisplayName: "Janelle O'Neil",
+      GivenName: "Janelle",
+      FamilyName: "O'Neil",
+    },
+    {
+      Id: "13",
+      DisplayName: "Different customer",
+      CompanyName: "EXAMPLE STUDIO",
+    },
+  ]);
+  const review = await run();
+  expect(review).toMatchObject({
+    status: "needs_review",
+    last_error:
+      "A QuickBooks customer named Jane O'Neil exists with a different email. Choose that customer or create a new one.",
+    metadata: {
+      customer_review_reason: "name",
+      customer_candidates: [
+        {
+          id: "10",
+          display_name: "Jane at Example",
+          company: "Example Studio",
+          email: "old@example.test",
+        },
+        { id: "11" },
+        { id: "13" },
+      ],
+    },
+  });
+  expect(
+    mock.queries.some((query) =>
+      query.includes("FamilyName like '%O\\'Neil%'"),
+    ),
+  ).toBe(true);
+  expect(mock.customerCreates).toHaveLength(0);
+  expect(mock.creates).toHaveLength(0);
+  p.billing_links = [
+    {
+      ...review,
+      metadata: {
+        ...review.metadata,
+        customer_choice: {
+          id: "11",
+          realm: "123",
+          email: "billing@example.test",
+        },
+      },
+    },
+  ];
+  expect(await run()).toMatchObject({
+    status: "succeeded",
+    external_customer_id: "11",
+  });
+  expect(mock.customerReads).toEqual(["11"]);
+  expect(mock.creates).toHaveLength(1);
+  expect(mock.creates[0].body).toMatchObject({
+    CustomerRef: { value: "11" },
+    BillEmail: { Address: "billing@example.test" },
+  });
+});
+
+it("offers the company chooser and creates, links, and invoices exactly once after explicit approval and a lost response", async () => {
+  const { mock, p, qbo, run } = await matchingFixture();
+  mock.setCustomers([
+    {
+      Id: "10",
+      DisplayName: "Example Studio",
+      CompanyName: "Example Studio",
+      PrimaryEmailAddr: { Address: "old@example.test" },
+    },
+  ]);
+  const review = await run();
+  expect(review).toMatchObject({
+    status: "needs_review",
+    metadata: {
+      customer_review_reason: "company",
+      customer_candidates: [{ id: "10" }],
+    },
+  });
+  p.billing_links = [
+    {
+      ...review,
+      metadata: {
+        ...review.metadata,
+        customer_choice: {
+          id: null,
+          realm: "123",
+          email: "billing@example.test",
+        },
+      },
+    },
+  ];
+  mock.loseCustomer();
+  const failed = await run();
+  expect(failed.status).toBe("failed");
+  p.billing_links = [failed];
+  expect(await run()).toMatchObject({
+    status: "succeeded",
+    external_customer_id: "51",
+  });
+  expect(await run()).toMatchObject({
+    status: "succeeded",
+    external_customer_id: "51",
+  });
+  expect(mock.customerCreates).toHaveLength(1);
+  expect(mock.customerCreates[0].requestId).toBeTruthy();
+  expect(mock.customerCreates[0].body).toMatchObject({
+    DisplayName: expect.stringMatching(
+      /^Example Studio \(Yeswell [0-9a-f]{10}\)$/,
+    ),
+    CompanyName: "Example Studio",
+  });
+  expect(mock.creates).toHaveLength(1);
+  expect(
+    await qbo.resolveQuickBooksCustomer(
+      { ...p.client, email: "new@example.test" },
+      "123",
+    ),
+  ).toMatchObject({ customer: { id: "51" } });
+});
+
+it("skips person lookup without a last name and creates automatically only after no match", async () => {
+  const { mock, p, run } = await matchingFixture();
+  p.client.last_name = " ";
+  mock.setCustomers([
+    { Id: "10", DisplayName: "Jane", CompanyName: "Other Studio" },
+  ]);
+  expect(await run()).toMatchObject({
+    status: "succeeded",
+    external_customer_id: "51",
+  });
+  expect(
+    mock.queries.some((query) => /FamilyName|DisplayName/.test(query)),
+  ).toBe(false);
+  expect(mock.customerCreates).toHaveLength(1);
+  expect(mock.creates).toHaveLength(1);
+});
+
+it("projects only the latest five provider events and the saved connection details", async () => {
+  const { repo } = await setup();
+  const put = async (
+    type: string,
+    index: number,
+    metadata: Record<string, unknown>,
+  ) =>
+    repo.put("workspace_events", {
+      id: `${type}-${index}`,
+      type,
+      actor: staff.actor,
+      created_at: `2026-11-09T12:0${index}:00.000Z`,
+      metadata,
+    });
+  await put("qbo_connected", 0, { actor_name: "Alex Morgan" });
+  for (let i = 1; i <= 6; i++)
+    await put("qbo_token_refreshed", i, { provider: "qbo" });
+  await put("catalog_synced", 7, { provider: "stripe" });
+  const qbo = await providerActivity(repo, "qbo");
+  expect(qbo.rows.map((row) => row.id)).toEqual(
+    [6, 5, 4, 3, 2].map((i) => "qbo_token_refreshed-" + i),
+  );
+  expect(qbo.rows[0]).not.toHaveProperty("metadata");
+  expect(qbo.connected).toMatchObject({
+    actor: staff.actor,
+    name: "Alex Morgan",
+  });
+  const stripe = await providerActivity(repo, "stripe");
+  expect(stripe.rows).toMatchObject([{ label: "Products synced" }]);
+  expect(stripe.lastSync).toBe("2026-11-09T12:07:00.000Z");
+  expect(stripe.connected).toBeUndefined();
 });
 
 it("grants credential compare-and-swap only to service_role and rejects a stale update", async () => {

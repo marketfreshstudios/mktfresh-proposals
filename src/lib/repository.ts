@@ -136,6 +136,7 @@ export interface Repository {
   list(search?: string): Promise<Proposal[]>;
   save(p: Proposal, expected: number): Promise<void>;
   entities<T>(table: EntityTable): Promise<T[]>;
+  providerAction<T>(id: string): Promise<T | null>;
   providerCredential<T>(id: string): Promise<T | null>;
   replaceProviderCredential<T extends { id: string }>(
     id: string,
@@ -756,6 +757,11 @@ export class MemoryRepository implements Repository {
       ...(this.catalog.get(table)?.values() ?? []),
     ]) as T[];
   }
+  async providerAction<T>(id: string) {
+    return structuredClone(
+      this.catalog.get("provider_actions")?.get(id) ?? null,
+    ) as T | null;
+  }
   async providerCredential<T>(id: string) {
     return structuredClone(
       this.catalog.get("provider_credentials")?.get(id) ?? null,
@@ -1004,6 +1010,10 @@ export class LocalRepository extends MemoryRepository {
     await this.ready;
     return super.entities<T>(t);
   }
+  override async providerAction<T>(id: string) {
+    await this.ready;
+    return super.providerAction<T>(id);
+  }
   override async providerCredential<T>(id: string) {
     await this.ready;
     return super.providerCredential<T>(id);
@@ -1135,6 +1145,17 @@ type HostedReportProposal = Omit<
   expiry: string | null;
 };
 export class SupabaseRepository implements Repository {
+  async providerAction<T>(id: string) {
+    const { data, error } = await this.db
+      .from("provider_actions")
+      .select("data")
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", id)
+      .maybeSingle();
+    if (error)
+      throw new AppError(503, "QuickBooks billing storage is unavailable.");
+    return (data?.data ?? null) as T | null;
+  }
   async providerCredential<T>(id: string) {
     const { data, error } = await this.db
       .from("provider_credentials")

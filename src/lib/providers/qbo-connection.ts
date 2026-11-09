@@ -4,6 +4,7 @@ import { AppError, check } from "../model";
 import { sha256 } from "../content";
 import { AppUrlSchema, appOrigin } from "../links";
 import type { Repository } from "../repository";
+import { workspaceEvent } from "../studio";
 import { decryptSecret, encryptSecret } from "./secrets";
 
 export const QBO_CALLBACK = "/api/connections/qbo/callback";
@@ -370,6 +371,14 @@ export class QboConnection {
             next,
           ),
         );
+        // The connection has already been saved. An audit storage failure
+        // must not fail a valid token refresh or expose credential data.
+        await workspaceEvent(
+          this.repo,
+          { actor: "system", ip: "", user_agent: "" },
+          "qbo_token_refreshed",
+          { provider: "qbo" },
+        ).catch(() => {});
         return { realm, accessToken: next.access_token };
       } catch (error) {
         if (error instanceof QboReconnect) {
