@@ -13,6 +13,7 @@ import {
 } from "../../lib/editor-pages";
 import { assertBlockMove, documentSectionRanges } from "../../lib/editor-moves";
 import { computedPages, moveComputedSection } from "../../lib/computed-pages";
+import { useDndContext } from "@dnd-kit/core";
 import { Reorder, Sortable } from "../sortable";
 import {
   SortableContext,
@@ -355,16 +356,7 @@ export function SectionsNav({
                     onClick={() => onPage?.(p.number)}
                   />
                 )}
-              <button
-                type="button"
-                className="outline-page-end"
-                aria-label={`End of page ${p.number}`}
-                onClick={() =>
-                  onFocus(p.sections.at(-1)?.id ?? p.first ?? "cover")
-                }
-              >
-                <span>End of page {p.number}</span>
-              </button>
+              <PageEndDropHint page={p.number} />
             </div>
           </Sortable>
         ))}
@@ -374,6 +366,17 @@ export function SectionsNav({
         Add page
       </button>
     </nav>
+  );
+}
+
+// The page sortable already owns this drop area. The hint never takes focus.
+function PageEndDropHint({ page }: { page: number }) {
+  const { active } = useDndContext();
+  const dragging = String(active?.id ?? "").startsWith("section:");
+  return (
+    <div className="outline-page-end" data-dragging={dragging || undefined}>
+      {dragging ? `Move to end of page ${page}` : null}
+    </div>
   );
 }
 

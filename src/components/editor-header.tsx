@@ -2,8 +2,15 @@
 import { confirmDialog } from "./dialog-actions";
 import { ToolbarPopover } from "./toolbar-popover";
 import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { Button, Icon } from "./ui";
+import { ChevronLeft } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { useHistoryStatus } from "./editor-history";
 import { PhoneEditorHeader } from "./editor/phone-header";
@@ -146,6 +153,18 @@ export function EditorHeader({
       setLeaving(false);
     }
   };
+  const onBackLink = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    void goBack();
+  };
   const label = offline
     ? "Offline — changes kept on this device"
     : pending
@@ -264,19 +283,19 @@ export function EditorHeader({
                     : "Saved";
     return (
       <header
-        className={`editor-document-header editor-v2-header ${className}`}
+        className={`editor-document-header editor-v2-header button-on-ink ${className}`}
         data-tablet={tablet || undefined}
       >
-        <button
-          type="button"
-          className="editor-v2-back"
-          onClick={goBack}
-          disabled={leaving}
-          title={`Back to ${backLabel.toLowerCase()}`}
+        <a
+          className="editor-v2-back editor-navigation-link"
+          href={backHref}
+          onClick={onBackLink}
+          aria-disabled={leaving || undefined}
           aria-label={`Back to ${backLabel.toLowerCase()}`}
         >
-          ‹ {backLabel}
-        </button>
+          <ChevronLeft size={16} aria-hidden="true" />
+          {backLabel}
+        </a>
         <span className="editor-header-divider" aria-hidden="true" />
         <span className="editor-header-title" title={title} aria-label={title}>
           {title}
@@ -301,6 +320,7 @@ export function EditorHeader({
           <div className="editor-header-history">
             <button
               type="button"
+              className="round-icon"
               aria-label="Undo"
               title="Undo (⌘Z / Ctrl+Z)"
               disabled={locked || stale || !history.canUndo}
@@ -310,6 +330,7 @@ export function EditorHeader({
             </button>
             <button
               type="button"
+              className="round-icon"
               aria-label="Redo"
               title="Redo (⇧⌘Z / Ctrl+Shift+Z)"
               disabled={locked || stale || !history.canRedo}
@@ -358,7 +379,7 @@ export function EditorHeader({
             <button
               ref={moreTrigger}
               type="button"
-              className="editor-header-more"
+              className="editor-header-more round-icon"
               aria-label="More editor actions"
               aria-haspopup="menu"
               aria-expanded={moreOpen}
@@ -430,7 +451,7 @@ export function EditorHeader({
     );
   }
   return (
-    <header className={`editor-document-header ${className}`}>
+    <header className={`editor-document-header button-on-ink ${className}`}>
       <div className="editor-header-identity">
         <Button
           className="editor-back-link"

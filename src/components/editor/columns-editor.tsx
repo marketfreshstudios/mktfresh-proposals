@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { columnBoxStyle } from "../../lib/block-style";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { blockSpacing, columnBoxStyle } from "../../lib/block-style";
 import { insertAuthoringBlocks } from "../../lib/block-insertion";
 import {
   changeColumnLayout,
@@ -149,6 +149,7 @@ export function ColumnsEditor({
       >
         {columns.items.map((c, n) => {
           const spacing = documentSpacing(c.content, styles, true);
+          const padding = blockSpacing[c.style?.padding ?? "none"];
           return (
             <div
               className="document-column editor-column"
@@ -156,9 +157,15 @@ export function ColumnsEditor({
               data-column-id={c.id}
               data-columns-block={block.id}
               data-column-empty={!c.content.length || undefined}
+              data-column-has-gutter={padding >= 24 || undefined}
               role="group"
               aria-label={`Column ${n + 1}`}
-              style={columnBoxStyle(c.style)}
+              style={
+                {
+                  ...columnBoxStyle(c.style),
+                  "--column-editing-padding": `${padding}px`,
+                } as CSSProperties
+              }
             >
               {c.content.map((child, index) => {
                 const id = prefix + child.id;
@@ -342,6 +349,7 @@ export function ColumnsEditor({
                 <div className="column-editor-actions" data-editor-chrome>
                   <Button
                     variant="ghost"
+                    icon="plus"
                     aria-label={`Add block to column ${n + 1}`}
                     onClick={(event) =>
                       setMenu({
@@ -350,9 +358,7 @@ export function ColumnsEditor({
                         anchor: event.currentTarget,
                       })
                     }
-                  >
-                    +
-                  </Button>
+                  />
                   <Button
                     variant="ghost"
                     aria-label={`Style column ${n + 1}`}

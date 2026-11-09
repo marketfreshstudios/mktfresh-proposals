@@ -1993,7 +1993,7 @@ function TemplatesStudioContent({
           )}
           {(mode === "templates" || templatePanels.phone) && (
             <button
-              className="studio-editor-more"
+              className="studio-editor-more round-icon"
               aria-label="More editor actions"
               aria-haspopup="dialog"
               onClick={(e) => {

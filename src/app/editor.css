@@ -2972,25 +2972,16 @@
     background: var(--ai);
   }
   .sections-nav .outline-page-end {
-    display: block;
     min-height: 8px;
-    height: 8px;
-    width: 100%;
-    padding: 0;
-    font-size: 0;
-    color: transparent;
   }
-  :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
-    .sections-nav
-    .outline-page-end
-    > span {
-    color: inherit;
-    font: inherit;
-  }
-  .sections-nav .outline-page-end:focus-visible {
-    height: 32px;
-    font-size: 12px;
-    color: var(--ink-muted);
+  .sections-nav .outline-page-end[data-dragging] {
+    min-height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed var(--border-strong);
+    color: var(--ink);
+    background: var(--surface-sunken);
+    font: 600 11px/16px var(--font-ui);
   }
   .sections-nav .sections-add-page {
     width: 100%;
@@ -6022,10 +6013,10 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 }
 @media (min-width: 700px) {
   .editor-v2 .editor-v2-sections .editor-sidebar-header {
-    background: var(--surface-page);
-    height: 44px;
-    min-height: 44px;
-    padding-bottom: 0;
+    background: var(--surface);
+    height: 56px;
+    min-height: 56px;
+    padding: 12px 16px;
   }
   .editor-v2 .sections-nav .outline-page {
     padding-bottom: 0;
@@ -9088,10 +9079,6 @@ body:has(.studio-v3-editor) {
   max-width: calc(100vw - 16px);
 }
 
-/* Back/breadcrumb navigation keeps its original shape. */
-.editor-v2-header .editor-v2-back {
-  border-radius: 8px;
-}
 .editor-document-header .editor-back-link {
   border-radius: 10px;
 }
@@ -9165,14 +9152,41 @@ body:has(.studio-v3-editor) {
 }
 
 @media (min-width: 700px) {
-  .editor-column .editor-gutter.editor-gutter {
-    left: -22px;
-    width: 20px;
+  /* Account for the frame's 10px negative margin, then leave 4px inside the column. */
+  .editor-column .editor-gutter.editor-insert-gutter {
+    inset: 50% 14px auto auto;
+    transform: translateY(-50%);
+    width: max-content;
+    min-height: 0;
+    flex-direction: row;
+    gap: 4px;
     z-index: var(--z-block-controls);
   }
-  .editor-column .editor-gutter :is(.drag-handle, .editor-gutter-add) {
+  .editor-column .editor-insert-gutter .editor-gutter-add {
+    margin: 0;
+  }
+  .editor-column .editor-insert-gutter .drag-handle {
     width: 20px;
     min-width: 20px;
+  }
+  .document-reading
+    .editor-column[data-column-has-gutter]
+    .block-frame[data-controls="v2"].block-frame.block-frame {
+    /* Keep the selection outline out of the column's authored padding. */
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+  .editor-column[data-column-has-gutter] .editor-gutter.editor-insert-gutter {
+    inset-inline-end: calc(2px - var(--column-editing-padding));
+    flex-direction: column;
+    gap: 2px;
+  }
+  .editor-column[data-column-has-gutter] .editor-insert-gutter .drag-handle {
+    height: 14px;
+    min-height: 14px;
+  }
+  .editor-column:has(.editor-insert-gutter) > .column-editor-actions {
+    inset-inline: 4px auto;
   }
 }
 

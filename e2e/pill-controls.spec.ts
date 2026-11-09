@@ -220,9 +220,14 @@ async function audit(page: Page) {
               radius,
               width: box.width,
               height: box.height,
+              roundIcon: el.matches(".icon-only, .round-icon"),
             };
           })
-          .filter((b) => b.radius < Math.min(b.width, b.height) / 2 - 1),
+          .filter(
+            (b) =>
+              b.radius < Math.min(b.width, b.height) / 2 - 1 ||
+              (b.roundIcon && b.width !== b.height),
+          ),
       buttonShapeExclusions,
     );
   expect.soft(square, page.url()).toEqual([]);

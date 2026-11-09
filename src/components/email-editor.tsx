@@ -418,7 +418,7 @@ function InlineEmailEditor({
         {device === "sheet" && (
           <button
             type="button"
-            className="studio-editor-more"
+            className="studio-editor-more round-icon"
             aria-label="More email tools"
             aria-haspopup="dialog"
             onClick={() => setOpen(true)}

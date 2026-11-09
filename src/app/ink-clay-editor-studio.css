@@ -41,32 +41,6 @@
 }
 .staff-foundation.ink-clay
   :is(.editor-document-header, .editor-phone-header, .template-editor-header)
-  :is(
-    .editor-button,
-    .editor-header-history > button,
-    .template-history-controls > button,
-    .studio-editor-more,
-    .phone-header-more,
-    .btn.btn:not(.action, .studio-primary, .toolbar-popover *)
-  ) {
-  color: var(--chrome-ink);
-  background: transparent;
-  border-color: var(--chrome-muted);
-}
-.staff-foundation.ink-clay
-  :is(.editor-document-header, .editor-phone-header, .template-editor-header)
-  :is(
-    .editor-button,
-    .editor-header-history > button,
-    .template-history-controls > button,
-    .studio-editor-more,
-    .phone-header-more,
-    .btn.btn:not(.action, .studio-primary, .toolbar-popover *)
-  ):hover:not(:disabled) {
-  background: var(--chrome-on);
-}
-.staff-foundation.ink-clay
-  :is(.editor-document-header, .editor-phone-header, .template-editor-header)
   :is(.editor-ai-pill, .phone-header-ai) {
   color: var(--ai-on-chrome);
   background: var(--ai-soft);
@@ -317,24 +291,6 @@
   background: var(--segment);
 }
 
-.staff-foundation.ink-clay .btn.studio-primary {
-  color: var(--hero-ink);
-  background: var(--hero);
-  border-color: var(--hero);
-}
-.staff-foundation.ink-clay .btn.studio-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--hero) 88%, var(--hero-ink));
-}
-.staff-foundation.ink-clay .template-editor-header .btn.studio-primary {
-  color: var(--chrome);
-  background: var(--chrome-ink);
-  border-color: var(--chrome-ink);
-}
-.staff-foundation.ink-clay
-  .template-editor-header
-  .btn.studio-primary:hover:not(:disabled) {
-  background: var(--hero-body);
-}
 .ink-clay.studio-v3-shell
   :is(
     .workspace-section-card > header h2,

@@ -225,19 +225,16 @@
   flex: 1;
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid var(--border);
   display: flex;
 }
 .ink-clay .directory-views .proposal-views [role="tab"] {
   color: var(--ink-muted);
   background: transparent;
   border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   font-weight: 600;
 }
 .ink-clay .directory-views .proposal-views [aria-selected="true"] {
-  border-bottom-color: var(--ink-title);
   color: var(--ink-title);
 }
 .ink-clay .directory-views .proposal-views small {
@@ -499,27 +496,8 @@
   gap: var(--space-2);
   align-items: center;
 }
-.staff-foundation.ink-clay
-  .record-toolbar
-  .record-primary-actions
-  .record-primary:not(.action) {
-  --record-primary-ink: var(--hero-ink);
-  --record-primary-fill: var(--ink-title);
-  color: var(--record-primary-ink);
-  background: var(--record-primary-fill);
-  border-color: var(--record-primary-fill);
-}
-[data-theme="dark"]
-  .staff-foundation.ink-clay
-  .record-toolbar
-  .record-primary-actions
-  .record-primary:not(.action) {
-  --record-primary-ink: var(--chrome);
-}
 .ink-clay .record-toolbar .more-control {
-  min-height: 40px;
-  width: 40px;
-  padding: 0;
+  --round-icon-size: 40px;
 }
 .ink-clay .record-v4 .next-card {
   align-items: center;
@@ -545,15 +523,9 @@
   border-color: var(--st-lost-strong);
 }
 .ink-clay .record-next-actions {
-  --ink: var(--hero-ink);
-}
-.staff-foundation.ink-clay .next-card .record-next-actions .btn {
-  background: transparent;
-  color: var(--hero-ink);
-  border-color: var(--hero-body);
-}
-.staff-foundation.ink-clay .next-card .record-next-actions .btn:hover {
-  background: color-mix(in srgb, var(--hero-ink) 12%, transparent);
+  --button-ink: var(--hero-ink);
+  --button-outline: var(--hero-body);
+  --button-wash: color-mix(in srgb, var(--hero-ink) 12%, transparent);
 }
 .ink-clay .record-v4 .lifecycle {
   background: transparent;
@@ -636,8 +608,7 @@
 }
 @media (max-width: 1099px) {
   .ink-clay .record-toolbar .more-control {
-    min-height: 44px;
-    width: 44px;
+    --round-icon-size: 44px;
   }
 }
 @media (max-width: 699px) {

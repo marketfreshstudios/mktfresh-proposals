@@ -45,7 +45,7 @@ export function PhoneEditorHeader({
   return (
     <header
       data-editor-chrome
-      className={`editor-phone-header editor-document-header ${className}`}
+      className={`editor-phone-header editor-document-header button-on-ink ${className}`}
       data-editing={!!editingTitle}
     >
       <button
@@ -76,7 +76,7 @@ export function PhoneEditorHeader({
       <button
         type="button"
         ref={trigger}
-        className="phone-header-more"
+        className="phone-header-more round-icon"
         aria-label="More editor actions"
         title="More"
         aria-haspopup="menu"

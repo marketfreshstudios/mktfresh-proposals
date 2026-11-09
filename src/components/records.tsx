@@ -247,7 +247,7 @@ export function ProposalMenu({
     <button
       type="button"
       ref={anchor}
-      className="btn ghost more-control"
+      className="btn ghost more-control round-icon"
       aria-label={`More actions for ${p.client.company}`}
       aria-describedby={hintId}
       aria-haspopup="dialog"
