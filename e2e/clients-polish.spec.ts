@@ -435,9 +435,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
           .filter({ visible: true })
           .isVisible())
       )
-        await page
-          .getByRole("button", { name: "Open Quote", exact: true })
-          .click();
+        await page.getByRole("button", { name: /^Open Quote\b/ }).click();
       await page
         .getByRole("tab", { name: "Send", exact: true })
         .filter({ visible: true })

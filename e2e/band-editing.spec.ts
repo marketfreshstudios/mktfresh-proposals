@@ -222,7 +222,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars stay att
     .locator(".band-phone-header")
     .getByRole("button", { name: "Done", exact: true })
     .click();
-  await page.getByRole("button", { name: "Open Quote", exact: true }).click();
+  await page.getByRole("button", { name: /^Open Quote\b/ }).click();
   await page
     .locator(".editor-v2-sheet")
     .getByRole("button", { name: "Done", exact: true })

@@ -186,6 +186,11 @@ test("full headless flow through the client interface, both PDFs, billing, downl
     page.getByRole("tab", { name: "Quote", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await page
+    .locator(".quote-row-toggle")
+    .filter({ hasText: "Website build" })
+    .first()
+    .click();
+  await page
     .getByRole("spinbutton", { name: "Amount Website build", exact: true })
     .first()
     .fill("2751");

@@ -240,6 +240,7 @@ test("saving stays editable; a 409 locks controls until Reload and keeps the loc
     },
   });
   await ready(page, f.draft.id, 1440);
+  await page.locator(".editor-sidepanel .quote-row-toggle").first().click();
   const input = page.locator(
     `[data-block-id="block-${f.content[1].id}"] .tiptap`,
   );

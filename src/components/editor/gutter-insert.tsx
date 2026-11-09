@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../ui";
+import { Check } from "lucide-react";
 import { ToastSurface } from "../block-controls";
 export function GutterInsert({
   onAdd,
@@ -26,7 +27,7 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("above", e.currentTarget)}
         >
-          {layout === "edges" ? "+ Add above" : <Icon name="plus" />}
+          {layout === "edges" ? "Add above" : <Icon name="plus" />}
         </button>
       )}
       {layout === "gutter" && dragHandle}
@@ -40,7 +41,7 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("below", e.currentTarget)}
         >
-          {layout === "edges" ? "+ Add below" : <Icon name="plus" />}
+          {layout === "edges" ? "Add below" : <Icon name="plus" />}
         </button>
       )}
     </div>
@@ -91,7 +92,7 @@ export function AiReviewCheck({
             onReviewed();
           }}
         >
-          ✓
+          <Check size={16} aria-hidden="true" />
         </button>
       )}
       {toast && (

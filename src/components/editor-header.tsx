@@ -338,8 +338,7 @@ export function EditorHeader({
           {tablet || compact ? "Preview" : "Preview as client"}
         </EditorButton>
         <EditorButton
-          variant="primary"
-          className={`editor-header-pill editor-header-send ${!locked && published === "draft" && (!primaryLabel || primaryLabel === "Review & send") ? "action" : ""}`}
+          className="editor-header-pill editor-header-send"
           disabled={
             stale ||
             (offline &&

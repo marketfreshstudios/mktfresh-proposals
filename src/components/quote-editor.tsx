@@ -6,7 +6,6 @@ import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
-import { DialogActions } from "./dialog-actions";
 import {
   insertAuthoringBlocks,
   insertColumnBlocks,
@@ -237,9 +236,7 @@ function QuoteEditorContent({
       initialTab === "Review & send" ? "Send" : initialTab,
     ),
     [phoneDrawer, setDrawer] = useState(false),
-    [expandedItem, setExpandedItem] = useState<string | null>(
-      initial.quote[0]?.id ?? null,
-    ),
+    [expandedItem, setExpandedItem] = useState<string | null>(null),
     [itemDetails, setItemDetails] = useState<string | null>(null),
     [reference, setReference] = useState(false),
     [search, setSearch] = useState(""),
@@ -1003,15 +1000,31 @@ function QuoteEditorContent({
       </>
     </button>
   ) : null;
+  const sendBlockedReason = offline
+    ? "Reconnect to send"
+    : stale
+      ? "Reload to review the latest changes."
+      : (ready.errors[0] ??
+        (delivery === "email"
+          ? emailError ||
+            emailValidation ||
+            (!emailLoaded ? "Loading email template…" : "")
+          : ""));
+  const sendReason =
+    sendBlockedReason ||
+    (protectedLink && !p.password_hash && password.length < 8
+      ? "Enter a password with at least 8 characters."
+      : "");
   const sendPanel = (
     <div className="send-panel stack">
+      <h2 className="t-section-title">Readiness</h2>
       <ul className="send-checklist">
         {ready.errors
           .filter((e) => !e.startsWith("Confirm review of AI changes"))
           .map((e, n) => (
             <li className="readiness-row blocker" key={n}>
               <span className="readiness-badge" aria-hidden="true">
-                !
+                <Icon name="failed" />
               </span>
               <div>
                 <p>
@@ -1064,7 +1077,7 @@ function QuoteEditorContent({
         ) && (
           <li className="readiness-row success">
             <span className="readiness-badge" aria-hidden="true">
-              ✓
+              <Icon name="verified" />
             </span>
             <p>Quote, contract and signature blocks are in place.</p>
           </li>
@@ -1076,7 +1089,7 @@ function QuoteEditorContent({
         hidden={pending.length === 0}
       >
         <span className="readiness-badge" aria-hidden="true">
-          !
+          <Icon name="failed" />
         </span>
         <div className="send-ai-review-body">
           <p>
@@ -1277,7 +1290,7 @@ function QuoteEditorContent({
         )}
       </small>
       <footer className="send-panel-footer">
-        <DialogActions>
+        <div className="send-card-preview">
           <Button
             onClick={async () => {
               if (await save())
@@ -1286,9 +1299,24 @@ function QuoteEditorContent({
           >
             Preview as client
           </Button>
+        </div>
+        <div className="send-action-card">
+          <div>
+            <strong>
+              {delivery === "manual" ? "Manual delivery" : "Send proposal"}
+            </strong>
+            <p
+              className="send-blocked-reason"
+              id="proposal-send-reason"
+              role="status"
+            >
+              {sendReason}
+            </p>
+          </div>
           <Button
             variant="primary"
             className="action"
+            aria-describedby={sendReason ? "proposal-send-reason" : undefined}
             disabled={
               !ready.ready ||
               (delivery === "email" &&
@@ -1305,15 +1333,7 @@ function QuoteEditorContent({
               ? "Publish client link"
               : `Send to ${p.client.first_name || "client"}`}
           </Button>
-        </DialogActions>
-        <p className="send-blocked-reason" role="status">
-          {offline
-            ? "Reconnect to send"
-            : (ready.errors[0] ??
-              (delivery === "email"
-                ? emailError || emailValidation || ""
-                : ""))}
-        </p>
+        </div>
       </footer>
     </div>
   );
@@ -2661,7 +2681,10 @@ function QuoteEditorContent({
             <ReadOnlyRegion locked={stale || locked}>{outline}</ReadOnlyRegion>
           </SectionsPanel>
         ) : null}
-        <main className="editor-document-region">
+        <section
+          className="editor-document-region"
+          aria-label="Proposal document"
+        >
           <ReadOnlyRegion locked={stale || locked}>
             {blockFeedback.feedback}
             <div className="pdf-paper-viewport">
@@ -2886,7 +2909,7 @@ function QuoteEditorContent({
               </div>
             </div>
           </ReadOnlyRegion>
-        </main>
+        </section>
         {
           <ToolsPanel
             tab={tab as EditorTab}

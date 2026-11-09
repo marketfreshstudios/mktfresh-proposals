@@ -1,47 +1,30 @@
-import { createElement, useId } from "react";
-import icons from "./editor-icons.json";
-type Name = Exclude<keyof typeof icons, "_about" | "_existing">;
-/** Paths are supplied by the editor prototype; keep them verbatim. */
+import {
+  Copy,
+  Link2,
+  List,
+  ListOrdered,
+  Redo2,
+  Trash2,
+  Undo2,
+} from "lucide-react";
+
+const icons = {
+  undo: Undo2,
+  redo: Redo2,
+  "list-bulleted": List,
+  "list-numbered": ListOrdered,
+  link: Link2,
+  duplicate: Copy,
+  trash: Trash2,
+};
+
 export function EditorIcon({
   name,
   size = 16,
-  symbol = false,
 }: {
-  name: Name;
+  name: keyof typeof icons;
   size?: number;
-  symbol?: boolean;
 }) {
-  const id = useId();
-  const icon = icons[name];
-  const [, , width, height] = icon.viewBox.split(" ").map(Number);
-  const paths = icon.els.map(([tag, attributes], n) => {
-    const { children, ...props } = attributes as Record<string, any>;
-    return createElement(tag as string, { ...props, key: n }, children);
-  });
-  return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={(size * height) / width}
-      viewBox={icon.viewBox}
-      style={
-        "mirror" in icon && icon.mirror
-          ? { transform: "scaleX(-1)" }
-          : undefined
-      }
-    >
-      {symbol ? (
-        <>
-          <defs>
-            <symbol id={id} viewBox={icon.viewBox}>
-              {paths}
-            </symbol>
-          </defs>
-          <use href={`#${id}`} />
-        </>
-      ) : (
-        paths
-      )}
-    </svg>
-  );
+  const Glyph = icons[name];
+  return <Glyph size={size} aria-hidden="true" />;
 }

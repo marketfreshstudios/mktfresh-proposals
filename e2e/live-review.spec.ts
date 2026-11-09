@@ -663,13 +663,15 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       await capture("font-upload-license", "7d", width, theme);
       await page.goto(`/proposals/${editing.id}`);
       await expect(page.locator(".quote-workspace")).toBeVisible();
-      if (width < 1100)
-        await page
-          .getByRole("button", { name: "Open Quote", exact: true })
-          .click();
+      const quotePanel = page.getByRole("tabpanel", { name: "Quote" });
+      const openQuote = page.getByRole("button", { name: /^Open Quote\b/ });
+      await expect(
+        quotePanel.or(openQuote).filter({ visible: true }).first(),
+      ).toBeVisible();
+      if (!(await quotePanel.isVisible())) await openQuote.click();
       await expect(
         page
-          .getByRole("combobox", { name: "+ Add product", exact: true })
+          .getByRole("combobox", { name: "Add product", exact: true })
           .filter({ visible: true }),
       ).toBeVisible();
       await capture(

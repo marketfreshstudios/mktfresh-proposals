@@ -169,7 +169,7 @@ export function FormattingControls({
         {item(
           "Numbered list",
           () => editor?.chain().focus().toggleOrderedList().run(),
-          <EditorIcon name="list-numbered" symbol={mode === "email"} />,
+          <EditorIcon name="list-numbered" />,
           !editor,
           marks?.ordered,
         )}

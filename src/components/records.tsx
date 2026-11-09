@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
 import { ProposalQuestions } from "./proposal-questions";
@@ -1010,12 +1011,13 @@ export function ProposalListV4({
           <button
             ref={moreTrigger}
             type="button"
-            className="btn"
+            className="more-views-trigger"
             aria-haspopup="dialog"
             aria-expanded={more}
             onClick={() => setMore(!more)}
           >
             {activeExtra ? `${activeExtra} · More views` : "More views"}
+            <ChevronDown size={14} aria-hidden="true" />
           </button>
           {more && (
             <Sheet
@@ -2597,10 +2599,12 @@ export function RecordV4({
                     e.metadata.reason && (
                       <blockquote>{e.metadata.reason}</blockquote>
                     )}
-                  <small>{timestamp(e.created_at, data)}</small>
-                  <a href={`/proposals/${p.id}?view=evidence#event-${e.id}`}>
-                    View evidence
-                  </a>
+                  <div className="timeline-entry-meta">
+                    <small>{timestamp(e.created_at, data)}</small>{" "}
+                    <a href={`/proposals/${p.id}?view=evidence#event-${e.id}`}>
+                      View evidence
+                    </a>
+                  </div>
                 </div>
               </article>
             ))}

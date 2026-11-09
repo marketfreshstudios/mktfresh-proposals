@@ -177,7 +177,16 @@ test("sidebar shells stay fixed, arrows retain their size, and every sheet is pa
       text: "A useful plan for this page.",
     },
   ]).flat();
-  const f = await editorFixture(page, false, { content: blocks });
+  const f = await editorFixture(page, false, {
+    content: blocks,
+    quote: ([line]) =>
+      Array.from({ length: 14 }, (_, index) => ({
+        ...line,
+        id: id(),
+        name: `Service ${index + 1}`,
+        sublines: line.sublines.map((subline) => ({ ...subline, id: id() })),
+      })),
+  });
   await page.setViewportSize({ width: 1920, height: 700 });
   await page.goto(`/proposals/${f.draft.id}`);
   await ready(page);

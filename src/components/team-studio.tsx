@@ -6,6 +6,7 @@ import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
+import { chromeIcons } from "./staff-icons";
 import { Sheet } from "./foundation";
 import {
   staffRoleLabel,
@@ -108,6 +109,7 @@ export function TeamStudio({
         {owner && (
           <Button
             variant="primary"
+            className="studio-primary"
             onClick={() => {
               setError("");
               setDialog({ action: "invite" });
@@ -212,6 +214,7 @@ export function TeamStudio({
                 <Button
                   variant="ghost"
                   aria-label={`Actions for ${person.display_name}`}
+                  title={`Actions for ${person.display_name}`}
                   onClick={(e) => {
                     setError("");
                     setDialog({
@@ -221,7 +224,7 @@ export function TeamStudio({
                     });
                   }}
                 >
-                  ⋯
+                  <chromeIcons.more size={18} aria-hidden="true" />
                 </Button>
               )}
             </div>

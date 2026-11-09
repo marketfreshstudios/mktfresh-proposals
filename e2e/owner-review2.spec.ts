@@ -372,6 +372,8 @@ test("Quote disclosures point right/down with a distinct heavy 10px icon", async
   await page.goto(`/proposals/${f.draft.id}`);
   const row = page.locator(".quote-row-toggle").first(),
     chevron = row.locator(".disclosure-chevron");
+  await expect(chevron).toHaveAttribute("data-open", "false");
+  await row.click();
   await expect(chevron).toHaveAttribute("data-open", "true");
   await expect(chevron).toHaveCSS("width", "10px");
   await expect(chevron).toHaveAttribute("stroke-width", "3");

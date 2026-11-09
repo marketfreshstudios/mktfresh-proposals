@@ -63,7 +63,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   expect(selectMetrics).toEqual(inputMetrics);
   await shot(page, "workspace-fields-1440");
   await page.setViewportSize({ width: 1024, height: 1000 });
-  await expect(activeSection).toHaveCSS("border-radius", "999px");
+  await expect(activeSection).toHaveCSS("border-radius", "10px");
   await expect(
     page
       .getByRole("navigation", { name: "Studio areas", exact: true })
@@ -79,7 +79,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   await openQuoteRow(page, 0);
   await expect(
     page.getByRole("button", { name: "Review & send", exact: true }),
-  ).toHaveCSS("background-color", "rgb(180, 83, 42)");
+  ).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(
     page.getByRole("button", { name: "Preview PDF", exact: true }),
   ).toHaveCSS("border-top-width", "1px");
@@ -243,7 +243,7 @@ for (const width of [1440, 375])
       if (width === 375) {
         await expect(
           page.locator('.workspace-section-list button[aria-current="page"]'),
-        ).toHaveCSS("border-radius", "999px");
+        ).toHaveCSS("border-radius", "10px");
         await expect(page.locator(".bottom-tabs a.active")).toHaveCSS(
           "border-radius",
           "10px",

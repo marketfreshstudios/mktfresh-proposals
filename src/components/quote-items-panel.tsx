@@ -119,12 +119,22 @@ export function QuoteItemsPanel({
         data-default={i.default_selected}
         data-optional={i.optional}
         key={i.id}
+        onKeyDown={(event) => {
+          if (!expanded || event.key !== "Escape" || event.defaultPrevented)
+            return;
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget
+            .querySelector<HTMLButtonElement>(".quote-row-toggle")
+            ?.focus();
+          setExpandedItem(null);
+        }}
       >
         <button
           type="button"
           className="quote-row-toggle"
           aria-expanded={expanded}
-          aria-controls={`quote-body-${i.id}`}
+          aria-controls={expanded ? `quote-body-${i.id}` : undefined}
           onClick={() => setExpandedItem(expanded ? null : i.id)}
         >
           <span className="quote-row-caption">
@@ -139,7 +149,11 @@ export function QuoteItemsPanel({
               title="AI price differs from product list"
             />
           )}
-          <strong className="quote-row-amount">{amount}</strong>
+          <strong className="quote-row-amount">
+            {amount}
+            {i.sublines.length === 1 &&
+              i.sublines[0].interval === "one_time" && <small> one-time</small>}
+          </strong>
           <DisclosureChevron open={expanded} />
         </button>
         {expanded && (
@@ -161,119 +175,138 @@ export function QuoteItemsPanel({
             />
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
-                {i.sublines.length > 1 && (
-                  <button
-                    type="button"
-                    className="subline-remove"
-                    title={`Remove sub-line ${sublineLabel(s)}`}
-                    aria-label={`Remove sub-line ${sublineLabel(s)}`}
-                    onClick={() =>
-                      updateItem(i.id, { sublines: removeSubline(i, s.id) })
-                    }
-                  >
-                    ×
-                  </button>
-                )}
                 <div className="subline-grid">
                   <div className="subline-label">
                     {i.sublines.length === 1 ? (
                       <span>Shown as the item price</span>
                     ) : (
+                      <div
+                        className="subline-label-edit"
+                        data-label={s.label || sublineLabel(s)}
+                      >
+                        <textarea
+                          rows={1}
+                          aria-label={`Sub-line label for ${i.name}`}
+                          placeholder={sublineLabel({ ...s, label: "" })}
+                          value={s.label ?? ""}
+                          onChange={(e) =>
+                            updateItem(i.id, {
+                              sublines: i.sublines.map((v) =>
+                                v.id === s.id
+                                  ? {
+                                      ...v,
+                                      label: e.target.value.replace(
+                                        /[\r\n]/g,
+                                        "",
+                                      ),
+                                    }
+                                  : v,
+                              ),
+                            })
+                          }
+                        />
+                      </div>
+                    )}
+                    {i.sublines.length > 1 && (
+                      <button
+                        type="button"
+                        className="subline-remove"
+                        title={`Remove sub-line ${sublineLabel(s)}`}
+                        aria-label={`Remove sub-line ${sublineLabel(s)}`}
+                        onClick={() =>
+                          updateItem(i.id, { sublines: removeSubline(i, s.id) })
+                        }
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <div className="subline-amount">
+                    <Field label={`Amount · ${currency}`}>
+                      <span className="currency-input">
+                        <span aria-hidden="true">
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: currency,
+                          })
+                            .formatToParts(0)
+                            .find((part) => part.type === "currency")?.value ??
+                            currency}
+                        </span>
+                        <input
+                          aria-label={`Amount ${s.label || i.name}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={s.amount / 100}
+                          onChange={(e) =>
+                            updateItem(i.id, {
+                              sublines: i.sublines.map((v) =>
+                                v.id === s.id
+                                  ? {
+                                      ...v,
+                                      amount: Math.round(
+                                        Number(e.target.value) * 100,
+                                      ),
+                                    }
+                                  : v,
+                              ),
+                              price_review: Object.fromEntries(
+                                Object.entries(i.price_review ?? {}).filter(
+                                  ([key]) => key !== s.id,
+                                ),
+                              ),
+                            })
+                          }
+                        />
+                      </span>
+                    </Field>
+                  </div>
+                  <div className="subline-quantity">
+                    <Field label="Qty">
                       <input
-                        aria-label={`Sub-line label for ${i.name}`}
-                        placeholder={sublineLabel({ ...s, label: "" })}
-                        value={s.label ?? ""}
+                        aria-label={`Quantity ${s.label || i.name}`}
+                        type="number"
+                        min="1"
+                        max="10000"
+                        value={s.qty}
                         onChange={(e) =>
                           updateItem(i.id, {
                             sublines: i.sublines.map((v) =>
                               v.id === s.id
-                                ? { ...v, label: e.target.value }
+                                ? { ...v, qty: Number(e.target.value) }
                                 : v,
                             ),
                           })
                         }
                       />
-                    )}
+                    </Field>
                   </div>
-                  <Field label={`Amount · ${currency}`}>
-                    <span className="currency-input">
-                      <span aria-hidden="true">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: currency,
-                        })
-                          .formatToParts(0)
-                          .find((part) => part.type === "currency")?.value ??
-                          currency}
-                      </span>
-                      <input
-                        aria-label={`Amount ${s.label || i.name}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={s.amount / 100}
+                  <div className="subline-interval">
+                    <Field label="Interval">
+                      <Select
+                        aria-label={`Interval ${s.label || i.name}`}
+                        value={s.interval}
                         onChange={(e) =>
                           updateItem(i.id, {
                             sublines: i.sublines.map((v) =>
                               v.id === s.id
                                 ? {
                                     ...v,
-                                    amount: Math.round(
-                                      Number(e.target.value) * 100,
-                                    ),
+                                    interval: e.target
+                                      .value as typeof s.interval,
                                   }
                                 : v,
                             ),
-                            price_review: Object.fromEntries(
-                              Object.entries(i.price_review ?? {}).filter(
-                                ([key]) => key !== s.id,
-                              ),
-                            ),
                           })
                         }
-                      />
-                    </span>
-                  </Field>
-                  <Field label="Qty">
-                    <input
-                      aria-label={`Quantity ${s.label || i.name}`}
-                      type="number"
-                      min="1"
-                      max="10000"
-                      value={s.qty}
-                      onChange={(e) =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.map((v) =>
-                            v.id === s.id
-                              ? { ...v, qty: Number(e.target.value) }
-                              : v,
-                          ),
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Interval">
-                    <Select
-                      aria-label={`Interval ${s.label || i.name}`}
-                      value={s.interval}
-                      onChange={(e) =>
-                        updateItem(i.id, {
-                          sublines: i.sublines.map((v) =>
-                            v.id === s.id
-                              ? {
-                                  ...v,
-                                  interval: e.target.value as typeof s.interval,
-                                }
-                              : v,
-                          ),
-                        })
-                      }
-                    >
-                      <option value="one_time">One-time</option>
-                      <option value="month">Monthly</option>
-                      <option value="year">Yearly</option>
-                    </Select>
-                  </Field>
+                      >
+                        <option value="one_time">One-time</option>
+                        <option value="month">Monthly</option>
+                        <option value="year">Yearly</option>
+                      </Select>
+                    </Field>
+                  </div>
                 </div>
                 {(i.ai_entered || aiUnreviewed) &&
                   s.list_amount !== null &&
@@ -494,7 +527,7 @@ export function QuoteItemsPanel({
                   })
                 }
               >
-                + Sub-line
+                Sub-line
               </Button>
               <button
                 type="button"
@@ -515,6 +548,18 @@ export function QuoteItemsPanel({
               >
                 Remove
               </Button>
+              <Button
+                aria-label="Done editing quote line"
+                onClick={(event) => {
+                  event.currentTarget
+                    .closest(".quote-row")
+                    ?.querySelector<HTMLButtonElement>(".quote-row-toggle")
+                    ?.focus();
+                  setExpandedItem(null);
+                }}
+              >
+                Done
+              </Button>
             </footer>
           </div>
         )}
@@ -530,7 +575,7 @@ export function QuoteItemsPanel({
     <div className="quote-panel stack">
       <p className="muted">
         {intro ??
-          "Enter agreed prices. The app never sets prices. Drag ⋮⋮ to reorder; the client sees this order."}
+          "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}
       </p>
       <div className="quote-cards">
         <Reorder
@@ -590,7 +635,7 @@ export function QuoteItemsPanel({
           ))}
         </Reorder>
         <div className="quote-add-row">
-          <Field label="+ Add product">
+          <Field label="Add product">
             <Select
               value=""
               onChange={(e) => {
@@ -598,7 +643,7 @@ export function QuoteItemsPanel({
                 if (item) addItem(item);
               }}
             >
-              <option value="">+ Add product</option>
+              <option value="">Add product</option>
               {sellableCatalogue(catalog)
                 .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
                 .map((c) => (
@@ -608,7 +653,7 @@ export function QuoteItemsPanel({
                 ))}
             </Select>
           </Field>
-          <Button onClick={() => addItem()}>+ Custom</Button>
+          <Button onClick={() => addItem()}>Custom line</Button>
         </div>
       </div>
       <footer>

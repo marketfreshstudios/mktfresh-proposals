@@ -361,6 +361,9 @@ test("Home, list views and action slots use the existing proposal states", async
   await expect(
     row(page, f.viewed).getByRole("tooltip", { name: "Duplicate" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "More views", exact: true }),
+  ).toHaveCSS("border-radius", "10px");
   await capture(page, "proposals-tooltip-1440");
   await row(page, f.lost)
     .getByRole("button", { name: /More actions/ })
@@ -471,6 +474,17 @@ test("record toolbar and next step select one primary action without widening si
       await expect(
         toolbar.getByRole("link", { name: "Preview as client" }),
       ).toHaveCount(0);
+    if (p === f.viewed) {
+      const event = page.locator(".timeline-entry-meta").first();
+      await expect(event).toContainText(/\sView evidence/);
+      await expect(event).toHaveCSS("column-gap", "10px");
+    }
+    if (p === f.countersign) {
+      await expect(page.locator(".record-jobs .ps-pill").first()).toHaveCSS(
+        "border-radius",
+        "6px",
+      );
+    }
     if (shot) await capture(page, `${shot}-1440`);
     if (p === f.billing) {
       const hero = page.locator(".next-card");
@@ -562,6 +576,10 @@ for (const width of [1440, 768, 375]) {
           await expect(
             page.getByText("Not billed through Stripe").first(),
           ).toBeVisible();
+          await expect(page.locator(".client-views button").first()).toHaveCSS(
+            "border-radius",
+            "10px",
+          );
           expect(f.billingReads()).toBe(billingBefore);
         }
         if (selector === ".client-detail-v4") {
