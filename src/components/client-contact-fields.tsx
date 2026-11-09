@@ -90,16 +90,17 @@ export function ClientContactFields({ client }: { client?: Client }) {
           ["last_name", "Last name"],
           ["title", "Title"],
           ["email", "Email"],
+          ["billing_email", "Billing email (optional)"],
           ["company", "Company"],
         ].map(([key, label]) => (
           <Field key={key} label={label}>
             <input
               name={key}
-              type={key === "email" ? "email" : "text"}
+              type={key.endsWith("email") ? "email" : "text"}
               required={["email", "company"].includes(key)}
               defaultValue={String(client?.[key as keyof Client] ?? "")}
               maxLength={
-                key === "email" ? 254 : key.endsWith("name") ? 100 : 200
+                key.endsWith("email") ? 254 : key.endsWith("name") ? 100 : 200
               }
             />
           </Field>

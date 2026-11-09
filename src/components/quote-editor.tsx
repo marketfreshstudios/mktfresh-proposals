@@ -183,6 +183,7 @@ function QuoteEditorContent({
   initial,
   appUrl,
   settings,
+  connections,
   catalog,
   families,
   library,
@@ -196,6 +197,7 @@ function QuoteEditorContent({
   initial: Proposal;
   appUrl: string;
   settings?: WorkspaceSettings | null;
+  connections?: import("../lib/workspace-setup").ConnectionStatus | null;
   catalog: Item[];
   families: { id: string; name: string; active: boolean }[];
   library: { id: string; name: string; block: Block }[];
@@ -834,7 +836,20 @@ function QuoteEditorContent({
           }
         : current.sender,
     }),
-    ready = readiness(current, catalog, new Date(), confirmed);
+    ready = readiness(
+      current,
+      catalog,
+      new Date(),
+      confirmed,
+      connections?.qbo_connection
+        ? {
+            connected: connections.qbo,
+            realm: connections.qbo_connection.realm,
+            defaultItem: settings?.qbo_custom_item_ref,
+          }
+        : undefined,
+    );
+
   for (const { excess } of browserPages?.overflowColumns ?? []) {
     ready.errors.push(columnsOverflowMessage(excess));
     ready.ready = false;
@@ -1184,6 +1199,9 @@ function QuoteEditorContent({
             <span>{p.client.email}</span>
             <CopyContactButton kind="email" value={p.client.email} />
           </div>
+          {p.client.billing_email && (
+            <p>Billing email: {p.client.billing_email}</p>
+          )}
         </section>
       ) : (
         <>

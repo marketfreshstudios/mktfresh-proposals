@@ -364,6 +364,7 @@ function StaffAppContent({
           initial={p}
           initialTab={action === "send" ? "Review & send" : "Quote"}
           settings={data.settings}
+          connections={data.connections}
           catalog={data.catalog}
           families={data.families}
           library={data.library}

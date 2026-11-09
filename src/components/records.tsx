@@ -27,6 +27,7 @@ import {
   stripeBillingStatus,
 } from "../lib/billing-confirmation";
 import { StripeBillingDetails } from "./billing-breakdown";
+import { QuickBooksBilling } from "./quickbooks-billing";
 import { ProposalEmailLog } from "./email-studio";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
@@ -2293,8 +2294,10 @@ export function RecordV4({
                             link.status === "succeeded"
                           ? "Invoiced manually"
                           : link.provider === "qbo" &&
-                              link.status === "needs_review"
-                            ? "Invoice manually"
+                              link.status !== "succeeded"
+                            ? link.metadata?.action === "Invoice manually"
+                              ? "Invoice manually"
+                              : "Billing to finish"
                             : link.status === "succeeded"
                               ? "Ready"
                               : link.status === "failed"
@@ -2337,7 +2340,18 @@ export function RecordV4({
                       <StripeBillingDetails link={link} />
                     )}
                     {link.provider === "qbo" &&
-                      link.status === "needs_review" && (
+                      !link.metadata?.skipped &&
+                      !link.metadata?.manual_invoice && (
+                        <QuickBooksBilling
+                          proposal={p}
+                          link={link}
+                          onRefresh={onRefresh}
+                        />
+                      )}
+                    {link.provider === "qbo" &&
+                      link.status === "needs_review" &&
+                      !link.external_object_id &&
+                      !link.metadata?.customer_candidates && (
                         <Button
                           onClick={() => {
                             setError("");

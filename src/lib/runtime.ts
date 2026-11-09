@@ -29,27 +29,35 @@ function createRuntime(workspaceId: string) {
       ? new SupabaseStorage(db)
       : new LocalStorage(join(dir, "files"));
   const test = process.env.BILLING_MODE === "test";
-  if (test)
-    check(
-      workspaceId === LOCAL_WORKSPACE_ID,
-      "Environment test credentials are assigned only to workspace 1",
-    );
+  const qboConfigured =
+    test &&
+    process.env.QBO_ENVIRONMENT === "sandbox" &&
+    process.env.QBO_CLIENT_ID &&
+    process.env.QBO_CLIENT_SECRET &&
+    Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY ?? "", "base64")
+      .length === 32;
   const providers = {
-    qbo:
-      test && process.env.QBO_CLIENT_ID
-        ? new QboProvider(repo, {
-            clientId: process.env.QBO_CLIENT_ID,
-            clientSecret: process.env.QBO_CLIENT_SECRET ?? "",
-            refreshToken: process.env.QBO_REFRESH_TOKEN,
-            realm: process.env.QBO_REALM_ID ?? "",
-            environment: process.env.QBO_ENVIRONMENT ?? "",
-            encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY ?? "",
-          })
-        : local
-          ? new MockBillingProvider("qbo")
-          : new UnconfiguredBillingProvider("QuickBooks"),
+    qbo: qboConfigured
+      ? new QboProvider(repo, {
+          clientId: process.env.QBO_CLIENT_ID!,
+          clientSecret: process.env.QBO_CLIENT_SECRET ?? "",
+          ...(local && workspaceId === LOCAL_WORKSPACE_ID
+            ? {
+                refreshToken: process.env.QBO_REFRESH_TOKEN,
+                realm: process.env.QBO_REALM_ID,
+              }
+            : {}),
+          redirectUri: process.env.QBO_REDIRECT_URI,
+          environment: process.env.QBO_ENVIRONMENT ?? "",
+          encryptionKey: process.env.INTEGRATION_ENCRYPTION_KEY ?? "",
+        })
+      : local
+        ? new MockBillingProvider("qbo")
+        : new UnconfiguredBillingProvider("QuickBooks"),
     stripe:
-      test && process.env.STRIPE_SECRET_KEY
+      test &&
+      workspaceId === LOCAL_WORKSPACE_ID &&
+      process.env.STRIPE_SECRET_KEY
         ? new StripeProvider(
             new StripeHttp(process.env.STRIPE_SECRET_KEY, repo),
             repo,

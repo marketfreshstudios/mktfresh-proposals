@@ -852,7 +852,7 @@ test("all existing Workspace sections and settings stay reachable after the rest
       /One-time fees/,
       /Payment methods/,
       /Collection method/,
-      /QuickBooks custom services item reference/,
+      /Default invoice terms/,
     ],
     team: [/Invite/, /Workspace team/, /Display name/, /Change your password/],
     signatory: [

@@ -1,5 +1,6 @@
 "use client";
 import { Switch, Select } from "./form-controls";
+import { QuickBooksPicker } from "./quickbooks-fields";
 import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Data } from "./staff-app";
@@ -855,6 +856,48 @@ export function WorkspaceStudio({
             <option value="card_ach">Card + US bank account (ACH)</option>
           </Select>
         </div>
+        <div className="workspace-setting-row">
+          <div>
+            <h3 id="qbo-delivery-label">QuickBooks invoices</h3>
+            <p>
+              Choose whether to review one-time invoices in QuickBooks or email
+              them when the client signs.
+            </p>
+          </div>
+          <Select
+            aria-labelledby="qbo-delivery-label"
+            disabled={!owner}
+            value={draft.qbo_invoice_delivery ?? "draft"}
+            onChange={(event) =>
+              change(
+                {
+                  qbo_invoice_delivery:
+                    event.currentTarget.value === "email" ? "email" : "draft",
+                },
+                true,
+              )
+            }
+          >
+            <option value="draft">Create as draft for review</option>
+            <option value="email">Create and email to the client</option>
+          </Select>
+        </div>
+        <div className="workspace-setting-row">
+          <div>
+            <h3>One-time product mapping</h3>
+            <p>Custom lines and products without a mapping use this item.</p>
+          </div>
+          <QuickBooksPicker
+            label="Default QuickBooks item"
+            initial={draft.qbo_custom_item_ref}
+            enabled={!!data.connections?.qbo}
+            disabled={!owner}
+            emptyLabel="No default item"
+            onChange={(qbo_custom_item_ref) =>
+              change({ qbo_custom_item_ref }, true)
+            }
+          />
+        </div>
         <details className="workspace-more">
           <Disclosure>More billing settings</Disclosure>
           <div className="stack">
@@ -877,10 +920,15 @@ export function WorkspaceStudio({
                 <option value="send_invoice">Send invoice</option>
               </Select>
             </Field>
-            {text(
-              "QuickBooks custom services item reference",
-              "qbo_custom_item_ref",
-            )}
+            <QuickBooksPicker
+              label="Default invoice terms"
+              kind="terms"
+              initial={draft.qbo_term_ref}
+              enabled={!!data.connections?.qbo}
+              disabled={!owner}
+              emptyLabel="Use QuickBooks default"
+              onChange={(qbo_term_ref) => change({ qbo_term_ref }, true)}
+            />
           </div>
         </details>
       </>
