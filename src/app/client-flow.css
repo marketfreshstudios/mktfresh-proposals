@@ -1010,3 +1010,46 @@ label.flow-quote-line {
 .flow-document .document-columns {
   grid-template-columns: minmax(0, 1fr) !important;
 }
+
+.flow-review-sign {
+  display: contents;
+}
+.flow-review-actions {
+  display: grid;
+  gap: 8px;
+}
+.client-flow .flow-review-actions .btn {
+  min-width: 0;
+  min-height: 44px;
+}
+.flow-section-question {
+  display: grid;
+  justify-items: start;
+}
+.flow-section-question .btn {
+  min-height: 44px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.client-flow .questions-panel {
+  grid-column: 1;
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
+  padding: 20px;
+}
+@media (min-width: 700px) {
+  .client-flow dialog.client-question-sheet {
+    width: min(100% - 24px, 480px);
+  }
+}
+@media (max-width: 1099px) {
+  .flow-review-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 699px) {
+  .client-flow .questions-panel {
+    padding: 12px;
+  }
+}

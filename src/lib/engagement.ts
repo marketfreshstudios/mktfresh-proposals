@@ -74,6 +74,15 @@ export type EngagementSession = EngagementSnapshot & {
   version_id: string;
   labels: Record<string, { label: string; kind: "section" | "page" }>;
 };
+export type EngagementQuestion = {
+  kind: "question";
+  question_id: string;
+  proposal_id: string;
+  started_at: string;
+  count_view: false;
+  seq: number;
+};
+export type EngagementActivity = EngagementSession | EngagementQuestion;
 export type EngagementAggregate = {
   id: string;
   revision: number;

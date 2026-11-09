@@ -365,11 +365,15 @@ export async function engagementReport(repo: Repository, p: Proposal) {
       ...Object.entries(a.targets).filter(([key]) => !keys.has(key)),
     ]),
   };
+  const activity = await repo.engagementSessions(p.id);
   return {
     ...publicEngagement(ordered),
+    questions: activity.filter(
+      (entry) => "kind" in entry && entry.kind === "question",
+    ).length,
     first_viewed_at: p.first_viewed_at,
-    sessions: (await repo.engagementSessions(p.id))
-      .filter((s) => s.count_view)
+    sessions: activity
+      .filter((s): s is EngagementSession => !("kind" in s) && s.count_view)
       .map((s) => ({
         id: s.id,
         recipient: s.recipient,

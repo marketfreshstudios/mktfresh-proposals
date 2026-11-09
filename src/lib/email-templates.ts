@@ -91,7 +91,7 @@ export async function saveEmailTemplate(
       403,
     );
   check(editableEmail(d), "Staff notifications are read-only", 403);
-  const data = reset ? d : validateTemplate(input);
+  const data = reset ? d : validateTemplate(input, key);
   const previous = (await emailTemplates(repo)).find((t) => t.key === key);
   const id = randomUUID(),
     now = new Date(
@@ -130,7 +130,7 @@ export async function saveEmailTemplate(
   );
   return template;
 }
-export function emailKey(p: Proposal, j: Job) {
+export function emailKey(p: Proposal, j: Pick<Job, "id" | "payload">) {
   if (["unopened", "viewed"].includes(String(j.payload.reminder_kind)))
     return `reminder_${j.payload.reminder_kind}`;
   if (
@@ -197,11 +197,14 @@ export function renderTemplate(
     jobFailure?: JobFailure;
   } = {},
 ) {
-  validateTemplate({
-    subject: t.subject,
-    body: t.body,
-    button_label: t.button_label,
-  });
+  validateTemplate(
+    {
+      subject: t.subject,
+      body: t.body,
+      button_label: t.button_label,
+    },
+    t.key,
+  );
   const map = {
       ...emailValues(p),
       ...(options.jobFailure
@@ -256,7 +259,9 @@ export function renderTemplate(
         ? "You're invited"
         : t.key === "team_password_reset"
           ? "Choose a new password"
-          : p.title,
+          : t.key === "question_reply"
+            ? "A reply to your question"
+            : p.title,
     bodyHtml: body.html,
     bodyText: body.text,
     workspace: s?.company_name ?? "Workspace",
@@ -323,6 +328,10 @@ export async function prepareEmail(
     )
   )[0];
   const r = renderTemplate(t, p, {
+    url:
+      typeof j.payload.question_url === "string"
+        ? j.payload.question_url
+        : undefined,
     showPoweredBy: currentSettings?.show_powered_by !== false,
     jobFailure: j.payload.job_failure as JobFailure | undefined,
     billingConfirmation: j.payload.billing_confirmation as
@@ -353,7 +362,7 @@ export type EmailLog = {
 export async function logSentEmail(
   repo: Repository,
   p: Proposal,
-  j: Job,
+  j: Pick<Job, "id">,
   snapshot: EmailSnapshot,
 ) {
   const id = emailId(`email:${repo.workspaceId}:${p.id}:${j.id}`);

@@ -1,4 +1,6 @@
 "use client";
+import { ProposalQuestions } from "./proposal-questions";
+import type { QuestionSummary } from "../lib/proposal-questions";
 import { Select, Switch } from "./form-controls";
 import {
   ProposalEngagement,
@@ -424,7 +426,7 @@ export function ProposalRows({
   showOwner = false,
 }: {
   showOwner?: boolean;
-  proposals: Proposal[];
+  proposals: (Proposal & { question_summary?: QuestionSummary })[];
   data: Data;
   onChanged?: (p: Proposal) => void;
 }) {
@@ -470,6 +472,15 @@ export function ProposalRows({
                   <strong>{p.client.company}</strong>
                   <span>{p.title}</span>
                   <EngagementListLine summary={engagement[p.id]} />
+                  {!!p.question_summary?.open && (
+                    <small className="question-badge open">
+                      {p.question_summary.notified > 0
+                        ? "New client question · "
+                        : ""}
+                      {p.question_summary.open} open{" "}
+                      {p.question_summary.open === 1 ? "question" : "questions"}
+                    </small>
+                  )}
                 </div>
                 {showOwner && (
                   <span className="proposal-owner" data-label="Owner">
@@ -1554,6 +1565,13 @@ export function RecordV4({
           </li>
         ))}
       </ol>
+      {native && p.token && (
+        <ProposalQuestions
+          key={p.id}
+          id={p.id}
+          timezone={data.settings?.timezone ?? "UTC"}
+        />
+      )}
       {native && (
         <ProposalEngagement
           knownRecipient={!!p.token && !!p.client.email}

@@ -1,3 +1,12 @@
+import { AskQuestionSchema, StaffQuestionSchema } from "./proposal-questions";
+import {
+  askQuestion,
+  changeQuestion,
+  clientQuestions,
+  deliverQuestionMail,
+  QuestionProposalChanged,
+  staffQuestions,
+} from "./question-service";
 import {
   EngagementStartSchema,
   EngagementSnapshotSchema,
@@ -335,6 +344,33 @@ async function handleRoute(req: Request, path: string[]) {
           },
         );
       }
+      if (action === "questions" && !path[3]) {
+        if (method === "GET")
+          return json(
+            await clientQuestions(
+              rt.repo,
+              await rt.service.byToken(token, password),
+            ),
+          );
+        if (method === "POST") {
+          check(sameOrigin(req), "Same-origin request required", 403);
+          const input = AskQuestionSchema.parse(await body(req));
+          for (let attempt = 0; ; attempt++) {
+            const p = await rt.service.byToken(token, password);
+            try {
+              return json(
+                await askQuestion(rt.repo, p, input, {
+                  notifyAdmins: workspaceBrand?.question_notify_admins,
+                }),
+                201,
+              );
+            } catch (error) {
+              if (!(error instanceof QuestionProposalChanged) || attempt === 2)
+                throw error;
+            }
+          }
+        }
+      }
       if (method === "GET" && action === "state") {
         const proposal = await rt.service.byToken(token, password);
         check(
@@ -466,7 +502,13 @@ async function handleRoute(req: Request, path: string[]) {
         await rt.repo.pruneEngagement(cutoff.toISOString());
         await refreshDueDocuments(rt.repo);
         await rt.service.tick();
-        results.push(await rt.worker.drain());
+        const [jobs] = await Promise.all([
+          rt.worker.drain(),
+          deliverQuestionMail(rt.repo, rt.mailer).catch(() => {
+            console.error("Unable to drain proposal question mail");
+          }),
+        ]);
+        results.push(jobs);
       }
       return json(results);
     }
@@ -1141,6 +1183,15 @@ async function handleRoute(req: Request, path: string[]) {
               403,
             );
           if (
+            (entity.question_notify_admins ?? false) !==
+            (previous?.question_notify_admins ?? false)
+          )
+            check(
+              user.staff_role === "owner",
+              "Only a super admin can change question notifications",
+              403,
+            );
+          if (
             JSON.stringify(entity.engagement_notifications) !==
             JSON.stringify(previous?.engagement_notifications)
           )
@@ -1360,9 +1411,15 @@ async function handleRoute(req: Request, path: string[]) {
         );
         const offset = Math.max(0, Number(q.get("offset")) || 0),
           limit = Math.min(100, Math.max(1, Number(q.get("limit")) || 50));
+        const page = list.slice(offset, offset + limit);
+        const questions = await rt.repo.questionCounts(
+          page.filter((p) => p.token).map((p) => p.id),
+          user.actor.slice(6),
+        );
         return json({
           total: list.length,
-          items: list.slice(offset, offset + limit).map((p) => ({
+          items: page.map((p) => ({
+            ...(questions[p.id] ? { question_summary: questions[p.id] } : {}),
             ...p,
             content: [],
             version_count: p.versions.length,
@@ -1485,6 +1542,17 @@ async function handleRoute(req: Request, path: string[]) {
               : null,
           },
         });
+      }
+      if (action === "questions") {
+        const p = await rt.repo.get(id);
+        check(p, "Not found", 404);
+        if (method === "GET" && !path[3])
+          return json(await staffQuestions(rt.repo, p, user));
+        if (method === "POST" && path[3] && !path[4]) {
+          const input = StaffQuestionSchema.parse(await body(req));
+          await changeQuestion(rt.repo, p, uuid.parse(path[3]), input, user);
+          return json(await staffQuestions(rt.repo, p, user));
+        }
       }
       if (method === "GET" && action === "engagement") {
         const p = await rt.repo.get(id);
@@ -1713,14 +1781,14 @@ async function handleRoute(req: Request, path: string[]) {
       e instanceof AppError &&
       e.status === 429 &&
       path[0] === "public" &&
-      path[2] === "engagement"
+      ["engagement", "questions"].includes(path[2])
     )
       return new Response(JSON.stringify({ error: e.message }), {
         status: 429,
         headers: {
           ...headers,
           "Content-Type": "application/json",
-          "Retry-After": "600",
+          "Retry-After": path[2] === "questions" ? "3600" : "600",
         },
       });
     if (e instanceof AppError)

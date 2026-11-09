@@ -10,7 +10,9 @@ export function emailPickerFields(key: string) {
     ? ["team.", "sender.", "workspace."]
     : key === "staff_billing_failed"
       ? ["job.", "proposal."]
-      : ["client.", "proposal.", "quote.", "sender.", "workspace."];
+      : key === "question_reply"
+        ? ["sender.", "workspace."]
+        : ["client.", "proposal.", "quote.", "sender.", "workspace."];
   return Object.fromEntries(
     Object.entries(emailFields).filter(([path]) =>
       prefixes.some((prefix) => path.startsWith(prefix)),

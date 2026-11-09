@@ -1,4 +1,18 @@
-import type { EngagementAggregate, EngagementSession } from "./engagement";
+import {
+  questionsReadable,
+  questionsWritable,
+  summarizeQuestions,
+  type QuestionDelivery,
+  type QuestionSummary,
+  type QuestionThread,
+  type QuestionWrite,
+  type QuestionWriteResult,
+} from "./proposal-questions";
+import type {
+  EngagementActivity,
+  EngagementAggregate,
+  EngagementSession,
+} from "./engagement";
 import { isDeepStrictEqual } from "node:util";
 import { sameClientContact, unsignedClientProposal } from "./clients";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
@@ -17,6 +31,8 @@ import {
 export type EntityTable =
   | "email_templates"
   | "email_log"
+  | "proposal_questions"
+  | "proposal_question_mail"
   | "clients"
   | "pricing_items"
   | "templates"
@@ -40,12 +56,23 @@ export type LinkedBlockCommit = {
   events: Audit[];
 };
 export interface Repository {
+  questionThreads(id: string): Promise<QuestionThread[]>;
+  questionCounts(
+    ids: string[],
+    user: string,
+  ): Promise<Record<string, QuestionSummary>>;
+  writeQuestion(change: QuestionWrite): Promise<QuestionWriteResult>;
+  claimQuestionMail(proposal?: string): Promise<QuestionDelivery | null>;
+  finishQuestionMail(
+    mail: QuestionDelivery,
+    next: string | null,
+  ): Promise<void>;
   engagementSummary(id: string): Promise<EngagementAggregate | null>;
   engagementSession(
     proposal: string,
     id: string,
   ): Promise<EngagementSession | null>;
-  engagementSessions(proposal: string): Promise<EngagementSession[]>;
+  engagementSessions(proposal: string): Promise<EngagementActivity[]>;
   saveEngagement(
     expected: number,
     session: EngagementSession,
@@ -100,6 +127,100 @@ export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
+  async questionThreads(id: string) {
+    return (await this.entities<QuestionThread>("proposal_questions"))
+      .filter((row) => row.proposal_id === id)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  async questionCounts(ids: string[], user: string) {
+    const wanted = new Set(ids);
+    return summarizeQuestions(
+      (await this.entities<QuestionThread>("proposal_questions")).filter(
+        (row) => row.status === "open" && wanted.has(row.proposal_id),
+      ),
+      user,
+    );
+  }
+  async writeQuestion({
+    thread,
+    previous,
+    proposalRevision,
+    mail,
+  }: QuestionWrite): Promise<QuestionWriteResult> {
+    const p = this.rows.get(thread.proposal_id);
+    if (!p) return "closed";
+    const rows = this.entityMap("proposal_questions");
+    const prior = rows.get(thread.id) as QuestionThread | undefined;
+    if (proposalRevision !== undefined && p.revision !== proposalRevision)
+      return "stale";
+    if (previous === null) {
+      if (prior) return "stale";
+      if (!questionsWritable(p)) return "closed";
+      const since = Date.now() - 3600000;
+      const recent = [...rows.values()].filter((value) => {
+        const row = value as QuestionThread;
+        return row.proposal_id === p.id && Date.parse(row.created_at) > since;
+      });
+      if (recent.length >= 10) return "limited";
+      const event = crypto.randomUUID();
+      this.entityMap("proposal_engagement").set(event, {
+        id: event,
+        kind: "question",
+        proposal_id: p.id,
+        question_id: thread.id,
+        started_at: thread.created_at,
+        count_view: false,
+        seq: 100001,
+      });
+    } else if (prior?.proposal_id !== p.id || prior.revision !== previous) {
+      return "stale";
+    } else if (proposalRevision !== undefined && !questionsReadable(p)) {
+      return "closed";
+    }
+    rows.set(thread.id, structuredClone(thread));
+    const outbox = this.entityMap("proposal_question_mail");
+    for (const entry of mail)
+      outbox.set(entry.id, {
+        ...structuredClone(entry),
+        attempt: 0,
+        available_at: new Date().toISOString(),
+      });
+    return "saved";
+  }
+  async claimQuestionMail(proposal?: string) {
+    const now = Date.now();
+    const rows = this.entityMap("proposal_question_mail");
+    const mail = ([...rows.values()] as QuestionDelivery[])
+      .filter(
+        (row) =>
+          (!proposal || row.proposal_id === proposal) &&
+          !!row.available_at &&
+          Date.parse(row.available_at) <= now,
+      )
+      .sort((a, b) => a.available_at!.localeCompare(b.available_at!))[0];
+    if (!mail) return null;
+    const claimed = {
+      ...mail,
+      attempt: mail.attempt + 1,
+      available_at: new Date(now + 180000).toISOString(),
+    };
+    rows.set(mail.id, claimed);
+    return structuredClone(claimed);
+  }
+  async finishQuestionMail(mail: QuestionDelivery, next: string | null) {
+    const rows = this.entityMap("proposal_question_mail");
+    const current = rows.get(mail.id) as QuestionDelivery | undefined;
+    if (current?.attempt === mail.attempt)
+      rows.set(mail.id, { ...current, available_at: next });
+  }
+  private entityMap(table: EntityTable) {
+    let rows = this.catalog.get(table);
+    if (!rows) {
+      rows = new Map();
+      this.catalog.set(table, rows);
+    }
+    return rows;
+  }
   async engagementSummary(id: string) {
     return structuredClone(
       (this.catalog
@@ -113,7 +234,7 @@ export class MemoryRepository implements Repository {
     return structuredClone(row?.proposal_id === proposal ? row : null);
   }
   async engagementSessions(proposal: string) {
-    return (await this.entities<EngagementSession>("proposal_engagement"))
+    return (await this.entities<EngagementActivity>("proposal_engagement"))
       .filter((s) => s.proposal_id === proposal)
       .sort((a, b) => b.started_at.localeCompare(a.started_at));
   }
@@ -561,6 +682,28 @@ export class MemoryRepository implements Repository {
 }
 // Local development only, single Node process. Production always uses database CAS.
 export class LocalRepository extends MemoryRepository {
+  private async questionTransaction<T>(operation: () => Promise<T>) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const result = await operation();
+      await this.persist();
+      return result;
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
+  override async writeQuestion(change: QuestionWrite) {
+    return this.questionTransaction(() => super.writeQuestion(change));
+  }
+  override async claimQuestionMail(proposal?: string) {
+    return this.questionTransaction(() => super.claimQuestionMail(proposal));
+  }
+  override async finishQuestionMail(
+    mail: QuestionDelivery,
+    next: string | null,
+  ) {
+    return this.questionTransaction(() => super.finishQuestionMail(mail, next));
+  }
   override async engagementSummary(id: string) {
     await this.ready;
     return super.engagementSummary(id);
@@ -821,6 +964,68 @@ export class LocalRepository extends MemoryRepository {
   }
 }
 export class SupabaseRepository implements Repository {
+  private async questionRows(filters: { proposal?: string; open?: string[] }) {
+    const rows: QuestionThread[] = [];
+    for (let from = 0; ; from += 500) {
+      let query = this.db
+        .from("proposal_questions")
+        .select("data")
+        .eq("workspace_id", this.workspaceId);
+      if (filters.proposal) query = query.eq("proposal_id", filters.proposal);
+      if (filters.open)
+        query = query.in("proposal_id", filters.open).eq("status", "open");
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(from, from + 499);
+      if (error) throw error;
+      rows.push(...data.map((row) => row.data as QuestionThread));
+      if (data.length < 500) return rows;
+    }
+  }
+  questionThreads(id: string) {
+    return this.questionRows({ proposal: id });
+  }
+  async questionCounts(ids: string[], user: string) {
+    if (!ids.length) return {};
+    return summarizeQuestions(await this.questionRows({ open: ids }), user);
+  }
+  async writeQuestion({
+    thread,
+    previous,
+    proposalRevision,
+    mail,
+  }: QuestionWrite): Promise<QuestionWriteResult> {
+    const { data, error } = await this.db.rpc("write_proposal_question", {
+      p_workspace: this.workspaceId,
+      p_previous: previous,
+      p_proposal_revision: proposalRevision ?? null,
+      p_thread: thread,
+      p_mail: mail,
+    });
+    if (error?.code === "23505") return "stale";
+    if (error) throw error;
+    return data as QuestionWriteResult;
+  }
+  async claimQuestionMail(proposal?: string) {
+    const { data, error } = await this.db
+      .rpc("claim_proposal_question_mail", {
+        p_workspace: this.workspaceId,
+        p_proposal: proposal ?? null,
+      })
+      .maybeSingle();
+    if (error) throw error;
+    return data as QuestionDelivery | null;
+  }
+  async finishQuestionMail(mail: QuestionDelivery, next: string | null) {
+    const { error } = await this.db
+      .from("proposal_question_mail")
+      .update({ available_at: next })
+      .eq("workspace_id", this.workspaceId)
+      .eq("id", mail.id)
+      .eq("attempt", mail.attempt);
+    if (error) throw error;
+  }
   async engagementSummary(id: string) {
     const { data, error } = await this.db
       .from("proposal_engagement_totals")
@@ -843,7 +1048,7 @@ export class SupabaseRepository implements Repository {
     return (data?.data as EngagementSession) ?? null;
   }
   async engagementSessions(proposal: string) {
-    const result: EngagementSession[] = [];
+    const result: EngagementActivity[] = [];
     for (let n = 0; ; n += 500) {
       const { data, error } = await this.db
         .from("proposal_engagement")
@@ -854,7 +1059,7 @@ export class SupabaseRepository implements Repository {
         .order("id")
         .range(n, n + 499);
       if (error) throw error;
-      result.push(...data.map((r) => r.data as EngagementSession));
+      result.push(...data.map((r) => r.data as EngagementActivity));
       if (data.length < 500) return result;
     }
   }

@@ -134,7 +134,7 @@ function InlineEmailEditor({
   };
   let validation = "";
   try {
-    validateTemplate(form);
+    validateTemplate(form, template.key);
   } catch (e) {
     validation = (e as Error).message;
   }

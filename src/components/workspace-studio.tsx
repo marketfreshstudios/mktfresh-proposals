@@ -1136,6 +1136,23 @@ export function WorkspaceStudio({
             </label>
           </div>
         ))}
+        <div className="workspace-setting-row workspace-reminder-row">
+          <div>
+            <h3>Client questions · notify super admins</h3>
+            <p>
+              The proposal owner is notified when a client asks a question. Turn
+              this on to notify super admins too.
+            </p>
+          </div>
+          <Switch
+            aria-label="Notify super admins about client questions"
+            disabled={!owner}
+            checked={draft.question_notify_admins ?? false}
+            onChange={(e) =>
+              change({ question_notify_admins: e.target.checked })
+            }
+          />
+        </div>
         <ReminderRules
           settings={draft}
           disabled={!owner}

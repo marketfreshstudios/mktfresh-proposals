@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { staff } from "../../../lib/auth";
 import { runtime as appRuntime, publicRuntime } from "../../../lib/runtime";
+import { deliverQuestionMail } from "../../../lib/question-service";
 import { handle } from "../../../lib/http";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,6 +80,22 @@ async function route(
             await rt.worker.drain(p.id, "email", job.id);
         });
     }
+  }
+  if (
+    response.ok &&
+    request.method === "POST" &&
+    path[2] === "questions" &&
+    ["public", "proposals"].includes(path[0])
+  ) {
+    after(async () => {
+      const rt =
+        path[0] === "public"
+          ? await publicRuntime(path[1])
+          : appRuntime((await staff(request)).workspace_id);
+      const id =
+        path[0] === "public" ? (await rt.repo.byToken(path[1]))?.id : path[1];
+      if (id) await deliverQuestionMail(rt.repo, rt.mailer, id);
+    });
   }
   return response;
 }

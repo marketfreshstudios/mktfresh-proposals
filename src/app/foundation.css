@@ -239,7 +239,7 @@
 .staff-foundation .bottom-tabs {
   display: none;
 }
-.staff-foundation .foundation-sheet {
+:is(.staff-foundation, .client-flow) .foundation-sheet {
   position: fixed;
   inset: 0;
   max-width: min(640px, calc(100vw - 40px));
@@ -254,20 +254,20 @@
   font-family: var(--font-ui);
   box-shadow: var(--shadow-lg);
 }
-.staff-foundation .foundation-sheet::backdrop {
+:is(.staff-foundation, .client-flow) .foundation-sheet::backdrop {
   background: var(--overlay);
 }
-.staff-foundation .foundation-sheet > header {
+:is(.staff-foundation, .client-flow) .foundation-sheet > header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   margin-bottom: 20px;
 }
-.staff-foundation .foundation-sheet h2 {
+:is(.staff-foundation, .client-flow) .foundation-sheet h2 {
   margin: 0;
 }
-.staff-foundation .foundation-sheet .form {
+:is(.staff-foundation, .client-flow) .foundation-sheet .form {
   max-width: none;
 }
 .staff-foundation .studio-menu {
@@ -461,7 +461,7 @@
   .staff-foundation .inside-proposal .workspace {
     padding-bottom: 24px;
   }
-  .staff-foundation .foundation-sheet {
+  :is(.staff-foundation, .client-flow) .foundation-sheet {
     inset: auto 0 0;
     max-width: 100%;
     width: 100%;
@@ -802,4 +802,79 @@
 }
 .engagement-panel .btn {
   min-height: 44px;
+}
+
+.questions-panel {
+  display: grid;
+  gap: 16px;
+  margin-block: 16px;
+}
+.questions-panel :is(h2, p),
+.question-form p {
+  margin: 0;
+}
+.questions-panel .question-thread {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  scroll-margin-block: 80px;
+}
+.question-thread-heading,
+.question-thread-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.question-thread-actions {
+  justify-content: flex-start;
+}
+.question-thread time,
+.question-section {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.question-thread time {
+  margin-inline-start: 8px;
+}
+.question-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.question-reply {
+  padding: 12px 14px;
+  border-inline-start: 2px solid var(--border-strong);
+  background: var(--neutral-soft);
+  border-radius: 8px;
+}
+.question-reply .question-text {
+  margin-top: 6px;
+}
+.question-note {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.question-badge {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: var(--neutral-soft);
+  color: var(--ink);
+  font: 600 12px/1.4 var(--font-ui);
+}
+.question-badge.open {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.question-form :is(input, select, textarea) {
+  min-height: 44px;
+}
+.question-form textarea {
+  resize: vertical;
 }

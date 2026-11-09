@@ -57,6 +57,7 @@ export function ClientPageSheets({
   busy = false,
   frozen = false,
   onToggle,
+  onAsk,
   onReady,
   onError,
 }: {
@@ -66,6 +67,7 @@ export function ClientPageSheets({
   busy?: boolean;
   frozen?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
+  onAsk?: (section: string) => void;
   onReady?: () => void;
   onError?: () => void;
 }) {
@@ -96,6 +98,7 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
+    onAsk,
     onReady,
     onError,
   });
@@ -107,6 +110,7 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
+    onAsk,
     onReady,
     onError,
   };
@@ -385,7 +389,33 @@ export function ClientPageSheets({
           const node = output.root.querySelector<HTMLElement>(
             `[data-print-block="${CSS.escape(block.id ?? String(index))}"]`,
           );
-          if (node) node.id = `section-${index}`;
+          if (!node) continue;
+          node.id = `section-${index}`;
+          const margin = pageGeometry(
+            current.p.resolved_styles,
+            current.p.header_footer,
+            1,
+          ).margins.right;
+          if (
+            current.onAsk &&
+            block.type === "heading" &&
+            (block.level ?? 1) === 1 &&
+            margin >= 54
+          ) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "client-section-question";
+            button.textContent = "Ask about this";
+            button.setAttribute(
+              "aria-label",
+              `Ask about this: ${node.querySelector("h2")?.textContent?.trim() || "Section"}`,
+            );
+            button.addEventListener("click", () =>
+              latest.current.onAsk?.(`section:${block.id ?? index}`),
+            );
+            node.classList.add("client-question-heading");
+            node.append(button);
+          }
         }
         // Prepare every new frame before exposing it, avoiding a zero-height
         // intermediate document and scrollbar-driven width oscillation.
@@ -457,7 +487,7 @@ export function ClientPageSheets({
   }, []);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-layout-change"));
-  }, [projection.key, frozen]);
+  }, [projection.key, frozen, !!onAsk]);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-controls-change"));
   }, [busy, frozen]);
@@ -483,4 +513,8 @@ const sheetCss = `
 .client-interactive-card{cursor:pointer}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid #365c4a;outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
+.client-question-heading{position:relative}
+.client-section-question{position:absolute;inset-inline-start:100%;top:0;width:52px;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px;border:0;border-radius:9999px;background:transparent;color:#365c4a;font:600 11px/1.2 "Instrument Sans",sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.client-section-question:hover{background:#eef3f3}.client-section-question:focus-visible{outline:2px solid #365c4a;outline-offset:1px}
+@media print{.client-section-question{display:none}}
 `;
