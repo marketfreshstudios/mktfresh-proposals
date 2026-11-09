@@ -724,7 +724,7 @@ function CatalogItem({
           label="QuickBooks item"
           name="qbo_item_ref"
           initial={i?.qbo_item_ref}
-          enabled={!!data.connections?.qbo}
+          enabled={data.connections?.qbo_connection?.state === "connected"}
           emptyLabel="Use workspace default"
         />
       )}

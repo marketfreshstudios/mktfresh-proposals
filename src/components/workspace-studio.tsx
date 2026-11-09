@@ -890,7 +890,7 @@ export function WorkspaceStudio({
           <QuickBooksPicker
             label="Default QuickBooks item"
             initial={draft.qbo_custom_item_ref}
-            enabled={!!data.connections?.qbo}
+            enabled={data.connections?.qbo_connection?.state === "connected"}
             disabled={!owner}
             emptyLabel="No default item"
             onChange={(qbo_custom_item_ref) =>
@@ -924,7 +924,7 @@ export function WorkspaceStudio({
               label="Default invoice terms"
               kind="terms"
               initial={draft.qbo_term_ref}
-              enabled={!!data.connections?.qbo}
+              enabled={data.connections?.qbo_connection?.state === "connected"}
               disabled={!owner}
               emptyLabel="Use QuickBooks default"
               onChange={(qbo_term_ref) => change({ qbo_term_ref }, true)}

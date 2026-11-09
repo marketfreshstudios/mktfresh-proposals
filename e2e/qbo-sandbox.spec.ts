@@ -231,6 +231,19 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
     )
     .toBe(true);
 
+  await page.route("**/api/connections/qbo/items?*", (route) =>
+    route.fulfill({ json: {} }),
+  );
+  await page.goto(`/studio/products?item=${f.product.id}`);
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "QuickBooks choices are temporarily unavailable." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("More product details", { exact: true }),
+  ).toBeVisible();
+
   await page.goto(`/proposals/${f.proposal.id}`);
   const invoice = page.getByText(`Invoice ${f.reference}`, { exact: true });
   await expect(invoice).toBeVisible();

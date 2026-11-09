@@ -38,7 +38,20 @@ export function QuickBooksPicker({
           `/api/connections/qbo/${kind}?q=${encodeURIComponent(search)}`,
           { signal: abort.signal },
         )
-          .then(setChoices)
+          .then((items) => {
+            if (
+              !Array.isArray(items) ||
+              items.some(
+                (item) =>
+                  typeof item?.id !== "string" ||
+                  typeof item?.name !== "string",
+              )
+            )
+              throw new Error(
+                "QuickBooks choices are temporarily unavailable.",
+              );
+            if (!abort.signal.aborted) setChoices(items);
+          })
           .catch((error) => {
             if (!abort.signal.aborted) setError((error as Error).message);
           });
