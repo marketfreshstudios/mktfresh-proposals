@@ -374,7 +374,7 @@ test("Quote disclosures point right/down with a distinct heavy 10px icon", async
     chevron = row.locator(".disclosure-chevron");
   await expect(chevron).toHaveAttribute("data-open", "true");
   await expect(chevron).toHaveCSS("width", "10px");
-  await expect(chevron).toHaveAttribute("viewBox", "0 0 320 512");
+  await expect(chevron).toHaveAttribute("stroke-width", "3");
   await expect(chevron).toHaveCSS("transform", "matrix(0, 1, -1, 0, 0, 0)");
   await row.click();
   await expect(chevron).toHaveAttribute("data-open", "false");
@@ -386,6 +386,6 @@ test("Quote disclosures point right/down with a distinct heavy 10px icon", async
     image: getComputedStyle(el).backgroundImage,
     width: getComputedStyle(el).backgroundSize,
   }));
-  expect(snapshot.image).toContain("viewBox='0 0 512 512'");
+  expect(snapshot.image).toContain("m6 9 6 6 6-6");
   expect(snapshot.width).toContain("12px");
 });

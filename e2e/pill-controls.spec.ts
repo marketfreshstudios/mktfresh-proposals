@@ -36,7 +36,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Studio navigation", exact: true })
       .locator('a[aria-current="page"]'),
-  ).toHaveCSS("border-radius", "8px");
+  ).toHaveCSS("border-radius", "10px");
   const metrics = (el: Element) => {
     const s = getComputedStyle(el);
     return {
@@ -68,7 +68,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Studio areas", exact: true })
       .locator('a[aria-current="page"]'),
-  ).toHaveCSS("border-radius", "999px");
+  ).toHaveCSS("border-radius", "10px");
   await page.setViewportSize({ width: 1440, height: 1000 });
   const f = await editorFixture(page);
   await page.goto(`/proposals/${f.draft.id}`);
@@ -79,7 +79,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   await openQuoteRow(page, 0);
   await expect(
     page.getByRole("button", { name: "Review & send", exact: true }),
-  ).toHaveCSS("background-color", "rgb(19, 48, 58)");
+  ).toHaveCSS("background-color", "rgb(180, 83, 42)");
   await expect(
     page.getByRole("button", { name: "Preview PDF", exact: true }),
   ).toHaveCSS("border-top-width", "1px");
@@ -244,9 +244,10 @@ for (const width of [1440, 375])
         await expect(
           page.locator('.workspace-section-list button[aria-current="page"]'),
         ).toHaveCSS("border-radius", "999px");
-        await expect(
-          page.locator('.bottom-tabs a[aria-current="page"]'),
-        ).toHaveCSS("border-radius", "10px");
+        await expect(page.locator(".bottom-tabs a.active")).toHaveCSS(
+          "border-radius",
+          "10px",
+        );
       }
       await audit(page);
     }
@@ -274,7 +275,7 @@ for (const width of [1440, 375])
       page
         .getByRole("tab", { name: "Quote", exact: true })
         .filter({ visible: true }),
-    ).toHaveCSS("border-radius", "8px");
+    ).toHaveCSS("border-radius", "10px");
     await audit(page);
     const optional = page.getByRole("switch", {
       name: "Optional",

@@ -183,10 +183,12 @@ export class MemoryRepository implements Repository {
         .map(({ id, targets }) => ({ id, targets })),
       questions: (await this.entities<QuestionThread>("proposal_questions"))
         .filter((row) => questionIds.has(row.proposal_id))
-        .map(({ proposal_id, status, replies }) => ({
+        .map(({ proposal_id, status, replies, created_at }) => ({
           proposal_id,
           status,
           answered: replies.length > 0,
+          asked_at: created_at,
+          first_reply_at: replies[0]?.created_at,
         })),
       versions: [...valueIds].flatMap((id) => {
         const p = this.rows.get(id);
@@ -1191,7 +1193,9 @@ export class SupabaseRepository implements Repository {
       >(questions, (ids, from) =>
         this.db
           .from("proposal_questions")
-          .select("proposal_id,status,first_reply:data->replies->0->>id")
+          .select(
+            "proposal_id,status,first_reply:data->replies->0->>id,asked_at:created_at,first_reply_at:data->replies->0->>created_at",
+          )
           .eq("workspace_id", this.workspaceId)
           .in("proposal_id", ids)
           .order("id")
@@ -1223,9 +1227,8 @@ export class SupabaseRepository implements Repository {
       engagement,
       versions,
       pendingBilling: billingRows.map((r) => r.proposal_id),
-      questions: threadRows.map(({ proposal_id, status, first_reply }) => ({
-        proposal_id,
-        status,
+      questions: threadRows.map(({ first_reply, ...thread }) => ({
+        ...thread,
         answered: !!first_reply,
       })),
     };

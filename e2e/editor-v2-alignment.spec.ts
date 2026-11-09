@@ -331,7 +331,7 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
   ).toHaveCSS("height", "38px");
   await expect(
     panel.getByRole("button", { name: "Send to Jane", exact: true }),
-  ).toHaveCSS("background-color", "rgb(19, 48, 58)");
+  ).toHaveCSS("background-color", "rgb(180, 83, 42)");
   const darkBorders = await panel
     .locator("input:not([type=checkbox],[type=radio]),select,textarea")
     .evaluateAll((inputs) =>
@@ -344,7 +344,7 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
           const rgb = s.borderTopColor.match(/\d+/g)?.map(Number) ?? [];
           return (
             rgb.length >= 3 &&
-            rgb.slice(0, 3).some((v, i) => v < [221, 216, 206][i])
+            rgb.slice(0, 3).some((v, i) => v < [207, 200, 187][i])
           );
         })
         .map((el) => el.getAttribute("aria-label") || el.tagName),

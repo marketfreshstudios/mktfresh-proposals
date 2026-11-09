@@ -129,7 +129,7 @@ test("Yeswell staff branding and install metadata stay separate from workspace c
   await page.setViewportSize({ width: 768, height: 1000 });
   await page.goto("/");
   await expect(
-    page.locator(".sidebar .yeswell-tight img:visible"),
+    page.locator(".shell-tablet-header .yeswell-brand img:visible"),
   ).toHaveAttribute("alt", "Yeswell");
   await page.setViewportSize({ width: 375, height: 900 });
   await expect(page.locator(".staff-mobile-brand img:visible")).toHaveAttribute(

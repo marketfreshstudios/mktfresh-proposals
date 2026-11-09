@@ -2635,7 +2635,7 @@
     min-height: 34px;
     padding: 0 14px;
     border-radius: var(--radius-button);
-    color: var(--ai);
+    color: var(--ai-text, var(--ai));
     background: var(--ai-soft);
     font: 600 13px/18px var(--font-ui);
     white-space: nowrap;
@@ -4174,7 +4174,7 @@
   padding: 10px;
   border-radius: 8px;
   background: var(--ai-soft);
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
 }
 .quote-row-body .price-review p {
   font-size: 12px;
@@ -4642,7 +4642,7 @@
     font: 600 10px/14px var(--font-ui);
     border-radius: var(--radius-button);
     padding: 0 10px;
-    color: var(--ai);
+    color: var(--ai-text, var(--ai));
     background: var(--ai-soft);
   }
   .phone-editor-menu button {

@@ -230,7 +230,7 @@
 }
 .staff-foundation .pill.ai {
   background: var(--ai-soft);
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
 }
 .staff-foundation .amount,
 .staff-foundation .totals strong {

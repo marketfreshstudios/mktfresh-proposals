@@ -336,10 +336,10 @@ test("Studio editors evidence and responsive tools", async ({ page }) => {
   });
   await expect(
     page.getByRole("button", { name: "Duplicate", exact: true }),
-  ).toHaveCSS("background-color", "rgb(28, 27, 25)");
+  ).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(
     page.getByRole("button", { name: "Duplicate", exact: true }),
-  ).toHaveCSS("color", "rgb(238, 243, 243)");
+  ).toHaveCSS("color", "rgb(238, 242, 242)");
   await shot("block-details-dark");
   await page.setViewportSize({ width: 768, height: 1000 });
   await page.getByRole("button", { name: "Open Fields", exact: true }).click();

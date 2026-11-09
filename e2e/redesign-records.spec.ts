@@ -400,16 +400,25 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         "Keep this title",
       );
       await page.keyboard.press("Escape");
-      if (width === 375) {
-        await page.getByRole("link", { name: "Studio", exact: true }).click();
-        await expect(page.locator(".studio-page")).toBeVisible();
-      } else if (width === 768) {
+      if (width === 768) {
+        await page.getByRole("button", { name: "Open navigation" }).click();
+        await expect(
+          page.getByRole("dialog", { name: "Navigation" }),
+        ).toBeVisible();
         await page
-          .getByRole("button", { name: "Studio", exact: true })
-          .filter({ visible: true })
+          .getByRole("dialog", { name: "Navigation" })
+          .getByRole("link", { name: "Studio", exact: true })
           .click();
-        await expect(page.locator(".studio-popover")).toBeVisible();
-      } else await expect(page.locator(".desktop-studio")).toBeVisible();
+      } else {
+        await page.getByRole("link", { name: "Studio", exact: true }).click();
+      }
+      await expect(page.locator(".studio-page")).toBeVisible();
+      if (width === 1440)
+        await expect(
+          page
+            .locator(".sidebar")
+            .getByRole("navigation", { name: "Studio navigation" }),
+        ).toBeVisible();
       await capture("studio", "Responsive Studio navigation", width, theme);
       await page.goto(`/clients/${unused.id}`);
       await expect(

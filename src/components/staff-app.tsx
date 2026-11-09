@@ -111,13 +111,9 @@ export type Data = {
 };
 type StaffAppProps = { path: string[]; query?: StaffQuery; local?: boolean };
 export function StaffApp(props: StaffAppProps) {
-  const { section, action } = staffRoute(props.path, props.query);
-  const enabled =
-    !["login", "billing"].includes(section) && action !== "countersign";
   return (
     <ReloadSafetyProvider>
       <StaffAppContent {...props} />
-      <DeploymentNotice enabled={enabled} />
     </ReloadSafetyProvider>
   );
 }
@@ -317,7 +313,13 @@ function StaffAppContent({
         month: "long",
         year: "numeric",
       });
-      content = <HomeV4 data={data} />;
+      content = (
+        <HomeV4
+          data={data}
+          onNew={openNew}
+          deploymentNotice={<DeploymentNotice enabled navigationKey="/" />}
+        />
+      );
     } else if (section === "proposals" && id === "new") {
       title = "New proposal";
       subtitle =
@@ -374,7 +376,6 @@ function StaffAppContent({
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
       );
     } else if (section === "reports") {
-      subtitle = "Track proposals from send to signature.";
       content = <ReportsPage query={query} />;
     } else if (section === "proposals" && drill && reportFilters) {
       subtitle = "Filtered from Reports";
@@ -384,9 +385,14 @@ function StaffAppContent({
     } else if (section === "proposals") {
       subtitle = `${data.total} proposals`;
       headerAction = (
-        <a className="btn" href="/reports">
-          <Icon name="reports" /> Reports
-        </a>
+        <div className="actions">
+          <a className="btn" href="/reports">
+            Reports
+          </a>
+          <Button variant="primary" className="action" onClick={openNew}>
+            New proposal
+          </Button>
+        </div>
       );
       content = (
         <ProposalListV4
@@ -483,13 +489,21 @@ function StaffAppContent({
       }}
     >
       <ContactToast />
-      <header className="page-header">
-        <div>
-          <h1>{title}</h1>
-          {subtitle && <p>{subtitle}</p>}
-        </div>
-        {headerAction}
-      </header>
+      {section !== "reports" && (
+        <header className="page-header">
+          <div>
+            <h1>{title}</h1>
+            {subtitle && <p>{subtitle}</p>}
+          </div>
+          {headerAction}
+        </header>
+      )}
+      {section !== "" && (
+        <DeploymentNotice
+          enabled={action !== "countersign"}
+          navigationKey={path.join("/")}
+        />
+      )}
       <div className="page-body stack">
         {error && (
           <Banner

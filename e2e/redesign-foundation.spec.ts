@@ -143,7 +143,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         await expect(shell).toHaveCSS("font-family", /"Instrument Sans"/);
         await expect(shell).toHaveCSS(
           "background-color",
-          theme === "light" ? "rgb(243, 240, 234)" : "rgb(19, 19, 17)",
+          theme === "light" ? "rgb(243, 239, 231)" : "rgb(17, 24, 27)",
         );
         if (width >= 700 && ["editor", "send", "template"].includes(name)) {
           await expect(page.locator(".sidebar")).toBeHidden();
@@ -157,12 +157,16 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
           await expect(
             page.getByRole("navigation", { name: "Studio areas" }),
           ).toBeVisible();
-        } else if (width >= 700) {
+        } else if (width >= 1100) {
           await expect(page.locator(".sidebar")).toBeVisible();
-          await expect(page.locator(".sidebar")).toHaveCSS(
-            "width",
-            width >= 1100 ? "232px" : "64px",
-          );
+          await expect(page.locator(".sidebar")).toHaveCSS("width", "236px");
+        } else if (width >= 700) {
+          await expect(page.locator(".sidebar")).toBeHidden();
+          if (!url.startsWith("/proposals/"))
+            await expect(page.locator(".shell-tablet-header")).toHaveCSS(
+              "height",
+              "64px",
+            );
         } else {
           await expect(page.locator(".sidebar")).toBeHidden();
           const inside = [
@@ -237,15 +241,24 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       if (width === 768) {
+        await page.getByRole("button", { name: "Open navigation" }).click();
+        await expect(
+          page.getByRole("dialog", { name: "Navigation" }),
+        ).toBeVisible();
         await page
-          .getByRole("button", { name: "Studio", exact: true })
-          .filter({ visible: true })
+          .getByRole("dialog", { name: "Navigation" })
+          .getByRole("link", { name: "Studio", exact: true })
           .click();
-        await expect(page.locator(".studio-popover")).toBeVisible();
-      } else if (width === 375) {
+      } else {
         await page.getByRole("link", { name: "Studio", exact: true }).click();
-        await expect(page.locator(".studio-page")).toBeVisible();
-      } else await expect(page.locator(".desktop-studio")).toBeVisible();
+      }
+      await expect(page.locator(".studio-page")).toBeVisible();
+      if (width === 1440)
+        await expect(
+          page
+            .locator(".sidebar")
+            .getByRole("navigation", { name: "Studio navigation" }),
+        ).toBeVisible();
       if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
         await page.screenshot({
           path: `${dir}/studio-menu-${width}-${theme}.png`,

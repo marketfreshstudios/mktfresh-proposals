@@ -119,8 +119,20 @@ export const sampleProposals: ReportProposal[] = [
 ];
 export const sampleFacts: ReportFacts = {
   questions: [
-    { proposal_id: reportId(1), status: "answered", answered: true },
-    { proposal_id: reportId(1), status: "resolved", answered: true },
+    {
+      proposal_id: reportId(1),
+      status: "answered",
+      answered: true,
+      asked_at: "2026-11-03T15:00:00Z",
+      first_reply_at: "2026-11-03T16:00:00Z",
+    },
+    {
+      proposal_id: reportId(1),
+      status: "resolved",
+      answered: true,
+      asked_at: "2026-11-05T15:00:00Z",
+      first_reply_at: "2026-11-05T18:00:00Z",
+    },
     { proposal_id: reportId(4), status: "resolved", answered: false },
     { proposal_id: reportId(5), status: "open", answered: false },
   ],

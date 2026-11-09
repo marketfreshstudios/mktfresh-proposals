@@ -279,7 +279,8 @@ for (const theme of ["light", "dark"])
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/studio/workspace?view=styles");
-    await activeHover(page, page.locator(".sidebar nav a.active"));
+    for (const item of await page.locator(".sidebar nav a.active").all())
+      await activeHover(page, item);
     if (theme === "light") await shot(page, "studio-nav-after-1440");
     await activeHover(
       page,

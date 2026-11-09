@@ -105,7 +105,7 @@ test("template creation stays reachable with collapsed Pages at desktop, tablet 
     await expect(create).toBeVisible();
     if (width >= 1100) {
       await expect(page.locator(".sidebar")).toBeVisible();
-      await expect(page.locator(".sidebar")).toHaveCSS("width", "232px");
+      await expect(page.locator(".sidebar")).toHaveCSS("width", "236px");
     } else if (width >= 700) {
       await expect(page.locator(".sidebar")).toBeHidden();
       await expect(

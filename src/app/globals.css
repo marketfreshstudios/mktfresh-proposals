@@ -222,7 +222,7 @@ small {
   color: var(--warning);
 }
 .metric .ai {
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
 }
 .metric p {
   font-size: 13px;
@@ -266,7 +266,7 @@ small {
 }
 .pill.ai,
 .banner.ai {
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
   background: var(--ai-soft);
 }
 .banner {
@@ -1112,7 +1112,7 @@ select:hover:not(:disabled),
   padding: 8px 10px;
   margin-bottom: 16px;
   font: 12px/1.4 var(--font-ui);
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
 }
 .section-review .btn {
   font-size: 11px;
@@ -1728,7 +1728,7 @@ select:hover:not(:disabled),
   font-size: 11px;
 }
 .section-review .btn {
-  color: var(--ai);
+  color: var(--ai-text, var(--ai));
   border-color: var(--ai);
 }
 @media (max-width: 699px) {

@@ -359,6 +359,15 @@
           "default": 300.0
         }
       ]
+    },
+    {
+      "asset": "DMSerifDisplay-Regular.woff2",
+      "source": "https://raw.githubusercontent.com/google/fonts/6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf",
+      "source_sha256": "8cc3643535edf039aa5d95440a8542735e9197e4f4b8d9303e980fefbf5ab616",
+      "sha256": "7e6679d41e35437090560e0367e6546f10b71c5792fa168b177e302cf009b66c",
+      "license": "DMSerifDisplay-OFL.txt",
+      "axes": [],
+      "conversion": "Lossless WOFF2 packaging with fontTools 4.60.2 and Brotli 1.2.0. Staff display font only."
     }
   ],
   "license_text": "Upstream license wording is retained; line endings are normalized to LF and trailing whitespace removed."

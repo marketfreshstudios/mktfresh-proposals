@@ -1,4 +1,5 @@
 "use client";
+import { chromeIcons } from "./staff-icons";
 import { Select } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -422,7 +423,7 @@ function InlineEmailEditor({
             aria-haspopup="dialog"
             onClick={() => setOpen(true)}
           >
-            ⋯
+            <chromeIcons.more size={18} aria-hidden="true" />
           </button>
         )}
         {editable && (
@@ -613,7 +614,7 @@ function InlineEmailEditor({
             aria-expanded={!!more}
             onClick={(e) => setMore(more ? null : e.currentTarget)}
           >
-            ⋯
+            <chromeIcons.more size={18} aria-hidden="true" />
           </button>
         </EditBar>
       )}

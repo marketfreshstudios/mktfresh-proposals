@@ -25,18 +25,16 @@ async function expectHeaderButtons(page: Page, bar: Locator) {
       page.getByRole("button", { name: "Preview PDF", exact: true }),
     );
     const primary = await style(page.locator(".editor-header-send"));
+    expect(primary.background).toBe(
+      theme === "light" ? "rgb(180, 83, 42)" : "rgb(224, 122, 74)",
+    );
     expect(outline.height).toBe(36);
     for (const button of await bar.getByRole("button").all()) {
       const actual = await style(button);
       expect(actual.height).toBe(outline.height);
       expect(actual.radius).toBe(outline.radius);
       expect(actual.font).toBe(outline.font);
-      const reference = (await button.getAttribute("class"))?.includes(
-        "editor-button-primary",
-      )
-        ? primary
-        : outline;
-      expect(actual).toEqual(reference);
+      expect(actual).toEqual(outline);
       const b = (await button.boundingBox())!;
       const bounds = (await bar.boundingBox())!;
       expect(b.y - bounds.y).toBeGreaterThanOrEqual(6);

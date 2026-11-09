@@ -1,4 +1,5 @@
 "use client";
+import { chromeIcons } from "./staff-icons";
 import { anchoredPopover } from "../lib/popover-position";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useId, useState, type ReactNode } from "react";
@@ -129,11 +130,16 @@ export function Sheet({
         </h2>
         <button
           type="button"
-          className="btn ghost"
+          className={`btn ghost ${surface === "staff" ? "icon-only" : ""}`}
+          title={surface === "staff" ? "Close" : undefined}
           aria-label="Close"
           onClick={onClose}
         >
-          ×
+          {surface === "staff" ? (
+            <chromeIcons.close size={18} aria-hidden="true" />
+          ) : (
+            "×"
+          )}
         </button>
       </header>
       {children}

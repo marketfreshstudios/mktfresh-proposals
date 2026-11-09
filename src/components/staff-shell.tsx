@@ -2,19 +2,23 @@
 import { StudioAccount } from "./studio-account";
 import { WorkspaceMark } from "./workspace-mark";
 import { YeswellBrand } from "./yeswell-brand";
-import type { ReactNode } from "react";
-import { useState, useEffect, useRef } from "react";
-
-import { Icon, ThemeToggle } from "./ui";
+import { Sheet } from "./foundation";
+import { StaffIconContext, chromeIcons } from "./staff-icons";
+import { useState, useEffect, type ReactNode } from "react";
+import { Icon, Button } from "./ui";
 import { MoneyProvider } from "./money-context";
 import { studioRoutes } from "../lib/staff-routes";
+import { staffPageName } from "../lib/staff-brand";
 import type { WorkspaceSettings } from "../lib/workspace";
+
 const primary = [
   ["/", "Home", "home"],
   ["/proposals", "Proposals", "proposals"],
   ["/reports", "Reports", "reports"],
   ["/clients", "Clients", "clients"],
+  ["/studio", "Studio", "studio"],
 ] as const;
+
 export function StaffShell({
   path,
   settings,
@@ -36,214 +40,184 @@ export function StaffShell({
     document.documentElement.dataset.theme =
       localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
   }, []);
-  const [studio, setStudio] = useState(false);
-  const studioButton = useRef<HTMLButtonElement>(null),
-    studioPopover = useRef<HTMLDivElement>(null);
+  const [drawer, setDrawer] = useState(false);
   const current = "/" + path.join("/");
-  const inStudio =
-    path[0] === "studio" &&
-    !(path[2] && ["templates", "blocks", "emails"].includes(path[1]));
+  const studio = path[0] === "studio";
+  const studioPage =
+    studio && !(path[2] && ["templates", "blocks", "emails"].includes(path[1]));
   const insideProposal =
     path[0] === "proposals" && !!path[1] && path[1] !== "new";
-  useEffect(() => {
-    if (!studio) return;
-    studioPopover.current?.querySelector<HTMLAnchorElement>("a")?.focus();
-    const close = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setStudio(false);
-        studioButton.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [studio]);
-  function nav(
-    href: string,
-    label: string,
-    icon: "home" | "proposals" | "reports" | "clients" | "studio",
-    phone = false,
-  ) {
-    const active = href === "/" ? current === "/" : current.startsWith(href);
-    const currentTab =
-      active || (phone && href === "/proposals" && current === "/reports");
+
+  function nav([href, label, icon]: (typeof primary)[number], phone = false) {
+    const active =
+      href === "/"
+        ? current === "/"
+        : current === href || current.startsWith(href + "/");
+    const parent = phone && href === "/proposals" && current === "/reports";
     return (
       <a
+        key={href}
         href={href}
-        className={currentTab ? "active" : ""}
-        aria-current={active ? "page" : currentTab ? "location" : undefined}
+        className={active || parent ? "active" : ""}
+        aria-current={
+          active && current === href
+            ? "page"
+            : active || parent
+              ? "location"
+              : undefined
+        }
       >
         <Icon name={icon} />
         <span>{label}</span>
       </a>
     );
   }
-  return (
-    <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
-      <div
-        className={`staff-foundation shell ${insideProposal ? "inside-proposal" : ""} ${inStudio ? "studio-v3-shell" : ""}`}
+  const studioLinks = studioRoutes.map(([href, label]) => {
+    const active =
+      current === href ||
+      current.startsWith(href + "/") ||
+      (href === "/studio/templates" && current.startsWith("/studio/blocks/"));
+    return (
+      <a
+        key={href}
+        href={href}
+        className={active ? "active" : ""}
+        aria-current={active ? "page" : undefined}
       >
-        <a className="skip-link" href="#workspace-content">
-          Skip to content
-        </a>
-        <aside className="sidebar">
-          <a className="brand" href="/">
-            <span className="yeswell-wide">
-              <YeswellBrand />
-            </span>
-            <span className="yeswell-tight">
-              <YeswellBrand mark />
-            </span>
-          </a>
-          <div className="workspace-label">
-            <WorkspaceMark settings={settings} />
-            <strong>{settings?.company_name ?? "Workspace"}</strong>
-          </div>
-          <button
-            className="btn primary shell-new"
-            onClick={onNew}
-            aria-label="New proposal"
-          >
-            <Icon name="plus" />
-            <span>New proposal</span>
-            <kbd>N</kbd>
-          </button>
-          <nav aria-label="Main navigation">
-            {primary.map(([href, label, icon]) => (
-              <span className="nav-item" key={href}>
-                {nav(href, label, icon)}
-              </span>
-            ))}
+        {label}
+      </a>
+    );
+  });
+  function sideNavigation() {
+    return (
+      <>
+        <nav aria-label="Main navigation">
+          {primary.map((item) => nav(item))}
+        </nav>
+        {studio && (
+          <nav className="studio-subnav" aria-label="Studio navigation">
+            {studioLinks}
           </nav>
-          <section className="desktop-studio">
-            <h2>Studio</h2>
-            <nav aria-label="Studio navigation">
-              {studioRoutes.map(([href, label]) => (
-                <span key={href}>{nav(href, label, "studio")}</span>
-              ))}
-            </nav>
-          </section>
-          <footer>
-            <button
-              ref={studioButton}
-              className={`studio-trigger ${path[0] === "studio" ? "active" : ""}`}
-              aria-haspopup="dialog"
-              aria-expanded={studio}
-              onClick={() => setStudio(!studio)}
-            >
-              <Icon name="studio" />
-              <span>Studio</span>
-            </button>
-            {inStudio ? (
-              <StudioAccount name={name} email={email} onSignout={onSignout} />
-            ) : (
-              <>
-                <div className="shell-person">
-                  <span className="avatar" aria-hidden="true">
-                    {name.slice(0, 1) || "U"}
-                  </span>
-                  <span>
-                    {name}
-                    <small>{email}</small>
-                  </span>
-                </div>
-                <ThemeToggle />
-                <button className="btn ghost sign-out" onClick={onSignout}>
-                  Sign out
-                </button>
-              </>
-            )}
-          </footer>
-        </aside>
-        <main className="workspace" id="workspace-content" tabIndex={-1}>
-          {!insideProposal && (
-            <a
-              href="/"
-              className="staff-mobile-brand"
-              aria-label="Yeswell home"
-            >
-              <YeswellBrand mark />
+        )}
+      </>
+    );
+  }
+  const workspace = (
+    <>
+      <WorkspaceMark settings={settings} />
+      <strong>{settings?.company_name ?? "Workspace"}</strong>
+    </>
+  );
+  return (
+    <StaffIconContext.Provider value>
+      <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
+        <div
+          className={`staff-foundation ink-clay shell ${insideProposal ? "inside-proposal" : ""} ${studioPage ? "studio-v3-shell" : ""}`}
+        >
+          <a className="skip-link" href="#workspace-content">
+            Skip to content
+          </a>
+          <aside className="sidebar">
+            <a className="brand" href="/" aria-label="Yeswell home">
+              <YeswellBrand reversed />
             </a>
-          )}
-          {inStudio && (
-            <>
-              <div className="studio-tablet-header">
+            <div className="workspace-label">{workspace}</div>
+            {sideNavigation()}
+            <footer>
+              <StudioAccount name={name} email={email} onSignout={onSignout} />
+            </footer>
+          </aside>
+          <main className="workspace" id="workspace-content" tabIndex={-1}>
+            {!insideProposal && (!studio || studioPage) && (
+              <div
+                className={`shell-tablet-header ${studioPage ? "studio-tablet-header" : ""}`}
+              >
+                <button
+                  className="btn icon-only shell-drawer-trigger"
+                  aria-label="Open navigation"
+                  title="Open navigation"
+                  aria-haspopup="dialog"
+                  aria-expanded={drawer}
+                  onClick={() => setDrawer(true)}
+                >
+                  <chromeIcons.menu size={20} aria-hidden="true" />
+                </button>
                 <a href="/" aria-label="Yeswell home">
-                  <YeswellBrand />
+                  <YeswellBrand reversed />
                 </a>
-                <span className="tablet-workspace-label">
-                  <WorkspaceMark settings={settings} />
-                  {settings?.company_name ?? "Workspace"}
-                </span>
+                <strong className="tablet-page-name">
+                  {staffPageName(path)}
+                </strong>
+                {studioPage && (
+                  <span className="tablet-workspace-label">{workspace}</span>
+                )}
                 <StudioAccount
                   name={name}
                   email={email}
                   onSignout={onSignout}
                 />
               </div>
-              <nav className="studio-area-chips" aria-label="Studio areas">
-                {studioRoutes.map(([href, label]) => (
-                  <a
-                    key={href}
-                    href={href}
-                    aria-current={current.startsWith(href) ? "page" : undefined}
-                  >
-                    {label}
+            )}
+            {!insideProposal && (
+              <a
+                href="/"
+                className="staff-mobile-brand"
+                aria-label="Yeswell home"
+              >
+                <YeswellBrand mark reversed={current !== "/"} />
+              </a>
+            )}
+            {studioPage && (
+              <>
+                <nav className="studio-area-chips" aria-label="Studio areas">
+                  {studioLinks}
+                </nav>
+                {path[1] && (
+                  <a className="studio-back" href="/studio">
+                    Studio
                   </a>
-                ))}
-              </nav>
-              {path[1] && (
-                <a className="studio-back" href="/studio">
-                  ‹ Studio
-                </a>
-              )}
-            </>
+                )}
+              </>
+            )}
+            {children}
+          </main>
+          {!insideProposal && (
+            <nav className="bottom-tabs" aria-label="Phone navigation">
+              {nav(primary[0], true)}
+              {nav(primary[1], true)}
+              <button
+                className="bottom-new"
+                onClick={onNew}
+                aria-label="New proposal"
+                title="New proposal"
+              >
+                <Icon name="plus" />
+                <span className="sr-only">New proposal</span>
+              </button>
+              {nav(primary[3], true)}
+              {nav(primary[4], true)}
+            </nav>
           )}
-          {children}
-        </main>
-        {!insideProposal && (
-          <nav className="bottom-tabs" aria-label="Phone navigation">
-            {nav("/", "Home", "home")}
-            {nav("/proposals", "Proposals", "proposals", true)}
-            <button
-              className="bottom-new"
-              onClick={onNew}
-              aria-label="New proposal"
+          {drawer && (
+            <Sheet
+              title="Navigation"
+              className="staff-drawer"
+              onClose={() => setDrawer(false)}
             >
-              <Icon name="plus" />
-              <span className="sr-only">New proposal</span>
-            </button>
-            {nav("/clients", "Clients", "clients")}
-            {nav("/studio", "Studio", "studio")}
-          </nav>
-        )}
-        {studio && (
-          <>
-            <button
-              className="studio-dismiss"
-              aria-label="Close Studio menu"
-              onClick={() => setStudio(false)}
-            />
-            <div
-              className="studio-popover"
-              role="dialog"
-              aria-label="Studio"
-              ref={studioPopover}
-            >
-              <nav className="studio-menu" aria-label="Studio navigation">
-                {studioRoutes.map(([href, label]) => (
-                  <a
-                    key={href}
-                    href={href}
-                    aria-current={current.startsWith(href) ? "page" : undefined}
-                  >
-                    {label}
-                  </a>
-                ))}
-              </nav>
-            </div>
-          </>
-        )}
-      </div>
-    </MoneyProvider>
+              <div className="workspace-label">{workspace}</div>
+              {sideNavigation()}
+              <Button
+                onClick={() => {
+                  setDrawer(false);
+                  onNew();
+                }}
+              >
+                New proposal
+              </Button>
+            </Sheet>
+          )}
+        </div>
+      </MoneyProvider>
+    </StaffIconContext.Provider>
   );
 }

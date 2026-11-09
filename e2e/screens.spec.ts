@@ -265,8 +265,18 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
           "background-position",
           compact ? "calc(100% - 8px) 50%" : "calc(100% - 12px) 50%",
         );
-        const paper = await select.evaluate((el) => !!el.closest(".paper"));
-        const muted = theme === "dark" && !paper ? "a3abb6" : "5a626b";
+        const { paper, staff } = await select.evaluate((el) => ({
+          paper: !!el.closest(".paper"),
+          staff: !!el.closest(".staff-foundation.ink-clay"),
+        }));
+        const muted =
+          staff && !paper
+            ? theme === "dark"
+              ? "a9bcc2"
+              : "5f5b53"
+            : theme === "dark" && !paper
+              ? "a3abb6"
+              : "5a626b";
         await expect(select).toHaveCSS("background-image", new RegExp(muted));
       }
       if (name === "send") {
@@ -275,7 +285,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         await from.hover();
         await expect(from).toHaveCSS(
           "background-image",
-          new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
+          new RegExp(theme === "dark" ? "eef2f2" : "1c1b18"),
         );
         await page.keyboard.press("Tab");
         await from.focus();
@@ -287,7 +297,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         await expect(from).toBeDisabled();
         await expect(from).toHaveCSS(
           "background-image",
-          new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+          new RegExp(theme === "dark" ? "a9bcc2" : "5f5b53"),
         );
         await from.evaluate((el: HTMLSelectElement) => {
           el.disabled = false;

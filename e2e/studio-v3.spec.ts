@@ -472,7 +472,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
       for (const action of await page
         .locator(".studio-v3-shell .workspace .btn.primary")
         .all())
-        await expect(action).toHaveCSS("border-radius", "9999px");
+        await expect(action).toHaveCSS("border-radius", "999px");
       await expect
         .poll(() =>
           page.evaluate(
@@ -494,13 +494,14 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
         window.scrollTo(0, document.documentElement.scrollHeight),
       );
       const footer = page.locator(".bottom-tabs");
+      await expect(footer).toBeHidden();
       await expect
         .poll(async () => {
           const bar = await footer.boundingBox(),
             last = await page
               .getByRole("link", { name: "Recent changes · Team activity" })
               .boundingBox();
-          return bar!.y - last!.y - last!.height;
+          return (bar?.y ?? 1000) - last!.y - last!.height;
         })
         .toBeGreaterThanOrEqual(24);
       await capture(page, "workspace-team-768", false);
@@ -562,7 +563,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
       ).toBeVisible();
       await expect(page.locator(".studio-home-list small.warning")).toHaveCSS(
         "color",
-        "rgb(122, 72, 0)",
+        "rgb(122, 82, 0)",
       );
       await capture(page, "studio-home-375");
     }
@@ -621,13 +622,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
     "rgba(0, 0, 0, 0)",
   );
   const active = page.locator('.sidebar nav a[aria-current="page"]');
-  await expect(active).toHaveCSS(
-    "color",
-    await page
-      .locator(".workspace")
-      .evaluate((el) => getComputedStyle(el).getPropertyValue("--ink").trim())
-      .then((c) => (c.startsWith("#") ? "rgb(19, 48, 58)" : c)),
-  );
+  await expect(active).toHaveCSS("color", "rgb(242, 245, 245)");
   await expect(page.locator(".sidebar footer").getByRole("button")).toHaveCount(
     1,
   ); // Only the account row is visible in the desktop footer.
@@ -734,7 +729,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   );
   await expect(qbo.locator(".connection-state")).toHaveCSS(
     "color",
-    "rgb(20, 107, 63)",
+    "rgb(30, 90, 58)",
   );
   const claude = page.locator(".connection-card").filter({
     has: page.getByRole("heading", { name: "Claude", exact: true }),
@@ -742,7 +737,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await expect(claude.locator(".connection-state")).toContainText("Connected");
   await expect(claude.locator(".connection-state")).toHaveCSS(
     "color",
-    "rgb(20, 107, 63)",
+    "rgb(30, 90, 58)",
   );
 });
 
@@ -757,7 +752,7 @@ test("Studio carry-over provider pills, unwrapped status and guarded danger remo
   ).toHaveText("Stripe");
   await expect(
     page.locator(".workspace-setting-row .studio-tag-qbo"),
-  ).toHaveCSS("color", "rgb(20, 107, 63)");
+  ).toHaveCSS("color", "rgb(30, 90, 58)");
   await expect(page.locator(".workspace-setting-row>a").first()).toHaveCSS(
     "white-space",
     "nowrap",
@@ -792,7 +787,7 @@ test("Studio carry-over provider pills, unwrapped status and guarded danger remo
   });
   await expect(remove).toBeDisabled();
   await expect(remove).toContainText("Reassign proposals first");
-  await expect(remove).toHaveCSS("color", "rgb(163, 38, 30)");
+  await expect(remove).toHaveCSS("color", "rgb(148, 40, 27)");
   if (process.env.STUDIO_EDITORS_CAPTURE === "1")
     await page.screenshot({
       path: "docs/screenshots/studio-v3-editors/team-menu.png",

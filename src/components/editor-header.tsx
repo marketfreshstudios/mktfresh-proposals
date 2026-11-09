@@ -4,6 +4,7 @@ import { ToolbarPopover } from "./toolbar-popover";
 import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Button, Icon } from "./ui";
+import { chromeIcons } from "./staff-icons";
 import { useHistoryStatus } from "./editor-history";
 import { PhoneEditorHeader } from "./editor/phone-header";
 import { EditorIcon } from "./editor/editor-icon";
@@ -338,7 +339,7 @@ export function EditorHeader({
         </EditorButton>
         <EditorButton
           variant="primary"
-          className="editor-header-pill editor-header-send"
+          className={`editor-header-pill editor-header-send ${!locked && published === "draft" && (!primaryLabel || primaryLabel === "Review & send") ? "action" : ""}`}
           disabled={
             stale ||
             (offline &&
@@ -364,7 +365,7 @@ export function EditorHeader({
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen(!moreOpen)}
             >
-              ⋯
+              <chromeIcons.more size={18} aria-hidden="true" />
             </button>
             {moreOpen && (
               <ToolbarPopover
