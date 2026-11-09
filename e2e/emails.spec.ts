@@ -192,7 +192,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
             ? "You're invited"
             : template.key === "team_password_reset"
               ? "Choose a new password"
-              : "Your next project",
+              : template.key === "question_reply"
+                ? "A reply to your question"
+                : "Your next project",
         );
         await expect(frame.locator("a.email-cta")).toHaveCount(1);
         await expect(frame.locator("a[href]")).toHaveCount(0);
