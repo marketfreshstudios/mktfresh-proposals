@@ -150,6 +150,7 @@ import {
   sameOrigin,
   workspaceStaff,
   updateStaffDisplayName,
+  dismissStaffHomeBanner,
 } from "./auth";
 import { publicRuntime, allRuntimes } from "./runtime";
 import { workspaceRuntime, stripeWebhookWorkspace } from "./workspace-runtime";
@@ -660,8 +661,13 @@ async function handleRoute(
       await revokeStaffSession(req);
       return clearStaffCookies(json({ signed_out: true }));
     }
-    const user = await staff(req),
-      rt = await workspaceRuntime(user.workspace_id);
+    const user = await staff(req);
+    if (path.join("/") === "auth/staff-home-banner" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      await dismissStaffHomeBanner(user);
+      return json({ dismissed: true });
+    }
+    const rt = await workspaceRuntime(user.workspace_id);
     if (path[0] === "auth" && path[1] === "session" && method === "GET") {
       const settings =
         (await rt.repo.entities<WorkspaceSettings>("workspace_settings"))[0] ??

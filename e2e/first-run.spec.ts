@@ -122,15 +122,23 @@ for (const width of [1440, 375]) {
       await setupHome(page, state);
       await page.goto("/");
       const setup = page.locator(".home-setup-card");
-      const title =
-        state === "staff"
-          ? "What you can do"
-          : state === "set-up"
-            ? "You’re set up."
-            : "Set up Example Studio";
-      await expect(
-        setup.getByRole("heading", { name: title, exact: true }),
-      ).toBeVisible();
+      if (state === "staff") {
+        const banner = page.getByRole("region", { name: "Staff welcome" });
+        await expect(banner).toContainText(
+          "You joined Example Studio as Staff",
+        );
+        await expect(
+          banner.getByRole("button", { name: "Dismiss", exact: true }),
+        ).toBeVisible();
+      } else {
+        await expect(
+          setup.getByRole("heading", {
+            name:
+              state === "set-up" ? "You’re set up." : "Set up Example Studio",
+            exact: true,
+          }),
+        ).toBeVisible();
+      }
       await expect(
         page.locator(".home-overview + .home-setup-card + .home-attention"),
       ).toBeVisible();
@@ -148,6 +156,52 @@ for (const width of [1440, 375]) {
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBe(width);
       if (state === "day-one" || state === "partly-done") {
+        const required = setup.getByRole("region", {
+          name: "Needed before you send",
+        });
+        const optional = setup.getByRole("region", {
+          name: "When you’re ready",
+        });
+        await expect(
+          optional.getByText("Optional", { exact: true }),
+        ).toBeVisible();
+        await expect(optional.getByRole("heading")).toHaveCSS(
+          "color",
+          "rgb(95, 91, 83)",
+        );
+        const requiredBox = (await required.boundingBox())!;
+        const optionalBox = (await optional.boundingBox())!;
+        if (width === 1440) {
+          expect(
+            optionalBox.x - requiredBox.x - requiredBox.width,
+          ).toBeGreaterThanOrEqual(40);
+          expect(
+            await optional.evaluate(
+              (node) => getComputedStyle(node, "::before").borderLeftWidth,
+            ),
+          ).toBe("1px");
+        } else {
+          expect(optionalBox.y).toBeGreaterThan(
+            requiredBox.y + requiredBox.height,
+          );
+          await expect(optional).toHaveCSS("border-top-width", "1px");
+        }
+        const signatory = required
+          .getByRole("listitem")
+          .filter({ hasText: "Company signatory" });
+        if (state === "day-one") {
+          await expect(signatory.locator(".home-setup-icon")).toHaveCSS(
+            "color",
+            "rgb(19, 48, 58)",
+          );
+          await expect(
+            signatory.locator(".home-setup-icon svg.lucide-pen-tool"),
+          ).toBeVisible();
+        } else {
+          await expect(
+            signatory.locator(".home-setup-icon svg.lucide-check"),
+          ).toBeVisible();
+        }
         await expect(setup.getByRole("progressbar")).toHaveAttribute(
           "value",
           state === "day-one" ? "0" : "3",
@@ -322,4 +376,87 @@ test("first-run and filtered empty states stay on white surfaces", async ({
     .getByRole("button", { name: "Delete sample" })
     .click();
   await expect(page.getByText("Sample", { exact: true })).toHaveCount(2);
+});
+
+test("Staff welcome dismissal follows the account to another device without leaving a gap", async ({
+  browser,
+  request,
+}) => {
+  const authFixture = "http://127.0.0.1:3112/fixture";
+  const origin = "http://127.0.0.1:3100";
+  async function account(account: "staff" | "other") {
+    const session = await request.post(authFixture, { data: { account } });
+    expect(session.ok()).toBe(true);
+    return session.json() as Promise<{ access_token: string }>;
+  }
+  const [first, second, other] = await Promise.all([
+    account("staff"),
+    account("staff"),
+    account("other"),
+  ]);
+  const [laptop, phone] = await Promise.all([
+    browser.newContext({
+      baseURL: origin,
+      viewport: { width: 1440, height: 1000 },
+    }),
+    browser.newContext({
+      baseURL: origin,
+      viewport: { width: 375, height: 844 },
+    }),
+  ]);
+  try {
+    for (const [device, session] of [
+      [laptop, first],
+      [phone, second],
+    ] as const) {
+      await device.addCookies([
+        {
+          name: "proposal_session",
+          value: session.access_token,
+          url: origin,
+          httpOnly: true,
+        },
+      ]);
+    }
+    const [desktop, mobile] = await Promise.all([
+      laptop.newPage(),
+      phone.newPage(),
+    ]);
+    await Promise.all([desktop.goto("/"), mobile.goto("/")]);
+    const banner = (page: Page) =>
+      page.getByRole("region", { name: "Staff welcome" });
+    await expect(banner(desktop)).toBeVisible();
+    await expect(banner(mobile)).toBeVisible();
+    const dismiss = banner(mobile).getByRole("button", { name: "Dismiss" });
+    expect((await dismiss.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+
+    const denied = await request.post("/api/auth/staff-home-banner", {
+      headers: {
+        Authorization: `Bearer ${first.access_token}`,
+        Origin: "https://other.example.test",
+      },
+    });
+    expect(denied.status()).toBe(403);
+    await expect(banner(desktop)).toBeVisible();
+    await banner(desktop).getByRole("button", { name: "Dismiss" }).click();
+    await expect(banner(desktop)).toHaveCount(0);
+    await expect(
+      desktop.locator(".home-overview + .home-attention"),
+    ).toBeVisible();
+
+    await mobile.reload();
+    await expect(
+      mobile.locator(".home-overview + .home-attention"),
+    ).toBeVisible();
+    await expect(banner(mobile)).toHaveCount(0);
+    const otherSession = await request.get("/api/auth/session", {
+      headers: { Authorization: `Bearer ${other.access_token}` },
+    });
+    expect(otherSession.ok()).toBe(true);
+    expect((await otherSession.json()).user.staff_home_banner_dismissed).toBe(
+      false,
+    );
+  } finally {
+    await Promise.all([laptop.close(), phone.close()]);
+  }
 });

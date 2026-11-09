@@ -86,7 +86,7 @@ const nav = [
 export type Data = {
   app_url: string;
   connections?: ConnectionStatus | null;
-  user: Actor;
+  user: Actor & { staff_home_banner_dismissed?: boolean };
   signatory_version: string;
   staff: {
     user_id: string;
@@ -170,7 +170,7 @@ function StaffAppContent({
       const session = await api<{
         settings: WorkspaceSettings | null;
         workspace_defaults?: WorkspaceSettings;
-        user: Actor;
+        user: Data["user"];
         signatory_version: string;
         app_url: string;
         staff: Data["staff"];

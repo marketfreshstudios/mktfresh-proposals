@@ -1,16 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  Check,
-  Mail,
-  Palette,
-  PenLine,
-  Sparkles,
-  Upload,
-  Users,
-} from "lucide-react";
+import { Check, Mail, Palette, Sparkles, Upload, Users } from "lucide-react";
 import type { Data } from "./staff-app";
 import { Button, post } from "./ui";
+import { SigningIcon } from "./staff-icons";
 import { ProviderMark } from "./provider-brand";
 import { workspaceSetup } from "../lib/workspace-setup";
 import { LOCAL_WORKSPACE_ID } from "../lib/workspace";
@@ -24,7 +17,7 @@ const optionalStepNames = {
 
 const setupIcons = {
   brand: Palette,
-  signatory: PenLine,
+  signatory: SigningIcon,
   email: Mail,
   team: Users,
   assistant: Sparkles,
@@ -33,12 +26,14 @@ const setupIcons = {
 
 function SetupMark({
   step,
+  complete,
 }: {
   step: keyof typeof setupIcons | "stripe" | "qbo";
+  complete: boolean;
 }) {
   if (step === "stripe" || step === "qbo")
     return <ProviderMark provider={step} />;
-  const Icon = setupIcons[step];
+  const Icon = complete ? Check : setupIcons[step];
   return (
     <span className="home-setup-icon" aria-hidden="true">
       <Icon size={18} />
@@ -68,17 +63,8 @@ export function HomeSetup({
   }, [key]);
 
   if (data.user.staff_role !== "owner")
-    return (
-      <section className="home-setup-card" aria-labelledby="home-staff-title">
-        <h2 id="home-staff-title">What you can do</h2>
-        <p>
-          Draft, edit and send proposals, review Claude’s drafts, and see
-          clients and reports. You can countersign when authorized.
-        </p>
-        <p className="muted">
-          Super admins manage workspace settings, billing and the team.
-        </p>
-      </section>
+    return data.user.staff_home_banner_dismissed ? null : (
+      <StaffHomeBanner key={data.user.actor} workspace={workspace} />
     );
 
   const knownIncomplete = setup.required.some(
@@ -172,13 +158,16 @@ export function HomeSetup({
               ["Needed before you send", setup.required],
               ["When you’re ready", setup.optional],
             ] as const
-          ).map(([heading, rows]) => (
+          ).map(([heading, rows], index) => (
             <section key={heading} aria-label={heading}>
-              <h3>{heading}</h3>
+              <header className="home-setup-group-heading">
+                <h3>{heading}</h3>
+                {index === 1 && <span>Optional</span>}
+              </header>
               <ul className="setup-checklist">
                 {rows.map((row) => (
                   <li key={row.id} data-complete={row.complete}>
-                    <SetupMark step={row.id} />
+                    <SetupMark step={row.id} complete={row.complete} />
                     <div className="home-setup-label">
                       <strong>{row.label}</strong>
                       <p>{row.detail}</p>
@@ -214,6 +203,53 @@ export function HomeSetup({
         </div>
         {error && <p role="alert">{error}</p>}
       </div>
+    </section>
+  );
+}
+
+function StaffHomeBanner({ workspace }: { workspace: string }) {
+  const [dismissed, setDismissed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  if (dismissed) return null;
+
+  async function dismiss() {
+    setSaving(true);
+    setError("");
+    try {
+      await post("/api/auth/staff-home-banner");
+      setDismissed(true);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Could not dismiss the message. Try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section
+      className="home-setup-card home-staff-banner"
+      aria-label="Staff welcome"
+    >
+      <span className="home-setup-complete" aria-hidden="true">
+        <Users size={18} />
+      </span>
+      <p>
+        You joined <strong>{workspace}</strong> as Staff — draft, send, and
+        countersign when authorized; super admins manage Studio settings.
+      </p>
+      <Button busy={saving} onClick={dismiss}>
+        Dismiss
+      </Button>
+      {error && (
+        <p className="home-staff-banner-error" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
