@@ -22,7 +22,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
-  pointerWithin,
+  type Collision,
   type CollisionDetection,
   type KeyboardCoordinateGetter,
   type DragEndEvent,
@@ -44,6 +44,7 @@ export function Sortable({
   documentKind,
   spaceBefore,
   customSpacing,
+  style,
 }: {
   id: string;
   label: string;
@@ -53,6 +54,7 @@ export function Sortable({
   documentKind?: "card" | "group";
   spaceBefore?: number;
   customSpacing?: boolean;
+  style?: CSSProperties;
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
@@ -143,6 +145,7 @@ export function Sortable({
           transform: CSS.Translate.toString(transform),
           transition,
           opacity: isDragging ? 0.5 : 1,
+          ...style,
         } as CSSProperties
       }
       className={`quote-sortable ${block ? "block-sortable" : ""} ${documentKind ? `document-sortable-${documentKind}` : ""}`}
@@ -154,9 +157,65 @@ export function Sortable({
     </div>
   );
 }
-// A section's sortable context contains only its own page. dnd-kit stops
-// translating that source row when the target is in a different context.
-// Keep the preview in the sidebar's DndContext, independent of those groups.
+
+type DropEdge = "before" | "after";
+
+export function sectionDropEdge(collision?: Collision): DropEdge | undefined {
+  const edge = collision?.data?.sectionEdge;
+  if (edge === "before" || edge === "after") return edge;
+}
+
+// Resolve against painted rows, including the insertion gap. Their original
+// nodes stay registered and the drag handle keeps its keyboard focus.
+function sectionPointerCollision(
+  args: Parameters<CollisionDetection>[0],
+  sidebar: HTMLElement,
+): Collision | undefined {
+  const { pointerCoordinates: pointer, droppableContainers, active } = args;
+  if (!pointer) return;
+  const contains = ({ left, right, top, bottom }: DOMRect) =>
+    pointer.x >= left &&
+    pointer.x <= right &&
+    pointer.y >= top &&
+    pointer.y <= bottom;
+  const gap = sidebar.querySelector<HTMLElement>("[data-section-drop-gap]");
+  if (gap?.dataset.sectionDropGap && contains(gap.getBoundingClientRect())) {
+    return {
+      id: gap.dataset.sectionDropGap,
+      data: { sectionEdge: gap.dataset.sectionDropEdge },
+    };
+  }
+
+  // A page's end slot bounds its painted height while its rows are moving.
+  let page: Collision | undefined;
+  for (const { id, node } of droppableContainers) {
+    const element = node.current;
+    if (!element) continue;
+    const rect = element.getBoundingClientRect();
+    if (String(id).startsWith("page:")) {
+      const end = element.querySelector(
+        ":scope > .outline-page > .outline-page-end",
+      );
+      const bottom = end?.getBoundingClientRect().bottom ?? rect.bottom;
+      if (
+        pointer.x >= rect.left &&
+        pointer.x <= rect.right &&
+        pointer.y >= rect.top &&
+        pointer.y <= bottom
+      ) {
+        page = { id };
+      }
+    } else if (
+      (id !== active.id || element.style.pointerEvents !== "none") &&
+      contains(rect)
+    ) {
+      return { id, data: { center: rect.top + rect.height / 2 } };
+    }
+  }
+  return page;
+}
+
+// The floating section follows the sensor independently of the page layout.
 function SectionDragOverlay({ label }: { label: (id: string) => string }) {
   const { active } = useDndContext();
   const id = String(active?.id ?? "");
@@ -206,6 +265,12 @@ export function Reorder({
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const pointerDrag = useRef(false);
   const keyboardSectionTarget = useRef<string | null>(null);
+  const lastSectionHit = useRef<{
+    x: number;
+    y: number;
+    sidebarTop: number;
+    collision: Collision;
+  } | null>(null);
   useEffect(() => {
     const track = (event: PointerEvent) => {
       if (pointerDrag.current)
@@ -264,36 +329,75 @@ export function Reorder({
   );
   const collision: CollisionDetection = (args) => {
     if (!pages) return closestCenter(args);
-    const page = String(args.active.id).startsWith("page:");
-    const filtered = {
-      ...args,
-      droppableContainers: args.droppableContainers.filter(
-        (d) =>
-          !page ||
-          (String(d.id).startsWith("page:") &&
-            !String(d.id).startsWith("page:computed-")),
-      ),
+    if (String(args.active.id).startsWith("page:")) {
+      return closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          ({ id }) =>
+            String(id).startsWith("page:") &&
+            !String(id).startsWith("page:computed-"),
+        ),
+      });
+    }
+    const sectionPage = (id: string) => {
+      const index = ids.indexOf(id);
+      return ids.slice(0, index).findLast((item) => item.startsWith("page:"));
     };
-    if (page) return closestCenter(filtered);
+    const targetEdge = (id: string, pointerOffset?: number): DropEdge => {
+      if (id.startsWith("page-end:")) return "after";
+      if (!id.startsWith("section:")) return "before";
+      if (pointerOffset !== undefined) {
+        if (pointerOffset > 8) return "after";
+        if (
+          pointerOffset < -8 ||
+          sectionPage(String(args.active.id)) !== sectionPage(id)
+        )
+          return "before";
+      }
+      return ids.indexOf(String(args.active.id)) < ids.indexOf(id)
+        ? "after"
+        : "before";
+    };
     if (!args.pointerCoordinates) {
       // The center of a page target can also fall inside its section row.
       // Honor the keyboard's ordered target instead of re-guessing by geometry.
-      return [{ id: keyboardSectionTarget.current ?? args.active.id }];
+      const id = keyboardSectionTarget.current ?? args.active.id;
+      return [{ id, data: { sectionEdge: targetEdge(String(id)) } }];
     }
-    const inside = pointerWithin(filtered);
-    const end = inside.find((d) => String(d.id).startsWith("page-end:"));
-    if (end) return [end];
-    const sections = inside.filter((d) => String(d.id).startsWith("section:"));
-    return sections.length
-      ? sections
-      : inside.length
-        ? inside
-        : closestCenter({
-            ...filtered,
-            droppableContainers: filtered.droppableContainers.filter(
-              (d) => !String(d.id).startsWith("page-end:"),
-            ),
-          });
+    const sidebar = args.droppableContainers
+      .find((item) => item.id === args.active.id)
+      ?.node.current?.closest<HTMLElement>(".sections-nav");
+    if (!sidebar) return [];
+    const { x, y } = args.pointerCoordinates;
+    const sidebarTop = sidebar.getBoundingClientRect().top;
+    const last = lastSectionHit.current;
+    // A gap's animation must not choose a different target while the
+    // pointer is stationary. A scroll or pointer move can choose again.
+    if (last?.x === x && last.y === y && last.sidebarTop === sidebarTop) {
+      return [last.collision];
+    }
+    const candidate =
+      sectionPointerCollision(args, sidebar) ??
+      closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          ({ id }) => !String(id).startsWith("page-end:"),
+        ),
+      })[0];
+    if (!candidate) return [];
+    const rect = args.droppableRects.get(candidate.id);
+    const center =
+      candidate.data?.center ?? (rect ? rect.top + rect.height / 2 : y);
+    const chosen = {
+      id: candidate.id,
+      data: {
+        sectionEdge:
+          sectionDropEdge(candidate) ??
+          targetEdge(String(candidate.id), y - center),
+      },
+    };
+    lastSectionHit.current = { x, y, sidebarTop, collision: chosen };
+    return [chosen];
   };
   return (
     <DndContext
@@ -301,6 +405,7 @@ export function Reorder({
       collisionDetection={collision}
       onDragStart={({ activatorEvent }) => {
         keyboardSectionTarget.current = null;
+        lastSectionHit.current = null;
         const e = activatorEvent as PointerEvent;
         pointerDrag.current = typeof e.clientX === "number";
         pointer.current =
@@ -317,7 +422,13 @@ export function Reorder({
         pointer.current = null;
         indicator.clear();
       }}
-      onDragEnd={({ active, over, delta, activatorEvent }: DragEndEvent) => {
+      onDragEnd={({
+        active,
+        over,
+        delta,
+        activatorEvent,
+        collisions,
+      }: DragEndEvent) => {
         if (documentDrop && pointer.current) {
           const from = blockId(String(active.id));
           const target = indicator.resolve(
@@ -330,6 +441,18 @@ export function Reorder({
           pointerDrag.current = false;
           if (target && from)
             documentDrop.onMoveAt(from, target, selectedBlocks());
+          return;
+        }
+        if (pages && String(active.id).startsWith("section:")) {
+          // Commit the same collision used to draw the gap. The announced
+          // `over` state updates in an effect and can lag the last pointer move.
+          const target = collisions?.[0];
+          if (target && target.id !== active.id)
+            onMove(
+              String(active.id),
+              String(target.id),
+              sectionDropEdge(target),
+            );
           return;
         }
         if (over && active.id !== over.id) {
