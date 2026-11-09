@@ -163,7 +163,7 @@ References are inert UTF-8 text, limited to 1 MiB and a total 15-second fetch de
 
 Staff can open **Preview as client** from the editor (after autosave) or proposal record. It opens /p/<proposal-id>?preview=1 with a staff-authenticated read-only data loader; drafts do not need a sent token. Preview uses the client component with local optional selections, live totals, reading/signing/billing layouts, viewport controls and a persistent banner. Signatures, checkout, declines, public view tracking and client actions are disabled.
 
-Catalog **Display name** is an optional app-only override preserved by Stripe sync. New catalog-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send; selected one-time lines receive an Invoice manually needs-review billing link when QuickBooks is unconfigured or mapping is absent.
+Catalog **Display name** is an optional app-only override preserved by Stripe sync. New catalog-based proposal lines snapshot this name; existing proposal snapshots stay as recorded. Dropdowns use alphabetical display names and exclude inactive/legacy items. Missing QuickBooks mappings warn at send. Stripe billing starts when the client signs. After both sides sign, one-time fees are invoiced from QuickBooks. When QuickBooks is unconfigured or a mapping is absent, the invoice waits for staff review.
 
 Workspace settings remain live while a proposal is a draft. Draft API responses and readiness use current settings without persisting a snapshot. Send and re-send capture the current settings before validation and rendering; signed proposals retain their frozen snapshot.
 

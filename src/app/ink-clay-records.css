@@ -60,8 +60,10 @@
 .home-pipeline-bar {
   display: flex;
   height: 8px;
+  gap: 3px;
+}
+.home-pipeline-bar:empty {
   border-radius: 4px;
-  overflow: hidden;
   background: var(--chrome-raised);
 }
 .home-pipeline
@@ -76,6 +78,7 @@
 }
 .home-pipeline-bar > span {
   background: var(--pipeline-color);
+  border-radius: 4px;
 }
 .home-pipeline-legend {
   list-style: none;
@@ -117,6 +120,19 @@
 }
 .ink-clay .home-expiring {
   padding: var(--space-5);
+}
+.home-expiring:has(.home-expiring-empty) {
+  align-self: start;
+}
+.home-expiring-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  color: var(--ink-muted);
+}
+.home-expiring-empty svg {
+  flex: none;
 }
 .home-expiring > p {
   margin: 0 0 var(--space-2);
@@ -230,8 +246,6 @@
 .ink-clay .directory-views .proposal-views [role="tab"] {
   color: var(--ink-muted);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
   font-weight: 600;
 }
 .ink-clay .directory-views .proposal-views [aria-selected="true"] {

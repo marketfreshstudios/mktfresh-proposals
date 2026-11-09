@@ -7,8 +7,13 @@ import {
 } from "./tab-indicator";
 
 async function screenshot(page: Page, name: string) {
-  if (process.env.CAPTURE_OWNER_REDESIGN !== "1") return;
-  const dir = "docs/screenshots/owner-redesign-polish";
+  const r21 =
+    process.env.CAPTURE_R21 === "1" &&
+    /^(proposal-tabs|editor-tabs|template-cards)-1440$/.test(name);
+  if (!r21 && process.env.CAPTURE_OWNER_REDESIGN !== "1") return;
+  const dir = r21
+    ? "docs/screenshots/redesign-21-a"
+    : "docs/screenshots/owner-redesign-polish";
   await mkdir(dir, { recursive: true });
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: `${dir}/${name}.png`, animations: "disabled" });
@@ -85,23 +90,38 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await expectReadable(preview, "Editor outline button hover");
   await back.hover();
   // The editor sidebar tabs are a segmented control: no underline.
-  await expectNoTabUnderline(
-    page.getByRole("tab", { name: "Quote", exact: true }),
-  );
+  const quote = page.getByRole("tab", { name: "Quote", exact: true });
+  await expectNoTabUnderline(quote);
+  await expect(quote).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await screenshot(page, "editor-tabs-1440");
   await screenshot(page, "editor-proposals-hover-1440");
 
   await page.goto("/studio/templates");
-  await expectStraightTabIndicator(
-    page
-      .getByRole("navigation", { name: "Templates and saved blocks" })
-      .locator('[aria-current="page"]'),
-  );
+  const templates = page
+    .getByRole("navigation", { name: "Templates and saved blocks" })
+    .locator('[aria-current="page"]');
+  await templates.hover();
+  await expectStraightTabIndicator(templates);
+  const thumbnail = page.locator(".template-thumbnail").first();
+  await expect(thumbnail).toHaveCSS("background-color", "rgb(238, 233, 224)");
+  const paper = thumbnail.locator(".template-thumbnail-paper");
+  await expect(paper).toHaveCSS("border-top-width", "1px");
+  await expect(paper).not.toHaveCSS("box-shadow", "none");
+  await screenshot(page, "template-cards-1440");
+
   await page.goto("/studio/emails");
-  await expectStraightTabIndicator(
-    page
-      .getByRole("tablist", { name: "Email audiences" })
-      .locator('[aria-selected="true"]'),
-  );
+  const audience = page
+    .getByRole("tablist", { name: "Email audiences" })
+    .locator('[aria-selected="true"]');
+  await audience.hover();
+  await expectStraightTabIndicator(audience);
+
+  await page.goto("/clients");
+  const clientView = page
+    .getByRole("group", { name: "Client views" })
+    .getByRole("button", { name: "All" });
+  await clientView.hover();
+  await expectStraightTabIndicator(clientView);
 });
 
 test("button variants keep their text readable in hover, active and focus on paper and ink", async ({

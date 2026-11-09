@@ -533,6 +533,16 @@ export class QboProvider implements BillingProvider {
       realm,
     };
   }
+  async refreshConnection() {
+    const { realm } = await this.connection.access();
+    await this.request(
+      "companyinfo/" + encodeURIComponent(realm),
+      undefined,
+      undefined,
+      realm,
+    );
+    return this.connection.status();
+  }
   async invoice(id: string, realm?: string) {
     const auth = await this.connection.access();
     check(

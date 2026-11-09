@@ -2,6 +2,8 @@ import { expect, type Locator } from "@playwright/test";
 
 export async function expectStraightTabIndicator(tab: Locator) {
   await expect(tab).toBeVisible();
+  await expect(tab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(tab).toHaveCSS("border-radius", "0px");
   const indicator = await tab.evaluate((el) => {
     const line = getComputedStyle(el, "::after");
     return {

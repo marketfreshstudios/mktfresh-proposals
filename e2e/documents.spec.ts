@@ -2,7 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 import { setup, staff, companyConsent } from "../tests/helpers";
 import { documents, saveDocument, refreshDocument } from "../src/lib/documents";
-test("linked reference save, refresh failure, dashboard status and hidden saved credentials", async ({
+test("linked reference save, refresh failure, workspace status and hidden saved credentials", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -39,7 +39,9 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
             );
     await route.fulfill({ json: value });
   });
+  const settingsUrl = "/studio/workspace?view=pricing-references";
   await page.goto("/studio/connections?view=reference");
+  await expect(page).toHaveURL(settingsUrl);
   await page
     .getByRole("combobox", { name: "Source", exact: true })
     .selectOption("linked");
@@ -81,7 +83,7 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
   await page.getByText("Linked pricing · v7", { exact: true }).last().click();
   await expect(page.locator("pre")).toContainText("<script>");
   expect(await page.evaluate(() => "referenceExecuted" in window)).toBe(false);
-  await page.goto("/");
+  await page.goto(settingsUrl);
   const status = page.getByRole("region", { name: "Pricing reference status" });
   await expect(status).toContainText("v7");
   await expect(status).toContainText("Last successful refresh:");
@@ -92,25 +94,17 @@ test("linked reference save, refresh failure, dashboard status and hidden saved 
       (t) => localStorage.setItem("proposal-theme", t),
       theme,
     );
-    for (const [screen, url] of [
-      ["references-dashboard", "/"],
-      ["references-settings", "/studio/connections?view=reference"],
-    ]) {
-      await page.goto(url);
-      await expect(
-        page.getByRole("region", { name: "Pricing reference status" }),
-      ).toContainText("HTTP 503");
-      if (url.includes("view=reference"))
-        await page
-          .getByRole("button", { name: "Edit Linked pricing", exact: true })
-          .click();
-      await page.evaluate(() => document.fonts.ready);
-      if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
-        await page.screenshot({
-          path: `.data/evidence/screens/${screen}-desktop-${theme}.png`,
-          fullPage: true,
-        });
-    }
+    await page.goto(settingsUrl);
+    await expect(status).toContainText("HTTP 503");
+    await page
+      .getByRole("button", { name: "Edit Linked pricing", exact: true })
+      .click();
+    await page.evaluate(() => document.fonts.ready);
+    if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
+      await page.screenshot({
+        path: `.data/evidence/screens/references-settings-desktop-${theme}.png`,
+        fullPage: true,
+      });
   }
   expect(await page.locator("body").innerText()).not.toContain(
     "private-password",

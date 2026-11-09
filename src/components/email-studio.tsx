@@ -81,6 +81,7 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
       </p>
       <div
         className="studio-segments"
+        data-tab-style="underline"
         role="tablist"
         aria-label="Email audiences"
       >

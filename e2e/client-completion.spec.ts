@@ -383,7 +383,7 @@ test("client completion: exact charges, one contact footer, reading width, email
         "Additional support",
       );
       await expect(page.locator(".flow-separate-invoice")).toContainText(
-        "You'll receive a QuickBooks invoice",
+        "After both sides sign, one-time fees are invoiced from QuickBooks.",
       );
       await expect(
         page.getByRole("link", {

@@ -710,6 +710,7 @@ function Trend({
         </h2>
         <div
           className="report-trend-tabs"
+          data-tab-style="underline"
           role="tablist"
           aria-label="Trend display"
           onKeyDown={(event) =>

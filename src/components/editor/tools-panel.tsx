@@ -95,6 +95,7 @@ export function PanelTabs<T extends string = EditorTab>({
     <div
       ref={root}
       className="editor-tabs"
+      data-tab-style="segment"
       role="tablist"
       aria-label={label}
       onKeyDown={(event) => {

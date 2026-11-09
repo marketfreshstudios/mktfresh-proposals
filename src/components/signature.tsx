@@ -166,7 +166,12 @@ export function SignatureForm({
         <legend>Your signature</legend>
         <div className="signature-pad">
           <div className="signature-method">
-            <div className="tabs" role="tablist" aria-label="Signature method">
+            <div
+              className="tabs"
+              data-tab-style="segment"
+              role="tablist"
+              aria-label="Signature method"
+            >
               {(
                 [
                   ["drawn", "Draw"],

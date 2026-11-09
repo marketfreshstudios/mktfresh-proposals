@@ -165,6 +165,7 @@ export function StudioTemplateList({
       <div className="studio-list-tools">
         <nav
           className="studio-segments"
+          data-tab-style="underline"
           aria-label="Templates and saved blocks"
         >
           <a

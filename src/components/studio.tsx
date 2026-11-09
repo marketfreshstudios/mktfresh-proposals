@@ -2,7 +2,15 @@
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
 import { QuickBooksPicker } from "./quickbooks-fields";
-import { ConnectionDetailLayout } from "./connection-detail";
+import {
+  ConnectionColumns,
+  ConnectionDetailLayout,
+  ConnectionFact,
+  ConnectionPanel,
+  ConnectionSteps,
+  ConnectionTiles,
+} from "./connection-detail";
+import { Archive, FileText, Link2, Mail, ShieldCheck } from "lucide-react";
 import type { ConnectionStatus } from "../lib/workspace-setup";
 import { quoteLayout } from "../lib/proposal-styles";
 import { useConnectorRestore } from "./connector-restore";
@@ -3656,9 +3664,56 @@ export function ConnectionsStudio({
       <ConnectionDetailLayout
         name="AI assistants"
         mark="AI"
+        status={connected.length ? "Connected" : "Not connected"}
+        tone={connected.length ? "success" : undefined}
         subtitle="Read reference data and draft proposals. A person always reviews and sends."
       >
-        <AssistantConnections data={data} run={run} />
+        <ConnectionTiles
+          tiles={[
+            {
+              label: "Connection",
+              value: connected.length ? "Connected" : "Not connected",
+              detail: "Connect through your assistant.",
+            },
+            {
+              label: "Assistants",
+              value: connected.length,
+              detail:
+                connected.map((a) => a.name).join(", ") || "No active grants",
+            },
+            {
+              label: "Permissions",
+              value: "Draft and edit",
+              detail: "Staff review and send proposals.",
+            },
+          ]}
+        />
+        <ConnectionColumns
+          main={
+            <ConnectionPanel title="Connect or reconnect an assistant">
+              <div className="connection-panel-body">
+                <p>
+                  Add this endpoint in your assistant, choose automatic
+                  registration, then sign in and approve access.
+                </p>
+              </div>
+              <dl>
+                <ConnectionFact label="Remote MCP endpoint">
+                  <code className="endpoint">{data.app_url}/mcp</code>
+                </ConnectionFact>
+                <ConnectionFact label="Access">
+                  Read proposals, draft proposals, and edit templates and saved
+                  blocks.
+                </ConnectionFact>
+              </dl>
+              <footer>
+                New templates stay hidden for review. Existing connections must
+                reconnect to approve template access.
+              </footer>
+            </ConnectionPanel>
+          }
+          aside={<AssistantConnections data={data} run={run} />}
+        />
       </ConnectionDetailLayout>
     );
   if (initial === "imports")
@@ -3666,64 +3721,184 @@ export function ConnectionsStudio({
       <ConnectionDetailLayout
         name="Import from Proposify"
         mark="P"
+        status={
+          missing.length
+            ? "PDFs need attention"
+            : imports.length
+              ? "Imported"
+              : "Not imported"
+        }
+        tone={
+          missing.length ? "warning" : imports.length ? "success" : undefined
+        }
         subtitle="Past proposals are kept as read-only PDFs linked to their clients."
-      >
-        <section className="studio-import-summary">
-          <h2>Imported proposals</h2>
-          <dl>
-            <div className="connection-fact">
-              <dt>Imported records</dt>
-              <dd>{imports.length}</dd>
-            </div>
-            <div className="connection-fact">
-              <dt>Missing PDFs</dt>
-              <dd>{missing.length}</dd>
-            </div>
-          </dl>
-          <p>
-            Existing records and PDFs are read-only. Match each PDF by its
-            original proposal ID using the import guide.
-          </p>
+        actions={
           <a className="btn" href="/proposals?view=imported">
             View imported proposals
           </a>
-        </section>
+        }
+      >
+        <ConnectionTiles
+          tiles={[
+            {
+              label: "Import",
+              value: imports.length ? "Imported" : "Ready to import",
+              detail: "From a Proposify CSV export",
+            },
+            {
+              label: "Proposals",
+              value: imports.length,
+              detail: "Kept as read-only records",
+            },
+            {
+              label: "PDFs",
+              value: missing.length
+                ? `${missing.length} missing`
+                : imports.length
+                  ? "All attached"
+                  : "No imported PDFs",
+              tone: missing.length ? "warning" : undefined,
+              action: missing.length ? (
+                <a href="#connection-import-pdfs">See proposals</a>
+              ) : undefined,
+            },
+          ]}
+        />
+        <ConnectionColumns
+          main={
+            <ConnectionPanel
+              title="What imports do in Yeswell"
+              className="studio-import-summary"
+            >
+              <ConnectionSteps
+                steps={[
+                  {
+                    title: "Import records",
+                    detail:
+                      "Bring past proposals and clients into Yeswell from a Proposify CSV export.",
+                    icon: Archive,
+                  },
+                  {
+                    title: "Attach PDFs",
+                    detail:
+                      "Match each PDF by its original proposal ID using the import guide.",
+                    icon: FileText,
+                  },
+                ]}
+              />
+            </ConnectionPanel>
+          }
+          aside={
+            <ConnectionPanel
+              id="connection-import-pdfs"
+              title={
+                missing.length ? "Proposals missing PDFs" : "Import records"
+              }
+            >
+              {missing.length ? (
+                <ul className="connection-activity" role="list">
+                  {missing.map((p) => (
+                    <li key={p.id}>
+                      <a href={`/proposals/${p.id}`}>
+                        {p.client.company} · {p.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="connection-panel-body muted">
+                  {imports.length
+                    ? "All imported proposals have a PDF."
+                    : "No proposals have been imported yet."}
+                </p>
+              )}
+            </ConnectionPanel>
+          }
+        />
       </ConnectionDetailLayout>
     );
-  if (initial === "email")
+  if (initial === "email") {
+    const domain = data.settings?.sending_domain;
+    const emailReady = health?.email && !!domain;
+    const emailSettings = "/studio/workspace?view=email-sending";
     return (
       <ConnectionDetailLayout
         name="Email sending"
         mark="E"
         subtitle="Proposals send from the selected staff member. Replies follow your workspace rules."
-        status={
-          health?.email && data.settings?.sending_domain
-            ? "Configured"
-            : "Setup needed"
-        }
-        tone={
-          health?.email && data.settings?.sending_domain ? "success" : "warning"
-        }
-      >
-        <section>
-          <h2>Connection</h2>
-          <dl>
-            <div className="connection-fact">
-              <dt>Provider</dt>
-              <dd>{health?.email ? "Configured" : "Not configured"}</dd>
-            </div>
-            <div className="connection-fact">
-              <dt>Sending domain</dt>
-              <dd>{data.settings?.sending_domain || "Not set"}</dd>
-            </div>
-          </dl>
-          <p>Verify SPF and DKIM with your email provider.</p>
-          <a className="btn" href="/studio/workspace?view=email-sending">
+        status={emailReady ? "Configured" : "Setup needed"}
+        tone={emailReady ? "success" : "warning"}
+        actions={
+          <a className="btn" href={emailSettings}>
             Open sending domain
           </a>
-        </section>
+        }
+      >
+        <ConnectionTiles
+          tiles={[
+            {
+              label: "Connection",
+              value: health?.email ? "Configured" : "Setup needed",
+              tone: health?.email ? "success" : "warning",
+            },
+            {
+              label: "Sending domain",
+              value: domain || "Not set",
+              detail: "Verify SPF and DKIM with your email provider.",
+            },
+            {
+              label: "Email templates",
+              value: "Workspace defaults",
+              action: <a href="/studio/emails">View templates</a>,
+            },
+          ]}
+        />
+        <ConnectionColumns
+          main={
+            <ConnectionPanel title="How Yeswell sends email">
+              <ConnectionSteps
+                steps={[
+                  {
+                    title: "Send proposals",
+                    detail: "The selected staff member appears as the sender.",
+                    icon: Mail,
+                  },
+                  {
+                    title: "Set up the domain",
+                    detail:
+                      "Verify the sending domain with your email provider.",
+                    icon: ShieldCheck,
+                  },
+                  {
+                    title: "Keep replies with your team",
+                    detail: "Replies follow the workspace’s email settings.",
+                    icon: Link2,
+                  },
+                ]}
+              />
+            </ConnectionPanel>
+          }
+          aside={
+            <ConnectionPanel title="Connection">
+              <dl>
+                <ConnectionFact label="Provider">
+                  {health?.email ? "Configured" : "Not configured"}
+                </ConnectionFact>
+                {domain && (
+                  <ConnectionFact label="Sending domain">
+                    {domain}
+                  </ConnectionFact>
+                )}
+              </dl>
+              <footer>
+                <a href={emailSettings}>Edit in Email sending</a>
+              </footer>
+            </ConnectionPanel>
+          }
+        />
       </ConnectionDetailLayout>
     );
+  }
   return (
     <div className="stack">
       <p className="studio-description">
@@ -3795,73 +3970,43 @@ export function ConnectionsStudio({
 }
 function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
   return (
-    <>
-      <section>
-        <h2>Connect or reconnect an assistant</h2>
-        <p>
-          Add this endpoint in your assistant, choose automatic registration,
-          then sign in and approve access.
-        </p>
-        <dl>
-          <div className="connection-fact">
-            <dt>Remote MCP endpoint</dt>
-            <dd>
-              <code className="endpoint">{data.app_url}/mcp</code>
-            </dd>
-          </div>
-          <div className="connection-fact">
-            <dt>Access</dt>
-            <dd>
-              Read proposals, draft proposals, and edit templates and saved
-              blocks.
-            </dd>
-          </div>
-        </dl>
-        <p>
-          New templates stay hidden for review. Assistants cannot send, sign, or
-          change billing. Existing connections must reconnect and approve
-          template access before using the new tools.
-        </p>
-      </section>
-      <section>
-        <h2>Connected assistants</h2>
-        {data.assistants.length ? (
-          <dl>
-            {data.assistants.map((a) => (
-              <div className="connection-fact" key={a.id}>
-                <dt>{a.name}</dt>
-                <dd>
+    <ConnectionPanel title="Connected assistants">
+      {data.assistants.length ? (
+        <ul className="connection-activity" role="list">
+          {data.assistants.map((a) => (
+            <li key={a.id}>
+              <span>
+                <strong>{a.name}</strong>
+                <small>
                   {a.revoked
                     ? "Access revoked"
                     : a.last_used
                       ? `Last connected ${new Date(a.last_used).toLocaleString()}`
                       : "Has not connected yet"}
-                </dd>
-                {!a.revoked && (
-                  <dd>
-                    <Button
-                      variant="danger"
-                      onClick={() =>
-                        run(
-                          () => post(`/api/assistants/${a.id}/revoke`),
-                          "Assistant access revoked",
-                        )
-                      }
-                    >
-                      Revoke {a.name}
-                    </Button>
-                  </dd>
-                )}
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <p>
-            No assistants connected. New connections appear after authorization.
-          </p>
-        )}
-      </section>
-    </>
+                </small>
+              </span>
+              {!a.revoked && (
+                <Button
+                  variant="danger"
+                  onClick={() =>
+                    run(
+                      () => post(`/api/assistants/${a.id}/revoke`),
+                      "Assistant access revoked",
+                    )
+                  }
+                >
+                  Revoke {a.name}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="connection-panel-body muted">
+          New connections appear after authorization.
+        </p>
+      )}
+    </ConnectionPanel>
   );
 }
 

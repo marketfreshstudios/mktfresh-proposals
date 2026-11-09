@@ -666,7 +666,9 @@
     [aria-selected="true"],
     [aria-pressed="true"],
     a.active
-  ):hover:not(:disabled):not(:where(.editor-edit-bar *, [popover] *)) {
+  ):hover:not(:disabled):not(
+    :where(.editor-edit-bar *, [popover] *, [data-tab-style="underline"] *)
+  ) {
   background: var(--control-active-background, var(--surface));
   color: var(--control-active-color, var(--ink));
 }

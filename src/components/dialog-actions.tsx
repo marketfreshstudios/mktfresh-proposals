@@ -100,12 +100,14 @@ export function DialogActions({
 export async function confirmDialog({
   title,
   description,
+  details,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   destructive = false,
 }: {
   title: string;
   description?: string;
+  details?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
@@ -140,6 +142,7 @@ export async function confirmDialog({
         >
           <h2>{title}</h2>
           {description && <p>{description}</p>}
+          {details}
           <DialogActions>
             <button
               type="button"

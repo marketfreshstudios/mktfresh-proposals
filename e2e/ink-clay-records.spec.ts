@@ -1,3 +1,7 @@
+import {
+  expectStraightTabIndicator,
+  expectNoTabUnderline,
+} from "./tab-indicator";
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdir } from "node:fs/promises";
@@ -361,9 +365,12 @@ test("Home, list views and action slots use the existing proposal states", async
   await expect(
     row(page, f.viewed).getByRole("tooltip", { name: "Duplicate" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "More views", exact: true }),
-  ).toHaveCSS("border-radius", "10px");
+  const moreViews = page.getByRole("button", {
+    name: "More views",
+    exact: true,
+  });
+  await expect(moreViews).toHaveCSS("border-radius", "999px");
+  await expectNoTabUnderline(moreViews);
   await capture(page, "proposals-tooltip-1440");
   await row(page, f.lost)
     .getByRole("button", { name: /More actions/ })
@@ -576,9 +583,10 @@ for (const width of [1440, 768, 375]) {
           await expect(
             page.getByText("Not billed through Stripe").first(),
           ).toBeVisible();
-          await expect(page.locator(".client-views button").first()).toHaveCSS(
-            "border-radius",
-            "10px",
+          await expectStraightTabIndicator(
+            page
+              .getByRole("group", { name: "Client views" })
+              .getByRole("button", { pressed: true }),
           );
           expect(f.billingReads()).toBe(billingBefore);
         }

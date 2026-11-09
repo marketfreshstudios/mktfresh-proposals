@@ -83,6 +83,20 @@ export class ResendMailer implements Mailer {
     if (!res.ok) throw new Error(`Resend delivery failed (${res.status})`);
   }
 }
+function billingTargets(p: Proposal, job: Job, provider: "qbo" | "stripe") {
+  if (job.payload.provider && job.payload.provider !== provider) return false;
+  if (provider === "stripe") return true;
+  // A dedicated invoice job takes over from any old combined job.
+  return (
+    p.signers.some((signer) => signer.role === "company") &&
+    (job.payload.provider === "qbo" ||
+      !p.jobs.some(
+        (candidate) =>
+          candidate.kind === "billing" && candidate.payload.provider === "qbo",
+      ))
+  );
+}
+
 export class Worker {
   constructor(
     private repo: Repository,
@@ -160,7 +174,11 @@ export class Worker {
             const providers =
               j.kind === "billing"
                 ? p.billing_links
-                    .filter((l) => l.status === "failed")
+                    .filter(
+                      (l) =>
+                        l.status === "failed" &&
+                        billingTargets(p, j, l.provider),
+                    )
                     .map((l) => l.provider)
                 : [];
             event(p, "sync_failed", system, {
@@ -207,7 +225,11 @@ export class Worker {
           source?.status === "done" &&
           !(
             source.kind === "billing" &&
-            p.billing_links.some((link) => link.status === "needs_review")
+            p.billing_links.some(
+              (link) =>
+                link.status === "needs_review" &&
+                billingTargets(p, source, link.provider),
+            )
           )
         )
           return;
@@ -228,7 +250,9 @@ export class Worker {
           const review =
             source.kind === "billing"
               ? row.billing_links.filter(
-                  (link) => link.status === "needs_review",
+                  (link) =>
+                    link.status === "needs_review" &&
+                    billingTargets(row, source, link.provider),
                 )
               : [];
           if (review.length)
@@ -247,7 +271,11 @@ export class Worker {
               source.last_error ||
                 String(oldEvent?.metadata.error || "Job failed"),
               row.billing_links
-                .filter((link) => link.status === "failed")
+                .filter(
+                  (link) =>
+                    link.status === "failed" &&
+                    billingTargets(row, source, link.provider),
+                )
                 .map((link) => link.provider),
             );
         });
@@ -343,9 +371,12 @@ export class Worker {
     }
     if (j.kind === "billing") {
       const failures = [];
+      const attempted: ("qbo" | "stripe")[] = [];
       for (const provider of ["qbo", "stripe"] as const) {
-        const fresh = (await this.repo.get(p.id))!,
-          old = fresh.billing_links.find((l) => l.provider === provider);
+        const fresh = (await this.repo.get(p.id))!;
+        if (!billingTargets(fresh, j, provider)) continue;
+        attempted.push(provider);
+        const old = fresh.billing_links.find((l) => l.provider === provider);
         const currentClient = (
           await this.repo.entities<Client>("clients")
         ).find((c) => c.id === fresh.client.id);
@@ -446,12 +477,15 @@ export class Worker {
       }
       if (
         (await this.repo.get(p.id))!.billing_links.some(
-          (link) => link.status === "needs_review",
+          (link) =>
+            attempted.includes(link.provider) && link.status === "needs_review",
         )
       )
         await mutate(this.repo, p.id, (row) => {
           const review = row.billing_links.filter(
-            (l) => l.status === "needs_review",
+            (link) =>
+              attempted.includes(link.provider) &&
+              link.status === "needs_review",
           );
           if (review.length)
             this.alert(
@@ -658,7 +692,10 @@ export class Worker {
           j.status === "failed" ||
           j.status === "pending" ||
           (j.kind === "billing" &&
-            p.billing_links.some((l) => l.status !== "succeeded"))
+            p.billing_links.some(
+              (l) =>
+                l.status !== "succeeded" && billingTargets(p, j, l.provider),
+            ))
         ) {
           j.status = "pending";
           j.available_at = new Date().toISOString();

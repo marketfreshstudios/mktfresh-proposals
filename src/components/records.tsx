@@ -61,6 +61,8 @@ import {
   viewKey,
   expiringWithinSevenDays,
   unfinishedJobs,
+  waitingForInvoiceCountersignature,
+  quickBooksInvoiceTiming,
 } from "../lib/proposal-state";
 import type { ProposalAction } from "../lib/proposal-actions";
 import type { ClientBilling } from "../lib/client-billing";
@@ -84,7 +86,6 @@ import {
 } from "./ui";
 import { Sheet, Skeleton } from "./foundation";
 import { useMoney } from "./money-context";
-import { ReferenceStatus } from "./reference-documents";
 import { CreateClientModal } from "./client-picker";
 function timestamp(value: string, data: Data) {
   return new Intl.DateTimeFormat("en-US", {
@@ -969,6 +970,7 @@ export function ProposalListV4({
         <div className="directory-views">
           <div
             className="proposal-views"
+            data-tab-style="underline"
             role="tablist"
             aria-label="Proposal views"
             onKeyDown={(event) => {
@@ -1019,7 +1021,7 @@ export function ProposalListV4({
           <button
             ref={moreTrigger}
             type="button"
-            className="more-views-trigger"
+            className="btn more-views-trigger"
             aria-haspopup="dialog"
             aria-expanded={more}
             onClick={() => setMore(!more)}
@@ -1211,7 +1213,6 @@ export function HomeV4({
           </Button>
         </section>
         {deploymentNotice}
-        <ReferenceStatus documents={data.documents} />
         <div className="home-overview">
           {!setup.complete && (
             <section className="home-reference home-setup-card">
@@ -1294,7 +1295,6 @@ export function HomeV4({
         </Button>
       </section>
       {deploymentNotice}
-      <ReferenceStatus documents={data.documents} />
       {actionError && (
         <Banner tone="danger" title="Action could not be completed">
           {actionError}
@@ -1392,28 +1392,33 @@ export function HomeV4({
             <h2 id="expiring-title">Expiring this week</h2>
             <a href="/proposals">All proposals</a>
           </header>
-          <p>Links that close in the next 7 days.</p>
           {expiring.length ? (
-            <ul role="list">
-              {expiring.map((p) => (
-                <li key={p.id}>
-                  <a href={`/proposals/${p.id}`}>
-                    <span>
-                      <strong>{p.client.company}</strong>
-                      <small>{p.title}</small>
-                    </span>
-                    <time
-                      dateTime={expiry(p)!}
-                      title={readableDate(expiry(p)!, timezone)}
-                    >
-                      Closes {weekday.format(new Date(expiry(p)!))}
-                    </time>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <>
+              <p>Links that close in the next 7 days.</p>
+              <ul role="list">
+                {expiring.map((p) => (
+                  <li key={p.id}>
+                    <a href={`/proposals/${p.id}`}>
+                      <span>
+                        <strong>{p.client.company}</strong>
+                        <small>{p.title}</small>
+                      </span>
+                      <time
+                        dateTime={expiry(p)!}
+                        title={readableDate(expiry(p)!, timezone)}
+                      >
+                        Closes {weekday.format(new Date(expiry(p)!))}
+                      </time>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
-            <p>No links close in the next 7 days.</p>
+            <p className="home-expiring-empty">
+              <chromeIcons.check size={16} aria-hidden="true" />
+              Nothing closes in the next 7 days.
+            </p>
           )}
         </section>
       </div>
@@ -1876,7 +1881,11 @@ export function RecordV4({
     signature = needsCountersign(p),
     issues = billingIssues(p),
     native = p.source === "native";
-  const qboIssue = p.billing_links.find(
+  const invoiceWaiting = waitingForInvoiceCountersignature(p);
+  const billingLinks = p.billing_links.filter(
+    (link) => !invoiceWaiting || link.provider !== "qbo",
+  );
+  const qboIssue = billingLinks.find(
     (link) => link.provider === "qbo" && link.status !== "succeeded",
   );
   const qboCustomerReview = !!qboIssue && quickBooksCustomerReview(qboIssue);
@@ -2308,12 +2317,23 @@ export function RecordV4({
               <p>
                 {p.marked_won_by
                   ? "No billing was started by this manual win."
-                  : "Billing starts after the client signs."}
+                  : `Stripe billing starts after the client signs. ${quickBooksInvoiceTiming}`}
               </p>
             ) : (
               <>
-                {!p.billing_links.length && <p>Billing is being prepared.</p>}
-                {p.billing_links.map((link, index) => (
+                {invoiceWaiting && (
+                  <section className="billing-state">
+                    <strong>One-time invoice</strong>
+                    <span className="pill info">
+                      Waiting for countersignature
+                    </span>
+                    <p>{quickBooksInvoiceTiming}</p>
+                  </section>
+                )}
+                {!billingLinks.length && !invoiceWaiting && (
+                  <p>Billing is being prepared.</p>
+                )}
+                {billingLinks.map((link, index) => (
                   <section className="billing-state" key={index}>
                     <strong>
                       {link.provider === "stripe"
@@ -2837,7 +2857,7 @@ export function ClientsV4({
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
-          <fieldset className="client-views">
+          <fieldset className="client-views" data-tab-style="underline">
             <legend className="sr-only">Client views</legend>
             {[
               ["all", "All"],

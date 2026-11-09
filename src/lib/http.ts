@@ -1,3 +1,4 @@
+import { waitingForInvoiceCountersignature } from "./proposal-state";
 import {
   processStaffPasswordReset,
   staffResetExpiryMinutes,
@@ -733,6 +734,10 @@ async function handleRoute(
             "Set-Cookie": `${QBO_STATE_COOKIE}=; HttpOnly; SameSite=Lax; Path=${QBO_CALLBACK}; Max-Age=0${new URL(req.url).protocol === "https:" ? "; Secure" : ""}`,
           },
         });
+      }
+      if (path[2] === "refresh" && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        return json(await qbo.refreshConnection());
       }
       if (path[2] === "disconnect" && method === "POST") {
         check(sameOrigin(req), "Same-origin request required", 403);
@@ -1970,6 +1975,11 @@ async function handleRoute(
         });
         const qbo = rt.worker.providers.qbo;
         if (method === "POST") {
+          check(
+            !waitingForInvoiceCountersignature(p),
+            "Waiting for countersignature",
+            409,
+          );
           check(sameOrigin(req), "Same-origin request required", 403);
           check(
             qbo instanceof QboProvider,

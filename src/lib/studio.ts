@@ -153,7 +153,8 @@ export async function providerActivity(
   repo: Repository,
   provider: "qbo" | "stripe",
 ) {
-  const rows = (await activity(repo)).filter(
+  const all = await activity(repo);
+  const rows = all.filter(
     (row) =>
       row.metadata.provider === provider ||
       (provider === "qbo"
@@ -181,6 +182,10 @@ export async function providerActivity(
           : undefined,
       created_at: connected.created_at,
     },
+    lastBillingEvent:
+      provider === "stripe"
+        ? all.find((row) => row.type === "webhook_received")?.created_at
+        : undefined,
     lastSync:
       provider === "stripe"
         ? rows.find((row) => row.type === "catalog_synced")?.created_at

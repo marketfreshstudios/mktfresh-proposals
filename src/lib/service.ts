@@ -1275,17 +1275,33 @@ export class ProposalService {
         },
         now,
       );
+      const lines = billingLines(v.quote);
+      const billingPayload = {
+        selected_item_ids: cloneQuote(v.quote)
+          .filter(itemSelected)
+          .map((i) => i.id),
+        lines,
+      };
       if (role === "client")
         queue(
           p,
           "billing",
           "billing",
-          {
-            selected_item_ids: cloneQuote(v.quote)
-              .filter(itemSelected)
-              .map((i) => i.id),
-            lines: billingLines(v.quote),
-          },
+          { ...billingPayload, provider: "stripe" },
+          now,
+        );
+      if (
+        role === "company" &&
+        lines.some((line) => line.interval === "one_time") &&
+        !p.billing_links.some(
+          (link) => link.provider === "qbo" && link.status === "succeeded",
+        )
+      )
+        queue(
+          p,
+          "billing",
+          "billing:qbo",
+          { ...billingPayload, provider: "qbo" },
           now,
         );
       if (role === "company" && actor.staff_email)
