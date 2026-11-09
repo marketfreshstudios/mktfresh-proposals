@@ -4,6 +4,7 @@ import { ItemSchema, check, type Item } from "./model";
 import type { Repository } from "./repository";
 export type StripePage<T> = { data: T[]; has_more: boolean };
 export interface StripeTransport {
+  readonly dashboardUrl?: string;
   get<T>(path: string, params: Record<string, string>): Promise<T>;
   post<T>(
     path: string,

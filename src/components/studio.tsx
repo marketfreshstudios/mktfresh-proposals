@@ -35,6 +35,7 @@ import { templateAuthoringItems } from "../lib/template-quote";
 import { studioDate } from "../lib/studio-v3";
 import { curatedFonts } from "../lib/proposal-fonts";
 import { confirmDialog } from "./dialog-actions";
+import { stripeTestDashboard } from "../lib/stripe-connect-status";
 import { stripeStatus } from "../lib/studio-v3";
 import { relativeTime } from "./studio-v3";
 import { DialogActions } from "./dialog-actions";
@@ -644,7 +645,7 @@ function CatalogItem({
                 .join(" + ")}
             </strong>
             <a
-              href={`${data.connections?.stripe_connect?.dashboardUrl ?? (data.connections?.mode === "live" ? "https://dashboard.stripe.com" : "https://dashboard.stripe.com/test")}/search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
+              href={`${data.connections?.stripe_connect?.dashboardUrl ?? (data.connections?.mode === "live" ? "https://dashboard.stripe.com" : stripeTestDashboard)}/search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
               target="_blank"
               rel="noopener"
             >

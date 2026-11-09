@@ -345,7 +345,7 @@ export class StripeConnect {
       actorName: row.actorName,
       accountName: row.name,
       accountSuffix: account.id.slice(-4),
-      dashboardUrl: `https://dashboard.stripe.com/${account.id}/test`,
+      dashboardUrl: this.transport(account).dashboardUrl,
     };
   }
   async runSetup(actor: Actor) {

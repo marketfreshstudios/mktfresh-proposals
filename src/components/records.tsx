@@ -2394,7 +2394,12 @@ export function RecordV4({
                         </div>
                       )}
                     {link.provider === "stripe" && (
-                      <StripeBillingDetails link={link} />
+                      <StripeBillingDetails
+                        link={link}
+                        dashboardUrl={
+                          data.connections?.stripe_connect?.dashboardUrl
+                        }
+                      />
                     )}
                     {link.provider === "qbo" &&
                       !link.metadata?.skipped &&

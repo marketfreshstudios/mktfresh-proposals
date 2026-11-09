@@ -1,3 +1,4 @@
+import { stripeTestDashboard } from "./stripe-connect-status";
 import type { Client, Item } from "./model";
 import type { StripeTransport, StripePage } from "./catalog";
 import type { Repository } from "./repository";
@@ -93,7 +94,7 @@ async function billingSummary(
     name: customer.name || client.company,
     created: customer.created,
   };
-  result.stripe_url = `https://dashboard.stripe.com/test/customers/${id}`;
+  result.stripe_url = `${api.dashboardUrl ?? stripeTestDashboard}/customers/${id}`;
   const catalog = await repo.entities<Item>("pricing_items");
   type Subscription = {
     id: string;

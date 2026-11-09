@@ -224,6 +224,9 @@ it("scopes writes and cached responses, revokes at Stripe and stops previously r
   const { connect, requests, finish } = fixture();
   await finish();
   const api = connect.transport((await connect.activeAccount())!);
+  expect(api.dashboardUrl).toBe(
+    `https://dashboard.stripe.com/${merchant}/test`,
+  );
   for (let n = 0; n < 2; n++)
     await api.post(
       "/v1/checkout/sessions",

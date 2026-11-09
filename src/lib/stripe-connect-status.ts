@@ -1,3 +1,5 @@
+export const stripeTestDashboard = "https://dashboard.stripe.com/test";
+
 export type StripeConnectionStatus = {
   state: "not_connected" | "setting_up" | "connected" | "disconnecting";
   available: boolean;

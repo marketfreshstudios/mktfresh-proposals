@@ -14,6 +14,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { Data } from "./staff-app";
+import { stripeTestDashboard } from "../lib/stripe-connect-status";
 import type { ConnectionStatus } from "../lib/workspace-setup";
 import type { Item, Proposal } from "../lib/model";
 import {
@@ -30,7 +31,6 @@ import { useMoney } from "./money-context";
 import { useQuickBooksItemName } from "./quickbooks-fields";
 
 const billingDefaults = "/studio/workspace?view=billing";
-const stripeDashboard = "https://dashboard.stripe.com/test";
 const quickBooksDashboard = "https://sandbox.qbo.intuit.com/app/homepage";
 
 export function ConnectionDetailLayout({
@@ -254,7 +254,7 @@ export function BillingConnectionDetail({
   const stripeDisconnecting = stripe?.state === "disconnecting";
   const providerDashboard = qbo
     ? quickBooksDashboard
-    : (stripe?.dashboardUrl ?? stripeDashboard);
+    : (stripe?.dashboardUrl ?? stripeTestDashboard);
   const connected = qbo ? connection?.state === "connected" : health?.stripe;
   const reconnect = qbo && connection?.state === "reconnect";
   const mode = health?.mode === "live" ? "live" : "test";

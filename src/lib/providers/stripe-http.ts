@@ -1,3 +1,4 @@
+import { stripeTestDashboard } from "../stripe-connect-status";
 import { check } from "../model";
 import type { StripeTransport } from "../catalog";
 import { canonical, sha256 } from "../content";
@@ -33,6 +34,11 @@ export class StripeHttp implements StripeTransport {
       !account || /^acct_[a-zA-Z0-9]+$/.test(account),
       "Invalid Stripe account.",
     );
+  }
+  get dashboardUrl() {
+    return this.account
+      ? `https://dashboard.stripe.com/${this.account}/test`
+      : stripeTestDashboard;
   }
   async get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
     return this.request<T>(path + "?" + new URLSearchParams(params), "GET");
