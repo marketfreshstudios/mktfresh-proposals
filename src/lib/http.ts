@@ -137,6 +137,12 @@ import { runtime, publicRuntime, allRuntimes } from "./runtime";
 import { publicResult, event } from "./service";
 import { mutate, type EntityTable } from "./repository";
 import { hashPassword, sha256 } from "./content";
+import {
+  readReport,
+  reportCsv,
+  reportDrilldown,
+  reportExportSort,
+} from "./report-server";
 const uuid = z.string().uuid();
 const headers = {
   "Cache-Control": "no-store",
@@ -1390,34 +1396,65 @@ async function handleRoute(req: Request, path: string[]) {
         ),
       );
     }
+    if (
+      path[0] === "reports" &&
+      method === "GET" &&
+      !path[2] &&
+      (!path[1] || path[1] === "export")
+    ) {
+      const query = new URL(req.url).searchParams;
+      const report = await readReport(rt.repo, query, user);
+      if (!path[1]) return json(report);
+      return new Response(
+        reportCsv(
+          report,
+          reportExportSort(query, "template"),
+          reportExportSort(query, "owner"),
+        ),
+        {
+          headers: {
+            ...headers,
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'attachment; filename="yeswell-reports.csv"',
+          },
+        },
+      );
+    }
     if (path[0] === "proposals") {
       const id = path[1],
         action = path[2];
       if (method === "GET" && !id) {
         const q = new URL(req.url).searchParams;
-        const list = (await rt.repo.list(q.get("q") ?? undefined)).filter(
-          (p) =>
-            (!q.get("owner") ||
-              q.get("owner") === "all" ||
-              proposalOwnerId(p) ===
-                (q.get("owner") === "mine"
-                  ? user.actor.slice(6)
-                  : q.get("owner"))) &&
-            (!q.get("status") || p.status === q.get("status")) &&
-            (!q.get("client") || p.client.id === q.get("client")) &&
-            (!q.get("source") || p.source === q.get("source")) &&
-            (!q.get("from") || p.created_at >= q.get("from")!) &&
-            (!q.get("to") || p.created_at <= q.get("to")!),
-        );
         const offset = Math.max(0, Number(q.get("offset")) || 0),
           limit = Math.min(100, Math.max(1, Number(q.get("limit")) || 50));
-        const page = list.slice(offset, offset + limit);
+        const drill = q.has("report")
+          ? await reportDrilldown(rt.repo, q)
+          : null;
+        const list = drill
+          ? []
+          : (await rt.repo.list(q.get("q") ?? undefined)).filter(
+              (p) =>
+                (!q.get("owner") ||
+                  q.get("owner") === "all" ||
+                  proposalOwnerId(p) ===
+                    (q.get("owner") === "mine"
+                      ? user.actor.slice(6)
+                      : q.get("owner"))) &&
+                (!q.get("status") || p.status === q.get("status")) &&
+                (!q.get("client") || p.client.id === q.get("client")) &&
+                (!q.get("source") || p.source === q.get("source")) &&
+                (!q.get("from") || p.created_at >= q.get("from")!) &&
+                (!q.get("to") || p.created_at <= q.get("to")!),
+            );
+        const page = drill
+          ? await rt.repo.reportPage(drill.ids.slice(offset, offset + limit))
+          : list.slice(offset, offset + limit);
         const questions = await rt.repo.questionCounts(
           page.filter((p) => p.token).map((p) => p.id),
           user.actor.slice(6),
         );
         return json({
-          total: list.length,
+          total: drill?.ids.length ?? list.length,
           items: page.map((p) => ({
             ...(questions[p.id] ? { question_summary: questions[p.id] } : {}),
             ...p,

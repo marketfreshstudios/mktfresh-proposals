@@ -74,6 +74,7 @@ export const config = {
   matcher: [
     "/((?!api(?:/|$)|login(?:/|$)|set-password(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
     "/api/proposals/:path*",
+    "/api/reports/:path*",
     "/api/clients/:path*",
     "/api/pricing_items/:path*",
     "/api/templates/:path*",

@@ -66,7 +66,8 @@ Internal routes use `Authorization: Bearer <Supabase access token>`, checked wit
 | `GET, POST, PUT /api/pricing_items`           | Products and billing mappings; deactivate instead of deleting                          |
 | `GET, POST, PUT /api/templates`               | Block content and default quote line references                                       |
 | `GET, POST, PUT /api/content_library`         | Reusable named blocks                                                                 |
-| `GET /api/proposals`                          | Filters: `status`, `client`, `source`, `from`, `to`, `q`, `offset`, `limit` (max 100) |
+| `GET /api/proposals`                          | Filters: `status`, `client`, `source`, `from`, `to`, `q`, `offset`, `limit` (max 100); Reports can supply a `report` drill-down filter |
+| `GET /api/reports`, `GET /api/reports/export` | Workspace-scoped metrics and breakdown CSV; filters: `range`, `from`, `to`, `owner` (sender), `template`, `client` |
 | `POST /api/proposals`                         | `{client_id,template_id,title,valid_until,currency?,password?,playbook?}`                 |
 | `GET /api/proposals/:id`                      | Full internal aggregate: versions, signers, events, jobs, billing, files              |
 | `PATCH /api/proposals/:id`                    | Draft-only changes with `revision`; title/content/quote/expiry                        |
