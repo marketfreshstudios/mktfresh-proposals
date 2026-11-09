@@ -564,7 +564,6 @@
   padding: 14px 16px;
 }
 .team-table-head {
-  background: var(--surface);
   font-size: 12px;
   color: var(--ink-muted);
   font-weight: 600;

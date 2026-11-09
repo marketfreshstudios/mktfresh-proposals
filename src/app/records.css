@@ -590,7 +590,6 @@
     75px 80px 75px 80px 32px;
 }
 .proposal-row-head {
-  background: var(--surface-sunken);
   font: 500 10px/16px var(--font-ui);
   text-transform: uppercase;
   letter-spacing: 0.05em;

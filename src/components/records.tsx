@@ -641,7 +641,7 @@ export function ProposalRows({
       <div
         className={`proposal-rows ${yearly ? "has-yearly" : ""} ${showOwner ? "has-owner" : ""} ${listActions ? "with-row-actions" : ""} ${compact ? "compact-proposal-rows" : ""}`}
       >
-        <div className="proposal-row-head">
+        <div className="proposal-row-head staff-table-head">
           <span>Proposal</span>
           {showOwner && !listActions && (
             <span>{reportSender ? "Owner (sender)" : "Owner"}</span>
@@ -2881,7 +2881,7 @@ export function ClientsV4({
           </fieldset>
         </div>
         <div className="client-directory client-table">
-          <div className="client-table-head">
+          <div className="client-table-head staff-table-head">
             {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
               (label) => (
                 <span key={label}>{label}</span>

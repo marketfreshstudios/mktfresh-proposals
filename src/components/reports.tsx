@@ -789,7 +789,7 @@ function Trend({
             <caption className="sr-only">
               Monthly proposals sent and signed. {summary}
             </caption>
-            <thead>
+            <thead className="staff-table-head">
               <tr>
                 <th scope="col">Month</th>
                 <th scope="col">Sent</th>
@@ -912,7 +912,7 @@ function Breakdown({
         <>
           <table className="report-table report-breakdown-table">
             <caption className="sr-only">{heading}</caption>
-            <thead>
+            <thead className="staff-table-head">
               <tr>
                 {columns.map(([key, label]) => {
                   const active = sort.key === key;

@@ -125,7 +125,7 @@ export function TeamStudio({
         </Banner>
       )}
       <div className="team-table" role="table" aria-label="Workspace team">
-        <div className="team-table-head" role="row">
+        <div className="team-table-head staff-table-head" role="row">
           <span role="columnheader">Name & email</span>
           <span role="columnheader">Role</span>
           <span role="columnheader">Status</span>

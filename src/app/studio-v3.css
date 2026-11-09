@@ -460,7 +460,6 @@
   font-size: 11px;
   color: var(--ink-muted);
   text-transform: uppercase;
-  background: var(--surface-sunken);
   letter-spacing: 0.06em;
 }
 .studio-table-row {

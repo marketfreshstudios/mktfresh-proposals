@@ -977,7 +977,7 @@ function Audit({ p }: { p: Proposal }) {
       </section>
       <div className="table-wrap">
         <table>
-          <thead>
+          <thead className="staff-table-head">
             <tr>
               <th>Time</th>
               <th>Event</th>

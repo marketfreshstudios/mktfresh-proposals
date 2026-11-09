@@ -946,3 +946,7 @@ MarketFresh is the test Connect platform and workspace 1 continues to use its di
 The OAuth callback binds one-time state to the workspace, signed-in super admin, and callback cookie. Yeswell stores encrypted account identity and mode, with a digest for unique webhook routing, and discards Stripe’s OAuth tokens. All merchant billing and catalog calls use the connected account header. Disconnect deauthorizes through Stripe and retains the workspace/account binding so reconnecting cannot replace billing references with another account’s data. The connected-account webhook has its own signing secret and routes by verified account before loading any proposal. Customer setup links only exact, unique email matches and skips ambiguity. “Configured” means Yeswell has the Connect webhook secret. “Receiving” requires a verified billing event for the workspace.
 
 Apply the account digest index before deploy. Follow the [Stripe Connect sandbox setup](docs/stripe-connect-test-setup.md) before testing against Stripe.
+
+### Staff table header surfaces (Nov 9, 2026)
+
+Staff data table headers share the card surface, white in light mode and the card surface in dark mode. Their hairline dividers keep headers distinct from the first row without changing the table's spacing. Proposal document tables retain their own styling.

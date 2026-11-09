@@ -337,7 +337,7 @@ export function StudioTemplateList({
             }))}
           />
           <div className="studio-data-table saved-block-table">
-            <div className="studio-table-head">
+            <div className="studio-table-head staff-table-head">
               <span>Block</span>
               <span>Type</span>
               <span>Used in</span>
