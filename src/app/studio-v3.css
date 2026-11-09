@@ -2474,8 +2474,9 @@
     background: var(--chrome);
     color: var(--chrome-ink);
   }
-  .studio-connection-detail .connection-back {
+  .staff-foundation.ink-clay .connection-hero .connection-back {
     min-height: 44px;
+    color: var(--chrome-ink);
   }
   .connection-detail-header {
     gap: 10px;
@@ -2487,7 +2488,7 @@
     height: 40px;
     font-size: 15px;
   }
-  .connection-detail-title .t-page-title {
+  .staff-foundation.ink-clay .connection-hero .t-page-title {
     color: var(--chrome-ink);
   }
   .connection-detail-title .pill {

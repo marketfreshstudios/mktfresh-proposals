@@ -573,7 +573,9 @@ test("R21 desktop connection states use actual actions and link to affected prop
   await expect(detail.locator(".connection-tile")).toHaveCount(3);
   await expect(detail.getByText("2 drafts to review")).toBeVisible();
   await expect(detail.getByText("1 to choose")).toBeVisible();
-  await expect(detail.getByText(/Web design services/)).toBeVisible();
+  await expect(
+    detail.getByText(/Web design services/).filter({ visible: true }),
+  ).toBeVisible();
   await expect(
     detail.getByText("Net 30", { exact: true }).filter({ visible: true }),
   ).toBeVisible();
@@ -700,6 +702,9 @@ test("R21 phone tiles stack and the QuickBooks menu opens from the bottom", asyn
   });
   await page.goto("/studio/connections/quickbooks");
   const detail = page.locator(".studio-connection-detail");
+  await expect(
+    detail.getByRole("heading", { level: 1, name: "QuickBooks" }),
+  ).toHaveCSS("color", "rgb(242, 245, 245)");
   const tiles = detail.locator(".connection-tile");
   await expect(tiles).toHaveCount(3);
   expect((await tiles.nth(1).boundingBox())!.y).toBeGreaterThan(
