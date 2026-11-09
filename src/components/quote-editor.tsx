@@ -2723,7 +2723,9 @@ function QuoteEditorContent({
                     "Document section"}
                 </p>
               ))}
-              <p>{recovery.quote?.length ?? 0} saved quote items.</p>
+              <p>
+                {withCount(recovery.quote?.length ?? 0, "saved quote item")}.
+              </p>
             </div>
           </details>
           <EditorButton
