@@ -808,3 +808,7 @@ One shared quote-wide column resolver checks trimmed item descriptions before an
 ### Studio template thumbnails (November 8, 2026)
 
 Template cards use a static Letter sheet cropped by the thumbnail band. It shows the visible cover title, the first heading if the cover has no title, or the template name if both are empty. Field values use readable samples. The workspace heading font and a subdued primary brand accent carry the document's look into the card. Starter and availability labels belong in the footer.
+
+### Columns and block styles (November 8, 2026)
+
+A Columns block that fits stays together on one Letter page. The current PagePlan stores one source boundary per page and cannot describe independent cuts across columns. The over-height policy is pending owner decision in the draft PR before implementation of that case.
