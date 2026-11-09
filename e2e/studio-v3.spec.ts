@@ -550,7 +550,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
         page.getByText("3 templates · 9 saved blocks", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText("8 client emails · 0 edited", { exact: true }),
+        page.getByText("9 client emails · 0 edited", { exact: true }),
       ).toBeVisible();
       for (const status of await page.locator(".studio-home-list small").all())
         await expect(status).toHaveCSS("white-space", "nowrap");
@@ -649,7 +649,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await page.getByRole("tab", { name: "Staff notifications · 11" }).click();
   await expect(
     page.locator(".studio-email-edited").filter({ hasText: "Read-only" }),
-  ).toHaveCount(7);
+  ).toHaveCount(8);
   const group = page.locator(".studio-email-stage").first();
   const title = await group.locator("h2").boundingBox(),
     card = await group.locator(".studio-email-rows").boundingBox();
