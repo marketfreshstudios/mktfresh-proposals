@@ -644,7 +644,7 @@ function CatalogItem({
                 .join(" + ")}
             </strong>
             <a
-              href={`https://dashboard.stripe.com/${data.connections?.mode === "live" ? "" : "test/"}search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
+              href={`${data.connections?.stripe_connect?.dashboardUrl ?? (data.connections?.mode === "live" ? "https://dashboard.stripe.com" : "https://dashboard.stripe.com/test")}/search?query=${encodeURIComponent(i.stripe_lookup_key)}`}
               target="_blank"
               rel="noopener"
             >
@@ -3592,13 +3592,23 @@ export function ConnectionsStudio({
     {
       id: "stripe",
       name: "Stripe",
-      state: stripeStatus(health),
+      state:
+        health?.stripe_connect?.state === "setting_up"
+          ? "Setting up · test mode"
+          : health?.stripe_connect?.state === "disconnecting"
+            ? "Disconnecting"
+            : stripeStatus(health),
       line: "Recurring billing, Checkout for new clients and product sync.",
       detail:
         health?.mode === "live"
           ? "Live Stripe billing configured."
           : "Stripe test mode; no live charges.",
-      action: "Settings",
+      action:
+        health?.stripe_platform === false
+          ? health.stripe
+            ? "Manage"
+            : "Connect"
+          : "Settings",
     },
     {
       id: "qbo",
