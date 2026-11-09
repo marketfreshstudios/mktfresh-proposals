@@ -469,3 +469,11 @@
   text-underline-offset: 3px;
   font: 600 13px/1.4 var(--font-ui);
 }
+
+.account-reset-address {
+  overflow-wrap: anywhere;
+}
+
+.account-screen .account-reset-link {
+  margin-inline: auto;
+}

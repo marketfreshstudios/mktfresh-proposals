@@ -11,7 +11,7 @@ async function route(
   context: { params: Promise<{ path: string[] }> },
 ) {
   const path = (await context.params).path;
-  const response = await handle(request, path);
+  const response = await handle(request, path, after);
   if (
     response.ok &&
     request.method === "POST" &&

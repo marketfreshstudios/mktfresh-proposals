@@ -73,7 +73,7 @@ export const emailWhen: Record<string, string> = {
   staff_billing_complete: "When billing setup completes",
   staff_billing_failed: "When a job needs attention",
   team_invite: "When an admin invites a teammate",
-  team_password_reset: "When an admin sends a password reset",
+  team_password_reset: "When a staff password reset is requested",
 };
 export function stripeStatus(
   health?: { stripe: boolean; mock: boolean; mode?: string } | null,

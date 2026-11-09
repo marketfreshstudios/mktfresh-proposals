@@ -103,6 +103,7 @@ export function eventLabel(
     templates_saved: "Template saved",
     content_library_saved: "Reusable block saved",
     font_uploaded: "Proposal font uploaded",
+    team_password_reset_requested: "Password reset requested",
     team_updated: "Staff display name updated",
   };
   return labels[e.type] ?? "Activity recorded";

@@ -31,7 +31,10 @@ export function teamActivity(event: TeamAudit): ActivityRow {
       target_name: event.target_name,
       ...event.after,
     },
-    detail: `${event.target_name} · ${event.action.replaceAll("_", " ")}`,
+    detail:
+      event.action === "password_reset_requested"
+        ? event.target_name
+        : `${event.target_name} · ${event.action.replaceAll("_", " ")}`,
   };
 }
 export function activityCsv(rows: ActivityRow[]) {
