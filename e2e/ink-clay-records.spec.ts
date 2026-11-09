@@ -356,7 +356,7 @@ test("Home, list views and action slots use the existing proposal states", async
     else await expect(slots.nth(0).locator(".btn")).toHaveCount(0);
     await expect(
       slots.nth(1).getByRole("button", { name: "Duplicate" }),
-    ).toHaveCSS("width", "40px");
+    ).toHaveCSS("width", "44px");
     await expect(
       slots.nth(2).getByRole("button", { name: "Archive" }),
     ).toBeVisible();
@@ -647,5 +647,110 @@ test("brand upload buttons have the shared pill padding", async ({ page }) => {
     const button = page.getByRole("button", { name: label, exact: true });
     await expect(button).toHaveCSS("padding-left", "16px");
     await expect(button).toHaveCSS("padding-right", "16px");
+  }
+});
+
+test("Home recent proposals and Proposals share their table and row actions", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const folder = "docs/screenshots/staff-table-headers/row-actions";
+  const screenshots = process.env.CAPTURE_ROW_ACTIONS === "1";
+  if (screenshots) await mkdir(folder, { recursive: true });
+  await scenario(page);
+
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript(
+      (value) => localStorage.setItem("proposal-theme", value),
+      theme,
+    );
+    let headers: string | undefined;
+    let recent: string[] = [];
+    let columns: string | undefined;
+    for (const [path, name] of [
+      ["/proposals", "proposals"],
+      ["/", "home"],
+    ]) {
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      const table = page.locator(".proposal-rows");
+      const header = table.locator(".staff-table-head");
+      await expect(header).toHaveCSS("text-transform", "uppercase");
+      await expect(header).toHaveCSS(
+        "background-color",
+        theme === "light" ? "rgb(255, 255, 255)" : "rgb(24, 34, 38)",
+      );
+      const labels = await header.innerText();
+      expect(labels).toContain("OWNER");
+      expect(labels).not.toContain("NEXT");
+      const rows = table.locator(".proposal-row");
+      const grid = await header.evaluate(
+        (node) => getComputedStyle(node).gridTemplateColumns,
+      );
+      if (name === "proposals") {
+        headers = labels;
+        recent = (await rows.allInnerTexts()).slice(0, 6);
+        columns = grid;
+      } else {
+        await expect(rows).toHaveCount(6);
+        expect(await rows.allInnerTexts()).toEqual(recent);
+        expect(labels).toBe(headers);
+        expect(grid).toBe(columns);
+        await expect(
+          page.getByRole("link", { name: "View all", exact: true }),
+        ).toHaveAttribute("href", "/proposals");
+      }
+      const editable = rows
+        .filter({ has: page.getByRole("link", { name: "Edit", exact: true }) })
+        .first();
+      await editable.scrollIntoViewIfNeeded();
+      const icons = editable.locator(".table-icon-action");
+      await expect(icons).toHaveCount(4);
+      for (const icon of await icons.all()) {
+        await expect(icon).toHaveCSS("width", "44px");
+        await expect(icon).toHaveCSS("height", "44px");
+        await expect(icon).toHaveCSS("border-radius", "50%");
+        await expect(icon).toHaveCSS("border-top-width", "0px");
+        await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        await expect(icon.locator("svg.lucide")).toHaveCount(1);
+      }
+      const sign = table.getByRole("link", { name: /^Sign / }).first();
+      await expect(sign).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      if (screenshots) {
+        await page.evaluate(() => document.fonts.ready);
+        if (name === "home")
+          await table.evaluate((node) => node.scrollIntoView({ block: "end" }));
+        await page.screenshot({
+          path: `${folder}/${name}-${theme}-rest.png`,
+          animations: "disabled",
+        });
+      }
+      const duplicate = editable.getByRole("button", {
+        name: "Duplicate",
+        exact: true,
+      });
+      await duplicate.hover();
+      await expect(duplicate).not.toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+      await expect(duplicate).toHaveCSS("border-top-width", "0px");
+      const tooltip = editable.getByRole("tooltip", { name: "Duplicate" });
+      await expect(tooltip).toBeVisible();
+      if (screenshots)
+        await page.screenshot({
+          path: `${folder}/${name}-${theme}-hover.png`,
+          animations: "disabled",
+        });
+      await page.mouse.move(5, 5);
+      await editable.getByRole("link", { name: "Edit", exact: true }).focus();
+      await page.keyboard.press("Tab");
+      await expect(duplicate).toBeFocused();
+      await expect(duplicate).not.toHaveCSS(
+        "background-color",
+        "rgba(0, 0, 0, 0)",
+      );
+      await expect(tooltip).toBeVisible();
+    }
   }
 });

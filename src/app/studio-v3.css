@@ -460,7 +460,6 @@
   font-size: 11px;
   color: var(--ink-muted);
   text-transform: uppercase;
-  background: var(--surface-sunken);
   letter-spacing: 0.06em;
 }
 .studio-table-row {
@@ -1806,12 +1805,6 @@
 .workspace-section-card .team-person > [role="cell"]:last-child {
   grid-column: 4;
   grid-row: 1;
-}
-.workspace-section-card .team-person .btn.ghost {
-  border: 0;
-  background: none;
-  min-width: 36px;
-  padding: 0;
 }
 .workspace-section-card .team-status-active {
   color: var(--success);

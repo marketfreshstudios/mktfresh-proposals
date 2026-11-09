@@ -40,7 +40,7 @@ import { workspaceSetup } from "../lib/workspace-setup";
 import { ContactValue } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   reportMetricLabel,
@@ -87,6 +87,7 @@ import {
 import { Sheet, Skeleton } from "./foundation";
 import { useMoney } from "./money-context";
 import { CreateClientModal } from "./client-picker";
+import { TableRowAction } from "./table-row-action";
 function timestamp(value: string, data: Data) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -166,24 +167,6 @@ export function SignLink({
     </a>
   ) : null;
 }
-function RowAction({
-  label,
-  children,
-}: {
-  label: string;
-  children: (hintId: string) => ReactNode;
-}) {
-  const id = useId();
-  return (
-    <span className="proposal-row-slot">
-      {children(id)}
-      <span id={id} className="proposal-row-tooltip" role="tooltip">
-        {label}
-      </span>
-    </span>
-  );
-}
-
 function canEditRecord(p: Proposal) {
   return (
     p.source === "native" &&
@@ -199,6 +182,7 @@ export function ProposalMenu({
   showUndo = true,
   showEdit = true,
   listRow = false,
+  tableRow = false,
 }: {
   p: Proposal;
   data: Data;
@@ -206,6 +190,7 @@ export function ProposalMenu({
   showUndo?: boolean;
   showEdit?: boolean;
   listRow?: boolean;
+  tableRow?: boolean;
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
@@ -256,7 +241,7 @@ export function ProposalMenu({
     <button
       type="button"
       ref={anchor}
-      className="btn ghost more-control round-icon"
+      className={`btn ghost more-control round-icon${tableRow ? " table-icon-action" : ""}`}
       aria-label={`More actions for ${p.client.company}`}
       aria-describedby={hintId}
       aria-haspopup="dialog"
@@ -283,15 +268,15 @@ export function ProposalMenu({
           onClick={(event) => event.stopPropagation()}
         >
           {sign ? (
-            <RowAction label="Review and countersign">
+            <TableRowAction label="Review and countersign">
               {(hint) => <SignLink p={p} data={data} hint={hint} />}
-            </RowAction>
+            </TableRowAction>
           ) : canEditRecord(p) ? (
-            <RowAction label={archived ? "Unarchive and edit" : "Edit"}>
+            <TableRowAction label={archived ? "Unarchive and edit" : "Edit"}>
               {(hint) =>
                 archived ? (
                   <button
-                    className="btn icon-only"
+                    className="btn icon-only table-icon-action"
                     type="button"
                     disabled={busy}
                     aria-label="Unarchive and edit"
@@ -302,7 +287,7 @@ export function ProposalMenu({
                   </button>
                 ) : (
                   <a
-                    className="btn icon-only"
+                    className="btn icon-only table-icon-action"
                     href={`/proposals/${p.id}?action=edit`}
                     aria-label="Edit"
                     aria-describedby={hint}
@@ -312,17 +297,17 @@ export function ProposalMenu({
                   </a>
                 )
               }
-            </RowAction>
+            </TableRowAction>
           ) : (
             <span />
           )}
           {imported ? (
             <span />
           ) : (
-            <RowAction label="Duplicate">
+            <TableRowAction label="Duplicate">
               {(hint) => (
                 <button
-                  className="btn icon-only"
+                  className="btn icon-only table-icon-action"
                   type="button"
                   disabled={busy}
                   aria-label="Duplicate"
@@ -332,12 +317,12 @@ export function ProposalMenu({
                   <Copy size={18} aria-hidden="true" />
                 </button>
               )}
-            </RowAction>
+            </TableRowAction>
           )}
-          <RowAction label={archiveLabel}>
+          <TableRowAction label={archiveLabel}>
             {(hint) => (
               <button
-                className="btn icon-only"
+                className="btn icon-only table-icon-action"
                 type="button"
                 disabled={busy}
                 aria-label={archiveLabel}
@@ -347,13 +332,15 @@ export function ProposalMenu({
                 <ArchiveIcon size={18} aria-hidden="true" />
               </button>
             )}
-          </RowAction>
+          </TableRowAction>
           {imported ? (
             <span />
           ) : (
-            <RowAction label="More actions">{more}</RowAction>
+            <TableRowAction label="More actions">{more}</TableRowAction>
           )}
         </div>
+      ) : tableRow ? (
+        <TableRowAction label="More actions">{more}</TableRowAction>
       ) : (
         more()
       )}
@@ -618,20 +605,21 @@ export function ProposalRows({
   reportSender = false,
   listActions = false,
   compact = false,
+  limit,
 }: {
   showOwner?: boolean;
   reportSender?: boolean;
   listActions?: boolean;
   compact?: boolean;
+  limit?: number;
   proposals: (Proposal & { question_summary?: QuestionSummary })[];
   data: Data;
   onChanged?: (p: Proposal) => void;
 }) {
   const [undo, setUndo] = useState<Proposal | null>(null),
     [undoError, setUndoError] = useState("");
-  const engagement = useEngagementSummaries(
-    proposals.map((p) => p.id).join(","),
-  );
+  const visible = limit === undefined ? proposals : proposals.slice(0, limit);
+  const engagement = useEngagementSummaries(visible.map((p) => p.id).join(","));
   const money = useMoney(),
     yearly = proposals.some((p) =>
       p.quote.some((i) => i.sublines.some((s) => s.interval === "year")),
@@ -641,7 +629,7 @@ export function ProposalRows({
       <div
         className={`proposal-rows ${yearly ? "has-yearly" : ""} ${showOwner ? "has-owner" : ""} ${listActions ? "with-row-actions" : ""} ${compact ? "compact-proposal-rows" : ""}`}
       >
-        <div className="proposal-row-head">
+        <div className="proposal-row-head staff-table-head">
           <span>Proposal</span>
           {showOwner && !listActions && (
             <span>{reportSender ? "Owner (sender)" : "Owner"}</span>
@@ -655,10 +643,10 @@ export function ProposalRows({
           <span className="updated-cell">Updated</span>
           <span />
         </div>
-        {!proposals.length ? (
+        {!visible.length ? (
           <p className="empty-copy">No proposals in this view.</p>
         ) : (
-          proposals.map((p) => {
+          visible.map((p) => {
             const t = totals(p.quote);
             const owner = showOwner ? (
               <span className="proposal-owner" data-label="Owner">
@@ -758,6 +746,7 @@ export function ProposalRows({
                   data={data}
                   showUndo={false}
                   listRow={listActions}
+                  tableRow
                   onChanged={(next) => {
                     if (next.archived_at && !p.archived_at) setUndo(next);
                     onChanged?.(next);
@@ -1511,13 +1500,14 @@ export function HomeV4({
           <a href="/proposals">View all</a>
         </header>
         <ProposalRows
-          proposals={active
-            .toSorted(
-              (a, b) =>
-                Date.parse(b.updated_at ?? b.created_at) -
-                Date.parse(a.updated_at ?? a.created_at),
-            )
-            .slice(0, 6)}
+          showOwner
+          listActions
+          limit={6}
+          proposals={active.toSorted(
+            (a, b) =>
+              Date.parse(b.updated_at ?? b.created_at) -
+              Date.parse(a.updated_at ?? a.created_at),
+          )}
           data={data}
           onChanged={(next) =>
             setRows((old) => old.map((p) => (p.id === next.id ? next : p)))
@@ -2881,7 +2871,7 @@ export function ClientsV4({
           </fieldset>
         </div>
         <div className="client-directory client-table">
-          <div className="client-table-head">
+          <div className="client-table-head staff-table-head">
             {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
               (label) => (
                 <span key={label}>{label}</span>

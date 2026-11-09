@@ -345,7 +345,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       >
         <div>
           <div className="studio-data-table product-table">
-            <div className="studio-table-head">
+            <div className="studio-table-head staff-table-head">
               <span>Product</span>
               <span>Price</span>
               <span>Plan terms</span>

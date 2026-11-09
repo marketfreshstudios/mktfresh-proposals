@@ -24,6 +24,18 @@
   :is(td, .proposal-row .row-amount, .proposal-row-head) {
   font-variant-numeric: tabular-nums;
 }
+/* Staff table headers share the card surface. Body rows supply the grid divider. */
+.staff-foundation.ink-clay
+  :is(.staff-table-head:not(thead), .staff-table-head th) {
+  background-color: var(--surface);
+}
+.staff-foundation.ink-clay
+  .staff-table-head:where(.proposal-row-head, .studio-table-head):is(
+    :only-child,
+    :has(+ .empty-copy)
+  ) {
+  box-shadow: inset 0 -1px var(--border);
+}
 /* Shared state colors pair the label with its background on every surface. */
 .staff-foundation.ink-clay
   :is(.btn, .btn.primary, .btn.secondary, .btn.ghost, .editor-button):not(
@@ -33,9 +45,9 @@
     .segmented .btn,
     [role="tab"]
   ) {
-  border: 1.5px solid
+  border: var(--button-stroke, 1.5px) solid
     var(--button-fill, var(--button-outline, var(--border-strong)));
-  border-radius: var(--radius-pill);
+  border-radius: var(--button-radius, var(--radius-pill));
   background: var(--button-fill, transparent);
   color: var(--button-label, var(--button-ink, var(--ink)));
 }
@@ -165,6 +177,38 @@
   flex: none;
   padding: 0;
   border-radius: 50%;
+}
+.staff-foundation.ink-clay .btn.table-icon-action {
+  --round-icon-size: 44px;
+  --button-fill: transparent;
+  --button-fill-hover: var(--segment);
+  --button-stroke: 0;
+  --button-radius: 50%;
+  pointer-events: auto;
+}
+.table-row-action {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.table-row-tooltip {
+  display: none;
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: calc(100% + 6px);
+  z-index: 3;
+  background: var(--toast);
+  color: var(--toast-ink);
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  pointer-events: none;
+  white-space: nowrap;
+  font: 600 12px/17px var(--font-ui);
+}
+.table-row-action:has(> :hover, > :focus-visible) .table-row-tooltip {
+  display: block;
 }
 .staff-foundation.ink-clay .editor-document-header .round-icon {
   --round-icon-size: 36px;

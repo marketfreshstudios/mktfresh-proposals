@@ -8,6 +8,7 @@ import type { Data } from "./staff-app";
 import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
 import { chromeIcons } from "./staff-icons";
 import { Sheet } from "./foundation";
+import { TableRowAction } from "./table-row-action";
 import {
   staffRoleLabel,
   staffStatusLabel,
@@ -125,7 +126,7 @@ export function TeamStudio({
         </Banner>
       )}
       <div className="team-table" role="table" aria-label="Workspace team">
-        <div className="team-table-head" role="row">
+        <div className="team-table-head staff-table-head" role="row">
           <span role="columnheader">Name & email</span>
           <span role="columnheader">Role</span>
           <span role="columnheader">Status</span>
@@ -211,21 +212,26 @@ export function TeamStudio({
             </div>
             <div role="cell">
               {owner && (
-                <Button
-                  variant="ghost"
-                  aria-label={`Actions for ${person.display_name}`}
-                  title={`Actions for ${person.display_name}`}
-                  onClick={(e) => {
-                    setError("");
-                    setDialog({
-                      person,
-                      action: "menu",
-                      anchor: e.currentTarget,
-                    });
-                  }}
-                >
-                  <chromeIcons.more size={18} aria-hidden="true" />
-                </Button>
+                <TableRowAction label={`Actions for ${person.display_name}`}>
+                  {(hint) => (
+                    <button
+                      type="button"
+                      className="btn ghost icon-only table-icon-action"
+                      aria-label={`Actions for ${person.display_name}`}
+                      aria-describedby={hint}
+                      onClick={(e) => {
+                        setError("");
+                        setDialog({
+                          person,
+                          action: "menu",
+                          anchor: e.currentTarget,
+                        });
+                      }}
+                    >
+                      <chromeIcons.more size={18} aria-hidden="true" />
+                    </button>
+                  )}
+                </TableRowAction>
               )}
             </div>
           </div>
