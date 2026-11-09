@@ -204,6 +204,15 @@
   background: var(--ink-title);
   pointer-events: none;
 }
+/* The editor sidebar's tab sets are segmented controls: the filled segment marks the selection, no underline. */
+.staff-foundation.ink-clay :is(.editor-tabs, .column-style-tabs) {
+  box-shadow: none;
+}
+.staff-foundation.ink-clay
+  :is(.editor-tabs, .column-style-tabs)
+  > [role="tab"][aria-selected="true"]::after {
+  content: none;
+}
 .staff-foundation.ink-clay
   :is(
     select,
