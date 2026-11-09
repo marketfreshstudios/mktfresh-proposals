@@ -3,6 +3,7 @@ import { Select, Switch } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
+import { finalOiotClause } from "../lib/oiot";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
@@ -996,6 +997,7 @@ function QuoteEditorContent({
       catalog={catalog}
       families={families}
       currency={p.currency}
+      proposalContent={p.content}
       aiUnreviewed={p.ai_unreviewed}
       onChange={setItems}
       addItem={addItem}
@@ -2201,7 +2203,11 @@ function QuoteEditorContent({
                               <HeadingTokens text={c.heading} map={map} />
                             </h3>
                           </Disclosure>
-                          <SourceParagraph text={c.body} map={map} />
+                          <SourceParagraph
+                            text={c.body}
+                            map={map}
+                            boldRunIns={finalOiotClause(c)}
+                          />
                         </details>
                       </BlockFrame>
                     </Sortable>

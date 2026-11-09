@@ -1,6 +1,7 @@
 "use client";
 import { Select, Switch } from "./form-controls";
-import type { QuoteItem, Item } from "../lib/model";
+import { oiotItem, oiotKickoff, oiotPlan } from "../lib/oiot";
+import type { Block, QuoteItem, Item } from "../lib/model";
 import { quoteRange } from "../lib/quote-model";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import {
@@ -22,6 +23,7 @@ export function QuoteItemsPanel({
   families,
   currency,
   aiUnreviewed = false,
+  proposalContent,
   onChange,
   addItem,
   expandedItem,
@@ -36,6 +38,7 @@ export function QuoteItemsPanel({
   families: { id: string; name: string; active: boolean }[];
   currency: string;
   aiUnreviewed?: boolean;
+  proposalContent?: Block[];
   onChange: (next: QuoteItem[]) => void;
   addItem: (item?: Item) => void;
   expandedItem: string | null;
@@ -90,6 +93,29 @@ export function QuoteItemsPanel({
   }
   function itemCard(i: QuoteItem) {
     const expanded = expandedItem === i.id;
+    const oiot = proposalContent && oiotItem(i, proposalContent, catalog);
+    const kickoff = oiot && oiotKickoff(i);
+    const changeKickoff = (amount: number) =>
+      updateItem(i.id, {
+        sublines: [
+          {
+            id: uid(),
+            label: "Kickoff",
+            amount,
+            interval: "one_time",
+            qty: 1,
+            oiot_kickoff: true,
+            list_amount: null,
+            stripe_lookup_key: null,
+            qbo_item_ref:
+              catalog
+                .find((product) => product.id === i.pricing_item_id)
+                ?.sublines?.find((line) => line.interval === "one_time")
+                ?.qbo_item_ref ?? null,
+          },
+          ...i.sublines,
+        ],
+      });
     const tag = i.choice_group_id
       ? `Choose one${i.default_selected ? " · default" : ""}`
       : i.source === "custom" && !i.optional
@@ -173,6 +199,49 @@ export function QuoteItemsPanel({
                 updateItem(i.id, { description: e.target.value })
               }
             />
+            {oiot && (
+              <div className="stack">
+                {!kickoff && (
+                  <Field label={oiotPlan.kickoffLabel}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000000"
+                      step="0.01"
+                      placeholder="Enter amount"
+                      onBlur={(event) => {
+                        const input = event.currentTarget;
+                        if (input.value && input.validity.valid)
+                          changeKickoff(Math.round(input.valueAsNumber * 100));
+                      }}
+                    />
+                  </Field>
+                )}
+                <Field label="Website purchase price">
+                  <input
+                    type="number"
+                    min="0"
+                    max="1000000"
+                    step="0.01"
+                    value={
+                      i.oiot_purchase_price === undefined
+                        ? ""
+                        : i.oiot_purchase_price / 100
+                    }
+                    onChange={(event) => {
+                      const input = event.currentTarget;
+                      if (input.validity.valid)
+                        updateItem(i.id, {
+                          oiot_purchase_price: input.value
+                            ? Math.round(input.valueAsNumber * 100)
+                            : undefined,
+                        });
+                    }}
+                  />
+                  <small>{oiotPlan.purchasePriceHelp}</small>
+                </Field>
+              </div>
+            )}
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
                 <div className="subline-grid">

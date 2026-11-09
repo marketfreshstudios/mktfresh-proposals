@@ -1,3 +1,4 @@
+import { oiotPlan } from "../../seed/oiot-plan";
 export const fieldLabels: Record<string, string> = {
   "client.first_name": "Client first name",
   "client.last_name": "Client last name",
@@ -24,6 +25,8 @@ export const fieldLabels: Record<string, string> = {
   "quote.monthly_total": "Monthly total",
   "quote.yearly_total": "Yearly total",
   "quote.selected_items": "Selected products",
+  "oiot.kickoff": oiotPlan.kickoffLabel,
+  "oiot.purchase_price": "Website purchase price",
 };
 export const fieldLabel = (path: string) =>
   fieldLabels[path] ??
@@ -36,6 +39,6 @@ export const fieldGroup = (path: string) =>
     ? "Client"
     : path.startsWith("proposal.")
       ? "Proposal"
-      : path.startsWith("quote.")
+      : path.startsWith("quote.") || path.startsWith("oiot.")
         ? "Totals"
         : "Sender & workspace";

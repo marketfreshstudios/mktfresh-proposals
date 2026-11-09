@@ -1,3 +1,4 @@
+import { finalOiotVisibility } from "./oiot";
 import {
   ColumnsOverflowError,
   columnsOverflowMessage,
@@ -1096,7 +1097,13 @@ export class ProposalService {
         409,
       );
       const v = p.versions.at(-1)!;
-      v.quote = chooseItem(v.quote, input.item_id, input.selected);
+      const before = v.quote;
+      v.quote = chooseItem(before, input.item_id, input.selected);
+      if (
+        finalOiotVisibility(v.content, before) !==
+        finalOiotVisibility(v.content, v.quote)
+      )
+        delete v.pagination;
       if (!p.live_blockers?.length) p.quote = structuredClone(v.quote);
       v.variables_resolved = variables(publishedPresentation(p), v.quote);
       renderBlocks(
@@ -1424,11 +1431,17 @@ export function publicResult(
         plan_terms: _plan,
         custom_family_id: _family,
         price_review: _review,
+        oiot_purchase_price: _oiotPrice,
         ...item
       }) => ({
         ...item,
         sublines: item.sublines.map(
-          ({ stripe_lookup_key: _key, qbo_item_ref: _qbo, ...s }) => s,
+          ({
+            stripe_lookup_key: _key,
+            qbo_item_ref: _qbo,
+            oiot_kickoff: _kickoff,
+            ...s
+          }) => s,
         ),
       }),
     ),

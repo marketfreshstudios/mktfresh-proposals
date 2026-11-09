@@ -1,3 +1,11 @@
+import {
+  clauseTextParts,
+  finalOiotClause,
+  oiotOffer,
+  oiotKickoff,
+  oiotKickoffField,
+  oiotPurchasePriceField,
+} from "./oiot";
 import { blockBoxCss, columnBoxStyle, cssDeclarations } from "./block-style";
 import { columnGridStyle, columnRejection, columnsSchema } from "./columns";
 import { documentSpacing } from "./document-spacing";
@@ -95,6 +103,13 @@ export function variables(p: Proposal, quote = p.quote) {
     const l = raw;
     map[`quote.item.${l.stripe_lookup_key ?? l.id}.price`] = fmt(l.amount);
   }
+  const offer = oiotOffer(quote, p.content ?? []);
+  const kickoff = offer && oiotKickoff(offer);
+  map[oiotKickoffField] = kickoff ? fmt(kickoff.amount * kickoff.qty) : "";
+  map[oiotPurchasePriceField] =
+    offer?.oiot_purchase_price === undefined
+      ? ""
+      : fmt(offer.oiot_purchase_price);
   return map;
 }
 export function resolve(text: string, map: Record<string, string>) {
@@ -120,6 +135,17 @@ export const escape = (text: string) =>
         c
       ]!,
   );
+export function contractClauseHtml(
+  clause: NonNullable<Block["clauses"]>[number],
+  map: Record<string, string>,
+) {
+  return clauseTextParts(clause.body, finalOiotClause(clause))
+    .map((part) => {
+      const html = escape(resolve(part.text, map)).replace(/\n/g, "<br>");
+      return part.bold ? `<strong>${html}</strong>` : html;
+    })
+    .join("");
+}
 function escapedResolved(text: string, map: Record<string, string>) {
   const result = escape(resolve(text, map));
   // Only the new multiline field changes whitespace; existing document text keeps its rendering.
@@ -260,7 +286,7 @@ export function renderBlocks(
                   c.body.length <= 20000,
                 "Invalid contract clause",
               );
-              return `<section><h3 data-print-part="${escape(c.id)}">${escape(resolve(c.heading, map))}</h3><p data-print-part="${escape(c.id)}">${escape(resolve(c.body, map)).replace(/\n/g, "<br>")}</p></section>`;
+              return `<section><h3 data-print-part="${escape(c.id)}">${escape(resolve(c.heading, map))}</h3><p data-print-part="${escape(c.id)}">${contractClauseHtml(c, map)}</p></section>`;
             })
             .join("")}</section>`;
         }

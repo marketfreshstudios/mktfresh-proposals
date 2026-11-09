@@ -2,6 +2,12 @@
 import { ChevronDown } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { Archive, ArchiveRestore, Copy, Pencil } from "lucide-react";
+import {
+  finalOiotClause,
+  oiotPlan,
+  oiotKickoffField,
+  oiotPurchasePriceField,
+} from "../lib/oiot";
 import { ProposalQuestions } from "./proposal-questions";
 import type { QuestionSummary } from "../lib/proposal-questions";
 import { Select, Switch } from "./form-controls";
@@ -1920,6 +1926,12 @@ export function RecordV4({
     p.billing_links.some(
       (link) => link.provider === "qbo" && link.status === "needs_review",
     );
+  const signedVersion = p.versions.at(-1);
+  const signedOiot =
+    signedVersion?.frozen &&
+    signedVersion.content.some((block) => block.clauses?.some(finalOiotClause))
+      ? signedVersion.variables_resolved
+      : undefined;
   const attention = !archive && native && actualSigned && issues;
   const complete =
     !archive && native && actualSigned && !!company && !billingOpen(p);
@@ -2267,6 +2279,16 @@ export function RecordV4({
           )}
           <section className="record-billing stack">
             <h2>Billing</h2>
+            {signedOiot && (
+              <div className="stack">
+                <h3>{oiotPlan.name}</h3>
+                <p>
+                  Website purchase price {signedOiot[oiotPurchasePriceField]} ·
+                  Kickoff {signedOiot[oiotKickoffField]}
+                </p>
+                <p>{oiotPlan.billingNote}</p>
+              </div>
+            )}
             {!actualSigned ? (
               <p>
                 {p.marked_won_by

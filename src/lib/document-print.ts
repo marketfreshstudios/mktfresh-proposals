@@ -10,6 +10,7 @@ import {
 } from "./signature-presentation";
 import { blockBoxCss } from "./block-style";
 import { documentSpacing } from "./document-spacing";
+import { finalOiotVisibility } from "./oiot";
 import { documentQuote } from "./document-quote";
 import { escape, renderBlocks, resolve } from "./presentation";
 import type { Block, Quote } from "./model";
@@ -161,7 +162,7 @@ export function printContent(input: {
         `<div class="signature-pair" style="--block-space-before:${spaces[input.content[n].id ?? String(n)] ?? 16}px">${blocks[n]}${blocks[++n]}</div>`,
       );
     else rendered.push(blocks[n]);
-  return `<main class="print-root proposal-typography"${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${rendered.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
+  return `<main class="print-root proposal-typography"${finalOiotVisibility(input.content, input.quote) ? ' data-final-oiot="true"' : ""}${input.currentLayout ? ' data-current-layout="true"' : ""}>${cover}${rendered.join("")}${input.currentLayout ? "" : (input.signatures ?? "")}</main>`;
 }
 export type PageFragment = {
   block: string;
@@ -277,6 +278,7 @@ export function paginatePrintDocument(root: HTMLElement): {
   const sources = Array.from(root.children) as HTMLElement[];
   const flow =
     getComputedStyle(root).getPropertyValue("--document-flow").trim() === "max";
+  const checkContentEdge = root.dataset.finalOiot === "true";
   root.replaceChildren();
   let page!: HTMLElement,
     count = 0,
@@ -315,7 +317,13 @@ export function paginatePrintDocument(root: HTMLElement): {
   }
   newPage();
   function fits() {
-    return page.scrollHeight <= frameHeight + 0.5;
+    if (page.scrollHeight > frameHeight + 0.5) return false;
+    if (!checkContentEdge || !page.lastElementChild) return true;
+    // A full PDF sheet includes the footer's padding in its scrollHeight.
+    // Keep the clause within the same usable content box as client sheets.
+    const paddingTop = parseFloat(getComputedStyle(page).paddingTop) || 0;
+    const end = page.getBoundingClientRect().top + paddingTop + height;
+    return page.lastElementChild.getBoundingClientRect().bottom <= end + 0.5;
   }
   function textCount(node: Node) {
     return node.textContent?.length ?? 0;
@@ -377,7 +385,14 @@ export function paginatePrintDocument(root: HTMLElement): {
         : read(cover ? node : (semanticNodes.at(-1) ?? node), "after");
     if (flow)
       wrapper.style.paddingTop = `${page.children.length > 1 ? (node.dataset.blockLayout ? parseFloat(getComputedStyle(node).getPropertyValue("--block-space-before")) || 0 : Math.max(previousAfter, above)) : 0}px`;
-    if (fits()) {
+    // Covers already occupy their own frame. Do not split their positioned
+    // artwork or metadata when the browser reports decorative overflow.
+    if (
+      (checkContentEdge &&
+        cover &&
+        wrapper.getBoundingClientRect().height <= height + 0.5) ||
+      fits()
+    ) {
       previousAfter = spacingAfter;
       offset += textCount(node);
       return;

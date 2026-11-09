@@ -1,3 +1,11 @@
+import {
+  finalOiotClause,
+  oiotItem,
+  oiotPlan,
+  oiotKickoff,
+  oiotKickoffField,
+  oiotPurchasePriceField,
+} from "./oiot";
 import { businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
@@ -36,6 +44,31 @@ export function readiness(
     validateItems(p.quote);
   } catch (e) {
     errors.push(e instanceof Error ? e.message : "Invalid quote items");
+  }
+  const offers = p.quote.filter((item) => oiotItem(item, p.content, catalog));
+  const kickoffError = `Enter the kickoff amount for ${oiotPlan.name}`;
+  const priceError = `Enter the website purchase price for ${oiotPlan.name}`;
+  if (offers.length > 1) errors.push(`Offer only one ${oiotPlan.name} option`);
+  if (offers.length === 1) {
+    const offer = offers[0];
+    const kickoff = oiotKickoff(offer);
+    if (
+      p.content.some((block) => block.clauses?.some(finalOiotClause)) &&
+      (offer.schedule?.after_paid_invoices !== oiotPlan.paidPayments ||
+        offer.schedule.then.amount !== oiotPlan.stepDownAmount)
+    )
+      errors.push(
+        `Configure the ${oiotPlan.paidPayments}-payment step-down in Studio Products, then re-add ${oiotPlan.name}`,
+      );
+    if (!kickoff) errors.push(kickoffError);
+    if (offer.oiot_purchase_price === undefined) errors.push(priceError);
+    if (
+      kickoff &&
+      offer.oiot_purchase_price !== undefined &&
+      offer.oiot_purchase_price !==
+        kickoff.amount * kickoff.qty + oiotPlan.creditDifference
+    )
+      errors.push(oiotPlan.priceError);
   }
   for (const i of cloneQuote(p.quote)) {
     if (
@@ -158,7 +191,11 @@ export function readiness(
     renderBlocks(p.content, p.quote, variables(p), p.currency);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Invalid proposal content";
-    if (
+    if (message === `Unresolved variable: ${oiotKickoffField}`) {
+      if (!errors.includes(kickoffError)) errors.push(kickoffError);
+    } else if (message === `Unresolved variable: ${oiotPurchasePriceField}`) {
+      if (!errors.includes(priceError)) errors.push(priceError);
+    } else if (
       message !== "Unresolved variable: workspace.state" ||
       !errors.includes(businessStateError)
     )

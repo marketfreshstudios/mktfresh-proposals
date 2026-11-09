@@ -61,7 +61,7 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
       expect(coverText).toContain("VALIDUNTILJanuary31,2026");
       expect(content).toContain("State of North Carolina");
       expect(content).toContain("Signatures");
-      expect(content.includes("18 monthly payments")).toBe(false);
+      expect(content).not.toContain("4.4 Own It Over Time");
       if (t.starter_key === "website-design-build") {
         const alternative = p.quote.find(
           (i) => i.pricing_item_id === "00000000-0000-4000-8000-000000000103",
@@ -74,6 +74,24 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
             quote: chooseItem(p.quote, alternative.id, true).map((i) => ({
               ...i,
               default_selected: !!i.selected,
+              ...(i.id === alternative.id
+                ? {
+                    oiot_purchase_price: 375000,
+                    sublines: [
+                      ...i.sublines,
+                      {
+                        id: crypto.randomUUID(),
+                        label: "Kickoff",
+                        amount: 150000,
+                        qty: 1,
+                        interval: "one_time" as const,
+                        list_amount: null,
+                        stripe_lookup_key: null,
+                        qbo_item_ref: null,
+                      },
+                    ],
+                  }
+                : {}),
             })),
           },
           settings,
@@ -83,11 +101,13 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
           selectedPath,
           Buffer.from(selected.pdf_base64, "base64"),
         );
-        expect(
-          execFileSync("pdftotext", [selectedPath, "-"], {
-            encoding: "utf8",
-          }).replace(/\s+/g, " "),
-        ).toContain("18 monthly payments");
+        const terms = execFileSync("pdftotext", [selectedPath, "-"], {
+          encoding: "utf8",
+        }).replace(/\s+/g, " ");
+        expect(terms).toContain("4.4 Own It Over Time");
+        expect(terms).toContain("kickoff payment of $1,500");
+        expect(terms).toContain("full purchase price is $3,750");
+        expect(terms).toContain("at least fifteen (15) days’ advance notice.");
       }
     }
   } finally {

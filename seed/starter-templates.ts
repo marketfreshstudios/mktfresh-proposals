@@ -11,23 +11,14 @@ import {
 import { defaultTemplateBands } from "../src/lib/page-bands";
 import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
+import { paymentPlanClause } from "./oiot-clause";
+export { paymentPlanClause } from "./oiot-clause";
 
 export const starterOrder = [6, 1, 2, 3, 4, 5, 7];
 export function starterId(workspace: string, key: string) {
   const hash = createHash("md5").update(`${workspace}:${key}`).digest("hex");
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-8${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
-// Original sample wording; new starters resolve its predicate to the actual catalog item.
-export const paymentPlanClause = {
-  id: "payment-plan",
-  heading: "4.4 Own It Over Time",
-  body: "If you choose Own It Over Time, you agree to a minimum commitment of 18 monthly payments. The website is paid off after 30 monthly payments of $175; billing then continues at $100/month for hosting and care. If payments stop before the 30th payment, {{workspace.name}} may take the website offline.",
-  show_when: {
-    kind: "item_selected" as const,
-    pricing_item_id: "00000000-0000-4000-8000-000000000103",
-  },
-  draft: true,
-};
 const starterProducts: Record<number, { sku: string; seed?: number }[]> = {
   1: [
     { sku: "build", seed: 101 },

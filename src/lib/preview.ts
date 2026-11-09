@@ -1,3 +1,5 @@
+import { oiotKickoffField, oiotPurchasePriceField } from "./oiot";
+import { fieldLabel } from "./field-labels";
 import { proposalBands } from "./page-bands";
 import { freezeStyles } from "./proposal-styles";
 import { draftItems } from "./quote-model";
@@ -15,6 +17,9 @@ export function previewProposal(
   if (!p.signers.length) {
     delete p.published_state;
     p.quote = draftItems(p.quote);
+    const map = variables(p);
+    for (const field of [oiotKickoffField, oiotPurchasePriceField])
+      map[field] ||= fieldLabel(field);
 
     const version = {
       header_footer: proposalBands(p.header_footer),
@@ -30,7 +35,7 @@ export function previewProposal(
       ...(p.cover ? { cover: p.cover } : {}),
       content: p.content,
       quote: p.quote,
-      variables_resolved: variables(p, p.quote),
+      variables_resolved: map,
       content_hash: "",
       created_at: p.created_at,
       frozen: false,

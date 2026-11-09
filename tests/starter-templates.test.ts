@@ -9,7 +9,7 @@ import {
   starterId,
 } from "../seed/starter-templates";
 import { setup } from "./helpers";
-import { seedIds } from "../seed/marketfresh";
+
 import { CoverSchema, coverElements } from "../src/lib/cover";
 import { variables } from "../src/lib/presentation";
 import { readiness } from "../src/lib/quote";
@@ -61,7 +61,7 @@ it("seven exact starters, order, covers, renumbered terms and both signatures wi
   expect(JSON.stringify(website.content)).toContain('"type":"bold"');
   expect(JSON.stringify(website)).not.toContain("(pricing_table)");
 });
-it("MarketFresh defaults resolve to existing items; care has no default, 4.4 stays byte-identical", async () => {
+it("MarketFresh defaults resolve to existing items; care has no default, and 4.4 uses final wording", async () => {
   const { repo } = await setup();
   const catalog = await repo.entities<Item>("pricing_items");
   const templates = starterTemplates(workspace, { marketfresh: true, catalog });
@@ -82,18 +82,11 @@ it("MarketFresh defaults resolve to existing items; care has no default, 4.4 sta
       (i) => !i.selected && !i.default_selected,
     ),
   ).toBe(true);
-  const old = (await repo.entities<Template>("templates")).find(
-    (t) => t.id === seedIds.template,
-  )!;
   expect(
     templates[1].content
       .find((b) => b.type === "contract")!
       .clauses!.find((c) => c.id === "payment-plan"),
-  ).toEqual(
-    old.content
-      .find((b) => b.type === "contract")!
-      .clauses!.find((c) => c.id === "payment-plan"),
-  );
+  ).toEqual(paymentPlanClause);
   expect(paymentPlanClause.show_when.pricing_item_id).toBe(
     catalog.find((i) => i.sku === "oiot-monthly")?.id,
   );
