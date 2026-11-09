@@ -133,7 +133,7 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   ).toBeVisible();
   await capture(page, "client-ask-1440");
   await page
-    .getByRole("button", { name: "Ask about this: Scope", exact: true })
+    .getByRole("link", { name: "Ask about this: Scope", exact: true })
     .click();
   const form = page.getByRole("dialog", { name: "Ask a question" });
   await expect(
