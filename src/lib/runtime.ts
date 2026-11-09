@@ -1,6 +1,7 @@
 import { validClientToken } from "./client-code";
 import { pdfPreview } from "./pdf-preview";
 import { StripeHttp } from "./providers/stripe-http";
+import { StripeConnect, stripeConnectConfig } from "./providers/stripe-connect";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
@@ -11,7 +12,10 @@ import { LocalStorage, SupabaseStorage } from "./storage";
 import { ProposalService } from "./service";
 import { MockMailer, ResendMailer, Worker } from "./jobs";
 import { MockBillingProvider, UnconfiguredBillingProvider } from "./billing";
-function createRuntime(workspaceId: string) {
+function createRuntime(
+  workspaceId: string,
+  account?: { id: string; mode: "test" },
+) {
   const local = process.env.APP_MODE === "local";
   if (local && (process.env.NODE_ENV === "production" || process.env.VERCEL))
     throw new Error("Local mode is disabled in production");
@@ -36,6 +40,11 @@ function createRuntime(workspaceId: string) {
     process.env.QBO_CLIENT_SECRET &&
     Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY ?? "", "base64")
       .length === 32;
+  const connectConfig =
+    workspaceId !== LOCAL_WORKSPACE_ID ? stripeConnectConfig() : undefined;
+  const stripeConnect = connectConfig
+    ? new StripeConnect(repo, connectConfig)
+    : undefined;
   const providers = {
     qbo: qboConfigured
       ? new QboProvider(repo, {
@@ -62,15 +71,18 @@ function createRuntime(workspaceId: string) {
             new StripeHttp(process.env.STRIPE_SECRET_KEY, repo),
             repo,
           )
-        : local
-          ? new MockBillingProvider("stripe")
-          : new UnconfiguredBillingProvider("Stripe"),
+        : account && stripeConnect
+          ? new StripeProvider(stripeConnect.transport(account), repo)
+          : local
+            ? new MockBillingProvider("stripe")
+            : new UnconfiguredBillingProvider("Stripe"),
   };
   const mailer = local ? new MockMailer() : new ResendMailer();
   return {
     mailer,
     repo,
     storage,
+    stripeConnect,
     service: new ProposalService(
       repo,
       undefined,
@@ -95,6 +107,10 @@ export function runtime(workspaceId = LOCAL_WORKSPACE_ID): Runtime {
     cache.set(workspaceId, createRuntime(workspaceId));
   return cache.get(workspaceId)!;
 }
+export async function resolveStripeAccount(base: Runtime): Promise<Runtime> {
+  const account = await base.stripeConnect?.activeAccount();
+  return account ? createRuntime(base.repo.workspaceId, account) : base;
+}
 // Token lookup returns only the tenant selector; all subsequent operations are scoped.
 export async function publicRuntime(token: string) {
   check(validClientToken(token), "Not found", 404);
@@ -109,11 +125,18 @@ export async function publicRuntime(token: string) {
     .eq("token", token)
     .maybeSingle();
   check(!error && data, "Not found", 404);
-  return runtime(data.workspace_id);
+  return resolveStripeAccount(runtime(data.workspace_id));
 }
 export async function allRuntimes() {
   if (process.env.APP_MODE === "local") return [runtime()];
   const { data, error } = await supabase().from("workspaces").select("id");
   if (error) throw error;
-  return data.map((w) => runtime(w.id));
+  const results = await Promise.allSettled(
+    data.map((w) => resolveStripeAccount(runtime(w.id))),
+  );
+  return results.flatMap((result) => {
+    if (result.status === "fulfilled") return [result.value];
+    console.error("Could not load a workspace billing connection.");
+    return [];
+  });
 }

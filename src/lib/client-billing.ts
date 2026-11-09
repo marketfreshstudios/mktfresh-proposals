@@ -225,11 +225,14 @@ async function billingSummary(
   return result;
 }
 
-export async function stripeCustomerMatches(
-  client: Client,
+type StripeMatch = { id: string; name?: string | null; created?: number };
+
+export async function stripeCustomerMatchesByEmail(
+  emails: ReadonlySet<string>,
   api: StripeTransport,
 ) {
-  const matches: { id: string; name?: string | null; created?: number }[] = [];
+  const matches = new Map<string, StripeMatch[]>();
+  if (!emails.size) return matches;
   let cursor = "";
   do {
     const page = await api.get<
@@ -249,8 +252,12 @@ export async function stripeCustomerMatches(
     });
     for (const c of page.data) {
       check(c.livemode === false && !c.deleted, "Test-mode customer required");
-      if (c.email?.toLowerCase() === client.email.toLowerCase())
-        matches.push(c);
+      const email = c.email?.toLowerCase();
+      if (email && emails.has(email)) {
+        const list = matches.get(email) ?? [];
+        list.push(c);
+        matches.set(email, list);
+      }
     }
     if (!page.has_more) break;
     check(
@@ -260,6 +267,15 @@ export async function stripeCustomerMatches(
     cursor = page.data.at(-1)!.id;
   } while (true);
   return matches;
+}
+export async function stripeCustomerMatches(
+  client: Client,
+  api: StripeTransport,
+) {
+  const email = client.email.toLowerCase();
+  return (
+    (await stripeCustomerMatchesByEmail(new Set([email]), api)).get(email) ?? []
+  );
 }
 export async function clientBilling(
   repo: Repository,

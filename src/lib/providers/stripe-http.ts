@@ -25,8 +25,14 @@ export class StripeHttp implements StripeTransport {
     private key: string,
     private repo: Repository,
     private fetcher: typeof fetch = fetch,
+    private account?: string,
+    private assertConnected?: () => Promise<void>,
   ) {
     requireTestStripeKey(key);
+    check(
+      !account || /^acct_[a-zA-Z0-9]+$/.test(account),
+      "Invalid Stripe account.",
+    );
   }
   async get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
     return this.request<T>(path + "?" + new URLSearchParams(params), "GET");
@@ -36,17 +42,21 @@ export class StripeHttp implements StripeTransport {
     params: Record<string, unknown>,
     key: string,
   ): Promise<T> {
-    const id = sha256(this.repo.workspaceId + ":" + key)
+    await this.assertConnected?.();
+    const id = sha256(
+      this.repo.workspaceId +
+        ":" +
+        (this.account ? this.account + ":" : "") +
+        key,
+    )
       .slice(0, 32)
       .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
     const fingerprint = sha256(canonical({ path, params }));
-    const old = (
-      await this.repo.entities<{
-        id: string;
-        fingerprint: string;
-        response: T;
-      }>("provider_actions")
-    ).find((a) => a.id === id);
+    const old = await this.repo.providerAction<{
+      id: string;
+      fingerprint: string;
+      response: T;
+    }>(id);
     if (old) {
       check(
         old.fingerprint === fingerprint,
@@ -65,6 +75,7 @@ export class StripeHttp implements StripeTransport {
     key?: string,
   ): Promise<T> {
     requireTestStripeKey(this.key);
+    await this.assertConnected?.();
     check(
       /^\/v1\/[a-z_]+(?:\/[A-Za-z0-9_]+)*(?:\?.*)?$/.test(path),
       "Invalid Stripe path",
@@ -76,6 +87,7 @@ export class StripeHttp implements StripeTransport {
       headers: {
         Authorization: "Bearer " + this.key,
         "Stripe-Version": STRIPE_VERSION,
+        ...(this.account ? { "Stripe-Account": this.account } : {}),
         ...(key ? { "Idempotency-Key": key } : {}),
         ...(params
           ? { "Content-Type": "application/x-www-form-urlencoded" }
@@ -83,6 +95,7 @@ export class StripeHttp implements StripeTransport {
       },
       ...(params ? { body } : {}),
       signal: AbortSignal.timeout(30000),
+      redirect: "error",
     });
     const data = await response.json();
     check(
