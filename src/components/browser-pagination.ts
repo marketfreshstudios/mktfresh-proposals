@@ -21,6 +21,7 @@ import type { SourceSpacer } from "./page-spacers";
 export type BrowserPages = {
   plan: PagePlan;
   assignments: { block: string; page: number }[];
+  overflowColumns?: { block: string; excess: number }[];
 };
 /** Measures actual browser line boxes at Letter width. All inserted gaps are visual decorations. */
 export function paginateBrowser(
@@ -114,6 +115,7 @@ export function paginateBrowser(
   const top = clone.getBoundingClientRect().top,
     starts: PageStart[] = [],
     assignments: BrowserPages["assignments"] = [];
+  const overflowColumns: NonNullable<BrowserPages["overflowColumns"]> = [];
   const spacers = new Map<HTMLElement, SourceSpacer[]>();
   let page = 1;
   const end = () =>
@@ -243,7 +245,11 @@ export function paginateBrowser(
           (row.node.nodeType === 1 && visited.has(row.node))
         )
           continue;
-        if (row.bottom - top > end() + 0.5) {
+        const styledEnd =
+          row === rows.at(-1) && target.hasAttribute("data-block-box")
+            ? target.getBoundingClientRect().bottom
+            : row.bottom;
+        if (Math.max(styledEnd, row.bottom) - top > end() + 0.5) {
           const pageTop = (page - 1) * stride + geometry(page).content.y;
           const unitFor = (node: Node) => {
             const element =
@@ -380,7 +386,9 @@ export function paginateBrowser(
           newPage(frame, b);
       }
       const whole =
-        ["signature_block", "image", "heading", "variable"].includes(b.type) ||
+        ["signature_block", "image", "heading", "variable", "columns"].includes(
+          b.type,
+        ) ||
         (b.type === "pricing_table" && height <= full);
       if (
         whole &&
@@ -393,6 +401,14 @@ export function paginateBrowser(
         local(el) > (page - 1) * stride + geometry(page).content.y + 2
       )
         newPage(pairFirst ? pair! : frame, b);
+      if (
+        b.type === "columns" &&
+        height > pageContentHeight(styles, hf, page) + 0.5
+      )
+        overflowColumns.push({
+          block: b.id!,
+          excess: Math.ceil(height - pageContentHeight(styles, hf, page)),
+        });
       assignments.push({ block: b.id!, page });
       if (b.type === "paragraph") text(el, b);
       else if (b.type === "contract") {
@@ -480,7 +496,11 @@ export function paginateBrowser(
           );
       root.style.setProperty("--page-sheets-height", `${page * stride - 24}px`);
     }
-    return { plan: { format: 1, pages: page, starts }, assignments };
+    return {
+      plan: { format: 1, pages: page, starts },
+      assignments,
+      ...(overflowColumns.length ? { overflowColumns } : {}),
+    };
   } finally {
     clone.remove();
   }

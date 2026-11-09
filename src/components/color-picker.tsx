@@ -3,18 +3,26 @@ import { useEffect, useRef, useState } from "react";
 import { ToolbarPopover } from "./toolbar-popover";
 import { Button } from "./ui";
 import { hexToHsv, hsvToHex, validHex } from "../lib/color-picker";
-import { whiteContrast } from "../lib/brand";
+import { colorContrast, whiteContrast } from "../lib/brand";
 import type { WorkspaceSettings } from "../lib/workspace";
-export function ContrastNote({ color }: { color: string }) {
-  const ratio = whiteContrast(color);
+export function ContrastNote({
+  color,
+  against,
+}: {
+  color: string;
+  against?: string;
+}) {
+  const ratio = against ? colorContrast(against, color) : whiteContrast(color);
   return (
     <p
       className={`color-contrast ${ratio < 4.5 ? "warning" : "success"}`}
       role="status"
     >
-      {ratio >= 4.5
-        ? `✓ ${ratio.toFixed(1)}:1 on white`
-        : `${ratio.toFixed(1)}:1 on white — fine for backgrounds and large text; small text in this color may be hard to read.`}
+      {against
+        ? `${ratio >= 4.5 ? "✓ " : ""}${ratio.toFixed(1)}:1 with block text${ratio < 4.5 ? " · below 4.5:1. Text may be hard to read." : ""}`
+        : ratio >= 4.5
+          ? `✓ ${ratio.toFixed(1)}:1 on white`
+          : `${ratio.toFixed(1)}:1 on white — fine for backgrounds and large text; small text in this color may be hard to read.`}
     </p>
   );
 }
@@ -29,6 +37,7 @@ export function ColorPicker({
   onRemove,
   onClose,
   initialOpen = false,
+  contrastAgainst,
 }: {
   label: string;
   value: string;
@@ -40,6 +49,7 @@ export function ColorPicker({
   onRemove?: () => void;
   onClose?: () => void;
   initialOpen?: boolean;
+  contrastAgainst?: string;
 }) {
   const [open, setOpen] = useState(false),
     [raw, setRaw] = useState(value),
@@ -256,7 +266,10 @@ export function ColorPicker({
                 Enter a six-digit hex color, such as #EA4E26.
               </p>
             )}
-            <ContrastNote color={validHex(raw) ? raw : value} />
+            <ContrastNote
+              color={validHex(raw) ? raw : value}
+              against={contrastAgainst}
+            />
             <footer>
               {onRemove && (
                 <Button

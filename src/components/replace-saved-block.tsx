@@ -1,4 +1,5 @@
 "use client";
+import { documentBlocks } from "../lib/columns";
 import { Select } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import type { Proposal, SavedBlock } from "../lib/model";
@@ -26,7 +27,9 @@ export function ReplaceSavedBlockDialog({
     api<SavedBlock[]>("/api/content_library")
       .then((all) => {
         const next = all.filter((r) =>
-          proposal.content.some((b) => b.saved_block_id === r.id),
+          documentBlocks(proposal.content).some(
+            (b) => b.saved_block_id === r.id,
+          ),
         );
         setRows(next);
         setSelected(next[0]?.id ?? "");

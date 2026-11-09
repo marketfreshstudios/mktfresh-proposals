@@ -7,6 +7,7 @@ const protectedTypes = new Set([
   "signature_block",
   "contract",
   "page_break",
+  "columns",
 ]);
 const markerPattern = /^<!-- yeswell:block:([A-Za-z0-9_-]{1,200}) -->$/;
 const escapeText = (text: string) =>
@@ -49,21 +50,23 @@ function rich(node: RichText, indent = ""): string {
   return inline(node);
 }
 export function templateBlockLabel(block: Block) {
-  return block.type === "signature_block"
-    ? `${block.role === "company" ? "Company" : "Client"} signature`
-    : block.type === "pricing_table"
-      ? "Pricing table"
-      : block.type === "page_break"
-        ? "Page break"
-        : block.type === "contract"
-          ? block.text || "Contract"
-          : block.type === "image"
-            ? block.alt || "Image"
-            : block.content?.content?.some((n) => n.type === "horizontalRule")
-              ? "Divider"
-              : block.type === "heading"
-                ? block.text || "Heading"
-                : "Text/list";
+  return block.type === "columns"
+    ? "Columns"
+    : block.type === "signature_block"
+      ? `${block.role === "company" ? "Company" : "Client"} signature`
+      : block.type === "pricing_table"
+        ? "Pricing table"
+        : block.type === "page_break"
+          ? "Page break"
+          : block.type === "contract"
+            ? block.text || "Contract"
+            : block.type === "image"
+              ? block.alt || "Image"
+              : block.content?.content?.some((n) => n.type === "horizontalRule")
+                ? "Divider"
+                : block.type === "heading"
+                  ? block.text || "Heading"
+                  : "Text/list";
 }
 export function templateBlockMarkdown(block: Block, contentWidth = 672) {
   if (

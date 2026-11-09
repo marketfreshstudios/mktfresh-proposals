@@ -17,6 +17,7 @@ import {
   documentStyleCss,
   styleFontFaces,
 } from "../lib/proposal-styles";
+import { blockBoxStyle } from "../lib/block-style";
 import { documentSpacing } from "../lib/document-spacing";
 import type { CSSProperties } from "react";
 import type { Block } from "../lib/model";
@@ -1519,6 +1520,7 @@ function FlowingDocument({
   const spacing = (block: Block, n: number) =>
     ({
       "--block-space-before": `${spaces[block.id ?? String(n)] ?? 0}px`,
+      ...blockBoxStyle(block.style),
     }) as CSSProperties;
   return (
     <article
@@ -1606,6 +1608,8 @@ function FlowingDocument({
                   p.quote as QuoteItem[],
                   p.variables,
                   p.currency,
+                  undefined,
+                  p.resolved_styles,
                 ),
               }}
             />

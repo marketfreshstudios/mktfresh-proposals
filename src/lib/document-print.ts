@@ -8,6 +8,7 @@ import {
   signaturePairStarts,
   signatureCss,
 } from "./signature-presentation";
+import { blockBoxCss } from "./block-style";
 import { documentSpacing } from "./document-spacing";
 import { documentQuote } from "./document-quote";
 import { escape, renderBlocks, resolve } from "./presentation";
@@ -144,10 +145,13 @@ export function printContent(input: {
                   input.variables,
                   input.currency,
                   input.cents,
+                  input.styles,
                 );
     if (input.planned && b.type === "contract")
       body = body.replaceAll("<br>", "<br>\n");
-    return `<section class="print-source print-atom" style="--block-space-before:${spaces[b.id ?? String(n)] ?? 0}px" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
+    const box = blockBoxCss(b.style);
+    const styled = !!b.style || b.type === "columns";
+    return `<section class="print-source print-atom"${box ? ' data-block-box="true"' : ""}${styled ? ' data-block-layout="true"' : ""} style="--block-space-before:${spaces[b.id ?? String(n)] ?? 0}px${styled ? ";display:flow-root;" : ""}${box}" data-print-block="${escape(b.id ?? String(n))}" data-print-kind="${b.type}"${b.type === "page_break" ? ' data-print-break="true"' : ""}>${body}</section>`;
   });
   const pairs = signaturePairStarts(input.content, input.pagination);
   const rendered: string[] = [];
@@ -182,6 +186,7 @@ export type PrintLayout = {
   }[];
   pricing_pages?: number;
   overflow_pages?: number[];
+  overflow_columns?: { block: string; excess: number }[];
 };
 export type PageBoundary = {
   page: number;
@@ -371,7 +376,7 @@ export function paginatePrintDocument(root: HTMLElement): {
         ? 0
         : read(cover ? node : (semanticNodes.at(-1) ?? node), "after");
     if (flow)
-      wrapper.style.paddingTop = `${page.children.length > 1 ? Math.max(previousAfter, above) : 0}px`;
+      wrapper.style.paddingTop = `${page.children.length > 1 ? (node.dataset.blockLayout ? parseFloat(getComputedStyle(node).getPropertyValue("--block-space-before")) || 0 : Math.max(previousAfter, above)) : 0}px`;
     if (fits()) {
       previousAfter = spacingAfter;
       offset += textCount(node);
@@ -382,6 +387,14 @@ export function paginatePrintDocument(root: HTMLElement): {
       (flow ? parseFloat(wrapper.style.paddingTop) || 0 : 0);
     wrapper.remove();
     // Atomic images/tables or short blocks move together to the next page.
+    if (node.dataset.printKind === "columns") {
+      if (page.children.length) newPage();
+      if (flow) wrapper.style.paddingTop = "0px";
+      page.append(wrapper);
+      previousAfter = spacingAfter;
+      offset += textCount(node);
+      return;
+    }
     const indivisible = node.matches(
       ".print-pricing-intro,.print-pricing-unit,.print-pricing-card,.print-choice-group,.print-signature,.signature-pair,.document-signature",
     );
@@ -525,9 +538,10 @@ export function paginatePrintDocument(root: HTMLElement): {
       newPage(true);
       pendingBreak = false;
     }
-    const nodes = source.classList.contains("print-source")
-      ? Array.from(source.children).flatMap((n) => flatten(n as HTMLElement))
-      : [source];
+    const nodes =
+      source.classList.contains("print-source") && !source.dataset.blockLayout
+        ? Array.from(source.children).flatMap((n) => flatten(n as HTMLElement))
+        : [source];
     for (let n = 0; n < nodes.length; n++) {
       // Keep headings with the following paragraph when that pair fits on a page.
       if (

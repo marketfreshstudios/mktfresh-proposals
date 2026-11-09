@@ -1,0 +1,71 @@
+import { z } from "zod";
+
+const hex = z.string().regex(/^#[\da-fA-F]{6}$/);
+const spacing = z.enum(["none", "s", "m", "l"]);
+export const blockStyleSchema = z
+  .object({
+    background: z.union([z.literal("neutral"), hex]).optional(),
+    padding: spacing.optional(),
+    margin_above: spacing.optional(),
+    margin_below: spacing.optional(),
+    border: z.enum(["thin", "medium"]).optional(),
+    border_color: hex.optional(),
+    radius: z.enum(["s", "m"]).optional(),
+  })
+  .strict();
+
+export type BlockStyle = z.infer<typeof blockStyleSchema>;
+export const blockSpacing = { none: 0, s: 12, m: 24, l: 40 } as const;
+export const blockBorderWidth = { thin: 1, medium: 2 } as const;
+export const blockRadius = { s: 4, m: 8 } as const;
+export const blockNeutral = "#f3f0ea";
+
+export function blockBackground(style?: BlockStyle) {
+  return style?.background === "neutral" ? blockNeutral : style?.background;
+}
+
+/** Keep rendering opt-in so unstyled documents retain their original markup. */
+export function blockBoxStyle(raw?: BlockStyle) {
+  if (!raw) return undefined;
+  const style = blockStyleSchema.parse(raw);
+  const backgroundColor = blockBackground(style);
+  const padding = style.padding ? blockSpacing[style.padding] : 0;
+  const border = style.border
+    ? `${blockBorderWidth[style.border]}px solid ${style.border_color ?? "#25241f"}`
+    : undefined;
+  if (!backgroundColor && !padding && !border) return undefined;
+  return {
+    ...(backgroundColor
+      ? { backgroundColor, printColorAdjust: "exact" as const }
+      : {}),
+    ...(padding ? { padding: `${padding}px` } : {}),
+    ...(border ? { border } : {}),
+    ...(style.radius ? { borderRadius: `${blockRadius[style.radius]}px` } : {}),
+  };
+}
+
+export function cssDeclarations(style: Record<string, string>) {
+  return Object.entries(style)
+    .map(
+      ([key, value]) =>
+        `${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}:${value};`,
+    )
+    .join("");
+}
+
+export const blockBoxCss = (style?: BlockStyle) =>
+  cssDeclarations(blockBoxStyle(style) ?? {});
+
+export function columnBoxStyle(style?: BlockStyle) {
+  return {
+    display: "flow-root",
+    minHeight: "44px",
+    ...blockBoxStyle(style),
+    ...(style?.margin_above !== undefined
+      ? { marginTop: `${blockSpacing[style.margin_above]}px` }
+      : {}),
+    ...(style?.margin_below !== undefined
+      ? { marginBottom: `${blockSpacing[style.margin_below]}px` }
+      : {}),
+  };
+}

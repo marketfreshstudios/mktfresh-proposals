@@ -3909,7 +3909,11 @@
   :is(.editor-paper, .template-paged-paper)[data-sheet-view="true"]:not(
       [data-page-measurement]
     )
-    .block-sortable:not([data-layout-space]) {
+    .block-sortable:not(
+      [data-layout-space],
+      [data-custom-spacing],
+      .editor-column > .block-sortable
+    ) {
     margin-top: var(--sheet-block-gap) !important;
     margin-bottom: 0;
   }
@@ -9090,4 +9094,92 @@ body:has(.studio-v3-editor) {
 
 .toolbar-popover.studio-template-actions .starter-actions-menu {
   min-width: 0;
+}
+
+.editor-column {
+  position: relative;
+  min-width: 0;
+}
+.editor-column[data-column-empty] {
+  outline: 1px dashed var(--border-strong);
+  outline-offset: -1px;
+}
+.column-editor-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: var(--z-formatting);
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+}
+.editor-column:is(:hover, :focus-within, [data-column-empty])
+  > .column-editor-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.column-editor-actions .btn {
+  background: var(--surface);
+  color: var(--ink);
+}
+.columns-overflow-notice {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: var(--z-formatting);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font: 500 13px/1.4 var(--font-ui);
+}
+.columns-overflow-notice > .btn {
+  flex: none;
+}
+@media (max-width: 699px) {
+  .document-reading:not([data-page-measurement]) .document-columns {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .column-editor-actions .btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .columns-overflow-notice {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 700px) {
+  .editor-column .editor-gutter.editor-gutter {
+    left: -22px;
+    width: 20px;
+    z-index: var(--z-block-controls);
+  }
+  .editor-column .editor-gutter :is(.drag-handle, .editor-gutter-add) {
+    width: 20px;
+    min-width: 20px;
+  }
+}
+
+dialog.foundation-sheet.block-style-sheet {
+  width: min(440px, calc(100% - 24px));
+}
+.block-style-controls,
+.columns-settings-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.columns-settings-controls {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.columns-settings-controls > :first-child,
+.block-background-controls {
+  grid-column: 1 / -1;
 }

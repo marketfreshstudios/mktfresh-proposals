@@ -7,7 +7,18 @@ import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
 import { DialogActions } from "./dialog-actions";
-import { insertAuthoringBlocks } from "../lib/block-insertion";
+import {
+  insertAuthoringBlocks,
+  insertColumnBlocks,
+} from "../lib/block-insertion";
+import { ColumnsEditor, ColumnsSettings } from "./editor/columns-editor";
+import {
+  documentBlocks,
+  columnsOverflowMessage,
+  moveBlocksAcrossColumns,
+  unwrapColumns,
+  type BlockDestination,
+} from "../lib/columns";
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { ReassignDialog } from "./reassign-proposal";
@@ -797,14 +808,12 @@ function QuoteEditorContent({
     };
   }, [p.id, p.revision]);
   const current = withDraftSettings(p, settings),
-    blockSpaces = documentSpacing(
-      p.content,
-      resolveStyles(
-        current.workspace_settings,
-        p.template_style_overrides,
-        p.style_overrides,
-      ),
+    resolvedStyles = resolveStyles(
+      current.workspace_settings,
+      p.template_style_overrides,
+      p.style_overrides,
     ),
+    blockSpaces = documentSpacing(p.content, resolvedStyles),
     items = orderedItems(p.quote),
     sections = contentSections(p.content),
     pending = pendingSections(p),
@@ -820,6 +829,10 @@ function QuoteEditorContent({
         : current.sender,
     }),
     ready = readiness(current, catalog, new Date(), confirmed);
+  for (const { excess } of browserPages?.overflowColumns ?? []) {
+    ready.errors.push(columnsOverflowMessage(excess));
+    ready.ready = false;
+  }
   ready.errors.push(...customerErrors);
   ready.ready = !ready.errors.length;
   function setItems(next: QuoteItem[]) {
@@ -1321,8 +1334,9 @@ function QuoteEditorContent({
   };
   const selectedIndex = p.content.findIndex(
     (b) =>
-      `block-${b.id}` === selection.selected ||
-      b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
+      documentBlocks([b]).some(
+        (child) => `block-${child.id}` === selection.selected,
+      ) || b.clauses?.some((c) => `clause-${c.id}` === selection.selected),
   );
   useEffect(() => {
     // Return from isolated phone editing to the complete existing sheet projection.
@@ -1540,11 +1554,19 @@ function QuoteEditorContent({
         }),
       );
     };
+    const unwrap = () => {
+      change({ content: unwrapColumns(latest.current.content, b.id!) });
+      selection.clear();
+    };
     return (
       <Sortable
         block
         id={`block-${b.id ?? n}`}
         spaceBefore={blockSpaces[b.id ?? String(n)]}
+        customSpacing={
+          b.style?.margin_above !== undefined ||
+          p.content[n - 1]?.style?.margin_below !== undefined
+        }
         label={`block ${n + 1}`}
         key={b.id ?? n}
       >
@@ -1552,6 +1574,23 @@ function QuoteEditorContent({
           id={`block-${b.id ?? n}`}
           label={`Proposal block ${n + 1}`}
           blockType={b.type}
+          layoutControls={
+            b.columns && (
+              <ColumnsSettings
+                value={b.columns}
+                onChange={(columns) => patchBlock({ ...b, columns })}
+              />
+            )
+          }
+          appearance={{
+            value: b.style,
+            settings: current.workspace_settings,
+            styles: resolvedStyles,
+            block: b,
+            onChange: locked
+              ? undefined
+              : (style) => patchBlock({ ...b, style }),
+          }}
           reviewBusy={reviewBusy}
           objectAction={
             b.type === "pricing_table" ? (
@@ -1590,6 +1629,11 @@ function QuoteEditorContent({
           }}
           tools={
             <>
+              {b.type === "columns" && (
+                <BlockAction menuLabel onClick={unwrap}>
+                  Unwrap columns
+                </BlockAction>
+              )}
               <BlockAction
                 variant="ghost"
                 disabled={!canMoveAdjacentBlock(p.content, b.id!, -1)}
@@ -1764,6 +1808,23 @@ function QuoteEditorContent({
                 setReplaceEmpty(true);
                 setInsertAt(n);
               }}
+            />
+          ) : b.type === "columns" && b.columns ? (
+            <ColumnsEditor
+              block={b}
+              map={map}
+              styles={resolvedStyles}
+              settings={current.workspace_settings}
+              prefix="block-"
+              saved={library}
+              onChange={locked ? undefined : patchBlock}
+              onUnwrap={unwrap}
+              excess={
+                browserPages?.overflowColumns?.find(
+                  (item) => item.block === b.id,
+                )?.excess
+              }
+              reuse={blockFeedback.reuse}
             />
           ) : b.type === "pricing_table" ? (
             <div className="editor-investment">
@@ -2193,9 +2254,49 @@ function QuoteEditorContent({
   const blockDrop = useBlockDrop(
     p.content,
     paper,
-    (blocks, at) => insertBlock(blocks[0], blocks.slice(1), at),
+    (blocks, { at, inside }) => {
+      if (!inside) return insertBlock(blocks[0], blocks.slice(1), at);
+      try {
+        const next = insertColumnBlocks(
+          latest.current.content,
+          blocks,
+          inside,
+          at,
+        );
+        change({ content: next.content });
+        if (next.first?.id)
+          requestAnimationFrame(() => {
+            selection.select(`block-${next.first.id}`);
+            document
+              .getElementById(`block-${next.first.id}`)
+              ?.focus({ preventScroll: true });
+          });
+      } catch (error) {
+        blockFeedback.error((error as Error).message);
+      }
+    },
     locked || stale,
   );
+  function moveAt(from: string, target: BlockDestination, selected: string[]) {
+    const current = latest.current.content;
+    const ids = selected.includes(from) ? selected : [from];
+    if (
+      !target.inside &&
+      ids.every((id) => current.some((block) => block.id === id))
+    )
+      return move((content) =>
+        moveDocumentBlocksAt(content, from, target.at, selected),
+      );
+    try {
+      const content = moveBlocksAcrossColumns(current, ids, target);
+      if (JSON.stringify(content) !== JSON.stringify(current)) {
+        change({ content });
+        selection.clear();
+      }
+    } catch (error) {
+      blockFeedback.error((error as Error).message);
+    }
+  }
   function documentItem(i: QuoteItem) {
     const active = !i.optional || i.default_selected;
     const Row = i.optional ? "label" : "div";
@@ -2741,15 +2842,7 @@ function QuoteEditorContent({
                         : {
                             paper,
                             content: p.content,
-                            onMoveAt: (from, at, selected) =>
-                              move((content) =>
-                                moveDocumentBlocksAt(
-                                  content,
-                                  from,
-                                  at,
-                                  selected,
-                                ),
-                              ),
+                            onMoveAt: moveAt,
                           }
                     }
                     onMove={(from, to) =>

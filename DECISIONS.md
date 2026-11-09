@@ -811,4 +811,8 @@ Template cards use a static Letter sheet cropped by the thumbnail band. It shows
 
 ### Columns and block styles (November 8, 2026)
 
-A Columns block that fits stays together on one Letter page. The current PagePlan stores one source boundary per page and cannot describe independent cuts across columns. The over-height policy is pending owner decision in the draft PR before implementation of that case.
+Columns stay intact in the existing PagePlan. An oversized grid remains editable and saves as a draft or unpublished work. The editor reports the excess in pixels and offers Unwrap columns. A server-side Letter measurement blocks Send and live publication until the grid fits. An intentional edit to a live unsigned proposal publishes a new version on the same link when ready. Existing versions keep their stored styles and page starts.
+
+A column drop moves the dragged block or the explicit multi-selection. Top-level Heading 1 drags retain the existing whole-section behavior. Moving from three columns to two appends column three's blocks to column two and retains the first two columns' settings. Unwrap restores the children's styles and reading order. The narrow client view stacks the columns in that same order.
+
+Block and column styles are optional document JSON. Padding and margins use 0, 12, 24 and 40px; borders use 1 and 2px with 0, 4 and 8px corners. Default margins use the existing pair-wise spacing. Brand choices store the selected hex, so future palette edits cannot recolor a published block. Contracts and signatures permit spacing only. Explicit page breaks have no style controls because they are markers with no painted box. Cover and band controls stay separate. No hosted SQL.

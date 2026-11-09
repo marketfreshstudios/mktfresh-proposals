@@ -28,12 +28,14 @@ export function Sheet({
   children,
   menu = false,
   anchor,
+  className = "",
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   menu?: boolean;
   anchor?: HTMLElement | null;
+  className?: string;
 }) {
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
@@ -95,7 +97,7 @@ export function Sheet({
   return createPortal(
     <dialog
       aria-labelledby={titleId}
-      className={`foundation-sheet ${["Block settings", "Edit block", "Add a block"].includes(title) ? "block-owned-dialog" : ""} ${menu ? "foundation-action-menu" : ""}`}
+      className={`foundation-sheet ${["Block settings", "Block style", "Edit block", "Add a block", "Column style"].includes(title) ? "block-owned-dialog" : ""} ${menu ? "foundation-action-menu" : ""} ${className}`}
       ref={ref}
       onClick={(e) => {
         if (menu && innerWidth >= 700 && e.target === e.currentTarget) {

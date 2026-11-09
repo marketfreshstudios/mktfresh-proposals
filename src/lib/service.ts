@@ -1,3 +1,8 @@
+import {
+  ColumnsOverflowError,
+  columnsOverflowMessage,
+  documentBlocks,
+} from "./columns";
 import { bankPayments, publicBankState } from "./billing-confirmation";
 import { cycleViewedAt, dueClientReminders, countersignDue } from "./reminders";
 import {
@@ -48,7 +53,12 @@ import { stripeCustomerMatches } from "./client-billing";
 import type { StripeTransport } from "./catalog";
 import { defaultValidUntil } from "./validity";
 import { withoutTitleHeading } from "./editor-document";
-import { reviewBlocks, contentSections, pendingSections } from "./ai-review";
+import {
+  reviewBlocks,
+  contentSections,
+  pendingSections,
+  setBlockReviewed,
+} from "./ai-review";
 import {
   cloneQuote,
   draftItems,
@@ -167,9 +177,11 @@ export class ProposalService {
     public clock = () => new Date(),
     private members = workspaceStaff,
     private stripeApi?: StripeTransport,
-    private printLayout?: (
-      p: Proposal,
-    ) => Promise<{ pricing_pages?: number; overflow_pages?: number[] }>,
+    private printLayout?: (p: Proposal) => Promise<{
+      pricing_pages?: number;
+      overflow_pages?: number[];
+      overflow_columns?: { block: string; excess: number }[];
+    }>,
   ) {}
   async checkReady(
     proposal: Proposal,
@@ -183,25 +195,43 @@ export class ProposalService {
       this.clock(),
       confirmAiReview,
     );
+    const hasColumns = p.content.some((b) => b.type === "columns");
     if (
-      !skipPrint &&
-      this.printLayout &&
-      (p.pagination || p.content.some((b) => b.type === "pricing_table"))
+      (hasColumns && (!skipPrint || ready.ready)) ||
+      (!skipPrint &&
+        this.printLayout &&
+        (p.pagination || p.content.some((b) => b.type === "pricing_table")))
     ) {
       try {
-        const layout = await this.printLayout(p);
-        for (const page of layout.overflow_pages ?? [])
-          ready.warnings.push(
-            `Page ${page} overflows in the PDF · Preview PDF`,
+        const layout = await this.printLayout?.(p);
+        if (hasColumns) {
+          check(layout?.overflow_columns, "Columns layout unavailable");
+          for (const { excess } of layout.overflow_columns)
+            ready.errors.push(columnsOverflowMessage(excess));
+          ready.ready = ready.errors.length === 0;
+        }
+        if (!skipPrint) {
+          for (const page of layout?.overflow_pages ?? [])
+            ready.warnings.push(
+              `Page ${page} overflows in the PDF · Preview PDF`,
+            );
+          if ((layout?.pricing_pages ?? 0) > 1)
+            ready.warnings.push(
+              `Pricing table spans ${layout!.pricing_pages} pages — use Standard density or trim descriptions.`,
+            );
+        }
+      } catch (error) {
+        if (hasColumns) {
+          ready.ready = false;
+          ready.errors.push(
+            error instanceof ColumnsOverflowError
+              ? error.message
+              : "Columns layout could not be verified. Preview the PDF and try again.",
           );
-        if ((layout.pricing_pages ?? 0) > 1)
+        } else
           ready.warnings.push(
-            `Pricing table spans ${layout.pricing_pages} pages — use Standard density or trim descriptions.`,
+            "PDF layout unavailable — preview the PDF before sending.",
           );
-      } catch {
-        ready.warnings.push(
-          "PDF layout unavailable — preview the PDF before sending.",
-        );
       }
     }
     const client =
@@ -500,7 +530,7 @@ export class ProposalService {
     );
     check(row, "Saved block not found", 404);
     check(
-      current.content.some((b) => b.saved_block_id === row.id),
+      documentBlocks(current.content).some((b) => b.saved_block_id === row.id),
       "This proposal has no copy of that block",
       400,
     );
@@ -723,9 +753,7 @@ export class ProposalService {
       );
       const indices = new Set(chosen.flatMap((s) => s.indices));
       p.content = p.content.map((b, n) =>
-        indices.has(n) && b.ai_review
-          ? { ...b, ai_review: { ...b.ai_review, reviewed: input.reviewed } }
-          : b,
+        indices.has(n) ? setBlockReviewed(b, input.reviewed) : b,
       );
       p.ai_unreviewed = pendingSections(p).length > 0;
       event(
@@ -827,7 +855,11 @@ export class ProposalService {
         sender,
       });
     const preflight = await this.checkReady(
-      { ...before, workspace_settings: settingsSnapshot(settings) },
+      {
+        ...before,
+        workspace_settings: settingsSnapshot(settings),
+        ...(before.content.some((b) => b.type === "columns") ? { sender } : {}),
+      },
       confirmAiReview,
     );
     check(preflight.ready, preflight.errors.join("; "));
@@ -894,11 +926,7 @@ export class ProposalService {
       ];
       const confirmedSections = pendingSections(p);
       if (confirmAiReview)
-        p.content = p.content.map((b) =>
-          b.ai_review
-            ? { ...b, ai_review: { ...b.ai_review, reviewed: true } }
-            : b,
-        );
+        p.content = p.content.map((b) => setBlockReviewed(b, true));
       p.ai_unreviewed = false;
       if (options.password !== undefined)
         p.password_hash =

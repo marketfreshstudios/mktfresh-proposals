@@ -1,3 +1,4 @@
+import { createColumns } from "../lib/columns";
 import type { Block } from "../lib/model";
 import type { SavedBlock } from "../lib/model";
 import { savedBlocks, stampSavedBlocks } from "../lib/linked-blocks";
@@ -118,6 +119,13 @@ export function blockOptions({
       icon: "signature" as const,
       block: { type: "signature_block" as const, role },
     })),
+    {
+      group: "Proposal",
+      name: "Columns",
+      description: "Arrange blocks in two or three columns",
+      icon: "table",
+      block: { type: "columns", columns: createColumns() },
+    },
     {
       group: "Proposal",
       name: "Page break",

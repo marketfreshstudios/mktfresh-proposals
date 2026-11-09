@@ -1,5 +1,7 @@
 import type { HeaderFooterSettings, TemplateBands } from "./page-bands";
 import type { Cover } from "./cover";
+import type { BlockStyle } from "./block-style";
+import type { Columns } from "./columns";
 import type { StyleOverrides, ResolvedStyles } from "./proposal-styles";
 import type { WorkspaceSettings } from "./workspace";
 import { z } from "zod";
@@ -108,6 +110,8 @@ export const ContractClauseSchema = z.object({
   draft: z.boolean().optional(),
 });
 export type Block = {
+  style?: BlockStyle;
+  columns?: Columns;
   saved_block_id?: string;
   saved_block_version?: number;
   saved_block_position?: number;
@@ -122,6 +126,7 @@ export type Block = {
     | "signature_block"
     | "page_break"
     | "variable"
+    | "columns"
     | "contract";
   text?: string;
   level?: 1 | 2 | 3;

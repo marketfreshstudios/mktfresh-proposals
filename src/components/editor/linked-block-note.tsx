@@ -1,4 +1,6 @@
 "use client";
+import { useState } from "react";
+import { transformBlocks } from "../../lib/columns";
 import type { Block, SavedBlock } from "../../lib/model";
 import {
   linkedInstances,
@@ -16,6 +18,7 @@ export function LinkedBlockNote({
   library: SavedBlock[];
   onChange: (content: Block[]) => void;
 }) {
+  const [error, setError] = useState("");
   if (!block.saved_block_id) return null;
   const row = library.find((r) => r.id === block.saved_block_id),
     instance = linkedInstances(content, block.saved_block_id).find((i) =>
@@ -29,12 +32,22 @@ export function LinkedBlockNote({
       className="linked-block-note"
     >
       <span>{instance.edited ? "Edited here" : `Linked · ${row.name}`}</span>
+      {error && (
+        <span role="alert" className="danger">
+          {error}
+        </span>
+      )}
       {instance.edited && (
         <button
           type="button"
-          onClick={() =>
-            onChange(replaceLinkedBlocks(content, row, true, instance.key))
-          }
+          onClick={() => {
+            setError("");
+            try {
+              onChange(replaceLinkedBlocks(content, row, true, instance.key));
+            } catch (error) {
+              setError((error as Error).message);
+            }
+          }}
         >
           Restore linked version
         </button>
@@ -43,9 +56,11 @@ export function LinkedBlockNote({
         type="button"
         onClick={() =>
           onChange(
-            content.map((b) =>
-              instance.blocks.includes(b) ? withoutBlockLink(b) : b,
-            ),
+            transformBlocks(content, (b) => [
+              instance.blocks.some((old) => old.id === b.id)
+                ? withoutBlockLink(b)
+                : b,
+            ]),
           )
         }
       >

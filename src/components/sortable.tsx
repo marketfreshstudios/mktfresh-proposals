@@ -1,4 +1,5 @@
 "use client";
+import { documentBlocks, type BlockDestination } from "../lib/columns";
 import {
   type ReactNode,
   type CSSProperties,
@@ -40,6 +41,7 @@ export function Sortable({
   printUnit,
   documentKind,
   spaceBefore,
+  customSpacing,
 }: {
   id: string;
   label: string;
@@ -48,6 +50,7 @@ export function Sortable({
   printUnit?: string;
   documentKind?: "card" | "group";
   spaceBefore?: number;
+  customSpacing?: boolean;
   children: ReactNode;
 }) {
   const selection = useBlockSelection();
@@ -127,6 +130,7 @@ export function Sortable({
       ref={assignRef}
       data-print-unit={printUnit}
       data-sortable-id={id}
+      data-custom-spacing={customSpacing || undefined}
       onPointerLeave={() => {
         if (block) selection.hover(null);
       }}
@@ -162,7 +166,11 @@ export function Reorder({
   documentDrop?: {
     paper: RefObject<HTMLElement | null>;
     content: Block[];
-    onMoveAt: (from: string, at: number, selected: string[]) => void;
+    onMoveAt: (
+      from: string,
+      target: BlockDestination,
+      selected: string[],
+    ) => void;
   };
 }) {
   const selection = useBlockSelection();
@@ -181,9 +189,12 @@ export function Reorder({
     if (documentDrop) window.addEventListener("pointermove", track, true);
     return () => window.removeEventListener("pointermove", track, true);
   }, [!!documentDrop]);
-  const blockId = (id: string) => documentDrop?.content[ids.indexOf(id)]?.id;
+  const blockId = (id: string) =>
+    id.startsWith("column:")
+      ? id.slice(7)
+      : documentDrop?.content[ids.indexOf(id)]?.id;
   const selectedBlocks = () =>
-    documentDrop?.content
+    documentBlocks(documentDrop?.content ?? [])
       .filter((b) =>
         selection.ids.some(
           (id) => id === `block-${b.id}` || id === `template-${b.id}`,
@@ -276,10 +287,15 @@ export function Reorder({
           pointer.current = null;
           pointerDrag.current = false;
           if (target && from)
-            documentDrop.onMoveAt(from, target.at, selectedBlocks());
+            documentDrop.onMoveAt(from, target, selectedBlocks());
           return;
         }
         if (over && active.id !== over.id) {
+          if (
+            String(active.id).startsWith("column:") ||
+            String(over.id).startsWith("column:")
+          )
+            return;
           const pointer = activatorEvent as PointerEvent;
           const distance =
             pointer.clientY + delta.y - (over.rect.top + over.rect.height / 2);

@@ -1,3 +1,4 @@
+import { documentBlocks } from "./columns";
 import type { Proposal, RichText } from "./model";
 import { businessState, businessStateError } from "./business-state";
 
@@ -43,7 +44,11 @@ export function authoringErrors(p: Proposal): string[] {
   for (const block of p.content) {
     if (block.type === "heading" && (block.level ?? 1) === 1)
       section = block.text || text(block.content) || "Untitled section";
-    check(block.content ? text(block.content) : (block.text ?? ""), section);
+    for (const authored of documentBlocks([block]))
+      check(
+        authored.content ? text(authored.content) : (authored.text ?? ""),
+        section,
+      );
     for (const clause of block.clauses ?? []) {
       check(clause.heading, block.text || "Terms");
       check(clause.body, block.text || "Terms");
