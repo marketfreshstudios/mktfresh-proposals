@@ -1,4 +1,5 @@
 "use client";
+import { ProviderMark } from "./provider-brand";
 import { chromeIcons } from "./staff-icons";
 import { Select, Switch } from "./form-controls";
 import { QuickBooksPicker } from "./quickbooks-fields";
@@ -3937,15 +3938,13 @@ export function ConnectionsStudio({
                     className={`connection-card ${c.id !== "assistants" && /needed|attention|Not connected/.test(c.state) ? "needs-attention" : ""}`}
                     key={c.id}
                   >
-                    <span className="connection-monogram" aria-hidden="true">
-                      {c.id === "stripe"
-                        ? "S"
-                        : c.id === "qbo"
-                          ? "qb"
-                          : c.id === "assistants"
-                            ? "AI"
-                            : c.name[0]}
-                    </span>
+                    {c.id === "stripe" || c.id === "qbo" ? (
+                      <ProviderMark provider={c.id} />
+                    ) : (
+                      <span className="connection-monogram" aria-hidden="true">
+                        {c.id === "assistants" ? "AI" : c.name[0]}
+                      </span>
+                    )}
                     <div>
                       <div className="connection-title">
                         <h3>{c.name}</h3>

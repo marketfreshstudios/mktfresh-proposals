@@ -29,6 +29,7 @@ import { Sheet } from "./foundation";
 import { api, Banner, Button, post } from "./ui";
 import { useMoney } from "./money-context";
 import { useQuickBooksItemName } from "./quickbooks-fields";
+import { ProviderMark, QuickBooksConnectButton } from "./provider-brand";
 
 const billingDefaults = "/studio/workspace?view=billing";
 const quickBooksDashboard = "https://sandbox.qbo.intuit.com/app/homepage";
@@ -43,7 +44,7 @@ export function ConnectionDetailLayout({
   children,
 }: {
   name: string;
-  mark: string;
+  mark: ReactNode;
   status: string;
   tone?: "success" | "warning" | "info";
   subtitle: string;
@@ -57,9 +58,13 @@ export function ConnectionDetailLayout({
           <ChevronLeft size={16} aria-hidden="true" /> Connections
         </a>
         <header className="connection-detail-header">
-          <span className="connection-monogram" aria-hidden="true">
-            {mark}
-          </span>
+          {typeof mark === "string" ? (
+            <span className="connection-monogram" aria-hidden="true">
+              {mark}
+            </span>
+          ) : (
+            mark
+          )}
           <div>
             <div className="connection-detail-title">
               <h1 className="t-page-title">{name}</h1>
@@ -840,7 +845,7 @@ export function BillingConnectionDetail({
   return (
     <ConnectionDetailLayout
       name={name}
-      mark={qbo ? "qb" : "S"}
+      mark={<ProviderMark provider={provider} />}
       status={status}
       tone={
         stripeSetup || stripeDisconnecting
@@ -913,7 +918,7 @@ export function BillingConnectionDetail({
                 className="connection-danger"
                 onClick={() => void manage("disconnect")}
               >
-                Disconnect QuickBooks…
+                Disconnect from QuickBooks…
               </button>
             )}
           </div>
@@ -1077,13 +1082,10 @@ export function BillingConnectionDetail({
                     </>
                   ) : owner ? (
                     <>
-                      <Button
-                        className="studio-primary"
+                      <QuickBooksConnectButton
                         disabled={!!busy || connection?.available !== true}
                         onClick={() => void manage("authorize")}
-                      >
-                        Connect QuickBooks
-                      </Button>
+                      />
                       <p>
                         {connection?.available === false
                           ? "A Yeswell administrator must configure sandbox OAuth first."

@@ -88,6 +88,7 @@ import { Sheet, Skeleton } from "./foundation";
 import { useMoney } from "./money-context";
 import { CreateClientModal } from "./client-picker";
 import { TableRowAction } from "./table-row-action";
+import { ProviderMark } from "./provider-brand";
 function timestamp(value: string, data: Data) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
@@ -1222,9 +1223,13 @@ export function HomeV4({
               <ol className="setup-checklist">
                 {setup.rows.map((row) => (
                   <li key={row.id} data-complete={row.complete}>
-                    <span className="setup-mark" aria-hidden="true">
-                      <Icon name={row.complete ? "verified" : "clock"} />
-                    </span>
+                    {row.id === "stripe" || row.id === "qbo" ? (
+                      <ProviderMark provider={row.id} />
+                    ) : (
+                      <span className="setup-mark" aria-hidden="true">
+                        <Icon name={row.complete ? "verified" : "clock"} />
+                      </span>
+                    )}
                     <div>
                       <strong>{row.label}</strong>
                       <p>{row.detail}</p>

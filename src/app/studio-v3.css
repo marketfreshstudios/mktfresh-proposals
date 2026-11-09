@@ -1088,6 +1088,50 @@
   font-weight: 700;
   background: var(--surface);
 }
+.provider-mark {
+  background: var(--surface);
+}
+.provider-mark img {
+  display: block;
+  inline-size: 18px;
+  block-size: 18px;
+}
+.connection-detail-header .provider-mark img {
+  inline-size: 26px;
+  block-size: 26px;
+}
+@media (max-width: 699px) {
+  .connection-detail-header .provider-mark img {
+    inline-size: 18px;
+    block-size: 18px;
+  }
+}
+.quickbooks-connect-button {
+  align-self: start;
+  display: inline-grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+.quickbooks-connect-button:disabled {
+  opacity: 1;
+}
+.quickbooks-connect-button img {
+  grid-area: 1 / 1;
+  display: block;
+}
+.quickbooks-connect-button img + img {
+  visibility: hidden;
+}
+.quickbooks-connect-button:is(:hover, :focus-visible):enabled img:first-child {
+  visibility: hidden;
+}
+.quickbooks-connect-button:is(:hover, :focus-visible):enabled img + img {
+  visibility: visible;
+}
 .studio-connections-v3 .connection-card > div {
   flex: 1;
 }

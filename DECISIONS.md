@@ -952,3 +952,11 @@ Apply the account digest index before deploy. Follow the [Stripe Connect sandbox
 Staff data table headers share the card surface, white in light mode and the card surface in dark mode. Their hairline dividers keep headers distinct from the first row without changing the table's spacing. Proposal document tables retain their own styling.
 
 Home Recent proposals uses the full Proposals table with the first six rows. Uppercase column labels sit inside the card. Icon actions across staff tables share a borderless 44px circle, with a surface tint and tooltip on hover or keyboard focus. Countersign rows keep a filled Sign button.
+
+### Reports cards and billing provider branding (Nov 9, 2026)
+
+Reports follows Redesign 19 frame 2d1 with the owner's single shared card for Value signed and Pipeline. Each currency's tiles stay together and the currency groups stack when more than one is present. The remaining charts, breakdowns, and engagement panels use the staff card surface. The trend switch is segmented. Desktop filters present one inline label and value while retaining native select behavior. Report figures and definitions are unchanged.
+
+Provider logos appear only on their related integration pages, cards, and checklist entries. Stripe's original parallelogram comes from the [Stripe Mark Usage Terms](https://stripe.com/legal/marks) and its [original SVG](https://images.stripeassets.com/fzn2n1nzq965/2phuvRabuaCNWJGPHi7EFY/c74b44260751b74905cf417e5886d757/parallelogram.svg). It remains Stripe's trademark and is used to identify the integration under Stripe's usage terms.
+
+The original QuickBooks icon comes from the [Intuit Developer branding guidance](https://developer.intuit.com/app/developer/qbo/docs/go-live/list-on-the-app-store/naming-and-logo-guidelines) and the [approved icon kit](https://static.developer.intuit.com/resources/qb_logo_icon.zip). It displays at 18–26px with clear space of at least half its height. The initial OAuth action uses the [official green medium English button assets](https://static.developer.intuit.com/resources/Connect_to_QuickBooks_buttons.zip) at their original 223×36 size, with the matching hover artwork and a 44px-high button target. QuickBooks marks are Intuit trademarks and their use follows the developer program branding guidance. These provider assets are separate from the app's source license.
