@@ -103,7 +103,12 @@ export function FieldOptions({
                   </span>
                 </button>
                 {variant === "panel" && path === "business.state" && (
-                  <a className="business-field-link" href={businessStateUrl}>
+                  <a
+                    className="business-field-link"
+                    href={businessStateUrl}
+                    target="_blank"
+                    rel="noopener"
+                  >
                     Edit business state in Workspace
                   </a>
                 )}
