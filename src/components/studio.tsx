@@ -8,6 +8,7 @@ import { QuickBooksPicker } from "./quickbooks-fields";
 import {
   ConnectionColumns,
   ConnectionDetailLayout,
+  connectionDetails,
   ConnectionFact,
   ConnectionPanel,
   ConnectionSteps,
@@ -204,7 +205,13 @@ function Section({
   );
 }
 export { WorkspaceStudio } from "./workspace-studio";
-export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
+export function CatalogStudio({
+  data,
+  run,
+}: {
+  data: Data | null;
+  run: Runner;
+}) {
   const [selected, setSelected] = useState<string | null>(() =>
       typeof window !== "undefined"
         ? new URLSearchParams(location.search).get("item")
@@ -237,12 +244,12 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       if (e.key === "Escape") pick(null);
       if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
         e.preventDefault();
-        pick(selected ? null : (data.catalog[0]?.id ?? null));
+        pick(selected ? null : (data?.catalog[0]?.id ?? null));
       }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [selected, data.catalog]);
+  }, [selected, data?.catalog]);
   const choices = ["All", "Stripe", "Custom families", "Archived"];
   const visible = (i: Item) =>
     filter === "Archived"
@@ -251,7 +258,9 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         !i.legacy &&
         filter !== "Custom families" &&
         (filter !== "Stripe" || !!i.stripe_lookup_key);
-  const items = data.catalog
+  const catalog = data?.catalog ?? [];
+  const customFamilies = data?.families ?? [];
+  const items = catalog
     .filter(
       (i) =>
         visible(i) &&
@@ -260,7 +269,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           .includes(query.toLowerCase()),
     )
     .toSorted((a, b) => itemDisplayName(a).localeCompare(itemDisplayName(b)));
-  const families = data.families.filter(
+  const families = customFamilies.filter(
     (f) =>
       (filter === "All" ||
         filter === "Custom families" ||
@@ -268,11 +277,11 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       (filter === "Archived" ? !f.active : f.active) &&
       f.name.toLowerCase().includes(query.toLowerCase()),
   );
-  const item = data.catalog.find((i) => i.id === selected),
-    custom = data.families.find((f) => f.id === selected);
+  const item = catalog.find((i) => i.id === selected),
+    custom = customFamilies.find((f) => f.id === selected);
   const source = (i: Item) => (i.stripe_lookup_key ? "Stripe" : "Custom");
   const beforeStripe =
-    data.connections?.stripe === false &&
+    data?.connections?.stripe === false &&
     !data.catalog.length &&
     !data.families.length &&
     !data.catalog_error &&
@@ -288,6 +297,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
         {!beforeStripe && (
           <Button
             className={item || custom ? undefined : "studio-primary"}
+            disabled={!data}
             onClick={() => setFamily(true)}
           >
             New custom family
@@ -296,16 +306,18 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
       </div>
       <div className="studio-sync-meta">
         <span
-          className={data.connections?.stripe ? "success" : "warning"}
+          className={data?.connections?.stripe ? "success" : "warning"}
           aria-hidden="true"
         >
           ●
         </span>{" "}
-        {data.connections?.stripe
+        {data?.connections?.stripe
           ? `Synced with Stripe · ${data.connections.mode === "live" ? "live" : "test"} mode`
-          : stripeStatus(data.connections)}{" "}
-        · {synced ? relativeTime(synced) : "No recorded sync yet"}
-        {!beforeStripe && (
+          : data
+            ? stripeStatus(data.connections)
+            : "Loading connection status…"}{" "}
+        {data && ` · ${synced ? relativeTime(synced) : "No recorded sync yet"}`}
+        {data && !beforeStripe && (
           <>
             {" · "}
             <Button
@@ -321,7 +333,9 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           </>
         )}
       </div>
-      <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+      {data && (
+        <TemplateWarnings templates={data.templates} catalog={data.catalog} />
+      )}
       <div className="studio-list-tools">
         <nav className="studio-filter-chips" aria-label="Product types">
           {choices.map((c) => (
@@ -331,19 +345,21 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
               onClick={() => setFilter(c)}
             >
               {c} ·{" "}
-              {c === "Custom families"
-                ? data.families.filter((f) => f.active).length
-                : c === "Archived"
-                  ? data.catalog.filter((i) => !i.active || i.legacy).length
-                  : data.catalog.filter(
-                      (i) =>
-                        i.active &&
-                        !i.legacy &&
-                        (c !== "Stripe" || i.stripe_lookup_key),
-                    ).length +
-                    (c === "All"
-                      ? data.families.filter((f) => f.active).length
-                      : 0)}
+              {!data
+                ? "–"
+                : c === "Custom families"
+                  ? customFamilies.filter((f) => f.active).length
+                  : c === "Archived"
+                    ? catalog.filter((i) => !i.active || i.legacy).length
+                    : catalog.filter(
+                        (i) =>
+                          i.active &&
+                          !i.legacy &&
+                          (c !== "Stripe" || i.stripe_lookup_key),
+                      ).length +
+                      (c === "All"
+                        ? customFamilies.filter((f) => f.active).length
+                        : 0)}
             </button>
           ))}
         </nav>
@@ -357,7 +373,9 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           />
         </label>
       </div>
-      {beforeStripe ? (
+      {!data ? (
+        <Skeleton kind="table" label="Loading products…" />
+      ) : beforeStripe ? (
         <Empty
           title="Connect Stripe to bring in your products"
           action={
@@ -544,7 +562,7 @@ export function CatalogStudio({ data, run }: { data: Data; run: Runner }) {
           )}
         </div>
       )}
-      {adding && (
+      {data && adding && (
         <Sheet title="New product" onClose={() => setAdding(false)}>
           <CatalogItem
             item={null}
@@ -3714,11 +3732,9 @@ export function ConnectionsStudio({
   if (initial === "assistants")
     return (
       <ConnectionDetailLayout
-        name="AI assistants"
-        mark="AI"
+        {...connectionDetails.assistants}
         status={connected.length ? "Connected" : "Not connected"}
         tone={connected.length ? "success" : undefined}
-        subtitle="Read reference data and draft proposals. A person always reviews and sends."
       >
         <ConnectionTiles
           tiles={[
@@ -3771,8 +3787,7 @@ export function ConnectionsStudio({
   if (initial === "imports")
     return (
       <ConnectionDetailLayout
-        name="Import from Proposify"
-        mark="P"
+        {...connectionDetails.imports}
         status={
           missing.length
             ? "PDFs need attention"
@@ -3782,12 +3797,6 @@ export function ConnectionsStudio({
         }
         tone={
           missing.length ? "warning" : imports.length ? "success" : undefined
-        }
-        subtitle="Past proposals are kept as read-only PDFs linked to their clients."
-        actions={
-          <a className="btn" href="/proposals?view=imported">
-            View imported proposals
-          </a>
         }
       >
         <ConnectionTiles
@@ -3875,16 +3884,9 @@ export function ConnectionsStudio({
     const emailSettings = "/studio/workspace?view=email-sending";
     return (
       <ConnectionDetailLayout
-        name="Email sending"
-        mark="E"
-        subtitle="Proposals send from the selected staff member. Replies follow your workspace rules."
+        {...connectionDetails.email}
         status={emailReady ? "Configured" : "Setup needed"}
         tone={emailReady ? "success" : "warning"}
-        actions={
-          <a className="btn" href={emailSettings}>
-            Open sending domain
-          </a>
-        }
       >
         <ConnectionTiles
           tiles={[
@@ -3952,11 +3954,7 @@ export function ConnectionsStudio({
     );
   }
   return (
-    <div className="stack">
-      <p className="studio-description">
-        Payments, invoicing, email delivery, AI assistants and imports. Each one
-        shows if it's healthy and offers one fix when it isn't.
-      </p>
+    <ConnectionsOverview>
       <div className="studio-connections-v3">
         {[
           { name: "Billing", ids: ["stripe", "qbo"] },
@@ -4015,9 +4013,30 @@ export function ConnectionsStudio({
           </section>
         ))}
       </div>
+    </ConnectionsOverview>
+  );
+}
+
+function ConnectionsOverview({ children }: { children: ReactNode }) {
+  return (
+    <div className="stack">
+      <p className="studio-description">
+        Payments, invoicing, email delivery, AI assistants and imports. Each one
+        shows if it's healthy and offers one fix when it isn't.
+      </p>
+      {children}
     </div>
   );
 }
+
+export function ConnectionsLoading() {
+  return (
+    <ConnectionsOverview>
+      <Skeleton kind="table" label="Loading connections…" />
+    </ConnectionsOverview>
+  );
+}
+
 function AssistantConnections({ data, run }: { data: Data; run: Runner }) {
   return (
     <ConnectionPanel title="Connected assistants">

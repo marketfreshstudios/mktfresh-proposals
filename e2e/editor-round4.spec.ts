@@ -95,9 +95,20 @@ test("template creation stays reachable with collapsed Pages at desktop, tablet 
       ),
     staff.actor,
   );
+  let emptyTemplates = true;
+  await page.route("**/api/templates", async (route) => {
+    if (route.request().method() === "POST") emptyTemplates = false;
+    if (emptyTemplates && route.request().method() === "GET")
+      return route.fulfill({ json: [] });
+    return route.fallback();
+  });
   for (const width of [1440, 768, 375]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/studio/templates");
+    if (width === 1440)
+      await expect(
+        page.getByRole("heading", { name: "Create your first template" }),
+      ).toBeVisible();
     const create = page.getByRole("button", {
       name: "New template",
       exact: true,

@@ -36,7 +36,7 @@ function previewHtml(html: string, dark?: boolean) {
           : "@media not all",
     );
 }
-export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
+export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
   const [staffTab, setStaffTab] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[] | null>(null),
     [error, setError] = useState("");
@@ -51,16 +51,16 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
   useEffect(() => {
     void load();
   }, []);
-  if (!templates)
-    return error ? (
-      <Banner tone="danger" title="Emails could not be loaded">
-        {error}
-        <Button onClick={load}>Try again</Button>
-      </Banner>
-    ) : (
-      <Skeleton kind="document" label="Loading emails…" />
-    );
+  const loading = error ? (
+    <Banner tone="danger" title="Emails could not be loaded">
+      {error}
+      <Button onClick={load}>Try again</Button>
+    </Banner>
+  ) : (
+    <Skeleton kind="table" label="Loading emails…" />
+  );
   if (id) {
+    if (!templates || !data) return loading;
     const t = templates.find((t) => t.key === id);
     return t ? (
       <EmailEditor
@@ -98,52 +98,55 @@ export function EmailsStudio({ data, id }: { data: Data; id?: string }) {
             onClick={() => setStaffTab(staff)}
           >
             {staff ? "Staff notifications" : "Client emails"} ·{" "}
-            {templates.filter((t) => t.staff === staff).length}
+            {templates?.filter((t) => t.staff === staff).length ?? "–"}
           </button>
         ))}
       </div>
+      {(!templates || !data) && loading}
       <section aria-label={staffTab ? "Staff notifications" : "Client emails"}>
-        {groupedEmails(templates, staffTab).map((group, n) => (
-          <section
-            className="studio-email-stage"
-            key={`${group.name}-${n}`}
-            aria-label={group.name}
-          >
-            <h2>{group.name}</h2>
-            <StaffTable className="studio-email-rows">
-              <StaffTableHead className="studio-email-head">
-                <span>Email</span>
-                <span>Subject</span>
-                <span>Status</span>
-                <span className="sr-only">Actions</span>
-              </StaffTableHead>
-              {group.templates.map((t) => (
-                <div className="staff-table-row email-list-row" key={t.key}>
-                  <span>
-                    <strong>{t.name}</strong>
-                    <small>{emailWhen[t.key]}</small>
-                  </span>
-                  <span className="studio-email-subject">
-                    <HeadingTokens text={t.subject} map={emailFields} />
-                  </span>
-                  <span
-                    className={`studio-email-edited ${editableEmail(t) && t.updated_at ? "success" : ""}`}
-                  >
-                    {!editableEmail(t)
-                      ? "Read-only"
-                      : t.updated_at
-                        ? `Edited ${studioDate(t.updated_at)} · ${data.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
-                        : "Default"}
-                  </span>
-                  <StaffTableOpen
-                    href={`/studio/emails/${t.key}`}
-                    label={`Open ${t.name}`}
-                  />
-                </div>
-              ))}
-            </StaffTable>
-          </section>
-        ))}
+        {groupedEmails(data ? (templates ?? []) : [], staffTab).map(
+          (group, n) => (
+            <section
+              className="studio-email-stage"
+              key={`${group.name}-${n}`}
+              aria-label={group.name}
+            >
+              <h2>{group.name}</h2>
+              <StaffTable className="studio-email-rows">
+                <StaffTableHead className="studio-email-head">
+                  <span>Email</span>
+                  <span>Subject</span>
+                  <span>Status</span>
+                  <span className="sr-only">Actions</span>
+                </StaffTableHead>
+                {group.templates.map((t) => (
+                  <div className="staff-table-row email-list-row" key={t.key}>
+                    <span>
+                      <strong>{t.name}</strong>
+                      <small>{emailWhen[t.key]}</small>
+                    </span>
+                    <span className="studio-email-subject">
+                      <HeadingTokens text={t.subject} map={emailFields} />
+                    </span>
+                    <span
+                      className={`studio-email-edited ${editableEmail(t) && t.updated_at ? "success" : ""}`}
+                    >
+                      {!editableEmail(t)
+                        ? "Read-only"
+                        : t.updated_at
+                          ? `Edited ${studioDate(t.updated_at)} · ${data?.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
+                          : "Default"}
+                    </span>
+                    <StaffTableOpen
+                      href={`/studio/emails/${t.key}`}
+                      label={`Open ${t.name}`}
+                    />
+                  </div>
+                ))}
+              </StaffTable>
+            </section>
+          ),
+        )}
       </section>
       <p className="staff-surface staff-surface-note muted">
         Each proposal keeps an exact copy of every email it sent, on its record

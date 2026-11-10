@@ -306,20 +306,24 @@ test("staff pages redirect before HTML and accept a refresh-only session", async
   request,
 }) => {
   await context.clearCookies();
-  for (const path of [
-    "/",
-    "/proposals/00000000-0000-4000-8000-000000000123?view=send",
-  ]) {
+  const homeHeading = /<h1\b[^>]*>Home<\/h1>/;
+  for (const [path, heading] of [
+    ["/", homeHeading],
+    [
+      "/proposals/00000000-0000-4000-8000-000000000123?view=send",
+      /<h1\b[^>]*>Send this proposal<\/h1>/,
+    ],
+  ] as const) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     expect(response.status()).toBe(307);
     expect(response.headers()["cache-control"]).toContain("no-store");
-    expect(
-      new URL(
-        response.headers().location,
-        "http://127.0.0.1:3100",
-      ).searchParams.get("next"),
-    ).toBe(path);
-    expect(await response.text()).not.toContain("Dashboard");
+    const location = new URL(
+      response.headers().location,
+      "http://127.0.0.1:3100",
+    );
+    expect(location.pathname).toBe("/login");
+    expect(location.searchParams.get("next")).toBe(path);
+    expect(await response.text()).not.toMatch(heading);
   }
   await page.goto("/login");
   await expect(
@@ -338,7 +342,7 @@ test("staff pages redirect before HTML and accept a refresh-only session", async
   ]);
   const response = await page.request.get("/", { maxRedirects: 0 });
   expect(response.status()).toBe(200);
-  expect(await response.text()).toContain("Dashboard");
+  expect(await response.text()).toMatch(homeHeading);
   const cookies = await context.cookies();
   expect(cookies.some((c) => c.name === "proposal_session")).toBe(true);
   expect(

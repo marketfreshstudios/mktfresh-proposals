@@ -10,7 +10,12 @@ import { StaffAuthFrame } from "./staff-auth-frame";
 import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
-import { BillingConnectionDetail } from "./connection-detail";
+import {
+  BillingConnectionDetail,
+  ConnectionDetailLoading,
+  connectionDetails,
+} from "./connection-detail";
+import { WorkspaceLoading } from "./workspace-studio";
 import { Disclosure } from "./ui";
 import { DialogActions } from "./dialog-actions";
 import {
@@ -21,6 +26,7 @@ import { EmailsStudio } from "./email-studio";
 import { ContactToast } from "./contact-value";
 import {
   HomeV4,
+  HomeLoading,
   ProposalListV4,
   ReportProposalList,
   RecordV4,
@@ -33,6 +39,7 @@ import {
   CatalogStudio,
   TemplatesStudio,
   ConnectionsStudio,
+  ConnectionsLoading,
   ActivityStudio,
 } from "./studio";
 import { ClientPicker } from "./client-picker";
@@ -68,21 +75,8 @@ import type {
   Template,
   Block,
 } from "../lib/model";
+import { inView } from "../lib/proposal-state";
 import type { WorkspaceSettings } from "../lib/workspace";
-const nav = [
-  ["", "Dashboard"],
-  ["proposals", "Proposals"],
-  ["reports", "Reports"],
-  ["clients", "Clients"],
-  ["catalogue", "Products"],
-  ["templates", "Templates"],
-  ["library", "Content library"],
-  ["integrations", "Integrations"],
-  ["imports", "Imports"],
-  ["settings", "Settings"],
-  ["settings/team", "Team"],
-  ["settings/ai", "AI assistants"],
-];
 export type Data = {
   app_url: string;
   connections?: ConnectionStatus | null;
@@ -133,10 +127,17 @@ function StaffAppContent({
   local?: boolean;
 }) {
   const { section, id, action } = staffRoute(path, query);
-  const connectionDetail =
-    (section === "integrations" && (!!id || query.view === "email")) ||
-    section === "imports" ||
-    (section === "settings" && id === "ai");
+  const requestedConnection =
+    section === "integrations"
+      ? (id ?? (query.view === "email" ? "email" : ""))
+      : section === "imports"
+        ? "imports"
+        : section === "settings" && id === "ai"
+          ? "assistants"
+          : "";
+  const connectionDetail = Object.hasOwn(connectionDetails, requestedConnection)
+    ? (requestedConnection as keyof typeof connectionDetails)
+    : undefined;
   const drill =
     section === "proposals" && !id
       ? reportDrillSchema.safeParse(query).data
@@ -307,40 +308,121 @@ function StaffAppContent({
       setError(e instanceof Error ? e.message : "Unable to complete action");
     }
   };
-  let title =
-      path[0] === "studio"
-        ? ({
-            templates: "Templates & blocks",
-            products: "Products",
-            emails: "Emails",
-            connections: "Connections",
-            workspace: "Workspace",
-            activity: "Activity log",
-          }[path[1]] ?? "Studio")
-        : (nav.find(([key]) => key === section)?.[1] ?? "Workspace"),
+  const pageData = loading ? null : data;
+  let title = staffPageName(path),
     subtitle = "",
     content: ReactNode = null,
     headerAction: ReactNode = null;
-  if (data) {
-    if (section === "studio") {
-      title = "Studio";
-      content = <StudioHome data={data} />;
-    } else if (section === "") {
-      title = "Home";
-      subtitle = new Date().toLocaleDateString(undefined, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+  if (section === "") {
+    content = pageData ? (
+      <HomeV4
+        data={pageData}
+        onNew={openNew}
+        onSetupChanged={() => load(true)}
+        deploymentNotice={<DeploymentNotice enabled navigationKey="/" />}
+      />
+    ) : loading ? (
+      <HomeLoading onNew={openNew} />
+    ) : null;
+  } else if (section === "reports") {
+    content = <ReportsPage query={query} />;
+  } else if (section === "clients") {
+    if (loading || pageData)
+      content = <ClientsV4 data={pageData} selected={id} onRefresh={load} />;
+  } else if (section === "proposals" && !id && !reportShell) {
+    subtitle = pageData
+      ? withCount(
+          pageData.proposals.filter((proposal) => inView(proposal, "all"))
+            .length,
+          "proposal",
+        )
+      : loading
+        ? "Loading proposals…"
+        : "";
+    headerAction = (
+      <div className="actions">
+        <a className="btn" href="/reports">
+          Reports
+        </a>
+        <Button
+          variant={pageData?.total === 0 ? undefined : "primary"}
+          className={pageData?.total === 0 ? undefined : "action"}
+          onClick={openNew}
+        >
+          New proposal
+        </Button>
+      </div>
+    );
+    if (loading || pageData)
       content = (
-        <HomeV4
-          data={data}
-          onNew={openNew}
-          onSetupChanged={() => load(true)}
-          deploymentNotice={<DeploymentNotice enabled navigationKey="/" />}
+        <ProposalListV4
+          data={pageData}
+          initialView={typeof query.view === "string" ? query.view : "all"}
+          onChanged={(next) =>
+            setData(
+              (current) =>
+                current && {
+                  ...current,
+                  proposals: current.proposals.map((proposal) =>
+                    proposal.id === next.id ? next : proposal,
+                  ),
+                },
+            )
+          }
         />
       );
+  } else if ((loading || pageData) && section === "catalogue") {
+    content = <CatalogStudio data={pageData} run={run} />;
+  } else if ((loading || pageData) && section === "emails") {
+    content = <EmailsStudio data={pageData} id={id} />;
+  } else if (
+    (loading || pageData) &&
+    !id &&
+    (section === "templates" || section === "library")
+  ) {
+    content = (
+      <StudioTemplateList data={pageData} blocks={section === "library"} />
+    );
+  } else if ((loading || pageData) && section === "activity") {
+    content = (
+      <ActivityStudio
+        data={pageData}
+        initialFilter={query.view === "team" ? "Team" : "All"}
+      />
+    );
+  } else if (loading) {
+    if (connectionDetail) {
+      content = <ConnectionDetailLoading page={connectionDetail} />;
+    } else if (section === "integrations") {
+      content = <ConnectionsLoading />;
+    } else if (section === "settings") {
+      subtitle = "How proposals look and who can send and sign them.";
+      content = (
+        <WorkspaceLoading
+          initial={
+            id === "team"
+              ? "team"
+              : typeof query.view === "string"
+                ? query.view
+                : undefined
+          }
+        />
+      );
+    } else {
+      content = <Skeleton kind={id ? "document" : "table"} />;
+    }
+    if (reportShell) subtitle = "Filtered from Reports";
+    if (section === "proposals" && id) {
+      title =
+        action === "send"
+          ? "Send this proposal"
+          : action === "audit"
+            ? "Audit trail"
+            : "Proposal";
+    }
+  } else if (data) {
+    if (section === "studio") {
+      content = <StudioHome data={data} />;
     } else if (section === "proposals" && id === "new") {
       title = "New proposal";
       subtitle =
@@ -397,57 +479,19 @@ function StaffAppContent({
       ) : (
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
       );
-    } else if (section === "reports") {
-      content = <ReportsPage query={query} />;
     } else if (section === "proposals" && drill && reportFilters) {
       subtitle = "Filtered from Reports";
       content = (
         <ReportProposalList data={data} drill={drill} filters={reportFilters} />
       );
-    } else if (section === "proposals") {
-      subtitle = withCount(data.total, "proposal");
-      headerAction = (
-        <div className="actions">
-          <a className="btn" href="/reports">
-            Reports
-          </a>
-          <Button
-            variant={data.total ? "primary" : undefined}
-            className={data.total ? "action" : undefined}
-            onClick={openNew}
-          >
-            New proposal
-          </Button>
-        </div>
-      );
+    } else if (id && (section === "templates" || section === "library")) {
       content = (
-        <ProposalListV4
+        <TemplatesStudio
           data={data}
-          initialView={typeof query.view === "string" ? query.view : "all"}
+          selected={id}
+          run={run}
+          blocksOnly={section === "library"}
         />
-      );
-    } else if (section === "clients") {
-      headerAction = null;
-      content = <ClientsV4 data={data} selected={id} onRefresh={load} />;
-    } else if (section === "catalogue") {
-      headerAction = null;
-      content = <CatalogStudio data={data} run={run} />;
-    } else if (section === "emails") {
-      title = "Emails";
-      content = <EmailsStudio data={data} id={id} />;
-    } else if (section === "templates") {
-      headerAction = null;
-      content = id ? (
-        <TemplatesStudio data={data} selected={id} run={run} />
-      ) : (
-        <StudioTemplateList data={data} />
-      );
-    } else if (section === "library") {
-      headerAction = null;
-      content = id ? (
-        <TemplatesStudio data={data} selected={id} run={run} blocksOnly />
-      ) : (
-        <StudioTemplateList data={data} blocks />
       );
     } else if (section === "imports") {
       headerAction = null;
@@ -488,10 +532,6 @@ function StaffAppContent({
       content = (
         <ConnectionsStudio data={data} run={run} initial="assistants" />
       );
-    } else if (section === "activity") {
-      title = "Activity log";
-      headerAction = null;
-      content = <ActivityStudio data={data} />;
     } else if (section === "settings") {
       headerAction = null;
       subtitle = "How proposals look and who can send and sign them.";
@@ -524,15 +564,18 @@ function StaffAppContent({
       }}
     >
       <ContactToast />
-      {section !== "reports" && section !== "clients" && !connectionDetail && (
-        <header className="page-header">
-          <div>
-            <h1>{title}</h1>
-            {subtitle && <p>{subtitle}</p>}
-          </div>
-          {headerAction}
-        </header>
-      )}
+      {section !== "" &&
+        section !== "reports" &&
+        section !== "clients" &&
+        !connectionDetail && (
+          <header className="page-header">
+            <div>
+              <h1>{title}</h1>
+              {subtitle && <p>{subtitle}</p>}
+            </div>
+            {headerAction}
+          </header>
+        )}
       {section !== "" && (
         <DeploymentNotice
           enabled={action !== "countersign"}
@@ -576,8 +619,7 @@ function StaffAppContent({
             unavailable.
           </Banner>
         )}
-        {notice && <Banner tone="success" title={notice} />}{" "}
-        {loading ? <Skeleton /> : content}
+        {notice && <Banner tone="success" title={notice} />} {content}
       </div>
       {newOpen && data && (
         <Sheet

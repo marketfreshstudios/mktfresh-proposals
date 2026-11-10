@@ -321,6 +321,8 @@ test("Home, list views and action slots use the existing proposal states", async
   await capture(page, "home-1440");
   await page.goto("/proposals");
   const tabs = page.getByRole("tablist", { name: "Proposal views" });
+  const proposalCount = page.locator(".page-header p");
+  await expect(proposalCount).toHaveText("9 proposals");
   await expect(tabs.getByRole("tab")).toHaveText([
     "All 9",
     "Drafts 1",
@@ -435,6 +437,8 @@ test("Home, list views and action slots use the existing proposal states", async
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await row(page, f.waiting).getByRole("button", { name: "Archive" }).click();
   await expect(row(page, f.waiting)).toHaveCount(0);
+  await expect(tabs.getByRole("tab", { name: "All 8" })).toBeVisible();
+  await expect(proposalCount).toHaveText("8 proposals");
   await expect(page).toHaveURL(/\/proposals$/);
   expect(f.actions).toEqual(["archive"]);
   await row(page, f.countersign)

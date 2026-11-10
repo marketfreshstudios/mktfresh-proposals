@@ -196,3 +196,30 @@
   display: grid;
   gap: 3px;
 }
+
+/* Staff tables share the light preview surface on hover. */
+:root:not([data-theme="dark"])
+  .ink-clay
+  :is(.staff-table, .staff-native-table) {
+  --row-hover: var(--surface-preview);
+}
+:root:not([data-theme="dark"])
+  .ink-clay
+  .staff-native-table
+  > tbody
+  > tr:hover
+  > :is(td, th) {
+  background-color: var(--row-hover);
+}
+.ink-clay .skeleton-table {
+  display: grid;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-card);
+}
+.ink-clay .staff-table > .skeleton-table {
+  border: 0;
+}
+.ink-clay .skeleton-table > .skeleton-line {
+  height: 14px;
+  margin: 30px 0;
+}

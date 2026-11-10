@@ -7,7 +7,7 @@ export function Skeleton({
   kind = "rows",
   label = "Loading your workspace…",
 }: {
-  kind?: "rows" | "document" | "cards";
+  kind?: "rows" | "document" | "cards" | "table";
   label?: string;
 }) {
   return (

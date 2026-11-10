@@ -18,6 +18,7 @@ import { resolveStyles } from "../lib/proposal-styles";
 import { formatMoney } from "../lib/money";
 import { stripeStatus } from "../lib/studio-v3";
 import { workspaceSections } from "./studio-v3";
+import { Skeleton } from "./foundation";
 import { api, post, Button, Field, Banner, Disclosure } from "./ui";
 import { ProposalStyles, ProposalLayoutOptions } from "./proposal-styles";
 import { TeamStudio } from "./team-studio";
@@ -25,6 +26,73 @@ import { ReferenceDocuments } from "./reference-documents";
 import { StoredSignatureEditor } from "./company-signature";
 import { StaffSignIn, isStaffSignedOut } from "./staff-sign-in";
 type Runner = (fn: () => Promise<unknown>, success?: string) => Promise<void>;
+function workspaceInitialSection(initial: string) {
+  const hash = typeof window === "undefined" ? "" : location.hash.slice(1);
+  const requested =
+    initial === "brand" && workspaceSections.some(([key]) => key === hash)
+      ? hash
+      : initial;
+  return workspaceSections.some(([key]) => key === requested)
+    ? requested
+    : "brand";
+}
+
+function WorkspaceFrame({
+  section,
+  onSelect,
+  onBlur,
+  status,
+  children,
+}: {
+  section: string;
+  onSelect?: (section: (typeof workspaceSections)[number][0]) => void;
+  onBlur?: () => void;
+  status?: ReactNode;
+  children: ReactNode;
+}) {
+  const label = workspaceSections.find(([key]) => key === section)?.[1];
+  return (
+    <div className="studio-workspace-v3">
+      <div className="workspace-auto-label">Changes save automatically</div>
+      <nav aria-label="Workspace sections" className="workspace-section-list">
+        {workspaceSections.map(([key, name]) => (
+          <button
+            key={key}
+            aria-current={section === key ? "page" : undefined}
+            disabled={!onSelect}
+            onClick={() => onSelect?.(key)}
+          >
+            {name}
+          </button>
+        ))}
+      </nav>
+      <section
+        id={section}
+        className="workspace-section-card"
+        aria-label={label}
+        onBlur={onBlur}
+      >
+        <header>
+          <h2>{label}</h2>
+          {status}
+        </header>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+export function WorkspaceLoading({ initial = "brand" }: { initial?: string }) {
+  const section = workspaceSections.some(([key]) => key === initial)
+    ? initial
+    : "brand";
+  return (
+    <WorkspaceFrame section={section}>
+      <Skeleton kind="table" label="Loading workspace settings…" />
+    </WorkspaceFrame>
+  );
+}
+
 export function WorkspaceStudio({
   data,
   run,
@@ -34,14 +102,8 @@ export function WorkspaceStudio({
   run: Runner;
   initial?: string;
 }) {
-  const [section, setSection] = useState(
-    workspaceSections.some(([key]) => key === initial)
-      ? initial === "brand" &&
-        typeof window !== "undefined" &&
-        workspaceSections.some(([key]) => key === location.hash.slice(1))
-        ? location.hash.slice(1)
-        : initial
-      : "brand",
+  const [section, setSection] = useState(() =>
+    workspaceInitialSection(initial),
   );
   const [draft, setDraft] = useState(
     (data.settings ?? data.workspace_defaults)!,
@@ -1316,61 +1378,46 @@ export function WorkspaceStudio({
     </>
   );
   return (
-    <div className="studio-workspace-v3">
-      <div className="workspace-auto-label">Changes save automatically</div>
-      <nav aria-label="Workspace sections" className="workspace-section-list">
-        {workspaceSections.map(([key, label]) => (
-          <button
-            key={key}
-            aria-current={section === key ? "page" : undefined}
-            onClick={() => go(key)}
+    <WorkspaceFrame
+      section={section}
+      onSelect={go}
+      onBlur={() => void flush()}
+      status={
+        (uploading || current) && (
+          <span role="status" className={current?.error ? "danger" : "muted"}>
+            {uploading ? "Uploading…" : (current?.status ?? "")}
+          </span>
+        )
+      }
+    >
+      <div className="stack">{cards[section]}</div>
+      {uploadError && (
+        <Banner tone="danger" title="Upload needs attention">
+          {uploadError}
+        </Banner>
+      )}
+      {current?.error && (
+        <Banner tone="danger" title="Your changes are still here">
+          {current.error}
+          {isStaffSignedOut(current.error) && <StaffSignIn />}
+          <Button
+            onClick={() => {
+              pending.current = {
+                value: model.current,
+                section,
+                extra: { ...extras.current },
+              };
+              void flush();
+            }}
           >
-            {label}
-          </button>
-        ))}
-      </nav>
-      <section
-        id={section}
-        className="workspace-section-card"
-        aria-label={workspaceSections.find(([key]) => key === section)?.[1]}
-        onBlur={() => void flush()}
-      >
-        <header>
-          <h2>{workspaceSections.find(([key]) => key === section)?.[1]}</h2>
-          {(uploading || current) && (
-            <span role="status" className={current?.error ? "danger" : "muted"}>
-              {uploading ? "Uploading…" : (current?.status ?? "")}
-            </span>
-          )}
-        </header>
-        <div className="stack">{cards[section]}</div>
-        {uploadError && (
-          <Banner tone="danger" title="Upload needs attention">
-            {uploadError}
-          </Banner>
-        )}
-        {current?.error && (
-          <Banner tone="danger" title="Your changes are still here">
-            {current.error}
-            {isStaffSignedOut(current.error) && <StaffSignIn />}
-            <Button
-              onClick={() => {
-                pending.current = {
-                  value: model.current,
-                  section,
-                  extra: { ...extras.current },
-                };
-                void flush();
-              }}
-            >
-              Retry
-            </Button>
-          </Banner>
-        )}
-      </section>
-    </div>
+            Retry
+          </Button>
+        </Banner>
+      )}
+    </WorkspaceFrame>
   );
 }
+
 function ReminderRules({
   settings,
   disabled,

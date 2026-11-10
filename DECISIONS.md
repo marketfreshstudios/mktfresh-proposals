@@ -969,6 +969,10 @@ Primary staff content uses the shared surface, 1px hairline and card radius. Pag
 
 Record lists share the staff table header, row spacing, in-table empty states, and existing borderless Lucide action targets. Each screen keeps its own columns and breakpoints. Saved blocks show the name, type and preview, block count, template use, last edit and Open action. Template thumbnails stay visual cards. Email stage groups and Activity dates keep their section headings over shared tables. Reports and proposal evidence keep native table semantics with the same header treatment.
 
+### Proposals header count (Nov 9, 2026)
+
+The Proposals header counts the same records as All, excluding archived proposals and Proposify imports. The header and tabs use the same list state so an archive or undo updates both.
+
 ### Proposal table Edit and Countersign icons (Nov 9, 2026)
 
 Proposals and Home Recent proposals share the four existing action slots. Edit uses Lucide square-pen and Countersign uses pen-tool, with the same borderless icon treatment and tooltip as the other actions. Desktop targets and empty slots are 40px; tablet and phone cards and touch targets use 44px. The Countersign button only opens the existing record sheet and respects the existing signer permissions. Edit on an archived unsigned proposal still unarchives before opening the editor.
@@ -984,3 +988,9 @@ When the five needed steps are done, Show opens the details and Dismiss hides th
 The required and optional groups have a hairline and a 44px gutter at desktop widths and stack with a horizontal divider on narrow screens. Setup icons and progress use the ink palette, with success checks for completed steps and approved artwork for Stripe and QuickBooks. Signing uses the shared Lucide pen-tool for the Company signatory step, existing Staff signing glyphs, and the separate Proposals row action.
 
 New workspaces get three editable Sample templates with no preset prices: Website proposal, Care plan, and Monthly retainer. They appear in Studio beside the existing read-only starter library. A super admin can delete a sample without touching existing proposals or library starters. The insert trigger applies before deploy and never backfills existing workspaces, including workspace 1. Empty states and inline filtered messages use the shared card or table surface.
+
+### Staff loading and table hover (Nov 9, 2026)
+
+Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available. Each loading area has a named status. The Templates page keeps one New template action in the header, including when the list is empty.
+
+Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.

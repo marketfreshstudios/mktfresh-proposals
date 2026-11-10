@@ -10,6 +10,7 @@ import type { Template } from "../lib/model";
 import { studioDate, templateUsage } from "../lib/studio-v3";
 import { StudioFilters } from "./studio-v3";
 import { useEffect, useState } from "react";
+import { Skeleton } from "./foundation";
 import type { Data } from "./staff-app";
 import type { Activity } from "../lib/studio";
 import type { Block } from "../lib/model";
@@ -84,13 +85,23 @@ export function StudioTemplateList({
   data,
   blocks = false,
 }: {
-  data: Data;
+  data: Data | null;
   blocks?: boolean;
 }) {
-  const [templates, setTemplates] = useState(data.templates);
-  useEffect(() => setTemplates(data.templates), [data.templates]);
+  const savedTemplates = data?.templates;
+  const [refreshed, setRefreshed] = useState<{
+    source: typeof savedTemplates;
+    templates: Template[];
+  }>();
+  const templates =
+    refreshed && refreshed.source === savedTemplates
+      ? refreshed.templates
+      : (savedTemplates ?? []);
   const refreshTemplates = async () => {
-    setTemplates(await api<Template[]>("/api/templates"));
+    setRefreshed({
+      source: savedTemplates,
+      templates: await api<Template[]>("/api/templates"),
+    });
   };
   const [query, setQuery] = useState(""),
     [type, setType] = useState("All"),
@@ -107,16 +118,17 @@ export function StudioTemplateList({
   const lastEdit = (id: string) => {
     const e = edited(id);
     return e
-      ? `Edited ${studioDate(e.created_at)} · ${data.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
+      ? `Edited ${studioDate(e.created_at)} · ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
       : "Default";
   };
-  const items = data.library.filter(
+  const library = data?.library ?? [];
+  const items = library.filter(
     (b) =>
       (!query || b.name.toLowerCase().includes(query.toLowerCase())) &&
       (type === "All" ||
         (b.type === "group" ? "Group" : blockType(b.block)) === type),
   );
-  const recent = [...data.library]
+  const recent = [...library]
     .sort((a, b) =>
       (edited(b.id)?.created_at ?? "").localeCompare(
         edited(a.id)?.created_at ?? "",
@@ -192,6 +204,7 @@ export function StudioTemplateList({
           variant="primary"
           className="action"
           busy={busy}
+          disabled={!data}
           onClick={create}
         >
           {blocks ? "New block" : "New template"}
@@ -207,13 +220,13 @@ export function StudioTemplateList({
             aria-current={!blocks ? "page" : undefined}
             href="/studio/templates"
           >
-            Templates · {templates.length}
+            Templates · {data ? templates.length : "–"}
           </a>
           <a
             aria-current={blocks ? "page" : undefined}
             href="/studio/templates?view=blocks"
           >
-            Saved blocks · {data.library.length}
+            Saved blocks · {data ? library.length : "–"}
           </a>
         </nav>
         <label className="field studio-search">
@@ -233,7 +246,12 @@ export function StudioTemplateList({
           {error}
         </Banner>
       )}
-      {!blocks ? (
+      {!data ? (
+        <Skeleton
+          kind={blocks ? "table" : "cards"}
+          label={blocks ? "Loading saved blocks…" : "Loading templates…"}
+        />
+      ) : !blocks ? (
         <>
           <TemplateWarnings templates={templates} catalog={data.catalog} />
           {templates.some((t) => t.starter_key) && (
@@ -341,11 +359,6 @@ export function StudioTemplateList({
             <Empty
               title={
                 query ? "No matching templates" : "Create your first template"
-              }
-              action={
-                query ? undefined : (
-                  <Button onClick={create}>New template</Button>
-                )
               }
             />
           )}

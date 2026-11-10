@@ -136,7 +136,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
           : draft;
         await page.goto(url);
         await expect(
-          page.getByText("Loading your workspace…", { exact: true }),
+          page.getByRole("status", { name: /^Loading / }),
         ).toHaveCount(0);
         await page.evaluate(() => document.fonts.ready);
         const shell = page.locator(".staff-foundation");
@@ -299,13 +299,18 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
   await expect(page).toHaveURL(
     new RegExp(`/proposals/${draft.id}\\?action=edit$`),
   );
-  // Loading is shaped content and announces itself once; no spinner or external font request.
+  // Each loading area has a named status and a content-shaped placeholder.
   delayAuth = true;
   await page.goto("/");
-  await expect(
-    page.getByRole("status", { name: "Loading your workspace…" }),
-  ).toBeVisible();
-  await expect(page.locator(".skeleton-line")).toHaveCount(4);
+  for (const name of [
+    "Loading pipeline…",
+    "Loading expiring proposals…",
+    "Loading recent proposals…",
+  ]) {
+    const status = page.getByRole("status", { name, exact: true });
+    await expect(status).toBeVisible();
+    await expect(status.locator(".skeleton-line")).toHaveCount(4);
+  }
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.locator(".skeleton-line").first()).toHaveCSS(
     "animation-name",
@@ -318,9 +323,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
     });
   delayAuth = false;
   release?.();
-  await expect(
-    page.getByText("Loading your workspace…", { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(0);
   expect(JSON.stringify(await repo.get(draft.id))).toBe(stateBefore);
   expect(externalFonts).toEqual([]);
   if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;

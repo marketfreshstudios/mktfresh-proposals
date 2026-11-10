@@ -907,12 +907,14 @@ const otherViews = listViews.filter(
 export function ProposalListV4({
   data,
   initialView = "all",
+  onChanged,
 }: {
-  data: Data;
+  data: Data | null;
   initialView?: string;
+  onChanged: (proposal: Proposal) => void;
 }) {
+  const rows = data?.proposals ?? [];
   const router = useRouter(),
-    [rows, setRows] = useState(data.proposals),
     [view, setView] = useState(
       listViews.some((name) => viewKey(name) === initialView)
         ? initialView
@@ -945,7 +947,7 @@ export function ProposalListV4({
         inView(p, view) &&
         (owner === "all" ||
           proposalOwnerId(p) ===
-            (owner === "mine" ? data.user.actor.slice(6) : owner)) &&
+            (owner === "mine" ? data?.user.actor.slice(6) : owner)) &&
         `${p.title} ${p.client.company} ${p.client.email} ${p.search_text ?? ""}`
           .toLowerCase()
           .includes(search.toLowerCase()),
@@ -956,7 +958,7 @@ export function ProposalListV4({
         Date.parse(a.updated_at ?? a.created_at),
     );
   const firstProposal =
-    !data.total && view === "all" && !search.trim() && owner === "all";
+    data?.total === 0 && view === "all" && !search.trim() && owner === "all";
   const emptyView = search.trim()
     ? {
         title: `No results for “${search.trim()}”`,
@@ -1034,7 +1036,7 @@ export function ProposalListV4({
                   className={selected ? "active" : ""}
                   onClick={() => change(viewKey(name))}
                 >
-                  {name} <small>{counts[name]}</small>
+                  {name} <small>{data ? counts[name] : "–"}</small>
                 </button>
               );
             })}
@@ -1065,7 +1067,7 @@ export function ProposalListV4({
                     aria-current={view === viewKey(name) ? "page" : undefined}
                     onClick={() => change(viewKey(name))}
                   >
-                    {name} <small>{counts[name]}</small>
+                    {name} <small>{data ? counts[name] : "–"}</small>
                   </button>
                 ))}
               </nav>
@@ -1091,7 +1093,7 @@ export function ProposalListV4({
             >
               <option value="all">Anyone</option>
               <option value="mine">Mine</option>
-              {data.staff.map((m) => (
+              {data?.staff.map((m) => (
                 <option key={m.user_id} value={m.user_id}>
                   {m.display_name}
                 </option>
@@ -1107,7 +1109,7 @@ export function ProposalListV4({
             >
               {listViews.map((v) => (
                 <option key={v} value={viewKey(v)}>
-                  {v} ({counts[v]})
+                  {v} ({data ? counts[v] : "–"})
                 </option>
               ))}
             </Select>
@@ -1120,7 +1122,9 @@ export function ProposalListV4({
         aria-label={activeExtra ?? undefined}
         aria-labelledby={activeExtra ? undefined : `proposal-view-${view}`}
       >
-        {firstProposal ? (
+        {!data ? (
+          <Skeleton kind="table" label="Loading proposals…" />
+        ) : firstProposal ? (
           <Empty
             title="No proposals yet"
             action={
@@ -1150,15 +1154,48 @@ export function ProposalListV4({
               </>
             }
             data={data}
-            onChanged={(next) =>
-              setRows((r) => r.map((p) => (p.id === next.id ? next : p)))
-            }
+            onChanged={onChanged}
           />
         )}
       </div>
     </div>
   );
 }
+function HomeIntro({
+  title,
+  subtitle,
+  onNew,
+}: {
+  title: string;
+  subtitle: string;
+  onNew: () => void;
+}) {
+  return (
+    <section className="home-intro">
+      <div>
+        <p className="t-eyebrow">{subtitle}</p>
+        <h1 className="t-page-title">{title}</h1>
+      </div>
+      <Button className="action" onClick={onNew}>
+        New proposal
+      </Button>
+    </section>
+  );
+}
+
+export function HomeLoading({ onNew }: { onNew: () => void }) {
+  return (
+    <div className="home-v4 stack">
+      <HomeIntro title="Home" subtitle="Workspace overview" onNew={onNew} />
+      <div className="home-overview">
+        <Skeleton label="Loading pipeline…" />
+        <Skeleton label="Loading expiring proposals…" />
+      </div>
+      <Skeleton kind="table" label="Loading recent proposals…" />
+    </div>
+  );
+}
+
 export function HomeV4({
   data,
   onNew,
@@ -1178,6 +1215,14 @@ export function HomeV4({
   const timezone = data.settings?.timezone ?? "UTC";
   const now = new Date();
   const firstName = (data.user.staff_name || "team").trim().split(/\s+/)[0];
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hourCycle: "h23",
+      timeZone: timezone,
+    }).format(now),
+  );
+  const greeting = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const attention = [
     {
       kind: "review",
@@ -1240,35 +1285,22 @@ export function HomeV4({
       setActionBusy(false);
     }
   }
-  const hour = Number(
-    new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      hourCycle: "h23",
-      timeZone: timezone,
-    }).format(now),
-  );
   return (
     <div className={`home-v4 stack${data.total ? "" : " first-run"}`}>
-      <section className="home-intro">
-        <div>
-          <p className="t-eyebrow">
-            {new Intl.DateTimeFormat("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: timezone,
-            }).format(now)}
-          </p>
-          <h1 className="t-page-title">
-            {data.total
-              ? `Good ${hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"}, ${firstName}`
-              : `Welcome to Yeswell, ${firstName}`}
-          </h1>
-        </div>
-        <Button className="action" onClick={onNew}>
-          New proposal
-        </Button>
-      </section>
+      <HomeIntro
+        title={
+          data.total
+            ? `Good ${greeting}, ${firstName}`
+            : `Welcome to Yeswell, ${firstName}`
+        }
+        subtitle={new Intl.DateTimeFormat("en-US", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          timeZone: timezone,
+        }).format(now)}
+        onNew={onNew}
+      />
       {deploymentNotice}
       {actionError && (
         <Banner tone="danger" title="Action could not be completed">
@@ -2794,16 +2826,72 @@ function ClientInitials({ company }: { company: string }) {
     </span>
   );
 }
+function ClientDetailHeader({
+  selected,
+  client,
+  onEdit,
+}: {
+  selected: string;
+  client?: Client;
+  onEdit?: () => void;
+}) {
+  return (
+    <header className="client-detail-header">
+      <div className="client-detail-toolbar">
+        <a href="/clients" className="staff-back">
+          <chromeIcons.back size={16} aria-hidden="true" /> Clients
+        </a>
+        <DialogActions>
+          <Button onClick={onEdit} disabled={!client}>
+            Edit client
+          </Button>
+          <a
+            className="btn action"
+            href={`/proposals?new=1&client=${selected}`}
+          >
+            New proposal
+          </a>
+        </DialogActions>
+      </div>
+      <div className="client-identity">
+        {client ? (
+          <ClientInitials company={client.company} />
+        ) : (
+          <span className="client-initials" aria-hidden="true" />
+        )}
+        <div>
+          <h1 className="t-page-title">{client?.company ?? "Client record"}</h1>
+          <div className="client-identity-contact">
+            {client ? (
+              <>
+                <span>
+                  {client.first_name} {client.last_name}
+                </span>
+                <ContactValue kind="email" value={client.email} />
+                {client.phone && (
+                  <ContactValue kind="phone" value={client.phone} />
+                )}
+              </>
+            ) : (
+              "Loading contact details…"
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function ClientsV4({
   data,
   selected,
   onRefresh,
 }: {
-  data: Data;
+  data: Data | null;
   selected?: string;
   onRefresh: () => Promise<void>;
 }) {
-  const client = data.clients.find((c) => c.id === selected),
+  const client = data?.clients.find((c) => c.id === selected),
     [linkChoice, setLinkChoice] = useState<string | null | undefined>(
       undefined,
     ),
@@ -2836,11 +2924,11 @@ export function ClientsV4({
       active = false;
     };
   }, [client?.id, client?.email, client?.stripe_customer_id]);
-  const visibleClients = data.clients.filter(
+  const visibleClients = (data?.clients ?? []).filter(
     (c) =>
       (clientView !== "stripe" || Boolean(c.stripe_customer_id)) &&
       (clientView !== "open" ||
-        data.proposals.some(
+        data?.proposals.some(
           (p) =>
             p.client.id === c.id &&
             inView(p, "all") &&
@@ -2850,7 +2938,14 @@ export function ClientsV4({
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
-  if (!client)
+  if (!data && selected && selected !== "new")
+    return (
+      <div className="client-detail-v4 stack">
+        <ClientDetailHeader selected={selected} />
+        <Skeleton kind="table" label="Loading client record…" />
+      </div>
+    );
+  if (!client || !data)
     return (
       <section className="clients-v4 clients-directory-v4 stack">
         <header className="directory-heading">
@@ -2885,7 +2980,10 @@ export function ClientsV4({
             ))}
           </fieldset>
         </div>
-        {!data.clients.length && !search.trim() && clientView === "all" ? (
+        {data &&
+        !data.clients.length &&
+        !search.trim() &&
+        clientView === "all" ? (
           <Empty
             title="No clients yet"
             action={
@@ -2913,8 +3011,9 @@ export function ClientsV4({
                 ),
               )}
             </StaffTableHead>
+            {!data && <Skeleton kind="table" label="Loading clients…" />}
             {visibleClients.map((c) => {
-              const proposals = data.proposals.filter(
+              const proposals = (data?.proposals ?? []).filter(
                 (p) => p.client.id === c.id && inView(p, "all"),
               );
               const open = proposals.filter((p) => inView(p, "sent")).length;
@@ -2975,7 +3074,7 @@ export function ClientsV4({
                 </article>
               );
             })}
-            {!visibleClients.length && (
+            {data && visibleClients.length === 0 && (
               <StaffTableEmpty>No clients match this view.</StaffTableEmpty>
             )}
           </StaffTable>
@@ -3005,37 +3104,11 @@ export function ClientsV4({
   ];
   return (
     <div className="client-detail-v4 stack">
-      <header className="client-detail-header">
-        <div className="client-detail-toolbar">
-          <a href="/clients" className="staff-back">
-            <chromeIcons.back size={16} aria-hidden="true" /> Clients
-          </a>
-          <DialogActions>
-            <Button onClick={() => setEditClient(true)}>Edit client</Button>
-            <a
-              className="btn action"
-              href={`/proposals?new=1&client=${client.id}`}
-            >
-              New proposal
-            </a>
-          </DialogActions>
-        </div>
-        <div className="client-identity">
-          <ClientInitials company={client.company} />
-          <div>
-            <h1 className="t-page-title">{client.company}</h1>
-            <div className="client-identity-contact">
-              <span>
-                {client.first_name} {client.last_name}
-              </span>
-              <ContactValue kind="email" value={client.email} />
-              {client.phone && (
-                <ContactValue kind="phone" value={client.phone} />
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <ClientDetailHeader
+        selected={client.id}
+        client={client}
+        onEdit={() => setEditClient(true)}
+      />
       {error && (
         <Banner tone="danger" title="Client action failed">
           {error}
