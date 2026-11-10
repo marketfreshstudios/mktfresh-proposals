@@ -20,6 +20,7 @@ import { TemplateBandsSchema, defaultTemplateBands } from "./page-bands";
 import { StyleOverridesSchema } from "./proposal-styles";
 import { PagePlanSchema } from "./page-plan";
 import { validateStyles, workspaceEvent } from "./studio";
+import { studioRevision } from "./studio-history";
 import type { WorkspaceSettings } from "./workspace";
 export const TemplateInputSchema = z.object({
   id: z.uuid(),
@@ -89,57 +90,36 @@ export async function libraryStarterAction(
   );
   check(before?.starter_key, "Starter not found", 404);
   if (action === "copy") {
-    const data = z
-      .object({
-        name: z.string().trim().min(1).max(200),
-        attempt: z.record(z.string(), z.unknown()).optional(),
-      })
+    const { name } = z
+      .object({ name: z.string().trim().min(1).max(200) })
       .parse(input);
-    const copyId = randomUUID();
-    const prepare = async (authored: Record<string, unknown>) => {
-      const value = TemplateInputSchema.parse({
-        ...authored,
-        id: copyId,
-        name: data.name,
-        active: true,
-      });
-      delete value.starter_key;
-      delete value.starter_order;
-      delete value.pagination;
-      value.source_starter_key = before.starter_key;
-      value.content = reviewBlocks(
-        contentAfterCover(value.content as Template["content"]),
-        false,
-      );
-      value.cover = loadedCover(value.cover);
-      await validateStyles(
-        repo,
-        (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
-        value.style_overrides,
-      );
-      return value;
-    };
-    let value,
-      attemptApplied = true;
-    try {
-      value = await prepare({ ...before, ...data.attempt });
-    } catch (error) {
-      if (!data.attempt) throw error;
-      // Incomplete numeric/style input is not safe template data. Copy the original
-      // and explicitly report that no tentative change was applied.
-      value = await prepare(before);
-      attemptApplied = false;
-    }
+    const value = TemplateInputSchema.parse({
+      ...before,
+      id: randomUUID(),
+      name,
+      active: true,
+    });
+    delete value.starter_key;
+    delete value.starter_order;
+    delete value.pagination;
+    value.source_starter_key = before.starter_key;
+    value.content = reviewBlocks(
+      contentAfterCover(value.content as Template["content"]),
+      false,
+    );
+    value.cover = loadedCover(value.cover);
+    await validateStyles(
+      repo,
+      (await repo.entities<WorkspaceSettings>("workspace_settings"))[0],
+      value.style_overrides,
+    );
     await repo.put("templates", value);
     await workspaceEvent(repo, actor, "starter_copied", {
       entity_id: value.id,
       name: value.name,
       source_starter_key: before.starter_key,
     });
-    return {
-      ...(await libraryTemplates(repo, [value as Template]))[0],
-      attempt_applied: attemptApplied,
-    };
+    return (await libraryTemplates(repo, [value as Template]))[0];
   }
   check(
     actor.staff_role === "owner",
@@ -202,7 +182,10 @@ export async function libraryStarterAction(
     409,
   );
   return {
-    template: (await libraryTemplates(repo, [after]))[0],
+    template: {
+      ...(await libraryTemplates(repo, [after]))[0],
+      revision: studioRevision(after),
+    },
     event_id: event.id,
   };
 }

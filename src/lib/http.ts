@@ -1464,10 +1464,18 @@ async function handleRoute(
       path[0] === "studio-history" &&
       path[1] &&
       path[2] === "restore"
-    )
-      return json(
-        await restoreConnectorChange(rt.repo, uuid.parse(path[1]), user),
+    ) {
+      const restored = await restoreConnectorChange(
+        rt.repo,
+        uuid.parse(path[1]),
+        user,
       );
+      return json(
+        restored.starter_key
+          ? (await libraryTemplates(rt.repo, [restored as Template]))[0]
+          : restored,
+      );
+    }
     if (method === "GET" && path[0] === "workspace_events") {
       const query = new URL(req.url).searchParams;
       const rows = (
@@ -1685,6 +1693,7 @@ async function handleRoute(
         const raw = await body(req);
         raw.id ??= randomUUID();
         let entity;
+        let previousTemplate: Template | undefined;
         if (table === "workspace_settings") {
           raw.id = rt.repo.workspaceId;
           entity = WorkspaceSettingsSchema.parse(raw);
@@ -1888,22 +1897,14 @@ async function handleRoute(
           return json(client, 201);
         } else if (table === "pricing_items") entity = ItemSchema.parse(raw);
         else if (table === "templates") {
-          const existing = (
-            await rt.repo.entities<import("./model").Template>("templates")
-          ).find((t) => t.id === raw.id);
-          check(
-            !existing?.starter_key,
-            "This is a Yeswell starter. Make a copy to customize it.",
-            403,
-          );
           entity = TemplateInputSchema.parse(raw);
           entity.content = reviewBlocks(
             contentAfterCover(entity.content as Block[]),
             false,
           );
           const savedTemplateId = entity.id;
-          const previousTemplate = (
-            await rt.repo.entities<import("./model").Template>("templates")
+          previousTemplate = (
+            await rt.repo.entities<Template>("templates")
           ).find((t) => t.id === savedTemplateId);
           entity.sample = previousTemplate?.sample;
           delete entity.connector_created;
@@ -1917,6 +1918,8 @@ async function handleRoute(
           if (previousTemplate?.starter_key) {
             entity.starter_key = previousTemplate.starter_key;
             entity.starter_order = previousTemplate.starter_order;
+            // Only the owner-only availability action changes a starter's visibility.
+            entity.active = previousTemplate.active;
           }
           if (
             !entity.signature_heading_defaulted &&
@@ -1952,16 +1955,23 @@ async function handleRoute(
             .parse(raw);
         if (table === "templates" || table === "content_library") {
           const before =
-            (await rt.repo.entities<{ id: string }>(table)).find(
-              (row) => row.id === entity.id,
-            ) ?? null;
+            table === "templates"
+              ? (previousTemplate ?? null)
+              : ((await rt.repo.entities<{ id: string }>(table)).find(
+                  (row) => row.id === entity.id,
+                ) ?? null);
           const expected = raw.expected_revision ?? raw.revision;
           if (expected !== undefined)
             z.string()
               .regex(/^[a-f0-9]{64}$/)
               .parse(expected);
-          return json(
-            await writeStudioEntity(rt.repo, table, before, entity, user, {
+          const saved = await writeStudioEntity(
+            rt.repo,
+            table,
+            before,
+            entity,
+            user,
+            {
               revision: expected,
               updateDrafts:
                 table === "content_library" && raw.update_drafts === true,
@@ -1969,7 +1979,12 @@ async function handleRoute(
                 table === "content_library" && raw.update_drafts === true
                   ? z.array(uuid).max(1000).parse(raw.update_draft_ids)
                   : undefined,
-            }),
+            },
+          );
+          return json(
+            table === "templates" && (saved as Template).starter_key
+              ? (await libraryTemplates(rt.repo, [saved as Template]))[0]
+              : saved,
             201,
           );
         }

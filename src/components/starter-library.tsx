@@ -5,7 +5,7 @@ import type { Template } from "../lib/model";
 import { useConnectorRestore } from "./connector-restore";
 import { post, Button, Field, Banner } from "./ui";
 import { Sheet } from "./foundation";
-import { DialogActions } from "./dialog-actions";
+import { confirmDialog, DialogActions } from "./dialog-actions";
 import { ToastSurface } from "./toast-surface";
 import { ToolbarPopover } from "./toolbar-popover";
 function Cancel({
@@ -35,10 +35,9 @@ export function useStarterActions(
   owner: boolean,
   onChanged: (t: Template) => void | Promise<void>,
   beforeNavigate?: () => void,
-  attempt?: Template | null,
+  beforeChange?: () => Promise<boolean>,
 ) {
-  const [copyMode, setCopyMode] = useState<"copy" | "backup" | null>(null),
-    [reset, setReset] = useState(false),
+  const [copyOpen, setCopyOpen] = useState(false),
     [name, setName] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -49,9 +48,9 @@ export function useStarterActions(
     return () => clearTimeout(id);
   }, [undo]);
   const copy = () => {
-    setName(`${template?.name} (copy)`);
+    setName(`${template?.name.slice(0, 193)} (copy)`);
     setError("");
-    setCopyMode("copy");
+    setCopyOpen(true);
   };
   const doReset = async () => {
     const value = await post<{ template: Template; event_id: string }>(
@@ -59,19 +58,32 @@ export function useStarterActions(
       {},
     );
     await onChanged(value.template);
-    setReset(false);
     setUndo(value.event_id);
   };
   const safe = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
     try {
-      await action();
+      if (!beforeChange || (await beforeChange())) await action();
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
+  };
+  const reset = async () => {
+    if (
+      !template ||
+      !(await confirmDialog({
+        title: `Reset “${template.name}” to default?`,
+        description:
+          "This replaces this template’s content, cover, quote, and styles with the shipped version. Proposals already created from this template keep their copy.",
+        confirmLabel: "Reset to default",
+        destructive: true,
+      }))
+    )
+      return;
+    await safe(doReset);
   };
   const availability = () =>
     safe(async () => {
@@ -82,28 +94,18 @@ export function useStarterActions(
       await onChanged(value.template);
     });
   return {
-    copy,
-    reset: () => {
-      setError("");
-      setReset(true);
-    },
-    availability,
-    busy,
     dialogs: (
       <>
-        {error && !copyMode && !reset && (
+        {error && !copyOpen && (
           <Banner tone="danger" title="Could not update starter">
             {error}
           </Banner>
         )}
-        {copyMode && (
+        {copyOpen && (
           <Sheet
             title="Name your template"
             onClose={() => {
-              if (!busy) {
-                setCopyMode(null);
-                if (copyMode === "backup") setReset(true);
-              }
+              if (!busy) setCopyOpen(false);
             }}
           >
             <form
@@ -111,21 +113,12 @@ export function useStarterActions(
               onSubmit={(e) => {
                 e.preventDefault();
                 void safe(async () => {
-                  const value = await post<
-                    Template & { attempt_applied?: boolean }
-                  >(`/api/templates/${template!.id}/copy`, {
-                    name,
-                    ...(copyMode === "copy" && attempt ? { attempt } : {}),
-                  });
-                  if (copyMode === "backup") {
-                    await doReset();
-                    setCopyMode(null);
-                  } else {
-                    beforeNavigate?.();
-                    location.assign(
-                      `/studio/templates/${value.id}${value.attempt_applied === false ? "?copy=without-edit" : ""}`,
-                    );
-                  }
+                  const value = await post<Template>(
+                    `/api/templates/${template!.id}/copy`,
+                    { name },
+                  );
+                  beforeNavigate?.();
+                  location.assign(`/studio/templates/${value.id}`);
                 });
               }}
             >
@@ -137,12 +130,6 @@ export function useStarterActions(
                   onChange={(e) => setName(e.target.value)}
                 />
               </Field>
-              {copyMode === "backup" && (
-                <p>
-                  Your edited version will be kept as a separate template before
-                  the starter is reset.
-                </p>
-              )}
               {error && (
                 <p role="alert" className="danger">
                   {error}
@@ -152,10 +139,7 @@ export function useStarterActions(
                 <Cancel
                   children="Cancel"
                   disabled={busy}
-                  onClick={() => {
-                    setCopyMode(null);
-                    if (copyMode === "backup") setReset(true);
-                  }}
+                  onClick={() => setCopyOpen(false)}
                 />
                 <Button
                   variant="primary"
@@ -163,51 +147,10 @@ export function useStarterActions(
                   busy={busy}
                   disabled={!name.trim()}
                 >
-                  Make copy
+                  Duplicate template
                 </Button>
               </DialogActions>
             </form>
-          </Sheet>
-        )}
-        {reset && !copyMode && (
-          <Sheet
-            title={`Reset ${template!.name} to the latest starter?`}
-            onClose={() => !busy && setReset(false)}
-          >
-            <div className="stack starter-dialog-content">
-              <p>
-                Your changes to this template will be replaced. Proposals
-                already made from it don't change.
-              </p>
-              {error && (
-                <p role="alert" className="danger">
-                  {error}
-                </p>
-              )}
-              <DialogActions>
-                <Cancel
-                  children="Cancel"
-                  disabled={busy}
-                  onClick={() => setReset(false)}
-                />
-                <Button
-                  disabled={busy}
-                  onClick={() => {
-                    setName(`${template!.name} (copy)`);
-                    setCopyMode("backup");
-                  }}
-                >
-                  Make a copy first
-                </Button>
-                <Button
-                  variant="primary"
-                  busy={busy}
-                  onClick={() => void safe(doReset)}
-                >
-                  Reset to starter
-                </Button>
-              </DialogActions>
-            </div>
           </Sheet>
         )}
         {undo && (
@@ -234,18 +177,16 @@ export function useStarterActions(
     items: (
       <>
         <button type="button" role="menuitem" onClick={copy}>
-          Make a copy
+          Duplicate
         </button>
         {owner && template?.starter_edited && (
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              setError("");
-              setReset(true);
-            }}
+            disabled={busy}
+            onClick={() => void reset()}
           >
-            Reset to starter
+            Reset to default
           </button>
         )}
         {owner && (

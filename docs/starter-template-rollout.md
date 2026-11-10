@@ -5,8 +5,8 @@ Apply [20261107225320_social_media_starter.sql](../supabase/migrations/202611072
 - Future workspaces receive all seven starters, ordered General, Website, Care, Visibility, Audit, Monthly marketing, Social media. All generic quotes are empty.
 - Existing MarketFresh workspace 1 gets only `social-media-management`, and only if its starter key is absent. The six existing starters, the old sample, proposals and versions are untouched. Re-running keeps an existing or edited Social starter unchanged.
 - The four products resolve from current catalog JSON by SKU: `social-starter-595`, `social-growth-995`, `social-pro-1650`, `social-premium-2200`. Their actual UUIDs, amounts, sub-lines, provider mapping and terms are copied. Growth is the only default selection in one choose-one group. No prices/products are manufactured from SKU names.
-- Read the SQL notices: they report each SKU/ID and the insert count. Missing, inactive, legacy or duplicated matches leave the entire quote empty and report the problem. If that happens, correct the catalog and use the existing Super-admin **Reset to starter** flow after reviewing/copying the saved template; rerunning an insert-only migration deliberately does not overwrite it.
-- MarketFresh alone receives the approved platform/add-on/minimum/approval bracket fills. The remaining guidance stays and prevents sending until staff handle it. The template remains a read-only library starter, with normal Make a copy and Reset behavior.
+- Read the SQL notices: they report each SKU/ID and the insert count. Missing, inactive, legacy or duplicated matches leave the entire quote empty and report the problem. If that happens, correct the catalog and use the existing Super-admin **Reset to default** flow after reviewing or optionally duplicating the saved template; rerunning an insert-only migration deliberately does not overwrite it.
+- MarketFresh alone receives the approved platform/add-on/minimum/approval bracket fills. The remaining guidance stays and prevents sending until staff handle it. The template remains a library starter. Staff can edit it in place or duplicate it; super admins can reset it to default.
 
 The checked-in payloads are reproducible with `node --import tsx scripts/build-starter-migration.ts`. The historical branding updater skips the new starter, which has no old cover snapshot. The original six have not been regenerated or rewritten in place; their historical assertions remain covered.
 
@@ -47,3 +47,9 @@ The repository's old “Website proposal sample” points to seed ID `00000000-0
 The embedded SQL has been regenerated for the guidance change. If the previous SQL file was already applied, run the updated complete file again before the backfill: it replaces the future-workspace trigger payload, without rewriting existing starters. Review the dry run before `--confirm`; reruns never overwrite edited or previously inserted starters.
 
 Business state uses existing workspace settings JSON; no separate column/backfill is required. Set it in Workspace → Brand → Workspace contact details. Starter placeholders intentionally block sending until staff replace them. Nothing rewrites existing proposals or frozen versions.
+
+## Protecting edits in future starter releases
+
+Starter templates are editable in place. Use an insert-only seed for new starter keys. To upgrade an existing starter, match its workspace and starter key, compare the entire authored state (content, cover, header/footer, quote and styles) with a known previous shipped seed, then atomically compare the stored row before replacing it. If any authored part differs, skip the row. Do not use the displayed Default/Edited label as a write condition or modify existing proposals. Preserve the row ID, name and availability. Super admins can explicitly reset a customized starter to the current shipped defaults.
+
+The #138 cover rollout was applied before in-place editing. Do not reuse its older cover-only check as a whole-starter guard: a matching cover alone does not establish that a starter is untouched.

@@ -10,7 +10,6 @@ const derived = new Set([
   "connector_restore_event_id",
   "starter_edited",
   "source_starter_name",
-  "attempt_applied",
   "used_in",
 ]);
 export function storedStudioEntity<T extends { id: string }>(value: T): T {
@@ -124,12 +123,18 @@ export async function writeStudioEntity<T extends { id: string }>(
   check(
     linked
       ? await repo.commitLinkedBlock(linked, audit)
-      : await repo.saveStudioEntity(
-          table,
-          before ? storedStudioEntity(before) : null,
-          value,
-          audit,
-        ),
+      : table === "templates" && (before as Template | null)?.starter_key
+        ? await repo.replaceStarter(
+            storedStudioEntity(before as Template),
+            value as unknown as Template,
+            audit,
+          )
+        : await repo.saveStudioEntity(
+            table,
+            before ? storedStudioEntity(before) : null,
+            value,
+            audit,
+          ),
     `409: ${table === "templates" ? "Template" : "Saved block"} changed during save. Reload it and merge your changes before retrying.`,
     409,
   );
@@ -189,7 +194,6 @@ export async function restoreConnectorChange(
     await repo.entities<{ id: string; starter_key?: string }>(table)
   ).find((e) => e.id === event.metadata.entity_id);
   check(current, "Item not found", 404);
-  check(!current.starter_key, "Starters are read-only", 403);
   check(
     studioRevision(current) === event.metadata.after_revision,
     "409: This item changed after Claude's edit. Your later edits are kept; refresh and review them before restoring.",

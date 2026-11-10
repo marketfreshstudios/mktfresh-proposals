@@ -5,6 +5,7 @@ import {
   libraryStarterAction,
   libraryTemplates,
 } from "../src/lib/template-library";
+import { studioRevision } from "../src/lib/studio-history";
 import { sameStarterState } from "../src/lib/starter-template-state";
 import type { Item, Template } from "../src/lib/model";
 const mocks = vi.hoisted(() => ({ staff: vi.fn(), runtime: vi.fn() }));
@@ -42,65 +43,81 @@ const request = (path: string[], method = "POST", body: any = {}) =>
     }),
     path,
   );
-it("every save and delete path protects starters; copy retains the attempted text, style, quote and lineage", async () => {
+it("saves starter changes in place, preserves protected metadata, and duplicates the saved version independently", async () => {
   const f = await fixture(),
     t = f.templates[1],
-    before = structuredClone(t),
-    attempt = structuredClone(t);
-  attempt.content[1].text = "Attempted wording";
-  attempt.style_overrides = { body: { size: 18 } };
-  attempt.default_items![0].name = "A tailored product";
-  for (const method of ["POST", "PUT"]) {
-    expect((await request(["templates"], method, attempt)).status).toBe(403);
-  }
-  expect((await request(["templates", t.id], "DELETE")).status).toBe(403);
-  expect(
-    (await f.repo.entities<Template>("templates")).find((x) => x.id === t.id),
-  ).toEqual(before);
-  const res = await request(["templates", t.id, "copy"], "POST", {
-    name: "Custom website",
-    attempt,
+    originalProposal = await f.service.create(
+      {
+        client_id: f.draft.client.id,
+        template_id: t.id,
+        title: "From the library",
+      },
+      staff,
+    ),
+    edited = structuredClone(t);
+  edited.content[1].text = "Customized wording";
+  edited.style_overrides = { body: { size: 18 } };
+  edited.default_items![0].name = "A tailored product";
+  edited.cover = {
+    ...t.cover!,
+    layout: "split",
+    background: { type: "solid" },
+  };
+  const put = await request(["templates"], "PUT", {
+    ...edited,
+    starter_key: "tampered-key",
+    starter_order: 0,
+    active: false,
+    expected_revision: studioRevision(t),
   });
-  expect(res.status).toBe(200);
-  const copy = await res.json();
-  const proposal = await f.service.create(
-    {
-      client_id: f.draft.client.id,
-      template_id: t.id,
-      title: "From the library",
-    },
-    staff,
-  );
-  expect(proposal.template_id).toBe(t.id);
-  expect(proposal.content).toEqual(t.content);
-  expect(copy.starter_key).toBeUndefined();
-  expect(copy.source_starter_key).toBe(t.starter_key);
-  expect(copy.content[1].text).toBe("Attempted wording");
-  expect(copy.style_overrides.body.size).toBe(18);
-  expect(copy.default_items[0].name).toBe("A tailored product");
+  expect(put.status).toBe(201);
+  const saved = await put.json();
+  expect(saved).toMatchObject({
+    id: t.id,
+    active: t.active,
+    starter_key: t.starter_key,
+    starter_order: t.starter_order,
+    starter_edited: true,
+    cover: edited.cover,
+    content: edited.content,
+    default_items: edited.default_items,
+    style_overrides: edited.style_overrides,
+  });
   expect(
-    (await request(["templates"], "POST", { ...copy, name: "Editable copy" }))
-      .status,
-  ).toBe(201);
+    (
+      await request(["templates"], "POST", {
+        ...t,
+        expected_revision: studioRevision(t),
+      })
+    ).status,
+  ).toBe(409);
+  expect((await request(["templates", t.id], "DELETE")).status).toBe(403);
+  const copyResponse = await request(["templates", t.id, "copy"], "POST", {
+    name: "Custom website",
+  });
+  expect(copyResponse.status).toBe(200);
+  const copy = await copyResponse.json();
+  expect(copy).toMatchObject({
+    source_starter_key: t.starter_key,
+    content: saved.content,
+    cover: saved.cover,
+    default_items: saved.default_items,
+    style_overrides: saved.style_overrides,
+  });
+  expect(copy.id).not.toBe(t.id);
+  expect(copy.starter_key).toBeUndefined();
+  expect(await f.repo.get(originalProposal.id)).toMatchObject({
+    template_id: t.id,
+    content: t.content,
+  });
   const rows = await (await request(["templates"], "GET")).json();
+  expect(rows.find((v: Template) => v.id === t.id)).toMatchObject({
+    starter_edited: true,
+    revision: saved.revision,
+  });
   expect(rows.find((v: Template) => v.id === copy.id).source_starter_name).toBe(
     t.name,
   );
-});
-it("an unfinished invalid style falls back explicitly to a clean copy instead of saving invalid template data", async () => {
-  const f = await fixture(),
-    t = f.templates[0],
-    attempt = { ...t, style_overrides: { body: { size: 0 } } };
-  const result = (await libraryStarterAction(f.repo, staff, t.id, "copy", {
-    name: "Continue here",
-    attempt,
-  })) as any;
-  expect(result.attempt_applied).toBe(false);
-  expect(result.style_overrides).toBeUndefined();
-  expect(result.content).toEqual(t.content);
-  expect(
-    (await f.repo.entities<Template>("templates")).find((v) => v.id === t.id),
-  ).toEqual(t);
 });
 it("Reset resolves current SKU products, preserves identity/availability, Undo restores the exact edited row, and proposals never change", async () => {
   const f = await fixture(),
@@ -215,7 +232,7 @@ it("workspace-scoped SQL CAS is atomic, rejects stale writes and is service-role
     const f = await fixture(),
       t = f.templates[0],
       workspace = f.repo.workspaceId,
-      after = { ...t, active: false },
+      after = { ...t, cover: { ...t.cover!, layout: "split" as const } },
       event = { id: crypto.randomUUID() };
     await db.query("insert into templates values($1,$2,$3)", [
       t.id,
