@@ -520,7 +520,9 @@ test("Live review: customer, contacts, setup, shared controls, products and font
             page.getByRole("progressbar", { name: "Workspace setup progress" }),
           ).toBeHidden();
         } else {
-          await expect(page.locator(".setup-checklist li")).toHaveCount(8);
+          const steps = page.locator(".setup-checklist li");
+          await expect(steps).toHaveCount(9);
+          await expect(steps.first()).toContainText("Business details");
           await expect(
             page.locator('.setup-checklist li[data-complete="true"] .btn'),
           ).toHaveCount(0);
