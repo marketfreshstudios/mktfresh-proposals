@@ -3186,6 +3186,7 @@ function QuoteEditorContent({
                 <PlainClauseText
                   label="Clause body"
                   value={c.body}
+                  boldRunIns={finalOiotClause(c)}
                   map={map}
                   onChange={(body) => patch({ body })}
                 />

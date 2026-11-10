@@ -8,6 +8,7 @@ import {
   bandImageDrop,
   type BandImageOptions,
 } from "./editor/inline-band-image";
+import { ClauseRunIn } from "./editor/clause-run-in";
 import { bandRichText } from "./editor/band-rich-text";
 import { pageSpacers, pageSpacerKey } from "./page-spacers";
 import { createPortal } from "react-dom";
@@ -50,6 +51,7 @@ export function FieldEditor({
   readOnly = false,
   plainText = false,
   multilinePlainText = false,
+  clauseRunIns = false,
   fieldLabels,
   pickerMap,
   formattingMode,
@@ -58,6 +60,7 @@ export function FieldEditor({
   readOnly?: boolean;
   plainText?: boolean;
   multilinePlainText?: boolean;
+  clauseRunIns?: boolean;
   fieldLabels?: Record<string, string>;
   pickerMap?: Record<string, string>;
   formattingMode?: "email";
@@ -271,6 +274,7 @@ export function FieldEditor({
           ]
         : []),
       pageSpacers(() => values.current),
+      ...(clauseRunIns ? [ClauseRunIn] : []),
       StarterKit.configure({
         ...(plainText
           ? {

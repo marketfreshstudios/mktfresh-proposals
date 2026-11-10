@@ -23,6 +23,7 @@ import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
+import { finalOiotClause } from "../lib/oiot";
 import { PlainClauseText } from "./editor/plain-clause-text";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { ToolsPanel } from "./editor/tools-panel";
@@ -3095,6 +3096,7 @@ function TemplatesStudioContent({
                                           <PlainClauseText
                                             label={`Clause ${k + 1} body`}
                                             value={c.body}
+                                            boldRunIns={finalOiotClause(c)}
                                             map={map}
                                             onChange={(body) =>
                                               patch(
@@ -3447,6 +3449,7 @@ function BlockPanel({
             <PlainClauseText
               label="Clause body"
               value={c.body}
+              boldRunIns={finalOiotClause(c)}
               map={map}
               onChange={(body) => update({ body })}
             />

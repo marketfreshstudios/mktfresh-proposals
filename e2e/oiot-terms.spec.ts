@@ -1,4 +1,9 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Locator,
+} from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { paymentPlanClause } from "../seed/oiot-clause";
@@ -12,13 +17,34 @@ import { openQuoteRow, openEditorPanel } from "./editor-ui";
 const headers = { Authorization: "Bearer e2e-staff-secret-only" };
 const capture = process.env.CAPTURE_OIOT === "1";
 const shots = "docs/screenshots/oiot-terms";
+const runInShots = "docs/screenshots/oiot-editor-run-in";
+const captureRunIns = process.env.CAPTURE_OIOT_RUN_INS === "1";
+const runIns = [
+  "Fees and Term.",
+  "What the Monthly Fee Covers.",
+  "Build Credit, Buyout and Step-Down.",
+  "Ownership.",
+  "If Payment Stops or Client Cancels.",
+];
+async function expectRunIns(clause: Locator) {
+  for (const label of runIns)
+    await expect(
+      clause.getByText(label, { exact: true }).first(),
+    ).toHaveJSProperty("tagName", "STRONG");
+  await expect(clause).not.toContainText("**");
+}
 
 async function fixture(
   request: APIRequestContext,
   {
     withoutClause = false,
     catalogSku,
-  }: { withoutClause?: boolean; catalogSku?: string } = {},
+    planSelected = false,
+  }: {
+    withoutClause?: boolean;
+    catalogSku?: string;
+    planSelected?: boolean;
+  } = {},
 ) {
   const { settings } = await setup();
   const client = crypto.randomUUID(),
@@ -51,8 +77,8 @@ async function fixture(
     ]),
     optional: true,
     choice_group_id: group,
-    selected: order === 0,
-    default_selected: order === 0,
+    selected: order === (planSelected ? 1 : 0),
+    default_selected: order === (planSelected ? 1 : 0),
   }));
   const blocks = [
     { type: "page_break" },
@@ -119,6 +145,7 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1040 });
   if (capture) mkdirSync(shots, { recursive: true });
+  if (captureRunIns) mkdirSync(runInShots, { recursive: true });
   const { draft, planId, post } = await fixture(request);
   const get = async (): Promise<Proposal> =>
     (await request.get(`/api/proposals/${draft.id}`, { headers })).json();
@@ -172,6 +199,14 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   await expect(clause.locator('[data-field="oiot.purchase_price"]')).toHaveText(
     "$3,750",
   );
+  await expectRunIns(clause);
+  if (captureRunIns) {
+    await clause.locator("summary").evaluate((el) => {
+      el.scrollIntoView({ block: "start" });
+      el.closest(".editor-document-region")?.scrollBy(0, -190);
+    });
+    await page.screenshot({ path: runInShots + "/proposal-editor-1440.png" });
+  }
   const now = await openQuoteRow(page, "Own It Now");
   await now.getByRole("radio", { name: "Selected for client" }).check();
   await expect
@@ -192,8 +227,7 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   await page.getByRole("radio", { name: /Own It Over Time/ }).check();
   await expect(heading.first()).toBeVisible();
   await expect(page.locator(".client-document-sheets")).toBeVisible();
-  const first = page.getByText("Fees and Term.", { exact: true }).first();
-  await expect(first).toHaveJSProperty("tagName", "STRONG");
+  await expectRunIns(page.locator(".client-document-sheets"));
   await expect(
     page.getByText(/full purchase price is \$3,750/).first(),
   ).toBeVisible();
@@ -208,6 +242,8 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   });
   if (capture)
     await page.screenshot({ path: shots + "/client-clause-1440.png" });
+  if (captureRunIns)
+    await page.screenshot({ path: runInShots + "/client-1440.png" });
 
   await page.setViewportSize({ width: 375, height: 850 });
   const phoneClause = page
@@ -227,6 +263,19 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
     data: signature(accepted.revision, accepted.client.email),
   });
   expect(response.ok(), await response.text()).toBe(true);
+  const frozen = (await get()).versions.at(-1)!;
+  expect(frozen.frozen).toBe(true);
+  expect(
+    frozen.content.find((b) => b.type === "contract")?.clauses?.[0],
+  ).toEqual(
+    expect.objectContaining({
+      body: paymentPlanClause.body,
+      body_format: "oiot_run_in",
+    }),
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "View the signed proposal" }).click();
+  await expectRunIns(page.locator(".client-document-sheets"));
   const file = testInfo.outputPath("signed-oiot.pdf");
   const pdf = await request.get(`/api/proposals/${draft.id}/download`, {
     headers,
@@ -245,6 +294,12 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   expect(text).toContain("kickoff payment of $1,500");
   expect(text).toContain("full purchase price is $3,750");
   expect(text).toContain("days’ advance notice.");
+  expect(text).not.toContain("**");
+  // Poppler exports bold font runs from the signed PDF as <b> elements.
+  const xml = execFileSync("pdftohtml", ["-xml", "-i", "-stdout", file], {
+    encoding: "utf8",
+  });
+  for (const label of runIns) expect(xml).toContain(`<b>${label}</b>`);
   await page.goto(`/proposals/${draft.id}`);
   await expect(
     page.getByText("Website purchase price $3,750 · Kickoff $1,500"),
@@ -269,6 +324,116 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
       file,
       shots + "/pdf-clause",
     ]);
+  if (captureRunIns)
+    execFileSync("pdftoppm", [
+      "-f",
+      String(termsPage),
+      "-l",
+      String(termsPage + 1),
+      "-scale-to-x",
+      "1440",
+      "-scale-to-y",
+      "-1",
+      "-png",
+      file,
+      runInShots + "/signed-pdf-1440",
+    ]);
+});
+
+test("template canvas and clause settings edit bold run-ins without exposing delimiters", async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1160 });
+  const { templateId, draft } = await fixture(request, { planSelected: true });
+  const getTemplateClause = async () => {
+    const list = await (
+      await request.get("/api/templates", { headers })
+    ).json();
+    return list
+      .find((t: { id: string }) => t.id === templateId)
+      .content.find((b: { type: string }) => b.type === "contract").clauses[0];
+  };
+  await page.goto(`/studio/templates/${templateId}`);
+  const clause = page.getByRole("textbox", { name: "Clause 1 body" });
+  await expectRunIns(clause);
+  await expect(clause.locator('[data-field="oiot.kickoff"]')).toBeAttached();
+  expect((await getTemplateClause()).body).toBe(paymentPlanClause.body);
+  if (captureRunIns) {
+    mkdirSync(runInShots, { recursive: true });
+    await clause
+      .locator("strong")
+      .first()
+      .evaluate((el) => {
+        el.scrollIntoView({ block: "start" });
+        el.closest(".studio-template-main")?.scrollBy(0, -185);
+      });
+    await page.screenshot({ path: runInShots + "/template-editor-1440.png" });
+  }
+  // Edit within the marked label, then type a stray Markdown delimiter.
+  await clause.locator("strong").first().scrollIntoViewIfNeeded();
+  const labelPoint = await clause
+    .locator("strong")
+    .first()
+    .evaluate((label) => {
+      const range = document.createRange();
+      range.setStart(label.firstChild!, "Fees and Term".length);
+      range.collapse(true);
+      const point = range.getBoundingClientRect();
+      return { x: point.x, y: point.y + point.height / 2 };
+    });
+  await page.mouse.click(labelPoint.x, labelPoint.y);
+  await page.keyboard.insertText(" revised**");
+  await expect(clause.locator("strong").first()).toHaveText(
+    "Fees and Term revised.",
+  );
+  await expect(clause).not.toContainText("*");
+  await expect
+    .poll(async () => (await getTemplateClause()).body)
+    .toBe(
+      paymentPlanClause.body.replace(
+        "Fees and Term.",
+        "Fees and Term revised.",
+      ),
+    );
+  await page.reload();
+  await expect(clause.locator("strong").first()).toHaveText(
+    "Fees and Term revised.",
+  );
+
+  // The proposal's edit sheet uses the same marked field as the template.
+  await page.goto(`/proposals/${draft.id}`);
+  const contract = page
+    .locator(".contract-editor details")
+    .filter({ hasText: "4.4 Own It Over Time" });
+  const summary = contract.locator("summary");
+  await expect(summary).toBeVisible();
+  await summary.click();
+  const clauseFrame = page.getByRole("group", {
+    name: "Proposal clause 1",
+    exact: true,
+  });
+  await clauseFrame.focus();
+  await clauseFrame.getByRole("button", { name: "Clause settings" }).click();
+  const editor = page.getByRole("textbox", {
+    name: "Clause body",
+    exact: true,
+  });
+  await expectRunIns(editor);
+  await editor
+    .locator("strong")
+    .first()
+    .evaluate((label) => {
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const selection = window.getSelection()!;
+      (label.closest("[contenteditable]") as HTMLElement).focus();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    });
+  await page.keyboard.press("Backspace");
+  await expect(editor.locator("strong")).toHaveCount(4);
+  await expect(editor).not.toContainText("*");
 });
 
 test("catalog kickoff stays editable after Enter and Tab without clause 4.4", async ({
