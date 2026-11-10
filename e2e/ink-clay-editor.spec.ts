@@ -123,7 +123,11 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   await expect(
     ai.getByRole("button", { name: "Mark this AI-written block reviewed" }),
   ).toHaveCSS("color", marker.color);
-  await expect(page.locator(".quote-workspace .action:visible")).toHaveCount(0);
+  // Owner 10 Nov: the header Review & send is the screen's one clay action.
+  await expect(page.locator(".quote-workspace .action:visible")).toHaveCount(1);
+  await expect(page.locator(".quote-workspace .action:visible")).toHaveClass(
+    /\beditor-header-send\b/,
+  );
   await capture(page, "editor-quote-1440");
 
   const toggles = rows.locator(".quote-row-toggle");
