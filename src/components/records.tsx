@@ -40,6 +40,7 @@ import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
 import { HomeSetup } from "./home-setup";
+import { HomePipeline } from "./home-pipeline";
 import { ContactValue } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
 import { formattedAddress } from "../lib/client-contact";
@@ -69,7 +70,7 @@ import {
 } from "../lib/proposal-state";
 import type { ProposalAction } from "../lib/proposal-actions";
 import type { ClientBilling } from "../lib/client-billing";
-import { selected, orderedItems, draftItems } from "../lib/quote-model";
+import { selected, orderedItems } from "../lib/quote-model";
 import { totals, renderBlocks, variables } from "../lib/presentation";
 import { fontCss } from "../lib/proposal-fonts";
 import { eventLabel } from "../lib/event-label";
@@ -144,10 +145,18 @@ function rememberList() {
     }),
   );
 }
-export function SignLink({ p, data }: { p: Proposal; data: Data }) {
+export function SignLink({
+  p,
+  data,
+  outline = false,
+}: {
+  p: Proposal;
+  data: Data;
+  outline?: boolean;
+}) {
   return canCountersign(p, data.user, data.settings) ? (
     <a
-      className="btn primary sign-link"
+      className={`btn ${outline ? "secondary" : "primary"} sign-link`}
       href={`/proposals/${p.id}?action=countersign`}
       onClick={(e) => {
         e.stopPropagation();
@@ -919,10 +928,16 @@ export function ProposalListV4({
     [owner, setOwner] = useState("all"),
     [more, setMore] = useState(false);
   const moreTrigger = useRef<HTMLButtonElement>(null);
+  const now = Date.now();
+  const timezone = data?.settings?.timezone ?? "UTC";
+  const matchesView = (proposal: Proposal, key: string) =>
+    key === "expiring"
+      ? expiringWithinSevenDays(proposal, now, timezone)
+      : inView(proposal, key);
   const counts = Object.fromEntries(
     listViews.map((name) => [
       name,
-      rows.filter((p) => inView(p, viewKey(name))).length,
+      rows.filter((p) => matchesView(p, viewKey(name))).length,
     ]),
   );
   const activeExtra = otherViews.find((name) => viewKey(name) === view);
@@ -939,7 +954,7 @@ export function ProposalListV4({
   const shown = rows
     .filter(
       (p) =>
-        inView(p, view) &&
+        matchesView(p, view) &&
         (owner === "all" ||
           proposalOwnerId(p) ===
             (owner === "mine" ? data?.user.actor.slice(6) : owner)) &&
@@ -1168,7 +1183,7 @@ function HomeIntro({
   return (
     <section className="home-intro">
       <div>
-        <p className="t-eyebrow">{subtitle}</p>
+        <p className="home-date">{subtitle}</p>
         <h1 className="t-page-title">{title}</h1>
       </div>
       <Button className="action" onClick={onNew}>
@@ -1241,16 +1256,6 @@ export function HomeV4({
       rows: active.filter(billingIssues),
     },
   ];
-  const stages = [
-    { view: "not-viewed", label: "Sent" },
-    { view: "viewed", label: "Viewed" },
-    { view: "won", label: "Won" },
-  ].map((stage) => ({
-    ...stage,
-    rows: active.filter((p) => inView(p, stage.view)),
-  }));
-  const pipeline = stages.flatMap((stage) => stage.rows);
-  const currencies = [...new Set(pipeline.map((p) => p.currency))];
   const expiry = (p: Proposal) =>
     p.published_state ? p.published_state.valid_until : p.valid_until;
   const expiring = active
@@ -1304,142 +1309,61 @@ export function HomeV4({
         </Banner>
       )}
       <div className="home-overview">
-        <section className="home-pipeline" aria-labelledby="open-pipeline">
-          <header className="home-pipeline-heading">
-            <h2 id="open-pipeline">
-              Open pipeline · {pipeline.length}{" "}
-              {pipeline.length === 1 ? "proposal" : "proposals"}
-            </h2>
-            <p>Sent, viewed and won</p>
-          </header>
-          {currencies.length ? (
-            currencies.map((currency) => {
-              const value = pipeline
-                .filter((p) => p.currency === currency)
-                .reduce(
-                  (sum, p) => {
-                    const amounts = totals(
-                      p.client_signed_at
-                        ? (p.versions.at(-1)?.quote ?? p.quote)
-                        : draftItems(p.quote),
-                    );
-                    return {
-                      once: sum.once + amounts.one_time_total,
-                      month: sum.month + amounts.monthly_total,
-                      year: sum.year + amounts.yearly_total,
-                    };
-                  },
-                  { once: 0, month: 0, year: 0 },
-                );
-              return (
-                <div
-                  key={currency}
-                  className="home-pipeline-amounts"
-                  aria-label={currency}
-                >
-                  <div>
-                    <strong className="t-hero-number">
-                      {money(value.month, currency)}
-                      <small>/mo</small>
-                    </strong>
-                    <span>Recurring</span>
-                  </div>
-                  <div>
-                    <strong className="t-hero-number">
-                      {money(value.once, currency)}
-                    </strong>
-                    <span>One-time</span>
-                  </div>
-                  {!!value.year && (
-                    <div>
-                      <strong className="t-hero-number">
-                        {money(value.year, currency)}
-                        <small>/yr</small>
-                      </strong>
-                      <span>Yearly</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <>
-              <div className="home-pipeline-amounts home-pipeline-zero">
-                <div>
-                  <strong className="t-hero-number">
-                    {money(0, data.settings?.currency)}
-                    <small>/mo</small>
-                  </strong>
-                  <span>Recurring</span>
-                </div>
-                <div>
-                  <strong className="t-hero-number">
-                    {money(0, data.settings?.currency)}
-                  </strong>
-                  <span>One-time</span>
-                </div>
-              </div>
-              <p>Your pipeline fills in as you send proposals.</p>
-            </>
-          )}
-          <div className="home-pipeline-bar" aria-hidden="true">
-            {stages.map(
-              ({ view, rows }) =>
-                rows.length > 0 && (
-                  <span
-                    key={view}
-                    data-stage={view}
-                    style={{ flex: rows.length }}
-                  />
-                ),
-            )}
-          </div>
-          <ul className="home-pipeline-legend" role="list">
-            {stages.map(({ view, label, rows }) => (
-              <li key={view} data-stage={view}>
-                <a href={`/proposals?view=${view}`}>
-                  {label} · {rows.length}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section
-          className="home-reference home-expiring"
-          aria-labelledby="expiring-title"
-        >
+        <HomePipeline
+          proposals={rows}
+          timezone={timezone}
+          currency={data.settings?.currency}
+          savedRange={data.account?.home_pipeline_range}
+        />
+        <section className="home-expiring" aria-labelledby="expiring-title">
           <header className="section-heading">
-            <h2 id="expiring-title">Expiring this week</h2>
-            <a href="/proposals">All proposals</a>
+            <h2 id="expiring-title">
+              Expiring this week{" "}
+              <span className="home-section-count" aria-hidden="true">
+                {expiring.length}
+              </span>
+            </h2>
+            <a href="/proposals?view=expiring">
+              {expiring.length ? `View all ${expiring.length}` : "View all"}
+            </a>
           </header>
-          {expiring.length ? (
-            <>
-              <p>Links that close in the next 7 days.</p>
+          <div className="home-expiring-card">
+            {expiring.length ? (
               <ul role="list">
-                {expiring.map((p) => (
+                {expiring.slice(0, 3).map((p) => (
                   <li key={p.id}>
-                    <a href={`/proposals/${p.id}`}>
-                      <span>
-                        <strong>{p.client.company}</strong>
-                        <small>{p.title}</small>
-                      </span>
-                      <time
-                        dateTime={expiry(p)!}
-                        title={readableDate(expiry(p)!, timezone)}
-                      >
-                        Closes {weekday.format(new Date(expiry(p)!))}
-                      </time>
+                    <a
+                      className="home-expiring-proposal"
+                      href={`/proposals/${p.id}`}
+                    >
+                      <strong>{p.client.company}</strong>
+                      <small>{p.title}</small>
                     </a>
+                    <time
+                      dateTime={expiry(p)!}
+                      title={readableDate(expiry(p)!, timezone)}
+                    >
+                      Closes {weekday.format(new Date(expiry(p)!))}
+                    </time>
+                    {canEditRecord(p) && (
+                      <a
+                        className="btn secondary"
+                        href={`/proposals/${p.id}?view=send`}
+                        aria-label={`Extend ${p.title}`}
+                      >
+                        Extend
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
-            </>
-          ) : (
-            <p className="home-expiring-empty">
-              <chromeIcons.check size={16} aria-hidden="true" />
-              Nothing closes in the next 7 days.
-            </p>
-          )}
+            ) : (
+              <p className="home-expiring-empty">
+                <chromeIcons.check size={16} aria-hidden="true" />
+                Nothing closes in the next 7 days.
+              </p>
+            )}
+          </div>
         </section>
       </div>
       <HomeSetup data={data} onChanged={onSetupChanged} />
@@ -1505,7 +1429,7 @@ export function HomeV4({
                   </strong>
                   {kind === "signature" &&
                   canCountersign(p, data.user, data.settings) ? (
-                    <SignLink p={p} data={data} />
+                    <SignLink p={p} data={data} outline />
                   ) : kind === "viewed" &&
                     p.token &&
                     (!expiry(p) || Date.parse(expiry(p)!) > now.getTime()) ? (
@@ -1523,10 +1447,10 @@ export function HomeV4({
           )}
         </div>
       </section>
-      <section>
+      <section aria-labelledby="home-recent-title">
         <header className="section-heading">
-          <h2>Recent proposals</h2>
-          <a href="/proposals">View all</a>
+          <h2 id="home-recent-title">Recent proposals</h2>
+          <a href="/proposals">View all proposals</a>
         </header>
         <ProposalRows
           showOwner

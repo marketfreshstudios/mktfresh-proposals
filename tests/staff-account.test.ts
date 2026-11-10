@@ -40,10 +40,12 @@ describe("staff account", () => {
         notifications: { staff_question: false },
       }),
       saveStaffAccount(repo, actor, { timezone: "Pacific/Honolulu" }),
+      saveStaffAccount(repo, actor, { home_pipeline_range: "6-months" }),
     ]);
     await saveStaffAccount(repo, other, { theme: "dark" });
     expect(await readStaffAccount(repo, actor)).toMatchObject({
       timezone: "Pacific/Honolulu",
+      home_pipeline_range: "6-months",
       notifications: { staff_question: false },
       theme: null,
     });
@@ -52,6 +54,9 @@ describe("staff account", () => {
       notifications: {},
       theme: "dark",
     });
+    expect(
+      (await readStaffAccount(repo, other)).home_pipeline_range,
+    ).toBeUndefined();
     await expect(
       readStaffAccount(new MemoryRepository(otherId), actor),
     ).rejects.toMatchObject({ status: 403 });
@@ -59,6 +64,7 @@ describe("staff account", () => {
       { user_id: otherId },
       { role: "owner" },
       { timezone: "Not/A_Timezone" },
+      { home_pipeline_range: "this-week" },
       { notifications: { staff_signed: false } },
       { notifications: { staff_billing_failed: false } },
       { first_name: "" },

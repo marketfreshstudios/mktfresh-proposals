@@ -47,7 +47,6 @@ async function scenario(page: Page) {
   });
   settings.company_signatory?.authorized_user_ids.push(delegate.actor.slice(6));
   await repo.put("workspace_settings", settings);
-  await page.clock.setFixedTime(now);
   const date = (days: number) =>
     new Date(now.getTime() + days * 86400000).toISOString();
   const clients: Client[] = [];
@@ -196,6 +195,7 @@ async function scenario(page: Page) {
     imported,
   ];
   for (const p of rows) await repo.save(p, p.revision);
+  await page.clock.setFixedTime(new Date());
   const all = async () =>
     (await repo.list()).filter(
       (p) => rows.some((row) => row.id === p.id) || p.title.endsWith("(copy)"),
@@ -309,10 +309,10 @@ test("Home, list views and action slots use the existing proposal states", async
     "Billing issue",
   ]);
   await expect(page.locator(".home-v4 .btn.action")).toHaveCount(1);
-  await expect(page.locator(".home-pipeline-legend li")).toHaveText([
-    "Sent · 1",
-    "Viewed · 1",
-    "Won · 4",
+  await expect(page.locator("[data-pipeline-stage-count]")).toHaveText([
+    "1 Sent",
+    "1 Viewed",
+    "3 Won",
   ]);
   await expect(page.locator(".home-expiring li")).toHaveCount(2);
   await expect(
@@ -712,7 +712,9 @@ test("Home recent proposals and Proposals share their table and row actions", as
         expect(labels).toBe(headers);
         expect(grid).toBe(columns);
         await expect(
-          page.getByRole("link", { name: "View all", exact: true }),
+          page
+            .getByRole("region", { name: "Recent proposals" })
+            .getByRole("link", { name: "View all proposals", exact: true }),
         ).toHaveAttribute("href", "/proposals");
       }
       const editable = rows

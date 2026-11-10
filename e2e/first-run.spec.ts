@@ -146,7 +146,7 @@ for (const width of [1440, 375]) {
         page.getByRole("heading", { name: "Recent proposals" }),
       ).toBeVisible();
       await expect(
-        page.getByRole("heading", { name: /Open pipeline · 0 proposals/ }),
+        page.getByRole("heading", { name: "Pipeline 0 proposals" }),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "Expiring this week" }),

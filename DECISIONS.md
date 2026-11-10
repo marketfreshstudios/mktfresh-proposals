@@ -1026,3 +1026,9 @@ The sign-in email may use any valid domain. If it is outside the workspace's ver
 Paused, removed, and signed-out screens reflect the existing membership and session actions. An encrypted browser hint from a prior authenticated visit can show the workspace and administrator for that account. An anonymous visitor receives the ordinary sign-in form, and a password error does not identify someone else's account. There is no scheduled deactivation.
 
 Apply the staff security migration before deployment. Secret tables and mutation functions are service-only. The existing authenticated workspace read policies gain a restrictive session check through staff membership. The function used by that policy only checks the caller's verified session. The migration provisions no factors for existing accounts.
+
+### Home pipeline range and section layout (Nov 10, 2026)
+
+Home follows the updated Redesign 19 frame 2b1. The range defaults to This month and saves to the existing private staff account JSON. Ranges use the workspace time zone and the proposal's most recent Send or Reopen date. Three and six months include the current calendar month and the preceding two or five. This year starts on January 1. All time also includes legacy proposals marked won without a send date. The existing stage rules apply in every range. Totals use the existing quote amounts, with currencies and billing intervals kept separate. Home already loads the proposal list, so switching ranges needs no second data request. Reduced-motion preferences skip both the number and segment animation.
+
+The Expiring card shows the next three proposals and links to the full seven-day view. Extend opens the existing Review & send editor for eligible records, where staff choose the date. The Expiring empty message remains inside the card. The setup checklist keeps its place between the top row and attention cards. No hosted SQL is needed.

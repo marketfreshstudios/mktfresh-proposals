@@ -155,11 +155,11 @@ test.describe("Staff content surfaces", () => {
     const f = await fixture(page);
     await page.goto("/");
     await table(page.locator(".proposal-rows.staff-table"));
-    await surface(page.locator(".home-expiring"));
+    await surface(page.locator(".home-expiring-card"));
     const attention = page.getByRole("region", {
       name: "Needs your attention",
     });
-    const attentionCard = attention.locator(".home-attention-list");
+    const attentionCard = attention.locator(".home-attention-empty");
     await surface(attentionCard);
     await expect(attentionCard).toHaveCSS("border-top-width", "1px");
     await expect(attentionCard).toHaveText(
