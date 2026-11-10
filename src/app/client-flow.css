@@ -906,9 +906,7 @@ label.flow-quote-line {
     border-inline: 0;
     width: 100%;
   }
-  .client-flow.client-flow.client-flow .flow-acceptance,
-  .client-flow.client-flow.client-flow .flow-contract details,
-  .client-flow.client-flow.client-flow .flow-contract summary {
+  .client-flow.client-flow.client-flow .flow-acceptance {
     padding-inline: 0;
     border-inline: 0;
   }
@@ -1052,4 +1050,9 @@ label.flow-quote-line {
   .client-flow .questions-panel {
     padding: 12px;
   }
+}
+
+.flow-contract .contract > section {
+  border-top: 1px solid var(--paper-border);
+  padding-block: 16px;
 }

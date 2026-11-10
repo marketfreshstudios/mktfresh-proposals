@@ -73,6 +73,30 @@ export function finalOiotVisibility(content: Block[], quote: Quote) {
   );
 }
 
+/** Return the heading only when selecting the plan reveals its terms. */
+export function revealedOiotClause(
+  content: Block[],
+  before: Quote,
+  after: Quote,
+) {
+  return content
+    .flatMap((block) => block.clauses ?? [])
+    .find((clause) => {
+      if (
+        (!finalOiotClause(clause) && clause.id !== "payment-plan") ||
+        !clause.show_when
+      )
+        return false;
+      const selected = (items: Quote) =>
+        items.some(
+          (item) =>
+            item.pricing_item_id === clause.show_when?.pricing_item_id &&
+            (!item.optional || (item.selected ?? item.default_selected)),
+        );
+      return !selected(before) && selected(after);
+    })?.id;
+}
+
 /** This format applies only to the final clause. All pieces are escaped by its renderer. */
 export function clauseTextParts(text: string, bold = false) {
   if (!bold) return [{ text, bold: false }];

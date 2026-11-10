@@ -2,8 +2,9 @@ import { setup } from "../tests/helpers";
 import { test, expect, type APIRequestContext } from "@playwright/test";
 const auth = "http://127.0.0.1:3112";
 const headers = { Authorization: "Bearer e2e-staff-secret-only" };
-async function draft(request: APIRequestContext) {
+async function draft(request: APIRequestContext, unsetPreviewField = false) {
   const { settings } = await setup();
+  if (unsetPreviewField) delete settings.business_state;
   const configured = await request.post("/api/workspace_settings", {
     headers,
     data: settings,
@@ -26,7 +27,9 @@ async function draft(request: APIRequestContext) {
       {
         id: crypto.randomUUID(),
         type: "paragraph",
-        text: "Scope being edited.",
+        text: unsetPreviewField
+          ? "Governed by {{workspace.state}}."
+          : "Scope being edited.",
       },
       { id: crypto.randomUUID(), type: "pricing_table" },
       { id: crypto.randomUUID(), type: "signature_block", role: "client" },
@@ -348,4 +351,87 @@ test("staff pages redirect before HTML and accept a refresh-only session", async
   expect(
     cookies.filter((c) => c.name === "proposal_refresh").map((c) => c.path),
   ).toEqual(["/"]);
+});
+
+test("Preview as client opens from the editor with a verified staff session and keeps workspace boundaries", async ({
+  page,
+  browser,
+  context,
+  request,
+}) => {
+  const p = await draft(request, true);
+  const url = `/p/${p.id}?preview=1`;
+  const cookie = (name: string, value: string) => ({
+    name,
+    value,
+    domain: "127.0.0.1",
+    path: "/",
+    httpOnly: true,
+    sameSite: "Lax" as const,
+  });
+  async function staffSession(account?: string) {
+    const response = await request.post(`${auth}/fixture`, {
+      data: { account },
+    });
+    return response.json();
+  }
+  const owner = await staffSession();
+  await context.addCookies([
+    cookie("proposal_session", owner.access_token),
+    cookie("proposal_refresh", owner.refresh_token),
+  ]);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/proposals/${p.id}/edit`);
+  await expect(
+    page.getByRole("button", { name: "Preview as client", exact: true }),
+  ).toBeVisible();
+  await request.post(`${auth}/fixture/${owner.id}/expire`);
+  const [preview] = await Promise.all([
+    context.waitForEvent("page"),
+    page
+      .getByRole("button", { name: "Preview as client", exact: true })
+      .click(),
+  ]);
+  const response = await preview.request.get(`/api/proposals/${p.id}/preview`);
+  expect(response.status(), await response.text()).toBe(200);
+  await expect(preview).toHaveURL(new RegExp(`/p/${p.id}\\?preview=1$`));
+  await expect(
+    preview.getByText("Preview, not sent", { exact: true }),
+  ).toBeVisible();
+  await expect(preview.getByText("Governed by Business state.")).toBeVisible();
+  expect(
+    (await (await request.get(`${auth}/fixture/${owner.id}`)).json()).refreshes,
+  ).toBe(1);
+  if (process.env.CAPTURE_PREVIEW_TERMS === "1") {
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir("docs/screenshots/client-preview-terms", { recursive: true });
+    await preview.evaluate(() => document.fonts.ready);
+    await preview.screenshot({
+      path: "docs/screenshots/client-preview-terms/preview-1440.png",
+      animations: "disabled",
+    });
+  }
+  const visitor = await browser.newContext({
+    baseURL: "http://127.0.0.1:3100",
+    storageState: { cookies: [], origins: [] },
+  });
+  const otherPage = await visitor.newPage();
+  await otherPage.goto(url);
+  await expect(
+    otherPage.getByText("This preview can only be opened by workspace staff."),
+  ).toBeVisible();
+  const outside = await staffSession("outside");
+  await visitor.addCookies([cookie("proposal_session", outside.access_token)]);
+  await otherPage.reload();
+  await expect(
+    otherPage.getByText("This preview can only be opened by workspace staff."),
+  ).toBeVisible();
+  await expect(otherPage.getByText(p.title, { exact: true })).toHaveCount(0);
+  const member = await staffSession("staff");
+  await visitor.addCookies([cookie("proposal_session", member.access_token)]);
+  await otherPage.reload();
+  await expect(
+    otherPage.getByText("Preview, not sent", { exact: true }),
+  ).toBeVisible();
+  await visitor.close();
 });
