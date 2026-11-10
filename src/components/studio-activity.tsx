@@ -20,6 +20,7 @@ import {
 import { eventLabel } from "../lib/event-label";
 import { api, Button, Banner } from "./ui";
 import { Skeleton } from "./foundation";
+import { useStaffDates } from "./staff-account-context";
 export function ActivityStudio({
   data,
   initialFilter,
@@ -76,7 +77,11 @@ export function ActivityStudio({
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  const timezone = data?.settings?.timezone ?? "UTC";
+  const {
+    timezone,
+    date: formatDate,
+    time: formatTime,
+  } = useStaffDates(data?.settings?.timezone ?? "UTC");
   const day = (when: string) =>
     new Intl.DateTimeFormat("en-CA", {
       timeZone: timezone,
@@ -153,8 +158,7 @@ export function ActivityStudio({
                 : date === yesterday
                   ? "Yesterday · "
                   : ""}
-              {new Date(events[0].created_at).toLocaleDateString("en-US", {
-                timeZone: timezone,
+              {formatDate(events[0].created_at, {
                 month: "long",
                 day: "numeric",
                 ...(date !== today && date !== yesterday
@@ -168,70 +172,75 @@ export function ActivityStudio({
                 <span>Activity</span>
                 <span className="sr-only">Actions</span>
               </StaffTableHead>
-              {events.map((e) => (
-                <article
-                  className="staff-table-row activity-row-v3 activity-row"
-                  key={e.id}
-                >
-                  <time dateTime={e.created_at}>
-                    {new Date(e.created_at).toLocaleTimeString("en-US", {
-                      timeZone: timezone,
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                  <span className="avatar" aria-hidden="true">
-                    {e.actor.startsWith("ai:")
-                      ? "AI"
-                      : e.actor === "system" || e.actor === "client"
-                        ? "·"
-                        : who(e)
-                            .split(" ")
-                            .map((w) => w[0])
-                            .slice(0, 2)
-                            .join("")}
-                  </span>
-                  <div>
-                    {e.type.startsWith("connector_") &&
-                    e.metadata.editor_name ? (
-                      eventLabel(e)
-                    ) : (
-                      <>
-                        <strong>{who(e)}</strong> {eventLabel(e)}
-                      </>
-                    )}
-                    <small>{e.detail}</small>
-                    {e.metadata.can_restore === true && (
-                      <Button
-                        disabled={restore.busy}
-                        onClick={() => void restore.restore(e.id)}
-                      >
-                        Restore previous version
-                      </Button>
-                    )}
-                  </div>
-                  <StaffTableOpen
-                    label={
-                      e.proposal_id ? "Open proposal" : "View activity source"
-                    }
-                    href={
-                      e.metadata.entity_table === "templates"
-                        ? `/studio/templates/${e.metadata.entity_id}`
-                        : e.metadata.entity_table === "content_library"
-                          ? `/studio/blocks/${e.metadata.entity_id}`
-                          : e.proposal_id
-                            ? `/proposals/${e.proposal_id}`
-                            : activityGroup(e) === "Team"
-                              ? "/studio/workspace?view=team"
-                              : /email/.test(e.type)
-                                ? "/studio/emails"
-                                : /catalog|pricing/.test(e.type)
-                                  ? "/studio/products"
-                                  : "/studio/workspace"
-                    }
-                  />
-                </article>
-              ))}
+              {events.map((e) => {
+                const photo = data?.staff.find(
+                  (member) => `staff:${member.user_id}` === e.actor,
+                )?.photo_url;
+                return (
+                  <article
+                    className="staff-table-row activity-row-v3 activity-row"
+                    key={e.id}
+                  >
+                    <time dateTime={e.created_at}>
+                      {formatTime(e.created_at)}
+                    </time>
+                    <span className="avatar" aria-hidden="true">
+                      {photo ? (
+                        <img src={photo} alt="" />
+                      ) : e.actor.startsWith("ai:") ? (
+                        "AI"
+                      ) : e.actor === "system" || e.actor === "client" ? (
+                        "·"
+                      ) : (
+                        who(e)
+                          .split(" ")
+                          .map((w) => w[0])
+                          .slice(0, 2)
+                          .join("")
+                      )}
+                    </span>
+                    <div>
+                      {e.type.startsWith("connector_") &&
+                      e.metadata.editor_name ? (
+                        eventLabel(e)
+                      ) : (
+                        <>
+                          <strong>{who(e)}</strong> {eventLabel(e)}
+                        </>
+                      )}
+                      <small>{e.detail}</small>
+                      {e.metadata.can_restore === true && (
+                        <Button
+                          disabled={restore.busy}
+                          onClick={() => void restore.restore(e.id)}
+                        >
+                          Restore previous version
+                        </Button>
+                      )}
+                    </div>
+                    <StaffTableOpen
+                      label={
+                        e.proposal_id ? "Open proposal" : "View activity source"
+                      }
+                      href={
+                        e.metadata.entity_table === "templates"
+                          ? `/studio/templates/${e.metadata.entity_id}`
+                          : e.metadata.entity_table === "content_library"
+                            ? `/studio/blocks/${e.metadata.entity_id}`
+                            : e.proposal_id
+                              ? `/proposals/${e.proposal_id}`
+                              : activityGroup(e) === "Team"
+                                ? "/studio/workspace?view=team"
+                                : /email/.test(e.type)
+                                  ? "/studio/emails"
+                                  : /catalog|pricing/.test(e.type)
+                                    ? "/studio/products"
+                                    : "/studio/workspace"
+                      }
+                    />
+                  </article>
+                );
+              })}
             </StaffTable>
           </section>
         ))

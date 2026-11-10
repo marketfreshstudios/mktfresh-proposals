@@ -52,9 +52,11 @@ export function ToastSurface({
   }, []);
   useEffect(() => {
     const toast = ref.current;
-    if (!toast) return;
+    if (!toast?.isConnected) return;
     toast.showPopover();
-    return () => toast.hidePopover();
+    return () => {
+      if (toast.isConnected) toast.hidePopover();
+    };
   }, [host]);
   return host
     ? createPortal(

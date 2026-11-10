@@ -5,6 +5,9 @@ export type ProposalSender = {
   email: string;
   company_name: string;
   sending_domain: string;
+  job_title?: string;
+  phone?: string;
+  photo_path?: string;
 };
 export function emailIdentity(p: Proposal) {
   const sender = p.sender;

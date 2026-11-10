@@ -1,3 +1,4 @@
+import { allowStaffNotification } from "./staff-account";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { workspaceStaff } from "./auth";
@@ -218,7 +219,11 @@ export async function deliverQuestionMail(
     if (!p) continue;
     const s = mail.snapshot;
     try {
-      if (s.template_key !== "question_reply" || questionsReadable(p)) {
+      const allowed =
+        s.template_key === "staff_question"
+          ? await allowStaffNotification(repo, p, s.to, "staff_question")
+          : s.template_key !== "question_reply" || questionsReadable(p);
+      if (allowed) {
         await mailer.send(
           {
             from: s.from,

@@ -109,6 +109,16 @@ import {
 } from "./documents";
 import { appOrigin } from "./links";
 import { signatoryVersion, validateSignatureImage } from "./company-signatory";
+import { StaffAccountPatchSchema } from "./staff-account-model";
+import {
+  readStaffAccount,
+  saveStaffAccount,
+  saveStaffPhoto,
+  staffPhoto,
+  readStaffPhoto,
+  saveAccountSignature,
+  workspaceStaffPhotos,
+} from "./staff-account";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
@@ -412,6 +422,30 @@ async function handleRoute(
         const p = await rt.repo.byToken(token);
         check(p, "Not found", 404);
         const settings = p.workspace_settings;
+        if (path[3] === "sender-photo") {
+          check(
+            p.sender?.photo_path && p.sender.user_id,
+            "Photo unavailable",
+            404,
+          );
+          return new Response(
+            Buffer.from(
+              await readStaffPhoto(
+                rt.storage,
+                rt.repo.workspaceId,
+                p.sender.user_id,
+                p.sender.photo_path,
+              ),
+            ),
+            {
+              headers: {
+                ...headers,
+                "Content-Type": "image/png",
+                "X-Content-Type-Options": "nosniff",
+              },
+            },
+          );
+        }
         if (path[3] === "icon") {
           return new Response(
             Buffer.from(
@@ -454,6 +488,14 @@ async function handleRoute(
           contact: {
             name: p.sender?.display_name ?? settings?.owner ?? "",
             email: p.sender?.email ?? settings?.email ?? "",
+            phone:
+              expired || p.status === "declined" || p.archived_at
+                ? p.sender?.phone
+                : undefined,
+            job_title: p.sender?.job_title,
+            photo_url: p.sender?.photo_path
+              ? `/api/public/${token}/brand/sender-photo`
+              : undefined,
           },
           ...(expired ? { valid_until: expiry } : {}),
           timezone: settings?.timezone,
@@ -668,12 +710,80 @@ async function handleRoute(
       return json({ dismissed: true });
     }
     const rt = await workspaceRuntime(user.workspace_id);
+    if (path[0] === "account") {
+      if (path.length === 1 && method === "GET")
+        return json(await readStaffAccount(rt.repo, user));
+      if (!["GET", "HEAD"].includes(method))
+        check(sameOrigin(req), "Same-origin request required", 403);
+      if (path.length === 1 && method === "PATCH") {
+        const patch = StaffAccountPatchSchema.parse(await body(req));
+        const account = await saveStaffAccount(rt.repo, user, patch);
+        if (patch.first_name !== undefined || patch.last_name !== undefined)
+          await workspaceEvent(rt.repo, user, "staff_profile_updated", {
+            actor_name: [account.first_name, account.last_name]
+              .filter(Boolean)
+              .join(" "),
+          });
+        return json(account);
+      }
+      if (path[1] === "photo" && path.length === 2 && method === "POST") {
+        const { image } = z
+          .object({ image: z.string().max(1500000) })
+          .strict()
+          .parse(await body(req));
+        return json(await saveStaffPhoto(rt.repo, rt.storage, user, image));
+      }
+      if (path[1] === "photo" && path.length === 2 && method === "DELETE")
+        return json(
+          await saveStaffAccount(rt.repo, user, { photo_path: null }),
+        );
+      if (path[1] === "photo" && path.length === 3 && method === "GET") {
+        return new Response(
+          Buffer.from(
+            await staffPhoto(rt.repo, rt.storage, uuid.parse(path[2])),
+          ),
+          {
+            headers: {
+              ...headers,
+              "Content-Type": "image/png",
+              "X-Content-Type-Options": "nosniff",
+            },
+          },
+        );
+      }
+      if (path[1] === "signature" && path.length === 2 && method === "POST") {
+        const { version, image } = z
+          .object({
+            version: z.string().regex(/^[a-f0-9]{64}$/),
+            image: z.string().max(500000),
+          })
+          .strict()
+          .parse(await body(req));
+        const result = await saveAccountSignature(
+          rt.repo,
+          user,
+          version,
+          image,
+        );
+        await workspaceEvent(rt.repo, user, "staff_signature_updated", {
+          actor_name: user.staff_name,
+        });
+        return json(result);
+      }
+      throw new AppError(404, "Account settings route not found");
+    }
     if (path[0] === "auth" && path[1] === "session" && method === "GET") {
       const settings =
         (await rt.repo.entities<WorkspaceSettings>("workspace_settings"))[0] ??
         null;
+      const [account, members, photos] = await Promise.all([
+        readStaffAccount(rt.repo, user),
+        workspaceStaff(user.workspace_id),
+        workspaceStaffPhotos(rt.repo),
+      ]);
       return json({
         user,
+        account,
         app_url: appOrigin(),
         settings: settings
           ? {
@@ -686,7 +796,10 @@ async function handleRoute(
           ? undefined
           : await workspaceDefaults(rt.repo, user),
         signatory_version: signatoryVersion(settings),
-        staff: await workspaceStaff(user.workspace_id),
+        staff: members.map((member) => ({
+          ...member,
+          photo_url: photos.get(member.user_id),
+        })),
       });
     }
     if (

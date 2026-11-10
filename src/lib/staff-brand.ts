@@ -51,6 +51,7 @@ export function staffPageName(path: string[]) {
     (
       {
         login: "Sign in",
+        account: "Your account",
         proposals: "Proposals",
         reports: "Reports",
         clients: "Clients",

@@ -75,6 +75,7 @@ import { fontCss } from "../lib/proposal-fonts";
 import { eventLabel } from "../lib/event-label";
 import { statusDisplay } from "../lib/status-display";
 import { readableDate } from "../lib/validity";
+import { formatStaffDate } from "../lib/staff-account-model";
 import { onBehalfText } from "../lib/workspace";
 import {
   api,
@@ -92,11 +93,11 @@ import { useMoney } from "./money-context";
 import { CreateClientModal } from "./client-picker";
 import { TableRowAction } from "./table-row-action";
 function timestamp(value: string, data: Data) {
-  return new Intl.DateTimeFormat("en-US", {
+  return formatStaffDate(value, data.account, {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: data.settings?.timezone ?? "UTC",
-  }).format(new Date(value));
+  });
 }
 function person(actor: string, data: Data) {
   return (
@@ -622,6 +623,13 @@ export function ProposalRows({
   data: Data;
   onChanged?: (p: Proposal) => void;
 }) {
+  const proposalDate = (value: string) =>
+    formatStaffDate(value, data.account, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: data.settings?.timezone ?? "UTC",
+    });
   const [undo, setUndo] = useState<Proposal | null>(null),
     [undoError, setUndoError] = useState("");
   const visible = limit === undefined ? proposals : proposals.slice(0, limit);
@@ -729,27 +737,14 @@ export function ProposalRows({
                 {listActions && owner}
                 <small className="updated-cell">
                   {listActions && p.archived_at
-                    ? "Archived " +
-                      readableDate(p.archived_at, data.settings?.timezone)
+                    ? "Archived " + proposalDate(p.archived_at)
                     : listActions && p.client_signed_at
-                      ? "Signed " +
-                        readableDate(
-                          p.client_signed_at,
-                          data.settings?.timezone,
-                        )
+                      ? "Signed " + proposalDate(p.client_signed_at)
                       : listActions && p.first_viewed_at
-                        ? "Opened " +
-                          readableDate(
-                            p.first_viewed_at,
-                            data.settings?.timezone,
-                          )
+                        ? "Opened " + proposalDate(p.first_viewed_at)
                         : listActions && p.sent_at
-                          ? "Sent " +
-                            readableDate(p.sent_at, data.settings?.timezone)
-                          : readableDate(
-                              p.updated_at ?? p.created_at,
-                              data.settings?.timezone,
-                            )}
+                          ? "Sent " + proposalDate(p.sent_at)
+                          : proposalDate(p.updated_at ?? p.created_at)}
                 </small>
                 <ProposalMenu
                   p={p}
@@ -1215,11 +1210,12 @@ export function HomeV4({
   const timezone = data.settings?.timezone ?? "UTC";
   const now = new Date();
   const firstName = (data.user.staff_name || "team").trim().split(/\s+/)[0];
+  const viewerZone = data.account?.timezone ?? timezone;
   const hour = Number(
     new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
       hourCycle: "h23",
-      timeZone: timezone,
+      timeZone: viewerZone,
     }).format(now),
   );
   const greeting = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
@@ -1293,12 +1289,12 @@ export function HomeV4({
             ? `Good ${greeting}, ${firstName}`
             : `Welcome to Yeswell, ${firstName}`
         }
-        subtitle={new Intl.DateTimeFormat("en-US", {
+        subtitle={formatStaffDate(now, data.account, {
           weekday: "long",
           day: "numeric",
           month: "long",
           timeZone: timezone,
-        }).format(now)}
+        })}
         onNew={onNew}
       />
       {deploymentNotice}

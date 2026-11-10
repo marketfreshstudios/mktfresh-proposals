@@ -11,6 +11,8 @@ import { jobFailure } from "./job-presentation";
 import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
+import { accountNotification } from "./staff-account-model";
+import { allowStaffNotification } from "./staff-account";
 import { proposalLink } from "./links";
 import {
   prepareEmail,
@@ -308,6 +310,16 @@ export class Worker {
       const prepared =
         (payload.email_snapshot as EmailSnapshot | undefined) ??
         (await prepareEmail(this.repo, p, j));
+      if (
+        accountNotification(prepared.template_key) &&
+        !(await allowStaffNotification(
+          this.repo,
+          p,
+          prepared.to,
+          prepared.template_key,
+        ))
+      )
+        return;
       const stored = await mutate(this.repo, p.id, (row) => {
         const job = row.jobs.find((v) => v.id === j.id)!;
         job.payload.email_snapshot ??= prepared;

@@ -75,6 +75,7 @@ import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
 import { proposalLink, appOrigin } from "./links";
 import { emailIdentity, staffRecipients } from "./email-identity";
+import { staffProfileForProposal } from "./staff-account";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
 import type { WorkspaceSettings } from "./workspace";
@@ -817,6 +818,7 @@ export class ProposalService {
       email: selected.email,
       company_name: settings.company_name,
       sending_domain: domain,
+      ...(await staffProfileForProposal(this.repo, selected.user_id)),
     };
     const mailTemplate =
       delivery === "email"

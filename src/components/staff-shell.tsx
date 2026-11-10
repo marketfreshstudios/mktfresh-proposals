@@ -4,12 +4,14 @@ import { WorkspaceMark } from "./workspace-mark";
 import { YeswellBrand } from "./yeswell-brand";
 import { Sheet } from "./foundation";
 import { StaffIconContext, chromeIcons } from "./staff-icons";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Icon, Button } from "./ui";
 import { MoneyProvider } from "./money-context";
 import { studioRoutes } from "../lib/staff-routes";
 import { staffPageName } from "../lib/staff-brand";
 import type { WorkspaceSettings } from "../lib/workspace";
+import type { StaffAccount } from "../lib/staff-account-model";
+import { StaffAccountProvider } from "./staff-account-context";
 
 const primary = [
   ["/", "Home", "home"],
@@ -24,6 +26,9 @@ export function StaffShell({
   settings,
   name,
   email,
+  account,
+  onAccountChanged,
+  role,
   onNew,
   onSignout,
   children,
@@ -33,15 +38,14 @@ export function StaffShell({
   settings: WorkspaceSettings | null;
   name: string;
   email: string;
+  account?: StaffAccount;
+  onAccountChanged?: (account: StaffAccount) => void;
+  role?: "owner" | "member";
   onNew: () => void;
   onSignout: () => void;
   children: ReactNode;
   record?: boolean;
 }) {
-  useEffect(() => {
-    document.documentElement.dataset.theme =
-      localStorage.getItem("proposal-theme") === "dark" ? "dark" : "light";
-  }, []);
   const [drawer, setDrawer] = useState(false);
   const current = "/" + path.join("/");
   const studio = path[0] === "studio";
@@ -112,114 +116,122 @@ export function StaffShell({
   );
   return (
     <StaffIconContext.Provider value>
-      <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
-        <div
-          className={`staff-foundation ink-clay shell ${insideProposal ? "inside-proposal" : ""} ${studioPage ? "studio-v3-shell" : ""}`}
-        >
-          <a className="skip-link" href="#workspace-content">
-            Skip to content
-          </a>
-          <aside className="sidebar">
-            <a className="brand" href="/" aria-label="Yeswell home">
-              <YeswellBrand reversed />
+      <StaffAccountProvider account={account} onChanged={onAccountChanged}>
+        <MoneyProvider mode={settings?.money?.cents ?? "auto"}>
+          <div
+            className={`staff-foundation ink-clay shell ${insideProposal ? "inside-proposal" : ""} ${studioPage ? "studio-v3-shell" : ""}`}
+          >
+            <a className="skip-link" href="#workspace-content">
+              Skip to content
             </a>
-            <div className="workspace-label">{workspace}</div>
-            {sideNavigation()}
-            <footer>
-              <StudioAccount name={name} email={email} onSignout={onSignout} />
-            </footer>
-          </aside>
-          <main className="workspace" id="workspace-content" tabIndex={-1}>
-            {(!insideProposal || record) && (!studio || studioPage) && (
-              <div
-                className={`shell-tablet-header ${studioPage ? "studio-tablet-header" : ""}`}
-              >
-                <button
-                  className="btn icon-only shell-drawer-trigger"
-                  aria-label="Open navigation"
-                  title="Open navigation"
-                  aria-haspopup="dialog"
-                  aria-expanded={drawer}
-                  onClick={() => setDrawer(true)}
-                >
-                  <chromeIcons.menu size={20} aria-hidden="true" />
-                </button>
-                <a href="/" aria-label="Yeswell home">
-                  <YeswellBrand reversed />
-                </a>
-                <strong className="tablet-page-name">
-                  {staffPageName(path)}
-                </strong>
-                {studioPage && (
-                  <span className="tablet-workspace-label">{workspace}</span>
-                )}
+            <aside className="sidebar">
+              <a className="brand" href="/" aria-label="Yeswell home">
+                <YeswellBrand reversed />
+              </a>
+              <div className="workspace-label">{workspace}</div>
+              {sideNavigation()}
+              <footer>
                 <StudioAccount
                   name={name}
                   email={email}
+                  role={role}
                   onSignout={onSignout}
                 />
-              </div>
-            )}
-            {!insideProposal && (
-              <a
-                href="/"
-                className="staff-mobile-brand"
-                aria-label="Yeswell home"
-              >
-                <YeswellBrand mark reversed={current !== "/"} />
-              </a>
-            )}
-            {studioPage && (
-              <>
-                <nav className="studio-area-chips" aria-label="Studio areas">
-                  {studioLinks}
-                </nav>
-                {path[1] && (
-                  <a className="studio-back" href="/studio">
-                    Studio
+              </footer>
+            </aside>
+            <main className="workspace" id="workspace-content" tabIndex={-1}>
+              {(!insideProposal || record) && (!studio || studioPage) && (
+                <div
+                  className={`shell-tablet-header ${studioPage ? "studio-tablet-header" : ""}`}
+                >
+                  <button
+                    className="btn icon-only shell-drawer-trigger"
+                    aria-label="Open navigation"
+                    title="Open navigation"
+                    aria-haspopup="dialog"
+                    aria-expanded={drawer}
+                    onClick={() => setDrawer(true)}
+                  >
+                    <chromeIcons.menu size={20} aria-hidden="true" />
+                  </button>
+                  <a href="/" aria-label="Yeswell home">
+                    <YeswellBrand reversed />
                   </a>
-                )}
-              </>
+                  <strong className="tablet-page-name">
+                    {staffPageName(path)}
+                  </strong>
+                  {studioPage && (
+                    <span className="tablet-workspace-label">{workspace}</span>
+                  )}
+                  <StudioAccount
+                    name={name}
+                    email={email}
+                    role={role}
+                    onSignout={onSignout}
+                  />
+                </div>
+              )}
+              {!insideProposal && path[0] !== "account" && (
+                <a
+                  href="/"
+                  className="staff-mobile-brand"
+                  aria-label="Yeswell home"
+                >
+                  <YeswellBrand mark reversed={current !== "/"} />
+                </a>
+              )}
+              {studioPage && (
+                <>
+                  <nav className="studio-area-chips" aria-label="Studio areas">
+                    {studioLinks}
+                  </nav>
+                  {path[1] && (
+                    <a className="studio-back" href="/studio">
+                      Studio
+                    </a>
+                  )}
+                </>
+              )}
+              {children}
+            </main>
+            {!insideProposal && (
+              <nav className="bottom-tabs" aria-label="Phone navigation">
+                {nav(primary[0], true)}
+                {nav(primary[1], true)}
+                <button
+                  className="bottom-new"
+                  onClick={onNew}
+                  aria-label="New proposal"
+                  title="New proposal"
+                >
+                  <Icon name="plus" />
+                  <span className="sr-only">New proposal</span>
+                </button>
+                {nav(primary[3], true)}
+                {nav(primary[4], true)}
+              </nav>
             )}
-            {children}
-          </main>
-          {!insideProposal && (
-            <nav className="bottom-tabs" aria-label="Phone navigation">
-              {nav(primary[0], true)}
-              {nav(primary[1], true)}
-              <button
-                className="bottom-new"
-                onClick={onNew}
-                aria-label="New proposal"
-                title="New proposal"
+            {drawer && (
+              <Sheet
+                title="Navigation"
+                className="staff-drawer"
+                onClose={() => setDrawer(false)}
               >
-                <Icon name="plus" />
-                <span className="sr-only">New proposal</span>
-              </button>
-              {nav(primary[3], true)}
-              {nav(primary[4], true)}
-            </nav>
-          )}
-          {drawer && (
-            <Sheet
-              title="Navigation"
-              className="staff-drawer"
-              onClose={() => setDrawer(false)}
-            >
-              <div className="workspace-label">{workspace}</div>
-              {sideNavigation()}
-              <Button
-                onClick={() => {
-                  setDrawer(false);
-                  onNew();
-                }}
-              >
-                New proposal
-              </Button>
-            </Sheet>
-          )}
-        </div>
-      </MoneyProvider>
+                <div className="workspace-label">{workspace}</div>
+                {sideNavigation()}
+                <Button
+                  onClick={() => {
+                    setDrawer(false);
+                    onNew();
+                  }}
+                >
+                  New proposal
+                </Button>
+              </Sheet>
+            )}
+          </div>
+        </MoneyProvider>
+      </StaffAccountProvider>
     </StaffIconContext.Provider>
   );
 }
