@@ -49,7 +49,6 @@ export function BusinessDetails({
   const invalid = (linked || touched) && !businessState(settings);
   return (
     <>
-      <p>Manage the business information used in proposals and agreements.</p>
       {!editable && (
         <p className="muted">Only a super admin can edit business details.</p>
       )}

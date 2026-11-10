@@ -423,11 +423,12 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(
         0,
       );
+      await page.getByRole("button", { name: "Client actions" }).click();
       await page
         .getByRole("button", { name: "Delete client", exact: true })
         .click();
       await expect(
-        page.getByRole("dialog", { name: "Delete Unused Client?" }),
+        page.getByRole("dialog", { name: `Delete ${unused.company}?` }),
       ).toBeVisible();
       await capture(
         "delete-client",
@@ -606,12 +607,16 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     .click();
   await expect(page.locator(".quote-workspace")).toBeVisible();
   await page.goto(`/clients/${draft.client.id}`);
+  await page.getByRole("button", { name: "Client actions" }).click();
   await expect(
     page.getByRole("button", { name: "Delete client", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByText(/Has 4 proposals — archive them or keep the client/),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Archive client", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "This client has proposal history that must be kept.",
+  );
   await page.keyboard.press("Escape");
   await page.goto("/proposals?view=viewed");
   await page.getByRole("button", { name: "More actions" }).click();

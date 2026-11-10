@@ -109,6 +109,8 @@ export function eventLabel(
     billing_invoice_updated: "Billing invoice updated",
     client_created: "Client created",
     client_saved: "Client details saved",
+    client_archived: "Client archived",
+    client_restored: "Client restored",
     client_deleted: `Client deleted${e.metadata.company ? `: ${e.metadata.company}` : ""}`,
     workspace_settings_saved: "Workspace settings saved",
     pricing_items_saved: "Product saved",

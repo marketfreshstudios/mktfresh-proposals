@@ -289,6 +289,11 @@ export class ProposalService {
         (t) => t.id === input.template_id && t.active,
       );
     check(client && template, "Client and active template required");
+    check(
+      !client.archived_at,
+      "Restore this client before creating a proposal",
+      409,
+    );
     check(input.title?.trim() && input.title.length <= 300, "Title required");
     check(/^[A-Z]{3}$/.test(input.currency ?? "USD"), "Currency required");
     // Explicit lines (including an empty list) and playbook lines fully replace defaults.

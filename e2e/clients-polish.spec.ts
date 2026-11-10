@@ -294,9 +294,14 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         "123 Main Street",
       );
       await expect(page.locator(".stripe-candidate")).toHaveCount(3);
+      await page.getByRole("button", { name: "Client actions" }).click();
       await expect(
         page.getByRole("button", { name: "Delete client", exact: true }),
-      ).toBeDisabled();
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Archive client", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
       await capture(
         "contact-and-many-matches",
         width === 1440 ? "6d" : width === 768 ? "6e" : "6f",
@@ -353,6 +358,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         }),
       ).toBeVisible();
       await capture("no-match", "6f", width, theme, true);
+      await page.getByRole("button", { name: "Client actions" }).click();
       await page
         .getByRole("button", { name: "Delete client", exact: true })
         .click();

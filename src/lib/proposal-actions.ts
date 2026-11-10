@@ -8,7 +8,13 @@ import {
 } from "./editor-publication";
 import { freezeStyles } from "./proposal-styles";
 import { randomUUID } from "node:crypto";
-import { check, type Actor, type Proposal, type Version } from "./model";
+import {
+  check,
+  type Actor,
+  type Client,
+  type Proposal,
+  type Version,
+} from "./model";
 import { mutate, type Repository } from "./repository";
 import { event, queue, ProposalService } from "./service";
 import { draftItems } from "./quote-model";
@@ -113,6 +119,14 @@ export async function proposalAction(
       await repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const client = (await repo.entities<Client>("clients")).find(
+      (record) => record.id === original.client.id,
+    );
+    check(
+      !client?.archived_at,
+      "Restore this client before creating a proposal",
+      409,
+    );
     const p: Proposal = {
       ...structuredClone(original),
       ...structuredClone(original.unpublished_work ?? {}),

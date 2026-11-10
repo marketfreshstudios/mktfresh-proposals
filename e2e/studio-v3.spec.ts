@@ -428,9 +428,9 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
   });
   await name.fill("Revised workspace");
   await expect.poll(() => f.settings.business_name).toBe("Revised workspace");
-  await expect(
-    page.locator(".workspace-section-card [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   f.fail(true);
   await name.fill("Keep this local value");
   await expect(
@@ -734,18 +734,23 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/workspace?view=client-links");
   await expect(
-    page.locator(".workspace-section-card > header [role=status]"),
+    page.locator(".workspace-section .staff-section-heading [role=status]"),
   ).toHaveCount(0);
   const toggle = page.getByRole("switch", { name: /Show.*Powered by/ });
   const control = await toggle.boundingBox(),
     label = await toggle.locator("..").locator(":scope > span").boundingBox();
   expect(control!.x).toBeGreaterThan(label!.x + label!.width);
   await page.getByRole("button", { name: "Team", exact: true }).click();
-  const description = await page.locator(".team-heading>p").boundingBox(),
-    heading = await page
-      .locator(".workspace-section-card>header")
-      .boundingBox();
-  expect(description!.y - heading!.y - heading!.height).toBeLessThanOrEqual(5);
+  // Owner 10 Nov: the section title (H2) sits on the canvas above its card.
+  const sectionTitle = await page
+      .locator(".workspace-section > .staff-section-heading h2")
+      .boundingBox(),
+    sectionCard = await page.locator(".workspace-section-card").boundingBox();
+  await expect(
+    page.locator(".workspace-section > .staff-section-heading h2"),
+  ).toHaveText("Team");
+  expect(sectionTitle!.y + sectionTitle!.height).toBeLessThan(sectionCard!.y);
+  await expect(page.locator(".workspace-section-card h2")).toHaveCount(0);
   const row = page.locator(".team-person").filter({ hasText: "Jamie Example" });
   await expect(row.locator(".team-status")).toHaveText("Active");
   const status = await row.locator(".team-status").boundingBox(),

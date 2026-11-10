@@ -45,7 +45,11 @@ import { HomeSetup } from "./home-setup";
 import { HomePipeline } from "./home-pipeline";
 import { ContactValue } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
-import { formattedAddress } from "../lib/client-contact";
+import { formattedAddress, formattedPhone } from "../lib/client-contact";
+import {
+  clientDeleteBlocker,
+  keepClientHistory,
+} from "../lib/client-retention";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -2742,10 +2746,12 @@ function ClientDetailHeader({
   selected,
   client,
   onEdit,
+  actions,
 }: {
   selected: string;
   client?: Client;
   onEdit?: () => void;
+  actions?: ReactNode;
 }) {
   return (
     <header className="client-detail-header">
@@ -2753,17 +2759,20 @@ function ClientDetailHeader({
         <a href="/clients" className="staff-back">
           <chromeIcons.back size={16} aria-hidden="true" /> Clients
         </a>
-        <DialogActions>
+        <div className="actions client-record-actions">
           <Button onClick={onEdit} disabled={!client}>
             Edit client
           </Button>
-          <a
-            className="btn action"
-            href={`/proposals?new=1&client=${selected}`}
-          >
-            New proposal
-          </a>
-        </DialogActions>
+          {!client?.archived_at && (
+            <a
+              className="btn action"
+              href={`/proposals?new=1&client=${selected}`}
+            >
+              New proposal
+            </a>
+          )}
+          {actions}
+        </div>
       </div>
       <div className="client-identity">
         {client ? (
@@ -2771,8 +2780,15 @@ function ClientDetailHeader({
         ) : (
           <span className="client-initials" aria-hidden="true" />
         )}
-        <div>
-          <h1 className="t-page-title">{client?.company ?? "Client record"}</h1>
+        <div className="client-identity-copy">
+          <div className="client-detail-name">
+            <h1 className="t-page-title">
+              {client?.company ?? "Client record"}
+            </h1>
+            {client?.archived_at && (
+              <span className="pill neutral">Archived</span>
+            )}
+          </div>
           <div className="client-identity-contact">
             {client ? (
               <>
@@ -2797,17 +2813,20 @@ function ClientDetailHeader({
 export function ClientsV4({
   data,
   selected,
+  initialView,
   onRefresh,
 }: {
   data: Data | null;
   selected?: string;
+  initialView?: string;
   onRefresh: () => Promise<void>;
 }) {
   const client = data?.clients.find((c) => c.id === selected),
     [linkChoice, setLinkChoice] = useState<string | null | undefined>(
       undefined,
     ),
-    [confirm, setConfirm] = useState(false),
+    [confirm, setConfirm] = useState<"archive" | "delete" | null>(null),
+    [menu, setMenu] = useState(false),
     [edit, setEdit] = useState(false),
     [editClient, setEditClient] = useState(false),
     [newClient, setNewClient] = useState(selected === "new"),
@@ -2815,9 +2834,12 @@ export function ClientsV4({
     [billing, setBilling] = useState<ClientBilling | null>(null),
     [billingError, setBillingError] = useState(""),
     [search, setSearch] = useState(""),
-    [clientView, setClientView] = useState("all"),
+    [clientView, setClientView] = useState(
+      initialView === "archived" ? "archived" : "all",
+    ),
     [busy, setBusy] = useState(false),
     money = useMoney();
+  const clientActions = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!client) return;
     let active = true;
@@ -2838,6 +2860,7 @@ export function ClientsV4({
   }, [client?.id, client?.email, client?.stripe_customer_id]);
   const visibleClients = (data?.clients ?? []).filter(
     (c) =>
+      !!c.archived_at === (clientView === "archived") &&
       (clientView !== "stripe" || Boolean(c.stripe_customer_id)) &&
       (clientView !== "open" ||
         data?.proposals.some(
@@ -2882,6 +2905,7 @@ export function ClientsV4({
               ["all", "All"],
               ["stripe", "Billing in Stripe"],
               ["open", "Open proposals"],
+              ["archived", "Archived"],
             ].map(([value, label]) => (
               <button
                 key={value}
@@ -2895,11 +2919,11 @@ export function ClientsV4({
           </fieldset>
         </div>
         {data &&
-        !data.clients.length &&
+        !data.clients.some((client) => !client.archived_at) &&
         !search.trim() &&
         clientView === "all" ? (
           <Empty
-            title="No clients yet"
+            title={data.clients.length ? "No active clients" : "No clients yet"}
             action={
               data.user.staff_role === "owner" ? (
                 <a className="btn" href="/studio/connections/imports">
@@ -3011,118 +3035,124 @@ export function ClientsV4({
   const currencyGroups = [
     ...new Set(billing?.items.map((i) => i.currency) ?? []),
   ];
-  return (
-    <div className="client-detail-v4 stack">
-      <ClientDetailHeader
-        selected={client.id}
-        client={client}
-        onEdit={() => setEditClient(true)}
-      />
-      {error && (
-        <Banner tone="danger" title="Client action failed">
-          {error}
-        </Banner>
-      )}
-      <section className="client-billing">
-        <header>
-          <h2 className="t-card-title">How they’re billed</h2>
-          {billing && (
-            <span
-              className={`pill ${billing.subscriber ? "success" : "neutral"}`}
-            >
-              {billing.subscriber
-                ? "Stripe subscriber"
-                : billing.available
-                  ? billing.linked_id
-                    ? "No active subscription"
-                    : "Stripe customer not linked"
-                  : "Stripe not connected"}
-            </span>
-          )}
-        </header>
-        {billingError && client.stripe_customer_id && (
-          <p>
-            <code>{client.stripe_customer_id}</code>{" "}
-            <Button onClick={() => setLinkChoice(null)}>Unlink customer</Button>
-          </p>
+  const blocker = clientDeleteBlocker(proposals);
+  const mayDelete = data.user.staff_role === "owner" && !blocker;
+  async function updateArchive(archived: boolean) {
+    if (!client) return;
+    setBusy(true);
+    setError("");
+    try {
+      await post(`/api/clients/${client.id}/archive`, { archived });
+      setConfirm(null);
+      await onRefresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const billingCard = (
+    <section className="client-billing card">
+      <header>
+        <h2 className="t-card-title">How they’re billed</h2>
+        {billing && (
+          <span
+            className={`pill ${billing.subscriber ? "success" : "neutral"}`}
+          >
+            {billing.subscriber
+              ? "Stripe subscriber"
+              : billing.available
+                ? billing.linked_id
+                  ? "No active subscription"
+                  : "Stripe customer not linked"
+                : "Stripe not connected"}
+          </span>
         )}
-        {billingError ? (
-          <Banner tone="warning" title="Current billing details unavailable">
-            {billingError}
-            <Button
-              onClick={() => {
-                setBillingError("");
-                api<ClientBilling>(`/api/clients/${client.id}/billing`)
-                  .then((value) => {
-                    if (!Array.isArray(value.items))
-                      throw new Error("Billing details could not be loaded.");
-                    setBilling(value);
-                  })
-                  .catch((e) => setBillingError(e.message));
-              }}
-            >
-              Retry
-            </Button>
-          </Banner>
-        ) : !billing ? (
-          <Skeleton kind="cards" label="Loading billing details…" />
-        ) : (
-          <>
-            <p>
-              {billing.subscriber
-                ? "New monthly items on a signed proposal are added to this customer’s existing subscription when a working card is available. Otherwise billing needs review."
-                : billing.notice ||
-                  "A new monthly plan starts through Checkout after signature."}
-            </p>
-            <div className="linked-billing-summary" hidden={!billing.linked_id}>
-              <div className="current-subscription">
-                {billing.items.map((i) => (
-                  <p key={i.id}>
-                    <strong>
-                      {i.name}
-                      {i.qty !== 1 ? ` × ${i.qty}` : ""}
-                    </strong>
-                    <span>
-                      {money(i.amount * i.qty, i.currency)}/
-                      {i.interval_count > 1 ? i.interval_count : ""}
-                      {i.interval === "month"
-                        ? "mo"
-                        : i.interval === "year"
-                          ? "yr"
-                          : i.interval}
-                    </span>
-                  </p>
-                ))}
-              </div>
-              {currencyGroups.map((currency) => (
-                <p key={currency}>
+      </header>
+      {billingError && client.stripe_customer_id && (
+        <p>
+          <code>{client.stripe_customer_id}</code>{" "}
+          <Button onClick={() => setLinkChoice(null)}>Unlink customer</Button>
+        </p>
+      )}
+      {billingError ? (
+        <Banner tone="warning" title="Current billing details unavailable">
+          {billingError}
+          <Button
+            onClick={() => {
+              setBillingError("");
+              api<ClientBilling>(`/api/clients/${client.id}/billing`)
+                .then((value) => {
+                  if (!Array.isArray(value.items))
+                    throw new Error("Billing details could not be loaded.");
+                  setBilling(value);
+                })
+                .catch((e) => setBillingError(e.message));
+            }}
+          >
+            Retry
+          </Button>
+        </Banner>
+      ) : !billing ? (
+        <Skeleton kind="cards" label="Loading billing details…" />
+      ) : (
+        <>
+          <p>
+            {billing.subscriber
+              ? "New monthly items on a signed proposal are added to this customer’s existing subscription when a working card is available. Otherwise billing needs review."
+              : billing.notice ||
+                "A new monthly plan starts through Checkout after signature."}
+          </p>
+          <div className="linked-billing-summary" hidden={!billing.linked_id}>
+            <div className="current-subscription">
+              {billing.items.map((i) => (
+                <p key={i.id}>
                   <strong>
-                    Current monthly{" "}
-                    {money(
-                      billing.items
-                        .filter(
-                          (i) =>
-                            i.currency === currency &&
-                            i.interval === "month" &&
-                            i.interval_count === 1,
-                        )
-                        .reduce((v, i) => v + i.amount * i.qty, 0),
-                      currency,
-                    )}
-                    /mo
+                    {i.name}
+                    {i.qty !== 1 ? ` × ${i.qty}` : ""}
                   </strong>
+                  <span>
+                    {money(i.amount * i.qty, i.currency)}/
+                    {i.interval_count > 1 ? i.interval_count : ""}
+                    {i.interval === "month"
+                      ? "mo"
+                      : i.interval === "year"
+                        ? "yr"
+                        : i.interval}
+                  </span>
                 </p>
               ))}
-              <small>
-                Card on file:{" "}
-                {billing.card ??
-                  (billing.available
-                    ? "No default card recorded"
-                    : "Unavailable")}
-                {billing.next_invoice &&
-                  ` · Next period ends ${readableDate(billing.next_invoice)}`}
-              </small>
             </div>
+            {currencyGroups.map((currency) => (
+              <p key={currency}>
+                <strong>
+                  Current monthly{" "}
+                  {money(
+                    billing.items
+                      .filter(
+                        (i) =>
+                          i.currency === currency &&
+                          i.interval === "month" &&
+                          i.interval_count === 1,
+                      )
+                      .reduce((v, i) => v + i.amount * i.qty, 0),
+                    currency,
+                  )}
+                  /mo
+                </strong>
+              </p>
+            ))}
+            <small>
+              Card on file:{" "}
+              {billing.card ??
+                (billing.available
+                  ? "No default card recorded"
+                  : "Unavailable")}
+              {billing.next_invoice &&
+                ` · Next period ends ${readableDate(billing.next_invoice)}`}
+            </small>
+          </div>
+          {(billing.linked_id || !!billing.candidates?.length) && (
             <section
               id="stripe-customers"
               className="stripe-customer-chooser stack"
@@ -3193,135 +3223,238 @@ export function ClientsV4({
                   ))}
               </div>
             </section>
-            <DialogActions>
-              {billing.stripe_url && (
-                <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
-                  Open Stripe ↗
-                </a>
-              )}
-              {billing.qbo_url ? (
-                <a href={billing.qbo_url} target="_blank" rel="noreferrer">
-                  QuickBooks: linked ↗
-                </a>
-              ) : (
-                <span>QuickBooks: not linked</span>
-              )}
-            </DialogActions>
-          </>
-        )}
-      </section>
-      <section className="client-proposals">
-        <header className="section-heading">
-          <h2>
-            Proposals <span className="count-badge">{count}</span>
-          </h2>
-        </header>
-        <ProposalRows proposals={proposals} data={data} compact />
-      </section>
-      <section className="client-notes">
-        <header className="section-heading">
-          <h2>Notes</h2>
-          <Button onClick={() => setEdit(!edit)}>
-            {edit ? "Cancel" : "Edit"}
-          </Button>
-        </header>
-        {edit ? (
-          <form
-            className="form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                await post("/api/clients", {
-                  ...client,
-                  notes: new FormData(e.currentTarget).get("notes"),
-                });
-                setEdit(false);
-                await onRefresh();
-              } catch (e) {
-                setError((e as Error).message);
-              }
-            }}
-          >
-            <Field label="Client notes">
-              <textarea
-                name="notes"
-                defaultValue={client.notes}
-                maxLength={10000}
-              />
-            </Field>
-            <Button type="submit" variant="primary">
-              Save notes
-            </Button>
-          </form>
-        ) : (
-          <p style={{ whiteSpace: "pre-wrap" }}>
-            {client.notes || "No notes yet."}
-          </p>
-        )}
-        <small>AI assistants can read these notes when drafting.</small>
-      </section>
-      <section className="client-activity">
-        <h2>Activity</h2>
-        <StaffTable inline density="compact" className="client-activity-table">
-          <StaffTableHead>
-            <span>Event</span>
-            <span>Date</span>
-          </StaffTableHead>
-          {activity.length ? (
-            activity.map(({ proposal, entry }) => (
-              <a
-                className="staff-table-row"
-                key={entry.id}
-                href={`/proposals/${proposal.id}?view=evidence#event-${entry.id}`}
-              >
-                <span>
-                  <strong>{eventTitle(entry, data)}</strong>
-                  <br />
-                  {proposal.title}
-                </span>
-                <time dateTime={entry.created_at}>
-                  {timestamp(entry.created_at, data)}
-                </time>
+          )}
+          <DialogActions>
+            {billing.stripe_url && (
+              <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
+                Open Stripe ↗
               </a>
-            ))
-          ) : (
-            <StaffTableEmpty>No recent proposal activity.</StaffTableEmpty>
-          )}
-        </StaffTable>
-      </section>
-      <section className="client-contact-card">
-        <h2>Contact details</h2>
-        <dl>
-          {[
-            ["Title", client.title],
-            ["Address", formattedAddress(client.address)],
-          ].map(([label, value]) => (
-            <div key={String(label)}>
-              <dt>{label}</dt>
-              <dd>{value || "—"}</dd>
-            </div>
-          ))}
-        </dl>
-        <DialogActions>
-          <a className="btn" href={`mailto:${client.email}`}>
-            Email {client.first_name || "client"}
-          </a>
-          <Button
-            variant="danger"
-            disabled={count > 0}
-            aria-describedby={count ? "client-delete-reason" : undefined}
-            onClick={() => setConfirm(true)}
+            )}
+            {billing.qbo_url ? (
+              <a href={billing.qbo_url} target="_blank" rel="noreferrer">
+                QuickBooks: linked ↗
+              </a>
+            ) : (
+              <span>QuickBooks: not linked</span>
+            )}
+          </DialogActions>
+        </>
+      )}
+    </section>
+  );
+  const proposalsSection = (
+    <section
+      className="client-proposals"
+      aria-labelledby="client-proposals-title"
+    >
+      <StaffSectionHeading id="client-proposals-title">
+        Proposals <span className="count-badge">{count}</span>
+      </StaffSectionHeading>
+      <ProposalRows
+        proposals={proposals}
+        data={data}
+        listActions
+        onChanged={() => void onRefresh()}
+        empty={
+          <span className="client-proposals-empty">
+            No proposals yet.
+            {!client.archived_at && (
+              <a href={`/proposals?new=1&client=${client.id}`}>New proposal</a>
+            )}
+          </span>
+        }
+      />
+    </section>
+  );
+  const notesCard = (
+    <section className="client-notes card">
+      <header className="section-heading">
+        <h2 className="t-card-title">Notes</h2>
+        <Button onClick={() => setEdit(!edit)}>
+          {edit ? "Cancel" : client.notes ? "Edit note" : "Add note"}
+        </Button>
+      </header>
+      {edit ? (
+        <form
+          className="form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await post("/api/clients", {
+                ...client,
+                notes: new FormData(e.currentTarget).get("notes"),
+              });
+              setEdit(false);
+              await onRefresh();
+            } catch (e) {
+              setError((e as Error).message);
+            }
+          }}
+        >
+          <Field label="Client notes">
+            <textarea
+              name="notes"
+              defaultValue={client.notes}
+              maxLength={10000}
+            />
+          </Field>
+          <Button type="submit">Save notes</Button>
+        </form>
+      ) : (
+        <p style={{ whiteSpace: "pre-wrap" }}>
+          {client.notes || "No notes yet."}
+        </p>
+      )}
+      {(edit || client.notes) && (
+        <small>AI assistants can read these notes when drafting.</small>
+      )}
+    </section>
+  );
+  const activitySection = (
+    <section
+      className="client-activity"
+      aria-labelledby="client-activity-title"
+    >
+      <StaffSectionHeading id="client-activity-title">
+        Activity
+      </StaffSectionHeading>
+      <StaffTable density="compact" className="client-activity-table">
+        <StaffTableHead>
+          <span>Event</span>
+          <span>Date</span>
+        </StaffTableHead>
+        {activity.length ? (
+          activity.map(({ proposal, entry }) => (
+            <a
+              className="staff-table-row"
+              key={entry.id}
+              href={`/proposals/${proposal.id}?view=evidence#event-${entry.id}`}
+            >
+              <span>
+                <strong>{eventTitle(entry, data)}</strong>
+                <br />
+                {proposal.title}
+              </span>
+              <time dateTime={entry.created_at}>
+                {timestamp(entry.created_at, data)}
+              </time>
+            </a>
+          ))
+        ) : (
+          <StaffTableEmpty>No recent proposal activity.</StaffTableEmpty>
+        )}
+      </StaffTable>
+    </section>
+  );
+  const contactCard = (
+    <section className="client-contact-card card">
+      <h2 className="t-card-title">Contact details</h2>
+      <dl>
+        {[
+          [
+            "Name",
+            [client.first_name, client.last_name].filter(Boolean).join(" "),
+          ],
+          ["Email", client.email],
+          ["Phone", formattedPhone(client.phone)],
+          ["Title", client.title],
+          ["Address", formattedAddress(client.address)],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value || "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+  return (
+    <div className="client-detail-v4 stack">
+      <ClientDetailHeader
+        selected={client.id}
+        client={client}
+        onEdit={() => setEditClient(true)}
+        actions={
+          <button
+            ref={clientActions}
+            type="button"
+            className="btn ghost more-control round-icon"
+            aria-label="Client actions"
+            aria-haspopup="dialog"
+            aria-expanded={menu}
+            onClick={() => setMenu(true)}
           >
-            Delete client
-          </Button>
-          {count > 0 && (
-            <small id="client-delete-reason">
-              Has {withCount(count, "proposal")} — archive{" "}
-              {count === 1 ? "the proposal" : "them"} or keep the client
-            </small>
-          )}
-        </DialogActions>
-      </section>
+            <chromeIcons.more size={18} aria-hidden="true" />
+          </button>
+        }
+      />
+      {error && !confirm && (
+        <Banner tone="danger" title="Client action failed">
+          {error}
+        </Banner>
+      )}
+      <div className="client-record-columns">
+        <div className="client-record-main">
+          {proposalsSection}
+          {activitySection}
+        </div>
+        <div className="client-record-side">
+          {contactCard}
+          {billingCard}
+          {notesCard}
+        </div>
+      </div>
+      {menu && (
+        <Sheet
+          title={`Actions · ${client.company}`}
+          menu
+          anchor={clientActions.current}
+          onClose={() => setMenu(false)}
+        >
+          <nav aria-label="Client actions" className="action-menu">
+            {client.archived_at ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(false);
+                  void updateArchive(false);
+                }}
+              >
+                Restore client
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(false);
+                  setError("");
+                  setConfirm("archive");
+                }}
+              >
+                Archive client
+              </button>
+            )}
+            {mayDelete && (
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  setMenu(false);
+                  setError("");
+                  setConfirm("delete");
+                }}
+              >
+                Delete client
+              </button>
+            )}
+            {data.user.staff_role === "owner" &&
+              blocker &&
+              blocker !== keepClientHistory && (
+                <small className="client-action-hint">{blocker}</small>
+              )}
+          </nav>
+        </Sheet>
+      )}
       {linkChoice !== undefined && (
         <Sheet
           title={
@@ -3383,43 +3516,66 @@ export function ClientsV4({
       )}
       {confirm && (
         <Sheet
-          title={`Delete ${client.company}?`}
+          title={`${confirm === "delete" ? "Delete" : "Archive"} ${client.company}?`}
           onClose={() => {
-            if (!busy) setConfirm(false);
+            if (!busy) setConfirm(null);
           }}
         >
           <div className="stack">
             <p>
-              Delete {client.company} ({client.email})? This client has no
-              proposals. This cannot be undone.
+              {confirm === "delete" ? (
+                <>
+                  Delete {client.company}?
+                  {count > 0 &&
+                    ` This also deletes ${withCount(count, "archived draft")} that never went to the client.`}{" "}
+                  This cannot be undone. Audit history and Stripe and QuickBooks
+                  records are kept.
+                </>
+              ) : (
+                <>
+                  {blocker === keepClientHistory
+                    ? "This client has proposal history that must be kept. "
+                    : ""}
+                  Archiving hides {client.company} from client lists and search.
+                  You can restore this client from Archived. Proposals and
+                  billing records stay available.
+                </>
+              )}
             </p>
             {error && (
-              <Banner tone="danger" title="Client could not be deleted">
+              <Banner tone="danger" title="Client action failed">
                 {error}
               </Banner>
             )}
             <DialogActions>
-              <Button disabled={busy} onClick={() => setConfirm(false)}>
-                Keep client
+              <Button disabled={busy} onClick={() => setConfirm(null)}>
+                Cancel
               </Button>
-              <Button
-                variant="danger"
-                busy={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await api(`/api/clients/${client.id}`, {
-                      method: "DELETE",
-                    });
-                    location.href = "/clients";
-                  } catch (e) {
-                    setError((e as Error).message);
-                    setBusy(false);
-                  }
-                }}
-              >
-                Delete {client.company}
-              </Button>
+              {confirm === "archive" ? (
+                <Button busy={busy} onClick={() => void updateArchive(true)}>
+                  Archive client
+                </Button>
+              ) : (
+                <Button
+                  variant="danger"
+                  busy={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await api(`/api/clients/${client.id}`, {
+                        method: "DELETE",
+                      });
+                      location.href = "/clients";
+                    } catch (e) {
+                      setError((e as Error).message);
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Delete {client.company}
+                </Button>
+              )}
             </DialogActions>
           </div>
         </Sheet>
