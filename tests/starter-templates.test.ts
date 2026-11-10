@@ -33,13 +33,17 @@ it("seven exact starters, order, covers, renumbered terms and both signatures wi
   ]);
   expect(templates.map((t) => t.cover?.layout)).toEqual([
     "editorial",
-    "split",
+    "editorial",
     "editorial",
     "side-photo",
     "bold",
     "centered",
     "editorial",
   ]);
+  expect(templates[1].cover?.background).toMatchObject({
+    type: "plain",
+    graphic: "ring",
+  });
   for (const t of templates) {
     expect(t.active).toBe(true);
     expect(t.default_items).toEqual([]);

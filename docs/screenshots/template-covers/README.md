@@ -5,7 +5,7 @@ The captures use MarketFresh’s palette and fonts with the workspace-name logo 
 | Template | Layout | Capture |
 | --- | --- | --- |
 | General project proposal | Editorial | [Cover](general-project-1440.png) |
-| Website design & build | Split panel | [Cover](website-design-build-1440.png) |
+| Website design & build | White Editorial with ring | [Cover](website-design-build-1440.png) |
 | Website care & hosting plan | Editorial | [Cover](website-care-hosting-1440.png) |
 | Local visibility (SEO) retainer | Photo beside title | [Cover](local-visibility-seo-1440.png) |
 | Website & AI search readiness audit | Full color | [Cover](website-ai-audit-1440.png) |

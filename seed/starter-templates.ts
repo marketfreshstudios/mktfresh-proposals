@@ -19,7 +19,7 @@ export const starterCoverLayouts: Partial<
   Record<string, Exclude<NonNullable<Cover["layout"]>, "custom">>
 > = {
   "general-project": "editorial",
-  "website-design-build": "split",
+  "website-design-build": "editorial",
   "local-visibility-seo": "side-photo",
   "website-ai-audit": "bold",
   "monthly-marketing": "centered",
@@ -191,6 +191,32 @@ export function starterTemplates(
           };
         })
       : [];
+    const cover = applyCoverLayout(
+      {
+        logo_mode: "brand",
+        workspace: "{{workspace.name}}",
+        eyebrow: source.eyebrow,
+        byline: "{{proposal.validity}}",
+        elements: [
+          coverLine("logo"),
+          coverLine("eyebrow", source.eyebrow),
+          coverLine("title", source.title),
+          coverLine(
+            "prepared_for",
+            "Prepared for {{client.full_name}}, {{client.company}}",
+          ),
+          coverLine(
+            "byline",
+            "Prepared by {{sender.name}}, {{workspace.name}}",
+          ),
+          coverLine("extra", "{{proposal.date}}", "date"),
+          coverLine("extra", "{{proposal.validity}}", "validity"),
+        ],
+      },
+      starterCoverLayouts[source.key] ?? "editorial",
+    );
+    if (source.key === "website-design-build" && cover.background)
+      cover.background.graphic = "ring";
     return {
       id,
       name: source.name,
@@ -200,30 +226,7 @@ export function starterTemplates(
       active: true,
       signature_heading_defaulted: true,
       header_footer: defaultTemplateBands(),
-      cover: applyCoverLayout(
-        {
-          logo_mode: "brand",
-          workspace: "{{workspace.name}}",
-          eyebrow: source.eyebrow,
-          byline: "{{proposal.validity}}",
-          elements: [
-            coverLine("logo"),
-            coverLine("eyebrow", source.eyebrow),
-            coverLine("title", source.title),
-            coverLine(
-              "prepared_for",
-              "Prepared for {{client.full_name}}, {{client.company}}",
-            ),
-            coverLine(
-              "byline",
-              "Prepared by {{sender.name}}, {{workspace.name}}",
-            ),
-            coverLine("extra", "{{proposal.date}}", "date"),
-            coverLine("extra", "{{proposal.validity}}", "validity"),
-          ],
-        },
-        starterCoverLayouts[source.key] ?? "editorial",
-      ),
+      cover,
       content,
       default_quote: [],
       default_items,

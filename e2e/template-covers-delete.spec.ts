@@ -33,7 +33,15 @@ test("all seven starter covers open with their designed layout and existing text
     await expect(
       cover.getByText("Prepared for", { exact: true }),
     ).toBeVisible();
-    if (process.env.CAPTURE_STARTER_COVERS === "1") {
+    if (template.starter_key === "website-design-build") {
+      await expect(cover.locator(".cover-decoration")).toHaveCSS(
+        "background-color",
+        "rgb(255, 255, 255)",
+      );
+      await expect(cover.locator('[data-cover-graphic="ring"]')).toBeVisible();
+    }
+    const capture = process.env.CAPTURE_STARTER_COVERS;
+    if (capture === "1" || capture === template.starter_key) {
       await mkdir(evidence, { recursive: true });
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({

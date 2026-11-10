@@ -659,7 +659,7 @@ PR #86 owner review: watermarks keep their transparent source shape, clipped onl
 
 ## Starter cover layouts and template deletion — November 10, 2026
 
-Starter covers use Editorial for General project, Website care and Social media, Split panel for Website design, Photo beside title for Local visibility, Full color for the Audit, and Centered minimal for Monthly marketing. The cover uses the workspace brand and existing text. Apply the cover migration before deploying the matching starter seed. It changes only exact shipped plain covers in MarketFresh and updates the new-workspace seed. Customized covers and proposal snapshots are outside the migration.
+Starter covers use Editorial for General project, Website care and Social media, white Editorial with the ring for Website design, Photo beside title for Local visibility, Full color for the Audit, and Centered minimal for Monthly marketing. The cover uses the workspace brand and existing text. Apply the cover migration before deploying the matching starter seed. It changes only exact shipped plain covers in MarketFresh and updates the new-workspace seed. Customized covers and proposal snapshots are outside the migration.
 
 Super admins can delete an ordinary template through its card menu after confirmation. Proposals keep their stored copy. Starters are protected by the server and still offer Hide from new proposals. The catch-all API exports DELETE so the application can reach the authorized handler.
 
