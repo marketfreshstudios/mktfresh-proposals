@@ -10,7 +10,12 @@ import { AddressSchema, PhoneInputSchema, countryCode } from "./client-contact";
 import type { Repository } from "./repository";
 export class DuplicateClient extends AppError {
   constructor(public existing: Client) {
-    super(409, "A client with this email already exists.");
+    super(
+      409,
+      existing.archived_at
+        ? "A client with this email is archived. Restore it in Clients first."
+        : "A client with this email already exists.",
+    );
   }
 }
 export function sameClientContact(a: Client, b: Client) {

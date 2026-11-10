@@ -45,6 +45,7 @@ export function ClientPicker({
         >
           <option value="">Choose a client</option>
           {all
+            .filter((client) => !client.archived_at)
             .toSorted((a, b) => a.company.localeCompare(b.company))
             .map((c) => (
               <option key={c.id} value={c.id}>
@@ -124,7 +125,10 @@ export function CreateClientModal({
             {error}
           </Banner>
         )}
-        {existing && (
+        {existing?.archived_at && (
+          <a href={`/clients/${existing.id}`}>Open the archived client</a>
+        )}
+        {existing && !existing.archived_at && (
           <Button onClick={() => onSaved(existing)}>
             Use the existing client
           </Button>
