@@ -23,11 +23,13 @@ async function hostedCatalog() {
     "visibility-core": "retainer-core-295",
     "visibility-growth": "retainer-growth-495",
   };
-  const catalog = (await f.repo.entities<Item>("pricing_items")).map((i) =>
-    skus[i.sku]
-      ? { ...i, id: starterId(workspace, i.sku), sku: skus[i.sku] }
-      : i,
-  );
+  const catalog = (await f.repo.entities<Item>("pricing_items"))
+    .filter((item) => item.sku !== "oiot-pro-monthly-239")
+    .map((i) =>
+      skus[i.sku]
+        ? { ...i, id: starterId(workspace, i.sku), sku: skus[i.sku] }
+        : i,
+    );
   return { ...f, catalog };
 }
 it("hosted SKUs resolve UUID products, correct groups/defaults, and the live 4.4 predicate", async () => {
@@ -61,7 +63,10 @@ it("hosted SKUs resolve UUID products, correct groups/defaults, and the live 4.4
   const clause = templates[1].content
     .flatMap((b) => b.clauses ?? [])
     .find((c) => c.id === "payment-plan")!;
-  expect(clause.show_when!.pricing_item_id).toBe(oi.id);
+  expect(
+    clause.show_when?.kind === "item_selected" &&
+      clause.show_when.pricing_item_id,
+  ).toBe(oi.id);
   expect(
     selectedContent(templates[1].content, website)
       .flatMap((b) => b.clauses ?? [])
@@ -79,7 +84,9 @@ it("hosted SKUs resolve UUID products, correct groups/defaults, and the live 4.4
 });
 it("SKU takes priority over a stale seed row; missing or inactive members leave the whole quote empty and report the exact SKU", async () => {
   const { catalog, repo } = await hostedCatalog();
-  const seed = await repo.entities<Item>("pricing_items");
+  const seed = (await repo.entities<Item>("pricing_items")).filter(
+    (item) => item.sku !== "oiot-pro-monthly-239",
+  );
   const oi = catalog.find((i) => i.sku === "oiot-monthly-175")!;
   const stale = seed.find((i) => i.id.endsWith("103"))!;
   expect(

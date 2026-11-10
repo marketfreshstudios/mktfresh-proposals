@@ -2,8 +2,13 @@
 import { PanelHeading } from "./editor/panel-heading";
 import { useState } from "react";
 import { Select, Switch } from "./form-controls";
-import { oiotItem, oiotKickoff, oiotPlan } from "../lib/oiot";
+import { oiotItem, oiotKickoff, oiotPlan, oiotPlanDetails } from "../lib/oiot";
 import type { Block, QuoteItem, Item } from "../lib/model";
+import {
+  choiceRequired,
+  visibleQuote,
+  validateQuoteConditions,
+} from "../lib/quote-options";
 import { quoteRange } from "../lib/quote-model";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import {
@@ -105,10 +110,83 @@ export function QuoteItemsPanel({
       ),
     );
   }
+  function changeRequired(group: string, required: boolean) {
+    const rows = items.filter((item) => item.choice_group_id === group);
+    const defaultId =
+      rows.find((item) => item.default_selected)?.id ?? rows[0].id;
+    setItems(
+      items.map((item) =>
+        item.choice_group_id === group
+          ? {
+              ...item,
+              choice_group_required: required,
+              default_selected: required
+                ? item.id === defaultId
+                : item.default_selected,
+            }
+          : item,
+      ),
+    );
+  }
+  function visibilityControl(rows: QuoteItem[], label: string) {
+    const condition = rows[0].show_when;
+    const id =
+      condition?.kind === "quote_item"
+        ? condition.id
+        : condition
+          ? (items.find((item) => item.pricing_item_id === condition.id)?.id ??
+            condition.id)
+          : undefined;
+    const ids = new Set(rows.map((item) => item.id));
+    const changes = (parent?: string) =>
+      items.map((item) =>
+        ids.has(item.id)
+          ? {
+              ...item,
+              show_when: parent
+                ? { kind: "quote_item" as const, id: parent }
+                : undefined,
+            }
+          : item,
+      );
+    const selectable = items.filter(
+      (item) => !ids.has(item.id) && item.optional,
+    );
+    return (
+      <Field label={label}>
+        <Select
+          value={id ?? ""}
+          onChange={(event) => setItems(changes(event.currentTarget.value))}
+        >
+          <option value="">Always</option>
+          {id && !selectable.some((item) => item.id === id) && (
+            <option value={id} disabled>
+              Previous option unavailable
+            </option>
+          )}
+          {selectable.map((item) => {
+            let disabled = false;
+            try {
+              validateQuoteConditions(changes(item.id));
+            } catch {
+              disabled = true;
+            }
+            return (
+              <option key={item.id} value={item.id} disabled={disabled}>
+                {item.name} is chosen
+              </option>
+            );
+          })}
+        </Select>
+      </Field>
+    );
+  }
   function unlink(group: string) {
     setItems(
       items.map((i) =>
-        i.choice_group_id === group ? { ...i, choice_group_id: null } : i,
+        i.choice_group_id === group
+          ? { ...i, choice_group_id: null, choice_group_required: undefined }
+          : i,
       ),
     );
   }
@@ -123,6 +201,7 @@ export function QuoteItemsPanel({
               ...i,
               optional: true,
               choice_group_id: group,
+              choice_group_required: target.choice_group_required,
               default_selected:
                 i.id === target.id ? target.default_selected : false,
             }
@@ -132,8 +211,15 @@ export function QuoteItemsPanel({
   }
   function itemCard(i: QuoteItem) {
     const expanded = expandedItem === i.id;
-    const oiot = oiotItem(i, proposalContent ?? [], catalog);
+    const oiot =
+      i.oiot_build ||
+      (!i.show_when && oiotItem(i, proposalContent ?? [], catalog));
     const kickoff = oiot ? oiotKickoff(i) : undefined;
+    const lockedCarePrice = !!(
+      i.show_when &&
+      items.some((item) => item.oiot_build) &&
+      oiotPlanDetails(i, catalog)
+    );
     const changeKickoff = (amount: number) =>
       updateItem(i.id, {
         sublines: kickoff
@@ -232,7 +318,7 @@ export function QuoteItemsPanel({
             />
           )}
           <strong className="quote-row-amount">
-            {amount}
+            {i.oiot_build && !kickoff ? "Kickoff needed" : amount}
             {i.sublines.length === 1 &&
               i.sublines[0].interval === "one_time" && <small> one-time</small>}
           </strong>
@@ -363,6 +449,7 @@ export function QuoteItemsPanel({
                             min="0"
                             step="0.01"
                             value={s.amount / 100}
+                            readOnly={lockedCarePrice}
                             onChange={(e) =>
                               updateItem(i.id, {
                                 sublines: i.sublines.map((v) =>
@@ -533,6 +620,14 @@ export function QuoteItemsPanel({
               <label className="check">
                 <Switch
                   checked={i.optional}
+                  disabled={
+                    i.oiot_build ||
+                    items.some(
+                      (item) =>
+                        item.oiot_build &&
+                        item.choice_group_id === i.choice_group_id,
+                    )
+                  }
                   onChange={(e) => {
                     if (!e.target.checked && i.choice_group_id) {
                       setItems(
@@ -541,6 +636,7 @@ export function QuoteItemsPanel({
                             ? {
                                 ...v,
                                 choice_group_id: null,
+                                choice_group_required: undefined,
                                 ...(v.id === i.id
                                   ? { optional: false, default_selected: true }
                                   : {}),
@@ -571,6 +667,7 @@ export function QuoteItemsPanel({
                 </label>
               )}
             </div>
+            {visibilityControl([i], "Show only when")}
             {!i.choice_group_id && i.optional ? (
               <Field label="Link as alternative">
                 <Select value="" onChange={(e) => link(i, e.target.value)}>
@@ -633,27 +730,29 @@ export function QuoteItemsPanel({
 
             <footer className="quote-item-footer">
               {" "}
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  updateItem(i.id, {
-                    sublines: [
-                      ...i.sublines,
-                      {
-                        id: uid(),
-                        amount: 0,
-                        list_amount: null,
-                        interval: "one_time",
-                        qty: 1,
-                        stripe_lookup_key: null,
-                        qbo_item_ref: null,
-                      },
-                    ],
-                  })
-                }
-              >
-                Sub-line
-              </Button>
+              {!i.oiot_build && (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    updateItem(i.id, {
+                      sublines: [
+                        ...i.sublines,
+                        {
+                          id: uid(),
+                          amount: 0,
+                          list_amount: null,
+                          interval: "one_time",
+                          qty: 1,
+                          stripe_lookup_key: null,
+                          qbo_item_ref: null,
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Sub-line
+                </Button>
+              )}
               <button
                 type="button"
                 aria-expanded={itemDetails === i.id}
@@ -668,7 +767,7 @@ export function QuoteItemsPanel({
                 variant="ghost"
                 aria-label={`Remove ${i.name}`}
                 onClick={() => {
-                  setItems(items.filter((v) => v.id !== i.id));
+                  setItems(items.filter((item) => item.id !== i.id));
                 }}
               >
                 Remove
@@ -731,10 +830,41 @@ export function QuoteItemsPanel({
                 <div className="editor-choice-group">
                   <header>
                     <PanelHeading nested>Choose one</PanelHeading>
-                    <Button variant="ghost" onClick={() => unlink(id)}>
-                      Unlink
-                    </Button>
+                    {!unitItems(id).some((item) => item.oiot_build) && (
+                      <Button variant="ghost" onClick={() => unlink(id)}>
+                        Unlink
+                      </Button>
+                    )}
                   </header>
+                  <details className="quote-group-settings">
+                    <Disclosure>Choice group settings</Disclosure>
+                    <label className="check">
+                      <Switch
+                        checked={choiceRequired(unitItems(id)[0])}
+                        onChange={(event) =>
+                          changeRequired(id, event.target.checked)
+                        }
+                      />
+                      Client must choose one
+                    </label>
+                    {!choiceRequired(unitItems(id)[0]) &&
+                      unitItems(id).some((item) => item.default_selected) && (
+                        <Button
+                          onClick={() =>
+                            setItems(
+                              items.map((item) =>
+                                item.choice_group_id === id
+                                  ? { ...item, default_selected: false }
+                                  : item,
+                              ),
+                            )
+                          }
+                        >
+                          Clear default choice
+                        </Button>
+                      )}
+                    {visibilityControl(unitItems(id), "Show group only when")}
+                  </details>
                   <Reorder
                     ids={unitItems(id).map((i) => i.id)}
                     onMove={(from, to) => {
@@ -788,11 +918,14 @@ export function QuoteItemsPanel({
         <p className="eyebrow">Client sees by default</p>
         <Totals lines={totalsItems} currency={currency} />
         <p className="muted">
-          Across all choices · {money(range.min.one_time_total, currency)}–
+          {items.some((item) => item.show_when)
+            ? "Across visible choices"
+            : "Across all choices"}{" "}
+          · {money(range.min.one_time_total, currency)}–
           {money(range.max.one_time_total, currency)} one-time ·{" "}
           {money(range.min.monthly_total, currency)}–
           {money(range.max.monthly_total, currency)}/mo
-          {totalsItems.some((i) =>
+          {visibleQuote(totalsItems).some((i) =>
             i.sublines.some((s) => s.interval === "year"),
           ) &&
             ` · ${money(range.min.yearly_total, currency)}–${money(range.max.yearly_total, currency)}/yr`}

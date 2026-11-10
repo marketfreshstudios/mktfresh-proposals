@@ -51,6 +51,17 @@ export async function seed(repo: Repository, mockMappings = false) {
       ["hosted-standard", "Hosted Standard", 10000, "month", true],
       ["legacy-audit", "Legacy Audit", 75000, "one_time", false],
       ["legacy-build", "Legacy Build", 250000, "one_time", false],
+      [
+        "hosted-essentials-25",
+        "Hosting & Care Essentials",
+        2500,
+        "month",
+        true,
+      ],
+      ["hosted-lite-64", "Hosting & Care Lite", 6400, "month", true],
+      ["hosted-standard-100", "Hosting & Care Standard", 10000, "month", true],
+      ["hosted-pro-164", "Hosting & Care Pro", 16400, "month", true],
+      ["oiot-pro-monthly-239", "Own It Over Time — Pro", 23900, "month", true],
     ];
   const existing = await repo.entities<Item>("pricing_items");
   for (const [
@@ -97,11 +108,21 @@ export async function seed(repo: Repository, mockMappings = false) {
               },
             }
           : {}),
+        ...(sku === "oiot-pro-monthly-239"
+          ? {
+              schedule: {
+                after_paid_invoices: 30,
+                then: { amount: 16400, lookup_key: "hosted-pro-164" },
+              },
+            }
+          : {}),
         qbo_item_ref:
           mockMappings && interval === "one_time" ? "mock_item_" + sku : null,
         stripe_lookup_key:
           mockMappings && interval === "month"
-            ? sku + "-" + amount / 100
+            ? /[-][0-9]+$/.test(sku)
+              ? sku
+              : sku + "-" + amount / 100
             : null,
       }),
     );

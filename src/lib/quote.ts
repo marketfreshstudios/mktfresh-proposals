@@ -1,6 +1,7 @@
 import {
   finalOiotClause,
   oiotItem,
+  oiotPlanDetails,
   oiotPlan,
   oiotKickoff,
   oiotKickoffField,
@@ -12,6 +13,11 @@ import { businessState, businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
+import {
+  validateQuoteConditions,
+  choiceRequired,
+  choiceGroups,
+} from "./quote-options";
 import { qboItemMapping } from "./qbo-mapping";
 import { pendingSections } from "./ai-review";
 import { renderBlocks, resolveLabel, variables } from "./presentation";
@@ -60,22 +66,91 @@ export function readiness(
     );
   try {
     validateItems(p.quote);
+    validateQuoteConditions(p.quote, true);
   } catch (e) {
     errors.push(e instanceof Error ? e.message : "Invalid quote items");
   }
-  const offers = p.quote.filter((item) => oiotItem(item, p.content, catalog));
-  if (offers.length > 1) errors.push(`Offer only one ${oiotPlan.name} option`);
+  for (const group of choiceGroups(p.quote).values()) {
+    if (
+      group.some((item) => item.choice_group_required === true) &&
+      !group.some((item) => item.default_selected)
+    )
+      errors.push(
+        `${group[0].name}: choose a default for the required choice group`,
+      );
+  }
+  const builds = p.quote.filter((item) => item.oiot_build);
+  const plans = p.quote.filter((item) => oiotPlanDetails(item, catalog));
+  const offers = builds.length
+    ? builds
+    : p.quote.filter((item) => oiotItem(item, p.content, catalog));
+  if (offers.length > 1)
+    errors.push(`Offer only one ${oiotPlan.name} Build choice`);
   if (offers.length === 1) {
     const offer = offers[0];
     const kickoff = oiotKickoff(offer);
-    if (
+    if (offer.oiot_build) {
+      if (!choiceRequired(offer))
+        errors.push(`Require a Build choice when offering ${oiotPlan.name}.`);
+      const group = plans[0]?.choice_group_id;
+      if (
+        !group ||
+        group === offer.choice_group_id ||
+        p.quote.some(
+          (item) => item.choice_group_id === group && !plans.includes(item),
+        ) ||
+        plans.some(
+          (item) =>
+            item.choice_group_id !== group ||
+            !choiceRequired(item) ||
+            item.show_when?.kind !== "quote_item" ||
+            item.show_when.id !== offer.id,
+        ) ||
+        plans.filter((item) => item.default_selected).length !== 1
+      )
+        errors.push(
+          `Add a required ${oiotPlan.name} care group with a default plan.`,
+        );
+      for (const item of plans) {
+        const plan = oiotPlanDetails(item, catalog)!;
+        const monthly =
+          item.sublines.length === 1 ? item.sublines[0] : undefined;
+        const product = catalog.find(
+          (product) => product.id === item.pricing_item_id,
+        );
+        const catalogLine = product?.sublines?.find(
+          (line) => line.interval === "month",
+        );
+        const stepDown = catalog.find(
+          (product) => product.stripe_lookup_key === plan.stepDownLookup,
+        );
+        if (
+          monthly?.interval !== "month" ||
+          monthly.qty !== 1 ||
+          monthly.stripe_lookup_key !== plan.lookup ||
+          !product?.active ||
+          product.legacy ||
+          monthly.amount !== (catalogLine?.amount ?? product.amount) ||
+          item.schedule?.after_paid_invoices !== oiotPlan.paidPayments ||
+          item.schedule.then.lookup_key !== plan.stepDownLookup ||
+          item.schedule.then.amount !== stepDown?.amount ||
+          !stepDown.active ||
+          stepDown.legacy ||
+          stepDown.interval !== "month"
+        )
+          errors.push(
+            `Refresh ${plan.name} from the catalog and confirm its 30-payment step-down.`,
+          );
+      }
+    } else if (
       p.content.some((block) => block.clauses?.some(finalOiotClause)) &&
       (offer.schedule?.after_paid_invoices !== oiotPlan.paidPayments ||
         offer.schedule.then.amount !== oiotPlan.stepDownAmount)
-    )
+    ) {
       errors.push(
         `Configure the ${oiotPlan.paidPayments}-payment step-down in Studio Products, then re-add ${oiotPlan.name}`,
       );
+    }
     if (!kickoff) errors.push(oiotKickoffRequired);
     if (offer.oiot_purchase_price === undefined)
       errors.push(oiotPurchasePriceRequired);
@@ -90,6 +165,7 @@ export function readiness(
   for (const i of cloneQuote(p.quote)) {
     if (
       i.choice_group_id &&
+      choiceRequired(i) &&
       !cloneQuote(p.quote).some(
         (v) => v.choice_group_id === i.choice_group_id && v.default_selected,
       )
@@ -130,7 +206,7 @@ export function readiness(
         .length !== 1
     )
       errors.push(`Exactly one ${role} signature block required`);
-  const allLines = quoteSublines(p.quote);
+  const allLines = quoteSublines(p.quote, false, true);
   if (
     quickbooks &&
     !quickbooks.connected &&

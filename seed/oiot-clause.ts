@@ -21,3 +21,12 @@ When the buyout price reaches zero through accrued build credits, two things hap
     pricing_item_id: "00000000-0000-4000-8000-000000000103",
   },
 };
+
+export const planAwarePaymentPlanClause = {
+  ...paymentPlanClause,
+  body: paymentPlanClause.body
+    .replaceAll("$175", "{{oiot.monthly}}")
+    .replaceAll("$100", "{{oiot.step_down}}")
+    .replace("Hosting & Care Standard Plan", "{{oiot.step_down_plan}}"),
+  show_when: { kind: "oiot_plan_selected" as const },
+};

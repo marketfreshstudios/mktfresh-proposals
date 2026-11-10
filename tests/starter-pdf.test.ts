@@ -63,9 +63,7 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
       expect(content).toContain("Signatures");
       expect(content).not.toContain("4.4 Own It Over Time");
       if (t.starter_key === "website-design-build") {
-        const alternative = p.quote.find(
-          (i) => i.pricing_item_id === "00000000-0000-4000-8000-000000000103",
-        )!;
+        const alternative = p.quote.find((i) => i.oiot_build)!;
         const selected = await pdfPreview(
           f.repo,
           { get: async () => logo, put: async () => {} },
@@ -82,6 +80,7 @@ it("all starters render their exact cover, legal fields and conditional 4.4 thro
                       {
                         id: crypto.randomUUID(),
                         label: "Kickoff",
+                        oiot_kickoff: true as const,
                         amount: 150000,
                         qty: 1,
                         interval: "one_time" as const,

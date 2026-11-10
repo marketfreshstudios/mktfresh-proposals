@@ -567,6 +567,10 @@ export class StripeProvider implements BillingProvider {
       cursor = page.data.at(-1)!.id;
     } while (true);
     const progress = paidInvoiceProgress(line, paid);
+    // Newly signed OIOT plans step down only once the paid-invoice threshold
+    // has actually been met. A projected date can arrive while a debit is unpaid.
+    if (line.plan_terms?.oiot_paid_step_down === true && progress.remaining > 0)
+      return;
     const next = await resolveLookup(this.api, line.schedule.then.lookup_key);
     if (next.recurring?.interval !== line.interval)
       throw new NeedsReview(

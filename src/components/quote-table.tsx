@@ -1,6 +1,7 @@
 "use client";
 import type { Quote, QuoteItem } from "../lib/model";
 import { quoteTableGroups, quoteTableColumns } from "../lib/quote-table";
+import { choiceRequired } from "../lib/quote-options";
 import { selected } from "../lib/quote-model";
 export function QuoteTable({
   quote,
@@ -45,6 +46,22 @@ export function QuoteTable({
           name={`${defaults ? "document-" : ""}${item.choice_group_id ?? item.id}`}
           aria-label={`${defaults ? "Default selection for " : ""}${item.name} · ${selected(item) ? "included" : "not included"}`}
           checked={selected(item)}
+          aria-description={
+            !defaults && item.choice_group_id && !choiceRequired(item)
+              ? "Activate the selected option again to clear it."
+              : undefined
+          }
+          onClick={(event) => {
+            if (
+              !defaults &&
+              selected(item) &&
+              item.choice_group_id &&
+              !choiceRequired(item)
+            ) {
+              event.preventDefault();
+              onToggle?.(item.id, false);
+            }
+          }}
           disabled={disabled}
           onChange={(e) => onToggle?.(item.id, e.target.checked)}
         />
@@ -97,7 +114,9 @@ export function QuoteTable({
             >
               <th scope="row" role="rowheader">
                 {g.choice && n === 0 && (
-                  <span className="quote-table-choice">Choose one</span>
+                  <span className="quote-table-choice">
+                    {choiceRequired(r.item) ? "Choose one" : "Choose up to one"}
+                  </span>
                 )}
                 <span className="quote-table-item">
                   <span className="quote-control-slot">{control(r.item)}</span>

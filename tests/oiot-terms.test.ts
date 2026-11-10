@@ -26,7 +26,7 @@ async function fixture() {
   const catalog = await f.repo.entities<Item>("pricing_items");
   const starter = starterTemplates(f.repo.workspaceId, {
     marketfresh: true,
-    catalog,
+    catalog: catalog.filter((item) => item.sku !== "oiot-pro-monthly-239"),
   })[1];
   const quote = starter.default_items!;
   const offer = quote[1];

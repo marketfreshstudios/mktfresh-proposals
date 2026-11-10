@@ -44,10 +44,21 @@ export const SublineSchema = z.object({
   qbo_item_ref: z.string().nullable().default(null),
 });
 export type Subline = z.infer<typeof SublineSchema>;
+const CatalogQuoteConditionSchema = z
+  .object({
+    kind: z.literal("catalog_item"),
+    id: z.uuid(),
+  })
+  .strict();
+export const QuoteConditionSchema = z.union([
+  CatalogQuoteConditionSchema,
+  z.object({ kind: z.literal("quote_item"), id: z.uuid() }).strict(),
+]);
 export const ItemSchema = z.object({
   id: z.string().uuid(),
   sublines: z.array(SublineSchema).max(20).optional(),
   display_name: z.string().trim().min(1).max(200).optional(),
+  quote_show_when: CatalogQuoteConditionSchema.optional(),
   sku: z.string().regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1).max(200),
   description: z.string().max(10000).default(""),
@@ -64,33 +75,56 @@ export const ItemSchema = z.object({
     .nullable()
     .default(null),
 });
-export const QuoteItemSchema = z.object({
-  oiot_purchase_price: cents.optional(),
-  id: z.string().uuid(),
-  order: z.number().int().nonnegative(),
-  name: z.string().min(1).max(200),
-  description: z.string().max(10000).default(""),
-  source: z.enum(["catalog", "custom"]),
-  pricing_item_id: z.string().uuid().nullable().default(null),
-  custom_family_id: z.string().uuid().nullable().default(null),
-  sublines: z.array(SublineSchema).min(1).max(20),
-  optional: z.boolean(),
-  default_selected: z.boolean(),
-  selected: z.boolean().optional(),
-  choice_group_id: z.string().uuid().nullable().default(null),
-  min_term_months: z.number().int().positive().nullable().default(null),
-  schedule: ScheduleSchema.nullable().default(null),
-  plan_terms: z
-    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-    .nullable()
-    .default(null),
-  ai_entered: z.boolean().optional(),
-  price_review: z.record(z.string(), z.enum(["keep", "list"])).optional(),
-});
+export const QuoteItemSchema = z
+  .object({
+    oiot_purchase_price: cents.optional(),
+    oiot_build: z.literal(true).optional(),
+    show_when: QuoteConditionSchema.optional(),
+    choice_group_required: z.boolean().optional(),
+    id: z.string().uuid(),
+    order: z.number().int().nonnegative(),
+    name: z.string().min(1).max(200),
+    description: z.string().max(10000).default(""),
+    source: z.enum(["catalog", "custom"]),
+    pricing_item_id: z.string().uuid().nullable().default(null),
+    custom_family_id: z.string().uuid().nullable().default(null),
+    sublines: z.array(SublineSchema).max(20),
+    optional: z.boolean(),
+    default_selected: z.boolean(),
+    selected: z.boolean().optional(),
+    choice_group_id: z.string().uuid().nullable().default(null),
+    min_term_months: z.number().int().positive().nullable().default(null),
+    schedule: ScheduleSchema.nullable().default(null),
+    plan_terms: z
+      .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+      .nullable()
+      .default(null),
+    ai_entered: z.boolean().optional(),
+    price_review: z.record(z.string(), z.enum(["keep", "list"])).optional(),
+  })
+  .refine((item) => item.sublines.length > 0 || item.oiot_build === true, {
+    message: "Add at least one priced line",
+    path: ["sublines"],
+  })
+  .refine(
+    (item) =>
+      !item.oiot_build ||
+      (item.optional &&
+        !!item.choice_group_id &&
+        item.sublines.length <= 1 &&
+        item.sublines.every(
+          (line) => line.interval === "one_time" && line.oiot_kickoff,
+        )),
+    {
+      message: "The unpriced Build choice can hold at most one kickoff line",
+      path: ["oiot_build"],
+    },
+  );
 export type QuoteItem = z.infer<typeof QuoteItemSchema>;
 export type Item = z.infer<typeof ItemSchema>;
 export const BillingLineSchema = ItemSchema.omit({
   sublines: true,
+  quote_show_when: true,
   display_name: true,
   active: true,
   legacy: true,
@@ -113,10 +147,10 @@ export const ContractClauseSchema = z.object({
   body: z.string().max(30000),
   body_format: z.literal("oiot_run_in").optional(),
   show_when: z
-    .object({
-      kind: z.literal("item_selected"),
-      pricing_item_id: z.string().uuid(),
-    })
+    .union([
+      z.object({ kind: z.literal("item_selected"), pricing_item_id: z.uuid() }),
+      z.object({ kind: z.literal("oiot_plan_selected") }).strict(),
+    ])
     .nullable(),
   draft: z.boolean().optional(),
 });
@@ -151,14 +185,7 @@ export type Block = {
   path?: string;
   id?: string;
   ai_review?: { source: string; reviewed: boolean };
-  clauses?: {
-    id: string;
-    heading: string;
-    body: string;
-    body_format?: "oiot_run_in";
-    show_when: null | { kind: "item_selected"; pricing_item_id: string };
-    draft?: boolean;
-  }[];
+  clauses?: z.infer<typeof ContractClauseSchema>[];
   contract_edited?: boolean;
 };
 export type SavedBlock = {

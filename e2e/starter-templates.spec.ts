@@ -334,16 +334,16 @@ test("every starter field is highlighted in template and proposal editors, while
     },
     staff,
   );
-  const choice = active.quote.find((i) => i.pricing_item_id?.endsWith("103"))!;
+  const build = active.quote.find((item) => item.oiot_build)!;
   active = await f.service.edit(
     active.id,
     {
       revision: active.revision,
-      quote: active.quote.map((i) => ({
-        ...i,
-        selected: i.id === choice.id,
-        default_selected: i.id === choice.id,
-      })),
+      quote: active.quote.map((item) =>
+        item.choice_group_id === build.choice_group_id
+          ? { ...item, default_selected: item.id === build.id }
+          : item,
+      ),
     },
     staff,
   );

@@ -1,14 +1,32 @@
-import { oiotPlan } from "../../seed/oiot-plan";
+import { oiotCarePlans, oiotPlan } from "../../seed/oiot-plan";
 export { oiotPlan } from "../../seed/oiot-plan";
 import type { Block, Item, Quote, QuoteItem, Subline } from "./model";
+import { selected, visibleQuote } from "./quote-options";
 
 export const oiotKickoffField = "oiot.kickoff";
 export const oiotPurchasePriceField = "oiot.purchase_price";
+export const oiotMonthlyField = "oiot.monthly";
+export const oiotStepDownField = "oiot.step_down";
+export const oiotStepDownPlanField = "oiot.step_down_plan";
 export const oiotKickoffRequired = `Enter the kickoff amount for ${oiotPlan.name}`;
 export const oiotPurchasePriceRequired = `Enter the website purchase price for ${oiotPlan.name}`;
 type Clause = NonNullable<Block["clauses"]>[number];
 export const finalOiotClause = (clause: Clause) =>
   clause.body_format === "oiot_run_in";
+
+export function oiotPlanDetails(item: QuoteItem, catalog: Item[] = []) {
+  const key = item.sublines.find(
+    (line) => line.interval === "month",
+  )?.stripe_lookup_key;
+  const product = catalog.find((entry) => entry.id === item.pricing_item_id);
+  return oiotCarePlans.find(
+    (plan) =>
+      plan.lookup === key ||
+      (product &&
+        (plan.lookup === product.stripe_lookup_key ||
+          plan.skus.some((sku) => sku === product.sku))),
+  );
+}
 
 export function oiotItem(
   item: QuoteItem,
@@ -16,21 +34,16 @@ export function oiotItem(
   catalog: Item[] = [],
 ) {
   return (
-    item.sublines.some((line) => line.interval === "month") &&
-    (item.sublines.some(
-      (line) => line.stripe_lookup_key === oiotPlan.lookupKey,
-    ) ||
-      (item.pricing_item_id !== null &&
-        (catalog.some(
-          (product) =>
-            product.id === item.pricing_item_id &&
-            oiotPlan.skus.includes(product.sku),
-        ) ||
+    item.oiot_build ||
+    (item.sublines.some((line) => line.interval === "month") &&
+      (!!oiotPlanDetails(item, catalog) ||
+        (item.pricing_item_id !== null &&
           content.some((block) =>
             block.clauses?.some(
               (clause) =>
                 clause.id === "payment-plan" &&
-                clause.show_when?.pricing_item_id === item.pricing_item_id,
+                clause.show_when?.kind === "item_selected" &&
+                clause.show_when.pricing_item_id === item.pricing_item_id,
             ),
           ))))
   );
@@ -53,22 +66,84 @@ export function oiotOffer(
   content: Block[],
   catalog: Item[] = [],
 ) {
+  const builds = quote.filter((item) => item.oiot_build);
+  if (builds.length) return builds.length === 1 ? builds[0] : undefined;
   const offers = quote.filter((item) => oiotItem(item, content, catalog));
   return offers.length === 1 ? offers[0] : undefined;
+}
+
+/** Catalog IDs and the signed recurring line identify the plan even in public DTOs. */
+export function chosenOiotCare(quote: Quote) {
+  const matches = visibleQuote(quote).filter(
+    (item) =>
+      selected(item) &&
+      (oiotPlanDetails(item) ||
+        item.plan_terms?.oiot_paid_step_down === true ||
+        (item.schedule &&
+          oiotCarePlans.some(
+            (plan) => plan.stepDownLookup === item.schedule?.then.lookup_key,
+          ))),
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+export function oiotCareVariables(
+  quote: Quote,
+  format: (amount: number) => string,
+) {
+  const plan = chosenOiotCare(quote);
+  const monthly = plan?.sublines.find((line) => line.interval === "month");
+  const next = plan?.schedule?.then;
+  return {
+    [oiotMonthlyField]: monthly ? format(monthly.amount * monthly.qty) : "",
+    [oiotStepDownField]: next ? format(next.amount) : "",
+    [oiotStepDownPlanField]: next
+      ? (oiotCarePlans.find((care) => care.stepDownLookup === next.lookup_key)
+          ?.stepDownPlan ?? "")
+      : "",
+  };
+}
+
+export function quoteChangesPageContent(
+  content: Block[],
+  before: Quote,
+  after: Quote,
+) {
+  return (
+    finalOiotVisibility(content, before) !==
+      finalOiotVisibility(content, after) ||
+    (after.some((item) => item.show_when) &&
+      (visibleQuote(before)
+        .map((item) => item.id)
+        .join() !==
+        visibleQuote(after)
+          .map((item) => item.id)
+          .join() ||
+        chosenOiotCare(before)?.id !== chosenOiotCare(after)?.id))
+  );
+}
+
+export function clauseApplies(clause: Clause, quote: Quote) {
+  const condition = clause.show_when;
+  if (!condition) return true;
+  if (condition.kind === "oiot_plan_selected") return !!chosenOiotCare(quote);
+  return visibleQuote(quote).some(
+    (item) =>
+      item.pricing_item_id === condition.pricing_item_id && selected(item),
+  );
+}
+
+export function clauseCatalogItem(clause: Clause) {
+  return clause.show_when?.kind === "item_selected"
+    ? clause.show_when.pricing_item_id
+    : undefined;
 }
 
 /** The long conditional clause needs a fresh layout when the client switches plans. */
 export function finalOiotVisibility(content: Block[], quote: Quote) {
   return content.some((block) =>
     block.clauses?.some(
-      (clause) =>
-        finalOiotClause(clause) &&
-        (!clause.show_when ||
-          quote.some(
-            (item) =>
-              item.pricing_item_id === clause.show_when?.pricing_item_id &&
-              (!item.optional || (item.selected ?? item.default_selected)),
-          )),
+      (clause) => finalOiotClause(clause) && clauseApplies(clause, quote),
     ),
   );
 }
@@ -87,13 +162,7 @@ export function revealedOiotClause(
         !clause.show_when
       )
         return false;
-      const selected = (items: Quote) =>
-        items.some(
-          (item) =>
-            item.pricing_item_id === clause.show_when?.pricing_item_id &&
-            (!item.optional || (item.selected ?? item.default_selected)),
-        );
-      return !selected(before) && selected(after);
+      return !clauseApplies(clause, before) && clauseApplies(clause, after);
     })?.id;
 }
 

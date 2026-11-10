@@ -28,7 +28,10 @@ async function fixture(page: Page) {
   );
   const t = starterTemplates(f.repo.workspaceId, {
     marketfresh: true,
-    catalog: await f.repo.entities<Item>("pricing_items"),
+    // Reproduce the original saved quote and its exact page positions.
+    catalog: (await f.repo.entities<Item>("pricing_items")).filter(
+      (item) => item.sku !== "oiot-pro-monthly-239",
+    ),
   }).find((t) => t.starter_key === "website-design-build")!;
   const header = t.header_footer!;
   const first = header.shared.header.slots[0].content[0].content!;

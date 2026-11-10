@@ -8,7 +8,14 @@ import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { TriangleAlert } from "lucide-react";
-import { finalOiotClause, revealedOiotClause } from "../lib/oiot";
+import {
+  clauseApplies,
+  clauseCatalogItem,
+  finalOiotClause,
+  oiotPlan,
+  revealedOiotClause,
+} from "../lib/oiot";
+import { applyQuoteVisibility } from "../lib/quote-options";
 import { useTermsJump } from "./use-terms-jump";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
@@ -120,7 +127,12 @@ import { pageMetrics } from "../lib/proposal-styles";
 import type { Block, Item, Proposal, QuoteItem, Actor } from "../lib/model";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { ReferenceDocument } from "../lib/documents";
-import { orderedItems, catalogQuoteItem, draftItems } from "../lib/quote-model";
+import {
+  orderedItems,
+  catalogQuoteItem,
+  draftItems,
+  visibleQuote,
+} from "../lib/quote-model";
 import { contentSections, pendingSections } from "../lib/ai-review";
 import {
   variables,
@@ -895,11 +907,13 @@ function QuoteEditorContent({
   ready.errors.push(...customerErrors);
   ready.ready = !ready.errors.length;
   function setItems(next: QuoteItem[]) {
-    const quote = next.map((i, order) => ({
-      ...i,
-      order,
-      selected: !i.optional || i.default_selected,
-    }));
+    const quote = applyQuoteVisibility(
+      next.map((i, order) => ({
+        ...i,
+        order,
+        selected: !i.optional || i.default_selected,
+      })),
+    );
     const term = revealedOiotClause(p.content, p.quote, quote);
     change({ quote });
     if (term) {
@@ -1034,11 +1048,12 @@ function QuoteEditorContent({
       )}
     </div>
   );
+  const shown = visibleQuote(items);
   const units = Array.from(
-      new Set(items.map((i) => i.choice_group_id ?? i.id)),
+      new Set(shown.map((i) => i.choice_group_id ?? i.id)),
     ),
     unitItems = (id: string) =>
-      items.filter((i) => (i.choice_group_id ?? i.id) === id);
+      shown.filter((i) => (i.choice_group_id ?? i.id) === id);
   const quotePanel = (
     <QuoteItemsPanel
       items={items}
@@ -2154,12 +2169,7 @@ function QuoteEditorContent({
                 }}
               >
                 {(b.clauses ?? []).map((c, k) =>
-                  !c.show_when ||
-                  items.some(
-                    (i) =>
-                      i.pricing_item_id === c.show_when?.pricing_item_id &&
-                      (!i.optional || i.default_selected),
-                  ) ? (
+                  clauseApplies(c, items) ? (
                     <Sortable
                       block
                       key={c.id}
@@ -3186,13 +3196,7 @@ function QuoteEditorContent({
                   {b.clauses!.map((clause, k) => (
                     <option key={clause.id} value={k}>
                       {resolvedEditorText(clause.heading, map)}
-                      {clause.show_when &&
-                      !items.some(
-                        (i) =>
-                          i.pricing_item_id ===
-                            clause.show_when?.pricing_item_id &&
-                          (!i.optional || i.default_selected),
-                      )
+                      {!clauseApplies(clause, items)
                         ? " — hidden for current choices"
                         : ""}
                     </option>
@@ -3219,19 +3223,27 @@ function QuoteEditorContent({
               </Field>
               <Field label="Show when">
                 <Select
-                  value={c.show_when?.pricing_item_id ?? ""}
+                  value={clauseCatalogItem(c) ?? c.show_when?.kind ?? ""}
                   onChange={(e) =>
                     patch({
-                      show_when: e.target.value
-                        ? {
-                            kind: "item_selected",
-                            pricing_item_id: e.target.value,
-                          }
-                        : null,
+                      show_when:
+                        e.target.value === "oiot_plan_selected"
+                          ? { kind: "oiot_plan_selected" }
+                          : e.target.value
+                            ? {
+                                kind: "item_selected",
+                                pricing_item_id: e.target.value,
+                              }
+                            : null,
                     })
                   }
                 >
                   <option value="">Always</option>
+                  {finalOiotClause(c) && (
+                    <option value="oiot_plan_selected">
+                      An {oiotPlan.name} care plan is selected
+                    </option>
+                  )}
                   {sellableCatalogue(catalog).map((i) => (
                     <option key={i.id} value={i.id}>
                       {itemDisplayName(i)} is selected

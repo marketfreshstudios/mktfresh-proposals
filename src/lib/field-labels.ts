@@ -28,6 +28,9 @@ export const fieldLabels: Record<string, string> = {
   "quote.selected_items": "Selected products",
   "oiot.kickoff": oiotPlan.kickoffLabel,
   "oiot.purchase_price": "Website purchase price",
+  "oiot.monthly": `${oiotPlan.name} monthly fee`,
+  "oiot.step_down": `${oiotPlan.name} step-down fee`,
+  "oiot.step_down_plan": `${oiotPlan.name} step-down plan`,
 };
 export const fieldLabel = (path: string) =>
   fieldLabels[path] ??

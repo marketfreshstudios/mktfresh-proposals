@@ -15,7 +15,7 @@ import { readableDate } from "../lib/validity";
 import { pageBandCss, pageBandHtml } from "../lib/page-band-render";
 import { pageGeometry } from "../lib/page-bands";
 import { bandPages, resolvedBandPages } from "../lib/band-overrides";
-import { orderedItems } from "../lib/quote-model";
+import { orderedItems, visibleQuote } from "../lib/quote-model";
 import { QuoteSchema } from "../lib/model";
 import type { PublicProposal } from "./client-proposal";
 /** The public print source is the PDF source, without internal billing metadata. */
@@ -101,7 +101,7 @@ export function paginateClientDocument(
   root = neutral;
   // Annotate before splitting: a pricing block can continue across several pages.
   // Array indices in a continued fragment would refer to the wrong product.
-  const items = orderedItems(QuoteSchema.parse(p.quote));
+  const items = orderedItems(visibleQuote(QuoteSchema.parse(p.quote)));
   for (const table of root.querySelectorAll<HTMLElement>(
     '[data-print-kind="pricing_table"]',
   ))
