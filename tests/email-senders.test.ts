@@ -104,7 +104,7 @@ it("defaults to the logged-in staff, supports re-send and freezes every client a
     ),
   ).toHaveLength(2);
 });
-it("rejects outsiders, mismatched domains and AI sender changes", async () => {
+it("rejects outsiders, a missing verified domain and AI sender changes", async () => {
   const { repo, service, draft, settings, members } = await setup();
   await expect(
     service.send(
@@ -114,10 +114,6 @@ it("rejects outsiders, mismatched domains and AI sender changes", async () => {
       "00000000-0000-4000-8000-000000000099",
     ),
   ).rejects.toThrow("belongs to this workspace");
-  members[0].email = "staff@other.test";
-  await expect(service.send(draft.id, staff)).rejects.toThrow(
-    "verified sending domain (example.test)",
-  );
   settings.sending_domain = "";
   await repo.put("workspace_settings", settings);
   await expect(service.send(draft.id, staff)).rejects.toThrow(
@@ -133,6 +129,33 @@ it("rejects outsiders, mismatched domains and AI sender changes", async () => {
   ).rejects.toThrow("AI assistants cannot send");
   expect((await repo.get(draft.id))!.sender).toBeUndefined();
 });
+it("new sends use a verified From for a changed off-domain email and keep prior sends' identity", async () => {
+  const { repo, service, draft, settings, members } = await setup();
+  const sent = await service.send(draft.id, staff);
+  const before = sent.jobs.find((job) => job.kind === "email")!.payload;
+  members[0].email = "staff@other.test";
+  settings.email = "public@other.test";
+  settings.email_reply_to = "workspace";
+  await repo.put("workspace_settings", settings);
+  const next = await service.create(
+    {
+      client_id: draft.client.id,
+      template_id: draft.template_id!,
+      title: "Follow-up proposal",
+    },
+    staff,
+  );
+  const updated = await service.send(next.id, staff);
+  const envelope = updated.jobs.find((job) => job.kind === "email")!.payload;
+  expect(envelope.from).toBe('"Alex Morgan" <notifications@example.test>');
+  expect(envelope.reply_to).toBe("staff@other.test");
+  const original = (await repo.get(sent.id))!;
+  expect(original.jobs.find((job) => job.kind === "email")!.payload).toEqual(
+    before,
+  );
+  expect(original.sender?.email).toBe("staff@example.test");
+});
+
 it("passes Reply-To to the email provider", async () => {
   vi.stubEnv("RESEND_API_KEY", "test-only");
   const request = vi

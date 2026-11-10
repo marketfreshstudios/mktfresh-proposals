@@ -460,7 +460,7 @@ for (const width of [1440, 768, 375]) {
     await page.getByLabel("Password", { exact: true }).fill("fixture password");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(
-      page.getByRole("heading", { name: "Deactivated account" }),
+      page.getByRole("heading", { name: "Your account is paused" }),
     ).toBeVisible();
     await axe(page, ".account-screen", "deactivated");
     for (const type of ["invite", "recovery"]) {

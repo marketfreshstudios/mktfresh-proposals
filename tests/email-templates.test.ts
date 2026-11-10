@@ -315,7 +315,7 @@ it("declined staff email includes the exact escaped client note and uses the sta
   expect(r.text).toContain("Please <wait> & call me.");
   expect(r.button_url).toBe(`https://proposals.example.test/proposals/${p.id}`);
 });
-it("preview/test accepts sample or scoped real data, cannot choose recipients/sender, sends only to the authenticated staff and refuses unverified domains", async () => {
+it("preview/test accepts sample or scoped real data, cannot choose recipients/sender, sends only to the authenticated staff and uses a verified From", async () => {
   vi.stubEnv("APP_URL", "https://proposals.example.test");
   const { repo, draft } = await setup(),
     mailer = new MockMailer();
@@ -357,7 +357,11 @@ it("preview/test accepts sample or scoped real data, cannot choose recipients/se
       "proposal_sent",
       { request_id: crypto.randomUUID() },
     ),
-  ).rejects.toThrow("verified sending domain");
+  ).resolves.toEqual({ sent_to: "person@different.test" });
+  expect([...mailer.sent.values()].at(-1)).toMatchObject({
+    from: expect.stringMatching(/<[^>]+@example\.test>$/),
+    reply_to: "person@different.test",
+  });
   await expect(
     emailStudioPreview(
       repo,

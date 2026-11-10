@@ -12,7 +12,7 @@ import {
   emailValues,
 } from "./email-templates";
 import { editableEmail, validateTemplate } from "./email-template-content";
-import { emailIdentity } from "./email-identity";
+import { emailIdentity, staffFromAddress } from "./email-identity";
 import { defaultValidUntil } from "./validity";
 import { appOrigin } from "./links";
 const PreviewSchema = z
@@ -164,13 +164,15 @@ export async function sendEmailTest(
       true,
     ),
     sender = preview.p.sender!;
+  const from = staffFromAddress(sender.email, {
+    sending_domain: sender.sending_domain,
+    email: preview.p.workspace_settings?.email ?? "",
+  });
   check(
-    sender.email &&
-      sender.sending_domain &&
-      sender.email.split("@")[1].toLowerCase() ===
-        sender.sending_domain.toLowerCase(),
-    `Your email must use the workspace's verified sending domain (${sender.sending_domain || "set it in Workspace"}) before sending a test`,
+    from,
+    "Set a verified sending domain in Workspace before sending a test",
   );
+  if (from !== sender.email) sender.from_email = from;
   check(preview.request_id, "Test request ID required");
   await mailer.send(
     {

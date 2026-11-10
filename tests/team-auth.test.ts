@@ -15,6 +15,9 @@ const state = vi.hoisted(() => ({
   resetLimit: true,
   resetKeys: [] as any[],
   resetWorkspaces: [] as string[],
+  factor: null as any,
+  verified: new Set<string>(),
+  pendingEmail: null as any,
 }));
 const id = "00000000-0000-4000-8000-000000000001";
 function token(sid: string) {
@@ -74,6 +77,91 @@ vi.mock("../src/lib/repository", async (original) => ({
   },
   supabase: () => ({
     from: (table: string) => {
+      if (table === "staff_security")
+        return {
+          upsert: async () => {
+            state.factor ??= {
+              revision: crypto.randomUUID(),
+              totp_secret: null,
+              backup_hashes: [],
+              last_totp_step: null,
+              enrollment: null,
+            };
+            return { error: null };
+          },
+          select() {
+            return this;
+          },
+          eq() {
+            return this;
+          },
+          maybeSingle: async () => ({
+            data: structuredClone(state.factor),
+            error: null,
+          }),
+        };
+      if (table === "staff_email_changes") {
+        const filters: ((row: any) => boolean)[] = [];
+        let operation = "read",
+          next: any;
+        function execute() {
+          const pending = state.pendingEmail;
+          const matches = pending && filters.every((filter) => filter(pending));
+          if (operation === "insert") {
+            if (pending) return { data: null, error: { code: "23505" } };
+            state.pendingEmail = {
+              ...next,
+              claimed_at: null,
+              keep_session: null,
+            };
+          } else if (!matches) return { data: null, error: null };
+          else if (operation === "update")
+            state.pendingEmail = { ...pending, ...next };
+          else if (operation === "delete") {
+            state.pendingEmail = null;
+            return { data: pending, error: null };
+          }
+          return { data: structuredClone(state.pendingEmail), error: null };
+        }
+        return {
+          select() {
+            return this;
+          },
+          eq(key: string, value: unknown) {
+            filters.push((row) => row[key] === value);
+            return this;
+          },
+          gt(key: string, value: string) {
+            filters.push((row) => row[key] > value);
+            return this;
+          },
+          is(key: string, value: unknown) {
+            filters.push((row) => row[key] === value);
+            return this;
+          },
+          or() {
+            filters.push((row) => row.claimed_at === null);
+            return this;
+          },
+          insert(value: unknown) {
+            operation = "insert";
+            next = value;
+            return this;
+          },
+          update(value: unknown) {
+            operation = "update";
+            next = value;
+            return this;
+          },
+          delete() {
+            operation = "delete";
+            return this;
+          },
+          maybeSingle: async () => execute(),
+          then: (resolve: (result: unknown) => unknown) =>
+            Promise.resolve(execute()).then(resolve),
+        };
+      }
       if (table === "team_audit")
         return {
           insert: async (row: unknown) => {
@@ -83,6 +171,9 @@ vi.mock("../src/lib/repository", async (original) => ({
         };
 
       const query = {
+        upsert: async () => ({ error: null }),
+        delete: () => query,
+        is: async () => ({ error: null }),
         select: () => query,
         eq: () => query,
         maybeSingle: async () => ({ data: state.member, error: null }),
@@ -106,8 +197,42 @@ vi.mock("../src/lib/repository", async (original) => ({
               : null,
           error: null,
         };
-      if (name === "staff_session_exists")
-        return { data: state.sessions.has(args.target_session), error: null };
+      if (name === "staff_session_security")
+        return {
+          data: !state.sessions.has(args.target_session)
+            ? "signed_out"
+            : state.factor?.totp_secret &&
+                !state.verified.has(args.target_session)
+              ? "two_step"
+              : "ok",
+          error: null,
+        };
+      if (name === "admit_staff_security_attempt")
+        return { data: true, error: null };
+      if (name === "manage_staff_sessions") {
+        for (const session of state.sessions) {
+          if (
+            (args.operation === "others" && session !== args.current_session) ||
+            (args.operation === "one" && session === args.target_session)
+          )
+            state.sessions.delete(session);
+        }
+        return { data: true, error: null };
+      }
+      if (name === "save_staff_factor") {
+        if (
+          state.factor?.revision !== args.expected_revision ||
+          !state.sessions.has(args.target_session)
+        )
+          return { data: false, error: null };
+        state.factor = { ...args.replacement, revision: crypto.randomUUID() };
+        if (args.verify_session) state.verified.add(args.target_session);
+        if (args.revoke_others)
+          for (const session of state.sessions) {
+            if (session !== args.target_session) state.sessions.delete(session);
+          }
+        return { data: true, error: null };
+      }
       if (name === "change_team_member") {
         state.member.status = "active";
         state.member.password_change_required = false;
@@ -149,6 +274,10 @@ vi.mock("../src/lib/repository", async (original) => ({
           };
         },
         updateUserById: async (userId: string, input: any) => {
+          if (input.email) {
+            state.user.email = input.email;
+            return { data: { user: state.user }, error: null };
+          }
           state.password = input.password;
           state.sessions.clear();
           state.authCalls.push({
@@ -157,7 +286,11 @@ vi.mock("../src/lib/repository", async (original) => ({
           });
           return { data: { user: state.user }, error: null };
         },
-        signOut: async () => ({ error: null }),
+        signOut: async (access: string) => {
+          const id = sessionId(access);
+          if (id) state.sessions.delete(id);
+          return { error: null };
+        },
       },
     },
   }),
@@ -172,6 +305,7 @@ import { staff } from "../src/lib/auth";
 import { proxy } from "../src/proxy";
 import { setup } from "./helpers";
 import { sessionId } from "../src/lib/staff-access";
+import { totpCode } from "../src/lib/staff-security-crypto";
 function req(path: string, input?: unknown, pair = state.current) {
   return new NextRequest(`https://app.example.test/api/${path}`, {
     method: input ? "POST" : "GET",
@@ -200,6 +334,9 @@ beforeEach(async () => {
   state.resetWorkspaces = [];
   state.resetLimit = true;
   state.sessions.clear();
+  state.verified.clear();
+  state.factor = null;
+  state.pendingEmail = null;
   state.links.clear();
   state.authCalls = [];
   state.rt = await setup();
@@ -520,3 +657,200 @@ it.each([
     }
   },
 );
+
+function securityRequest(path: string, input?: unknown, pair = state.current) {
+  return handle(req(path, input, pair), path.split("/"));
+}
+
+function pairFrom(response: Response) {
+  const values = Object.fromEntries(
+    response.headers
+      .getSetCookie()
+      .filter((cookie) => !cookie.includes("Max-Age=0"))
+      .map((cookie) => cookie.split(";")[0].split("=")),
+  );
+  return {
+    access_token: decodeURIComponent(values.proposal_session),
+    refresh_token: decodeURIComponent(values.proposal_refresh),
+  };
+}
+
+it("requires the second factor for real staff APIs and consumes a backup code only once", async () => {
+  vi.stubEnv(
+    "INTEGRATION_ENCRYPTION_KEY",
+    Buffer.alloc(32, 7).toString("base64"),
+  );
+  const original = state.current,
+    other = session();
+  const endpoint = "account/security/two-step";
+  const setup = await securityRequest(endpoint, { action: "start" });
+  expect(setup.status).toBe(200);
+  const { secret, qr } = await setup.json();
+  expect(qr).toMatch(/^data:image\/png;base64,/);
+  expect(JSON.stringify(state.factor)).not.toContain(secret);
+  const code = totpCode(secret, Math.floor(Date.now() / 30_000));
+  const prepared = await securityRequest(endpoint, { action: "prepare", code });
+  expect(prepared.status).toBe(200);
+  const { codes } = await prepared.json();
+  expect(codes).toHaveLength(8);
+  expect((await securityRequest(endpoint, { action: "enable" })).status).toBe(
+    200,
+  );
+  expect(state.factor.backup_hashes).toHaveLength(8);
+  expect(JSON.stringify(state.factor)).not.toContain(codes[0]);
+  await expect(staff(req("proposals", undefined, other))).rejects.toMatchObject(
+    { status: 401 },
+  );
+  expect((await staff(req("proposals", undefined, original))).staff_email).toBe(
+    state.user.email,
+  );
+
+  const login = () =>
+    securityRequest(
+      "auth/login",
+      { email: state.user.email, password: state.password },
+      null,
+    );
+  const first = await login();
+  expect(await first.json()).toEqual({
+    authenticated: false,
+    two_step_required: true,
+  });
+  expect(first.headers.getSetCookie()[0]).toContain("Max-Age=600");
+  const pending = pairFrom(first);
+  expect(
+    (await securityRequest("account/security", undefined, pending)).status,
+  ).toBe(403);
+  expect(
+    (await securityRequest("auth/two-step", { code }, pending)).status,
+  ).toBe(400);
+  const verified = await securityRequest(
+    "auth/two-step",
+    { code: codes[0] },
+    pending,
+  );
+  expect(verified.status).toBe(200);
+  expect(verified.headers.getSetCookie()[0]).toContain("Max-Age=2592000");
+  expect(state.factor.backup_hashes).toHaveLength(7);
+  expect((await staff(req("proposals", undefined, pending))).staff_email).toBe(
+    state.user.email,
+  );
+
+  const next = pairFrom(await login());
+  expect(
+    (await securityRequest("auth/two-step", { code: codes[0] }, next)).status,
+  ).toBe(400);
+  expect(
+    (await securityRequest(endpoint, { action: "disable" }, pending)).status,
+  ).toBe(400);
+  expect(
+    (
+      await securityRequest(
+        endpoint,
+        { action: "disable", code: codes[1] },
+        pending,
+      )
+    ).status,
+  ).toBe(200);
+  expect(state.factor.backup_hashes).toEqual([]);
+});
+
+it("emails the new and old addresses, replaces links on resend, and revokes other sessions on confirmation", async () => {
+  vi.stubEnv("RESEND_API_KEY", "fixture");
+  const original = state.current,
+    other = session();
+  const target = "casey@external.test";
+  const endpoint = "account/security/email";
+  const emailRequest = {
+    action: "request",
+    email: target,
+    password: state.password,
+  };
+  expect(
+    (await securityRequest(endpoint, { ...emailRequest, password: "wrong" }))
+      .status,
+  ).toBe(400);
+  expect(state.resetMail).toHaveLength(0);
+  const created = await securityRequest(endpoint, emailRequest);
+  expect(created.status).toBe(200);
+  expect(await created.json()).toEqual({
+    email: target,
+    expires_at: expect.any(String),
+  });
+  expect(state.user.email).toBe("staff@example.test");
+  expect(state.resetMail.map(({ to }) => to)).toEqual([
+    target,
+    "staff@example.test",
+  ]);
+
+  const confirm = (token: string) =>
+    securityRequest("auth/confirm-email", { token }, original);
+  function linkToken() {
+    const message = state.resetMail.filter(({ to }) => to === target).at(-1);
+    const url = message.text.match(
+      /https:\/\/[^\s]+\/login\/confirm-email#token=[A-Za-z0-9_-]+/,
+    )?.[0];
+    expect(url).toBeTruthy();
+    return new URLSearchParams(new URL(url).hash.slice(1)).get("token")!;
+  }
+  const oldToken = linkToken();
+  expect(state.pendingEmail.token_hash).not.toContain(oldToken);
+  expect((await securityRequest(endpoint, { action: "resend" })).status).toBe(
+    200,
+  );
+  expect((await confirm(oldToken)).status).toBe(410);
+  const canceled = linkToken();
+  expect((await securityRequest(endpoint, { action: "cancel" })).status).toBe(
+    200,
+  );
+  expect((await confirm(canceled)).status).toBe(410);
+  expect((await securityRequest(endpoint, emailRequest)).status).toBe(200);
+  const fresh = linkToken();
+  const confirmed = await confirm(fresh);
+  expect(confirmed.status).toBe(200);
+  expect(await confirmed.json()).toEqual({ email: target, signed_in: true });
+  expect((await confirm(fresh)).status).toBe(410);
+  expect(state.sessions.has(sessionId(other.access_token)!)).toBe(false);
+  expect(state.sessions.has(sessionId(original.access_token)!)).toBe(true);
+  expect((await staff(req("proposals", undefined, original))).staff_email).toBe(
+    target,
+  );
+});
+
+it("changes a password through Your account, preserving only the new session and its existing two-step verification", async () => {
+  vi.stubEnv(
+    "INTEGRATION_ENCRYPTION_KEY",
+    Buffer.alloc(32, 11).toString("base64"),
+  );
+  const original = state.current,
+    other = session();
+  state.factor = {
+    revision: crypto.randomUUID(),
+    totp_secret: "already configured",
+    backup_hashes: [],
+    last_totp_step: null,
+    enrollment: null,
+  };
+  state.verified.add(sessionId(original.access_token)!);
+  state.verified.add(sessionId(other.access_token)!);
+  const endpoint = "account/security/password";
+  expect(
+    (
+      await securityRequest(endpoint, {
+        current_password: "incorrect",
+        password: "A newer account password!",
+      })
+    ).status,
+  ).toBe(401);
+  const changed = await securityRequest(endpoint, {
+    current_password: state.password,
+    password: "A newer account password!",
+  });
+  expect(changed.status).toBe(200);
+  expect(await changed.json()).toEqual({ changed: true });
+  const fresh = pairFrom(changed);
+  expect(state.sessions).toEqual(new Set([sessionId(fresh.access_token)]));
+  expect((await staff(req("proposals", undefined, fresh))).staff_email).toBe(
+    state.user.email,
+  );
+});

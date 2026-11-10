@@ -15,6 +15,7 @@ import {
 import { emailLayout } from "./email-layout";
 import { escape } from "./presentation";
 import { appOrigin } from "./links";
+import { staffFromAddress, workspaceSecuritySender } from "./email-identity";
 export async function sendTeamEmail(
   repo: Repository,
   mailer: Mailer,
@@ -32,13 +33,11 @@ export async function sendTeamEmail(
     await repo.entities<WorkspaceSettings>("workspace_settings")
   )[0];
   check(settings, "Configure Workspace before inviting staff", 409);
-  const email = actor.staff_email ?? "",
-    domain = settings.sending_domain;
+  const email = actor.staff_email ?? "";
+  const from = staffFromAddress(email, settings);
   check(
-    email &&
-      domain &&
-      email.split("@")[1]?.toLowerCase() === domain.toLowerCase(),
-    `Your email must use the workspace's verified sending domain (${domain || "set it in Workspace"}) before sending team email`,
+    from,
+    "Set a verified sending domain in Workspace before sending team email",
     409,
   );
   const key =
@@ -79,9 +78,10 @@ export async function sendTeamEmail(
         .join(" · "),
       accent: settings.accent_colour,
     });
+  const name = actor.staff_name ?? email;
   const id = randomUUID(),
     identity = {
-      from: `${JSON.stringify(`${actor.staff_name ?? email} · ${settings.company_name}`)} <${email}>`,
+      from: `${JSON.stringify(from === email ? `${name} · ${settings.company_name}` : name)} <${from}>`,
       reply_to: input.replyTo ?? email,
     };
   await mailer.send(
@@ -110,15 +110,6 @@ export async function sendTeamEmail(
     },
   });
   return { sent: true };
-}
-
-/** A verified workspace domain can send even if the public contact uses another domain. */
-export function workspaceSecuritySender(settings: WorkspaceSettings) {
-  const domain = settings.sending_domain;
-  if (!domain) return null;
-  return settings.email.split("@")[1]?.toLowerCase() === domain
-    ? settings.email
-    : `notifications@${domain}`;
 }
 
 export async function sendPasswordChangedEmail(

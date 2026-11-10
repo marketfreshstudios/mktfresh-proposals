@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { staffRequestHeaders, withStaffCookies } from "./lib/staff-session";
 import { AppError } from "./lib/model";
 import { StaffPasswordRequired } from "./lib/staff-access";
-import { staff } from "./lib/auth";
+import { cookie, staff } from "./lib/auth";
+import {
+  priorStaffState,
+  staffIdentityCookie,
+  staffIdentityCookieName,
+  StaffSecurityRequired,
+} from "./lib/staff-security-session";
 export function staffPagePath(path: string) {
   return (
     !/^\/(?:api|login|set-password|p|oauth|mcp|_next|fonts|brand|schemas|\.well-known)(?:\/|$)/.test(
@@ -28,15 +34,26 @@ export async function proxy(request: NextRequest) {
   if (!page && !request.nextUrl.pathname.startsWith("/api/"))
     return NextResponse.next();
   try {
-    await staff(request);
+    const user = await staff(request);
     const response = NextResponse.next({
       request: { headers: staffRequestHeaders(request) },
     });
-    if (page) response.headers.set("Cache-Control", "no-store");
+    if (page) {
+      response.headers.set("Cache-Control", "no-store");
+      if (!cookie(request, staffIdentityCookieName)) {
+        const hint = staffIdentityCookie(user.actor.slice(6));
+        if (hint) response.headers.append("Set-Cookie", hint);
+      }
+    }
     return withStaffCookies(request, response);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 503;
-    if (page && (status === 401 || error instanceof StaffPasswordRequired)) {
+    if (
+      page &&
+      (status === 401 ||
+        error instanceof StaffPasswordRequired ||
+        error instanceof StaffSecurityRequired)
+    ) {
       const url = new URL(
         error instanceof StaffPasswordRequired ? "/set-password" : "/login",
         request.url,
@@ -45,6 +62,17 @@ export async function proxy(request: NextRequest) {
         "next",
         request.nextUrl.pathname + request.nextUrl.search,
       );
+      if (error instanceof StaffSecurityRequired)
+        url.searchParams.set("state", error.state);
+      else if (status === 401) {
+        const prior = await priorStaffState(request).catch(() => null);
+        if (
+          prior ||
+          cookie(request, "proposal_session") ||
+          cookie(request, "proposal_refresh")
+        )
+          url.searchParams.set("state", prior?.state ?? "signed-out");
+      }
       const response = NextResponse.redirect(url, 307);
       response.headers.set("Cache-Control", "no-store");
       return withStaffCookies(request, response);

@@ -280,7 +280,7 @@ it("closed and archived handoffs only change internal ownership, and no-op hando
     expect(unchanged.events).toHaveLength(count);
   }
 });
-it("pending reminder jobs adopt the live sender; AI and off-domain live senders are refused", async () => {
+it("pending reminders use a verified From and the new owner's reply address; AI cannot reassign", async () => {
   const f = await fixture();
   const p = await f.service.send(f.draft.id, staff);
   await expect(
@@ -289,20 +289,19 @@ it("pending reminder jobs adopt the live sender; AI and off-domain live senders 
   const offDomain = new ReassignmentService(f.repo, async () => [
     { ...target, email: "jamie@other.test" },
   ]);
-  await expect(
-    offDomain.reassign(staff, {
-      user_id: target.user_id,
-      notify: false,
-      proposals: [{ id: p.id, revision: p.revision }],
-    }),
-  ).rejects.toMatchObject({ status: 400 });
   f.service.clock = () => new Date(Date.now() + 4 * 86400000);
   await f.service.tick();
-  await f.assign();
+  const current = (await f.repo.get(p.id))!;
+  await offDomain.reassign(staff, {
+    user_id: target.user_id,
+    notify: false,
+    proposals: [{ id: p.id, revision: current.revision }],
+  });
   const after = (await f.repo.get(p.id))!;
   const reminder = after.jobs.find((j) => j.payload.reminder_day)!;
-  expect(reminder.payload.reply_to).toBe(target.email);
+  expect(reminder.payload.reply_to).toBe("jamie@other.test");
   expect(reminder.payload.from).toContain(target.display_name);
+  expect(reminder.payload.from).toMatch(/<[^>]+@example\.test>$/);
   expect(reminder.payload.to).toBe(p.client.email);
   expect(after.versions).toEqual(p.versions);
 });

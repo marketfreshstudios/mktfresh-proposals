@@ -50,11 +50,13 @@ export function staffCookiePair(
 }
 export function setStaffCookies(
   response: Response,
-  session: Pick<Session, "access_token" | "refresh_token">,
+  session: Pick<Session, "access_token"> & { refresh_token?: string },
+  age = STAFF_SESSION_AGE,
 ) {
   for (const value of staffCookiePair(
     session.access_token,
     session.refresh_token,
+    age,
   ))
     response.headers.append("Set-Cookie", value);
   return response;
@@ -65,8 +67,14 @@ export function clearStaffCookies(response: Response) {
   return response;
 }
 export function withStaffCookies(request: Request, response: Response) {
-  for (const value of responseCookies.get(request) ?? [])
-    response.headers.append("Set-Cookie", value);
+  if (
+    !response.headers
+      .getSetCookie()
+      .some((cookie) => cookie.startsWith(STAFF_ACCESS_COOKIE + "="))
+  ) {
+    for (const value of responseCookies.get(request) ?? [])
+      response.headers.append("Set-Cookie", value);
+  }
   return response;
 }
 /** Only cookies minted/validated by this request are forwarded; never trust actor headers. */

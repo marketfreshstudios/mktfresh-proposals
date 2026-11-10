@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, LockKeyhole } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   accountNotifications,
@@ -17,6 +17,8 @@ import { api, Banner, Button, Field, post } from "./ui";
 import { Skeleton } from "./foundation";
 import { useStaffAccount } from "./staff-account-context";
 import { StaffThemeOptions } from "./studio-account";
+import { StaffEmailSettings, StaffSecurityPanel } from "./staff-security-panel";
+import { workspaceSecuritySender } from "../lib/email-identity";
 
 type AccountSection = (typeof accountSections)[number][0];
 type Signatory = NonNullable<WorkspaceSettings["company_signatory"]>;
@@ -142,6 +144,7 @@ export function AccountPage({
             <Profile
               email={data.user.staff_email ?? ""}
               workspaceReplyTo={settings?.email_reply_to === "workspace"}
+              verifiedFrom={settings ? workspaceSecuritySender(settings) : null}
             />
           ) : section === "notifications" ? (
             <Notifications
@@ -152,13 +155,7 @@ export function AccountPage({
           ) : section === "preferences" ? (
             <Preferences workspaceZone={settings?.timezone ?? "UTC"} />
           ) : section === "security" ? (
-            <div className="account-fact">
-              <LockKeyhole size={18} aria-hidden="true" />
-              <div>
-                <strong>Sign-in email</strong>
-                <p>{data.user.staff_email}</p>
-              </div>
-            </div>
+            <StaffSecurityPanel />
           ) : (
             <p>This account section could not be found.</p>
           )}
@@ -185,9 +182,11 @@ export function AccountAvatar({
 function Profile({
   email,
   workspaceReplyTo,
+  verifiedFrom,
 }: {
   email: string;
   workspaceReplyTo: boolean;
+  verifiedFrom: string | null;
 }) {
   const { account, accept, saved } = useStaffAccount()!;
   const input = useRef<HTMLInputElement>(null);
@@ -296,11 +295,15 @@ function Profile({
           <strong>Email</strong>
           <p>
             {email} ·{" "}
-            {workspaceReplyTo
+            {workspaceReplyTo &&
+            (!verifiedFrom ||
+              email.split("@").at(-1)?.toLowerCase() ===
+                verifiedFrom.split("@").at(-1)?.toLowerCase())
               ? "used to sign in. Proposal replies go to the workspace email."
               : "used to sign in and as the reply-to on proposals you send"}
           </p>
         </div>
+        <StaffEmailSettings email={email} verifiedFrom={verifiedFrom} />
       </div>
     </>
   );

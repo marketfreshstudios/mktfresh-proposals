@@ -460,3 +460,129 @@
     width: 100%;
   }
 }
+
+.staff-security-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.staff-security-row > div:first-child {
+  min-width: 0;
+}
+.staff-security-sessions {
+  margin-top: 20px;
+}
+.staff-security-sessions h2 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--ink-title);
+}
+.staff-security-sessions ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.staff-security-sessions li {
+  flex-wrap: nowrap;
+  justify-content: start;
+  min-height: 62px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.staff-security-sessions li > svg {
+  color: var(--ink-title);
+  flex: none;
+}
+.staff-device-label {
+  flex: 1;
+  min-width: 0;
+}
+.staff-device-label p {
+  color: var(--ink-muted);
+  margin: 3px 0 0;
+  font-size: 13px;
+}
+.staff-security-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.staff-security-start {
+  justify-content: flex-start;
+}
+.staff-security-form {
+  margin-top: 12px;
+}
+.staff-security-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.staff-totp-setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.staff-totp-setup img {
+  flex: none;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: white;
+}
+.staff-totp-setup code {
+  display: block;
+  margin-bottom: 8px;
+}
+.staff-totp-setup p {
+  margin-bottom: 4px;
+}
+.staff-backup-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 0;
+  list-style: none;
+}
+.staff-backup-codes li {
+  padding: 8px;
+  text-align: center;
+  background: var(--segment);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+}
+.staff-backup-codes code {
+  color: var(--ink-title);
+}
+.staff-email-pending {
+  margin-top: 8px;
+}
+.staff-email-pending .staff-security-actions {
+  margin-top: 8px;
+}
+.account-email > .button-wrap {
+  margin-top: 8px;
+}
+.staff-auth-state-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--ink-title);
+}
+.team-two-step-status {
+  display: block;
+  color: var(--ink-muted);
+}
+.staff-auth-contact {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-block: 1px solid var(--border);
+}
+.staff-auth-contact a {
+  overflow-wrap: anywhere;
+}

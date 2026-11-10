@@ -204,6 +204,11 @@ export function TeamStudio({
                   staffStatusLabel(person.status)
                 )}
               </span>
+              {owner && person.two_step_enabled !== undefined && (
+                <small className="team-two-step-status">
+                  Two-step {person.two_step_enabled ? "on" : "off"}
+                </small>
+              )}
             </div>
             <div role="cell">
               <span className="team-mobile-label">Last sign-in</span>

@@ -74,7 +74,11 @@ import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
 import { proposalLink, appOrigin } from "./links";
-import { emailIdentity, staffRecipients } from "./email-identity";
+import {
+  emailIdentity,
+  staffFromAddress,
+  staffRecipients,
+} from "./email-identity";
 import { staffProfileForProposal } from "./staff-account";
 import { companySignature } from "./company-signatory";
 import { PlaybookDraftSchema } from "./playbook";
@@ -808,14 +812,13 @@ export class ProposalService {
       domain,
       "Set the workspace's verified sending domain in Settings before sending",
     );
-    check(
-      selected.email.split("@")[1]?.toLowerCase() === domain,
-      `Sender ${selected.email} must use the workspace's verified sending domain (${domain})`,
-    );
+    const from = staffFromAddress(selected.email, settings);
+    check(from, "Choose a sender with a valid email address");
     const sender = {
       user_id: selected.user_id,
       display_name: selected.display_name,
       email: selected.email,
+      ...(from === selected.email ? {} : { from_email: from }),
       company_name: settings.company_name,
       sending_domain: domain,
       ...(await staffProfileForProposal(this.repo, selected.user_id)),

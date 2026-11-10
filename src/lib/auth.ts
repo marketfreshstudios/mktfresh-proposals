@@ -90,8 +90,7 @@ async function checkStaff(request: Request): Promise<StaffActor> {
       staff_email: "staff@example.test",
     };
   const credentials = await staffCredentials(request),
-    db = supabase();
-  const user = credentials.user;
+    user = credentials.user;
   const member = {
     data: await validateStaffMembership(user, credentials.access_token, {
       passwordChange: true,
@@ -124,9 +123,6 @@ export async function login(email: string, password: string) {
   const db = authClient();
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new AppError(401, "Invalid credentials");
-  await validateStaffMembership(data.user, data.session.access_token, {
-    passwordChange: true,
-  });
   return data.session;
 }
 

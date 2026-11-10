@@ -5,11 +5,8 @@ import { z } from "zod";
 import { ResendMailer } from "./jobs";
 import { supabase, SupabaseRepository } from "./repository";
 import { SupabaseTeamAuth } from "./team";
-import {
-  sendTeamEmail,
-  sendPasswordChangedEmail,
-  workspaceSecuritySender,
-} from "./team-email";
+import { sendTeamEmail, sendPasswordChangedEmail } from "./team-email";
+import { workspaceSecuritySender } from "./email-identity";
 import { SupabaseTeamStore } from "./team-store";
 import type { StaffMember } from "./team-model";
 import type { WorkspaceSettings } from "./workspace";

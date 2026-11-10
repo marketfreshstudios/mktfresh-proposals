@@ -22,8 +22,10 @@ vi.mock("../src/lib/repository", async (original) => ({
   ...(await original<typeof import("../src/lib/repository")>()),
   supabase: () => ({
     auth: { getUser: state.getUser, admin: { signOut: state.signOut } },
+    rpc: async () => ({ data: "ok", error: null }),
     from: () => {
       const chain = {
+        upsert: async () => ({ error: null }),
         select: () => chain,
         eq: () => chain,
         maybeSingle: state.member,
@@ -41,9 +43,13 @@ import { handle } from "../src/lib/http";
 import { proxy } from "../src/proxy";
 import { staff } from "../src/lib/auth";
 import { STAFF_SESSION_AGE, staffCookiePair } from "../src/lib/staff-session";
+const accessToken = (tag: string) =>
+  `${tag}.${Buffer.from(JSON.stringify({ session_id: "00000000-0000-4000-8000-000000000101" })).toString("base64url")}.signature`;
+const newAccess = accessToken("access-new");
+const validAccess = accessToken("access-valid");
 let refreshToken: string;
 const session = () => ({
-  access_token: "access-new",
+  access_token: newAccess,
   refresh_token: "refresh-new-" + refreshToken,
   expires_in: 3600,
   token_type: "bearer",
@@ -57,7 +63,7 @@ beforeEach(async () => {
   vi.stubEnv("SUPABASE_ANON_KEY", "anon-test");
   refreshToken = crypto.randomUUID();
   state.getUser.mockImplementation(async (token: string) =>
-    token === "access-new" || token === "access-valid"
+    token === newAccess || token === validAccess
       ? { data: { user: state.user }, error: null }
       : { data: { user: null }, error: { status: 401 } },
   );
@@ -159,7 +165,7 @@ it("missing access uses the refresh cookie; valid access slides both cookies wit
       "proposals",
       "GET",
       undefined,
-      `proposal_session=access-valid; proposal_refresh=${refreshToken}`,
+      `proposal_session=${validAccess}; proposal_refresh=${refreshToken}`,
     ),
   );
   expect(gate.headers.get("x-middleware-next")).toBe("1");
@@ -256,7 +262,12 @@ it("valid non-staff remains 403 and an invalid bearer cannot borrow the browser'
   expect(
     (
       await proxy(
-        request("proposals", "GET", undefined, "proposal_session=access-valid"),
+        request(
+          "proposals",
+          "GET",
+          undefined,
+          `proposal_session=${validAccess}`,
+        ),
       )
     ).status,
   ).toBe(403);
@@ -280,7 +291,7 @@ it("logout revokes this Supabase session and clears both cookies even when refre
     expect(await response.json()).toEqual({ signed_out: true });
     expect(response.headers.getSetCookie()).toEqual(staffCookiePair("", "", 0));
   }
-  expect(state.signOut).toHaveBeenCalledWith("access-new", "local");
+  expect(state.signOut).toHaveBeenCalledWith(newAccess, "local");
 });
 it("anonymous proposals are 401 for both proxy and route even with the old design flag", async () => {
   vi.stubEnv("DESIGN_PREVIEW_OPEN", "1");

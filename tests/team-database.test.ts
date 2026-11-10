@@ -1,3 +1,7 @@
+import {
+  addAuthSessionsFixture,
+  setAuthSessionClaim,
+} from "./postgres-fixture";
 import { it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile, readdir } from "node:fs/promises";
@@ -6,6 +10,7 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
   await db.exec(
     `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb);create table auth.sessions(id uuid primary key,user_id uuid);create table auth.refresh_tokens(user_id text,session_id uuid);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant select on auth.sessions to service_role;grant execute on function auth.uid() to authenticated;`,
   );
+  await addAuthSessionsFixture(db);
   for (const f of (await readdir("supabase/migrations"))
     .filter((f) => f.endsWith(".sql"))
     .sort())
@@ -154,9 +159,7 @@ it("team changes are tenant-scoped, guarded and append-only in the actual databa
     db.exec("update team_audit set action='tamper'"),
   ).rejects.toThrow("Append-only");
   await db.exec("reset role");
-  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [
-    member,
-  ]);
+  await setAuthSessionClaim(db, member);
   await db.exec("set role authenticated");
   await expect(
     db.query("select team_auth_identity($1)", [`${owner}@example.test`]),
