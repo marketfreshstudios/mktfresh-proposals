@@ -8,6 +8,7 @@ import { toolDefinitions } from "../src/lib/ai-tools";
 import type { Block, Item, Proposal, Quote } from "../src/lib/model";
 import { contractClauseHtml, variables } from "../src/lib/presentation";
 import { readiness } from "../src/lib/quote";
+import { prepareQuote } from "../src/lib/quote-model";
 import { publicResult } from "../src/lib/service";
 import { clientActor, setup, signature, staff } from "./helpers";
 import { postgresFixture } from "./postgres-fixture";
@@ -92,6 +93,58 @@ it("requires both entered amounts whenever the plan is offered and enforces the 
   expect(
     toolDefinitions.find((t) => t.name === "create_template")?.description,
   ).toContain("{{oiot.purchase_price}}");
+});
+
+it("keeps an explicit kickoff separate from an older bundled catalog list price", async () => {
+  const f = await fixture();
+  const product = f.catalog.find((item) => item.id === f.offer.pricing_item_id);
+  expect(product?.sublines).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        interval: "one_time",
+        label: "Kickoff",
+        amount: 50000,
+      }),
+    ]),
+  );
+  const quote = prepareQuote(f.quoteWithAmounts, f.catalog, true);
+  expect(quote.find((item) => item.id === f.offer.id)).toMatchObject({
+    oiot_purchase_price: 375000,
+    sublines: [
+      expect.objectContaining({
+        oiot_kickoff: true,
+        amount: 150000,
+        list_amount: null,
+      }),
+      expect.objectContaining({ amount: 17500, list_amount: 17500 }),
+    ],
+  });
+});
+
+it("derives only an omitted kickoff on an assistant write with a valid purchase price", async () => {
+  const f = await fixture();
+  const plan = { ...f.offer, oiot_purchase_price: 375000 };
+  const invalid = { ...plan, oiot_purchase_price: 200000 };
+  const derive = (item: typeof plan, ai: boolean) =>
+    prepareQuote([item], f.catalog, ai)[0].sublines.filter(
+      (line) => line.oiot_kickoff,
+    );
+  expect(derive(plan, false)).toEqual([]);
+  expect(derive(invalid, true)).toEqual([]);
+  expect(derive(plan, true)).toEqual([
+    expect.objectContaining({ amount: 150000, qty: 1, interval: "one_time" }),
+  ]);
+  const explicit = {
+    ...plan,
+    sublines: f.quoteWithAmounts
+      .find((item) => item.id === f.offer.id)!
+      .sublines.map((line) =>
+        line.oiot_kickoff ? { ...line, amount: 140000 } : line,
+      ),
+  };
+  expect(derive(explicit, true)).toEqual([
+    expect.objectContaining({ amount: 140000 }),
+  ]);
 });
 
 it("shows the clause only for Own It Over Time and freezes the entered values and the existing schedule", async () => {

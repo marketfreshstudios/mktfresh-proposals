@@ -14,7 +14,7 @@ Set `OAUTH_ISSUER` to the canonical HTTPS app origin, without a trailing slash. 
 
 ## Tool examples
 
-IDs below are UUIDs returned by the relevant list/create tools. Monetary amounts are integer cents supplied by the owner/playbook; the connector does not calculate prices.
+IDs below are UUIDs returned by the relevant list/create tools. Monetary amounts are integer cents. Use the owner’s or catalog’s prices, with the one kickoff calculation below.
 
 | Tool | Example arguments |
 |---|---|
@@ -40,6 +40,18 @@ A custom monthly item (all amounts are entered cents):
 ```
 
 Use a real family UUID from the workspace. Catalog lines snapshot the catalog ID, list amount, name, description and lookup key. Unknown keys and inconsistencies warn; legacy keys block sending. Custom lines are flagged for scope/price review. Do not invent catalog IDs or quote a price without checking the workspace's pricing documents.
+
+## Own It Over Time
+
+Use the same Own It Over Time quote item in proposal `items` or template `default_quote_items`.
+
+1. Find the active SKU `oiot-monthly-175` in `list_catalog`. Set `pricing_item_id` to the returned catalog UUID. Keep the $175 monthly subline, its Stripe lookup key, and the catalog schedule and term. Give the quote item and its sublines unique quote UUIDs.
+2. Set `oiot_purchase_price` to the known Own It Now price in integer cents, using a price supplied by the user or found in the catalog or proposal. For example, $3,750 is `375000`. This field appears in the terms and does not add another charge.
+3. On the same item, use exactly one kickoff subline with `interval: "one_time"`, `qty: 1`, `oiot_kickoff: true` and `amount` in integer cents. Use the supplied kickoff if there is one. Otherwise the only allowed price calculation is **kickoff = purchase price − $2,250**. For example, a $3,750 purchase price gives a $1,500 kickoff. You can omit the subline and the connector fills it when the purchase price is at least $2,250. Keep the kickoff on the monthly item's `sublines` so it follows the client's plan choice.
+
+If the purchase price is unknown, omit it, keep any supplied kickoff and tell the user what is missing. The $3,500 playbook threshold is guidance to lead with Own It Now; Own It Over Time can still be offered. The connector calculates no other price.
+
+`check_ready` points to the missing inputs and verifies that purchase price equals kickoff plus $2,250. The quote item is marked `ai_entered` and both amounts are highlighted for staff review. `get_proposal` and `get_template` return the stored amounts. Clause 4.4, where present, renders them through `{{oiot.kickoff}}` and `{{oiot.purchase_price}}`.
 
 ## Content and review
 
@@ -117,7 +129,7 @@ In proposal Markdown, `#` creates Heading 1 and starts a section; `##` and `###`
 
 Template/saved-block writes require a separate `templates:edit` grant: “Create and edit templates and saved blocks; nothing is sent.” Existing proposal-only connections do not gain this permission through refresh; reconnect and approve it. Read tools still require `proposals:read`. Human sending/signing and the proposal draft-only limit are unchanged.
 
-Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters are read-only: duplicate them before customizing. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog values, never invent or calculate prices. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
+Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters are read-only: duplicate them before customizing. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog or proposal values. The kickoff calculation above is the only exception to copying amounts. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
 
 Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's plain-text clause bodies. Existing fixed Image blocks are read-only. Each write commits an Activity event atomically with the entity, attributed to Claude and the consenting staff member. Updates retain the full previous state. A Super admin or that recorded editor can Restore while the entity still matches Claude's saved version. Later changes produce a 409, including if a staff save races the Restore. No existing proposal or frozen version changes.
 

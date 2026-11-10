@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Select, Switch } from "./form-controls";
 import { oiotItem, oiotKickoff, oiotPlan } from "../lib/oiot";
 import type { Block, QuoteItem, Item } from "../lib/model";
@@ -15,6 +16,43 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useMoney } from "./money-context";
 import { Button, Field, Disclosure, Totals } from "./ui";
 const uid = () => crypto.randomUUID();
+function OiotKickoffInput({
+  amount,
+  onCommit,
+}: {
+  amount?: number;
+  onCommit: (amount: number) => void;
+}) {
+  const [entry, setEntry] = useState<string | null>(null);
+  function commit(input: HTMLInputElement) {
+    if (entry === null) return;
+    setEntry(null);
+    if (input.value && input.validity.valid) {
+      const cents = Math.round(input.valueAsNumber * 100);
+      if (cents !== amount) onCommit(cents);
+    }
+  }
+  return (
+    <Field label={oiotPlan.kickoffLabel}>
+      <input
+        type="number"
+        min="0"
+        max="1000000"
+        step="0.01"
+        placeholder="Enter amount"
+        value={entry ?? (amount === undefined ? "" : amount / 100)}
+        onChange={(event) => setEntry(event.currentTarget.value)}
+        onBlur={(event) => commit(event.currentTarget)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          commit(event.currentTarget);
+        }}
+      />
+    </Field>
+  );
+}
+
 /** One quote panel for proposals and template defaults; callers own history and persistence. */
 export function QuoteItemsPanel({
   items,
@@ -93,28 +131,34 @@ export function QuoteItemsPanel({
   }
   function itemCard(i: QuoteItem) {
     const expanded = expandedItem === i.id;
-    const oiot = proposalContent && oiotItem(i, proposalContent, catalog);
-    const kickoff = oiot && oiotKickoff(i);
+    const oiot = oiotItem(i, proposalContent ?? [], catalog);
+    const kickoff = oiot ? oiotKickoff(i) : undefined;
     const changeKickoff = (amount: number) =>
       updateItem(i.id, {
-        sublines: [
-          {
-            id: uid(),
-            label: "Kickoff",
-            amount,
-            interval: "one_time",
-            qty: 1,
-            oiot_kickoff: true,
-            list_amount: null,
-            stripe_lookup_key: null,
-            qbo_item_ref:
-              catalog
-                .find((product) => product.id === i.pricing_item_id)
-                ?.sublines?.find((line) => line.interval === "one_time")
-                ?.qbo_item_ref ?? null,
-          },
-          ...i.sublines,
-        ],
+        sublines: kickoff
+          ? i.sublines.map((line) =>
+              line.id === kickoff.id
+                ? { ...line, amount, oiot_kickoff: true, list_amount: null }
+                : line,
+            )
+          : [
+              {
+                id: uid(),
+                label: "Kickoff",
+                amount,
+                interval: "one_time",
+                qty: 1,
+                oiot_kickoff: true,
+                list_amount: null,
+                stripe_lookup_key: null,
+                qbo_item_ref:
+                  catalog
+                    .find((product) => product.id === i.pricing_item_id)
+                    ?.sublines?.find((line) => line.interval === "one_time")
+                    ?.qbo_item_ref ?? null,
+              },
+              ...i.sublines,
+            ],
       });
     const tag = i.choice_group_id
       ? `Choose one${i.default_selected ? " · default" : ""}`
@@ -129,14 +173,21 @@ export function QuoteItemsPanel({
           `${money(s.amount * s.qty, currency)}${s.interval === "month" ? "/mo" : s.interval === "year" ? "/yr" : ""}`,
       )
       .join(" + ");
+    const aiPlanAmounts = Boolean(
+      oiot &&
+      i.ai_entered &&
+      (aiUnreviewed || !proposalContent) &&
+      (kickoff || i.oiot_purchase_price !== undefined),
+    );
     const aiPrice =
-      (i.ai_entered || aiUnreviewed) &&
-      i.sublines.some(
-        (s) =>
-          s.list_amount !== null &&
-          s.amount !== s.list_amount &&
-          !i.price_review?.[s.id],
-      );
+      aiPlanAmounts ||
+      ((i.ai_entered || aiUnreviewed) &&
+        i.sublines.some(
+          (s) =>
+            s.list_amount !== null &&
+            s.amount !== s.list_amount &&
+            !i.price_review?.[s.id],
+        ));
     return (
       <section
         className="quote-item quote-row"
@@ -172,7 +223,11 @@ export function QuoteItemsPanel({
           {aiPrice && (
             <span
               className="quote-ai-dot"
-              title="AI price differs from product list"
+              title={
+                aiPlanAmounts
+                  ? "Review assistant-entered plan amounts"
+                  : "AI price differs from product list"
+              }
             />
           )}
           <strong className="quote-row-amount">
@@ -201,23 +256,22 @@ export function QuoteItemsPanel({
             />
             {oiot && (
               <div className="stack">
-                {!kickoff && (
-                  <Field label={oiotPlan.kickoffLabel}>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1000000"
-                      step="0.01"
-                      placeholder="Enter amount"
-                      onBlur={(event) => {
-                        const input = event.currentTarget;
-                        if (input.value && input.validity.valid)
-                          changeKickoff(Math.round(input.valueAsNumber * 100));
-                      }}
-                    />
-                  </Field>
+                {aiPlanAmounts && (
+                  <div className="price-review">
+                    <p>
+                      Review the kickoff and website purchase price entered by
+                      the assistant.
+                    </p>
+                  </div>
                 )}
-                <Field label="Website purchase price">
+                <OiotKickoffInput
+                  amount={kickoff?.amount}
+                  onCommit={changeKickoff}
+                />
+                <Field
+                  label="Website purchase price"
+                  hint={oiotPlan.purchasePriceHelp}
+                >
                   <input
                     type="number"
                     min="0"
@@ -238,7 +292,6 @@ export function QuoteItemsPanel({
                         });
                     }}
                   />
-                  <small>{oiotPlan.purchasePriceHelp}</small>
                 </Field>
               </div>
             )}
@@ -290,47 +343,49 @@ export function QuoteItemsPanel({
                       </button>
                     )}
                   </div>
-                  <div className="subline-amount">
-                    <Field label={`Amount · ${currency}`}>
-                      <span className="currency-input">
-                        <span aria-hidden="true">
-                          {new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: currency,
-                          })
-                            .formatToParts(0)
-                            .find((part) => part.type === "currency")?.value ??
-                            currency}
-                        </span>
-                        <input
-                          aria-label={`Amount ${s.label || i.name}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={s.amount / 100}
-                          onChange={(e) =>
-                            updateItem(i.id, {
-                              sublines: i.sublines.map((v) =>
-                                v.id === s.id
-                                  ? {
-                                      ...v,
-                                      amount: Math.round(
-                                        Number(e.target.value) * 100,
-                                      ),
-                                    }
-                                  : v,
-                              ),
-                              price_review: Object.fromEntries(
-                                Object.entries(i.price_review ?? {}).filter(
-                                  ([key]) => key !== s.id,
-                                ),
-                              ),
+                  {s.id !== kickoff?.id && (
+                    <div className="subline-amount">
+                      <Field label={`Amount · ${currency}`}>
+                        <span className="currency-input">
+                          <span aria-hidden="true">
+                            {new Intl.NumberFormat("en-US", {
+                              style: "currency",
+                              currency: currency,
                             })
-                          }
-                        />
-                      </span>
-                    </Field>
-                  </div>
+                              .formatToParts(0)
+                              .find((part) => part.type === "currency")
+                              ?.value ?? currency}
+                          </span>
+                          <input
+                            aria-label={`Amount ${s.label || i.name}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={s.amount / 100}
+                            onChange={(e) =>
+                              updateItem(i.id, {
+                                sublines: i.sublines.map((v) =>
+                                  v.id === s.id
+                                    ? {
+                                        ...v,
+                                        amount: Math.round(
+                                          Number(e.target.value) * 100,
+                                        ),
+                                      }
+                                    : v,
+                                ),
+                                price_review: Object.fromEntries(
+                                  Object.entries(i.price_review ?? {}).filter(
+                                    ([key]) => key !== s.id,
+                                  ),
+                                ),
+                              })
+                            }
+                          />
+                        </span>
+                      </Field>
+                    </div>
+                  )}
                   <div className="subline-quantity">
                     <Field label="Qty">
                       <input

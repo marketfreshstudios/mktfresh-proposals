@@ -9,6 +9,7 @@ import {
   type Item,
   type Block,
 } from "./model";
+import { isOiotKickoffLine, oiotItem, oiotPlan } from "./oiot";
 /** Clone the current model; malformed/flat quote inputs are rejected. */
 export function cloneQuote(quote: Quote): QuoteItem[] {
   return structuredClone(QuoteSchema.parse(quote));
@@ -243,10 +244,38 @@ export function prepareQuote(
 ): QuoteItem[] {
   return draftItems(quote).map((i) => {
     const item = catalog.find((c) => c.id === i.pricing_item_id);
+    const ownItOverTime = oiotItem(i, [], item ? [item] : []);
+    const sublines = [...i.sublines];
+    if (
+      ai &&
+      ownItOverTime &&
+      i.oiot_purchase_price !== undefined &&
+      i.oiot_purchase_price >= oiotPlan.creditDifference &&
+      !sublines.some(isOiotKickoffLine) &&
+      sublines.length < 20
+    ) {
+      sublines.push({
+        id: crypto.randomUUID(),
+        label: "Kickoff",
+        amount: i.oiot_purchase_price - oiotPlan.creditDifference,
+        interval: "one_time",
+        qty: 1,
+        oiot_kickoff: true,
+        list_amount: null,
+        stripe_lookup_key: null,
+        qbo_item_ref:
+          item?.sublines?.find((line) => line.interval === "one_time")
+            ?.qbo_item_ref ?? null,
+      });
+    }
     return {
       ...i,
       ...(ai ? { ai_entered: true, price_review: undefined } : {}),
-      sublines: i.sublines.map((s) => {
+      sublines: sublines.map((s) => {
+        // A designated kickoff is entered for this quote, even if an older
+        // catalog entry still has a bundled one-time preset with the same label.
+        if (ownItOverTime && s.oiot_kickoff && s.interval === "one_time")
+          return { ...s, list_amount: null };
         const preset = item?.sublines?.find(
           (v) =>
             v.interval === s.interval &&

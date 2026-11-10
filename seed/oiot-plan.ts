@@ -1,4 +1,4 @@
-// MarketFresh plan terms. These values validate the agreement, never set prices.
+// MarketFresh plan terms. The financed amount also supports the approved connector kickoff calculation.
 export const oiotPlan = {
   name: "Own It Over Time",
   kickoffLabel: "Own It Over Time kickoff",
@@ -7,6 +7,7 @@ export const oiotPlan = {
   lookupKey: "oiot-monthly-175",
   skus: ["oiot-monthly", "oiot-monthly-175"],
   creditDifference: 225000,
+  monthlyAmount: 17500,
   paidPayments: 30,
   stepDownAmount: 10000,
   priceError:
