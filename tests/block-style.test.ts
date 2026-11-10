@@ -82,8 +82,9 @@ test("background contrast checks use both actual colors", () => {
   expect(colorContrast("#25241f", "#f1f4f5")).toBeGreaterThan(4.5);
 });
 
-test("an unstyled document matches the Harbor print source and CSS baseline", () => {
+test("an older frozen document matches the print source and CSS baseline", () => {
   const styles = resolveStyles();
+  delete styles.layout!.quote_neutrals;
   const content: Block[] = [
     { id: "overview", type: "heading", text: "Overview" },
     {
@@ -106,7 +107,6 @@ test("an unstyled document matches the Harbor print source and CSS baseline", ()
     styles,
     planned: true,
   });
-  // Harbor changed the neutral paint literals in this print baseline.
   expect(
     sha256(
       printCss +

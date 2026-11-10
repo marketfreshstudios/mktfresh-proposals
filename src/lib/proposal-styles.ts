@@ -12,7 +12,7 @@ import {
   type FontChoice,
   type ProposalFont,
 } from "./proposal-fonts";
-import { whiteContrast, accessibleAccent } from "./brand";
+import { whiteContrast, accessibleAccent, colorContrast } from "./brand";
 export const styleLevels = [
   "title",
   "heading1",
@@ -42,6 +42,28 @@ export const StyleEntrySchema = z.object({
   space_below: z.number().min(0).max(1056),
 });
 export type TextStyle = z.infer<typeof StyleEntrySchema>;
+const hexColor = z.string().regex(/^#[\da-fA-F]{6}$/);
+const QuoteNeutralsSchema = z
+  .object({
+    group_fill: hexColor,
+    group_border: hexColor,
+    dividers: hexColor,
+    shaded_fill: hexColor,
+  })
+  .strict();
+type QuoteNeutrals = z.infer<typeof QuoteNeutralsSchema>;
+export const harborQuoteNeutrals: QuoteNeutrals = {
+  group_fill: "#f1f4f5",
+  group_border: "#dce3e6",
+  dividers: "#dce3e6",
+  shaded_fill: "#f4f7f7",
+};
+export const legacyQuoteNeutrals: QuoteNeutrals = {
+  group_fill: "#f2f6f3",
+  group_border: "#9db3a8",
+  dividers: "#e4eaed",
+  shaded_fill: "#f4f7f7",
+};
 export const StyleOverridesSchema = z
   .object({
     title: StyleEntrySchema.partial().optional(),
@@ -51,6 +73,7 @@ export const StyleOverridesSchema = z
     body: StyleEntrySchema.partial().optional(),
     density: z.enum(["standard", "comfortable"]).optional(),
     quote_layout: z.enum(["cards", "table"]).optional(),
+    quote_neutrals: QuoteNeutralsSchema.partial().optional(),
     margins: z
       .object({
         top: z.number().min(0.25).max(2).optional(),
@@ -66,6 +89,7 @@ export type StyleOverrides = z.infer<typeof StyleOverridesSchema>;
 export type DocumentLayout = {
   density: "standard" | "comfortable";
   quote_layout?: "cards" | "table";
+  quote_neutrals?: QuoteNeutrals;
   margins: { top: number; right: number; bottom: number; left: number };
 };
 export type ResolvedStyles = Record<StyleLevel, TextStyle> & {
@@ -187,8 +211,35 @@ export function resolveStyles(
     proposal?.quote_layout ??
     template?.quote_layout ??
     settings?.proposal_styles?.quote_layout;
-  // Absence is preserved: old style maps/hashes and generated CSS remain identical.
+  // An implicit Cards layout has the same metrics as earlier versions.
   if (quoteLayout) text.layout.quote_layout = quoteLayout;
+  const workspaceNeutrals = settings?.proposal_styles?.quote_neutrals;
+  const templateNeutrals = template?.quote_neutrals;
+  const proposalNeutrals = proposal?.quote_neutrals;
+  // Customized older documents keep their original colors until a palette is chosen.
+  const matchesDefault =
+    density === "standard" &&
+    (!quoteLayout || quoteLayout === "cards") &&
+    Object.values(text.layout.margins).every((margin) => margin === 0.75) &&
+    styleLevels.every((level) =>
+      Object.entries(defaults[level]).every(
+        ([key, value]) =>
+          JSON.stringify(text[level][key as keyof TextStyle]) ===
+          JSON.stringify(value),
+      ),
+    );
+  if (
+    workspaceNeutrals ||
+    templateNeutrals ||
+    proposalNeutrals ||
+    matchesDefault
+  )
+    text.layout.quote_neutrals = {
+      ...harborQuoteNeutrals,
+      ...workspaceNeutrals,
+      ...templateNeutrals,
+      ...proposalNeutrals,
+    };
   return text;
 }
 export const marginPresets = { narrow: 0.6, normal: 0.9, wide: 1.1 } as const;
@@ -252,6 +303,36 @@ export function textLineHeight(styles: ResolvedStyles, level: StyleLevel) {
         : 1.35;
 }
 /** Shared screen/print rules. Scope excludes the PDF completion certificate and app chrome. */
+function quoteNeutralCss(
+  palette: QuoteNeutrals,
+  accent: string,
+  table: boolean,
+) {
+  const { group_fill, group_border, dividers, shaded_fill } = palette;
+  const readableOn = (fill: string, color: string) => {
+    if (colorContrast(fill, color) >= 4.5) return color;
+    return colorContrast(fill, "#ffffff") >= 4.5 ? "#ffffff" : "#000000";
+  };
+  const scope = ".proposal-typography.proposal-typography";
+  return `
+    .proposal-typography{--quote-neutral-group:${group_fill};--quote-neutral-frame:${group_border};--quote-neutral-label:${readableOn(group_fill, accent)};--quote-neutral-divider:${dividers}}
+    ${scope} .flow-choice-group,.client-flow ${scope} .flow-choice-group{background:${group_fill};border-color:${group_border}}
+    ${scope} .flow-choice-group>h3,.client-flow ${scope} .flow-choice-group h3{color:${readableOn(group_fill, accent)}}
+    ${scope} .flow-quote-line,${scope} .flow-quote-line.selected{border-bottom-color:${dividers}}
+    ${scope} .flow-choice-group .flow-quote-line:not(.selected){box-shadow:inset 0 0 0 1px ${dividers}}
+    .client-flow ${scope} .flow-choice-group .flow-quote-line:not(.selected){box-shadow:none}
+    .client-flow ${scope} .flow-choice-group .flow-quote-line+.flow-quote-line::before{background:${dividers}}
+    ${scope} .document-totals,.client-flow.client-flow .document-totals{background:${shaded_fill}}
+    ${scope} .document-totals :is(span,small),.client-flow.client-flow .document-totals :is(span,small){color:${readableOn(shaded_fill, "#56646a")}}
+    ${scope} .document-totals strong,.client-flow.client-flow .document-totals strong{color:${readableOn(shaded_fill, "#1c1b18")}}
+    ${
+      table
+        ? `${scope} .quote-table th,${scope} .quote-table td,.client-flow .flow-document .quote-table tr{border-bottom-color:${dividers}}
+    ${scope} .quote-table thead th,${scope} .quote-table .quote-table-repeat th{background:${shaded_fill};color:${readableOn(shaded_fill, "#56646a")}}`
+        : ""
+    }
+  `;
+}
 export function documentStyleCss(
   styles?: ResolvedStyles,
   accent = "#365c4a",
@@ -319,6 +400,13 @@ export function documentStyleCss(
     (quoteLayout(styles) === "table"
       ? quoteTableCss +
         `.proposal-typography.proposal-typography .quote-table{font:${styles.body.weight} ${styles.body.size}px/${textLineHeight(styles, "body")} ${fontFamily(styles.body.font)}}`
+      : "") +
+    (styles.layout?.quote_neutrals
+      ? quoteNeutralCss(
+          styles.layout.quote_neutrals,
+          accent,
+          quoteLayout(styles) === "table",
+        )
       : "") +
     `${scope}{--list-line-ratio:${textLineHeight(styles, "body")}}` +
     listMarkerCss(

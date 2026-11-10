@@ -1865,6 +1865,11 @@ async function handleRoute(
           previousTemplate = (
             await rt.repo.entities<Template>("templates")
           ).find((t) => t.id === savedTemplateId);
+          if (!previousTemplate)
+            entity.style_overrides = {
+              quote_neutrals: {},
+              ...entity.style_overrides,
+            };
           entity.sample = previousTemplate?.sample;
           delete entity.connector_created;
           if (previousTemplate?.connector_created)

@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   documentLayout,
+  harborQuoteNeutrals,
   documentStyleCss,
   freezeStyles,
   pageMetrics,
@@ -13,6 +14,7 @@ it("defaults to Standard and .75in with property-wise layout precedence", () => 
   const base = resolveStyles();
   expect(base.layout).toEqual({
     density: "standard",
+    quote_neutrals: harborQuoteNeutrals,
     margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 },
   });
   expect(pageMetrics(base)).toMatchObject({
