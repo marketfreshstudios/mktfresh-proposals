@@ -7,6 +7,7 @@ import { Select, Switch } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
+import { TriangleAlert } from "lucide-react";
 import { finalOiotClause } from "../lib/oiot";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
@@ -1081,13 +1082,15 @@ function QuoteEditorContent({
           .map((e, n) => (
             <li className="readiness-row blocker" key={n}>
               <span className="readiness-badge" aria-hidden="true">
-                <Icon name="failed" />
+                <TriangleAlert aria-hidden="true" />
               </span>
               <div>
                 <p>
                   <strong>Needs attention.</strong>{" "}
                   {e === businessStateError ? (
-                    <a href={businessStateUrl}>{e}</a>
+                    <a href={businessStateUrl} target="_blank" rel="noopener">
+                      {e}
+                    </a>
                   ) : (
                     e
                   )}
@@ -1113,7 +1116,7 @@ function QuoteEditorContent({
         ].map((e, n) => (
           <li className="readiness-row warning" key={n}>
             <span className="readiness-badge" aria-hidden="true">
-              ?
+              <Icon name="review" />
             </span>
             <div>
               <p>
@@ -1148,7 +1151,7 @@ function QuoteEditorContent({
         hidden={pending.length === 0}
       >
         <span className="readiness-badge" aria-hidden="true">
-          <Icon name="failed" />
+          <TriangleAlert aria-hidden="true" />
         </span>
         <div className="send-ai-review-body">
           <p>

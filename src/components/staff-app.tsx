@@ -277,6 +277,29 @@ function StaffAppContent({
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
   }, [section, id, action, reportShell]);
+  // Workspace fixes (e.g. business state) are made in a new tab from the
+  // editor's readiness notices; refresh settings when staff come back so the
+  // notice clears without reloading the draft.
+  useEffect(() => {
+    if (!["proposals", "archives"].includes(section) || !id) return;
+    async function refresh() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const session = await api<{ settings: WorkspaceSettings | null }>(
+          "/api/auth/session",
+        );
+        setData((d) => (d ? { ...d, settings: session.settings } : d));
+      } catch {
+        // Keep the current settings; the next full load will retry.
+      }
+    }
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [section, id]);
   useEffect(() => {
     function key(event: KeyboardEvent) {
       const target = event.target as HTMLElement;

@@ -4396,30 +4396,39 @@
   width: 20px;
   height: 20px;
   flex: none;
-  border-radius: 50%;
-  color: white;
-  font-weight: 700;
+}
+/* Owner 10 Nov: solid Lucide icons, no circle behind them. The icon's outer
+   shape is filled with the status color and its inner mark is drawn white. */
+.readiness-badge svg {
+  width: 20px;
+  height: 20px;
+}
+.readiness-badge svg > :first-child {
+  fill: currentColor;
+}
+.readiness-badge svg > :not(:first-child) {
+  stroke: white;
 }
 .readiness-row.blocker {
   background: var(--danger-soft);
   color: var(--danger);
 }
 .readiness-row.blocker .readiness-badge {
-  background: var(--danger);
+  color: var(--danger);
 }
 .readiness-row.warning {
   background: var(--warning-soft);
   color: var(--warning);
 }
 .readiness-row.warning .readiness-badge {
-  background: var(--warning);
+  color: var(--warning);
 }
 .readiness-row.success {
   background: var(--success-soft);
   color: var(--success);
 }
 .readiness-row.success .readiness-badge {
-  background: var(--success);
+  color: var(--success);
 }
 .send-ai-review {
   background: var(--danger-soft);
@@ -5839,7 +5848,6 @@
 .send-panel .readiness-badge {
   width: 20px;
   height: 20px;
-  font: 700 12px/1 var(--font-ui);
 }
 .send-panel input[readonly] {
   background: var(--paper-well);
