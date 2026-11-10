@@ -28,6 +28,7 @@ import "./ink-clay-client-account.css";
 import "./staff-tables.css";
 import "./staff-account.css";
 import "./staff-headings.css";
+import "./toast.css";
 
 export default function RootLayout({
   children,

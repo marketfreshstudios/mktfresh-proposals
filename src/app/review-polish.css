@@ -97,19 +97,6 @@ button.contact-open {
 .phone-dial {
   display: none;
 }
-.contact-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: var(--z-toast);
-  padding: 10px 18px;
-  max-width: calc(100vw - 32px);
-  background: var(--surface-inverse);
-  color: var(--ink-inverse);
-  border-radius: 8px;
-  box-shadow: 0 4px 24px #0003;
-}
 @media (max-width: 699px) {
   .contact-phone .contact-copy,
   .contact-phone .contact-open {
@@ -126,9 +113,6 @@ button.contact-open {
   }
   .contact-copy {
     min-height: 44px;
-  }
-  .contact-toast {
-    bottom: 90px;
   }
 }
 .product-mapping {
@@ -217,16 +201,6 @@ button.contact-open {
 }
 .catalog-row:last-child {
   border-radius: 0 0 12px 12px;
-}
-
-/* The shared top-layer toast remains visible above the phone tools sheet. */
-.block-feedback-toast.contact-toast {
-  padding: 10px 18px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--surface-inverse);
-  color: var(--ink-inverse);
-  box-shadow: 0 4px 24px #0003;
 }
 
 /* Copy is an action; the neighbouring tel/mail links remain navigation. */

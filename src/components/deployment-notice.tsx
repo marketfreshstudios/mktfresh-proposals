@@ -158,6 +158,17 @@ export function DeploymentNotice({
     };
   }, [enabled, available, mobile]);
   if (!enabled || !available) return null;
+  const dismiss = () => {
+    hiddenOnPage.current = true;
+    snooze.current = Date.now() + buildSnoozeMs;
+    try {
+      sessionStorage.setItem(
+        `yeswell-update-later:${appBuildId}`,
+        String(snooze.current),
+      );
+    } catch {}
+    setAvailable(false);
+  };
   const contents = (
     <>
       <div>
@@ -173,17 +184,7 @@ export function DeploymentNotice({
           variant="secondary"
           className="notice-later"
           disabled={busy}
-          onClick={() => {
-            hiddenOnPage.current = true;
-            snooze.current = Date.now() + buildSnoozeMs;
-            try {
-              sessionStorage.setItem(
-                `yeswell-update-later:${appBuildId}`,
-                String(snooze.current),
-              );
-            } catch {}
-            setAvailable(false);
-          }}
+          onClick={dismiss}
         >
           Later
         </Button>
@@ -210,22 +211,19 @@ export function DeploymentNotice({
       </div>
     </>
   );
-  return mobile ? (
-    <div
-      className="deployment-notice deployment-inline"
-      role="status"
-      aria-live="polite"
-    >
-      {contents}
-    </div>
-  ) : (
+  return (
     <ToastSurface
+      inline={mobile}
       stableLayer
-      className="deployment-notice staff-foundation ink-clay"
+      className={`deployment-notice ${mobile ? "deployment-inline" : "staff-foundation ink-clay"}`}
+      onDismiss={dismiss}
+      dismissDisabled={busy}
       style={
-        position
-          ? { ...position, visibility: "visible" }
-          : { visibility: "hidden" }
+        mobile
+          ? undefined
+          : position
+            ? { ...position, visibility: "visible" }
+            : { visibility: "hidden" }
       }
     >
       {contents}

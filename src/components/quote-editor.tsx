@@ -122,7 +122,12 @@ import type { WorkspaceSettings } from "../lib/workspace";
 import type { ReferenceDocument } from "../lib/documents";
 import { orderedItems, catalogQuoteItem, draftItems } from "../lib/quote-model";
 import { contentSections, pendingSections } from "../lib/ai-review";
-import { variables, intervalLabel, totals } from "../lib/presentation";
+import {
+  variables,
+  intervalLabel,
+  totals,
+  resolveLabel,
+} from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
@@ -1170,7 +1175,7 @@ function QuoteEditorContent({
               {pending.length} AI-written{" "}
               {pending.length === 1 ? "section" : "sections"}.
             </strong>{" "}
-            {pending.join(", ")}
+            {pending.map((title) => resolveLabel(title, map)).join(", ")}
           </p>
           <label className="check">
             <input
@@ -2750,7 +2755,11 @@ function QuoteEditorContent({
           We’ll save them when you’re back online.
         </Banner>
       )}
-      {linkCopied && <ToastSurface>Client link copied</ToastSurface>}
+      {linkCopied && (
+        <ToastSurface onDismiss={() => setLinkCopied(false)}>
+          Client link copied
+        </ToastSurface>
+      )}
       {(p.unpublished_work || (locked && recovery)) && (
         <p className="editor-retained-work" role="status">
           Unpublished changes were not part of the signed version

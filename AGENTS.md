@@ -13,6 +13,8 @@ You are building a self-hosted replacement for Proposify for MarketFresh (a two-
 - Secrets come from `.env.local` (never committed). Create `.env.example` listing every variable needed. If a credential is missing, mock the integration behind an interface, make tests pass against the mock, and list the missing credential in `HANDOFF_PHASE1.md`.
 - Use Supabase migrations (`supabase/migrations/*.sql`) for all schema. Row Level Security on for every table; internal tables readable only by authenticated staff; public proposal access only via the token route.
 
+- **UI copy (owner, 10 Nov):** never use a bullet (·) as a separator in UI copy. Use a pipe ( | ), a comma or a line break instead. Applies to new and changed copy; see `design/ink-and-clay/specs/ink-and-clay.md` §2.
+
 ## Product summary
 
 Staff (2 users) author proposals from templates, send a client a unique link, the client ticks optional line items, accepts, and e-signs. Staff always counter-sign. On client signature the system creates a QuickBooks draft invoice for one-time items and a Stripe subscription for monthly items. Every proposal produces a sealed PDF with an audit trail. Hundreds of historical Proposify proposals are imported as archived PDFs plus metadata.

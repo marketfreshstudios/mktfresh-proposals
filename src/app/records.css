@@ -460,29 +460,6 @@
 .countersign-sheet .btn.primary {
   width: 100%;
 }
-.phase4-toast,
-.notice-toast {
-  background: var(--ink);
-  color: var(--surface);
-  border-radius: 10px;
-  padding: 12px 18px;
-}
-.phase4-toast {
-  position: fixed;
-  z-index: var(--z-toast);
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  box-shadow: 0 4px 18px #0003;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  max-width: calc(100vw - 24px);
-}
-.phase4-toast .text-action,
-.phase4-toast .btn {
-  color: inherit;
-}
 .action-menu {
   display: flex;
   flex-direction: column;
@@ -1067,13 +1044,6 @@
   }
   .countersign-sheet .totals {
     gap: 14px;
-  }
-  .phase4-toast {
-    bottom: 78px;
-    width: calc(100vw - 24px);
-    padding: 10px 14px;
-    font-size: 13px;
-    gap: 10px;
   }
   .list-tools {
     flex-wrap: wrap;

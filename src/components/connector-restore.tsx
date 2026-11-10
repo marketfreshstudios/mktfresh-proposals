@@ -41,11 +41,14 @@ export function useConnectorRestore(
     busy,
     feedback: (
       <>
-        {message && <ToastSurface>{message}</ToastSurface>}
+        {message && (
+          <ToastSurface onDismiss={() => setMessage("")}>
+            {message}
+          </ToastSurface>
+        )}
         {error && (
-          <ToastSurface role="alert" className="error">
+          <ToastSurface role="alert" onDismiss={() => setError("")}>
             {error}
-            <button onClick={() => setError("")}>Dismiss</button>
           </ToastSurface>
         )}
       </>

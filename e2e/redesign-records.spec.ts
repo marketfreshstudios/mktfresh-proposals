@@ -577,12 +577,14 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     .filter({ hasText: ai.client.company })
     .getByRole("button", { name: "Archive", exact: true })
     .click();
-  await expect(page.locator(".phase4-toast")).toBeVisible();
+  const archivedToast = page
+    .getByRole("status")
+    .filter({ hasText: "Proposal archived." });
+  await expect(archivedToast).toBeVisible();
   await expect(
     page.getByRole("link", { name: `Open ${ai.client.company}: ${ai.title}` }),
   ).toHaveCount(0);
-  await page
-    .locator(".phase4-toast")
+  await archivedToast
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect(
