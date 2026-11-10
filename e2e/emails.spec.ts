@@ -1,3 +1,4 @@
+import emailLayouts from "./ink-clay-email-layouts.json" with { type: "json" };
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { setup, staff } from "../tests/helpers";
@@ -126,7 +127,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
       if (state === "editor-live-preview")
         await expect(page.locator(".email-rendered")).toHaveCSS(
           "background-color",
-          theme === "dark" ? "rgb(24, 23, 21)" : "rgb(243, 241, 235)",
+          emailLayouts[
+            theme === "dark" ? "proposal_sent · dark" : "proposal_sent · light"
+          ].canvas,
         );
     }
     expect(

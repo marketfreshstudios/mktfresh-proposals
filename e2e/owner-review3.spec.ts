@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { test, expect } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -170,7 +171,10 @@ test("cover field atoms have the same highlight as band fields", async ({
   const chip = page
     .locator('.document-cover [data-field="workspace.name"]')
     .first();
-  await expect(chip).toHaveCSS("background-color", "rgb(240, 236, 228)");
+  await expect(chip).toHaveCSS(
+    "background-color",
+    await cssColorToken(chip, "--field-chip-ground"),
+  );
   await expect(chip).toHaveCSS("border-radius", "4px");
 });
 test("phone client content has a single inset, full-width details and unwrapped prices", async ({

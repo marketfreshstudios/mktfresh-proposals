@@ -4,6 +4,9 @@
   :is(.editor-document-region, .studio-template-main, .email-canvas-column) {
   background-color: var(--surface-deep);
 }
+.staff-foundation.ink-clay :is(.email-from-line, .saved-block-caption) {
+  color: var(--canvas-ink-muted);
+}
 .staff-foundation.ink-clay
   :is(.editor-layout, .studio-template-layout)
   > .editor-outline {

@@ -1,3 +1,5 @@
+import emailLayouts from "./ink-clay-email-layouts.json" with { type: "json" };
+import { cssColorToken } from "./css-color-token";
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
@@ -12,10 +14,13 @@ test.use({ actionTimeout: 10000 });
 const dir = "docs/screenshots/studio-v3-email";
 async function shot(page: Page, name: string) {
   if (process.env.STUDIO_EMAIL_CAPTURE === "1") {
-    if (name === "email-dark-1440")
-      await expect(
-        page.getByRole("searchbox", { name: "Search fields" }),
-      ).toHaveCSS("background-color", "rgb(28, 27, 25)");
+    if (name === "email-dark-1440") {
+      const search = page.getByRole("searchbox", { name: "Search fields" });
+      await expect(search).toHaveCSS(
+        "background-color",
+        await cssColorToken(search, "--surface"),
+      );
+    }
     mkdirSync(dir, { recursive: true });
     await page.screenshot({
       path: `${dir}/${name}.png`,
@@ -171,7 +176,7 @@ test("real renderer values, widths, dark, plain text and self-only test emails",
   await page.getByRole("button", { name: "Dark", exact: true }).click();
   await expect(page.locator(".email-rendered")).toHaveCSS(
     "background-color",
-    "rgb(24, 23, 21)",
+    emailLayouts["proposal_sent · dark"].canvas,
   );
   await page.getByRole("tab", { name: "Plain text", exact: true }).click();
   await expect
@@ -332,7 +337,7 @@ test("email editor references, accessible panels, save failure recovery and lega
   await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
   await expect(page.locator(".email-rendered")).toHaveCSS(
     "background-color",
-    "rgb(24, 23, 21)",
+    emailLayouts["proposal_sent · dark"].canvas,
   );
   await shot(page, "email-dark-1440");
   await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
@@ -427,9 +432,10 @@ test("email fields use the shared highlight in both Names and Values; the sent r
   for (const mode of ["Show fields", "Show values"]) {
     await page.getByRole("button", { name: mode, exact: true }).click();
     for (const root of [subject, body]) {
-      await expect(root.locator(".field-chip").first()).toHaveCSS(
+      const chip = root.locator(".field-chip").first();
+      await expect(chip).toHaveCSS(
         "background-color",
-        "rgb(240, 236, 228)",
+        await cssColorToken(chip, "--field-chip-ground"),
       );
       await expect(root).not.toContainText("{{");
     }

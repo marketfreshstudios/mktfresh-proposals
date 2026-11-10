@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { test, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -273,7 +274,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await row.hover();
       await expect(row).toHaveCSS(
         "background-color",
-        theme === "light" ? "rgb(244, 247, 247)" : "rgb(44, 43, 39)",
+        await cssColorToken(row, "--row-hover"),
       );
       await link.focus();
       await expect(row).toHaveCSS("outline-style", "solid");

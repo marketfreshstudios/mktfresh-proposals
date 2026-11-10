@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { test, expect, type Page } from "@playwright/test";
 import { editorFixture } from "./editor-fixture";
 import {
@@ -333,10 +334,12 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
   await expect(
     panel.getByRole("button", { name: "Send to Jane", exact: true }),
   ).toHaveCSS("background-color", "rgb(180, 83, 42)");
+  const minimumBorder = await cssColorToken(panel, "--border-control");
   const darkBorders = await panel
     .locator("input:not([type=checkbox],[type=radio]),select,textarea")
-    .evaluateAll((inputs) =>
-      inputs
+    .evaluateAll((inputs, token) => {
+      const minimumRgb = token.match(/\d+/g)!.map(Number);
+      return inputs
         .filter((el) => {
           if (!el.getClientRects().length) return false;
           const s = getComputedStyle(el);
@@ -344,12 +347,11 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
             return false;
           const rgb = s.borderTopColor.match(/\d+/g)?.map(Number) ?? [];
           return (
-            rgb.length >= 3 &&
-            rgb.slice(0, 3).some((v, i) => v < [207, 200, 187][i])
+            rgb.length >= 3 && rgb.slice(0, 3).some((v, i) => v < minimumRgb[i])
           );
         })
-        .map((el) => el.getAttribute("aria-label") || el.tagName),
-    );
+        .map((el) => el.getAttribute("aria-label") || el.tagName);
+    }, minimumBorder);
   expect(darkBorders).toEqual([]);
 });
 

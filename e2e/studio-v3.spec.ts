@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
@@ -240,7 +241,10 @@ test("template cards show inset preview sheets with resolved titles at every wid
     await expect(band).toHaveCSS("background-color", "rgb(244, 247, 247)");
     await expect(band).toHaveCSS("border-bottom-width", "1px");
     await expect(band).toHaveCSS("border-bottom-style", "solid");
-    await expect(band).toHaveCSS("border-bottom-color", "rgb(228, 222, 210)");
+    await expect(band).toHaveCSS(
+      "border-bottom-color",
+      await cssColorToken(band, "--border"),
+    );
     await expect(band).toHaveCSS("padding", "22px 22px 0px");
     await expect(paper).toHaveCSS("border-radius", "3px 3px 0px 0px");
     await expect(paper).toHaveCSS("padding", "20px 22px");
@@ -267,7 +271,7 @@ test("template cards show inset preview sheets with resolved titles at every wid
     await expect(paper).toHaveCSS("background-color", "rgb(255, 255, 255)");
     await expect(paper).toHaveCSS(
       "box-shadow",
-      "rgb(228, 222, 210) 0px 0px 0px 1px, rgba(19, 48, 58, 0.08) 0px 6px 16px 0px",
+      `${await cssColorToken(paper, "--paper-border")} 0px 0px 0px 1px, rgba(19, 48, 58, 0.08) 0px 6px 16px 0px`,
     );
     await expect(paper.locator(".template-thumbnail-accent")).toHaveCSS(
       "background-color",

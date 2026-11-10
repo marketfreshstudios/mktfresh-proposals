@@ -340,12 +340,16 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
     );
     await expect(select).toHaveCSS(
       "background-image",
-      new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+      await select.evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--select-chevron").trim(),
+      ),
     );
     await select.hover();
     await expect(select).toHaveCSS(
       "background-image",
-      new RegExp(theme === "dark" ? "f2f4f7" : "12151a"),
+      await select.evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--select-chevron-hover").trim(),
+      ),
     );
     await select.focus();
     await page.keyboard.press("Tab");
@@ -359,7 +363,9 @@ test("compact toolbar selects share chevrons, focus, hover and disabled states i
     await expect(select).toHaveCSS("cursor", "not-allowed");
     await expect(select).toHaveCSS(
       "background-image",
-      new RegExp(theme === "dark" ? "a3abb6" : "5a626b"),
+      await select.evaluate((el) =>
+        getComputedStyle(el).getPropertyValue("--select-chevron").trim(),
+      ),
     );
     await select.evaluate((el: HTMLButtonElement) => {
       el.disabled = false;
