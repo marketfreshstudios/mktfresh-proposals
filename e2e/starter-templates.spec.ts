@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { socialCatalog } from "../tests/social-catalog";
 import { starterLogo } from "../tests/starter-logo";
 import { authoringPreview } from "../src/lib/authoring-preview";
@@ -204,13 +205,10 @@ test("every starter field is highlighted in template and proposal editors, while
       );
     const all = root.locator(".field-chip");
     await expect(all.first()).toBeAttached();
-    expect(
-      await all.evaluateAll((els) =>
-        els.every(
-          (el) => getComputedStyle(el).backgroundColor === "rgb(240, 236, 228)",
-        ),
-      ),
-    ).toBe(true);
+    const ground = await cssColorToken(all.first(), "--field-chip-ground");
+    expect(ground).not.toBe("rgba(0, 0, 0, 0)");
+    for (const chip of await all.all())
+      await expect(chip).toHaveCSS("background-color", ground);
   }
   async function walk(
     prefix: string,

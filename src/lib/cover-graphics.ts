@@ -50,7 +50,7 @@ export function coverPresentation(
   const base = filled
     ? color
     : layout === "centered" || b.type === "corners"
-      ? "#f6f4ef"
+      ? "#f4f7f7"
       : "#ffffff";
   let graphic =
     b.graphic ??
@@ -118,7 +118,7 @@ export const coverLayoutCss = `
 .cover-brand-group,.cover-main-group,.cover-meta-group{position:relative;min-width:0}
 .cover-main-group{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:72px}
 .cover-main-group:after{content:"";display:block;width:72px;height:4px;background:var(--cover-color);margin-top:36px}
-.cover-meta-group{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;border-top:1px solid #dcdedb;padding-top:24px}
+.cover-meta-group{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;border-top:1px solid #dce3e6;padding-top:24px}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-element{min-width:0;flex:none;color:inherit}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-element :is(.field-editor,.field-editor-content,.tiptap,.tiptap>p){font:inherit!important;color:inherit!important;line-height:inherit!important;text-transform:inherit!important;letter-spacing:inherit!important}
 [data-cover-layout]:not([data-cover-layout=custom]) .cover-text-line{font:400 14px/1.4 var(--proposal-body,"Source Serif 4",serif);margin:0;color:inherit}
@@ -141,7 +141,7 @@ export const coverLayoutCss = `
 [data-cover-layout=bold]{--cover-eyebrow-color:var(--cover-text);--cover-title-size:76px;--cover-title-leading:1;--cover-title-tracking:-.03em;--cover-title-width:640px}[data-cover-layout=bold] .cover-main-group{justify-content:center;padding-bottom:0}[data-cover-layout=bold] .cover-main-group:after{display:none}[data-cover-layout=bold] .flow-eyebrow{color:inherit}
 [data-cover-layout=photo]{--cover-eyebrow-color:var(--cover-text);--cover-title-size:50px;--cover-title-leading:1.06;--cover-title-width:640px}[data-cover-layout=photo] .cover-background-image{height:64%}[data-cover-layout=photo] .cover-decoration{background:var(--cover-color)}[data-cover-layout=photo] .cover-main-group{justify-content:flex-end;padding-bottom:72px}[data-cover-layout=photo] .cover-brand-group{align-self:flex-start;background:white;color:#1b1f1d;border-radius:10px;padding:10px 14px;margin:-32px -32px 0}
 [data-cover-layout=photo] .flow-eyebrow{color:inherit}[data-cover-layout=photo] .cover-main-group:after{display:none}
-[data-cover-layout=centered]{--cover-title-size:56px;--cover-title-leading:1.06;--cover-title-width:560px;text-align:center}[data-cover-layout=centered] .cover-decoration:after{content:"";position:absolute;inset:56px;border:1px solid #d6d5cd}[data-cover-layout=centered] .cover-main-group{align-items:center;justify-content:center;padding-bottom:0}[data-cover-layout=centered] .cover-main-group:after{display:none}[data-cover-layout=centered] .cover-meta-group{border:0;display:flex;justify-content:center;flex-wrap:wrap}
+[data-cover-layout=centered]{--cover-title-size:56px;--cover-title-leading:1.06;--cover-title-width:560px;text-align:center}[data-cover-layout=centered] .cover-decoration:after{content:"";position:absolute;inset:56px;border:1px solid #c2cdd2}[data-cover-layout=centered] .cover-main-group{align-items:center;justify-content:center;padding-bottom:0}[data-cover-layout=centered] .cover-main-group:after{display:none}[data-cover-layout=centered] .cover-meta-group{border:0;display:flex;justify-content:center;flex-wrap:wrap}
 [data-cover-layout=bold] .cover-brand-group{display:flex;align-items:center;justify-content:space-between;gap:24px}[data-cover-layout=bold] .cover-brand-group .flow-eyebrow{margin-bottom:0}[data-cover-layout=bold] .cover-main-group{padding-bottom:120px}[data-cover-layout=bold] .cover-main-group>[data-cover-kind=prepared_for]{margin-top:32px;font-size:18px}[data-cover-layout=bold] .cover-meta-group{display:flex;gap:48px;border:0}
 [data-cover-layout=centered] .cover-brand-group{padding-top:56px}[data-cover-layout=centered] h1:after{content:"";display:block;width:48px;height:3px;background:var(--cover-color);margin:24px auto}[data-cover-layout=centered] .cover-main-group>[data-cover-kind=prepared_for]{font-size:17px}[data-cover-layout=centered] .cover-meta-group{padding-bottom:40px}
 [data-cover-finished=true] .cover-background-image{height:100%}[data-cover-backdrop=true] .cover-text-line,[data-cover-backdrop=true] h1{background:rgba(0,0,0,.78);color:white!important;padding:8px!important;border-radius:4px}

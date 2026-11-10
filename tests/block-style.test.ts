@@ -24,7 +24,7 @@ test("block styles opt in and use the same declarations in JSX and print", () =>
       radius: "m",
     }),
   ).toBe(
-    "background-color:#f3f0ea;print-color-adjust:exact;padding:40px;border:2px solid #123456;border-radius:8px;",
+    "background-color:#f1f4f5;print-color-adjust:exact;padding:40px;border:2px solid #123456;border-radius:8px;",
   );
 });
 
@@ -79,10 +79,10 @@ test("background contrast checks use both actual colors", () => {
     8,
   );
   expect(colorContrast("#25241f", "#333333")).toBeLessThan(4.5);
-  expect(colorContrast("#25241f", "#f3f0ea")).toBeGreaterThan(4.5);
+  expect(colorContrast("#25241f", "#f1f4f5")).toBeGreaterThan(4.5);
 });
 
-test("an unstyled document keeps its exact pre-feature print source and CSS", () => {
+test("an unstyled document matches the Harbor print source and CSS baseline", () => {
   const styles = resolveStyles();
   const content: Block[] = [
     { id: "overview", type: "heading", text: "Overview" },
@@ -106,6 +106,7 @@ test("an unstyled document keeps its exact pre-feature print source and CSS", ()
     styles,
     planned: true,
   });
+  // Harbor changed the neutral paint literals in this print baseline.
   expect(
     sha256(
       printCss +
@@ -113,5 +114,5 @@ test("an unstyled document keeps its exact pre-feature print source and CSS", ()
         documentStyleCss(styles, undefined, content) +
         source,
     ),
-  ).toBe("a7e4ecd9eece557aa49ea277432c2ea8de163e59116fb2df7e40e023df45a4f3");
+  ).toBe("c73d9f9a9d48263c7e8ddef7818bb098bf189011a40dc1e0ee9aa0dabf0ffb60");
 });

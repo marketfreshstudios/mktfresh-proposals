@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { editorFixture } from "./editor-fixture";
@@ -134,7 +135,7 @@ test("tab sets and real record and editor navigation use readable shared styles"
   const paper = thumbnail.locator(".template-thumbnail-paper");
   await expect(paper).toHaveCSS(
     "box-shadow",
-    /rgb\(228, 222, 210\) 0px 0px 0px 1px/,
+    `${await cssColorToken(paper, "--paper-border")} 0px 0px 0px 1px, rgba(19, 48, 58, 0.08) 0px 6px 16px 0px`,
   );
   await screenshot(page, "template-cards-1440");
 

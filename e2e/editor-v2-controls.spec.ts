@@ -56,7 +56,7 @@ for (const width of [1440, 1180, 1024, 924])
       await expect(bar).toBeVisible();
       await expect(bar).toHaveCSS("opacity", "1");
       await expect(bar).toHaveCSS("margin", "0px");
-      await expect(bar).toHaveCSS("background-color", "rgb(28, 27, 24)");
+      await expect(bar).toHaveCSS("background-color", "rgb(24, 34, 38)");
       if (b.type === "paragraph") {
         const field = bar.getByRole("button", {
           name: "Insert field",

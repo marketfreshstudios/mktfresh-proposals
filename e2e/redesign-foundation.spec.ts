@@ -143,7 +143,7 @@ test("Foundation: responsive navigation, redirects, typography, money, keyboard 
         await expect(shell).toHaveCSS("font-family", /"Instrument Sans"/);
         await expect(shell).toHaveCSS(
           "background-color",
-          theme === "light" ? "rgb(243, 239, 231)" : "rgb(17, 24, 27)",
+          theme === "light" ? "rgb(241, 244, 245)" : "rgb(17, 24, 27)",
         );
         if (width >= 700 && ["editor", "send", "template"].includes(name)) {
           await expect(page.locator(".sidebar")).toBeHidden();

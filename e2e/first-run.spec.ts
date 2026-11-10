@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { editorFixture } from "./editor-fixture";
@@ -167,7 +168,7 @@ for (const width of [1440, 375]) {
         ).toBeVisible();
         await expect(optional.getByRole("heading")).toHaveCSS(
           "color",
-          "rgb(95, 91, 83)",
+          await cssColorToken(optional.getByRole("heading"), "--ink-muted"),
         );
         const requiredBox = (await required.boundingBox())!;
         const optionalBox = (await optional.boundingBox())!;

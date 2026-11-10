@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
@@ -617,7 +618,6 @@ test("staff data tables hover in Mist in light mode and preserve dark mode", asy
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await fixture(page);
-  const mist = "rgb(244, 247, 247)";
   for (const [url, rowSelector] of [
     ["/proposals", ".proposal-row"],
     ["/", ".proposal-row"],
@@ -631,9 +631,11 @@ test("staff data tables hover in Mist in light mode and preserve dark mode", asy
     await page.goto(url);
     const row = page.locator(rowSelector).first();
     await row.hover();
-    await expect(
-      url === "/reports" ? row.locator("td").first() : row,
-    ).toHaveCSS("background-color", mist);
+    const cell = url === "/reports" ? row.locator("td").first() : row;
+    await expect(cell).toHaveCSS(
+      "background-color",
+      await cssColorToken(cell, "--row-hover"),
+    );
     if (url === "/proposals")
       await captureOwnerReview(page, "proposals-row-hover-1440");
   }
@@ -641,7 +643,10 @@ test("staff data tables hover in Mist in light mode and preserve dark mode", asy
   await page.goto("/proposals");
   const row = page.locator(".proposal-row").first();
   await row.hover();
-  await expect(row).toHaveCSS("background-color", "rgb(44, 43, 39)");
+  await expect(row).toHaveCSS(
+    "background-color",
+    await cssColorToken(row, "--row-hover"),
+  );
 });
 
 test("staff pages and account states have one title and a sequential heading outline", async ({

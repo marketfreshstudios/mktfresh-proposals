@@ -367,7 +367,7 @@ test("Studio editors evidence and responsive tools", async ({ page }) => {
   ).toHaveCSS("opacity", "1");
   await expect(
     page.getByRole("toolbar", { name: "Text tools", exact: true }),
-  ).toHaveCSS("background-color", "rgb(28, 27, 24)");
+  ).toHaveCSS("background-color", "rgb(24, 34, 38)");
   await shot("block-phone");
   const bar = await page
     .getByRole("toolbar", { name: "Text tools", exact: true })

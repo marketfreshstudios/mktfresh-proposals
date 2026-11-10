@@ -254,7 +254,7 @@ test("phone touch resizing keeps proportions and the shared dark image toolbar",
   await image.locator("img").click();
   await expect(page.getByRole("toolbar", { name: "Image actions" })).toHaveCSS(
     "background-color",
-    "rgb(28, 27, 24)",
+    "rgb(24, 34, 38)",
   );
   const corner = image.getByRole("button", {
     name: "Resize image bottom right",

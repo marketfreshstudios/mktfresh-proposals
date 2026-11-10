@@ -1,3 +1,4 @@
+import { cssColorToken } from "./css-color-token";
 import {
   expectStraightTabIndicator,
   expectNoTabUnderline,
@@ -810,7 +811,10 @@ test("proposal Edit and Countersign icons keep their slots, styling, and keyboar
       await expect(icon).toHaveCSS("height", size);
       await expect(icon).toHaveCSS("border-radius", "50%");
       await expect(icon).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-      await expect(icon).toHaveCSS("color", "rgb(95, 91, 83)");
+      await expect(icon).toHaveCSS(
+        "color",
+        await cssColorToken(icon, "--ink-muted"),
+      );
     }
     const spacer = row(page, f.completed).locator(".proposal-action-spacer");
     await expect(spacer).toHaveCSS("width", size);
@@ -848,8 +852,14 @@ test("proposal Edit and Countersign icons keep their slots, styling, and keyboar
         exact: true,
       });
       await expect(tooltip).toBeVisible();
-      await expect(counter).toHaveCSS("background-color", "rgb(238, 233, 224)");
-      await expect(counter).toHaveCSS("color", "rgb(19, 48, 58)");
+      await expect(counter).toHaveCSS(
+        "background-color",
+        await cssColorToken(counter, "--segment"),
+      );
+      await expect(counter).toHaveCSS(
+        "color",
+        await cssColorToken(counter, "--ink-title"),
+      );
       if (screenshots)
         await page.screenshot({
           path: `${folder}/proposals-1440-countersign-hover.png`,

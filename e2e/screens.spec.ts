@@ -275,10 +275,10 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
           staff && !paper
             ? theme === "dark"
               ? "a9bcc2"
-              : "5f5b53"
+              : "56646a"
             : theme === "dark" && !paper
               ? "a3abb6"
-              : "5a626b";
+              : "56646a";
         await expect(select).toHaveCSS("background-image", new RegExp(muted));
       }
       if (name === "send") {
@@ -299,7 +299,7 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         await expect(from).toBeDisabled();
         await expect(from).toHaveCSS(
           "background-image",
-          new RegExp(theme === "dark" ? "a9bcc2" : "5f5b53"),
+          new RegExp(theme === "dark" ? "a9bcc2" : "56646a"),
         );
         await from.evaluate((el: HTMLSelectElement) => {
           el.disabled = false;

@@ -1,5 +1,5 @@
-/* Staff-only palette from design/ink-and-clay/specs/tokens.css.
-   The shared foundation continues to supply the tenant document and client tokens. */
+/* Harbor neutrals replace the linen, oat, and sandstone staff palette.
+   Ink, clay, and semantic hues keep the Redesign 19 roles. Client accents remain tenant-owned. */
 @font-face {
   font-family: "DM Serif Display";
   src: url("/fonts/DMSerifDisplay-Regular.woff2") format("woff2");
@@ -16,22 +16,23 @@
   --chrome-muted: #a9bcc2;
   --chrome-line: rgba(255, 255, 255, 0.14);
   --chrome-marker: #e07a4a; /* 3px active-item bar */
-  /* Surfaces */
-  --surface-page: #f3efe7;
+  /* Harbor surfaces: cool page, recessed controls, and the editor canvas. */
+  --surface-page: #f1f4f5;
   --surface: #ffffff;
   --surface-preview: #f4f7f7;
-  --surface-sunken: #eee9e0;
+  --surface-sunken: #e8edef;
   --surface-raised: #ffffff;
-  --surface-deep: #dcd5c8; /* editor canvas behind the white pages */
-  --segment: #eee9e0; /* segmented controls, tab tracks, progress tracks */
+  --surface-deep: #d5dee1; /* editor canvas behind the white pages */
+  --segment: #e8edef; /* segmented controls, tab tracks, progress tracks */
   /* Ink */
   --ink: #1c1b18;
   --ink-title: #13303a;
-  --ink-muted: #5f5b53;
+  --ink-muted: #56646a;
+  --canvas-ink-muted: #546268; /* AA text on the deeper editor canvas */
   --link: #13303a;
-  --border: #e4ded2;
-  --border-strong: #cfc8bb;
-  --border-control: #cfc8bb;
+  --border: #dce3e6;
+  --border-strong: #c2cdd2;
+  --border-control: #c2cdd2;
   /* Hero card: the one filled card per screen (Home pipeline, record "Next step", value signed) */
   --hero: #13303a;
   --hero-ink: #ffffff;
@@ -48,10 +49,10 @@
   --ai-soft: rgba(224, 122, 74, 0.18);
   --ai-text: var(--st-review-ink);
   --ai-on-chrome: #f6c9ae;
-  /* Status, saturated set: soft = chip ground, ink = chip text (≥4.5:1 on soft), strong = dot / bar / left marker */
-  --st-draft-soft: #ece7dd;
-  --st-draft-ink: #4a463f;
-  --st-draft-strong: #8a857b;
+  /* Status (neutral Draft/Expired; other hues unchanged): soft = chip ground, ink = chip text (≥4.5:1 on soft), strong = dot / bar / left marker */
+  --st-draft-soft: #e4eaed;
+  --st-draft-ink: #3c4a50;
+  --st-draft-strong: #7f8e94;
   --st-sent-soft: #dce8ec;
   --st-sent-ink: #13303a;
   --st-sent-strong: #6f97a3;
@@ -67,9 +68,9 @@
   --st-lost-soft: #f8dedb;
   --st-lost-ink: #94281b;
   --st-lost-strong: #c2412f; /* also billing issue */
-  --st-expired-soft: #ece7dd;
-  --st-expired-ink: #4a463f;
-  --st-expired-strong: #8a857b;
+  --st-expired-soft: #e4eaed;
+  --st-expired-ink: #3c4a50;
+  --st-expired-strong: #7f8e94;
   --success: #1e5a3a;
   --success-soft: #ddefe4;
   --warning: #7a5200;
@@ -78,24 +79,24 @@
   --danger-soft: #f8dedb;
   --info: #13303a;
   --info-soft: #dce8ec;
-  --neutral: #4a463f;
-  --neutral-soft: #ece7dd;
+  --neutral: #3c4a50;
+  --neutral-soft: #e4eaed;
   /* Toast (update notice, undo) */
-  --toast: #1c1b18;
+  --toast: #182226;
   --toast-ink: #ffffff;
-  --toast-muted: #d9d4ca;
-  --overlay: rgba(20, 18, 14, 0.45);
+  --toast-muted: #d3dee1;
+  --overlay: rgba(19, 48, 58, 0.45);
   --shadow-card: none; /* cards use a 1px --border, no shadow */
   --shadow-md:
-    0 2px 4px rgba(20, 18, 14, 0.06), 0 8px 16px rgba(20, 18, 14, 0.08);
-  --shadow-lg: 0 18px 40px rgba(20, 18, 14, 0.18);
+    0 2px 4px rgba(19, 48, 58, 0.06), 0 8px 16px rgba(19, 48, 58, 0.08);
+  --shadow-lg: 0 18px 40px rgba(19, 48, 58, 0.18);
   --shadow-frame:
-    0 1px 3px rgba(0, 0, 0, 0.08), 0 24px 60px rgba(20, 18, 14, 0.14);
+    0 1px 3px rgba(0, 0, 0, 0.08), 0 24px 60px rgba(19, 48, 58, 0.14);
   --shadow-paper:
-    0 1px 3px rgba(20, 18, 14, 0.08), 0 14px 32px rgba(20, 18, 14, 0.1);
-  --shadow-bar: 0 -8px 24px rgba(20, 18, 14, 0.08);
+    0 1px 3px rgba(19, 48, 58, 0.08), 0 14px 32px rgba(19, 48, 58, 0.1);
+  --shadow-bar: 0 -8px 24px rgba(19, 48, 58, 0.08);
 }
-/* Dark (Redesign 17 · 2a–2c). Chrome stays ink; surfaces go deep. */
+/* Harbor dark: keep the ink-tinted surface steps and cool the neutral status text. */
 [data-theme="dark"] .staff-foundation.ink-clay {
   --chrome: #0c1e25;
   --chrome-raised: rgba(255, 255, 255, 0.08);
@@ -110,6 +111,7 @@
   --ink: #eef2f2;
   --ink-title: #f2f5f5;
   --ink-muted: #a9bcc2;
+  --canvas-ink-muted: var(--ink-muted);
   --link: #f2f5f5;
   --border: #2a3a41;
   --border-strong: #4a5d65;
@@ -123,7 +125,7 @@
   --ai-soft: rgba(224, 122, 74, 0.22);
   /* paper-* stay identical to light */
   --st-draft-soft: #2a3236;
-  --st-draft-ink: #d6d1c7;
+  --st-draft-ink: #d2dce0;
   --st-sent-soft: #1d3640;
   --st-sent-ink: #bfd6dd;
   --st-viewed-soft: #3a2e0e;
@@ -197,7 +199,7 @@
   --selected: var(--segment);
   --radius-navigation-button: var(--radius-md);
   --radius-field: var(--radius-md);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%235f5b53' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%2356646a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --select-chevron-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%231c1b18' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --switch-on: var(--ink-title);
   --switch-off: var(--st-draft-strong);
