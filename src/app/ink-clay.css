@@ -67,7 +67,7 @@
   .btn.record-primary:where(:not(.action)) {
   --button-label: var(--chrome);
 }
-.staff-foundation.ink-clay .btn.action {
+.staff-foundation.ink-clay :is(.btn, .editor-button).action {
   --button-fill: var(--action);
   --button-label: var(--on-action);
   --button-fill-hover: var(--action-hover);
