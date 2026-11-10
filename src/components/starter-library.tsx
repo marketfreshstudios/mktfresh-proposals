@@ -315,7 +315,7 @@ export function StarterCardMenu({
             {template.starter_key && actions.items}
             {onDelete && (
               <button type="button" role="menuitem" onClick={onDelete}>
-                Delete sample
+                {template.sample ? "Delete sample" : "Delete"}
               </button>
             )}
             {template.connector_restore_event_id && (

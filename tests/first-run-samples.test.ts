@@ -57,13 +57,15 @@ it("provisions three price-free, editable samples only on new workspace inserts"
   }
 });
 
-it("removes only samples and leaves a deleted sample absent", async () => {
+it("removes ordinary and sample templates while protecting starters", async () => {
   const repo = new MemoryRepository();
   const template = { id: randomUUID(), name: "Template" };
   const sample = { id: randomUUID(), name: "Sample", sample: true };
-  await repo.put("templates", template);
-  await repo.put("templates", sample);
-  expect(await repo.removeSampleTemplate(template.id)).toBe(false);
-  expect(await repo.removeSampleTemplate(sample.id)).toBe(true);
-  expect(await repo.entities("templates")).toEqual([template]);
+  const starter = { id: randomUUID(), name: "Starter", starter_key: "test" };
+  for (const row of [template, sample, starter])
+    await repo.put("templates", row);
+  expect(await repo.removeTemplate(template.id)).toBe(true);
+  expect(await repo.removeTemplate(sample.id)).toBe(true);
+  expect(await repo.removeTemplate(starter.id)).toBe(false);
+  expect(await repo.entities("templates")).toEqual([starter]);
 });

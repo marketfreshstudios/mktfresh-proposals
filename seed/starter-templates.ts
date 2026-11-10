@@ -6,6 +6,7 @@ import { markdownBlocks } from "../src/lib/markdown";
 import {
   coverText,
   applyCoverLayout,
+  type Cover,
   type CoverElement,
 } from "../src/lib/cover";
 import { defaultTemplateBands } from "../src/lib/page-bands";
@@ -13,6 +14,16 @@ import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
 import { paymentPlanClause } from "./oiot-clause";
 export { paymentPlanClause } from "./oiot-clause";
+
+export const starterCoverLayouts: Partial<
+  Record<string, Exclude<NonNullable<Cover["layout"]>, "custom">>
+> = {
+  "general-project": "editorial",
+  "website-design-build": "split",
+  "local-visibility-seo": "side-photo",
+  "website-ai-audit": "bold",
+  "monthly-marketing": "centered",
+};
 
 export const starterOrder = [6, 1, 2, 3, 4, 5, 7];
 export function starterId(workspace: string, key: string) {
@@ -211,7 +222,7 @@ export function starterTemplates(
             coverLine("extra", "{{proposal.validity}}", "validity"),
           ],
         },
-        "editorial",
+        starterCoverLayouts[source.key] ?? "editorial",
       ),
       content,
       default_quote: [],

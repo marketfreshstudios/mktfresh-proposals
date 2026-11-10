@@ -1034,3 +1034,9 @@ Home follows the updated Redesign 19 frame 2b1. The range defaults to This month
 The Expiring card shows the next three proposals and links to the full seven-day view. Extend opens the existing Review & send editor for eligible records, where staff choose the date. The Expiring empty message remains inside the card. The setup checklist keeps its place between the top row and attention cards. No hosted SQL is needed.
 
 Buttons and tabs use the shared keyboard focus ring. A pointer press suppresses the ring even when the browser keeps keyboard focus-visible on the same control. Keyboard input restores the ring without a blur or forced focus change. The selected segment’s fill, shadow or underline still indicates selection. Pipeline animation screenshots use a real pointer click so they do not pick up a keyboard ring from programmatic activation.
+
+## Starter cover layouts and template deletion — November 10, 2026
+
+Starter covers use Editorial for General project, Website care and Social media, Split panel for Website design, Photo beside title for Local visibility, Full color for the Audit, and Centered minimal for Monthly marketing. The cover uses the workspace brand and existing text. Apply the cover migration before deploying the matching starter seed. It changes only exact shipped plain covers in MarketFresh and updates the new-workspace seed. Customized covers and proposal snapshots are outside the migration.
+
+Super admins can delete an ordinary template through its card menu after confirmation. Proposals keep their stored copy. Starters are protected by the server and still offer Hide from new proposals. The catch-all API exports DELETE so the application can reach the authorized handler.

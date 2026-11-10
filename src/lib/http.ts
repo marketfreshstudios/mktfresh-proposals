@@ -1554,20 +1554,20 @@ async function handleRoute(
           await rt.repo.entities<import("./model").Template>("templates")
         ).find((t) => t.id === path[1]);
         check(
-          !template?.starter_key,
-          "Starters cannot be deleted. Hide from new proposals instead.",
+          user.staff_role === "owner",
+          "Only a super admin can delete templates",
           403,
         );
-        check(template?.sample, "Template deletion unavailable", 405);
+        check(template, "Template not found", 404);
         check(
-          user.staff_role === "owner",
-          "Only a super admin can delete samples",
+          !template.starter_key,
+          "Starters cannot be deleted. Hide from new proposals instead.",
           403,
         );
         check(sameOrigin(req), "Same-origin request required", 403);
         check(
-          await rt.repo.removeSampleTemplate(template.id),
-          "Sample template not found",
+          await rt.repo.removeTemplate(template.id),
+          "Template not found",
           404,
         );
         await workspaceEvent(rt.repo, user, "template_deleted", {

@@ -21,7 +21,10 @@ const request = (path: string[], method = "GET", body: unknown = {}) =>
       ...(method === "GET"
         ? {}
         : {
-            headers: { "content-type": "application/json" },
+            headers: {
+              "content-type": "application/json",
+              origin: "http://localhost",
+            },
             body: JSON.stringify(body),
           }),
     }),
@@ -149,4 +152,30 @@ it("a legacy read-time upgrade cannot overwrite a concurrent staff/connector edi
       (t) => t.id === original.id,
     ),
   ).toEqual(next);
+});
+
+it("only super admins may delete non-starters and existing proposals keep their content", async () => {
+  const f = await setup();
+  mocks.runtime.mockReturnValue(f);
+  const id = f.draft.template_id!;
+  const before = await f.repo.get(f.draft.id);
+  const starter = {
+    id: crypto.randomUUID(),
+    name: "Starter",
+    starter_key: "protected",
+  };
+  await f.repo.put("templates", starter);
+  mocks.staff.mockResolvedValue({ ...staff, staff_role: "member" });
+  expect((await request(["templates", id], "DELETE")).status).toBe(403);
+  mocks.staff.mockResolvedValue(staff);
+  expect((await request(["templates", starter.id], "DELETE")).status).toBe(403);
+  expect((await request(["templates", id], "DELETE")).status).toBe(200);
+  expect((await request(["templates", id], "DELETE")).status).toBe(404);
+  expect(await f.repo.get(f.draft.id)).toEqual(before);
+  const existing = await request(["proposals", f.draft.id]);
+  expect(existing.status).toBe(200);
+  expect(await existing.json()).toMatchObject({
+    id: f.draft.id,
+    content: f.draft.content,
+  });
 });
