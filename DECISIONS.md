@@ -995,6 +995,10 @@ The dark editor header uses a text link with a Lucide chevron for navigation and
 
 The Proposals header counts the same records as All, excluding archived proposals and Proposify imports. The header and tabs use the same list state so an archive or undo updates both.
 
+### Viewed is a primary proposal view (Nov 10, 2026)
+
+The existing Viewed filter and count appear between Sent and Won and are removed from More views. Tablet and phone use the same tabs in one horizontally scrollable row in place of the native select. More views stays visible beside the tabs, and keyboard navigation reveals the selected tab. The existing view predicates and counts are unchanged.
+
 ### Proposal table Edit and Countersign icons (Nov 9, 2026)
 
 Proposals and Home Recent proposals share the four existing action slots. Edit uses Lucide square-pen and Countersign uses pen-tool, with the same borderless icon treatment and tooltip as the other actions. Desktop targets and empty slots are 40px; tablet and phone cards and touch targets use 44px. The Countersign button only opens the existing record sheet and respects the existing signer permissions. Edit on an archived unsigned proposal still unarchives before opening the editor.

@@ -901,6 +901,7 @@ const primaryViews = [
   "All",
   "Drafts",
   "Sent",
+  "Viewed",
   "Won",
   "Needs countersign",
 ] as const;
@@ -928,6 +929,7 @@ export function ProposalListV4({
     [owner, setOwner] = useState("all"),
     [more, setMore] = useState(false);
   const moreTrigger = useRef<HTMLButtonElement>(null);
+  const viewTabs = useRef<HTMLDivElement>(null);
   const now = Date.now();
   const timezone = data?.settings?.timezone ?? "UTC";
   const matchesView = (proposal: Proposal, key: string) =>
@@ -941,6 +943,16 @@ export function ProposalListV4({
     ]),
   );
   const activeExtra = otherViews.find((name) => viewKey(name) === view);
+  useEffect(() => {
+    const list = viewTabs.current;
+    const tab = list?.querySelector('[aria-selected="true"]');
+    if (!list || !tab) return;
+    const outer = list.getBoundingClientRect();
+    const inner = tab.getBoundingClientRect();
+    if (inner.left < outer.left) list.scrollLeft += inner.left - outer.left;
+    else if (inner.right > outer.right)
+      list.scrollLeft += inner.right - outer.right;
+  }, [view]);
   useEffect(() => {
     const saved = sessionStorage.getItem("proposal-list-return");
     if (saved) {
@@ -1002,6 +1014,7 @@ export function ProposalListV4({
       <div className="proposal-directory-controls">
         <div className="directory-views">
           <div
+            ref={viewTabs}
             className="proposal-views"
             data-tab-style="underline"
             role="tablist"
@@ -1056,10 +1069,16 @@ export function ProposalListV4({
             type="button"
             className="btn more-views-trigger"
             aria-haspopup="dialog"
+            aria-label={
+              activeExtra ? `${activeExtra} · More views` : "More views"
+            }
             aria-expanded={more}
             onClick={() => setMore(!more)}
           >
-            {activeExtra ? `${activeExtra} · More views` : "More views"}
+            <span>
+              {activeExtra ? `${activeExtra} · More` : "More"}
+              <span className="more-views-suffix"> views</span>
+            </span>
             <ChevronDown size={14} aria-hidden="true" />
           </button>
           {more && (
@@ -1106,20 +1125,6 @@ export function ProposalListV4({
               {data?.staff.map((m) => (
                 <option key={m.user_id} value={m.user_id}>
                   {m.display_name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="compact-views">
-            View
-            <Select
-              aria-label="Filter proposals"
-              value={view}
-              onChange={(e) => change(e.target.value)}
-            >
-              {listViews.map((v) => (
-                <option key={v} value={viewKey(v)}>
-                  {v} ({data ? counts[v] : "–"})
                 </option>
               ))}
             </Select>

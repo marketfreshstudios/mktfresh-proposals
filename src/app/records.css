@@ -564,9 +564,6 @@
   font-weight: 400;
   opacity: 0.8;
 }
-.compact-views {
-  display: none;
-}
 .proposal-rows {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -940,17 +937,6 @@
   .next-card > .actions {
     margin-left: 62px;
   }
-  .proposal-views {
-    display: none;
-  }
-  .compact-views {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .compact-views select {
-    min-width: 175px;
-  }
   .proposal-row,
   .proposal-row-head {
     grid-template-columns: minmax(120px, 2fr) 110px 75px 80px 32px;
@@ -1091,19 +1077,6 @@
     padding: 10px 14px;
     font-size: 13px;
     gap: 10px;
-  }
-  .proposal-views {
-    display: none;
-  }
-  .compact-views {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    width: 100%;
-    font-size: 12px;
-  }
-  .compact-views select {
-    flex: 1;
   }
   .list-tools {
     flex-wrap: wrap;
@@ -1437,12 +1410,6 @@
     font-size: 26px;
     line-height: 34px;
   }
-}
-.compact-views select {
-  background-color: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--border-strong);
-  padding-left: 12px;
 }
 .staff-foundation .sidebar footer > .btn {
   appearance: none;

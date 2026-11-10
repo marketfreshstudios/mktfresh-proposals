@@ -327,6 +327,7 @@ test("Home, list views and action slots use the existing proposal states", async
     "All 9",
     "Drafts 1",
     "Sent 2",
+    "Viewed 1",
     "Won 4",
     "Needs countersign 1",
   ]);
@@ -619,7 +620,7 @@ for (const width of [1440, 768, 375]) {
         }
         if (selector === ".proposal-directory" && width < 1100) {
           await expect(
-            page.getByRole("combobox", { name: "Filter proposals" }),
+            page.getByRole("tablist", { name: "Proposal views" }),
           ).toBeVisible();
           await expect(
             row(page, f.viewed).getByRole("button", { name: "Duplicate" }),
@@ -880,5 +881,67 @@ test("proposal Edit and Countersign icons keep their slots, styling, and keyboar
       ).toBeVisible();
       expect(f.actions).toEqual([]);
     }
+  }
+});
+
+test("Viewed is a counted primary tab that stays reachable at desktop, tablet and phone widths", async ({
+  page,
+}) => {
+  const f = await scenario(page);
+  for (const width of [1440, 768, 375]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/proposals");
+    const tabs = page.getByRole("tablist", { name: "Proposal views" });
+    await expect(tabs.getByRole("tab")).toHaveText([
+      "All 9",
+      "Drafts 1",
+      "Sent 2",
+      "Viewed 1",
+      "Won 4",
+      "Needs countersign 1",
+    ]);
+    const viewed = tabs.getByRole("tab", { name: "Viewed 1", exact: true });
+    await tabs
+      .getByRole("tab", { name: "Sent 2", exact: true })
+      .press("ArrowRight");
+    await expect(viewed).toHaveAttribute("aria-selected", "true");
+    await expect(page).toHaveURL(/view=viewed/);
+    await expect(row(page, f.viewed)).toBeVisible();
+    await expect(row(page, f.waiting)).toHaveCount(0);
+    const dimensions = await tabs.evaluate((list) => ({
+      page: document.documentElement.scrollWidth,
+      wrap: getComputedStyle(list).flexWrap,
+      content: list.scrollWidth,
+      viewport: list.clientWidth,
+    }));
+    expect(dimensions.page).toBe(width);
+    expect(dimensions.wrap).toBe("nowrap");
+    if (width === 375) {
+      expect(dimensions.content).toBeGreaterThan(dimensions.viewport);
+      await expect(viewed).toHaveCSS("min-height", "44px");
+      expect(await tabs.evaluate((list) => list.scrollLeft)).toBe(0);
+    }
+    if (process.env.CAPTURE_VIEWED_TAB === "1" && width !== 768) {
+      await viewed.click();
+      const directory = "docs/screenshots/editable-starters";
+      await mkdir(directory, { recursive: true });
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: `${directory}/proposals-viewed-${width}.png`,
+      });
+    }
+    await page.getByRole("button", { name: "More views", exact: true }).click();
+    const more = page.getByRole("dialog", { name: "More views" });
+    await expect(more.getByRole("button", { name: /^Viewed\b/ })).toHaveCount(
+      0,
+    );
+    await expect(
+      more.getByRole("button", { name: /^Not viewed/ }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await viewed.press("End");
+    await expect(
+      tabs.getByRole("tab", { name: "Needs countersign 1" }),
+    ).toBeFocused();
   }
 });
