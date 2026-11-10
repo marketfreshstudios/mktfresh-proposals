@@ -107,7 +107,7 @@ export function StudioTemplateList({
   };
   const [query, setQuery] = useState(""),
     [type, setType] = useState("All"),
-    [error, setError] = useState(""),
+    [error, setError] = useState<{ title: string; message: string }>(),
     [busy, setBusy] = useState(false);
   const [events, setEvents] = useState<Activity[]>([]);
   useEffect(() => {
@@ -139,7 +139,7 @@ export function StudioTemplateList({
     .slice(0, 4);
   async function create() {
     setBusy(true);
-    setError("");
+    setError(undefined);
     try {
       const id = crypto.randomUUID();
       if (blocks) {
@@ -164,27 +164,31 @@ export function StudioTemplateList({
         location.href = `/studio/templates/${id}`;
       }
     } catch (e) {
-      setError((e as Error).message);
+      setError({ title: "Could not create", message: (e as Error).message });
       setBusy(false);
     }
   }
-  async function deleteSample(template: Template) {
+  async function deleteTemplate(template: Template) {
     if (
       !(await confirmDialog({
         title: `Delete “${template.name}”?`,
         description:
-          "This removes the sample from Templates. Existing proposals keep their content.",
-        confirmLabel: "Delete sample",
+          "Proposals already created from this template keep their own copy and are unaffected.",
+        confirmLabel: template.sample ? "Delete sample" : "Delete template",
         cancelLabel: "Cancel",
         destructive: true,
       }))
     )
       return;
+    setError(undefined);
     try {
       await api(`/api/templates/${template.id}`, { method: "DELETE" });
       await refreshTemplates();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete sample.");
+      setError({
+        title: "Could not delete template",
+        message: e instanceof Error ? e.message : "Try again.",
+      });
     }
   }
   const sampleCount = templates.filter((t) => t.sample).length;
@@ -244,8 +248,8 @@ export function StudioTemplateList({
         </label>
       </div>
       {error && (
-        <Banner tone="danger" title="Could not create">
-          {error}
+        <Banner tone="danger" title={error.title}>
+          {error.message}
         </Banner>
       )}
       {!data ? (
@@ -342,14 +346,14 @@ export function StudioTemplateList({
                 </a>
                 {(t.starter_key ||
                   t.connector_restore_event_id ||
-                  t.sample) && (
+                  data.user.staff_role === "owner") && (
                   <StarterCardMenu
                     template={t}
                     owner={data.user.staff_role === "owner"}
                     onChanged={refreshTemplates}
                     onDelete={
-                      t.sample && data.user.staff_role === "owner"
-                        ? () => void deleteSample(t)
+                      !t.starter_key && data.user.staff_role === "owner"
+                        ? () => void deleteTemplate(t)
                         : undefined
                     }
                   />

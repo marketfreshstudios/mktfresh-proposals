@@ -86,4 +86,10 @@ async function route(
   }
   return response;
 }
-export { route as GET, route as POST, route as PUT, route as PATCH };
+export {
+  route as GET,
+  route as POST,
+  route as PUT,
+  route as PATCH,
+  route as DELETE,
+};

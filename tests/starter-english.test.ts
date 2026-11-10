@@ -8,11 +8,14 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import {
   starterTemplates,
+  starterCoverLayouts,
   workspaceStarterTemplates,
 } from "../seed/starter-templates";
 import { starterEnglishUpdates } from "../seed/starter-english-updates";
 import { starterEnglishSql } from "../scripts/starter-english-sql";
 import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
+import oldCovers from "../seed/starter-covers-pr-a.json" with { type: "json" };
+import { applyCoverLayout, type Cover } from "../src/lib/cover";
 import type { Template } from "../src/lib/model";
 const migration =
   "supabase/migrations/20261108220213_american_english_starter_copy.sql";
@@ -75,7 +78,15 @@ it("American default copy matches the hosted trigger; exact unedited starters up
       JSON.parse(
         JSON.stringify(
           starterTemplates("00000000-0000-4000-8000-000000000000").map(
-            ({ id, ...t }) => t,
+            ({ id, ...t }) => ({
+              ...t,
+              ...(t.starter_key! in starterCoverLayouts && {
+                cover: applyCoverLayout(
+                  oldCovers[t.starter_key as keyof typeof oldCovers] as Cover,
+                  "editorial",
+                ),
+              }),
+            }),
           ),
         ),
       ),

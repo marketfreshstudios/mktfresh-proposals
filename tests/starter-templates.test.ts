@@ -1,3 +1,4 @@
+import oldCovers from "../seed/starter-covers-pr-a.json" with { type: "json" };
 import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
 import { validateItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
@@ -5,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   starterTemplates,
+  starterCoverLayouts,
   paymentPlanClause,
   starterId,
 } from "../seed/starter-templates";
@@ -29,6 +31,19 @@ it("seven exact starters, order, covers, renumbered terms and both signatures wi
     "monthly-marketing",
     "social-media-management",
   ]);
+  expect(templates.map((t) => t.cover?.layout)).toEqual([
+    "editorial",
+    "editorial",
+    "editorial",
+    "side-photo",
+    "bold",
+    "centered",
+    "editorial",
+  ]);
+  expect(templates[1].cover?.background).toMatchObject({
+    type: "plain",
+    graphic: "ring",
+  });
   for (const t of templates) {
     expect(t.active).toBe(true);
     expect(t.default_items).toEqual([]);
@@ -127,8 +142,55 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
       ),
     );
     await db.query("insert into workspaces values ($1)", [workspace]);
+    const migratedCovers = starterTemplates(workspace).filter(
+      (template) => template.starter_key! in starterCoverLayouts,
+    );
+    for (const template of migratedCovers) {
+      const key = template.starter_key as keyof typeof oldCovers;
+      const old = structuredClone(oldCovers[key]);
+      const cover =
+        key === "website-design-build"
+          ? Object.fromEntries(
+              Object.entries(old).filter(([field]) => field !== "logo_mode"),
+            )
+          : key === "website-ai-audit"
+            ? { ...old, logo_alt: "Custom logo wording" }
+            : old;
+      await db.query(
+        "update templates set data=jsonb_set(data,'{cover}', $2) where id=$1",
+        [template.id, JSON.stringify(cover)],
+      );
+    }
+    const migration = await readFile(
+      "supabase/migrations/20261110105000_starter_cover_layouts.sql",
+      "utf8",
+    );
+    const oldRows = async () =>
+      (
+        await db.query<{ data: Template }>(
+          "select data from templates where workspace_id=$1 order by id",
+          [workspace],
+        )
+      ).rows.map(({ data }) => data);
+    const before = await oldRows();
+    await db.exec(migration);
+    const after = await oldRows();
+    expect(after).toEqual(
+      before.map((template) => {
+        const next = migratedCovers.find(({ id }) => id === template.id);
+        return next && template.starter_key !== "website-ai-audit"
+          ? { ...template, cover: next.cover }
+          : template;
+      }),
+    );
+    await db.exec(migration);
+    expect(await oldRows()).toEqual(after);
+
+    const newWorkspace = "00000000-0000-4000-8000-000000000088";
+    await db.query("insert into workspaces values ($1)", [newWorkspace]);
     const rows = await db.query<{ data: Template }>(
-      "select data from templates order by (data->>'starter_order')::int",
+      "select data from templates where workspace_id=$1 order by (data->>'starter_order')::int",
+      [newWorkspace],
     );
     expect(rows.rows.map((r) => r.data.name)).toEqual(
       starterTemplates(workspace).map((t) => t.name),

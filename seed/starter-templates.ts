@@ -6,6 +6,7 @@ import { markdownBlocks } from "../src/lib/markdown";
 import {
   coverText,
   applyCoverLayout,
+  type Cover,
   type CoverElement,
 } from "../src/lib/cover";
 import { defaultTemplateBands } from "../src/lib/page-bands";
@@ -13,6 +14,16 @@ import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
 import { paymentPlanClause } from "./oiot-clause";
 export { paymentPlanClause } from "./oiot-clause";
+
+export const starterCoverLayouts: Partial<
+  Record<string, Exclude<NonNullable<Cover["layout"]>, "custom">>
+> = {
+  "general-project": "editorial",
+  "website-design-build": "editorial",
+  "local-visibility-seo": "side-photo",
+  "website-ai-audit": "bold",
+  "monthly-marketing": "centered",
+};
 
 export const starterOrder = [6, 1, 2, 3, 4, 5, 7];
 export function starterId(workspace: string, key: string) {
@@ -180,6 +191,32 @@ export function starterTemplates(
           };
         })
       : [];
+    const cover = applyCoverLayout(
+      {
+        logo_mode: "brand",
+        workspace: "{{workspace.name}}",
+        eyebrow: source.eyebrow,
+        byline: "{{proposal.validity}}",
+        elements: [
+          coverLine("logo"),
+          coverLine("eyebrow", source.eyebrow),
+          coverLine("title", source.title),
+          coverLine(
+            "prepared_for",
+            "Prepared for {{client.full_name}}, {{client.company}}",
+          ),
+          coverLine(
+            "byline",
+            "Prepared by {{sender.name}}, {{workspace.name}}",
+          ),
+          coverLine("extra", "{{proposal.date}}", "date"),
+          coverLine("extra", "{{proposal.validity}}", "validity"),
+        ],
+      },
+      starterCoverLayouts[source.key] ?? "editorial",
+    );
+    if (source.key === "website-design-build" && cover.background)
+      cover.background.graphic = "ring";
     return {
       id,
       name: source.name,
@@ -189,30 +226,7 @@ export function starterTemplates(
       active: true,
       signature_heading_defaulted: true,
       header_footer: defaultTemplateBands(),
-      cover: applyCoverLayout(
-        {
-          logo_mode: "brand",
-          workspace: "{{workspace.name}}",
-          eyebrow: source.eyebrow,
-          byline: "{{proposal.validity}}",
-          elements: [
-            coverLine("logo"),
-            coverLine("eyebrow", source.eyebrow),
-            coverLine("title", source.title),
-            coverLine(
-              "prepared_for",
-              "Prepared for {{client.full_name}}, {{client.company}}",
-            ),
-            coverLine(
-              "byline",
-              "Prepared by {{sender.name}}, {{workspace.name}}",
-            ),
-            coverLine("extra", "{{proposal.date}}", "date"),
-            coverLine("extra", "{{proposal.validity}}", "validity"),
-          ],
-        },
-        "editorial",
-      ),
+      cover,
       content,
       default_quote: [],
       default_items,

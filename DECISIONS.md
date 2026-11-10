@@ -657,6 +657,12 @@ New-layout spacing controls treat the main group's flexible blank space as avail
 
 PR #86 owner review: watermarks keep their transparent source shape, clipped only by the page/panel. Editorial defaults to 480px, top/right −150px and 8% on white; Split defaults to 420px, bleeding right/bottom at 12%. Filled-color backgrounds also default to 12%; explicit opacity/size edits remain intact. Review screenshots use a transparent E mark and default values, rather than the previous solid-square stress fixture at 25%/600px. Background color is shown only for color-bearing backgrounds/layouts (Panel color in Split). Workspace Brand has one Brand colors group: Primary (the existing accent with its contrast check), then up to four extra colors, all using a swatch and editable UI-font hex input. Suggestions stay pending until accepted. Run PR B's future-workspace seed SQL **after deploying the matching app**, then optionally run the guarded starter update.
 
+## Starter cover layouts and template deletion — November 10, 2026
+
+Starter covers use Editorial for General project, Website care and Social media, white Editorial with the ring for Website design, Photo beside title for Local visibility, Full color for the Audit, and Centered minimal for Monthly marketing. The cover uses the workspace brand and existing text. Apply the cover migration before deploying the matching starter seed. It changes only exact shipped plain covers in MarketFresh and updates the new-workspace seed. Customized covers and proposal snapshots are outside the migration.
+
+Super admins can delete an ordinary template through its card menu after confirmation. Proposals keep their stored copy. Starters are protected by the server and still offer Hide from new proposals. The catch-all API exports DELETE so the application can reach the authorized handler.
+
 ## Staff deployment notice
 
 A build-time public ID identifies the Yeswell app deployment (explicit YESWELL_BUILD_ID, Vercel deployment ID, commit plus deployment URL, otherwise a generated build ID). The browser and authenticated no-store `/api/staff-build` endpoint use the same baked value. Staff checks on initial load/focus and every five minutes while visible; hidden tabs stop polling. Client proposals, client billing/signing and staff countersigning never mount/check the notice. This app build ID is separate from proposal versions/hashes.

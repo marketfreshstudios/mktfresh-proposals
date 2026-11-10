@@ -113,7 +113,7 @@ export interface Repository {
     audit: Audit,
   ): Promise<boolean>;
   removeSavedBlock(id: string): Promise<boolean>;
-  removeSampleTemplate(id: string): Promise<boolean>;
+  removeTemplate(id: string): Promise<boolean>;
   saveReassignments(documents: Proposal[], actor: Actor): Promise<void>;
   saveEmailTemplate<T extends { id: string }>(
     template: T,
@@ -543,9 +543,9 @@ export class MemoryRepository implements Repository {
     this.catalog.get("workspace_events")!.set(audit.id, structuredClone(audit));
     return true;
   }
-  async removeSampleTemplate(id: string) {
+  async removeTemplate(id: string) {
     const row = this.catalog.get("templates")?.get(id) as Template | undefined;
-    return row?.sample === true && !row.starter_key
+    return row && !row.starter_key
       ? this.catalog.get("templates")!.delete(id)
       : false;
   }
@@ -1087,10 +1087,10 @@ export class LocalRepository extends MemoryRepository {
     this.tail = operation.catch(() => {});
     return operation;
   }
-  override async removeSampleTemplate(id: string) {
+  override async removeTemplate(id: string) {
     await this.ready;
     const run = this.tail.then(async () => {
-      const removed = await super.removeSampleTemplate(id);
+      const removed = await super.removeTemplate(id);
       if (removed) await this.persist();
       return removed;
     });
@@ -1707,13 +1707,12 @@ export class SupabaseRepository implements Repository {
     if (error) throw error;
     return data === true;
   }
-  async removeSampleTemplate(id: string) {
+  async removeTemplate(id: string) {
     const { data, error } = await this.db
       .from("templates")
       .delete()
       .eq("workspace_id", this.workspaceId)
       .eq("id", id)
-      .eq("data->>sample", "true")
       .is("data->>starter_key", null)
       .select("id");
     if (error) throw error;
