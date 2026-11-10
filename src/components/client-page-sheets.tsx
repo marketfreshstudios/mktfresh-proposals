@@ -552,11 +552,11 @@ const sheetCss = `
 .client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;inline-size:max-content;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px 4px;white-space:nowrap;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .client-section-question:hover{background:var(--client-selection)}.client-section-question:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:1px}
 /* These rules apply only after pagination. Preserve every shared print box. */
-.client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--paper);border-color:var(--client-frame)}
-.client-pages-root.proposal-typography.proposal-typography .print-choice-group>h3{color:var(--client-accent-text)}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--quote-neutral-group,var(--paper));border-color:var(--quote-neutral-frame,var(--client-frame))}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group>h3{color:var(--quote-neutral-label,var(--client-accent-text))}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line{border-radius:0;box-shadow:none;background:transparent}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line{position:relative}
-.client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line::before{content:"";position:absolute;inset:-4px 0 auto;height:1px;background:var(--paper-border)}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line::before{content:"";position:absolute;inset:-4px 0 auto;height:1px;background:var(--quote-neutral-divider,var(--paper-border))}
 .client-pages-root.proposal-typography.proposal-typography .client-interactive-card.selected{background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
 .client-pages-root .quote-table-row:has(input:checked){background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
 .client-pages-root .print-selection[data-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}

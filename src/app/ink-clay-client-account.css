@@ -303,11 +303,11 @@
 
 /* Paint the new client frame without moving any document boxes. */
 .client-flow .proposal-typography.proposal-typography .flow-choice-group {
-  border-color: var(--client-frame);
-  background: var(--paper);
+  border-color: var(--quote-neutral-frame, var(--client-frame));
+  background: var(--quote-neutral-group, var(--paper));
 }
 .client-flow .proposal-typography.proposal-typography .flow-choice-group h3 {
-  color: var(--client-accent-text);
+  color: var(--quote-neutral-label, var(--client-accent-text));
 }
 .client-flow
   .proposal-typography.proposal-typography
@@ -333,7 +333,7 @@
   position: absolute;
   inset: -4px 0 auto;
   height: 1px;
-  background: var(--paper-border);
+  background: var(--quote-neutral-divider, var(--paper-border));
 }
 .client-flow
   .proposal-typography.proposal-typography

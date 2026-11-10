@@ -39,6 +39,8 @@ import {
   documentStyleCss,
   styleFontFaces,
   styleColour,
+  legacyQuoteNeutrals,
+  harborQuoteNeutrals,
   type StyleLevel,
   type StyleOverrides,
   type TextStyle,
@@ -51,7 +53,7 @@ export function ProposalStyles({
   settings,
   inherited,
   value,
-  onChange,
+  onChange: saveStyles,
   resetLabel = "Reset to defaults",
   onReset,
   availableFonts = [],
@@ -95,6 +97,13 @@ export function ProposalStyles({
   }, []);
   const styles = resolveStyles(settings, inherited, value),
     selected = styles[level];
+  function onChange(next: StyleOverrides) {
+    saveStyles(
+      !next.quote_neutrals && styles.layout?.quote_neutrals
+        ? { ...next, quote_neutrals: {} }
+        : next,
+    );
+  }
   const uploads = [
     ...new Map(
       [
@@ -146,6 +155,48 @@ export function ProposalStyles({
             ? "Changes apply to new proposals made from this template."
             : "Changes apply to this proposal only. Workspace defaults live in Studio → Workspace."}
       </p>
+      <details className="style-accordion">
+        <Disclosure>Quote colors</Disclosure>
+        <div className="style-accordion-body">
+          <p className="muted">
+            These colors appear in the editor, client page, and PDF.
+          </p>
+          {(
+            [
+              ["group_fill", "Choice group background"],
+              ["group_border", "Choice group border"],
+              ["dividers", "Quote dividers"],
+              ["shaded_fill", "Quote header and totals background"],
+            ] as const
+          ).map(([key, label]) => {
+            const palette =
+              styles.layout?.quote_neutrals ?? legacyQuoteNeutrals;
+            return (
+              <ColorPicker
+                key={key}
+                label={label}
+                value={palette[key]}
+                settings={settings}
+                onChange={(color) =>
+                  onChange({
+                    ...value,
+                    quote_neutrals: styles.layout?.quote_neutrals
+                      ? { ...value?.quote_neutrals, [key]: color }
+                      : { ...palette, [key]: color },
+                  })
+                }
+              />
+            );
+          })}
+          <Button
+            onClick={() =>
+              onChange({ ...value, quote_neutrals: harborQuoteNeutrals })
+            }
+          >
+            Use Harbor defaults
+          </Button>
+        </div>
+      </details>
       <details className="style-accordion" open={!headerFooter}>
         <Disclosure>Text styles</Disclosure>
         <div className="style-accordion-body">

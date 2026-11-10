@@ -12,6 +12,16 @@ import { QuoteSchema, type Block, type RichText, type Template } from "./model";
 import { defaultTemplateBands, TemplateBandsSchema } from "./page-bands";
 import { withSignatureHeadings } from "./signature-headings";
 
+function authoredStyles(value: Template) {
+  if (
+    !value.style_overrides?.quote_neutrals ||
+    Object.keys(value.style_overrides.quote_neutrals).length
+  )
+    return value.style_overrides;
+  const { quote_neutrals, ...authored } = value.style_overrides;
+  return Object.keys(authored).length ? authored : undefined;
+}
+
 function authoredState(value: Template) {
   return {
     content: value.content,
@@ -19,7 +29,7 @@ function authoredState(value: Template) {
     header_footer: value.header_footer,
     default_quote: value.default_quote,
     default_items: value.default_items,
-    style_overrides: value.style_overrides,
+    style_overrides: authoredStyles(value),
   };
 }
 const sort = (v: unknown): unknown =>
@@ -140,7 +150,7 @@ function semanticAuthoredState(value: Template) {
     default_items: quote?.success
       ? quote.data
       : (value.default_items ?? (value.default_quote.length ? undefined : [])),
-    style_overrides: value.style_overrides ?? {},
+    style_overrides: authoredStyles(value) ?? {},
   };
 }
 
