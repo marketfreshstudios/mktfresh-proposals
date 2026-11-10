@@ -114,6 +114,13 @@ export function variables(p: Proposal, quote = p.quote) {
       : fmt(offer.oiot_purchase_price);
   return map;
 }
+/** Fill known fields for labels shown to staff (section titles in readiness
+ * messages). Unknown or empty fields stay as written instead of throwing. */
+export function resolveLabel(text: string, map: Record<string, string>) {
+  return text.replace(/{{\s*([\w.-]+)\s*}}/g, (token, path) =>
+    map[path] ? map[path] : token,
+  );
+}
 export function resolve(text: string, map: Record<string, string>) {
   return text.replace(/{{\s*([\w.-]+)\s*}}/g, (_, path) => {
     check(

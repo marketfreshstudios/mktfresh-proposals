@@ -14,7 +14,18 @@ import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
 import { qboItemMapping } from "./qbo-mapping";
 import { pendingSections } from "./ai-review";
-import { renderBlocks, variables } from "./presentation";
+import { renderBlocks, resolveLabel, variables } from "./presentation";
+
+/** Section titles may contain fields such as {{workspace.name}}; show values. */
+function sectionLabels(p: Proposal, titles: string[]) {
+  let map: Record<string, string> = {};
+  try {
+    map = variables(p);
+  } catch {
+    // Keep the titles as written if the field map can't be built.
+  }
+  return titles.map((title) => resolveLabel(title, map));
+}
 
 /** One shared readiness result for the editor, send endpoint and MCP. */
 export function readiness(
@@ -45,7 +56,7 @@ export function readiness(
   const pending = pendingSections(p);
   if (pending.length && !confirmAiReview)
     errors.push(
-      `Confirm review of AI changes before sending: ${pending.join(", ")}`,
+      `Confirm review of AI changes before sending: ${sectionLabels(p, pending).join(", ")}`,
     );
   try {
     validateItems(p.quote);

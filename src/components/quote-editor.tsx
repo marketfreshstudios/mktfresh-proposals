@@ -121,7 +121,12 @@ import type { WorkspaceSettings } from "../lib/workspace";
 import type { ReferenceDocument } from "../lib/documents";
 import { orderedItems, catalogQuoteItem, draftItems } from "../lib/quote-model";
 import { contentSections, pendingSections } from "../lib/ai-review";
-import { variables, intervalLabel, totals } from "../lib/presentation";
+import {
+  variables,
+  intervalLabel,
+  totals,
+  resolveLabel,
+} from "../lib/presentation";
 import { readiness } from "../lib/quote";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
@@ -1159,7 +1164,7 @@ function QuoteEditorContent({
               {pending.length} AI-written{" "}
               {pending.length === 1 ? "section" : "sections"}.
             </strong>{" "}
-            {pending.join(", ")}
+            {pending.map((title) => resolveLabel(title, map)).join(", ")}
           </p>
           <label className="check">
             <input
