@@ -132,10 +132,20 @@ test("Yeswell staff branding and install metadata stay separate from workspace c
     page.locator(".shell-tablet-header .yeswell-brand img:visible"),
   ).toHaveAttribute("alt", "Yeswell");
   await page.setViewportSize({ width: 375, height: 900 });
-  await expect(page.locator(".staff-mobile-brand img:visible")).toHaveAttribute(
-    "alt",
-    "Yeswell",
-  );
+  // Owner 10 Nov: on phones the mark sits in line, left of the page H1.
+  await expect(page.locator(".staff-mobile-brand")).toBeHidden();
+  const mark = await page.locator("#workspace-content h1").evaluate((h1) => {
+    const before = getComputedStyle(h1, "::before");
+    const title = h1.getBoundingClientRect();
+    return {
+      image: before.backgroundImage,
+      width: before.width,
+      inside: title.left >= 0 && title.right <= innerWidth,
+    };
+  });
+  expect(mark.image).toContain("/brand/yeswell/yeswell-mark");
+  expect(mark.width).toBe("28px");
+  expect(mark.inside).toBe(true);
   await page.goto("/login");
   await page.setViewportSize({ width: 375, height: 900 });
   await shot(page, "login-dark-375");

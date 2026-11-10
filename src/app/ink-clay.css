@@ -518,18 +518,41 @@
     font-size: 30px;
     line-height: 36px;
   }
-  .staff-foundation.ink-clay:not(.inside-proposal):not(
-      :has(.reports, .studio-v3-editor, .studio-email-editor)
+  /* Owner 10 Nov: on phones the Yeswell mark sits in line, left of the page
+     H1, instead of floating over the header actions. It is decorative here;
+     the bottom tabs carry Home. */
+  .staff-foundation.ink-clay:not(.inside-proposal, .studio-v3-shell):not(
+      :has(
+        .reports,
+        .studio-v3-editor,
+        .studio-email-editor,
+        .staff-account-page
+      )
     )
-    .staff-mobile-brand {
-    display: grid;
-    position: absolute;
-    inset: 16px 16px auto auto;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    margin: 0;
-    z-index: 1;
+    #workspace-content
+    h1::before {
+    content: "";
+    display: inline-block;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin-inline-end: 10px;
+    vertical-align: -4px;
+    background: url("/brand/yeswell/yeswell-mark.svg") center / contain
+      no-repeat;
+  }
+  .staff-foundation.ink-clay:not(.inside-proposal, .studio-v3-shell):not(
+      :has(
+        .reports,
+        .studio-v3-editor,
+        .studio-email-editor,
+        .staff-account-page
+      )
+    )
+    #workspace-content
+    .page-header
+    h1::before {
+    background-image: url("/brand/yeswell/yeswell-mark-reversed.svg");
   }
   .staff-foundation.ink-clay .bottom-tabs {
     height: calc(var(--tabbar-phone) + env(safe-area-inset-bottom, 0px));
