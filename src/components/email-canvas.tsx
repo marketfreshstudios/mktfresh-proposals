@@ -77,16 +77,6 @@ export function EmailCanvas({
     wrap.innerHTML = parsed.body.innerHTML;
     // The editor already has a main landmark. The sent document has its own.
     wrap.querySelector(".email-content")?.removeAttribute("role");
-    // The editor owns H1. Keep the preview title's email styles and place it
-    // below that heading without changing the HTML that actually gets sent.
-    const emailTitle = wrap.querySelector("h1.email-title");
-    if (emailTitle) {
-      const heading = document.createElement("h2");
-      for (const attr of emailTitle.attributes)
-        heading.setAttribute(attr.name, attr.value);
-      heading.append(...emailTitle.childNodes);
-      emailTitle.replaceWith(heading);
-    }
     wrap.querySelectorAll("a").forEach((link) => {
       link.dataset.previewHref = link.getAttribute("href") ?? "";
       link.removeAttribute("href");
@@ -135,7 +125,7 @@ export function EmailCanvas({
       <div
         className="email-real-renderer"
         ref={host}
-        role="group"
+        role="document"
         aria-label="Email preview"
       />
       {targets && (

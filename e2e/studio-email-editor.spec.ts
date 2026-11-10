@@ -59,7 +59,7 @@ test("inline email subject/body keep cursor, marks, fields and explicit saves; r
   await page.goto("/studio/emails/proposal_sent");
   const subject = page.getByRole("textbox", { name: "Subject", exact: true }),
     body = page.getByRole("textbox", { name: "Email body", exact: true });
-  await expect(page.locator(".email-rendered .email-title")).toHaveText(
+  await expect(page.locator(".email-rendered h1.email-title")).toHaveText(
     "Your next project",
   );
   await expect(subject.locator('[data-field="proposal.title"]')).toHaveText(
@@ -342,7 +342,7 @@ test("email editor references, accessible panels, save failure recovery and lega
   );
   await shot(page, "email-readonly-1440");
   await page.goto("/studio/emails/team_invite");
-  await expect(page.locator(".email-rendered .email-title")).toHaveText(
+  await expect(page.locator(".email-rendered h1.email-title")).toHaveText(
     "You're invited",
   );
   await shot(page, "email-team-invite-1440");

@@ -971,7 +971,7 @@ Record lists share the staff table header, row spacing, in-table empty states, a
 
 ### Staff heading hierarchy and editor identity (Nov 10, 2026)
 
-Each staff screen has one page title, including loading and account states. Staff editors own their title in the toolbar; the editable cover sits below it in the outline. Proposal content retains its authored headings and client and print output keep their existing title and styling. Typography samples demonstrate the styles without adding headings to the staff page. Dialog titles are H2, with H3 for subsections.
+Each staff screen has one page title, including loading and account states. Staff editors own their title in the toolbar; the editable cover sits below it in the outline. Proposal content retains its authored headings and client and print output keep their existing title and styling. Typography samples demonstrate the styles without adding headings to the staff page. The labeled email preview has its own outline and retains the delivered email’s H1 markup. Dialog titles are H2, with H3 for subsections.
 
 Templates shows the starter terms and sample guidance as muted copy under the tabs. Saved blocks uses the shared section heading. Library template cards say Default or Edited in their details; they no longer use a Starter chip, and the editor retains the read-only status and Reset to starter action. The Sample chip stays.
 

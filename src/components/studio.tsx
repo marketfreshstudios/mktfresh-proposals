@@ -2042,6 +2042,7 @@ function TemplatesStudioContent({
             <>
               <input
                 className="studio-inline-name"
+                title={editorTitle}
                 aria-label={
                   mode === "templates" ? "Template name" : "Block name"
                 }

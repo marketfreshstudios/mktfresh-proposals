@@ -53,4 +53,4 @@ Each route has one H1. Conditional sections appear only when they have content o
 | Password reset and email change | Reset your password, Check your email, Choose a new password, Link expired, Deactivated account, Confirm your new email, or Email changed | Form and status copy |
 | Shared dialogs and editor drawers | Underlying page title | Dialog title is H2 (including New proposal, Sections and editor tools), with H3 for subsections |
 
-The audit checks the loaded page, accessible heading order, and the New proposal dialog. It excludes author-controlled document content from the application heading-order rule; that content keeps its own outline. The client, PDF and sent email keep their existing headings and markup.
+The audit checks the loaded page, accessible heading order, and the New proposal dialog. It excludes author-controlled document content from the application heading-order rule; that content keeps its own outline. The labeled email preview is audited as a separate document and keeps the sent email’s native H1. The client, PDF and sent email keep their existing headings and markup.

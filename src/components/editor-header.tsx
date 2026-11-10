@@ -299,7 +299,11 @@ export function EditorHeader({
           {backLabel}
         </a>
         <span className="editor-header-divider" aria-hidden="true" />
-        <h1 className="editor-header-title editor-page-heading" title={title}>
+        <h1
+          className="editor-header-title editor-page-heading"
+          title={title}
+          aria-label={title}
+        >
           {title}
         </h1>
         <div

@@ -194,6 +194,7 @@ test("template cards show inset preview sheets with resolved titles at every wid
       ...templates[index],
       name: entry.name,
       starter_key: entry.starter_key,
+      starter_edited: entry.starter_key ? true : undefined,
       starter_order: index,
       active: index !== 2,
       default_quote: [],
@@ -285,8 +286,9 @@ test("template cards show inset preview sheets with resolved titles at every wid
     expect(widths[1]).toBeGreaterThan(widths[2]);
   }
   await expect(
-    cards.first().getByText("Starter", { exact: true }),
-  ).toBeVisible();
+    cards.first().locator('[data-starter-status="edited"]'),
+  ).toContainText("Edited");
+  await expect(cards.getByText("Starter", { exact: true })).toHaveCount(0);
   await expect(
     cards.last().getByText("Hidden from new proposals"),
   ).toBeVisible();

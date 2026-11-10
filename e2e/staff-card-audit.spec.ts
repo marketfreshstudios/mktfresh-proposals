@@ -681,22 +681,32 @@ test("staff pages and account states have one title and a sequential heading out
 
   const outlines: Record<string, string[]> = {};
   async function check(label: string) {
-    await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+    await expect(
+      page
+        .getByRole("heading", { level: 1 })
+        .and(page.locator(":not(.email-real-renderer *)"))
+        .first(),
+    ).toBeVisible();
     await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(
       0,
     );
     await expect
-      .soft(page.locator("h1"), label)
+      .soft(page.locator("h1:not(.email-rendered *)"), label)
       .toHaveCount(1, { timeout: 1500 });
     await expect
-      .soft(page.getByRole("heading", { level: 1 }), label)
+      .soft(
+        page
+          .getByRole("heading", { level: 1 })
+          .and(page.locator(":not(.email-real-renderer *)")),
+        label,
+      )
       .toHaveCount(1, { timeout: 1500 });
     await expect
       .soft(page.getByRole("heading").first(), label)
       .toHaveJSProperty("tagName", "H1");
     const audit = await new AxeBuilder({ page })
       // The proposal being authored has its own headings chosen by its author.
-      .exclude(".editor-paper, .studio-blocks")
+      .exclude(".editor-paper, .studio-blocks, .email-real-renderer")
       .withRules(["heading-order"])
       .analyze();
     expect
@@ -724,8 +734,11 @@ test("staff pages and account states have one title and a sequential heading out
   }
   for (const url of routes) {
     await page.goto(url);
-    if (url === `/studio/emails/${f.emails[0].key}`)
-      await expect(page.locator(".email-rendered .email-title")).toBeVisible();
+    if (url === `/studio/emails/${f.emails[0].key}`) {
+      const preview = page.getByRole("document", { name: "Email preview" });
+      await expect(preview.locator("h1.email-title")).toBeVisible();
+      await expect(preview.getByRole("heading", { level: 1 })).toHaveCount(1);
+    }
     await check(url);
   }
   await page.goto("/proposals");
@@ -841,6 +854,7 @@ test("Templates notes, Saved blocks heading and borderless ink editor headers", 
     if (name === "template-editor") {
       const title = page.getByRole("textbox", { name: "Template name" });
       await expect(title).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+      await expect(title).toHaveAttribute("title", starter.name);
       await expect(title).toHaveCSS("padding-left", "11px");
       await expect(title).toHaveCSS("padding-right", "11px");
       await expect(
