@@ -293,7 +293,7 @@ it("editing sent proposals preserves access, manual lost closes signing, resend 
   expect(lost.marked_lost_by).toBe(staff.actor);
   expect(lost.events.at(-1)?.metadata.reason).toBe("Paused");
 });
-it("duplicate emails are offered safely and client deletion is staff-only, reference guarded and audited", async () => {
+it("duplicate emails are offered safely and client deletion is Super admin-only, reference guarded and audited", async () => {
   const { repo, draft } = await setup();
   const c = {
     ...draft.client,
@@ -306,11 +306,11 @@ it("duplicate emails are offered safely and client deletion is staff-only, refer
     saveClient(repo, { ...c, id: randomUUID(), email: "NEW@example.test" }),
   ).rejects.toBeInstanceOf(DuplicateClient);
   await expect(repo.deleteClient(draft.client.id, staff)).rejects.toThrow(
-    "Has 1 proposal — archive the proposal",
+    "Archive this client’s unsent drafts before deleting it.",
   );
   await expect(
     repo.deleteClient(c.id, { ...staff, actor: "ai:test" }),
-  ).rejects.toThrow("Staff authorization");
+  ).rejects.toThrow("Only super admins");
   await repo.deleteClient(c.id, staff);
   expect((await repo.entities("clients")).some((v: any) => v.id === c.id)).toBe(
     false,
@@ -346,6 +346,7 @@ it("Postgres client deletion and audit are atomic, reference guarded across impo
     const audit = {
       id: randomUUID(),
       actor: staff.actor,
+      staff_role: "owner",
       type: "client_deleted",
       created_at: new Date().toISOString(),
     };
@@ -355,7 +356,7 @@ it("Postgres client deletion and audit are atomic, reference guarded across impo
         draft.client.id,
         JSON.stringify(audit),
       ]),
-    ).rejects.toThrow("Has 1 proposals");
+    ).rejects.toThrow("Archive the client instead");
     await expect(
       db.query("select delete_unused_client($1,$2,$3)", [
         "00000000-0000-4000-8000-000000000002",
@@ -369,7 +370,7 @@ it("Postgres client deletion and audit are atomic, reference guarded across impo
         unused.id,
         JSON.stringify({ ...audit, actor: "ai:test" }),
       ]),
-    ).rejects.toThrow("Staff deletion audit required");
+    ).rejects.toThrow("Only super admins");
     expect(
       (await db.query("select id from clients where id=$1", [unused.id])).rows,
     ).toHaveLength(1);
@@ -755,4 +756,153 @@ it("lists open published links expiring within seven workspace calendar days acr
       timezone,
     ),
   ).toBe(false);
+});
+
+it("archives and restores a protected client without touching their proposal or provider links", async () => {
+  const { repo, service, draft } = await setup();
+  const client = await saveClient(repo, {
+    ...draft.client,
+    stripe_customer_id: "cus_test_client",
+    qbo_customer_id: "qbo_test_client",
+  });
+  const sent = await service.send(draft.id, staff);
+  const archived = await proposalAction(
+    repo,
+    sent.id,
+    sent.revision,
+    "archive",
+    staff,
+  );
+  await expect(repo.deleteClient(client.id, staff)).rejects.toThrow(
+    "proposal history",
+  );
+  await expect(
+    repo.deleteClient(client.id, { ...staff, staff_role: "member" }),
+  ).rejects.toThrow("Only super admins");
+  const afterArchive = await repo.archiveClient(client.id, true, staff);
+  expect(afterArchive.archived_at).toBeTruthy();
+  expect(afterArchive).toMatchObject({
+    stripe_customer_id: client.stripe_customer_id,
+    qbo_customer_id: client.qbo_customer_id,
+  });
+  await expect(
+    service.create(
+      {
+        client_id: client.id,
+        template_id: draft.template_id!,
+        title: "Another proposal",
+      },
+      staff,
+    ),
+  ).rejects.toThrow("Restore this client");
+  await expect(
+    repo.archiveClient(client.id, false, staff),
+  ).resolves.toMatchObject({ archived_at: null });
+  expect(await repo.get(draft.id)).toEqual(archived);
+  expect(
+    (await repo.entities<any>("workspace_events"))
+      .slice(-2)
+      .map(({ type }) => type),
+  ).toEqual(["client_archived", "client_restored"]);
+});
+
+it("Postgres deletes only never-sent archived drafts and retains their original immutable evidence", async () => {
+  const db = await postgresFixture();
+  const { draft, repo } = await setup();
+  const member = { ...staff, staff_role: "member" as const };
+  const audit = (type: string, actor = staff) =>
+    JSON.stringify({
+      ...actor,
+      id: randomUUID(),
+      type,
+      created_at: new Date().toISOString(),
+    });
+  const args = [repo.workspaceId, draft.client.id];
+  const events = () =>
+    db.query("select * from events where proposal_id=$1 order by id", [
+      draft.id,
+    ]);
+  try {
+    await db.exec("set role service_role");
+    await db.query(
+      "insert into clients(id,workspace_id,data) values($1,$2,$3)",
+      [draft.client.id, repo.workspaceId, JSON.stringify(draft.client)],
+    );
+    await db.query("select save_proposal($1::jsonb,-1)", [
+      JSON.stringify(draft),
+    ]);
+    await expect(
+      db.query("select delete_unused_client($1,$2,$3)", [
+        ...args,
+        audit("client_deleted"),
+      ]),
+    ).rejects.toThrow("Archive this client");
+    await db.query("select set_client_archived($1,$2,true,$3)", [
+      ...args,
+      audit("client_archived"),
+    ]);
+    expect(
+      (
+        await db.query("select archived_at from clients where id=$1", [
+          draft.client.id,
+        ])
+      ).rows[0],
+    ).toMatchObject({ archived_at: expect.any(Date) });
+    await db.query("select set_client_archived($1,$2,false,$3)", [
+      ...args,
+      audit("client_restored"),
+    ]);
+    const archivedAt = new Date().toISOString();
+    await db.query("select save_proposal($1::jsonb,0)", [
+      JSON.stringify({ ...draft, archived_at: archivedAt, revision: 1 }),
+    ]);
+    const evidence = (await events()).rows;
+    expect(evidence.length).toBeGreaterThan(0);
+    await expect(
+      db.query("select delete_unused_client($1,$2,$3)", [
+        ...args,
+        audit("client_deleted", member),
+      ]),
+    ).rejects.toThrow("Only super admins");
+    await db.query("select delete_unused_client($1,$2,$3)", [
+      ...args,
+      audit("client_deleted"),
+    ]);
+    expect(
+      (await db.query("select id from proposals where id=$1", [draft.id])).rows,
+    ).toEqual([]);
+    expect(
+      (await db.query("select id from clients where id=$1", [draft.client.id]))
+        .rows,
+    ).toEqual([]);
+    expect((await events()).rows).toEqual(evidence);
+    await db.exec("reset role");
+    await expect(
+      db.query("delete from events where proposal_id=$1", [draft.id]),
+    ).rejects.toThrow("Append-only record");
+    expect(
+      (
+        await db.query(
+          "select data from workspace_events where data->>'type'='client_deleted'",
+        )
+      ).rows,
+    ).toMatchObject([
+      { data: { metadata: { deleted_draft_ids: [draft.id] } } },
+    ]);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`set role ${role}`);
+      await expect(
+        db.query("select id from proposal_evidence_ids"),
+      ).rejects.toThrow("permission denied");
+      await expect(
+        db.query("select set_client_archived($1,$2,true,$3)", [
+          ...args,
+          audit("client_archived"),
+        ]),
+      ).rejects.toThrow("permission denied");
+      await db.exec("reset role");
+    }
+  } finally {
+    await db.close();
+  }
 });
