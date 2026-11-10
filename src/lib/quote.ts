@@ -8,7 +8,7 @@ import {
   oiotPurchasePriceField,
   oiotPurchasePriceRequired,
 } from "./oiot";
-import { businessStateError } from "./business-state";
+import { businessState, businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
 import { BillingLineSchema, type Item, type Proposal } from "./model";
 import { quoteSublines, cloneQuote, validateItems } from "./quote-model";
@@ -28,7 +28,12 @@ export function readiness(
     defaultItem?: string | null;
   },
 ) {
-  const errors: string[] = authoringErrors(p),
+  const errors: string[] = [
+      ...(p.status === "draft" && !businessState(p.workspace_settings)
+        ? [businessStateError]
+        : []),
+      ...authoringErrors(p),
+    ],
     warnings: string[] = [];
   if (p.archived_at) errors.push("Unarchive this proposal before sending");
   if (p.valid_until && Date.parse(p.valid_until) <= now.getTime())
@@ -199,10 +204,15 @@ export function readiness(
       if (!errors.includes(oiotPurchasePriceRequired))
         errors.push(oiotPurchasePriceRequired);
     } else if (
-      message !== "Unresolved variable: workspace.state" ||
-      !errors.includes(businessStateError)
-    )
+      ![
+        "Unresolved variable: workspace.state",
+        "Unresolved variable: business.state",
+      ].includes(message)
+    ) {
       errors.push(message);
+    } else if (!errors.includes(businessStateError)) {
+      errors.push(businessStateError);
+    }
   }
   return { ready: !errors.length, errors, warnings };
 }

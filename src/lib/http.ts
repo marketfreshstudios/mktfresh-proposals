@@ -1,3 +1,5 @@
+import { normalizedPhone } from "./client-contact";
+import { businessDetailsSnapshot } from "./business-details";
 import { waitingForInvoiceCountersignature } from "./proposal-state";
 import {
   processStaffPasswordReset,
@@ -1682,15 +1684,23 @@ async function handleRoute(
               "Only a super admin can change the brand palette",
               403,
             );
-          if (
-            JSON.stringify(entity.business_state ?? null) !==
-            JSON.stringify(previous?.business_state ?? null)
-          )
+          if (user.staff_role !== "owner") {
+            const baseline =
+              previous ?? (await workspaceDefaults(rt.repo, user));
             check(
-              user.staff_role === "owner",
-              "Only a super admin can change Business state",
+              JSON.stringify(businessDetailsSnapshot(entity)) ===
+                JSON.stringify(businessDetailsSnapshot(baseline)),
+              "Only a super admin can change Business details",
               403,
             );
+          }
+          if (entity.phone !== (previous?.phone ?? "")) {
+            try {
+              entity.phone = normalizedPhone(entity.phone);
+            } catch (e) {
+              throw new AppError(400, (e as Error).message);
+            }
+          }
           if (
             JSON.stringify(entity.logo_icon ?? null) !==
             JSON.stringify(previous?.logo_icon ?? null)

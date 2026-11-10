@@ -1,3 +1,4 @@
+import { formattedBusinessAddress } from "./business-details";
 import { z } from "zod";
 import { emailIdentity, staffFromAddress } from "./email-identity";
 import { check, type Actor, type Proposal } from "./model";
@@ -189,7 +190,11 @@ export class ReassignmentService {
           workspace: settings.company_name,
           sender: name,
           accent: settings.accent_colour,
-          contact: [settings.email, settings.phone, settings.address]
+          contact: [
+            settings.email,
+            settings.phone,
+            formattedBusinessAddress(settings),
+          ]
             .filter(Boolean)
             .join(" · "),
           bodyHtml: `<p>${escape(text)}</p>`,

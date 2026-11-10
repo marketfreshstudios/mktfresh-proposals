@@ -1,4 +1,5 @@
 "use client";
+import { workspaceBusinessName } from "../lib/business-details";
 import { StaffSectionHeading } from "./staff-section-heading";
 import {
   StaffTable,
@@ -59,7 +60,7 @@ function TemplateThumbnail({
     template.name;
   const samples = {
     "client.company": "Client",
-    "workspace.name": settings?.company_name ?? "Workspace",
+    "workspace.name": workspaceBusinessName(settings) || "Workspace",
     "company.name": settings?.company_name ?? "Workspace",
   };
   const previewTitle = resolvedEditorText(title, {

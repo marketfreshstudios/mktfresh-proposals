@@ -29,6 +29,18 @@ export const WorkspaceSettingsSchema = z.object({
   money: z.object({ cents: z.enum(["auto", "always"]) }).optional(),
   show_powered_by: z.boolean().default(true),
   business_state: BusinessStateSchema.optional(),
+  business_name: z.string().trim().max(200).optional(),
+  business_address: z
+    .object({
+      street: z.string().trim().max(2000),
+      line2: z.string().trim().max(200),
+      city: z.string().trim().max(200),
+      zip: z.string().trim().max(40),
+    })
+    .optional(),
+  business_website: z
+    .union([z.url({ protocol: /^https?$/ }).max(500), z.literal("")])
+    .optional(),
   company_name: z.string().min(1).max(200),
   owner: z.string().max(200),
   company_signatory: CompanySignatorySchema.nullable().optional(),

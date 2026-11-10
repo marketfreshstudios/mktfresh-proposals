@@ -1,3 +1,4 @@
+import { businessState, businessStateError } from "./business-state";
 import {
   reminderCycle,
   publishedExpiry,
@@ -61,9 +62,12 @@ export async function proposalAction(
       await repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    check(businessState(settings), businessStateError);
     const candidate = structuredClone(original);
     candidate.valid_until = defaultValidUntil(settings, now);
     if (candidate.workspace_settings) {
+      if (!businessState(candidate.workspace_settings))
+        candidate.workspace_settings.business_state = settings.business_state;
       candidate.workspace_settings.reminder_days = [...settings.reminder_days];
       candidate.workspace_settings.reminder_rules = settings.reminder_rules;
       candidate.workspace_settings.countersign_reminder =

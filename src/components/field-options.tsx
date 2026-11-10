@@ -1,6 +1,7 @@
 "use client";
 import { ToolbarPopover } from "./toolbar-popover";
 import {
+  Fragment,
   useRef,
   useState,
   useEffect,
@@ -13,6 +14,7 @@ import { useBlockToolbar } from "./block-controls";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { useEditorHistory, textHistoryScope } from "./editor-history";
 import { Button } from "./ui";
+import { businessStateUrl } from "../lib/business-state";
 export function FieldOptions({
   map,
   onInsert,
@@ -27,10 +29,12 @@ export function FieldOptions({
   variant?: "panel" | "menu";
 }) {
   const [query, setQuery] = useState("");
-  const keys = Object.keys(map).filter((path) =>
-    `${labels?.[path] ?? fieldLabel(path)} ${path}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
+  const keys = Object.keys(map).filter(
+    (path) =>
+      !(path === "workspace.state" && "business.state" in map) &&
+      `${labels?.[path] ?? fieldLabel(path)} ${path} ${path === "business.state" ? "workspace.state" : ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
   );
   return (
     <div className={`field-options field-options-${variant}`}>
@@ -71,32 +75,39 @@ export function FieldOptions({
           <section key={group} className="field-option-group">
             <h3>{group}</h3>
             {items.map((path) => (
-              <button
-                type="button"
-                className="field-option"
-                data-field-insert
-                key={path}
-                onClick={() => onInsert(path)}
-                aria-label={
-                  labels ? undefined : `${fieldLabel(path)} — {{${path}}}`
-                }
-              >
-                <span className="field-option-label">
-                  {labels?.[path] ??
-                    (variant === "panel"
-                      ? fieldLabel(path)
-                          .replace(/^(Client|Proposal) /, "")
-                          .replace(/^./, (c) => c.toUpperCase())
-                      : fieldLabel(path))}
-                </span>
-                <code title={`{{${path}}}`}>{`{{${path}}}`}</code>
-                <span
-                  className="field-option-value"
-                  title={map[path] || "Empty"}
+              <Fragment key={path}>
+                <button
+                  type="button"
+                  className="field-option"
+                  data-field-insert
+                  key={path}
+                  onClick={() => onInsert(path)}
+                  aria-label={
+                    labels ? undefined : `${fieldLabel(path)} — {{${path}}}`
+                  }
                 >
-                  {map[path] && map[path] !== `{{${path}}}` ? map[path] : "—"}
-                </span>
-              </button>
+                  <span className="field-option-label">
+                    {labels?.[path] ??
+                      (variant === "panel"
+                        ? fieldLabel(path)
+                            .replace(/^(Client|Proposal) /, "")
+                            .replace(/^./, (c) => c.toUpperCase())
+                        : fieldLabel(path))}
+                  </span>
+                  <code title={`{{${path}}}`}>{`{{${path}}}`}</code>
+                  <span
+                    className="field-option-value"
+                    title={map[path] || "Empty"}
+                  >
+                    {map[path] && map[path] !== `{{${path}}}` ? map[path] : "—"}
+                  </span>
+                </button>
+                {variant === "panel" && path === "business.state" && (
+                  <a className="business-field-link" href={businessStateUrl}>
+                    Edit business state in Workspace
+                  </a>
+                )}
+              </Fragment>
             ))}
           </section>
         ) : null;

@@ -16,6 +16,7 @@ export const fieldLabels: Record<string, string> = {
   "sender.email": "Sender email",
   "workspace.name": "Workspace name",
   "workspace.state": "Business state",
+  "business.state": "Business state",
   "company.name": "Company name",
   "company.owner": "Company owner",
   "company.email": "Company email",

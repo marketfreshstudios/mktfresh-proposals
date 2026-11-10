@@ -11,6 +11,7 @@ import { columnGridStyle, columnRejection, columnsSchema } from "./columns";
 import { documentSpacing } from "./document-spacing";
 import { resolveStyles, type ResolvedStyles } from "./proposal-styles";
 import { businessState } from "./business-state";
+import { workspaceBusinessName } from "./business-details";
 import { hasInlineFontSize, inlineSizeHtml } from "./inline-font-size";
 import { formattedAddress } from "./client-contact";
 import { readableDate } from "./validity";
@@ -95,8 +96,9 @@ export function variables(p: Proposal, quote = p.quote) {
     "client.full_name": [p.client.first_name, p.client.last_name]
       .filter(Boolean)
       .join(" "),
-    "workspace.name": p.workspace_settings?.company_name ?? "",
+    "workspace.name": workspaceBusinessName(p.workspace_settings),
     "workspace.state": businessState(p.workspace_settings),
+    "business.state": businessState(p.workspace_settings),
     "sender.name": p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
   });
   for (const raw of quoteSublines(quote)) {

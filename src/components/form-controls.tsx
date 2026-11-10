@@ -4,14 +4,14 @@ import {
   useRef,
   useState,
   type InputHTMLAttributes,
-  type SelectHTMLAttributes,
+  type ComponentPropsWithRef,
 } from "react";
 
 /** Native selection behavior with the same field contract in every surface. */
 export function Select({
   className = "",
   ...props
-}: SelectHTMLAttributes<HTMLSelectElement>) {
+}: ComponentPropsWithRef<"select">) {
   return <select {...props} className={`shared-select ${className}`} />;
 }
 

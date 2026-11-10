@@ -1,6 +1,5 @@
 import { documentBlocks } from "./columns";
 import type { Proposal, RichText } from "./model";
-import { businessState, businessStateError } from "./business-state";
 
 /** Authored text only: URLs, field chips and image metadata are not guidance. */
 function text(node?: RichText): string {
@@ -72,20 +71,7 @@ export function authoringErrors(p: Proposal): string[] {
           check(text(slot), kind === "header" ? "Header" : "Footer");
     }
   }
-  const authored = JSON.stringify({
-    title: p.title,
-    content: p.content,
-    cover: p.cover,
-    quote: p.quote,
-    header_footer: p.header_footer,
-  });
   return [
-    ...(!businessState(p.workspace_settings) &&
-    /(?:{{\s*workspace\.state\s*}}|"path"\s*:\s*"workspace\.state")/.test(
-      authored,
-    )
-      ? [businessStateError]
-      : []),
     ...(sections.size
       ? [`Replace bracketed guidance in: ${[...sections].join(", ")}`]
       : []),

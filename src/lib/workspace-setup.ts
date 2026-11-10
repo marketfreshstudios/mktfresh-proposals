@@ -1,5 +1,6 @@
 import type { StripeConnectionStatus } from "./stripe-connect-status";
 import type { QboConnectionStatus } from "./providers/qbo-connection";
+import { businessState, businessStateUrl } from "./business-state";
 import type { WorkspaceSettings } from "./workspace";
 import type { Item, Proposal } from "./model";
 export type ConnectionStatus = {
@@ -38,6 +39,14 @@ export function workspaceSetup(data: {
   const signatory = settings?.company_signatory;
   const manual = settings?.qbo_manual_invoice === true;
   const required = [
+    {
+      id: "business-details",
+      label: "Business details",
+      complete: !!businessState(settings),
+      detail: "Set the business state used in proposals and terms",
+      href: businessStateUrl,
+      action: "Set up",
+    },
     {
       id: "brand",
       label: "Brand and fonts",

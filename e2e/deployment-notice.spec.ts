@@ -162,7 +162,7 @@ test("Reload drains a pending workspace save, waits for it and preserves changes
     }
     return route.fulfill({ json: [f.settings] });
   });
-  await page.goto("/studio/workspace?view=brand");
+  await page.goto("/studio/workspace?view=business-details");
   f.update();
   await focus(page);
   await expect(notice(page)).toBeVisible();
@@ -170,7 +170,7 @@ test("Reload drains a pending workspace save, waits for it and preserves changes
     allow = r;
   });
   await page
-    .getByLabel("Workspace name", { exact: true })
+    .getByLabel("Legal business name", { exact: true })
     .fill("Updated workspace");
   await notice(page)
     .getByRole("button", { name: "Reload", exact: true })
@@ -179,17 +179,17 @@ test("Reload drains a pending workspace save, waits for it and preserves changes
   await expect(
     notice(page).getByRole("button", { name: "Saving…" }),
   ).toBeVisible();
-  expect(f.settings.company_name).not.toBe("Updated workspace");
+  expect(f.settings.business_name).not.toBe("Updated workspace");
   const reloaded = page.waitForEvent("load");
   allow();
   await reloaded;
-  await expect(page.getByLabel("Workspace name", { exact: true })).toHaveValue(
-    "Updated workspace",
-  );
+  await expect(
+    page.getByLabel("Legal business name", { exact: true }),
+  ).toHaveValue("Updated workspace");
   fail = true;
   entered = false;
   await page
-    .getByLabel("Workspace name", { exact: true })
+    .getByLabel("Legal business name", { exact: true })
     .fill("Kept after error");
   await notice(page)
     .getByRole("button", { name: "Reload", exact: true })
@@ -200,9 +200,9 @@ test("Reload drains a pending workspace save, waits for it and preserves changes
   await expect(
     notice(page).getByRole("button", { name: "Reload", exact: true }),
   ).toBeDisabled();
-  await expect(page.getByLabel("Workspace name", { exact: true })).toHaveValue(
-    "Kept after error",
-  );
+  await expect(
+    page.getByLabel("Legal business name", { exact: true }),
+  ).toHaveValue("Kept after error");
 });
 test("Reload saves a pending template and explicit saved block through the serialized saver", async ({
   page,

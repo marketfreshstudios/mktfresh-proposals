@@ -106,7 +106,12 @@ it("AI creates a review-required draft; explicit section review unlocks send and
   expect(created.brief).toBe("Discovery notes");
   expect(
     await aiTool(repo, ai, "check_ready", { id: created.id }, scopes),
-  ).toEqual(readiness(created, await repo.entities<Item>("pricing_items")));
+  ).toEqual(
+    readiness(
+      await service.forRead(created),
+      await repo.entities<Item>("pricing_items"),
+    ),
+  );
   await expect(service.send(created.id, staff)).rejects.toThrow(
     "Confirm review",
   );

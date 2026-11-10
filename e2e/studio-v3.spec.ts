@@ -421,13 +421,13 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
     page.getByRole("heading", { name: "Stripe", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/studio\/connections\/stripe$/);
-  await page.goto("/studio/workspace?view=brand");
+  await page.goto("/studio/workspace?view=business-details");
   const name = page.getByRole("textbox", {
-    name: "Workspace name",
+    name: "Legal business name",
     exact: true,
   });
   await name.fill("Revised workspace");
-  await expect.poll(() => f.settings.company_name).toBe("Revised workspace");
+  await expect.poll(() => f.settings.business_name).toBe("Revised workspace");
   await expect(
     page.locator(".workspace-section-card [role=status]"),
   ).toHaveText("Saved");
@@ -440,7 +440,7 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
   f.fail(false);
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect
-    .poll(() => f.settings.company_name)
+    .poll(() => f.settings.business_name)
     .toBe("Keep this local value");
   await page
     .getByRole("button", { name: "Billing defaults", exact: true })
@@ -505,7 +505,7 @@ test("Studio v3 Staff permissions and Team actions retain the existing endpoints
     ).toBeVisible();
   await page.keyboard.press("Escape");
   f.member(true);
-  await page.goto("/studio/workspace?view=brand");
+  await page.goto("/studio/workspace?view=client-links");
   await expect(
     page.getByRole("switch", { name: /Show.*Powered by Yeswell/ }),
   ).toBeDisabled();
@@ -732,13 +732,13 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   expect(phoneTitle.y + phoneTitle.height).toBeLessThan(phoneCard.y);
   expect(phoneTitle.x).toBeCloseTo(phoneCard.x, 0);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/studio/workspace?view=brand");
+  await page.goto("/studio/workspace?view=client-links");
   await expect(
     page.locator(".workspace-section-card > header [role=status]"),
   ).toHaveCount(0);
   const toggle = page.getByRole("switch", { name: /Show.*Powered by/ });
   const control = await toggle.boundingBox(),
-    label = await page.locator(".workspace-switch>span").boundingBox();
+    label = await toggle.locator("+ span").boundingBox();
   expect(control!.x).toBeGreaterThan(label!.x + label!.width);
   await page.getByRole("button", { name: "Team", exact: true }).click();
   const description = await page.locator(".team-heading>p").boundingBox(),
@@ -902,17 +902,21 @@ test("all existing Workspace sections and settings stay reachable after the rest
     workspaceSections.map(([, label]) => label),
   );
   const settings: Record<(typeof workspaceSections)[number][0], RegExp[]> = {
+    "business-details": [
+      /Legal business name/,
+      /Street address/,
+      /Address line 2/,
+      /City/,
+      /State \(required\)/,
+      /ZIP/,
+      /Business phone/,
+      /Website/,
+    ],
     brand: [
-      /Workspace name/,
       /Logo · used/,
       /Logo icon · square/,
       /Brand colors/,
-      /Powered by Yeswell/,
-      /Owner contact name/,
-      /Contact email/,
-      /Phone/,
-      /Address/,
-      /Business state/,
+      /Manage proposal fonts/,
     ],
     fonts: [
       /Headings/,
@@ -950,10 +954,13 @@ test("all existing Workspace sections and settings stay reachable after the rest
     "client-links": [
       /Default link validity/,
       /Workspace timezone/,
+      /Powered by Yeswell/,
       /Password by default/,
     ],
     "email-sending": [
       /Verified sending domain/,
+      /Owner contact name/,
+      /Contact email/,
       /Reply-to/,
       /First client view · in-app note/,
       /First client view · staff email/,
@@ -969,10 +976,7 @@ test("all existing Workspace sections and settings stay reachable after the rest
   for (const [key, label] of workspaceSections) {
     await nav.getByRole("button", { name: label, exact: true }).click();
     const section = page.getByRole("region", { name: label, exact: true });
-    for (const disclosure of [
-      "Workspace contact details",
-      "More billing settings",
-    ]) {
+    for (const disclosure of ["More billing settings"]) {
       const trigger = section.getByText(disclosure, { exact: true });
       if (await trigger.isVisible()) await trigger.click();
     }

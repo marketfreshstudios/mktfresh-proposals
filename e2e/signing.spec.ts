@@ -33,6 +33,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
       "workspace_settings",
       {
         company_name: "Example Studio",
+        business_state: { name: "North Carolina", other: "" },
         company_signatory: testSignatory,
         owner: "Alex",
         email: "owner@example.test",

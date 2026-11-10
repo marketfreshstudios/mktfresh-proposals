@@ -18,6 +18,7 @@ async function fixture(
   f.settings.owner = "Alex Morgan";
   if (withState)
     f.settings.business_state = { name: "North Carolina", other: "" };
+  else delete f.settings.business_state;
   f.settings.logo = `${f.repo.workspaceId}/logo.png`;
   await f.repo.put("workspace_settings", f.settings);
   await page.route("**/api/workspace-logo**", (route) =>
@@ -118,9 +119,11 @@ test("Business state autosaves, is available as a field, and readiness links to 
 }) => {
   test.setTimeout(30000);
   const f = await fixture(page);
-  await page.goto("/studio/workspace?view=brand#workspace-business-state");
+  await page.goto(
+    "/studio/workspace?view=business-details#workspace-business-state",
+  );
   await page
-    .getByRole("combobox", { name: "Business state", exact: true })
+    .getByRole("combobox", { name: "State (required)", exact: true })
     .selectOption("North Carolina");
   await expect
     .poll(() => f.getSettings().business_state?.name)
@@ -166,12 +169,21 @@ test("Business state autosaves, is available as a field, and readiness links to 
       .locator(".field-option-label")
       .getByText("Business state", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Send", exact: true }).click();
   await expect(
-    page.getByText("Add business state", { exact: true }),
+    page.getByRole("button", { name: "Business state — {{business.state}}" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Edit business state in Workspace" }),
   ).toHaveAttribute(
     "href",
-    "/studio/workspace?view=brand#workspace-business-state",
+    "/studio/workspace?view=business-details#workspace-business-state",
+  );
+  await page.getByRole("tab", { name: "Send", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Add your business state", exact: true }),
+  ).toHaveAttribute(
+    "href",
+    "/studio/workspace?view=business-details#workspace-business-state",
   );
   await expect(
     page.getByText(/Replace bracketed guidance in: Overview/),

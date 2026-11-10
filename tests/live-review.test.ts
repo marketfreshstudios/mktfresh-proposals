@@ -86,6 +86,7 @@ it("Home derives setup from workspace settings, provider status, and team activi
       logo: null,
       sending_domain: "",
       company_signatory: null,
+      business_state: undefined,
     },
     staff: members,
     connections: { stripe: false, qbo: false, email: false, mock: false },
@@ -93,7 +94,8 @@ it("Home derives setup from workspace settings, provider status, and team activi
     proposals: [],
   };
   const incomplete = workspaceSetup(base);
-  expect(incomplete.required).toHaveLength(5);
+  expect(incomplete.required).toHaveLength(6);
+  expect(incomplete.required[0].id).toBe("business-details");
   expect(incomplete.required.every((row) => !row.complete)).toBe(true);
   expect(incomplete.optional).toHaveLength(3);
   expect(incomplete.complete).toBe(false);

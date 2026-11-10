@@ -595,3 +595,21 @@
 .staff-auth-contact a {
   overflow-wrap: anywhere;
 }
+
+.account-content-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.account-business-card > a {
+  display: inline-block;
+  margin-top: 10px;
+}
+@media (max-width: 699px) {
+  .account-phone-index .account-content-stack {
+    display: none;
+  }
+  .staff-account-page .account-business-card > h2 {
+    display: block;
+  }
+}
