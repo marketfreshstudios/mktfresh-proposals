@@ -520,9 +520,6 @@
 .column-more-options summary::-webkit-details-marker {
   display: none;
 }
-.style-paste-toast {
-  gap: 12px;
-}
 .tools-sheet[data-style-sheet] .editor-tools-header h2:focus {
   outline: none;
 }

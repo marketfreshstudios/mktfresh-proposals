@@ -154,7 +154,7 @@ export function useStarterActions(
           </Sheet>
         )}
         {undo && (
-          <ToastSurface>
+          <ToastSurface onDismiss={() => setUndo(null)}>
             Starter reset ·{" "}
             <button
               onClick={() =>

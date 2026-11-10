@@ -426,7 +426,10 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                     <BandEditingProvider
                       renderNotices={(notices, undo) =>
                         notices.length ? (
-                          <ToastSurface className="band-notices">
+                          <ToastSurface
+                            className="band-notices"
+                            key={notices.map((notice) => notice.key).join(",")}
+                          >
                             {notices.map((notice) => (
                               <div key={notice.key} className="band-notice-row">
                                 <span>{notice.text} · </span>
@@ -448,7 +451,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                   {guidance &&
                     typeof document !== "undefined" &&
                     createPortal(
-                      <ToastSurface>
+                      <ToastSurface onDismiss={() => setGuidance(false)}>
                         Click into a paragraph first, then choose a field
                       </ToastSurface>,
                       document.body,
@@ -1295,16 +1298,11 @@ export function useBlockFeedback() {
                       </DialogActions>
                     </>
                   )}
-                  {toast?.error && (
-                    <div className="block-feedback-toast error" role="alert">
-                      {toast.message}
-                    </div>
-                  )}
                 </dialog>
               )}
-              {toast && !(candidate && toast.error) && (
+              {toast && (
                 <ToastSurface
-                  className={toast.error ? "error" : ""}
+                  onDismiss={() => setToast(null)}
                   role={toast.error ? "alert" : "status"}
                 >
                   {toast.message}

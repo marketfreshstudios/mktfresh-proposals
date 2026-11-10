@@ -843,7 +843,7 @@ function BandSettings({
         </div>
       )}
       {resetUndo !== null && (
-        <ToastSurface>
+        <ToastSurface onDismiss={() => setResetUndo(null)}>
           Shared header and footer reset ·{" "}
           <button
             onClick={() => {

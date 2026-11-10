@@ -2750,7 +2750,11 @@ function QuoteEditorContent({
           We’ll save them when you’re back online.
         </Banner>
       )}
-      {linkCopied && <ToastSurface>Client link copied</ToastSurface>}
+      {linkCopied && (
+        <ToastSurface onDismiss={() => setLinkCopied(false)}>
+          Client link copied
+        </ToastSurface>
+      )}
       {(p.unpublished_work || (locked && recovery)) && (
         <p className="editor-retained-work" role="status">
           Unpublished changes were not part of the signed version
