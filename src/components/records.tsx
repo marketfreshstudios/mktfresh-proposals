@@ -1,4 +1,5 @@
 "use client";
+import { ToastSurface } from "./toast-surface";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
 import { Empty } from "./ui";
@@ -364,17 +365,9 @@ export function ProposalMenu({
         more()
       )}
       {listRow && error && !open && (
-        <div className="phase4-toast" role="alert">
+        <ToastSurface role="alert" onDismiss={() => setError("")}>
           {error}
-          <button
-            type="button"
-            className="btn icon-only"
-            aria-label="Dismiss error"
-            onClick={() => setError("")}
-          >
-            <chromeIcons.close size={18} aria-hidden="true" />
-          </button>
-        </div>
+        </ToastSurface>
       )}
       {reassign && (
         <ReassignDialog
@@ -393,7 +386,7 @@ export function ProposalMenu({
         />
       )}
       {undo && (
-        <div className="phase4-toast" role="status">
+        <ToastSurface onDismiss={() => setUndo(null)}>
           Proposal archived.{" "}
           <button
             type="button"
@@ -402,15 +395,7 @@ export function ProposalMenu({
           >
             Undo
           </button>
-          <button
-            type="button"
-            className="btn ghost"
-            aria-label="Dismiss notification"
-            onClick={() => setUndo(null)}
-          >
-            ×
-          </button>
-        </div>
+        </ToastSurface>
       )}
       {open && (
         <Sheet
@@ -777,7 +762,7 @@ export function ProposalRows({
         )}
       </StaffTable>
       {undo && (
-        <div className="phase4-toast" role="status">
+        <ToastSurface onDismiss={() => setUndo(null)}>
           {undoError || "Proposal archived."}
           <button
             className="text-action"
@@ -796,14 +781,7 @@ export function ProposalRows({
           >
             Undo
           </button>
-          <button
-            className="btn ghost"
-            aria-label="Dismiss notification"
-            onClick={() => setUndo(null)}
-          >
-            ×
-          </button>
-        </div>
+        </ToastSurface>
       )}
     </>
   );
@@ -2081,9 +2059,9 @@ export function RecordV4({
         <h1 className="t-page-title">{p.title}</h1>
       </header>
       {already && (
-        <div role="status" className="notice-toast">
+        <ToastSurface inline onDismiss={() => setAlready("")}>
           {already}
-        </div>
+        </ToastSurface>
       )}
       {error && (
         <Banner tone="danger" title="Unable to complete action">

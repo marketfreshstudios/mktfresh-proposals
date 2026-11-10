@@ -24,6 +24,7 @@ export function ContactToast() {
   return notice ? (
     <ToastSurface
       className="contact-toast"
+      onDismiss={() => setNotice(null)}
       role={notice.error ? "alert" : "status"}
     >
       {notice.text}

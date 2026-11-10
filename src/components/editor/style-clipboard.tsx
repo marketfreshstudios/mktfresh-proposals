@@ -287,7 +287,7 @@ export function StyleClipboardProvider({
     >
       {children}
       {notice && (
-        <ToastSurface className="style-paste-toast">
+        <ToastSurface onDismiss={() => setNotice(undefined)}>
           <span>{notice.text}</span>
           {notice.undo && (
             <button

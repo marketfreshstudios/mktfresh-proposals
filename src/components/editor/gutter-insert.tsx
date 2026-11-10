@@ -96,7 +96,10 @@ export function AiReviewCheck({
         </button>
       )}
       {toast && (
-        <ToastSurface className="editor-review-toast">
+        <ToastSurface
+          className="editor-review-toast"
+          onDismiss={() => setToast(false)}
+        >
           Marked reviewed
           {onUndo && (
             <>

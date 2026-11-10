@@ -1101,6 +1101,10 @@ Owner decision, November 10: Harbor cool ink-tinted neutrals replace beige. The 
 - Selecting Own It Over Time reveals and scrolls to its clause heading after document layout is ready. The landing leaves room for editor and client chrome and honors reduced motion.
 - Contract clauses are fully expanded on the client page and in the staff client preview. Clients must be able to read every applicable term without expanding it. Conditional terms still follow the selected offer. The editor, PDF, and signed evidence retain their existing document behavior.
 
+### Shared notifications · owner, Nov 10
+
+- Record, editor, account, contact, and deployment toasts share one surface with a Harbor dark background, light text actions, and a Lucide dismiss control. The dismiss icon has a 32px circular target with a background on hover or keyboard focus only.
+- The deployment notice retains its position, reload safeguards, and snooze behavior. Dismiss uses the same snooze as Later. Persistent inline field errors and banners keep their existing patterns. No hosted SQL is needed.
 ## 2026-11-10 · Client records, archive and delete
 
 The client record puts the shared Proposals and Activity tables in the main

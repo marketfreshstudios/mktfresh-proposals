@@ -128,7 +128,10 @@ export function StaffAccountProvider({
     >
       {children}
       {toast && (
-        <ToastSurface role={toast.error ? "alert" : "status"}>
+        <ToastSurface
+          role={toast.error ? "alert" : "status"}
+          onDismiss={() => setToast(null)}
+        >
           <span>{toast.error ?? "Saved"}</span>
           {toast.undo && (
             <button
