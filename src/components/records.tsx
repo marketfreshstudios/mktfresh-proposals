@@ -2950,7 +2950,9 @@ export function ClientsV4({
       <section className="clients-v4 clients-directory-v4 stack">
         <header className="directory-heading">
           <h1 className="t-page-title">Clients</h1>
-          <Button onClick={() => setNewClient(true)}>New client</Button>
+          <Button className="action" onClick={() => setNewClient(true)}>
+            New client
+          </Button>
         </header>
         <div className="list-tools">
           <label className="search-field">
@@ -2987,16 +2989,11 @@ export function ClientsV4({
           <Empty
             title="No clients yet"
             action={
-              <div className="first-run-actions">
-                <Button className="action" onClick={() => setNewClient(true)}>
-                  New client
-                </Button>
-                {data.user.staff_role === "owner" && (
-                  <a className="btn" href="/studio/connections/imports">
-                    Import from Proposify
-                  </a>
-                )}
-              </div>
+              data.user.staff_role === "owner" ? (
+                <a className="btn" href="/studio/connections/imports">
+                  Import from Proposify
+                </a>
+              ) : undefined
             }
           >
             Clients appear here when you create a proposal for someone new or
