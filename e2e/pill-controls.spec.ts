@@ -79,7 +79,7 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
   await openQuoteRow(page, 0);
   await expect(
     page.getByRole("button", { name: "Review & send", exact: true }),
-  ).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  ).toHaveCSS("background-color", "rgb(180, 83, 42)"); // Owner 10 Nov: clay primary
   await expect(
     page.getByRole("button", { name: "Preview PDF", exact: true }),
   ).toHaveCSS("border-top-width", "1px");
