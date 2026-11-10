@@ -296,7 +296,7 @@ export function CatalogStudio({
         </p>
         {!beforeStripe && (
           <Button
-            className={item || custom ? undefined : "studio-primary"}
+            className="action"
             disabled={!data}
             onClick={() => setFamily(true)}
           >
@@ -910,7 +910,7 @@ function CatalogItem({
         <Button
           type="submit"
           variant="primary"
-          className="studio-primary"
+          className={i ? undefined : "action"}
           busy={save.busy}
         >
           Save item and terms

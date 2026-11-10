@@ -994,3 +994,7 @@ New workspaces get three editable Sample templates with no preset prices: Websit
 Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available. Each loading area has a named status. The Templates page keeps one New template action in the header, including when the list is empty.
 
 Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.
+
+### Primary create buttons (Nov 9, 2026)
+
+Clients uses one clay New client button in its header, including on an empty list. Products uses clay for New custom family whenever it is shown; Add one-time product and Save item and terms on an existing product are outline. The create-product dialog has its own clay submit. The first-run Products screen keeps Connect Stripe as its next action. Proposal fonts uses clay for Upload font with the existing PDF embedding license gate. Team uses clay for Invite. Home, Proposals, Templates and Saved blocks already give the page’s single creation action the clay treatment. Emails has no create action.
