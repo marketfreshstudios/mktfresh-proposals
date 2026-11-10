@@ -734,6 +734,7 @@ export async function connectorStudioTool(
       active: false,
       connector_created: true,
       signature_heading_defaulted: true,
+      style_overrides: { quote_neutrals: {} },
       content: contentAfterCover(
         connectorMarkdown(
           input.content,

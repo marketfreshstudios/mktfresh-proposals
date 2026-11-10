@@ -5,14 +5,18 @@ import {
   documentStyleCss,
   StyleOverridesSchema,
   marginPresets,
+  harborQuoteNeutrals,
 } from "../src/lib/proposal-styles";
 import { documentQuote } from "../src/lib/document-quote";
 import { setup, staff } from "./helpers";
 import { publicResult } from "../src/lib/service";
 import { versionHash } from "../src/lib/content";
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
-it("keeps the old resolved JSON and Cards HTML with Harbor-only CSS paint changes", () => {
-  const styles = resolveStyles();
+it("preserves the old frozen style map and Cards HTML while new default drafts use Harbor", () => {
+  const current = resolveStyles();
+  expect(current.layout?.quote_neutrals).toEqual(harborQuoteNeutrals);
+  const styles = structuredClone(current);
+  delete styles.layout!.quote_neutrals; // Older published and frozen versions omitted the palette.
   expect(styles.body.size).toBe(16);
   expect(styles.layout!.margins).toEqual({
     top: 0.75,

@@ -1101,6 +1101,23 @@ Owner decision, November 10: Harbor cool ink-tinted neutrals replace beige. The 
 - Selecting Own It Over Time reveals and scrolls to its clause heading after document layout is ready. The landing leaves room for editor and client chrome and honors reduced motion.
 - Contract clauses are fully expanded on the client page and in the staff client preview. Clients must be able to read every applicable term without expanding it. Conditional terms still follow the selected offer. The editor, PDF, and signed evidence retain their existing document behavior.
 
+## 2026-11-10 · Harbor quote neutrals
+
+The Harbor document defaults cover the choice group fill and frame, quote
+dividers, and the shaded table header and totals. Styles can override these at
+workspace, template, or proposal level. The client selection tint and marker
+continue to use the workspace accent. Only color changes; quote geometry and
+prices stay the same.
+
+The guarded migration compares the old resolved text and layout properties
+across the workspace, template, and proposal layers. It records the new palette
+default only on matching templates and native never-sent drafts. Existing
+custom styles keep their previous look unless an author chooses a quote
+palette. Stored versions without a palette retain their original CSS and
+sealed PDFs are left alone. Apply `20261110204400_harbor_quote_neutrals.sql`
+after deploying the app. The previous strict Styles schema rejects the new
+key. The new resolver already gives default-style editable documents the
+Harbor palette when the key is absent.
 ### Shared notifications · owner, Nov 10
 
 - Record, editor, account, contact, and deployment toasts share one surface with a Harbor dark background, light text actions, and a Lucide dismiss control. The dismiss icon has a 32px circular target with a background on hover or keyboard focus only.
