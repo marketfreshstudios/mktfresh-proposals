@@ -120,7 +120,7 @@
   background: var(--hero);
   color: var(--hero-ink);
 }
-.ink-clay .quote-panel .editor-choice-group > header h3 {
+.ink-clay .quote-panel .editor-choice-group > header :is(h3, h4) {
   color: var(--hero-ink);
   margin: 0;
 }
@@ -200,7 +200,7 @@
 .ink-clay .quote-panel > footer .muted {
   margin-bottom: 0;
 }
-.ink-clay .send-panel > h2 {
+.ink-clay .send-panel > :is(h2, h3) {
   margin: 0;
   order: -2;
 }
@@ -272,12 +272,7 @@
     .studio-product-detail h2,
     .studio-product-terms h3,
     .connection-title h3,
-    .studio-email-stage h2,
-    .saved-block-usage h2,
-    .saved-block-save-options h3,
-    .activity-day h2,
-    .studio-saved-preview h2,
-    .studio-section h2
+    .saved-block-save-options h3
   ) {
   font: 600 16px/22px var(--font-ui);
   letter-spacing: normal;
@@ -299,7 +294,6 @@
 .ink-clay .activity-row-v3 time {
   font-variant-numeric: tabular-nums;
 }
-.ink-clay .studio-section,
 .ink-clay .studio-product-terms,
 .ink-clay .saved-block-usage {
   border-inline: 0;

@@ -1,4 +1,5 @@
 "use client";
+import { StaffSectionHeading } from "./staff-section-heading";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { groupedEmails, emailWhen, studioDate } from "../lib/studio-v3";
 import {
@@ -126,7 +127,7 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
               key={`${group.name}-${n}`}
               aria-label={group.name}
             >
-              <h2>{group.name}</h2>
+              <StaffSectionHeading>{group.name}</StaffSectionHeading>
               <StaffTable className="studio-email-rows">
                 <StaffTableHead className="studio-email-head">
                   <span>Email</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelHeading } from "./panel-heading";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import {
@@ -713,13 +714,13 @@ export function SelectionStyles({
       ) : columns ? (
         <>
           <section className="columns-overview">
-            <h2>Columns</h2>
+            <PanelHeading>Columns</PanelHeading>
             <p>Layout for the whole group. Style each column below.</p>
             <LayoutControls value={columns} change={patch} />
           </section>
           <section className="column-style-list">
             <header>
-              <h3>Column styles</h3>
+              <PanelHeading nested>Column styles</PanelHeading>
               <Button
                 onClick={() =>
                   clipboard.pasteAll(
@@ -769,7 +770,7 @@ export function SelectionStyles({
         </>
       ) : (
         <>
-          <h2>{active.label} style</h2>
+          <PanelHeading>{active.label} style</PanelHeading>
           <div className="column-style-actions">
             <Button onClick={() => clipboard.copy(active.key)}>
               Copy style

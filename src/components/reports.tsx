@@ -1,5 +1,6 @@
 "use client";
 
+import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
 import { StaffNativeTable } from "./staff-table";
 import { ChevronDown } from "lucide-react";
@@ -378,7 +379,9 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
           {empty ? (
             <section className="report-empty">
               <p className="t-eyebrow">Nothing to report yet</p>
-              <h2>Reports fill in once you send proposals.</h2>
+              <h2 className="t-card-title">
+                Reports fill in once you send proposals.
+              </h2>
               <p>
                 After you send a proposal, you’ll see who viewed it, how long it
                 took to sign, and the one-time and monthly value signed.
@@ -403,9 +406,9 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
                 className="report-breakdowns"
                 aria-labelledby="report-breakdowns"
               >
-                <h2 className="t-section-title" id="report-breakdowns">
+                <StaffSectionHeading id="report-breakdowns">
                   Breakdowns
-                </h2>
+                </StaffSectionHeading>
                 <Breakdown
                   group="template"
                   rows={report.byTemplate}
@@ -548,7 +551,7 @@ function ValueSigned({ report, link }: { report: Report; link: Link }) {
   return (
     <section className="report-section" aria-labelledby="report-value">
       <div className="report-section-heading">
-        <h2 className="t-section-title" id="report-value">
+        <h2 className="t-card-title" id="report-value">
           Value signed
         </h2>
         <span>
@@ -635,7 +638,7 @@ function Pipeline({ report, link }: { report: Report; link: Link }) {
   return (
     <section className="report-section" aria-labelledby="report-pipeline">
       <div className="report-section-heading">
-        <h2 className="t-section-title" id="report-pipeline">
+        <h2 className="t-card-title" id="report-pipeline">
           Pipeline by stage
         </h2>
         <span>Where each proposal is now · click a stage to open it</span>
@@ -724,7 +727,7 @@ function Trend({
       aria-labelledby="report-trend"
     >
       <div className="report-section-heading">
-        <h2 className="t-section-title" id="report-trend">
+        <h2 className="t-card-title" id="report-trend">
           Sent vs signed by month
         </h2>
         <div className="report-trend-controls">
@@ -918,7 +921,7 @@ function Breakdown({
       aria-label={heading}
     >
       <div className="report-section-heading">
-        <h3 className="t-section-title">{heading}</h3>
+        <h3 className="t-card-title">{heading}</h3>
         <span className="report-sort-hint">Click a column to sort</span>
         <label className="report-sort-phone">
           Sort{" "}
@@ -1077,12 +1080,12 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
   const largest = Math.max(1, ...sections.map((s) => s.ms / s.proposals));
   return (
     <section className="report-section" aria-labelledby="report-engagement">
-      <h2 className="t-section-title" id="report-engagement">
+      <StaffSectionHeading id="report-engagement">
         Engagement
-      </h2>
+      </StaffSectionHeading>
       <div className="report-engagement">
         <section className="report-card" aria-labelledby="report-sections">
-          <h3 className="t-section-title" id="report-sections">
+          <h3 className="t-card-title" id="report-sections">
             Most-read sections
           </h3>
           <p className="t-ui-note">
@@ -1118,7 +1121,7 @@ function Engagement({ report, link }: { report: Report; link: Link }) {
           )}
         </section>
         <section className="report-card" aria-labelledby="report-questions">
-          <h3 className="t-section-title" id="report-questions">
+          <h3 className="t-card-title" id="report-questions">
             Client questions
           </h3>
           <dl className="report-questions">

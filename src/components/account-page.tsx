@@ -133,7 +133,7 @@ export function AccountPage({
           </div>
         )}
         <section className="card account-content" aria-label={label}>
-          <h2>{label}</h2>
+          <h2 className="t-card-title">{label}</h2>
           {!data ? (
             <Skeleton label="Loading your account…" />
           ) : !account ? (

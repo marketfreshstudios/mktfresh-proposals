@@ -1313,7 +1313,7 @@ select:hover:not(:disabled),
   padding: 10px;
   background: var(--choice-ground);
 }
-.editor-choice-group h3 {
+.editor-choice-group :is(h3, h4) {
   font: 600 12px var(--font-ui);
   margin: 0 0 4px;
 }

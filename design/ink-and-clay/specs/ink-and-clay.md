@@ -20,7 +20,7 @@ Visual references:
 
 ## 2. Type
 
-- Page titles, card titles, section titles and big numbers use `--font-title` (DM Serif Display, weight 400). Everything else uses Instrument Sans.
+- Page titles, the hero number, and staff section headings on the page background use `--font-title` (DM Serif Display, weight 400). Use the Home 2b1 section style on every staff page. Card titles and subsections use Instrument Sans, 16px/600; numbers other than the hero use tabular Instrument Sans. Heading levels follow the nesting rules in the design README.
 - Sizes are in the `.t-*` classes. The phone sizes in the comments apply below 700px.
 - Money and counts in tables use `tabular-nums`.
 

@@ -402,11 +402,6 @@
 .studio-saved-preview {
   margin-top: 32px;
 }
-.studio-saved-preview > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .studio-filter-chips {
   display: flex;
   gap: 8px;
@@ -551,13 +546,6 @@
 }
 .studio-email-stage {
   margin-top: 28px;
-}
-.studio-email-stage h2 {
-  font: 600 12px/18px var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
-  margin: 0 0 10px;
 }
 .studio-v3-emails .email-list-row {
   display: grid;
@@ -1044,13 +1032,6 @@
   flex-direction: column;
   gap: 28px;
 }
-.connection-group > h2 {
-  font: 600 11px var(--font-ui);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-  margin: 0 0 12px;
-}
 .studio-connections-v3 .connection-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1165,13 +1146,6 @@
 }
 .activity-day {
   margin-top: 28px;
-}
-.activity-day h2 {
-  font: 600 11px var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
-  margin: 0 0 12px;
 }
 .activity-row-v3 {
   display: grid;
@@ -1588,30 +1562,6 @@
 .studio-search input {
   height: 40px;
 }
-.studio-email-stage {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-.studio-email-stage h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-transform: none;
-  letter-spacing: normal;
-  padding-top: 20px;
-  font-size: 12px;
-  line-height: 18px;
-}
-.studio-email-stage h2::before {
-  content: "";
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border: 2px solid var(--border-strong);
-  border-radius: 50%;
-}
 .studio-email-subject .field-chip {
   font: 500 11px/18px var(--font-ui);
   color: var(--ink-muted);
@@ -1923,13 +1873,6 @@
   .studio-list-tools .studio-search {
     flex: auto;
     margin: 0;
-  }
-  .studio-email-stage {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-  }
-  .studio-email-stage h2 {
-    padding-top: 0;
   }
   .studio-v3-emails .email-list-row {
     grid-template-columns: minmax(0, 1fr) 66px 10px;

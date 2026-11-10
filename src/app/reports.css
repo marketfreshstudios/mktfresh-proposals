@@ -226,8 +226,7 @@
   margin: 0;
 }
 .report-section-heading,
-.report-question-links,
-.report-panel-heading {
+.report-question-links {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -537,6 +536,9 @@
   display: grid;
   gap: var(--space-4);
 }
+.report-breakdowns > .staff-section-heading {
+  margin-block-end: 0;
+}
 .report-breakdown-cards,
 .report-sort-phone {
   display: none;
@@ -549,7 +551,6 @@
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: var(--space-5);
-  margin-top: var(--space-4);
 }
 .report-sections {
   list-style: none;

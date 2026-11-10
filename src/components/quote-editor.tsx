@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelHeading } from "./editor/panel-heading";
 import { staffFromAddress } from "../lib/email-identity";
 import { withCount } from "../lib/count-label";
 import { Select, Switch } from "./form-controls";
@@ -934,7 +935,9 @@ function QuoteEditorContent({
   const doc = documents.find((d) => d.id === documentId);
   const refPanel = (
     <div className="stack">
-      <h2 className="t-section-title">Pricing reference · read only</h2>
+      <PanelHeading className="t-card-title">
+        Pricing reference · read only
+      </PanelHeading>
       {documents.length > 1 && (
         <Field label="Document">
           <Select
@@ -951,7 +954,7 @@ function QuoteEditorContent({
       )}
       {doc ? (
         <>
-          <h3>{doc.name}</h3>
+          <PanelHeading nested>{doc.name}</PanelHeading>
           <p>
             Version {doc.version} ·{" "}
             {doc.fetched_at
@@ -1046,7 +1049,7 @@ function QuoteEditorContent({
       : "");
   const sendPanel = (
     <div className="send-panel stack">
-      <h2 className="t-section-title">Readiness</h2>
+      <PanelHeading className="t-card-title">Readiness</PanelHeading>
       <ul className="send-checklist">
         {ready.errors
           .filter((e) => !e.startsWith("Confirm review of AI changes"))

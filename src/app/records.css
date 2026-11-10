@@ -790,9 +790,6 @@
   margin-bottom: 10px;
 }
 .client-billing h2 {
-  font: 600 12px/18px var(--font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   margin: 0;
 }
 .client-billing > p {
@@ -1231,7 +1228,7 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .editor-choice-group h3 {
+  .editor-choice-group :is(h3, h4) {
     position: static !important;
     display: block;
     margin: 4px 0 10px;

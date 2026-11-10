@@ -1,4 +1,6 @@
 "use client";
+import { PanelHeading } from "./editor/panel-heading";
+import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import { ProviderMark } from "./provider-brand";
@@ -182,27 +184,6 @@ function SaveError({ error }: { error: string }) {
         : `${error} Correct the issue and try again.`}
     </Banner>
   ) : null;
-}
-function Section({
-  title,
-  id,
-  children,
-  description,
-}: {
-  title: string;
-  id?: string;
-  children: ReactNode;
-  description?: string;
-}) {
-  return (
-    <section className="studio-section" id={id}>
-      <header>
-        <h2>{title}</h2>
-        {description && <p>{description}</p>}
-      </header>
-      <div className="stack">{children}</div>
-    </section>
-  );
 }
 export { WorkspaceStudio } from "./workspace-studio";
 export function CatalogStudio({
@@ -1689,7 +1670,7 @@ function TemplatesStudioContent({
   const templateTools = draft && (
     <div className="template-style-panel">
       <section className="template-fonts-row">
-        <h2 className="t-section-title">Fonts</h2>
+        <PanelHeading className="t-card-title">Fonts</PanelHeading>
         <div>
           <strong>
             {[templateStyles.title.font, templateStyles.body.font]
@@ -1772,7 +1753,7 @@ function TemplatesStudioContent({
   const panelBody =
     mode === "blocks" && tab === "Used in" ? (
       <section className="saved-block-usage stack" aria-label="Used in">
-        <h2 className="t-section-title">Templates · linked</h2>
+        <PanelHeading className="t-card-title">Templates · linked</PanelHeading>
         {usage.templates.length ? (
           usage.templates.map((t) => (
             <a
@@ -1789,9 +1770,9 @@ function TemplatesStudioContent({
         ) : (
           <p className="muted">Not linked to any templates yet.</p>
         )}
-        <h2 className="t-section-title">
+        <PanelHeading className="t-card-title">
           Drafts with a copy · {usage.drafts.length}
-        </h2>
+        </PanelHeading>
         {usage.drafts.map((p) => (
           <a
             className="saved-block-usage-row"
@@ -3934,7 +3915,7 @@ export function ConnectionsStudio({
             key={group.name}
             data-connection-group={group.ids[0]}
           >
-            <h2>{group.name}</h2>
+            <StaffSectionHeading>{group.name}</StaffSectionHeading>
             <div className="connection-grid">
               {cards
                 .filter((c) => group.ids.includes(c.id))

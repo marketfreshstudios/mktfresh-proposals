@@ -717,6 +717,17 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   const title = await group.locator("h2").boundingBox(),
     card = await group.locator(".studio-email-rows").boundingBox();
   expect(title!.x + title!.width).toBeLessThan(card!.x);
+  await page.setViewportSize({ width: 768, height: 1000 });
+  const tabletTitle = (await group.locator("h2").boundingBox())!;
+  const tabletCard = (await group.locator(".studio-email-rows").boundingBox())!;
+  expect(tabletTitle.x + tabletTitle.width).toBeLessThan(tabletCard.x);
+
+  await page.setViewportSize({ width: 375, height: 900 });
+  const phoneTitle = (await group.locator("h2").boundingBox())!;
+  const phoneCard = (await group.locator(".studio-email-rows").boundingBox())!;
+  expect(phoneTitle.y + phoneTitle.height).toBeLessThan(phoneCard.y);
+  expect(phoneTitle.x).toBeCloseTo(phoneCard.x, 0);
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/workspace?view=brand");
   await expect(
     page.locator(".workspace-section-card > header [role=status]"),

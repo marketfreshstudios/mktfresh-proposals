@@ -1,4 +1,5 @@
 "use client";
+import { PanelHeading } from "./editor/panel-heading";
 import { Select, Switch } from "./form-controls";
 import { CoverSettings } from "./cover-settings";
 import { ColorPicker } from "./color-picker";
@@ -449,7 +450,7 @@ export function ProposalStyles({
       </details>
       {scope === "template" && (
         <div className="template-band-heading">
-          <h2>Header & footer</h2>
+          <PanelHeading>Header & footer</PanelHeading>
           <p>
             Editing the header here makes it unique to this template. Proposals
             made from it start with this version.

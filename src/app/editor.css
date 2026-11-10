@@ -4220,7 +4220,7 @@
   align-items: center;
   min-height: 32px;
 }
-.editor-choice-group > header h3 {
+.editor-choice-group > header :is(h3, h4) {
   margin: 0;
   color: var(--accent-text);
   font: 600 11px/16px var(--font-ui);
@@ -5499,7 +5499,7 @@
 .editor-choice-group > header {
   min-height: 24px;
 }
-.editor-choice-group > header h3 {
+.editor-choice-group > header :is(h3, h4) {
   letter-spacing: 0.08em;
 }
 .editor-choice-group > header button {
@@ -8559,7 +8559,7 @@ body:has(.studio-v3-editor) {
   display: grid;
   gap: 20px;
 }
-.template-band-heading > h2 {
+.template-band-heading > :is(h2, h3) {
   color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
