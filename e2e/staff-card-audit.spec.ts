@@ -214,17 +214,10 @@ test.describe("Staff content surfaces", () => {
     );
     await screenshot(page, "clients-filter-empty-1440");
     await page.goto(`/clients/${f.draft.client.id}`);
-    for (const name of [
-      "billing",
-      "proposals",
-      "notes",
-      "activity",
-      "contact-card",
-    ])
+    for (const name of ["billing", "notes", "contact-card"])
       await surface(page.locator(`.client-${name}`));
-    await expect(
-      page.locator(".client-activity-table .staff-table-head"),
-    ).toBeVisible();
+    await table(page.locator(".client-proposals .staff-table"));
+    await table(page.locator(".client-activity-table"));
     await screenshot(page, "client-detail-1440");
 
     await page.goto("/reports?range=last-90");

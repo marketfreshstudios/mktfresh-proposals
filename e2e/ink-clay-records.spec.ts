@@ -609,15 +609,25 @@ for (const width of [1440, 768, 375]) {
         }
         if (selector === ".client-detail-v4") {
           await expect(page.getByText("Current monthly $175/mo")).toBeVisible();
-          await expect(
-            page.locator(".client-detail-v4 > section h2").first(),
-          ).toHaveText("How they’re billed");
-          const headings = await page
-            .locator(".client-detail-v4 > section h2")
-            .allTextContents();
-          expect(
-            headings.findIndex((heading) => heading.startsWith("Proposals")),
-          ).toBeLessThan(headings.indexOf("Activity"));
+          const contact = await page
+            .getByRole("heading", { name: "Contact details" })
+            .boundingBox();
+          const proposals = await page
+            .getByRole("heading", { name: /^Proposals/ })
+            .boundingBox();
+          const activity = await page
+            .getByRole("heading", { name: "Activity", exact: true })
+            .boundingBox();
+          const billing = await page
+            .getByRole("heading", { name: "How they’re billed" })
+            .boundingBox();
+          expect(proposals!.y).toBeLessThan(activity!.y);
+          expect(contact!.y).toBeLessThan(billing!.y);
+          if (width === 1440) expect(contact!.x).toBeGreaterThan(proposals!.x);
+          else {
+            expect(contact!.y).toBeLessThan(proposals!.y);
+            expect(billing!.y).toBeLessThan(activity!.y);
+          }
         }
         if (selector === ".proposal-directory" && width < 1100) {
           await expect(

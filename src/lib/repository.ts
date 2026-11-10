@@ -1,4 +1,4 @@
-import { withCount } from "./count-label";
+import { clientDeleteBlocker } from "./client-retention";
 import {
   questionsReadable,
   questionsWritable,
@@ -37,9 +37,6 @@ import {
   type Template,
   type SavedBlock,
 } from "./model";
-const clientDeleteBlockedMessage = (count: number) =>
-  `Has ${withCount(count, "proposal")} — archive ${count === 1 ? "the proposal" : "them"} or keep the client`;
-
 export type EntityTable =
   | "email_templates"
   | "email_log"
@@ -126,6 +123,7 @@ export interface Repository {
     documents: Proposal[],
   ): Promise<Client>;
   deleteClient(id: string, actor: Actor): Promise<void>;
+  archiveClient(id: string, archived: boolean, actor: Actor): Promise<Client>;
   linkClientStripe(
     id: string,
     expected: string | null,
@@ -158,6 +156,7 @@ type ReportFactRequest = Partial<
 export class MemoryRepository implements Repository {
   constructor(public readonly workspaceId = LOCAL_WORKSPACE_ID) {}
   rows = new Map<string, Proposal>();
+  retiredDraftEvidence = new Map<string, Pick<Proposal, "events" | "files">>();
   catalog = new Map<EntityTable, Map<string, unknown>>();
   async reportNames() {
     return {
@@ -608,9 +607,12 @@ export class MemoryRepository implements Repository {
     };
     // The memory repository commits synchronously, like the database row update.
     const clients = this.catalog.get("clients") ?? new Map();
-    clients.set(client.id, structuredClone(saved));
+    const directoryClient = existing?.archived_at
+      ? { ...saved, archived_at: existing.archived_at }
+      : saved;
+    clients.set(client.id, structuredClone(directoryClient));
     this.catalog.set("clients", clients);
-    return saved;
+    return directoryClient;
   }
   async saveClientAndProposals(client: Client, documents: Proposal[]) {
     const existing = this.catalog.get("clients")?.get(client.id) as
@@ -650,11 +652,14 @@ export class MemoryRepository implements Repository {
       );
     // Validate everything before either write; no awaits in this transaction.
     const clients = this.catalog.get("clients") ?? new Map();
-    clients.set(client.id, structuredClone(saved));
+    const directoryClient = existing?.archived_at
+      ? { ...saved, archived_at: existing.archived_at }
+      : saved;
+    clients.set(client.id, structuredClone(directoryClient));
     this.catalog.set("clients", clients);
     for (const p of documents)
       this.rows.set(p.id, structuredClone({ ...p, client: saved }));
-    return saved;
+    return directoryClient;
   }
   async linkClientStripe(
     id: string,
@@ -694,23 +699,70 @@ export class MemoryRepository implements Repository {
     });
     this.catalog.set("workspace_events", events);
   }
-  async deleteClient(id: string, actor: Actor) {
+  private logClientLifecycle(
+    type: string,
+    client: Client,
+    actor: Actor,
+    drafts?: string[],
+  ) {
+    const id = crypto.randomUUID();
+    const events = this.catalog.get("workspace_events") ?? new Map();
+    events.set(id, {
+      id,
+      ...actor,
+      type,
+      created_at: new Date().toISOString(),
+      metadata: {
+        client_id: client.id,
+        company: client.company,
+        ...(drafts ? { deleted_draft_ids: drafts } : {}),
+      },
+    });
+    this.catalog.set("workspace_events", events);
+  }
+  async archiveClient(id: string, archived: boolean, actor: Actor) {
     if (!actor.actor.startsWith("staff:"))
       throw new AppError(403, "Staff authorization required");
-    const client = (await this.entities<Client>("clients")).find(
-      (c) => c.id === id,
+    const clients = this.catalog.get("clients");
+    const current = clients?.get(id) as Client | undefined;
+    if (!current) throw new AppError(404, "Client not found");
+    if (archived === !!current.archived_at) return structuredClone(current);
+    const client = {
+      ...current,
+      archived_at: archived ? new Date().toISOString() : null,
+    };
+    clients!.set(id, structuredClone(client));
+    this.logClientLifecycle(
+      archived ? "client_archived" : "client_restored",
+      client,
+      actor,
     );
+    return client;
+  }
+  async deleteClient(id: string, actor: Actor) {
+    if (!actor.actor.startsWith("staff:") || actor.staff_role !== "owner")
+      throw new AppError(403, "Only super admins can delete clients");
+    const clients = this.catalog.get("clients");
+    const client = clients?.get(id) as Client | undefined;
     if (!client) throw new AppError(404, "Client not found");
-    const count = (await this.list()).filter((p) => p.client.id === id).length;
-    if (count) throw new AppError(409, clientDeleteBlockedMessage(count));
-    this.catalog.get("clients")!.delete(id);
-    await this.put("workspace_events", {
-      id: crypto.randomUUID(),
-      type: "client_deleted",
-      ...actor,
-      created_at: new Date().toISOString(),
-      metadata: { client_id: id, company: client.company },
-    });
+    const proposals = [...this.rows.values()].filter(
+      (p) =>
+        p.client.id === id &&
+        (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId,
+    );
+    const blocker = clientDeleteBlocker(proposals);
+    if (blocker) throw new AppError(409, blocker);
+    for (const { id, events, files } of proposals) {
+      this.retiredDraftEvidence.set(id, structuredClone({ events, files }));
+      this.rows.delete(id);
+    }
+    clients!.delete(id);
+    this.logClientLifecycle(
+      "client_deleted",
+      client,
+      actor,
+      proposals.map((p) => p.id),
+    );
   }
   async get(id: string) {
     const p = this.rows.get(id);
@@ -813,7 +865,7 @@ export class LocalRepository extends MemoryRepository {
     await this.ready;
     return super.reportProposals();
   }
-  private async questionTransaction<T>(operation: () => Promise<T>) {
+  private async localTransaction<T>(operation: () => Promise<T>) {
     await this.ready;
     const run = this.tail.then(async () => {
       const result = await operation();
@@ -824,16 +876,16 @@ export class LocalRepository extends MemoryRepository {
     return run;
   }
   override async writeQuestion(change: QuestionWrite) {
-    return this.questionTransaction(() => super.writeQuestion(change));
+    return this.localTransaction(() => super.writeQuestion(change));
   }
   override async claimQuestionMail(proposal?: string) {
-    return this.questionTransaction(() => super.claimQuestionMail(proposal));
+    return this.localTransaction(() => super.claimQuestionMail(proposal));
   }
   override async finishQuestionMail(
     mail: QuestionDelivery,
     next: string | null,
   ) {
-    return this.questionTransaction(() => super.finishQuestionMail(mail, next));
+    return this.localTransaction(() => super.finishQuestionMail(mail, next));
   }
   override async engagementSummary(id: string) {
     await this.ready;
@@ -893,6 +945,7 @@ export class LocalRepository extends MemoryRepository {
     try {
       const d = JSON.parse(await readFile(join(this.dir, "db.json"), "utf8"));
       this.rows = new Map(d.rows);
+      this.retiredDraftEvidence = new Map(d.retiredDraftEvidence ?? []);
       this.catalog = new Map(
         d.catalog.map(([k, v]: [EntityTable, [string, unknown][]]) => [
           k,
@@ -909,6 +962,7 @@ export class LocalRepository extends MemoryRepository {
       join(this.dir, "db.tmp"),
       JSON.stringify({
         rows: [...this.rows],
+        retiredDraftEvidence: [...this.retiredDraftEvidence],
         catalog: [...this.catalog].map(([k, v]) => [k, [...v]]),
       }),
       { mode: 0o600 },
@@ -971,32 +1025,13 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async archiveClient(id: string, archived: boolean, actor: Actor) {
+    return this.localTransaction(() =>
+      super.archiveClient(id, archived, actor),
+    );
+  }
   override async deleteClient(id: string, actor: Actor) {
-    await this.ready;
-    const run = this.tail.then(async () => {
-      // Avoid the queued put override while this transaction owns the queue.
-      const client = (await super.entities<Client>("clients")).find(
-        (c) => c.id === id,
-      );
-      if (!actor.actor.startsWith("staff:"))
-        throw new AppError(403, "Staff authorization required");
-      if (!client) throw new AppError(404, "Client not found");
-      const count = (await super.list()).filter(
-        (p) => p.client.id === id,
-      ).length;
-      if (count) throw new AppError(409, clientDeleteBlockedMessage(count));
-      this.catalog.get("clients")!.delete(id);
-      await super.put("workspace_events", {
-        id: crypto.randomUUID(),
-        type: "client_deleted",
-        ...actor,
-        created_at: new Date().toISOString(),
-        metadata: { client_id: id, company: client.company },
-      });
-      await this.persist();
-    });
-    this.tail = run.catch(() => {});
-    await run;
+    return this.localTransaction(() => super.deleteClient(id, actor));
   }
   override async get(id: string) {
     await this.ready;
@@ -1027,7 +1062,7 @@ export class LocalRepository extends MemoryRepository {
     expected: T | null,
     replacement: T | null,
   ) {
-    return this.questionTransaction(() =>
+    return this.localTransaction(() =>
       super.replaceProviderCredential(id, expected, replacement),
     );
   }
@@ -1574,9 +1609,27 @@ export class SupabaseRepository implements Repository {
         error.message,
       );
   }
-  async deleteClient(id: string, actor: Actor) {
+  async archiveClient(id: string, archived: boolean, actor: Actor) {
     if (!actor.actor.startsWith("staff:"))
       throw new AppError(403, "Staff authorization required");
+    const { data, error } = await this.db.rpc("set_client_archived", {
+      target_workspace: this.workspaceId,
+      target_client: id,
+      archived,
+      audit_event: {
+        id: crypto.randomUUID(),
+        ...actor,
+        type: archived ? "client_archived" : "client_restored",
+        created_at: new Date().toISOString(),
+      },
+    });
+    if (error)
+      throw new AppError(error.code === "P0002" ? 404 : 400, error.message);
+    return data as Client;
+  }
+  async deleteClient(id: string, actor: Actor) {
+    if (!actor.actor.startsWith("staff:") || actor.staff_role !== "owner")
+      throw new AppError(403, "Only super admins can delete clients");
     const { error } = await this.db.rpc("delete_unused_client", {
       target_workspace: this.workspaceId,
       target_client: id,
@@ -1589,11 +1642,14 @@ export class SupabaseRepository implements Repository {
     });
     if (error)
       throw new AppError(
-        error.code === "23503" ? 409 : error.code === "P0002" ? 404 : 400,
-        error.code === "23503" &&
-          error.message === "Has 1 proposals — archive them or keep the client"
-          ? clientDeleteBlockedMessage(1)
-          : error.message,
+        error.code === "23503"
+          ? 409
+          : error.code === "P0002"
+            ? 404
+            : error.code === "42501"
+              ? 403
+              : 400,
+        error.message,
       );
   }
   async get(id: string) {
@@ -1652,12 +1708,19 @@ export class SupabaseRepository implements Repository {
     for (let from = 0; ; from += 500) {
       const { data, error } = await this.db
         .from(table)
-        .select("data")
+        .select(table === "clients" ? "data,archived_at" : "data")
         .eq("workspace_id", this.workspaceId)
         .order("id")
         .range(from, from + 499);
       if (error) throw error;
-      all.push(...data.map((x) => x.data as T));
+      all.push(
+        ...data.map((x) => {
+          const row = x as unknown as { data: T; archived_at?: string | null };
+          return table === "clients" && row.archived_at
+            ? { ...row.data, archived_at: row.archived_at }
+            : row.data;
+        }),
+      );
       if (data.length < 500) return all;
     }
   }

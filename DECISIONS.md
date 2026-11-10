@@ -1131,3 +1131,24 @@ starter and never-sent drafts with matching legacy quote and clause defaults.
 Edited quote data and published versions remain unchanged. Staff can review
 and update any drafts skipped by the guard. Billing verification uses Stripe
 test fixtures.
+## 2026-11-10 · Client records, archive and delete
+
+The client record puts the shared Proposals and Activity tables in the main
+column. Contact details, billing, and notes sit beside them. At tablet and phone
+widths contact details come before Proposals, followed by Billing, Notes, and
+Activity. The header carries the primary contact and the New proposal action.
+
+Staff can archive and restore clients. Archived clients remain accessible in
+the Archived view and in historical proposal records. They are excluded from
+active client lists, searches, and new-proposal pickers. Super admins can delete
+an unused client or one whose proposals are all archived, never-sent native
+drafts. Sent, signed, billed, and imported records stay with the client and can
+be archived. Active drafts must be archived before the client can be deleted.
+Archive, restore, and delete do not call Stripe or QuickBooks.
+
+Eligible deletion removes the client and the live draft records in one
+transaction. An independent proposal ID anchors immutable events and file
+evidence, which keep their original IDs, contents, and workspace. The deletion
+logs the client and removed draft IDs in workspace Activity. Existing
+append-only protections stay in force. Apply
+`20261110202400_client_archives_and_safe_delete.sql` before deploying the app.

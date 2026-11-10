@@ -21,6 +21,7 @@ import { formatMoney } from "../lib/money";
 import { stripeStatus } from "../lib/studio-v3";
 import { workspaceSections } from "./studio-v3";
 import { Skeleton } from "./foundation";
+import { StaffSectionHeading } from "./staff-section-heading";
 import { api, post, Button, Field, Banner, Disclosure } from "./ui";
 import { ProposalStyles, ProposalLayoutOptions } from "./proposal-styles";
 import { TeamStudio } from "./team-studio";
@@ -40,6 +41,21 @@ function workspaceInitialSection(initial: string) {
     ? requested
     : "brand";
 }
+
+/** Owner 10 Nov: section title (H2) and its helper sit on the canvas above the card. */
+const sectionDescriptions: Record<string, string> = {
+  "business-details":
+    "Manage the business information used in proposals and agreements.",
+  brand: "Shown on client pages, emails and PDFs.",
+  fonts: "Used in the proposal, client page and sealed PDF.",
+  billing: "Where each kind of charge is billed after a client signs.",
+  signatory:
+    "Every company signature presents as this person. The audit records who applied it.",
+  "email-sending":
+    "Configure the existing verified domain and automatic reminders.",
+  "pricing-references":
+    "Internal documents staff and assistants can read while writing a quote. They never set prices.",
+};
 
 function WorkspaceFrame({
   section,
@@ -70,18 +86,27 @@ function WorkspaceFrame({
           </button>
         ))}
       </nav>
-      <section
-        id={section}
-        className="workspace-section-card"
-        aria-label={label}
-        onBlur={onBlur}
-      >
-        <header>
-          <h2 className="t-card-title">{label}</h2>
-          {status}
-        </header>
-        {children}
-      </section>
+      <div className="workspace-section">
+        <StaffSectionHeading
+          id={`${section}-heading`}
+          description={
+            sectionDescriptions[section] && (
+              <p className="muted">{sectionDescriptions[section]}</p>
+            )
+          }
+          action={status}
+        >
+          {label}
+        </StaffSectionHeading>
+        <section
+          id={section}
+          className="workspace-section-card"
+          aria-labelledby={`${section}-heading`}
+          onBlur={onBlur}
+        >
+          {children}
+        </section>
+      </div>
     </div>
   );
 }
@@ -396,7 +421,6 @@ export function WorkspaceStudio({
     ),
     brand: (
       <>
-        <p>Shown on client pages, emails and PDFs.</p>
         <div className="workspace-brand-assets">
           <div className="workspace-logo-row">
             <div className="workspace-logo-heading">
@@ -750,7 +774,6 @@ export function WorkspaceStudio({
     ),
     fonts: (
       <>
-        <p>Used in the proposal, client page and sealed PDF.</p>
         <div className="workspace-control-grid">
           {fontSelect("Headings", "heading")}
           {fontSelect("Body text", "body")}
@@ -840,7 +863,6 @@ export function WorkspaceStudio({
     ),
     billing: (
       <>
-        <p>Where each kind of charge is billed after a client signs.</p>
         <div className="workspace-setting-row">
           <div>
             <h3>
@@ -990,10 +1012,6 @@ export function WorkspaceStudio({
     team: <TeamStudio data={data} run={run} embedded />,
     signatory: (
       <>
-        <p>
-          Every company signature presents as this person. The audit records who
-          applied it.
-        </p>
         {!owner && (
           <p className="muted">
             Only a super admin can change the signatory or delegates.
@@ -1167,7 +1185,6 @@ export function WorkspaceStudio({
     ),
     "email-sending": (
       <>
-        <p>Configure the existing verified domain and automatic reminders.</p>
         <div className="workspace-control-grid">
           {text("Owner contact name", "owner")}
           {text("Contact email", "email", "email")}
@@ -1331,10 +1348,6 @@ export function WorkspaceStudio({
     ),
     "pricing-references": (
       <>
-        <p>
-          Internal documents staff and assistants can read while writing a
-          quote. They never set prices.
-        </p>
         <ReferenceDocuments documents={data.documents} run={run} />
       </>
     ),

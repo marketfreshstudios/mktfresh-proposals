@@ -215,7 +215,7 @@ function StaffAppContent({
         assistants,
         connections,
       ] = await Promise.all([
-        allProposals(),
+        allProposals(section === "clients" && id !== "new" ? id : undefined),
         api("/api/clients"),
         api("/api/pricing_items").catch((e) => ({ load_error: e.message })),
         api("/api/templates"),
@@ -370,7 +370,14 @@ function StaffAppContent({
     content = <ReportsPage query={query} />;
   } else if (section === "clients") {
     if (loading || pageData)
-      content = <ClientsV4 data={pageData} selected={id} onRefresh={load} />;
+      content = (
+        <ClientsV4
+          data={pageData}
+          selected={id}
+          initialView={typeof query.view === "string" ? query.view : undefined}
+          onRefresh={load}
+        />
+      );
   } else if (section === "proposals" && !id && !reportShell) {
     subtitle = pageData
       ? withCount(
@@ -710,13 +717,14 @@ function StaffAppContent({
     </StaffShell>
   );
 }
-async function allProposals() {
+async function allProposals(clientId?: string) {
+  const query = clientId ? `&client=${encodeURIComponent(clientId)}` : "";
   const first = await api<{ items: Proposal[]; total: number }>(
-    "/api/proposals?limit=100",
+    `/api/proposals?limit=100${query}`,
   );
   for (let offset = 100; offset < first.total; offset += 100) {
     const next = await api<{ items: Proposal[] }>(
-      `/api/proposals?limit=100&offset=${offset}`,
+      `/api/proposals?limit=100&offset=${offset}${query}`,
     );
     first.items.push(...next.items);
   }

@@ -1530,7 +1530,26 @@ async function handleRoute(
         ),
       );
     }
-    if (method === "DELETE" && path[0] === "clients" && path[1]) {
+    if (
+      method === "POST" &&
+      path[0] === "clients" &&
+      path[2] === "archive" &&
+      path.length === 3
+    ) {
+      const input = z
+        .object({ archived: z.boolean() })
+        .strict()
+        .parse(await body(req));
+      return json(
+        await rt.repo.archiveClient(uuid.parse(path[1]), input.archived, user),
+      );
+    }
+    if (
+      method === "DELETE" &&
+      path[0] === "clients" &&
+      path[1] &&
+      path.length === 2
+    ) {
       await rt.repo.deleteClient(uuid.parse(path[1]), user);
       return json({ deleted: true });
     }
@@ -2047,9 +2066,11 @@ async function handleRoute(
             content: [],
             version_count: p.versions.length,
             versions: [],
-            events: p.events.filter((e) =>
-              ["viewed", "marked_won", "marked_lost"].includes(e.type),
-            ),
+            events: q.has("client")
+              ? p.events.slice(-5).map(({ ip, user_agent, ...event }) => event)
+              : p.events.filter((e) =>
+                  ["viewed", "marked_won", "marked_lost"].includes(e.type),
+                ),
           })),
         });
       }

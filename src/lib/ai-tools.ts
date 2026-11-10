@@ -266,10 +266,12 @@ export async function aiTool(
     check(input.items !== undefined, "Items required");
   if (name === "search_clients")
     return (await repo.entities<Client>("clients"))
-      .filter((c) =>
-        (c.company + " " + c.email)
-          .toLowerCase()
-          .includes(input.query.toLowerCase()),
+      .filter(
+        (c) =>
+          !c.archived_at &&
+          (c.company + " " + c.email)
+            .toLowerCase()
+            .includes(input.query.toLowerCase()),
       )
       .slice(0, 50)
       .map(clientView);
