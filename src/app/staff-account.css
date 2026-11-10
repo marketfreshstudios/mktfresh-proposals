@@ -474,10 +474,19 @@
 .staff-security-sessions {
   margin-top: 20px;
 }
-.staff-security-sessions h2 {
+.staff-security-sessions :is(h2, h3) {
   margin: 0;
-  font-size: 16px;
-  color: var(--ink-title);
+}
+.staff-security-title-phone {
+  display: none;
+}
+@media (max-width: 699px) {
+  .staff-security-title-wide {
+    display: none;
+  }
+  .staff-security-title-phone {
+    display: block;
+  }
 }
 .staff-security-sessions ul {
   margin: 8px 0 0;

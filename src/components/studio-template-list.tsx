@@ -1,4 +1,5 @@
 "use client";
+import { StaffSectionHeading } from "./staff-section-heading";
 import {
   StaffTable,
   StaffTableHead,
@@ -389,12 +390,15 @@ export function StudioTemplateList({
             />
           )}
           <section className="studio-saved-preview">
-            <header>
-              <h2>Saved blocks</h2>
-              <a href="/studio/templates?view=blocks">
-                See all {data.library.length}
-              </a>
-            </header>
+            <StaffSectionHeading
+              action={
+                <a href="/studio/templates?view=blocks">
+                  See all {data.library.length}
+                </a>
+              }
+            >
+              Saved blocks
+            </StaffSectionHeading>
             <StaffTable className="saved-preview-table">
               <StaffTableHead className="studio-table-head">
                 <span>Name</span>
@@ -426,7 +430,7 @@ export function StudioTemplateList({
         </>
       ) : (
         <>
-          <h2 className="t-section-title">Saved blocks</h2>
+          <StaffSectionHeading>Saved blocks</StaffSectionHeading>
           <StudioFilters
             label="Block types"
             value={type}

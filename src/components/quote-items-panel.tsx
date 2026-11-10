@@ -1,4 +1,5 @@
 "use client";
+import { PanelHeading } from "./editor/panel-heading";
 import { useState } from "react";
 import { Select, Switch } from "./form-controls";
 import { oiotItem, oiotKickoff, oiotPlan } from "../lib/oiot";
@@ -697,7 +698,9 @@ export function QuoteItemsPanel({
       items.filter((i) => (i.choice_group_id ?? i.id) === id);
   const quotePanel = (
     <div className="quote-panel stack">
-      <h2 className="sr-only">{proposalContent ? "Quote" : "Default quote"}</h2>
+      <PanelHeading className="sr-only">
+        {proposalContent ? "Quote" : "Default quote"}
+      </PanelHeading>
       <p className="muted">
         {intro ??
           "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}
@@ -727,7 +730,7 @@ export function QuoteItemsPanel({
               {unitItems(id)[0].choice_group_id ? (
                 <div className="editor-choice-group">
                   <header>
-                    <h3>Choose one</h3>
+                    <PanelHeading nested>Choose one</PanelHeading>
                     <Button variant="ghost" onClick={() => unlink(id)}>
                       Unlink
                     </Button>

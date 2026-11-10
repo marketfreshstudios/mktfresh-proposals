@@ -9,7 +9,7 @@ Imported 8–9 Nov 2026 from the Claude Design project. This is the current visu
 3. Ink card only for the hero (Home pipeline) and "next step".
 4. Pills are buttons only. Status chips are 6px-radius rectangles; proposal views are tabs.
 5. One filled button per screen; every other action is outline.
-6. DM Serif only for page titles and the hero number; section headings are Instrument Sans 16/600; totals are sans, bold, tabular.
+6. DM Serif for page titles, the hero number, and section headings on the staff page background (as on Home, frame 2b1). Card titles and subsections are Instrument Sans 16/600. Totals are sans, bold, tabular. Heading levels follow nesting: one page H1, page sections H2, card titles within a section H3, and titled groups within those cards H4. A card directly under the H1 uses H2 with the card style. Dialogs use H2 for the title and H3 for internal groups. Proposal documents keep their own outline.
 7. No cards inside cards: a choice group is one frame with rows split by lines; the selected row gets a tint and a 3px left marker.
 8. All icons from Lucide.
 

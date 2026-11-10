@@ -10,7 +10,7 @@
 }
 .ink-clay
   :is(.home-v4, .record-v4, .client-detail-v4)
-  :is(h2, h3):not(.proposal-typography *) {
+  :is(h2, h3):not(.proposal-typography *, .staff-section-heading *) {
   margin-block: 0 var(--space-2);
   font: 600 16px/22px var(--font-ui);
   letter-spacing: normal;
@@ -22,22 +22,6 @@
   margin: 0 0 6px;
   color: var(--ink-muted);
   font: 500 14px/20px var(--font-ui);
-}
-.ink-clay .home-v4 .section-heading {
-  align-items: baseline;
-  margin-block-end: var(--space-4);
-}
-.ink-clay .home-v4 .section-heading h2 {
-  margin: 0;
-  color: var(--ink-title);
-  font: 400 26px/32px var(--font-title);
-}
-.ink-clay .home-v4 .section-heading a {
-  flex: none;
-  font: 600 13px/20px var(--font-ui);
-  text-decoration: underline;
-  text-decoration-color: var(--border-strong);
-  text-underline-offset: 3px;
 }
 .ink-clay .home-overview {
   display: grid;
@@ -580,10 +564,6 @@
   }
   .home-pipeline-range label > span {
     min-block-size: 44px;
-  }
-  .ink-clay .home-v4 .section-heading h2 {
-    font-size: 22px;
-    line-height: 28px;
   }
   .ink-clay .home-expiring-card {
     padding-inline: var(--space-4);

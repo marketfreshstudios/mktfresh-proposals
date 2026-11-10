@@ -1,4 +1,5 @@
 "use client";
+import { PanelDialogContext } from "./panel-heading";
 import {
   Braces,
   CircleDollarSign,
@@ -223,8 +224,10 @@ export function ToolsPanel<T extends string = EditorTab>({
         aria-label={tab}
         className="editor-tab-content"
       >
-        {children}
-        {actions}
+        <PanelDialogContext value={mode !== "docked"}>
+          {children}
+          {actions}
+        </PanelDialogContext>
       </div>
       <button
         type="button"

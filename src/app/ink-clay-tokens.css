@@ -232,7 +232,7 @@
   font: 400 44px/50px var(--font-title);
   color: var(--ink-title);
 }
-.ink-clay :is(.t-card-title, .t-section-title) {
+.ink-clay .t-card-title {
   font: 600 16px/22px var(--font-ui);
   color: var(--ink-title);
 }

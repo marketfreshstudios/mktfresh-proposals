@@ -403,7 +403,12 @@ export function StaffSecurityPanel() {
       </div>
       <div className="staff-security-sessions">
         <div className="staff-security-row">
-          <h2>Where you’re signed in</h2>
+          <h3 className="t-card-title staff-security-title-wide">
+            Where you’re signed in
+          </h3>
+          <h2 className="t-card-title staff-security-title-phone">
+            Where you’re signed in
+          </h2>
           <Button
             onClick={() => setSignOut("others")}
             disabled={state.sessions.every((device) => device.current)}

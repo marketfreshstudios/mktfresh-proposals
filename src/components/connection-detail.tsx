@@ -202,7 +202,7 @@ export function ConnectionPanel({
     <section className={`connection-panel ${className}`} id={id}>
       <header>
         <div>
-          <h2>{title}</h2>
+          <h2 className="t-card-title">{title}</h2>
           {subtitle && <p>{subtitle}</p>}
         </div>
         {action}

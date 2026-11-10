@@ -1,4 +1,5 @@
 "use client";
+import { StaffSectionHeading } from "./staff-section-heading";
 import {
   StaffTable,
   StaffTableHead,
@@ -152,7 +153,7 @@ export function ActivityStudio({
       ) : filtered.length ? (
         [...groups].map(([date, events]) => (
           <section key={date} className="activity-day">
-            <h2>
+            <StaffSectionHeading>
               {date === today
                 ? "Today · "
                 : date === yesterday
@@ -165,7 +166,7 @@ export function ActivityStudio({
                   ? { year: "numeric" }
                   : {}),
               })}
-            </h2>
+            </StaffSectionHeading>
             <StaffTable className="activity-day-rows">
               <StaffTableHead className="activity-table-head">
                 <span>Time</span>

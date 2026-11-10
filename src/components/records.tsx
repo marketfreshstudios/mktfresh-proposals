@@ -1,4 +1,5 @@
 "use client";
+import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
 import { Empty } from "./ui";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
@@ -840,20 +841,23 @@ export function ReportProposalList({
   }, [queryKey, offset, retry]);
   return (
     <div className="stack phase4-list">
-      <div className="report-panel-heading">
-        <div>
-          <h2>{reportMetricLabel(drill)}</h2>
-          {result && (
+      <StaffSectionHeading
+        description={
+          result && (
             <p role="status" className="muted">
               {result.total} matching{" "}
               {result.total === 1 ? "proposal" : "proposals"}
             </p>
-          )}
-        </div>
-        <a className="btn" href={"/reports?" + reportParams(filters)}>
-          Back to Reports
-        </a>
-      </div>
+          )
+        }
+        action={
+          <a className="btn" href={"/reports?" + reportParams(filters)}>
+            Back to Reports
+          </a>
+        }
+      >
+        {reportMetricLabel(drill)}
+      </StaffSectionHeading>
       {error ? (
         <Banner
           title="Unable to load proposals"
@@ -1321,17 +1325,19 @@ export function HomeV4({
           savedRange={data.account?.home_pipeline_range}
         />
         <section className="home-expiring" aria-labelledby="expiring-title">
-          <header className="section-heading">
-            <h2 id="expiring-title">
-              Expiring this week{" "}
-              <span className="home-section-count" aria-hidden="true">
-                {expiring.length}
-              </span>
-            </h2>
-            <a href="/proposals?view=expiring">
-              {expiring.length ? `View all ${expiring.length}` : "View all"}
-            </a>
-          </header>
+          <StaffSectionHeading
+            id="expiring-title"
+            action={
+              <a href="/proposals?view=expiring">
+                {expiring.length ? `View all ${expiring.length}` : "View all"}
+              </a>
+            }
+          >
+            Expiring this week{" "}
+            <span className="home-section-count" aria-hidden="true">
+              {expiring.length}
+            </span>
+          </StaffSectionHeading>
           <div className="home-expiring-card">
             {expiring.length ? (
               <ul role="list">
@@ -1373,10 +1379,12 @@ export function HomeV4({
       </div>
       <HomeSetup data={data} onChanged={onSetupChanged} />
       <section className="home-attention" aria-labelledby="attention-title">
-        <header className="section-heading">
-          <h2 id="attention-title">Needs your attention</h2>
-          <a href="/proposals">View all proposals</a>
-        </header>
+        <StaffSectionHeading
+          id="attention-title"
+          action={<a href="/proposals">View all proposals</a>}
+        >
+          Needs your attention
+        </StaffSectionHeading>
         <div className="home-attention-list">
           {attention.every((group) => !group.rows.length) && (
             <p className="home-attention-empty">
@@ -1452,10 +1460,12 @@ export function HomeV4({
         </div>
       </section>
       <section aria-labelledby="home-recent-title">
-        <header className="section-heading">
-          <h2 id="home-recent-title">Recent proposals</h2>
-          <a href="/proposals">View all proposals</a>
-        </header>
+        <StaffSectionHeading
+          id="home-recent-title"
+          action={<a href="/proposals">View all proposals</a>}
+        >
+          Recent proposals
+        </StaffSectionHeading>
         <ProposalRows
           showOwner
           listActions
@@ -3037,7 +3047,7 @@ export function ClientsV4({
       )}
       <section className="client-billing">
         <header>
-          <h2>How they’re billed</h2>
+          <h2 className="t-card-title">How they’re billed</h2>
           {billing && (
             <span
               className={`pill ${billing.subscriber ? "success" : "neutral"}`}

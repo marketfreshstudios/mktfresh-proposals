@@ -235,7 +235,7 @@ export function Empty({
   return (
     <div className="empty staff-empty">
       <Icon name="document" />
-      <h2>{title}</h2>
+      <h2 className="t-card-title">{title}</h2>
       <p className="muted">{children}</p>
       {action}
     </div>

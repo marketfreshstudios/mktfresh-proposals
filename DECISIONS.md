@@ -1015,6 +1015,10 @@ The required and optional groups have a hairline and a 44px gutter at desktop wi
 
 New workspaces get three editable Sample templates with no preset prices: Website proposal, Care plan, and Monthly retainer. They appear in Studio beside the existing read-only starter library. A super admin can delete a sample without touching existing proposals or library starters. The insert trigger applies before deploy and never backfills existing workspaces, including workspace 1. Empty states and inline filtered messages use the shared card or table surface.
 
+## Staff section headings — November 10, 2026
+
+Use Home's Redesign 19 frame 2b1 heading for sections on the staff page background, with the same type, spacing and optional right-aligned link. A card title keeps the Instrument Sans card style. Heading levels follow nesting: the page is H1, its sections are H2, subsections and cards under those sections are H3, and a titled group inside one of those cards is H4. A card directly under the page title uses H2 with the card style. Dialogs have an H2 title and H3 groups. The proposal canvas, public proposal, PDFs and rendered email previews keep their separate outlines.
+
 ### Staff loading and table hover (Nov 9, 2026)
 
 Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available. Each loading area has a named status. The Templates page keeps one New template action in the header, including when the list is empty.

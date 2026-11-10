@@ -652,11 +652,68 @@ test("staff pages and account states have one title and a sequential heading out
   const savedBlock = (
     await f.repo.entities<{ id: string }>("content_library")
   )[0];
+  for (const template of starterTemplates(f.repo.workspaceId))
+    await f.repo.put("templates", template);
+  await page.route("**/api/auth/session", (route) =>
+    route.fulfill({
+      json: {
+        user: staff,
+        settings: f.settings,
+        staff: f.members,
+        app_url: "http://127.0.0.1:3100",
+        signatory_version: "fixture",
+        account: {
+          first_name: "Alex",
+          last_name: "Morgan",
+          job_title: "",
+          phone: "",
+          notifications: {},
+          own_proposals_only: false,
+          photo_url: null,
+          date_format: null,
+          timezone: null,
+          theme: null,
+        },
+      },
+    }),
+  );
+  await page.route("**/api/clients/*/billing", (route) =>
+    route.fulfill({
+      json: {
+        available: true,
+        subscriber: false,
+        items: [],
+        card: null,
+        next_invoice: null,
+        stripe_url: null,
+        qbo_url: null,
+      },
+    }),
+  );
+  await page.route("**/api/account/security", (route) =>
+    route.fulfill({
+      json: { sessions: [], two_step: false, backup_codes_remaining: 0 },
+    }),
+  );
+  const captures: Record<string, string> = {
+    "/": "home",
+    "/reports": "reports",
+    "/clients": "clients",
+    [`/clients/${f.draft.client.id}`]: "client-record",
+    "/studio/templates": "templates",
+    "/studio/templates?view=blocks": "saved-blocks",
+    "/studio/workspace?view=brand": "workspace",
+    "/studio/emails": "emails",
+    "/studio/connections": "connections",
+    "/studio/activity": "activity",
+  };
   const routes = [
     "/",
     "/proposals",
     "/proposals?view=archived",
+    "/proposals?report=sent",
     `/proposals/${f.draft.id}?view=record`,
+    `/proposals/${f.draft.id}?view=evidence`,
     `/proposals/${f.draft.id}?action=edit`,
     "/clients",
     `/clients/${f.draft.client.id}`,
@@ -680,6 +737,16 @@ test("staff pages and account states have one title and a sequential heading out
   ];
 
   const outlines: Record<string, string[]> = {};
+  let homeType: string[] | undefined;
+  const expectedCanvas: Record<string, string[]> = {
+    "/": ["Expiring this week", "Needs your attention", "Recent proposals"],
+    "/reports": ["Breakdowns", "Engagement"],
+    "/studio/templates": ["Saved blocks"],
+    "/studio/templates?view=blocks": ["Saved blocks"],
+    "/studio/connections": ["Billing", "Email", "AI assistants", "Imports"],
+    "/studio/emails": ["Send", "Follow up", "Questions", "Sign", "Billing"],
+    "/proposals?report=sent": ["Proposals sent"],
+  };
   async function check(label: string) {
     await expect(
       page
@@ -715,6 +782,80 @@ test("staff pages and account states have one title and a sequential heading out
         label,
       )
       .toEqual([]);
+    const headings = await page.locator("h2").evaluateAll((elements) =>
+      elements.flatMap((el) => {
+        const css = getComputedStyle(el);
+        if (
+          !el.getClientRects().length ||
+          css.visibility === "hidden" ||
+          el.closest(
+            ".sr-only, .editor-paper, .studio-blocks, .email-real-renderer, [inert], [role=dialog]",
+          )
+        )
+          return [];
+        let surface = el.parentElement;
+        while (
+          surface &&
+          !surface.matches(".workspace, .ink-clay") &&
+          getComputedStyle(surface).backgroundColor === "rgba(0, 0, 0, 0)"
+        ) {
+          surface = surface.parentElement;
+        }
+        return [
+          {
+            name: el.textContent?.trim().replace(/\s+/g, " "),
+            type: [css.fontFamily, css.fontSize, css.fontWeight],
+            onCanvas: !!surface?.matches(".workspace, .ink-clay"),
+            shared: !!el.closest(".staff-section-heading"),
+          },
+        ];
+      }),
+    );
+    if (label === "/")
+      homeType = headings.find((h) => h.name === "Needs your attention")?.type;
+    const sectionHeadings = headings.filter((h) => h.onCanvas);
+    if (expectedCanvas[label])
+      expect
+        .soft(
+          sectionHeadings.map((h) => h.name),
+          label,
+        )
+        .toEqual(
+          expectedCanvas[label].map((name) =>
+            name === "Expiring this week"
+              ? expect.stringMatching(/^Expiring this week/)
+              : name,
+          ),
+        );
+    for (const heading of sectionHeadings) {
+      expect
+        .soft(
+          heading.shared,
+          `${label}: ${heading.name} uses the shared heading`,
+        )
+        .toBe(true);
+      expect
+        .soft(heading.type, `${label}: ${heading.name} matches Home`)
+        .toEqual(homeType);
+    }
+    for (const heading of headings.filter((h) => !h.onCanvas))
+      expect
+        .soft(
+          heading.shared,
+          `${label}: ${heading.name} stays a card or panel title`,
+        )
+        .toBe(false);
+    const screenshotName = captures[label];
+    if (process.env.CAPTURE_STAFF_SECTION_HEADINGS && screenshotName) {
+      const dir = "docs/screenshots/staff-section-headings";
+      await mkdir(dir, { recursive: true });
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: `${dir}/${screenshotName}-1440.png`,
+        animations: "disabled",
+        fullPage: true,
+      });
+    }
     if (process.env.CAPTURE_STAFF_HEADINGS) {
       outlines[label] = await page
         .locator("h1, h2, h3, h4, h5, h6")
@@ -723,7 +864,9 @@ test("staff pages and account states have one title and a sequential heading out
             .filter(
               (el) =>
                 el.getClientRects().length &&
-                !el.closest(".editor-paper, .studio-blocks, [inert]"),
+                !el.closest(
+                  ".editor-paper, .studio-blocks, .email-real-renderer, [inert]",
+                ),
             )
             .map(
               (el) =>
@@ -739,8 +882,27 @@ test("staff pages and account states have one title and a sequential heading out
       await expect(preview.locator("h1.email-title")).toBeVisible();
       await expect(preview.getByRole("heading", { level: 1 })).toHaveCount(1);
     }
+    if (url === "/account/security")
+      await expect(
+        page.getByRole("heading", { level: 3, name: "Where you’re signed in" }),
+      ).toBeVisible();
     await check(url);
   }
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/account/security");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Where you’re signed in" }),
+  ).toBeVisible();
+  await page.goto(`/proposals/${f.draft.id}?action=edit`);
+  await page.getByRole("button", { name: "Open Send", exact: true }).click();
+  const tools = page.getByRole("dialog", { name: "Proposal tools" });
+  await expect(tools.getByRole("heading", { level: 2 })).toHaveText(
+    "Proposal tools",
+  );
+  await expect(
+    tools.getByRole("heading", { level: 3, name: "Readiness" }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/proposals");
   await page
     .getByRole("button", { name: "New proposal", exact: true })

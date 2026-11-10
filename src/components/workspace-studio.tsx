@@ -73,7 +73,7 @@ function WorkspaceFrame({
         onBlur={onBlur}
       >
         <header>
-          <h2>{label}</h2>
+          <h2 className="t-card-title">{label}</h2>
           {status}
         </header>
         {children}

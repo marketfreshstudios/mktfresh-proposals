@@ -13,7 +13,7 @@ export function TemplateWarnings({
   if (!affected.length) return null;
   return (
     <section className="card stack" aria-label="Inactive template defaults">
-      <h2 className="t-section-title">
+      <h2 className="t-card-title">
         Templates with inactive or missing pricing items
       </h2>
       <p role="alert">

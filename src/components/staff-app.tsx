@@ -1052,7 +1052,7 @@ function Audit({ p }: { p: Proposal }) {
   return (
     <div className="stack">
       <section className="card">
-        <h2>Integrity</h2>
+        <h2 className="t-card-title">Integrity</h2>
         <h3>Content hash</h3>
         <div className="hash">
           {p.versions.at(-1)?.content_hash ?? "Not created until send"}
@@ -1092,7 +1092,7 @@ function Audit({ p }: { p: Proposal }) {
           ))}
       </section>
       <section className="card">
-        <h2>Consent text as shown</h2>
+        <h2 className="t-card-title">Consent text as shown</h2>
         {p.signers.map((s) => (
           <div key={s.role}>
             <strong>
