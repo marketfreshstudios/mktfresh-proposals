@@ -738,7 +738,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   ).toHaveCount(0);
   const toggle = page.getByRole("switch", { name: /Show.*Powered by/ });
   const control = await toggle.boundingBox(),
-    label = await toggle.locator("+ span").boundingBox();
+    label = await toggle.locator("..").locator(":scope > span").boundingBox();
   expect(control!.x).toBeGreaterThan(label!.x + label!.width);
   await page.getByRole("button", { name: "Team", exact: true }).click();
   const description = await page.locator(".team-heading>p").boundingBox(),
