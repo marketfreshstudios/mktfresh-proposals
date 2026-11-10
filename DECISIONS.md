@@ -1017,7 +1017,7 @@ New workspaces get three editable Sample templates with no preset prices: Websit
 
 ## Staff section headings — November 10, 2026
 
-Use Home's Redesign 19 frame 2b1 heading for sections on the staff page background, with the same type, spacing and optional right-aligned link. A card title keeps the Instrument Sans card style. Heading levels follow nesting: the page is H1, its sections are H2, subsections and cards under those sections are H3, and a titled group inside one of those cards is H4. A card directly under the page title uses H2 with the card style. Dialogs have an H2 title and H3 groups. The proposal canvas, public proposal, PDFs and rendered email previews keep their separate outlines.
+Use Home's Redesign 19 frame 2b1 heading for sections on the staff page background, with the same type, spacing and optional right-aligned link. A card title keeps the Instrument Sans card style. Heading levels follow nesting: the page is H1, its sections are H2, subsections and cards under those sections are H3, and a titled group inside one of those cards is H4. A card directly under the page title uses H2 with the card style. Dialogs have an H2 title and H3 groups. The proposal canvas, public proposal, PDFs and rendered email previews keep their separate outlines. Studio email group headings keep their label column beside the tables on desktop and tablet and sit above the tables on phone.
 
 ### Staff loading and table hover (Nov 9, 2026)
 

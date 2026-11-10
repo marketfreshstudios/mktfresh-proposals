@@ -23,4 +23,4 @@ The Home reference is Redesign 19 frame 2b1. Its serif section heading is shared
 | ---------------------- | ------------------------------------------- |
 | ![Home](home-1440.png) | ![Workspace Brand card](workspace-1440.png) |
 
-The same heading precedes the records in [Emails](emails-1440.png) (R19 2e5), the provider cards in [Connections](connections-1440.png) (R19 2e8), and the dates in [Activity log](activity-1440.png) (R19 2e14).
+The same heading sits beside the records in [Emails](emails-1440.png) (R19 2e5), the provider cards in [Connections](connections-1440.png) (R19 2e8), and the dates in [Activity log](activity-1440.png) (R19 2e14).

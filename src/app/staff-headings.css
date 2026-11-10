@@ -26,6 +26,19 @@
   text-decoration-color: var(--border-strong);
   text-underline-offset: 3px;
 }
+/* Email stages sit beside their tables when there is room for both. */
+@media (min-width: 700px) {
+  .ink-clay .studio-email-stage {
+    display: grid;
+    grid-template-columns: clamp(120px, 12vw, 168px) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-4);
+  }
+  .ink-clay .studio-email-stage > .staff-section-heading {
+    margin-block-end: 0;
+    padding-block-start: var(--space-2);
+  }
+}
 @media (max-width: 699px) {
   .ink-clay .staff-section-heading h2 {
     font-size: 22px;
