@@ -194,7 +194,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.locator(".workspace-section-card [role=status]"),
+    page.locator(".workspace-section [role=status]"),
   ).toHaveText("Saved");
   expect(settings.default_validity_days).toBe(45);
   expect(settings.company_signatory!.image!.length).toBeGreaterThan(1000);
@@ -229,7 +229,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.locator(".workspace-section-card [role=status]"),
+    page.locator(".workspace-section [role=status]"),
   ).toHaveText("Saved");
   expect(typeof settings.proposal_fonts?.body).toBe("object");
   const chosen = settings.proposal_fonts!.body;
@@ -253,7 +253,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   ).toBeVisible();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   await expect(
-    page.locator(".workspace-section-card [role=status]"),
+    page.locator(".workspace-section [role=status]"),
   ).toHaveText("Saved");
   await page.goto("/proposals?new=1");
   await page

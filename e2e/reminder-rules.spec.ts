@@ -77,7 +77,7 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
     }),
   ).toBeVisible();
   await expect(
-    page.locator(".workspace-section-card [role=status]"),
+    page.locator(".workspace-section [role=status]"),
   ).toHaveText("Saved");
   await page
     .getByRole("heading", { name: "Email sending", exact: true })
