@@ -414,6 +414,7 @@
   :is(.editor-document-region, .studio-template-main)
   .editor-sheet-gap {
   background-color: var(--surface-deep);
+  color: var(--canvas-ink-muted);
 }
 @media (max-width: 1099px) {
   .ink-clay .workspace-section-list button {

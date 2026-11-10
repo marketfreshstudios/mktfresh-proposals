@@ -246,7 +246,7 @@ export function renderTemplate(
     body.text += "\n\n" + facts;
   }
   if (options.jobFailure?.details) {
-    body.html += `<p style="margin:16px 0;font-size:12px;line-height:18px;color:#625f56"><strong>Details</strong><br>${escape(options.jobFailure.details).replaceAll("\n", "<br>")}</p>`;
+    body.html += `<p style="margin:16px 0;font-size:12px;line-height:18px;color:#56646a"><strong>Details</strong><br>${escape(options.jobFailure.details).replaceAll("\n", "<br>")}</p>`;
     body.text += "\n\nDetails: " + options.jobFailure.details;
   }
   const s = p.workspace_settings,

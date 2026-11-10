@@ -355,7 +355,7 @@ for (const width of [1440, 768, 375])
         await focusedBefore.dispose();
         await expect(n).toHaveCSS(
           "background-color",
-          theme === "dark" ? "rgb(242, 245, 245)" : "rgb(28, 27, 24)",
+          theme === "dark" ? "rgb(242, 245, 245)" : "rgb(24, 34, 38)",
         );
         expect(
           (

@@ -17,11 +17,11 @@ import {
 import { fontFamily } from "./proposal-fonts";
 import type { ResolvedStyles } from "./proposal-styles";
 export const pageBandCss = `
-.page-band{position:absolute;display:grid;gap:24px;align-items:center;box-sizing:border-box;color:#5F5B53;font-size:12px;line-height:16px;font-weight:400;text-transform:none;letter-spacing:normal;overflow:hidden}
+.page-band{position:absolute;display:grid;gap:24px;align-items:center;box-sizing:border-box;color:#56646a;font-size:12px;line-height:16px;font-weight:400;text-transform:none;letter-spacing:normal;overflow:hidden}
 .page-band[data-page-band=header]{padding-bottom:var(--band-space-by-line,6px)}
-.page-band[data-page-band=header][data-divider=true]{border-bottom:1px solid #E3DED4}
+.page-band[data-page-band=header][data-divider=true]{border-bottom:1px solid #dce3e6}
 .page-band[data-page-band=footer]{padding-top:var(--band-space-by-line,6px)}
-.page-band[data-page-band=footer][data-divider=true]{border-top:1px solid #E3DED4}
+.page-band[data-page-band=footer][data-divider=true]{border-top:1px solid #dce3e6}
 .page-band .band-slot{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;height:100%}
 .page-band .band-brand-name{vertical-align:middle;margin:0}.page-band .band-brand-lockup{display:inline-flex;align-items:center;gap:10px;vertical-align:middle;white-space:nowrap}
 .page-band .band-slot-content{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

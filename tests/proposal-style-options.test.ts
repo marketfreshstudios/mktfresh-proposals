@@ -11,7 +11,7 @@ import { setup, staff } from "./helpers";
 import { publicResult } from "../src/lib/service";
 import { versionHash } from "../src/lib/content";
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
-it("preserves the exact old resolved JSON, CSS and Cards HTML until a setting changes", () => {
+it("keeps the old resolved JSON and Cards HTML with Harbor-only CSS paint changes", () => {
   const styles = resolveStyles();
   expect(styles.body.size).toBe(16);
   expect(styles.layout!.margins).toEqual({
@@ -25,7 +25,7 @@ it("preserves the exact old resolved JSON, CSS and Cards HTML until a setting ch
     "d8a514d296c5966d383ba9e09e3423b24856abc91b23073c2e74092b0df674b8",
   );
   expect(hash(documentStyleCss(styles))).toBe(
-    "4bb254933ab41b1c089e68f50e78ac22c4a8e2ebdc5c8aa7b112b23bf86ef8cd",
+    "a26892ad20506af9a242fadcc65769dbc1dfbf46f8953b025d0a1420ad81b7f5",
   );
   expect(hash(documentQuote([], "USD"))).toBe(
     "b0d71e645450d3b2971fba163a76d4b86ac99fdb69d11264c229323f7b9864ac",

@@ -2,6 +2,8 @@
 
 Imported 8–9 Nov 2026 from the Claude Design project. This is the current visual direction for the staff app.
 
+**Palette update, November 10:** Harbor cool neutrals replace beige in the running app. The archived references below are unchanged; use `src/app/ink-clay-tokens.css` for the live staff palette and `src/app/foundation-tokens.css` for client and paper neutrals. Page is `#F1F4F5`, sunken and segmented controls are `#E8EDEF`, editor canvas is `#D5DEE1`, and Mist hover stays `#F4F7F7`. Ink, Clay, and the hero and semantic status hues keep their roles.
+
 **Start with `Redesign 19 - Review Fixes.dc.html`.** It supersedes Redesign 18: the same screens and ids prefixed with 2 (2a1 = A1), plus review fixes 1a–1e, with these rules applied everywhere (where they conflict with older frames or `specs/ink-and-clay.md`, they win):
 
 1. Cards only for things you act on; reference info sits on the page between hairlines.

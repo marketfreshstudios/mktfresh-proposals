@@ -517,10 +517,10 @@ export function ClientPageSheets({
 const sheetCss = `
 :host{display:block;position:relative;min-width:0;width:100%}
 .client-pages-root{width:100%;min-width:0}
-.client-page-frame{position:relative;overflow:clip;width:100%;background:white;border-radius:4px;box-shadow:0 1px 3px rgba(20,18,14,.08),0 14px 32px rgba(20,18,14,.08)}
+.client-page-frame{position:relative;overflow:clip;width:100%;background:white;border-radius:4px;box-shadow:0 1px 3px rgba(19, 48, 58,.08),0 14px 32px rgba(19, 48, 58,.08)}
 .client-letter-sheet{position:absolute;left:0;top:0;transform-origin:top left;background:white;box-sizing:border-box}
 .client-sheet-content{display:flow-root;position:relative}
-.client-sheet-gap{height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f2efe9);color:var(--ink-muted,#5f5b53);font:600 11px/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
+.client-sheet-gap{height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f1f4f5);color:var(--ink-muted,#56646a);font:600 11px/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
 .proposal-typography.proposal-typography .flow-quote-line>.quote-control-slot{position:relative}
 .proposal-typography.proposal-typography .flow-quote-line .client-sheet-input{position:absolute;left:10px;top:10px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));margin:0;padding:0;border:0;opacity:0;z-index:1;cursor:pointer}
 .proposal-typography.proposal-typography .quote-table .client-sheet-input{position:absolute;left:22px;top:22px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));border:0;opacity:0;z-index:1;cursor:pointer}.quote-table .quote-control-slot:focus-within>.print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}

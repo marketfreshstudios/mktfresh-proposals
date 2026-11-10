@@ -42,6 +42,29 @@ function composite(overlay: string, ground: string) {
   );
 }
 
+it("keeps the approved Harbor light palette and unchanged Ink and Clay", () => {
+  expect(values(light)).toMatchObject({
+    "surface-page": "#f1f4f5",
+    "surface-sunken": "#e8edef",
+    segment: "#e8edef",
+    "surface-deep": "#d5dee1",
+    "surface-preview": "#f4f7f7",
+    border: "#dce3e6",
+    "border-strong": "#c2cdd2",
+    "border-control": "#c2cdd2",
+    "ink-muted": "#56646a",
+    "st-draft-soft": "#e4eaed",
+    "st-draft-ink": "#3c4a50",
+    "st-draft-strong": "#7f8e94",
+    "st-expired-soft": "#e4eaed",
+    "st-expired-ink": "#3c4a50",
+    "st-expired-strong": "#7f8e94",
+    ink: "#1c1b18",
+    "ink-title": "#13303a",
+    action: "#b4532a",
+  });
+});
+
 it.each(["light", "dark"])("%s staff text pairs reach 4.5:1", (theme) => {
   const tokens = {
     ...values(light),
@@ -67,9 +90,9 @@ it.each(["light", "dark"])("%s staff text pairs reach 4.5:1", (theme) => {
       "surface-sunken",
       "surface-raised",
       "segment",
-      "surface-deep",
     ])
       check(ink, bg);
+    check(ink === "ink-muted" ? "canvas-ink-muted" : ink, "surface-deep");
   }
   for (const ink of ["chrome-ink", "chrome-muted", "ai-on-chrome"]) {
     check(ink, "chrome");

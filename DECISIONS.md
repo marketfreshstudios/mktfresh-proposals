@@ -1084,3 +1084,7 @@ The header's workspace branding uses the shared brand resolver: wide logo alone 
 ## Editing Own It Over Time labels — November 10, 2026
 
 The template canvas and both clause settings fields display the five run-in labels as editable bold text. Only `oiot_run_in` uses this adapter. It converts a leading bold label back to the existing paired delimiters on save and discards loose asterisks during editing. Ordinary clause editing, the approved stored body, and the client/PDF renderer are unchanged. No data migration or rewrite of frozen proposals is needed.
+
+## Harbor neutrals — November 10, 2026
+
+Owner decision, November 10: Harbor cool ink-tinted neutrals replace beige. The live tokens override the historical design references. White sheets and cards remain white. Staff Ink, Clay, hero and semantic status hues are unchanged, apart from the neutral Draft and Expired treatment. Body text stays at `#1C1B18`; the near-black document ink used in existing resolved proposal styles also stays as authored. Client and email chrome use Harbor neutrals with the tenant's existing accent, never the staff accent. Default paper rules, the neutral block and cover treatments, editor field chips, and shadows use the same cool family. Custom tenant colors, content, snapshots, and sealed PDF files are not rewritten. The favicon and social preview already use Ink and a cool background.

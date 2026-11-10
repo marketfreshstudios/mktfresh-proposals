@@ -386,7 +386,7 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
   const box = paper.locator('[data-block-id="block-columns"] > .block-content');
   await expect(box).toHaveCSS("padding-top", "24px");
   await expect(box).toHaveCSS("border-top-width", "1px");
-  await expect(box).toHaveCSS("background-color", "rgb(243, 240, 234)");
+  await expect(box).toHaveCSS("background-color", "rgb(241, 244, 245)");
   const editorEdges = await readColumnEdges(box);
   expectContentHeight(editorEdges);
   await shot(page, "styled-block-editor-1440");
@@ -429,7 +429,7 @@ test("styled Columns share the frozen plan with PDF and desktop client and stack
   expect(pdf.layout.overflow_columns).toEqual([]);
   expect(
     pdf.layout.sheets!.some((sheet) =>
-      /background-color:\s*(?:#f3f0ea|rgb\(243, 240, 234\))/i.test(sheet.html),
+      /background-color:\s*(?:#f1f4f5|rgb\(241, 244, 245\))/i.test(sheet.html),
     ),
   ).toBe(true);
   const printSheet = pdf.layout.sheets!.find((sheet) =>

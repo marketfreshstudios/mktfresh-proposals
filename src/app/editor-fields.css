@@ -1,8 +1,9 @@
 /* One authoring decoration. Paint outside the text box; preserve print-width metrics. */
 :is(.quote-workspace, .studio-v3-editor, .studio-email-editor) .field-chip {
   display: inline;
-  background: #f0ece4;
-  color: #3e3b35;
+  --field-chip-ground: #e8edef;
+  background: var(--field-chip-ground);
+  color: #3c4a50;
   border: 0;
   border-radius: 4px;
   padding: 0;
@@ -10,6 +11,6 @@
   line-height: inherit;
   letter-spacing: inherit;
   box-shadow:
-    2px 0 #f0ece4,
-    -2px 0 #f0ece4;
+    2px 0 var(--field-chip-ground),
+    -2px 0 var(--field-chip-ground);
 }

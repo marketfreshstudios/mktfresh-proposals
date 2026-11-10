@@ -19,7 +19,7 @@ export type BlockStyle = z.infer<typeof blockStyleSchema>;
 export const blockSpacing = { none: 0, s: 12, m: 24, l: 40 } as const;
 export const blockBorderWidth = { thin: 1, medium: 2 } as const;
 export const blockRadius = { s: 4, m: 8 } as const;
-export const blockNeutral = "#f3f0ea";
+export const blockNeutral = "#f1f4f5";
 
 export function blockBackground(style?: BlockStyle) {
   return style?.background === "neutral" ? blockNeutral : style?.background;

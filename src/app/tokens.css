@@ -15,7 +15,7 @@
   );
   --select-compact-chevron-offset: var(--space-2);
   /* Design-system chevron-right, rotated down; colors mirror ink tokens. */
-  --select-chevron-light-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%235a626b' transform='rotate(90 256 256) translate(96 0)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
+  --select-chevron-light-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%2356646a' transform='rotate(90 256 256) translate(96 0)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
   --select-chevron-light-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%2312151a' transform='rotate(90 256 256) translate(96 0)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
   --select-chevron-dark-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23a3abb6' transform='rotate(90 256 256) translate(96 0)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
   --select-chevron-dark-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23f2f4f7' transform='rotate(90 256 256) translate(96 0)' d='M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z'/%3E%3C/svg%3E");
@@ -50,23 +50,23 @@
 }
 :root,
 [data-theme="light"] {
-  --surface-page: #f5f6f8;
+  --surface-page: #f1f4f5;
   --surface: #ffffff;
-  --surface-sunken: #eceef1;
+  --surface-sunken: #e8edef;
   --surface-raised: #ffffff;
   --surface-inverse: #16191d;
   --paper: #ffffff;
   --overlay: rgba(14, 17, 22, 0.5);
   --ink: #12151a;
-  --ink-muted: #5a626b;
+  --ink-muted: #56646a;
   --select-chevron: var(--select-chevron-light-muted);
   --select-chevron-hover: var(--select-chevron-light-ink);
   --ink-inverse: #ffffff;
   --paper-ink: #12151a;
-  --paper-muted: #5a626b;
+  --paper-muted: #56646a;
   --paper-accent: #1a5fb4;
-  --paper-border: #d4d8de;
-  --border: #dde1e6;
+  --paper-border: #dce3e6;
+  --border: #dce3e6;
   --border-strong: #7e8690;
   --accent: #1a5fb4;
   --accent-hover: #164e94;
@@ -90,7 +90,7 @@
   --ai: #6b4fbb;
   --ai-soft: #eee8fb;
   --on-ai: #ffffff;
-  --neutral-soft: #eceef1;
+  --neutral-soft: #e4eaed;
   --shadow-sm: 0 1px 2px rgba(14, 17, 22, 0.08);
   --shadow-md:
     0 2px 4px rgba(14, 17, 22, 0.06), 0 8px 16px rgba(14, 17, 22, 0.08);
@@ -113,9 +113,9 @@
   --select-chevron-hover: var(--select-chevron-dark-ink);
   --ink-inverse: #12151a;
   --paper-ink: #12151a;
-  --paper-muted: #5a626b;
+  --paper-muted: #56646a;
   --paper-accent: #1a5fb4;
-  --paper-border: #d4d8de;
+  --paper-border: #dce3e6;
   --border: #2b3038;
   --border-strong: #6e7681;
   --accent: #6fa8e6;
@@ -347,25 +347,25 @@
 
 :root,
 [data-theme="light"] {
-  --row-hover: #eeece6;
+  --row-hover: #f4f7f7;
 }
 [data-theme="dark"] {
-  --row-hover: #2c2b27;
+  --row-hover: #252f33;
 }
 
 :root,
 [data-theme="light"] {
   --block-active-ground: rgba(54, 92, 74, 0.045);
   --block-active-outline: #688276;
-  --block-toolbar-ground: #fbfaf7;
-  --block-toolbar-ink: #24231f;
+  --block-toolbar-ground: #ffffff;
+  --block-toolbar-ink: #1d2529;
   --block-ai-ink: #6541a1;
 }
 [data-theme="dark"] {
   --block-active-ground: rgba(149, 185, 159, 0.12);
   --block-active-outline: #88ad97;
-  --block-toolbar-ground: #24231f;
-  --block-toolbar-ink: #f4f2ed;
+  --block-toolbar-ground: #1d2529;
+  --block-toolbar-ink: #f2f5f5;
   --block-ai-ink: #ceb7ff;
 }
 

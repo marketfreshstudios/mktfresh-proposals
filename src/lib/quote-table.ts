@@ -91,11 +91,11 @@ export const quoteTableCss = `
 .proposal-typography.proposal-typography .quote-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:100%;margin:8px 0;font:inherit;line-height:1.5;color:inherit}
 .proposal-typography.proposal-typography .print-pricing-table>.quote-table:first-child{margin-top:0}
 .quote-table-mobile-label{display:none}.quote-table-details{font-weight:400;margin-top:4px}.quote-table-details:empty{display:none}
-.proposal-typography.proposal-typography .quote-table th,.proposal-typography.proposal-typography .quote-table td{padding:12px 6px;border:0;border-bottom:1px solid #ECE8E1;text-align:left;vertical-align:top;overflow-wrap:anywhere;font:inherit;line-height:1.5;background:transparent;text-transform:none;letter-spacing:normal}
-.proposal-typography.proposal-typography .quote-table thead th,.proposal-typography.proposal-typography .quote-table .quote-table-repeat th{font-size:12px;font-weight:600;background:#F6F4EF;color:#5F5B53;padding:8px 6px}
-.proposal-typography.proposal-typography .quote-table p{font:inherit;color:inherit;margin:0 0 4px}.quote-table .flow-terms{font-size:.85em!important;color:#5F5B53!important}
+.proposal-typography.proposal-typography .quote-table th,.proposal-typography.proposal-typography .quote-table td{padding:12px 6px;border:0;border-bottom:1px solid #e4eaed;text-align:left;vertical-align:top;overflow-wrap:anywhere;font:inherit;line-height:1.5;background:transparent;text-transform:none;letter-spacing:normal}
+.proposal-typography.proposal-typography .quote-table thead th,.proposal-typography.proposal-typography .quote-table .quote-table-repeat th{font-size:12px;font-weight:600;background:#f4f7f7;color:#56646a;padding:8px 6px}
+.proposal-typography.proposal-typography .quote-table p{font:inherit;color:inherit;margin:0 0 4px}.quote-table .flow-terms{font-size:.85em!important;color:#56646a!important}
 .quote-table-item{display:flex;align-items:flex-start;gap:8px}.quote-table-item strong{font-weight:600}.quote-table .quote-control-slot{position:relative;display:inline-flex;flex:none;width:20px;height:20px;margin-top:2px}
-.quote-table .quote-control-slot input{position:relative;appearance:none;width:20px;height:20px;min-height:20px;border:2px solid #8A857B;border-radius:6px;background:white;margin:0;padding:0;flex:none}
+.quote-table .quote-control-slot input{position:relative;appearance:none;width:20px;height:20px;min-height:20px;border:2px solid #7f8e94;border-radius:6px;background:white;margin:0;padding:0;flex:none}
 .quote-table .quote-control-slot input:checked{background:#365c4a;border-color:#365c4a;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12 4 4L19 6' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E");background-size:16px;background-position:center}
 .quote-table .quote-control-slot input[type=radio]{border-radius:50%}.quote-table .quote-control-slot input[type=radio]:checked{background:white;background-image:radial-gradient(circle,#365c4a 0 5px,transparent 5.5px)}
 .quote-table .quote-table-hit{display:inline-flex;position:absolute;left:-12px;top:-12px;width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer}.quote-table input:focus-visible{outline:2px solid #13303A;outline-offset:4px}
@@ -105,15 +105,15 @@ export const quoteTableCss = `
 .client-flow .flow-document .quote-table colgroup{display:none}
 .client-flow .flow-document .quote-table thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .client-flow .flow-document .quote-table tbody{display:block}
-.client-flow .flow-document .quote-table tr{display:grid;grid-template-columns:minmax(0,.65fr) repeat(2,minmax(0,1fr));column-gap:8px;padding:16px 0;border-bottom:1px solid #ECE8E1}
+.client-flow .flow-document .quote-table tr{display:grid;grid-template-columns:minmax(0,.65fr) repeat(2,minmax(0,1fr));column-gap:8px;padding:16px 0;border-bottom:1px solid #e4eaed}
 .client-flow .flow-document.proposal-typography.proposal-typography .quote-table :is(th,td,p,strong,.quote-table-details){word-break:normal;overflow-wrap:break-word;hyphens:none}
 .client-flow .flow-document.proposal-typography.proposal-typography .quote-table :is(th,td){border:0;padding:0!important;min-width:0}
 .client-flow .flow-document .quote-table th[scope=row],.client-flow .flow-document .quote-table .quote-table-description{grid-column:1/-1}
 .client-flow .flow-document .quote-table .quote-table-description{margin-top:8px}
 .client-flow .flow-document .quote-table .quote-table-numeric{position:relative;margin-top:10px}
-.client-flow .flow-document .quote-table .quote-table-numeric+.quote-table-numeric .quote-table-entry::before{content:"·";position:absolute;left:-7px;color:#5F5B53}
+.client-flow .flow-document .quote-table .quote-table-numeric+.quote-table-numeric .quote-table-entry::before{content:"·";position:absolute;left:-7px;color:#56646a}
 .client-flow .flow-document .quote-table .quote-table-item{align-items:baseline}.client-flow .flow-document .quote-table .quote-table-item strong{min-width:0}
-.client-flow .flow-document .quote-table .quote-table-mobile-label{display:inline;font-size:12px;color:#5F5B53}
+.client-flow .flow-document .quote-table .quote-table-mobile-label{display:inline;font-size:12px;color:#56646a}
 .client-flow .flow-document .quote-table .quote-table-hit{align-items:center}
 }
 `;
