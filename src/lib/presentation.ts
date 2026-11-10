@@ -121,16 +121,16 @@ export function resolveLabel(text: string, map: Record<string, string>) {
     map[path] ? map[path] : token,
   );
 }
+export const permitsEmptyVariable = (path: string) =>
+  ["proposal.validity", "proposal.valid_until", "client.address"].includes(
+    path,
+  );
+
 export function resolve(text: string, map: Record<string, string>) {
   return text.replace(/{{\s*([\w.-]+)\s*}}/g, (_, path) => {
     check(
       map[path] !== undefined &&
-        (map[path] !== "" ||
-          [
-            "proposal.validity",
-            "proposal.valid_until",
-            "client.address",
-          ].includes(path)),
+        (map[path] !== "" || permitsEmptyVariable(path)),
       `Unresolved variable: ${path}`,
     );
     return map[path];

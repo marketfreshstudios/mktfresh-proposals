@@ -8,7 +8,8 @@ import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
 import { TriangleAlert } from "lucide-react";
-import { finalOiotClause } from "../lib/oiot";
+import { finalOiotClause, revealedOiotClause } from "../lib/oiot";
+import { useTermsJump } from "./use-terms-jump";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
@@ -237,6 +238,7 @@ function QuoteEditorContent({
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
+  const jumpToTerms = useTermsJump("editor");
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
       ...initial,
@@ -893,13 +895,22 @@ function QuoteEditorContent({
   ready.errors.push(...customerErrors);
   ready.ready = !ready.errors.length;
   function setItems(next: QuoteItem[]) {
-    change({
-      quote: next.map((i, order) => ({
-        ...i,
-        order,
-        selected: !i.optional || i.default_selected,
-      })),
-    });
+    const quote = next.map((i, order) => ({
+      ...i,
+      order,
+      selected: !i.optional || i.default_selected,
+    }));
+    const term = revealedOiotClause(p.content, p.quote, quote);
+    change({ quote });
+    if (term) {
+      selection.clear();
+      if (panels.phone) {
+        setFullDocument(true);
+        setSection(0);
+        setDrawer(false);
+      } else if (drawer) panels.toggle("right");
+      jumpToTerms(term);
+    }
   }
   function addItem(item?: Item) {
     const id = uid(),
@@ -2259,7 +2270,7 @@ function QuoteEditorContent({
                       >
                         <details open={panels.printMode || undefined}>
                           <Disclosure>
-                            <h3>
+                            <h3 data-terms-heading={c.id}>
                               <HeadingTokens text={c.heading} map={map} />
                             </h3>
                           </Disclosure>

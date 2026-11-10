@@ -1,4 +1,3 @@
-import { oiotKickoffField, oiotPurchasePriceField } from "./oiot";
 import { fieldLabel } from "./field-labels";
 import { proposalBands } from "./page-bands";
 import { freezeStyles } from "./proposal-styles";
@@ -7,6 +6,7 @@ import type { Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
 import { publicResult } from "./service";
 import { variables, versionHash } from "./content";
+import { permitsEmptyVariable } from "./presentation";
 export function previewProposal(
   proposal: Proposal,
   settings: WorkspaceSettings,
@@ -18,8 +18,10 @@ export function previewProposal(
     delete p.published_state;
     p.quote = draftItems(p.quote);
     const map = variables(p);
-    for (const field of [oiotKickoffField, oiotPurchasePriceField])
-      map[field] ||= fieldLabel(field);
+    // Staff can preview an unfinished draft. Sending still requires real values.
+    for (const [field, value] of Object.entries(map))
+      if (!value && !permitsEmptyVariable(field))
+        map[field] = fieldLabel(field);
 
     const version = {
       header_footer: proposalBands(p.header_footer),

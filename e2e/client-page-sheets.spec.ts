@@ -289,7 +289,10 @@ test("desktop client sheets use frozen PDF breaks, bands and geometry, with cris
     await expect(
       page.locator(".flow-body .page-band,.flow-body .client-page-frame"),
     ).toHaveCount(0);
-    await expect(page.locator(".flow-contract details")).not.toHaveCount(0);
+    const terms = page.locator(".flow-contract");
+    await expect(terms.locator("details, summary")).toHaveCount(0);
+    await expect(terms.locator("h3").first()).toBeVisible();
+    await expect(terms.locator("section > p").first()).toBeVisible();
   }
 });
 

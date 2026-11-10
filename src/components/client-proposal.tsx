@@ -1,6 +1,7 @@
 "use client";
 import { quickBooksInvoiceTiming } from "../lib/proposal-state";
-import { finalOiotClause, finalOiotVisibility } from "../lib/oiot";
+import { finalOiotVisibility, revealedOiotClause } from "../lib/oiot";
+import { useTermsJump } from "./use-terms-jump";
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
@@ -8,7 +9,6 @@ import { CircleAlert, LockKeyhole } from "lucide-react";
 import { blockText } from "../lib/editor-document";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
-import { Disclosure } from "./ui";
 import { pairSignatureNodes } from "./signature-pair";
 import { DocumentTotals } from "./document-totals";
 import { ClientPrint } from "./client-print";
@@ -46,13 +46,7 @@ import type { QuoteItem } from "../lib/model";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
-import {
-  contractClauseHtml,
-  money,
-  totals,
-  renderBlocks,
-  resolve,
-} from "../lib/presentation";
+import { money, totals, renderBlocks, resolve } from "../lib/presentation";
 import { PoweredByYeswell } from "./powered-by-yeswell";
 import { ClientWorkspaceIcon } from "./client-workspace-icon";
 import type { BillingLine } from "../lib/model";
@@ -100,7 +94,7 @@ export function ClientProposal({
     brand: Brand;
     initial?: PublicProposal;
   } | null>(null);
-  const [failure, setFailure] = useState(false);
+  const [failure, setFailure] = useState("");
   useEffect(() => {
     const preference = localStorage.getItem("proposal-theme");
     document.documentElement.dataset.theme =
@@ -110,7 +104,7 @@ export function ClientProposal({
   useEffect(() => {
     let active = true;
     setRoute(null);
-    setFailure(false);
+    setFailure("");
     void api<any>(
       preview
         ? `/api/proposals/${token}/preview`
@@ -125,8 +119,16 @@ export function ClientProposal({
             initial: preview ? value : undefined,
           });
       })
-      .catch(() => {
-        if (active) setFailure(true);
+      .catch((error: unknown) => {
+        if (!active) return;
+        const status = error instanceof ApiError ? error.status : 0;
+        setFailure(
+          [401, 403, 404].includes(status)
+            ? "This preview can only be opened by workspace staff."
+            : status === 400
+              ? "Some proposal content couldn’t be previewed. Open the editor and check readiness."
+              : "The preview couldn’t be loaded. Reload the page to try again.",
+        );
       });
     return () => {
       active = false;
@@ -138,7 +140,7 @@ export function ClientProposal({
         <section className="flow-state flow-ended">
           <CircleAlert aria-hidden="true" />
           <h1>Preview unavailable</h1>
-          <p>This preview can only be opened by workspace staff.</p>
+          <p>{failure}</p>
         </section>
       </main>
     );
@@ -214,6 +216,7 @@ function NewClientFlow({
     pending = useRef(false);
   const [barHeight, setBarHeight] = useState(0);
   const [readSection, setReadSection] = useState<number | null>(null);
+  const jumpToTerms = useTermsJump("client");
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
   const [questionSection, setQuestionSection] = useState<string | null>(null);
@@ -428,6 +431,7 @@ function NewClientFlow({
     if (!p || pending.current || stale || signed) return;
     const previous = p,
       quote = chooseItem(p.quote as QuoteItem[], id, selected),
+      term = revealedOiotClause(p.content, p.quote as QuoteItem[], quote),
       t = totals(quote);
     const fmt = (n: number) => formatMoney(n, p.currency, p.money_cents);
     const variables = {
@@ -457,7 +461,10 @@ function NewClientFlow({
         p.currency,
       ),
     });
-    if (preview) return;
+    if (preview) {
+      jumpToTerms(term ?? null);
+      return;
+    }
     pending.current = true;
     setBusy(true);
     setError("");
@@ -469,6 +476,7 @@ function NewClientFlow({
         selected,
       });
       setP(saved);
+      jumpToTerms(term ?? null);
       engagement.choice(id, selected);
     } catch (e) {
       setP(previous);
@@ -1769,38 +1777,15 @@ function FlowingDocument({
               id={`section-${index}`}
               className="flow-contract"
               {...blockProps(block, index)}
-            >
-              <h2>{block.text || "Statement of Work & Contract"}</h2>
-              {(block.clauses ?? [])
-                .filter(
-                  (clause) =>
-                    !finalOiotClause(clause) ||
-                    !clause.show_when ||
-                    p.quote.some(
-                      (item) =>
-                        item.pricing_item_id ===
-                          clause.show_when?.pricing_item_id &&
-                        (!item.optional ||
-                          (item.selected ?? item.default_selected)),
-                    ),
-                )
-                .map((c) => (
-                  <details key={c.id}>
-                    <Disclosure>{resolve(c.heading, p.variables)}</Disclosure>
-                    {finalOiotClause(c) ? (
-                      <p
-                        dangerouslySetInnerHTML={{
-                          __html: contractClauseHtml(c, p.variables),
-                        }}
-                      />
-                    ) : (
-                      <p style={{ whiteSpace: "pre-wrap" }}>
-                        {resolve(c.body, p.variables)}
-                      </p>
-                    )}
-                  </details>
-                ))}
-            </section>
+              dangerouslySetInnerHTML={{
+                __html: renderBlocks(
+                  [block],
+                  p.quote as QuoteItem[],
+                  p.variables,
+                  p.currency,
+                ),
+              }}
+            />
           ) : block.type === "signature_block" ? (
             <div key={index} {...blockProps(block, index)}>
               <ClientSignatureBlock
