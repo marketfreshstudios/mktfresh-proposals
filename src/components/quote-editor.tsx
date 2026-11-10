@@ -1085,11 +1085,13 @@ function QuoteEditorContent({
               </span>
               <div>
                 <p>
-                  <strong>Needs attention.</strong> {e}
+                  <strong>Needs attention.</strong>{" "}
+                  {e === businessStateError ? (
+                    <a href={businessStateUrl}>{e}</a>
+                  ) : (
+                    e
+                  )}
                 </p>
-                {e === businessStateError && (
-                  <a href={businessStateUrl}>Add business state</a>
-                )}
                 {e === "Choose which Stripe customer this client is" && (
                   <a href={`/clients/${p.client.id}#stripe-customers`}>
                     Choose Stripe customer

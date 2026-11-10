@@ -1112,6 +1112,7 @@ function TemplatesStudioContent({
     data.settings?.company_name,
     data.settings?.owner,
     data.settings?.business_state,
+    data.settings?.business_name,
     data.settings?.default_validity_days,
     data.settings?.logo,
     data.settings?.logo_icon,

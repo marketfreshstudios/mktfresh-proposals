@@ -7,7 +7,9 @@ import type { Data } from "./staff-app";
 import type { WorkspaceSettings } from "../lib/workspace";
 import { ColorPicker } from "./color-picker";
 import { acceptBrandSuggestions } from "../lib/color-picker";
-import { businessStates } from "../lib/business-state";
+import { businessDetailsSnapshot } from "../lib/business-details";
+import { BusinessDetails } from "./business-details";
+import { ToastSurface } from "./toast-surface";
 import {
   curatedFonts,
   fontCss,
@@ -28,6 +30,8 @@ import { StaffSignIn, isStaffSignedOut } from "./staff-sign-in";
 type Runner = (fn: () => Promise<unknown>, success?: string) => Promise<void>;
 function workspaceInitialSection(initial: string) {
   const hash = typeof window === "undefined" ? "" : location.hash.slice(1);
+  if (initial === "brand" && hash === "workspace-business-state")
+    return "business-details";
   const requested =
     initial === "brand" && workspaceSections.some(([key]) => key === hash)
       ? hash
@@ -144,6 +148,15 @@ export function WorkspaceStudio({
   const [states, setStates] = useState<
     Record<string, { status: string; error?: string }>
   >({});
+  const [businessUndo, setBusinessUndo] = useState<ReturnType<
+    typeof businessDetailsSnapshot
+  > | null>(null);
+  const savedSettings = useRef(draft);
+  useEffect(() => {
+    if (!businessUndo) return;
+    const timer = setTimeout(() => setBusinessUndo(null), 6000);
+    return () => clearTimeout(timer);
+  }, [businessUndo]);
   const pending = useRef<{
       value: WorkspaceSettings;
       section: string;
@@ -184,6 +197,7 @@ export function WorkspaceStudio({
     }
     if (!pending.current) return !saveFailed.current;
     let didSave = false;
+    let savedOtherSection = false;
     const task = (async () => {
       while (pending.current) {
         const current = pending.current;
@@ -195,6 +209,17 @@ export function WorkspaceStudio({
             ...current.extra,
           });
           didSave = true;
+          savedOtherSection ||= current.section !== "business-details";
+          const before = businessDetailsSnapshot(savedSettings.current);
+          if (
+            mounted.current &&
+            current.section === "business-details" &&
+            JSON.stringify(before) !==
+              JSON.stringify(businessDetailsSnapshot(current.value))
+          ) {
+            setBusinessUndo(before);
+          }
+          savedSettings.current = current.value;
           saveFailed.current = false;
           if (
             current.extra?.default_password === extras.current.default_password
@@ -228,7 +253,11 @@ export function WorkspaceStudio({
     await task;
     flight.current = null;
     if (pending.current) return flush();
-    if (didSave) await run(async () => {}, "Workspace settings saved");
+    if (didSave)
+      await run(
+        async () => {},
+        savedOtherSection ? "Workspace settings saved" : "",
+      );
     return !saveFailed.current;
   }
   function change(
@@ -236,6 +265,7 @@ export function WorkspaceStudio({
     immediate = false,
     extra?: Record<string, unknown>,
   ) {
+    if (section === "business-details") setBusinessUndo(null);
     const next = { ...model.current, ...patch };
     model.current = next;
     setDraft(next);
@@ -261,6 +291,7 @@ export function WorkspaceStudio({
     setSection(key);
     const url = new URL(location.href);
     url.searchParams.set("view", key);
+    url.hash = "";
     history.replaceState(null, "", url);
   }
   const text = (label: string, key: keyof WorkspaceSettings, type = "text") => (
@@ -360,12 +391,12 @@ export function WorkspaceStudio({
     </Field>
   );
   const cards: Record<string, ReactNode> = {
+    "business-details": (
+      <BusinessDetails settings={draft} editable={owner} change={change} />
+    ),
     brand: (
       <>
         <p>Shown on client pages, emails and PDFs.</p>
-        <div className="workspace-control-grid workspace-brand-top">
-          {text("Workspace name", "company_name")}
-        </div>
         <div className="workspace-brand-assets">
           <div className="workspace-logo-row">
             <div className="workspace-logo-heading">
@@ -706,71 +737,15 @@ export function WorkspaceStudio({
             )
           )}
         </section>
-        {toggle(
-          'Show "Powered by Yeswell"',
-          draft.show_powered_by !== false,
-          (v) => change({ show_powered_by: v }, true),
-          !owner,
-          "A small line at the bottom of client pages and emails. Never shown on the PDF.",
-        )}
-        {!owner && (
-          <p className="muted">
-            Only a super admin can change Yeswell attribution.
-          </p>
-        )}
-        <details
-          open={
-            (typeof location !== "undefined" &&
-              location.hash === "#workspace-business-state") ||
-            undefined
-          }
+        <a
+          href="/studio/workspace?view=fonts"
+          onClick={(event) => {
+            event.preventDefault();
+            go("fonts");
+          }}
         >
-          <Disclosure>Workspace contact details</Disclosure>
-          <div className="stack">
-            {text("Owner contact name", "owner")}
-            {text("Contact email", "email", "email")}
-            {text("Phone", "phone")}
-            {text("Address", "address")}
-            <Field label="Business state">
-              <Select
-                id="workspace-business-state"
-                disabled={!owner}
-                value={draft.business_state?.name ?? ""}
-                onChange={(e) =>
-                  change(
-                    {
-                      business_state: {
-                        name: e.target.value as any,
-                        other: draft.business_state?.other ?? "",
-                      },
-                    },
-                    true,
-                  )
-                }
-              >
-                <option value="">Choose your business state</option>
-                {businessStates.map((state) => (
-                  <option key={state}>{state}</option>
-                ))}
-                <option value="other">Other / outside the US</option>
-              </Select>
-            </Field>
-            {draft.business_state?.name === "other" && (
-              <Field label="State or region">
-                <input
-                  disabled={!owner}
-                  maxLength={200}
-                  value={draft.business_state.other}
-                  onChange={(e) =>
-                    change({
-                      business_state: { name: "other", other: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-            )}
-          </div>
-        </details>
+          Manage proposal fonts
+        </a>
       </>
     ),
     fonts: (
@@ -1118,6 +1093,18 @@ export function WorkspaceStudio({
     ),
     "client-links": (
       <>
+        {toggle(
+          'Show "Powered by Yeswell"',
+          draft.show_powered_by !== false,
+          (v) => change({ show_powered_by: v }, true),
+          !owner,
+          "A small line at the bottom of client pages and emails. Never shown on the PDF.",
+        )}
+        {!owner && (
+          <p className="muted">
+            Only a super admin can change Yeswell attribution.
+          </p>
+        )}
         <Field label="Default link validity (days)">
           <input
             type="number"
@@ -1181,6 +1168,10 @@ export function WorkspaceStudio({
     "email-sending": (
       <>
         <p>Configure the existing verified domain and automatic reminders.</p>
+        <div className="workspace-control-grid">
+          {text("Owner contact name", "owner")}
+          {text("Contact email", "email", "email")}
+        </div>
         <Field label="Verified sending domain">
           <input
             value={draft.sending_domain}
@@ -1403,6 +1394,18 @@ export function WorkspaceStudio({
       }
     >
       <div className="stack">{cards[section]}</div>
+      {section === "business-details" && businessUndo && (
+        <ToastSurface>
+          <span>Saved</span>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => change(businessUndo, true)}
+          >
+            Undo
+          </button>
+        </ToastSurface>
+      )}
       {uploadError && (
         <Banner tone="danger" title="Upload needs attention">
           {uploadError}

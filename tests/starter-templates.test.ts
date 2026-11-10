@@ -346,7 +346,7 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
     await db.close();
   }
 });
-it("Business state resolves its full name or outside-US text; sending blocks only when the field is used", async () => {
+it("Business state resolves its full name or outside-US text; sending always requires the state", async () => {
   expect(
     businessState({
       business_state: BusinessStateSchema.parse({ name: "North Carolina" }),
@@ -363,10 +363,13 @@ it("Business state resolves its full name or outside-US text; sending blocks onl
   expect(() => BusinessStateSchema.parse({ name: "NC" })).toThrow();
   const { draft } = await setup();
   const p = structuredClone(draft);
-  p.content.push({ type: "paragraph", text: "State: {{workspace.state}}" });
-  expect(readiness(p, []).errors).toContain(
-    "Add your business state in Workspace settings",
-  );
+  delete p.workspace_settings!.business_state;
+  expect(readiness(p, []).errors).toContain("Add your business state");
+  p.content.push({
+    type: "paragraph",
+    text: "State: {{workspace.state}} / {{business.state}}",
+  });
+  expect(readiness(p, []).errors).toContain("Add your business state");
   expect(readiness(p, []).errors).not.toContain(
     "Unresolved variable: workspace.state",
   );
@@ -375,6 +378,8 @@ it("Business state resolves its full name or outside-US text; sending blocks onl
     business_state: { name: "New York", other: "" },
   };
   expect(variables(p)["workspace.state"]).toBe("New York");
+  expect(variables(p)["business.state"]).toBe("New York");
+  expect(readiness(p, []).errors).not.toContain("Add your business state");
   expect(authoringErrors(p)).toEqual([]);
 });
 it("bracket guard names every section, ignores chips, hyperlinks and numeric prices, then passes after editing", async () => {

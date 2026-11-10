@@ -124,9 +124,9 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
     .join("");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/studio/workspace?view=brand");
-  await expect(page.getByLabel("Workspace name", { exact: true })).toHaveValue(
-    "Example Studio",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Brand", exact: true }),
+  ).toBeVisible();
   await expect(page.locator(".workspace-label .workspace-mark")).toHaveText(
     "E",
   );

@@ -88,6 +88,7 @@ export function stripeStatus(
 }
 
 export const workspaceSections = [
+  ["business-details", "Business details"],
   ["brand", "Brand"],
   ["fonts", "Proposal fonts"],
   ["money", "Money"],

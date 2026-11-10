@@ -20,6 +20,9 @@ import { StaffThemeOptions } from "./studio-account";
 import { StaffEmailSettings, StaffSecurityPanel } from "./staff-security-panel";
 import { workspaceSecuritySender } from "../lib/email-identity";
 
+import { businessDetailsUrl, businessState } from "../lib/business-state";
+import { workspaceBusinessName } from "../lib/business-details";
+
 type AccountSection = (typeof accountSections)[number][0];
 type Signatory = NonNullable<WorkspaceSettings["company_signatory"]>;
 
@@ -132,34 +135,58 @@ export function AccountPage({
             </div>
           </div>
         )}
-        <section className="card account-content" aria-label={label}>
-          <h2 className="t-card-title">{label}</h2>
-          {!data ? (
-            <Skeleton label="Loading your account…" />
-          ) : !account ? (
-            <Banner title="Account settings unavailable" tone="danger">
-              Reload to try again.
-            </Banner>
-          ) : section === "" ? (
-            <Profile
-              email={data.user.staff_email ?? ""}
-              workspaceReplyTo={settings?.email_reply_to === "workspace"}
-              verifiedFrom={settings ? workspaceSecuritySender(settings) : null}
-            />
-          ) : section === "notifications" ? (
-            <Notifications
-              viewedEnabled={settings?.engagement_notifications?.email === true}
-            />
-          ) : section === "signature" ? (
-            <AccountSignature data={data} />
-          ) : section === "preferences" ? (
-            <Preferences workspaceZone={settings?.timezone ?? "UTC"} />
-          ) : section === "security" ? (
-            <StaffSecurityPanel />
-          ) : (
-            <p>This account section could not be found.</p>
+        <div className="account-content-stack">
+          <section className="card account-content" aria-label={label}>
+            <h2 className="t-card-title">{label}</h2>
+            {!data ? (
+              <Skeleton label="Loading your account…" />
+            ) : !account ? (
+              <Banner title="Account settings unavailable" tone="danger">
+                Reload to try again.
+              </Banner>
+            ) : section === "" ? (
+              <Profile
+                email={data.user.staff_email ?? ""}
+                workspaceReplyTo={settings?.email_reply_to === "workspace"}
+                verifiedFrom={
+                  settings ? workspaceSecuritySender(settings) : null
+                }
+              />
+            ) : section === "notifications" ? (
+              <Notifications
+                viewedEnabled={
+                  settings?.engagement_notifications?.email === true
+                }
+              />
+            ) : section === "signature" ? (
+              <AccountSignature data={data} />
+            ) : section === "preferences" ? (
+              <Preferences workspaceZone={settings?.timezone ?? "UTC"} />
+            ) : section === "security" ? (
+              <StaffSecurityPanel />
+            ) : (
+              <p>This account section could not be found.</p>
+            )}
+          </section>
+          {section === "" && settings && (
+            <section
+              className="card account-content account-business-card"
+              aria-labelledby="account-business-title"
+            >
+              <h2 className="t-card-title" id="account-business-title">
+                Your business
+              </h2>
+              <p>
+                {[workspaceBusinessName(settings), businessState(settings)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+              {data?.user.staff_role === "owner" && (
+                <a href={businessDetailsUrl}>Edit business details</a>
+              )}
+            </section>
           )}
-        </section>
+        </div>
       </div>
     </div>
   );

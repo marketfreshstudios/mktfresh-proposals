@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check, Mail, Palette, Sparkles, Upload, Users } from "lucide-react";
+import {
+  Building2,
+  Check,
+  Mail,
+  Palette,
+  Sparkles,
+  Upload,
+  Users,
+} from "lucide-react";
 import type { Data } from "./staff-app";
 import { Button, post } from "./ui";
 import { SigningIcon } from "./staff-icons";
@@ -16,6 +24,7 @@ const optionalStepNames = {
 };
 
 const setupIcons = {
+  "business-details": Building2,
   brand: Palette,
   signatory: SigningIcon,
   email: Mail,
@@ -71,6 +80,7 @@ export function HomeSetup({
     (row) =>
       !row.complete &&
       (data.connections ||
+        row.id === "business-details" ||
         row.id === "brand" ||
         row.id === "signatory" ||
         (row.id === "email" && !data.settings?.sending_domain)),

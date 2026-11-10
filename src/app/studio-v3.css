@@ -2583,3 +2583,24 @@
   display: block;
   color: var(--ink-muted);
 }
+
+.workspace-business-group {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+.workspace-business-group .t-card-title {
+  margin: 0;
+}
+.workspace-business-group .field [aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.workspace-business-group .field small.danger {
+  color: var(--danger);
+}
+.business-field-link {
+  display: block;
+  padding: 4px 8px 8px;
+  font-size: 13px;
+}

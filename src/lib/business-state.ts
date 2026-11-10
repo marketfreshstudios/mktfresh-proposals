@@ -58,13 +58,14 @@ export const BusinessStateSchema = z
     other: z.string().trim().max(200).default(""),
   })
   .strict();
-export function businessState(settings?: {
-  business_state?: z.infer<typeof BusinessStateSchema>;
-}) {
+export function businessState(
+  settings?: {
+    business_state?: z.infer<typeof BusinessStateSchema>;
+  } | null,
+) {
   const value = settings?.business_state;
   return value?.name === "other" ? value.other.trim() : (value?.name ?? "");
 }
-export const businessStateError =
-  "Add your business state in Workspace settings";
-export const businessStateUrl =
-  "/studio/workspace?view=brand#workspace-business-state";
+export const businessDetailsUrl = "/studio/workspace?view=business-details";
+export const businessStateError = "Add your business state";
+export const businessStateUrl = `${businessDetailsUrl}#workspace-business-state`;

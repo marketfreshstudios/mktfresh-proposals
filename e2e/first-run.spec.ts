@@ -45,6 +45,7 @@ async function setupHome(page: Page, state: State, platform = false) {
     logo_icon: null,
     sending_domain: "",
     company_signatory: undefined,
+    business_state: undefined,
   };
   await page.route("**/api/auth/session", (route) =>
     route.fulfill({
@@ -205,7 +206,7 @@ for (const width of [1440, 375]) {
         }
         await expect(setup.getByRole("progressbar")).toHaveAttribute(
           "value",
-          state === "day-one" ? "0" : "3",
+          state === "day-one" ? "0" : "4",
         );
         await expect(
           setup.getByRole("link", { name: "Connect: Connect Stripe" }),
@@ -228,7 +229,7 @@ for (const width of [1440, 375]) {
           .click();
         await expect(setup.getByRole("progressbar")).toHaveAttribute(
           "value",
-          "4",
+          "5",
         );
         await expect(
           setup.getByRole("button", { name: "Record invoice numbers by hand" }),
@@ -239,7 +240,7 @@ for (const width of [1440, 375]) {
         await setup.getByRole("button", { name: "Show", exact: true }).click();
         await expect(setup.getByRole("progressbar")).toHaveAttribute(
           "value",
-          "5",
+          "6",
         );
         await setup.getByRole("button", { name: "Dismiss" }).click();
         await expect(setup).toHaveCount(0);
@@ -266,7 +267,7 @@ test("platform owner only sees setup when a required step is incomplete", async 
   await page.reload();
   await expect(
     page.getByRole("progressbar", { name: "Workspace setup progress" }),
-  ).toHaveAttribute("value", "4");
+  ).toHaveAttribute("value", "5");
   await expect(
     page.getByRole("link", { name: "Connect: Connect Stripe" }),
   ).toBeVisible();

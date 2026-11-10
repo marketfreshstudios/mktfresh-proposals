@@ -209,8 +209,12 @@ it("only Super admins upload, replace or remove; members can read and save unrel
     (await call("workspace_settings", { ...settings, logo_icon: null })).status,
   ).toBe(403);
   expect(
-    (await call("workspace_settings", { ...settings, phone: "555-0123" }))
-      .status,
+    (
+      await call("workspace_settings", {
+        ...settings,
+        accent_colour: "#24505A",
+      })
+    ).status,
   ).toBe(201);
   state.actor.staff_role = "owner";
   const replaced = await (

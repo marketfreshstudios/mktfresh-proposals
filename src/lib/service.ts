@@ -1,3 +1,4 @@
+import { businessState, businessStateError } from "./business-state";
 import { finalOiotVisibility } from "./oiot";
 import {
   ColumnsOverflowError,
@@ -824,6 +825,7 @@ export class ProposalService {
       domain,
       "Set the workspace's verified sending domain in Settings before sending",
     );
+    check(businessState(settings), businessStateError);
     const from = staffFromAddress(selected.email, settings);
     check(from, "Choose a sender with a valid email address");
     const sender = {

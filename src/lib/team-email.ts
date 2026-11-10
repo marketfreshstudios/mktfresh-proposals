@@ -1,3 +1,7 @@
+import {
+  formattedBusinessAddress,
+  workspaceBusinessName,
+} from "./business-details";
 import { randomUUID } from "node:crypto";
 import type { Actor } from "./model";
 import { check } from "./model";
@@ -50,7 +54,7 @@ export async function sendTeamEmail(
     "team.email": input.email,
     "team.role": staffRoleLabel(input.member.role),
     "sender.name": actor.staff_name ?? email,
-    "workspace.name": settings.company_name,
+    "workspace.name": workspaceBusinessName(settings),
   };
   const body = renderEmailBody(t.body, values),
     subject = resolveEmailText(t.subject, values);
@@ -73,7 +77,11 @@ export async function sendTeamEmail(
       button: { label: t.button_label, url: buttonUrl },
       workspace: settings.company_name,
       sender: actor.staff_name ?? email,
-      contact: [settings.email, settings.phone, settings.address]
+      contact: [
+        settings.email,
+        settings.phone,
+        formattedBusinessAddress(settings),
+      ]
         .filter(Boolean)
         .join(" · "),
       accent: settings.accent_colour,

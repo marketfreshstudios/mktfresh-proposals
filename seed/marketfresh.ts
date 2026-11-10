@@ -10,6 +10,9 @@ export async function seed(repo: Repository, mockMappings = false) {
     await repo.put("workspace_settings", {
       id: repo.workspaceId,
       company_name: "MarketFresh Studios",
+      ...(mockMappings
+        ? { business_state: { name: "North Carolina", other: "" } }
+        : {}),
       owner: "Jonathan Garces",
       company_signatory: {
         user_id: null,
