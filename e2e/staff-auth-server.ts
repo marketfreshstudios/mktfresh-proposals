@@ -18,6 +18,12 @@ const staffAccounts = {
     email: "member@example.test",
     app_metadata: { provider: "email" } as Record<string, unknown>,
   },
+  outside: {
+    ...user,
+    id: "00000000-0000-4000-8000-000000000004",
+    email: "outside@example.test",
+    app_metadata: {} as Record<string, unknown>,
+  },
   other: {
     ...user,
     id: "00000000-0000-4000-8000-000000000003",
@@ -73,10 +79,9 @@ const server = createServer(async (req, res) => {
   const body = text ? JSON.parse(text) : {};
   if (url.pathname === "/fixture" && req.method === "POST") {
     const s: Fixture = {
-      identity:
-        body.account === "staff" || body.account === "other"
-          ? staffAccounts[body.account as keyof typeof staffAccounts]
-          : user,
+      identity: ["staff", "other", "outside"].includes(body.account)
+        ? staffAccounts[body.account as keyof typeof staffAccounts]
+        : user,
       id: randomUUID(),
       access: "",
       refresh: "",
@@ -180,7 +185,10 @@ const server = createServer(async (req, res) => {
     return json([
       {
         user_id: identity.id,
-        workspace_id: LOCAL_WORKSPACE_ID,
+        workspace_id:
+          identity === staffAccounts.outside
+            ? "00000000-0000-4000-8000-000000000005"
+            : LOCAL_WORKSPACE_ID,
         role: identity === user ? "owner" : "member",
         display_name: identity === user ? "Alex Morgan" : "Sam Lee",
       },
