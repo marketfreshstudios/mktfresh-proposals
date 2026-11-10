@@ -66,14 +66,18 @@ export async function setStaffPassword(
   const member = await validateStaffMembership(
     session.user,
     session.access_token,
-    { passwordChange: true, invite: fromLink },
+    { passwordChange: true, invite: fromLink, twoStep: true },
   );
   check(fromLink || member.status === "active", "Staff access required", 403);
-  const store = new SupabaseTeamStore(supabase(), member.workspace_id);
-  await new SupabaseTeamAuth(supabase()).password(
-    session.user.id,
-    input.password,
-  );
+  const db = supabase();
+  const store = new SupabaseTeamStore(db, member.workspace_id);
+  const pending = await db
+    .from("staff_email_changes")
+    .delete()
+    .eq("user_id", session.user.id)
+    .is("claimed_at", null);
+  check(!pending.error, "Unable to update security settings. Try again.", 503);
+  await new SupabaseTeamAuth(db).password(session.user.id, input.password);
   await store.change(
     {
       actor: "staff:" + session.user.id,
@@ -98,6 +102,7 @@ export async function setStaffPassword(
   await validateStaffMembership(
     result.data.session.user,
     result.data.session.access_token,
+    { twoStep: true },
   );
   const email = result.data.session.user.email;
   if (

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emailIdentity } from "./email-identity";
+import { emailIdentity, staffFromAddress } from "./email-identity";
 import { check, type Actor, type Proposal } from "./model";
 import type { Repository } from "./repository";
 import { workspaceStaff } from "./auth";
@@ -104,10 +104,10 @@ export class ReassignmentService {
       p.owner = owner;
       if (liveSenderAssignment(p)) {
         const domain = settings?.sending_domain;
+        const from = settings && staffFromAddress(owner.email, settings);
         check(
-          domain &&
-            owner.email.split("@")[1]?.toLowerCase() === domain.toLowerCase(),
-          `Choose a sender with an email on the workspace's verified sending domain (${domain || "set it in Workspace"})`,
+          domain && from,
+          "Set a verified sending domain in Workspace before reassigning the sender",
           400,
         );
         check(
@@ -125,6 +125,7 @@ export class ReassignmentService {
           company_name:
             p.workspace_settings?.company_name ?? settings!.company_name,
           sending_domain: domain,
+          ...(from === owner.email ? {} : { from_email: from }),
         };
         // Unsent jobs must use the new sender; delivered snapshots remain immutable.
         const logged = await this.repo.emailLog<{
@@ -149,8 +150,9 @@ export class ReassignmentService {
               continue;
             if (j.payload.to !== p.client.email) j.payload.to = owner.email;
             delete j.payload.email_snapshot;
-            j.payload.from = `${JSON.stringify(`${owner.display_name} · ${p.sender.company_name}`)} <${owner.email}>`;
-            j.payload.reply_to = emailIdentity(p).reply_to;
+            const identity = emailIdentity(p);
+            j.payload.from = identity.from;
+            j.payload.reply_to = identity.reply_to;
           }
       }
       event(
@@ -171,12 +173,11 @@ export class ReassignmentService {
         now,
       );
       if (input.notify) {
+        const from =
+          settings && staffFromAddress(actor.staff_email ?? "", settings);
         check(
-          settings &&
-            actor.staff_email &&
-            actor.staff_email.split("@")[1]?.toLowerCase() ===
-              settings.sending_domain?.toLowerCase(),
-          "Your email must use the workspace's verified sending domain to notify the new owner",
+          settings && actor.staff_email && from,
+          "Set a verified sending domain in Workspace before notifying the new owner",
           400,
         );
         const name = actor.staff_name ?? actor.staff_email,
@@ -201,7 +202,7 @@ export class ReassignmentService {
         // Snapshot and queue once with the normal idempotent email worker.
         const payload = {
           to: owner.email,
-          from: `${JSON.stringify(`${name} · ${settings.company_name}`)} <${actor.staff_email}>`,
+          from: `${JSON.stringify(from === actor.staff_email ? `${name} · ${settings.company_name}` : name)} <${from}>`,
           reply_to: actor.staff_email,
           subject,
           ...layout,

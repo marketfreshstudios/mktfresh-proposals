@@ -34,6 +34,7 @@ export const StaffMemberSchema = z.object({
 });
 export type StaffMember = z.infer<typeof StaffMemberSchema>;
 export type TeamPerson = StaffMember & {
+  two_step_enabled?: boolean;
   email: string;
   name: string;
   last_sign_in_at: string | null;

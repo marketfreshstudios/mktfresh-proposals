@@ -4,7 +4,13 @@ import { YeswellBrand } from "./yeswell-brand";
 import { applyStaffTheme, browserStaffTheme } from "./staff-account-context";
 
 /** Account screens share the same centered frame before a workspace is known. */
-export function StaffAuthFrame({ children }: { children: ReactNode }) {
+export function StaffAuthFrame({
+  children,
+  workspace,
+}: {
+  children: ReactNode;
+  workspace?: string;
+}) {
   const [host, setHost] = useState("");
   useEffect(() => {
     setHost(location.host);
@@ -16,7 +22,8 @@ export function StaffAuthFrame({ children }: { children: ReactNode }) {
         <YeswellBrand />
         <div className="card stack">{children}</div>
         <p className="account-workspace">
-          Yeswell workspace{host ? ` · ${host}` : ""}
+          {workspace ?? "Yeswell workspace"}
+          {host ? ` · ${host}` : ""}
         </p>
       </div>
     </main>

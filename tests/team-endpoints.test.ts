@@ -5,6 +5,21 @@ vi.mock("../src/lib/auth", async (original) => ({
   staff: async () => state.actor,
   workspaceStaff: async () => state.fixture.team.list(),
 }));
+vi.mock("../src/lib/repository", async (original) => ({
+  ...(await original<typeof import("../src/lib/repository")>()),
+  supabase: () => ({
+    from: () => ({
+      select: () => ({
+        in: () => ({
+          not: async () => ({
+            data: [{ user_id: state.fixture.admin.actor.slice(6) }],
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  }),
+}));
 vi.mock("../src/lib/runtime", () => ({
   runtime: () => state.fixture,
   publicRuntime: vi.fn(),
@@ -38,7 +53,13 @@ async function call(path: string, input?: unknown) {
 it("every team management endpoint rejects Staff server-side, while list and own name remain available", async () => {
   const f = state.fixture;
   state.actor = f.member;
-  expect((await call("team")).status).toBe(200);
+  const list = await call("team");
+  expect(list.status).toBe(200);
+  expect(
+    (await list.json()).members.every(
+      (member: any) => !("two_step_enabled" in member),
+    ),
+  ).toBe(true);
   expect(
     (
       await call("team/invite", {
@@ -97,6 +118,9 @@ it("Super admin mutations succeed, audit actions, and never put a supplied passw
     expect(await response.text()).not.toContain("Secret new password!");
   }
   const data = await (await call("team")).json();
+  expect(
+    data.members.find((m: any) => m.user_id === f.admin.actor.slice(6)),
+  ).toMatchObject({ two_step_enabled: true });
   expect(data.members.some((m: any) => m.user_id === added.user_id)).toBe(
     false,
   );

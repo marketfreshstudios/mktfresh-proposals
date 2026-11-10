@@ -57,6 +57,27 @@ import { teamService } from "./team-runtime";
 import { StaffPasswordRequired, validateStaffMembership } from "./staff-access";
 import { setStaffPassword } from "./staff-password";
 import {
+  clearStaffIdentity,
+  priorStaffState,
+  staffIdentityCookie,
+  staffIdentityCookieName,
+  StaffSecurityRequired,
+} from "./staff-security-session";
+import {
+  changeSecurityPassword,
+  manageStaffSessions,
+  readStaffSecurity,
+  recordStaffDevice,
+  staffFactorAction,
+  staffSecurityIdentity,
+  verifyStaffSignIn,
+} from "./staff-security";
+import {
+  confirmStaffEmailChange,
+  staffEmailAction,
+  staffPendingEmail,
+} from "./staff-email-change";
+import {
   StaffSessionExpired,
   setStaffCookies,
   clearStaffCookies,
@@ -292,19 +313,54 @@ async function handleRoute(
       const input = z
         .object({ email: z.email(), password: z.string().min(1).max(200) })
         .parse(await body(req));
-      const session = await login(input.email, input.password);
+      const session = await login(input.email, input.password).catch(
+        async (error) => {
+          if (error instanceof AppError && error.status === 401) {
+            const state = await priorStaffState(req);
+            if (state) throw new StaffSecurityRequired(state.state);
+          }
+          throw error;
+        },
+      );
       const membership = await validateStaffMembership(
         session.user,
         session.access_token,
-        { passwordChange: true },
+        { passwordChange: true, twoStep: true },
       );
+      await recordStaffDevice(req, session);
       const response = json({
-        authenticated: true,
+        authenticated: !membership.two_step_required,
+        ...(membership.two_step_required ? { two_step_required: true } : {}),
         ...(membership.password_change_required
           ? { password_change_required: true }
           : {}),
       });
-      return setStaffCookies(response, session);
+      if (!membership.two_step_required) {
+        const identity = staffIdentityCookie(session.user.id);
+        if (identity) response.headers.append("Set-Cookie", identity);
+      }
+      return setStaffCookies(
+        response,
+        session,
+        membership.two_step_required ? 600 : undefined,
+      );
+    }
+    if (path.join("/") === "auth/account-state" && method === "GET")
+      return json(await priorStaffState(req, true));
+    if (path.join("/") === "auth/two-step" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      const identity = await verifyStaffSignIn(req, await body(req));
+      const response = json({
+        authenticated: true,
+        password_change_required: identity.member.password_change_required,
+      });
+      const hint = staffIdentityCookie(identity.user.id);
+      if (hint) response.headers.append("Set-Cookie", hint);
+      return setStaffCookies(response, identity);
+    }
+    if (path.join("/") === "auth/confirm-email" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      return json(await confirmStaffEmailChange(req, await body(req)));
     }
     if (
       path[0] === "auth" &&
@@ -332,7 +388,11 @@ async function handleRoute(
         await body(req),
         afterResponse,
       );
-      return setStaffCookies(json({ authenticated: true }), session);
+      const response = json({ authenticated: true });
+      const hint = staffIdentityCookie(session.user.id);
+      if (hint) response.headers.append("Set-Cookie", hint);
+      await recordStaffDevice(req, session);
+      return setStaffCookies(response, session);
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
       const isConnect = path[2] === "connect";
@@ -701,13 +761,55 @@ async function handleRoute(
       if (req.headers.get("authorization")) await staff(req);
       else check(sameOrigin(req), "Same-origin request required", 403);
       await revokeStaffSession(req);
-      return clearStaffCookies(json({ signed_out: true }));
+      const response = clearStaffCookies(json({ signed_out: true }));
+      return cookie(req, staffIdentityCookieName)
+        ? clearStaffIdentity(response)
+        : response;
     }
     const user = await staff(req);
     if (path.join("/") === "auth/staff-home-banner" && method === "POST") {
       check(sameOrigin(req), "Same-origin request required", 403);
       await dismissStaffHomeBanner(user);
       return json({ dismissed: true });
+    }
+    if (path[0] === "account" && path[1] === "security") {
+      if (method !== "GET")
+        check(sameOrigin(req), "Same-origin request required", 403);
+      const identity = await staffSecurityIdentity(req);
+      if (path.length === 2 && method === "GET")
+        return json(await readStaffSecurity(identity));
+      if (path[2] === "email" && path.length === 3) {
+        if (method === "GET")
+          return json(await staffPendingEmail(identity.user.id));
+        if (method === "POST")
+          return json(await staffEmailAction(identity, await body(req)));
+      }
+      if (path[2] === "two-step" && path.length === 3 && method === "POST")
+        return json(await staffFactorAction(identity, await body(req)));
+      if (path[2] === "password" && path.length === 3 && method === "POST") {
+        const session = await changeSecurityPassword(
+          req,
+          identity,
+          await body(req),
+        );
+        return setStaffCookies(json({ changed: true }), session);
+      }
+      if (path[2] === "sessions" && path.length === 3 && method === "POST") {
+        const input = z
+          .discriminatedUnion("action", [
+            z.object({ action: z.literal("one"), id: z.uuid() }).strict(),
+            z.object({ action: z.literal("others") }).strict(),
+          ])
+          .parse(await body(req));
+        await manageStaffSessions(
+          identity.user.id,
+          identity.session,
+          input.action,
+          input.action === "one" ? input.id : null,
+        );
+        return json({ signed_out: true });
+      }
+      throw new AppError(404, "Security settings route not found");
     }
     const rt = await workspaceRuntime(user.workspace_id);
     if (path[0] === "account") {
@@ -1096,8 +1198,26 @@ async function handleRoute(
             recent: [],
           });
         const team = teamService(user.workspace_id);
+        const members = await team.list();
+        const memberIds = members.map((member) => member.user_id);
+        let enabled = new Set<string>();
+        if (user.staff_role === "owner" && memberIds.length) {
+          const result = await supabase()
+            .from("staff_security")
+            .select("user_id")
+            .in("user_id", memberIds)
+            .not("totp_secret", "is", null);
+          check(!result.error, "Unable to load team security status", 503);
+          enabled = new Set(result.data.map((row) => row.user_id));
+        }
         return json({
-          members: await team.list(),
+          members:
+            user.staff_role === "owner"
+              ? members.map((member) => ({
+                  ...member,
+                  two_step_enabled: enabled.has(member.user_id),
+                }))
+              : members,
           recent: await team.store.audit(
             new URL(req.url).searchParams.get("history") === "all",
           ),
@@ -2418,6 +2538,7 @@ async function handleRoute(
       return json(
         {
           error: e.message,
+          ...(e instanceof StaffSecurityRequired ? { state: e.state } : {}),
           ...(e instanceof StaffSessionExpired ||
           e instanceof StaffPasswordRequired
             ? { code: e.code }

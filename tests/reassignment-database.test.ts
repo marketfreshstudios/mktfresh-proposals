@@ -1,3 +1,4 @@
+import { addAuthSessionsFixture } from "./postgres-fixture";
 import { it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile, readdir } from "node:fs/promises";
@@ -8,6 +9,7 @@ it("database reassignment is atomic, tenant-scoped, owner-guarded and unblocks r
   await db.exec(
     `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb);create table auth.sessions(id uuid primary key,user_id uuid);create table auth.refresh_tokens(user_id text,session_id uuid);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant select on auth.sessions to service_role;grant execute on function auth.uid() to authenticated;`,
   );
+  await addAuthSessionsFixture(db);
   for (const f of (await readdir("supabase/migrations"))
     .filter((f) => f.endsWith(".sql"))
     .sort())

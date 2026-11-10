@@ -100,9 +100,9 @@ test("account pages save edits, keep alerts scoped, and follow R22 at 1440, 768 
   await expect(page.getByRole("textbox", { name: "First name" })).toHaveValue(
     "Alex",
   );
-  await expect(page.getByRole("button", { name: "Change email" })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole("button", { name: "Change email" }),
+  ).toBeVisible();
   await capture(page, "1a-profile-1440");
   await page.getByRole("button", { name: /Account menu/ }).click();
   const menu = page.getByRole("dialog", { name: "Account" });

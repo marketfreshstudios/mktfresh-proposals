@@ -7,6 +7,13 @@ import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
 import { StaffResetForm } from "./staff-reset-form";
 import { StaffAuthFrame } from "./staff-auth-frame";
+import {
+  ConfirmStaffEmail,
+  nextStaffPage,
+  SignedOutHeading,
+  StaffAccessState,
+  TwoStepSignIn,
+} from "./staff-security-auth";
 import { StudioTemplateList } from "./studio-template-list";
 import { StudioHome } from "./studio-v3";
 import { TeamStudio } from "./team-studio";
@@ -290,7 +297,12 @@ function StaffAppContent({
     if (section !== "login") window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [section, reportShell]);
-  if (section === "login") return <Login local={local} />;
+  if (section === "login")
+    return path[1] === "confirm-email" ? (
+      <ConfirmStaffEmail />
+    ) : (
+      <Login local={local} initialState={query.state} />
+    );
   if (section === "billing")
     return (
       <div className="login card">
@@ -680,7 +692,13 @@ async function allProposals() {
   }
   return first;
 }
-function Login({ local }: { local: boolean }) {
+function Login({
+  local,
+  initialState,
+}: {
+  local: boolean;
+  initialState?: string | string[];
+}) {
   // Server HTML is visible before hydration. Never let the browser submit the
   // form natively (GET /login) before the credential POST handler is installed.
   const [ready, setReady] = useState(false);
@@ -689,6 +707,19 @@ function Login({ local }: { local: boolean }) {
     [busy, setBusy] = useState(false),
     [resumed, setResumed] = useState(false),
     [forgot, setForgot] = useState(false);
+  const [state, setState] = useState(initialState);
+  function continueSignIn(passwordChange?: boolean) {
+    if (passwordChange) {
+      location.href = "/set-password";
+      return;
+    }
+    if (new URL(location.href).searchParams.get("resume") === "1") {
+      setResumed(true);
+      window.close();
+      return;
+    }
+    location.href = nextStaffPage();
+  }
   if (resumed)
     return (
       <StaffAuthFrame>
@@ -697,17 +728,20 @@ function Login({ local }: { local: boolean }) {
       </StaffAuthFrame>
     );
   if (forgot) return <StaffResetForm onBack={() => setForgot(false)} />;
-  if (error.startsWith("Staff access deactivated"))
+  if (state === "two-step") return <TwoStepSignIn done={continueSignIn} />;
+  if (state === "paused" || state === "removed")
     return (
-      <StaffAuthFrame>
-        <h1>Deactivated account</h1>
-        <p>Contact your workspace administrator if you need access again.</p>
-        <Button onClick={() => setError("")}>Back to sign in</Button>
-      </StaffAuthFrame>
+      <StaffAccessState
+        state={state}
+        back={() => {
+          setState(undefined);
+          setError("");
+        }}
+      />
     );
   return (
     <StaffAuthFrame>
-      <h1>Sign in</h1>
+      {state === "signed-out" ? <SignedOutHeading /> : <h1>Sign in</h1>}
       {error && (
         <Banner tone="danger" title="Unable to sign in">
           {error}
@@ -725,20 +759,25 @@ function Login({ local }: { local: boolean }) {
               email: f.get("email"),
               password: f.get("password"),
             });
-            if (result.password_change_required) {
-              location.href = "/set-password";
+            if (result.two_step_required) {
+              setError("");
+              setState("two-step");
               return;
             }
-            if (new URL(location.href).searchParams.get("resume") === "1") {
-              setResumed(true);
-              window.close();
-              return;
-            }
-            const next = new URL(location.href).searchParams.get("next");
-            location.href =
-              next?.startsWith("/") && !next.startsWith("//") ? next : "/";
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Unable to sign in");
+            continueSignIn(result.password_change_required);
+          } catch (error) {
+            const accountState = (error as ApiError).details?.state;
+            if (
+              accountState === "paused" ||
+              accountState === "removed" ||
+              (error instanceof Error &&
+                error.message.startsWith("Staff access deactivated"))
+            )
+              setState(accountState === "removed" ? "removed" : "paused");
+            else
+              setError(
+                error instanceof Error ? error.message : "Unable to sign in",
+              );
           } finally {
             setBusy(false);
           }
@@ -783,9 +822,7 @@ function Login({ local }: { local: boolean }) {
                 await post("/api/auth/local", {
                   token: new FormData(e.currentTarget).get("token"),
                 });
-                const next = new URL(location.href).searchParams.get("next");
-                location.href =
-                  next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+                location.href = nextStaffPage();
               } catch (e) {
                 setError(String(e));
               }

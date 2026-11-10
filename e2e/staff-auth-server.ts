@@ -33,6 +33,7 @@ type Fixture = {
   expired: boolean;
   revoked: boolean;
   refreshes: number;
+  twoStep?: boolean;
 };
 const expiredAccess = new Set<string>();
 const sessions = new Map<string, Fixture>(),
@@ -82,6 +83,7 @@ const server = createServer(async (req, res) => {
       expired: false,
       revoked: false,
       refreshes: 0,
+      twoStep: !!body.two_step,
     };
     rotate(s);
     s.expired = !!body.expired;
@@ -135,12 +137,17 @@ const server = createServer(async (req, res) => {
     if (s.refresh === body.refresh_token) rotate(s);
     return json(pair(s));
   }
-  if (url.pathname === "/rest/v1/rpc/staff_session_exists") {
+  if (url.pathname === "/rest/v1/rpc/staff_session_security") {
     const session = sessions.get(body.target_session);
     return json(
-      !!session && !session.revoked && body.target_user === session.identity.id,
+      !session || session.revoked || body.target_user !== session.identity.id
+        ? "signed_out"
+        : session.twoStep
+          ? "two_step"
+          : "ok",
     );
   }
+  if (url.pathname === "/rest/v1/staff_security_sessions") return json([]);
   const token = (req.headers.authorization ?? "").replace(/^Bearer /, ""),
     s = access.get(token);
   if (url.pathname === "/auth/v1/user")

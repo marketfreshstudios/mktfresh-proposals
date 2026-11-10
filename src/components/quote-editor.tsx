@@ -1,4 +1,6 @@
 "use client";
+
+import { staffFromAddress } from "../lib/email-identity";
 import { withCount } from "../lib/count-label";
 import { Select, Switch } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
@@ -1210,13 +1212,31 @@ function QuoteEditorContent({
         <>
           <Field label="From">
             <Select value={sender} onChange={(e) => setSender(e.target.value)}>
-              {staff.map((s) => (
-                <option key={s.user_id} value={s.user_id}>
-                  {s.display_name} · {settings?.company_name} &lt;{s.email}&gt;
-                </option>
-              ))}
+              {staff.map((s) => {
+                const from =
+                  (settings && staffFromAddress(s.email, settings)) ?? s.email;
+                const name =
+                  from === s.email
+                    ? `${s.display_name} · ${settings?.company_name ?? ""}`
+                    : s.display_name;
+                return (
+                  <option key={s.user_id} value={s.user_id}>
+                    {name} &lt;{from}&gt;
+                  </option>
+                );
+              })}
             </Select>
           </Field>
+          {(() => {
+            const selected = staff.find((person) => person.user_id === sender);
+            const from =
+              selected &&
+              settings &&
+              staffFromAddress(selected.email, settings);
+            return from && from !== selected?.email ? (
+              <small>Replies go to {selected?.email}.</small>
+            ) : null;
+          })()}
           <Field label="To">
             <input
               value={`${p.client.first_name} ${p.client.last_name} <${p.client.email}>`}

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { AppError, check } from "./model";
 import { StaffSessionExpired } from "./staff-session";
+import { StaffSecurityRequired } from "./staff-security-session";
 import { supabase } from "./repository";
 export class StaffPasswordRequired extends AppError {
   readonly code = "STAFF_PASSWORD_REQUIRED";
@@ -21,7 +22,11 @@ export function sessionId(token: string) {
 export async function validateStaffMembership(
   user: User,
   access: string,
-  options: { passwordChange?: boolean; invite?: boolean } = {},
+  options: {
+    passwordChange?: boolean;
+    invite?: boolean;
+    twoStep?: boolean;
+  } = {},
 ) {
   const db = supabase();
   const { data, error } = await db
@@ -31,12 +36,9 @@ export async function validateStaffMembership(
     )
     .eq("user_id", user.id)
     .maybeSingle();
-  check(!error && data, "Staff access required", 403);
-  check(
-    data.status !== "deactivated",
-    "Staff access deactivated. Contact your super admin.",
-    403,
-  );
+  if (error) throw new AppError(503, "Unable to verify staff access");
+  if (!data) throw new StaffSecurityRequired("removed");
+  if (data.status === "deactivated") throw new StaffSecurityRequired("paused");
   check(
     (data.status ?? "active") === "active" ||
       (options.invite && data.status === "invited"),
@@ -45,18 +47,24 @@ export async function validateStaffMembership(
   );
   // Existing tokens are valid JWTs at Auth but may outlive a revoked Auth session.
   const id = sessionId(access);
-  if (id || data.session_version > 0) {
+  if (id || data.session_version > 0 || process.env.APP_MODE !== "local") {
     if (!id) throw new StaffSessionExpired();
-    const result = await db.rpc("staff_session_exists", {
+    const result = await db.rpc("staff_session_security", {
       target_user: user.id,
       target_session: id,
     });
     if (result.error) throw new AppError(503, "Unable to verify staff session");
-    if (!result.data) throw new StaffSessionExpired();
+    if (result.data === "two_step" && !options.twoStep)
+      throw new StaffSecurityRequired("two-step");
+    if (result.data !== "ok" && result.data !== "two_step")
+      throw new StaffSessionExpired();
+    if (data.password_change_required && !options.passwordChange)
+      throw new StaffPasswordRequired();
+    return { ...data, two_step_required: result.data === "two_step" };
   }
   if (data.password_change_required && !options.passwordChange)
     throw new StaffPasswordRequired();
-  return data;
+  return { ...data, two_step_required: false };
 }
 export async function activeConnectorMember(workspace: string, userId: string) {
   if (process.env.APP_MODE === "local") return;

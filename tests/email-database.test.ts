@@ -1,15 +1,7 @@
 import { it, expect } from "vitest";
-import { PGlite } from "@electric-sql/pglite";
-import { readFile, readdir } from "node:fs/promises";
+import { postgresFixture, setAuthSessionClaim } from "./postgres-fixture";
 it("email storage migration scopes reads, denies direct/AI writes, atomically audits edits and preserves sent content", async () => {
-  const db = new PGlite();
-  await db.exec(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table storage.buckets(id text primary key,name text,public boolean);grant usage on schema public,auth to anon,authenticated,service_role;grant execute on function auth.uid() to authenticated;`,
-  );
-  for (const f of (await readdir("supabase/migrations"))
-    .filter((f) => f.endsWith(".sql"))
-    .sort())
-    await db.exec(await readFile("supabase/migrations/" + f, "utf8"));
+  const db = await postgresFixture();
   const workspace = "00000000-0000-4000-8000-000000000001",
     other = "00000000-0000-4000-8000-000000000002",
     user = "00000000-0000-4000-8000-000000000011",
@@ -104,7 +96,7 @@ it("email storage migration scopes reads, denies direct/AI writes, atomically au
     ],
   );
   await db.exec("reset role");
-  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [user]);
+  await setAuthSessionClaim(db, user);
   await db.exec("set role authenticated");
   expect((await db.query("select * from email_templates")).rows).toHaveLength(
     1,

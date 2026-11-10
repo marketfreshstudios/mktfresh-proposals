@@ -326,7 +326,12 @@ export async function api<T = any>(
       response.status,
       path.startsWith("/api/") &&
         !path.startsWith("/api/public/") &&
-        !["/api/auth/login", "/api/auth/local"].includes(path.split("?")[0])
+        ![
+          "/api/auth/login",
+          "/api/auth/local",
+          "/api/auth/two-step",
+          "/api/auth/confirm-email",
+        ].includes(path.split("?")[0])
         ? staffErrorMessage(response.status, data)
         : (data.error ?? "Unable to complete request"),
       data,
