@@ -371,7 +371,11 @@ export function EditorHeader({
           className={`editor-header-pill editor-header-send${
             // Owner 10 Nov: Review & send is the page's clay primary, except
             // while the Send panel's own clay Send button is on screen.
-            !locked && !primaryLabel && !sendPanelOpen ? " action" : ""
+            !locked &&
+            (primaryLabel ?? "Review & send") === "Review & send" &&
+            !sendPanelOpen
+              ? " action"
+              : ""
           }`}
           disabled={
             stale ||
