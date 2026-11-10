@@ -342,6 +342,8 @@
   font: 600 12px/18px var(--font-ui);
 }
 .home-attention-title {
+  margin: 0;
+  font: inherit;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -748,7 +750,7 @@
   display: grid;
   gap: var(--space-3);
 }
-.ink-clay .new-proposal-content h2 {
+.ink-clay .new-proposal-content :is(h2, h3) {
   font: 600 16px/22px var(--font-ui);
   margin-block: var(--space-1) 0;
 }

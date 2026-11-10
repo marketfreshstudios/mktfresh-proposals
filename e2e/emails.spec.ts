@@ -120,7 +120,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   async function shot(state: string, width: number, theme: string) {
     await page.evaluate(() => document.fonts.ready);
     if (await page.locator(".email-rendered").count()) {
-      await expect(page.locator(".email-rendered h1")).toBeVisible();
+      await expect(page.locator(".email-rendered .email-title")).toBeVisible();
       if (state === "editor-live-preview")
         await expect(page.locator(".email-rendered")).toHaveCSS(
           "background-color",

@@ -969,6 +969,14 @@ Primary staff content uses the shared surface, 1px hairline and card radius. Pag
 
 Record lists share the staff table header, row spacing, in-table empty states, and existing borderless Lucide action targets. Each screen keeps its own columns and breakpoints. Saved blocks show the name, type and preview, block count, template use, last edit and Open action. Template thumbnails stay visual cards. Email stage groups and Activity dates keep their section headings over shared tables. Reports and proposal evidence keep native table semantics with the same header treatment.
 
+### Staff heading hierarchy and editor identity (Nov 10, 2026)
+
+Each staff screen has one page title, including loading and account states. Staff editors own their title in the toolbar; the editable cover sits below it in the outline. Proposal content retains its authored headings and client and print output keep their existing title and styling. Typography samples demonstrate the styles without adding headings to the staff page. Dialog titles are H2, with H3 for subsections.
+
+Templates shows the starter terms and sample guidance as muted copy under the tabs. Saved blocks uses the shared section heading. Library template cards say Default or Edited in their details; they no longer use a Starter chip, and the editor retains the read-only status and Reset to starter action. The Sample chip stays.
+
+The dark editor header uses a text link with a Lucide chevron for navigation and keeps the save-before-leaving check. Editable names use an 11px inline inset and transparent rest state, with the shared focus-visible treatment. These changes do not need hosted SQL.
+
 ### Proposals header count (Nov 9, 2026)
 
 The Proposals header counts the same records as All, excluding archived proposals and Proposify imports. The header and tabs use the same list state so an archive or undo updates both.

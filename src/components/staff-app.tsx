@@ -582,6 +582,11 @@ function StaffAppContent({
         onSignout={() => void signout()}
       />
     );
+  const ownsHeading =
+    isValidElement(content) &&
+    (content.type === RecordV4 ||
+      content.type === ProposalEditor ||
+      content.type === TemplatesStudio);
   return (
     <StaffShell
       path={path}
@@ -614,7 +619,9 @@ function StaffAppContent({
         section !== "reports" &&
         section !== "clients" &&
         section !== "account" &&
-        !connectionDetail && (
+        !connectionDetail &&
+        !ownsHeading &&
+        !(section === "emails" && id) && (
           <header className="page-header">
             <div>
               <h1>{title}</h1>
@@ -845,6 +852,7 @@ function NewProposal({
   data: Data;
   onCancel?: () => void;
 }) {
+  const SectionHeading = onCancel ? "h3" : "h2";
   const [error, setError] = useState(""),
     [payload, setPayload] = useState<ReturnType<
       typeof PlaybookDraftSchema.parse
@@ -913,7 +921,7 @@ function NewProposal({
             }
           }}
         >
-          <h2>Client</h2>
+          <SectionHeading>Client</SectionHeading>
           <ClientPicker
             clients={data.clients}
             initial={
@@ -923,7 +931,7 @@ function NewProposal({
             }
             required={!payload?.client}
           />
-          <h2>Proposal</h2>
+          <SectionHeading>Proposal</SectionHeading>
           <Field label="Title">
             <input
               key={payload?.title}
@@ -1006,7 +1014,7 @@ function NewProposal({
         </form>
       </section>
       <aside className="new-proposal-note">
-        <h2>What happens next</h2>
+        <SectionHeading>What happens next</SectionHeading>
         <ol>
           <li>The template and default quote are copied into a draft.</li>
           <li>You edit the content, prices and optional items.</li>

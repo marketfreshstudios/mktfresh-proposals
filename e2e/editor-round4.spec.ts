@@ -125,7 +125,7 @@ test("template creation stays reachable with collapsed Pages at desktop, tablet 
     }
     await create.click();
     await expect(
-      page.getByRole("button", { name: "Back to templates", exact: true }),
+      page.getByRole("link", { name: "Back to templates", exact: true }),
     ).toBeVisible();
     const name = page.getByRole("textbox", {
       name: "Template name",

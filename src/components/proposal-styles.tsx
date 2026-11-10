@@ -367,21 +367,28 @@ export function ProposalStyles({
               <style>
                 {curatedFontFaces(curatedFonts)}
                 {styleFontFaces(styles)}
-                {documentStyleCss(styles, settings?.accent_colour).replaceAll(
+                {documentStyleCss(
+                  styles,
+                  settings?.accent_colour,
+                  undefined,
+                  "type-sample",
+                ).replaceAll(
                   ".proposal-typography.proposal-typography",
                   `[id="${id}"]`,
                 )}
               </style>
-              <h1>A proposal for your next chapter</h1>
-              <h2>Our approach</h2>
+              <div data-sample-heading="1">
+                A proposal for your next chapter
+              </div>
+              <div data-sample-heading="2">Our approach</div>
               <p className="style-body">
                 Clear goals and thoughtful work, shaped around your business.
               </p>
-              <h3>Built around you</h3>
+              <div data-sample-heading="3">Built around you</div>
               <p className="style-body">
                 Each detail supports the outcome we agree on together.
               </p>
-              <h4>The next step</h4>
+              <div data-sample-heading="4">The next step</div>
               <p className="style-body">
                 Review your proposal and let us know what you think.
               </p>
@@ -442,7 +449,7 @@ export function ProposalStyles({
       </details>
       {scope === "template" && (
         <div className="template-band-heading">
-          <h3>Header & footer</h3>
+          <h2>Header & footer</h2>
           <p>
             Editing the header here makes it unique to this template. Proposals
             made from it start with this version.
@@ -755,7 +762,7 @@ function BandSettings({
       </div>
       {own.length > 0 && (
         <section className="band-own-pages" aria-label="Pages with their own">
-          <h4>Pages with their own</h4>
+          <h3>Pages with their own</h3>
           {own.map((p) => (
             <div key={`${p.page}-${p.kind}`}>
               <span>

@@ -78,7 +78,7 @@ for (const layout of coverLayouts)
       label: [...el.querySelectorAll(".cover-meta-label")].map(
         (e) => e.textContent,
       ),
-      title: getComputedStyle(el.querySelector("h1")!).fontSize,
+      title: getComputedStyle(el.querySelector(".cover-title-line")!).fontSize,
       overflow:
         document.querySelector("main")!.scrollWidth >
         document.querySelector("main")!.clientWidth,
@@ -132,13 +132,16 @@ for (const layout of coverLayouts)
       const image = root.locator(".cover-background-image");
       await expect(image).toHaveCSS("object-position", "70% 35%");
       expect((await image.boundingBox())!.x).toBeGreaterThan(
-        (await root.locator("h1").boundingBox())!.x,
+        (await root.locator(".cover-title-line").boundingBox())!.x,
       );
     }
     const titleInk = ["bold", "photo", "side-photo"].includes(layout)
       ? "rgb(255, 255, 255)"
       : "rgb(27, 31, 29)";
-    await expect(root.locator("h1")).toHaveCSS("color", titleInk);
+    await expect(root.locator(".cover-title-line")).toHaveCSS(
+      "color",
+      titleInk,
+    );
     await expect(
       root.locator('[data-field="proposal.valid_until"]'),
     ).toHaveClass(/field-chip/);
@@ -384,7 +387,7 @@ test("cover controls preserve history, use palette colors, validate uploads and 
     "data-cover-backdrop",
     "true",
   );
-  await expect(page.locator(".editor-paper h1")).toHaveCSS(
+  await expect(page.locator(".editor-paper .cover-title-line")).toHaveCSS(
     "color",
     "rgb(255, 255, 255)",
   );

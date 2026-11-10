@@ -202,7 +202,10 @@ export function ToolsPanel<T extends string = EditorTab>({
         {mode === "sheet" && sheetTitle ? (
           <h2 tabIndex={-1}>{sheetTitle}</h2>
         ) : (
-          <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
+          <>
+            {mode !== "docked" && <h2 className="sr-only">{label}</h2>}
+            <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
+          </>
         )}
         {mode === "sheet" && (
           <button

@@ -128,7 +128,9 @@ test("cover logo upload is a keyboard button and its menu avoids the title", asy
   expect(styles[0]).toEqual(styles[1]);
   expect(styles[0]).toEqual(styles[2]);
   const box = await menu.boundingBox(),
-    title = await page.locator(".document-cover h1").boundingBox();
+    title = await page
+      .locator(".document-cover .cover-title-line")
+      .boundingBox();
   expect(box).not.toBeNull();
   expect(title).not.toBeNull();
   expect(

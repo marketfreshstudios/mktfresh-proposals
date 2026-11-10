@@ -25,7 +25,7 @@ export function SectionsPanel({
   }, [mode, open]);
   const heading = (
     <div className="editor-sidebar-header">
-      <strong>Sections</strong>
+      <h2 className="editor-sections-heading">Sections</h2>
       <button
         type="button"
         className="sidebar-arrow"

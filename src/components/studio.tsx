@@ -1706,7 +1706,7 @@ function TemplatesStudioContent({
   const templateTools = draft && (
     <div className="template-style-panel">
       <section className="template-fonts-row">
-        <h3>Fonts</h3>
+        <h2 className="t-section-title">Fonts</h2>
         <div>
           <strong>
             {[templateStyles.title.font, templateStyles.body.font]
@@ -1789,7 +1789,7 @@ function TemplatesStudioContent({
   const panelBody =
     mode === "blocks" && tab === "Used in" ? (
       <section className="saved-block-usage stack" aria-label="Used in">
-        <h3>TEMPLATES · LINKED</h3>
+        <h2 className="t-section-title">Templates · linked</h2>
         {usage.templates.length ? (
           usage.templates.map((t) => (
             <a
@@ -1806,7 +1806,9 @@ function TemplatesStudioContent({
         ) : (
           <p className="muted">Not linked to any templates yet.</p>
         )}
-        <h3>DRAFTS WITH A COPY · {usage.drafts.length}</h3>
+        <h2 className="t-section-title">
+          Drafts with a copy · {usage.drafts.length}
+        </h2>
         {usage.drafts.map((p) => (
           <a
             className="saved-block-usage-row"
@@ -1961,6 +1963,10 @@ function TemplatesStudioContent({
       </section>
     ) : null;
 
+  const editorTitle =
+    mode === "templates"
+      ? (draft?.name ?? "Templates & blocks")
+      : (saved?.name ?? "Saved blocks");
   return (
     <div
       {...blockDrop.handlers}
@@ -1974,6 +1980,7 @@ function TemplatesStudioContent({
             : templatePanels.columns,
       }}
     >
+      <h1 className="sr-only">{editorTitle}</h1>
       {blockDrop.line}
       <EditorControlConfig
         document={{
@@ -2015,11 +2022,8 @@ function TemplatesStudioContent({
       >
         <EditorHeader
           className="template-editor-header"
-          title={
-            mode === "templates"
-              ? (draft?.name ?? "Templates & blocks")
-              : (saved?.name ?? "Saved blocks")
-          }
+          title={editorTitle}
+          externalHeading
           backLabel={mode === "templates" ? "Templates" : "Saved blocks"}
           backHref={
             mode === "templates"
@@ -2064,9 +2068,6 @@ function TemplatesStudioContent({
           meta={
             mode === "templates" ? (
               <>
-                {draft?.starter_key && (
-                  <span className="starter-pill">Starter</span>
-                )}
                 {draft?.source_starter_key && (
                   <span className="starter-source">
                     Based on{" "}
@@ -2345,10 +2346,12 @@ function TemplatesStudioContent({
                           templateStyles,
                           data.settings?.accent_colour,
                           content,
+                          "editor",
                         )}
                       </style>
                       {mode === "templates" && (
                         <DocumentCover
+                          titleHeadingLevel={2}
                           contentHeight={
                             pageGeometry(
                               resolveStyles(
@@ -3317,6 +3320,7 @@ function TemplatesStudioContent({
           close={() => setMoreAnchor(null)}
         >
           <div role="dialog" aria-label="Template actions">
+            <h2 className="sr-only">Template actions</h2>
             {draft?.starter_key ? (
               <div
                 role="menu"

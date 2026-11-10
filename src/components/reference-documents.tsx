@@ -5,18 +5,14 @@ import { useState } from "react";
 import type { ReferenceDocument } from "../lib/documents";
 import { Button, Field, post } from "./ui";
 type Runner = (fn: () => Promise<unknown>, success?: string) => Promise<void>;
-export function ReferenceStatus({
-  documents,
-}: {
-  documents: ReferenceDocument[];
-}) {
+function ReferenceStatus({ documents }: { documents: ReferenceDocument[] }) {
   if (!documents.length) return null;
   return (
     <section
       className="reference-document-section stack"
       aria-label="Pricing reference status"
     >
-      <h2>Pricing references</h2>
+      <h3>Status</h3>
       {documents.map((d) => (
         <div key={d.id}>
           <strong>
@@ -55,7 +51,7 @@ export function ReferenceDocuments({
     <section className="stack">
       <ReferenceStatus documents={documents} />
       <section className="reference-document-section stack">
-        <h2>Pricing reference for assistants</h2>
+        <h3>Pricing reference for assistants</h3>
         {documents.map((d) => (
           <div key={d.id} className="stack">
             <details>
@@ -127,7 +123,7 @@ function ReferenceForm({
         }, "Pricing reference saved");
       }}
     >
-      <h3>{document ? "Edit reference" : "Add reference"}</h3>
+      <h4>{document ? "Edit reference" : "Add reference"}</h4>
       <Field label="Reference name">
         <input name="name" required defaultValue={document?.name} />
       </Field>

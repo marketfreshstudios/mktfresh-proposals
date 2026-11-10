@@ -1416,12 +1416,11 @@ export function HomeV4({
                 >
                   <span className="attention-chip">{label}</span>
                   <div>
-                    <a
-                      className="home-attention-title"
-                      href={`/proposals/${p.id}`}
-                    >
-                      {p.client.company} — {p.title}
-                    </a>
+                    <h3 className="home-attention-title">
+                      <a href={`/proposals/${p.id}`}>
+                        {p.client.company} — {p.title}
+                      </a>
+                    </h3>
                     <p>{context}</p>
                   </div>
                   <strong className="home-attention-amount">

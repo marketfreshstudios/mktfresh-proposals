@@ -448,7 +448,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     .filter({ hasText: "Block deleted" });
   await expect(oldToast).toBeVisible();
   await page
-    .getByRole("button", { name: "Back to templates", exact: true })
+    .getByRole("link", { name: "Back to templates", exact: true })
     .click();
   await page
     .locator(".studio-template-card")
