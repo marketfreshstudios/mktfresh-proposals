@@ -55,17 +55,22 @@ test("super admin confirms deletion of an inactive ordinary template and its pro
     name: "Website proposal sample (old)",
     active: true,
   };
+  const clientId = crypto.randomUUID();
   async function post(path: string, data: unknown) {
     const response = await request.post("/api/" + path, { headers, data });
     expect(response.ok(), await response.text()).toBe(true);
     return response.json();
   }
   await post("workspace_settings", f.settings);
-  await post("clients", f.draft.client);
+  await post("clients", {
+    ...f.draft.client,
+    id: clientId,
+    email: `template-delete-${clientId}@example.test`,
+  });
   await post("templates", template);
   const proposal: Proposal = await post("proposals", {
     template_id: template.id,
-    client_id: f.draft.client.id,
+    client_id: clientId,
     title: "A proposal with its own template copy",
   });
   await post("templates", { ...template, active: false });
