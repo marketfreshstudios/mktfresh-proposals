@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { canonical, sha256 } from "./content";
 import { check, type Actor, type Audit, type Template } from "./model";
 import type { Repository, StudioEntityTable } from "./repository";
+import { sameTemplateSave } from "./starter-template-state";
 import { prepareLinkedSave } from "./saved-blocks";
 import type { SavedBlock } from "./model";
 import { replaceLinkedBlocks, withoutBlockLink } from "./linked-blocks";
@@ -61,6 +62,11 @@ export async function writeStudioEntity<T extends { id: string }>(
   let value = storedStudioEntity(after);
   if (table === "templates") {
     const template = value as unknown as Template;
+    if (before && sameTemplateSave(before as Template, template))
+      return {
+        ...(storedStudioEntity(before) as T),
+        revision: studioRevision(before),
+      };
     if (!template.starter_key) {
       const sources = await repo.entities<SavedBlock>("content_library");
       template.content = template.content.map((b) =>

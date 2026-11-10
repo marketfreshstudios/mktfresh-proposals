@@ -53,3 +53,7 @@ Business state uses existing workspace settings JSON; no separate column/backfil
 Starter templates are editable in place. Use an insert-only seed for new starter keys. To upgrade an existing starter, match its workspace and starter key, compare the entire authored state (content, cover, header/footer, quote and styles) with a known previous shipped seed, then atomically compare the stored row before replacing it. If any authored part differs, skip the row. Do not use the displayed Default/Edited label as a write condition or modify existing proposals. Preserve the row ID, name and availability. Super admins can explicitly reset a customized starter to the current shipped defaults.
 
 The #138 cover rollout was applied before in-place editing. Do not reuse its older cover-only check as a whole-starter guard: a matching cover alone does not establish that a starter is untouched.
+
+## Website cover graphic follow-up
+
+Apply [20261110165350_website_starter_auto_graphic.sql](../supabase/migrations/20261110165350_website_starter_auto_graphic.sql) **before deploying** the editable-starters release. Expect one MarketFresh cover and one new-workspace payload update on the first run, zero on a second run. The row update requires the exact approved #138 cover checksum; changed covers are skipped. All other template fields and existing proposals stay as saved.

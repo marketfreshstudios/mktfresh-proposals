@@ -1064,3 +1064,9 @@ Buttons and tabs use the shared keyboard focus ring. A pointer press suppresses 
 ## Own It Over Time kickoff entry — November 10, 2026
 
 Owner decision, November 10: the AI may derive the kickoff as purchase price minus $2,250. The purchase price comes from the supplied, catalog or proposal Own It Now price. No other price calculation is permitted. If the connector receives the purchase price alone, it fills the kickoff and marks the item for staff review. The $3,500 threshold is guidance to lead with Own It Now. The kickoff is one one-time subline of the active monthly catalog item, identified by `oiot_kickoff`. The purchase price is stored separately on the same item and does not add a charge. A designated kickoff keeps its entered amount without matching a historical catalog preset. The connector reports the exact missing fields, while the shared sending rules still validate the supplied amounts and require staff review. The editor keeps one named kickoff input before and after entry and commits it on Enter or when focus leaves. No hosted SQL is needed.
+
+## Starter defaults and edit history — November 10, 2026
+
+The Website design & build cover uses Auto for its graphic. Apply the targeted migration before deploy: it changes only the exact #138 cover for MarketFresh and the matching new-workspace seed payload. It leaves edited covers and proposal versions alone.
+
+Opening an editor supplies missing defaults without writing to storage. Identical saves keep the same revision and produce no activity, for ordinary templates and starters alike. Starter cards compare their current authored content, cover, header/footer, quote and styles to the shipped seed, ignoring editor normalization and cached pagination. Undo back to the shipped content returns the card to Default. Edit dates come from actual edit events; old normalization events do not set them. Guarded data migrations still use exact equality when they require it.

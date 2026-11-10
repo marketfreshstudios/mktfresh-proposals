@@ -42,7 +42,7 @@ it("seven exact starters, order, covers, renumbered terms and both signatures wi
   ]);
   expect(templates[1].cover?.background).toMatchObject({
     type: "plain",
-    graphic: "ring",
+    graphic: "auto",
   });
   for (const t of templates) {
     expect(t.active).toBe(true);
@@ -174,16 +174,61 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
       ).rows.map(({ data }) => data);
     const before = await oldRows();
     await db.exec(migration);
-    const after = await oldRows();
-    expect(after).toEqual(
+    const afterRing = await oldRows();
+    expect(afterRing).toEqual(
       before.map((template) => {
         const next = migratedCovers.find(({ id }) => id === template.id);
         return next && template.starter_key !== "website-ai-audit"
-          ? { ...template, cover: next.cover }
+          ? {
+              ...template,
+              cover:
+                template.starter_key === "website-design-build"
+                  ? {
+                      ...next.cover!,
+                      background: {
+                        ...next.cover!.background!,
+                        graphic: "ring",
+                      },
+                    }
+                  : next.cover,
+            }
           : template;
       }),
     );
     await db.exec(migration);
+    expect(await oldRows()).toEqual(afterRing);
+    const graphicMigration = await readFile(
+      "supabase/migrations/20261110165350_website_starter_auto_graphic.sql",
+      "utf8",
+    );
+    const website = afterRing.find(
+      (template) => template.starter_key === "website-design-build",
+    )!;
+    // A customized cover must survive the data migration untouched.
+    const custom = {
+      ...website,
+      cover: { ...website.cover!, logo_alt: "Our logo" },
+    };
+    await db.query("update templates set data=$2 where id=$1", [
+      website.id,
+      custom,
+    ]);
+    await db.exec(graphicMigration);
+    expect(await oldRows()).toEqual(
+      afterRing.map((t) => (t.id === custom.id ? custom : t)),
+    );
+    await db.query("update templates set data=$2 where id=$1", [
+      website.id,
+      website,
+    ]);
+    await db.exec(graphicMigration);
+    const after = afterRing.map((t) =>
+      t.id === website.id
+        ? { ...t, cover: migratedCovers.find((row) => row.id === t.id)!.cover }
+        : t,
+    );
+    expect(await oldRows()).toEqual(after);
+    await db.exec(graphicMigration);
     expect(await oldRows()).toEqual(after);
 
     const newWorkspace = "00000000-0000-4000-8000-000000000088";

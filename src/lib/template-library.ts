@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { workspaceStarterTemplates } from "../../seed/starter-templates";
 import { preAmericanEnglishStarter } from "../../seed/starter-legacy-copy";
-import { sameStarterState } from "./starter-template-state";
+import { sameAuthoredTemplate } from "./starter-template-state";
 import {
   AppError,
   check,
@@ -62,8 +62,8 @@ export async function libraryTemplates(repo: Repository, rows: Template[]) {
           starter_edited: !seeds.some(
             (s) =>
               s.starter_key === t.starter_key &&
-              (sameStarterState(t, s) ||
-                sameStarterState(t, preAmericanEnglishStarter(s))),
+              (sameAuthoredTemplate(t, s) ||
+                sameAuthoredTemplate(t, preAmericanEnglishStarter(s))),
           ),
         }
       : {}),

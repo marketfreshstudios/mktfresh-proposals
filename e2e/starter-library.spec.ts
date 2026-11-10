@@ -15,7 +15,7 @@ import {
 } from "../src/lib/studio-history";
 import { blockText } from "../src/lib/editor-document";
 import { applyCoverLayout } from "../src/lib/cover";
-import type { Template, Item } from "../src/lib/model";
+import type { Audit, Template, Item } from "../src/lib/model";
 async function fixture(page: Page, edited = false, member = false) {
   const f = await editorFixture(page),
     seeds = workspaceStarterTemplates(
@@ -205,6 +205,56 @@ test("starter cover and text autosave in place and the card shows Edited; Duplic
     id: f.starter.id,
     starter_key: f.starter.starter_key,
   });
+});
+
+test("opening does not log edits, and undoing a saved change returns the starter to Default", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  const back = () =>
+    page.getByRole("link", { name: "Back to templates", exact: true }).click();
+  const edits = async () =>
+    (await f.repo.entities<Audit>("workspace_events")).filter(
+      (event) => event.type === "templates_saved",
+    );
+  const expectDefault = async () => {
+    await expect(
+      card(page, f).locator('[data-starter-status="default"]'),
+    ).toContainText("Default");
+    await expect(card(page, f)).not.toContainText(/edited /i);
+  };
+
+  await page.goto(url(f));
+  const before = await edits();
+  await bodyEditor(page, f).click();
+  await back();
+  await expectDefault();
+  expect(f.writes).toHaveLength(0);
+  expect(await edits()).toEqual(before);
+
+  await card(page, f).click();
+  await bodyEditor(page, f).fill("A real starter change.");
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe("A real starter change.");
+  const [edited] = await libraryTemplates(f.repo, [await current(f)]);
+  expect(edited.starter_edited).toBe(true);
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+
+  await page
+    .locator(".template-editor-header")
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe(body(f.starter, f));
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+  await back();
+  await expectDefault();
 });
 
 test("Reset to default confirms, preserves identity, supports Undo and supplies the revision for the next edit", async ({

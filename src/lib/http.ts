@@ -27,6 +27,7 @@ import {
 } from "./engagement-server";
 import {
   studioEntityViews,
+  studioRevision,
   writeStudioEntity,
   restoreConnectorChange,
   connectorActivityViews,
@@ -43,6 +44,7 @@ import {
   readWorkspaceIcon,
   workspaceIconPath,
 } from "./workspace-icon";
+import { templateAuthoringView } from "./starter-template-state";
 import { withSignatureHeadings } from "./signature-headings";
 import { proposalOwnerId } from "./proposal-owner";
 import {
@@ -84,11 +86,7 @@ import {
   withStaffCookies,
   revokeStaffSession,
 } from "./staff-session";
-import {
-  HeaderFooterSettingsSchema,
-  TemplateBandsSchema,
-  defaultTemplateBands,
-} from "./page-bands";
+import { HeaderFooterSettingsSchema, TemplateBandsSchema } from "./page-bands";
 import {
   CoverSchema,
   loadedCover,
@@ -1613,45 +1611,6 @@ async function handleRoute(
             (a, b) =>
               Number(a.starter_order ?? 999) - Number(b.starter_order ?? 999),
           );
-          for (let index = 0; index < entities.length; index++) {
-            const e = entities[index];
-            if (!e.signature_heading_defaulted) {
-              const next = {
-                ...e,
-                content: withSignatureHeadings(e.content as Block[]),
-                signature_heading_defaulted: true,
-              } as Record<string, unknown>;
-              delete next.pagination;
-              const audit = {
-                id: randomUUID(),
-                ...user,
-                type: "template_defaults_updated",
-                created_at: new Date().toISOString(),
-                metadata: { entity_id: e.id, name: e.name },
-              };
-              const changed = e.starter_key
-                ? await rt.repo.replaceStarter(
-                    e as unknown as import("./model").Template,
-                    next as unknown as import("./model").Template,
-                    audit,
-                  )
-                : await rt.repo.saveStudioEntity(
-                    "templates",
-                    e as { id: string },
-                    next as { id: string },
-                    audit,
-                  );
-              if (changed) entities[index] = next;
-              else {
-                // A read-time legacy upgrade must never overwrite a newer edit.
-                const current = (
-                  await rt.repo.entities<Record<string, unknown>>("templates")
-                ).find((row) => row.id === e.id);
-                if (current) entities[index] = current;
-                else entities.splice(index--, 1);
-              }
-            }
-          }
         }
         if (table === "templates")
           entities = await libraryTemplates(
@@ -1675,17 +1634,7 @@ async function handleRoute(
                 default_password_enabled: !!e.default_password_hash,
               }))
             : table === "templates"
-              ? entities.map((e) => ({
-                  ...e,
-                  header_footer: TemplateBandsSchema.parse(
-                    e.header_footer ?? defaultTemplateBands(),
-                  ),
-                  cover: loadedCover(
-                    e.cover === undefined
-                      ? undefined
-                      : CoverSchema.parse(e.cover),
-                  ),
-                }))
+              ? (entities as Template[]).map(templateAuthoringView)
               : entities,
         );
       }
@@ -1981,12 +1930,16 @@ async function handleRoute(
                   : undefined,
             },
           );
-          return json(
-            table === "templates" && (saved as Template).starter_key
-              ? (await libraryTemplates(rt.repo, [saved as Template]))[0]
-              : saved,
-            201,
-          );
+          if (table !== "templates") return json(saved, 201);
+          const template = saved as Template;
+          const [result] = template.starter_key
+            ? await libraryTemplates(rt.repo, [template])
+            : [template];
+          const [view] =
+            before && studioRevision(before) === template.revision
+              ? await studioEntityViews(rt.repo, "templates", [result], user)
+              : [result];
+          return json(templateAuthoringView(view), 201);
         }
         await rt.repo.put(table, entity);
         await workspaceEvent(rt.repo, user, `${table}_saved`, {
