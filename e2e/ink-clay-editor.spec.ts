@@ -164,6 +164,16 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
     .poll(() => f.active().quote.map((item) => item.default_selected))
     .toEqual([true, false, true]);
 
+  // Owner 10 Nov: Review & send is the clay primary until the Send panel's
+  // own clay Send button is on screen.
+  if (
+    !(
+      await page
+        .getByRole("tab", { name: "Send", exact: true })
+        .getAttribute("aria-selected")
+    )?.includes("true")
+  )
+    await expect(page.locator(".editor-header-send")).toHaveClass(/\baction\b/);
   await page.getByRole("tab", { name: "Send", exact: true }).click();
   const send = page.locator(".send-action-card");
   await expect(send.getByRole("button", { name: /^Send to/ })).toBeDisabled();

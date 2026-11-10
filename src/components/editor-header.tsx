@@ -68,6 +68,7 @@ export function EditorHeader({
   onPreviewPdf,
   onPreviewClient,
   onReviewSend,
+  sendPanelOpen = false,
   onDuplicate,
   editingTitle,
   onDone,
@@ -115,6 +116,8 @@ export function EditorHeader({
   onPreviewPdf?: () => void;
   onPreviewClient?: () => void;
   onReviewSend?: () => void;
+  /** The Send panel (with its own clay Send button) is showing. */
+  sendPanelOpen?: boolean;
   onDuplicate?: () => void;
   editingTitle?: string;
   onDone?: () => void;
@@ -365,7 +368,11 @@ export function EditorHeader({
           {tablet || compact ? "Preview" : "Preview as client"}
         </EditorButton>
         <EditorButton
-          className="editor-header-pill editor-header-send"
+          className={`editor-header-pill editor-header-send${
+            // Owner 10 Nov: Review & send is the page's clay primary, except
+            // while the Send panel's own clay Send button is on screen.
+            !locked && !primaryLabel && !sendPanelOpen ? " action" : ""
+          }`}
           disabled={
             stale ||
             (offline &&

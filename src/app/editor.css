@@ -2463,6 +2463,16 @@
 .editor-v2-header .editor-button-primary:hover {
   background: color-mix(in oklch, var(--ink) 85%, var(--surface));
 }
+/* Owner 10 Nov: Review & send is the editor's clay primary action. */
+.editor-v2-header .editor-button.action {
+  border-color: var(--action, var(--accent));
+  background: var(--action, var(--accent));
+  color: var(--on-action, var(--on-accent));
+}
+.editor-v2-header .editor-button.action:hover {
+  border-color: var(--action-hover, var(--accent-hover));
+  background: var(--action-hover, var(--accent-hover));
+}
 .editor-button:disabled {
   cursor: default;
   opacity: 0.4;

@@ -24,8 +24,19 @@ async function expectHeaderButtons(page: Page, bar: Locator) {
     const outline = await style(
       page.getByRole("button", { name: "Preview PDF", exact: true }),
     );
+    // Owner 10 Nov: Review & send is clay; it keeps the outline geometry.
     const primary = await style(page.locator(".editor-header-send"));
-    expect(primary).toEqual(outline);
+    expect({ ...primary, background: "", color: "", border: [] }).toEqual({
+      ...outline,
+      background: "",
+      color: "",
+      border: [],
+    });
+    const clay = await page
+      .locator(".editor-header-send")
+      .evaluate((el) => el.classList.contains("action"));
+    if (clay) expect(primary.background).not.toBe(outline.background);
+    else expect(primary).toEqual(outline);
     expect(outline.height).toBe(36);
     for (const button of await bar.getByRole("button").all()) {
       const actual = await style(button);
@@ -33,7 +44,8 @@ async function expectHeaderButtons(page: Page, bar: Locator) {
       expect(actual.radius).toBe(outline.radius);
       expect(actual.font).toBe(outline.font);
       expect(actual.padding).toEqual(outline.padding);
-      expect(actual.background).toBe(outline.background);
+      if (!(await button.evaluate((el) => el.classList.contains("action"))))
+        expect(actual.background).toBe(outline.background);
       const b = (await button.boundingBox())!;
       const bounds = (await bar.boundingBox())!;
       expect(b.y - bounds.y).toBeGreaterThanOrEqual(6);
