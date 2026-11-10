@@ -183,7 +183,10 @@ test("starter cards preview/use/copy and reset with backup and exact Undo; Staff
 }) => {
   const f = await fixture(page, true);
   await page.goto("/studio/templates");
-  await expect(page.locator(".starter-pill")).toHaveCount(7);
+  await expect(page.locator("[data-starter-status]")).toHaveCount(7);
+  await expect(
+    page.locator(".starter-pill").filter({ hasText: "Starter" }),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
     .click();

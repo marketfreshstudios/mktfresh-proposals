@@ -162,6 +162,7 @@ export function ColorPicker({
           close={close}
         >
           <section role="dialog" aria-label={`${label} color picker`}>
+            <h2 className="sr-only">{label} color picker</h2>
             {!!colors.length && (
               <div className="picker-brand-colors">
                 <strong>Brand colors</strong>

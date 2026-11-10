@@ -59,6 +59,7 @@ type Props = {
   cover?: Cover;
   map?: Record<string, string>;
   highlightFields?: boolean;
+  titleHeadingLevel?: 1 | 2;
   onCover?: (cover: Cover) => void;
 };
 function coverOccupiedSpace(cover: HTMLElement, available: number) {
@@ -192,6 +193,7 @@ export function DocumentCover({
   cover,
   map = {},
   highlightFields = true,
+  titleHeadingLevel = 1,
   onCover,
 }: Props) {
   const value = cover ?? defaultCover(),
@@ -468,7 +470,9 @@ export function DocumentCover({
                     {logoMenu && (
                       <ToolbarPopover
                         className="cover-logo-menu"
-                        avoid={root.current?.querySelector<HTMLElement>("h1")}
+                        avoid={root.current?.querySelector<HTMLElement>(
+                          ".cover-title-line",
+                        )}
                         trigger={logoTrigger.current}
                         close={() => setLogoMenu(false)}
                       >
@@ -562,6 +566,7 @@ export function DocumentCover({
               content={content}
               map={resolvedMap}
               highlightFields={highlightFields}
+              titleHeadingLevel={titleHeadingLevel}
               editable={editable || (e.kind === "title" && !!onTitle)}
               selected={selected === e.id}
               select={() => choose(e.id)}
@@ -582,6 +587,7 @@ function CoverText({
   map,
   editable,
   highlightFields,
+  titleHeadingLevel,
   selected,
   select,
   update,
@@ -594,6 +600,7 @@ function CoverText({
   map: Record<string, string>;
   editable: boolean;
   highlightFields: boolean;
+  titleHeadingLevel: 1 | 2;
   selected: boolean;
   select: () => void;
   update: (patch: Partial<CoverElement>, text?: RichText) => void;
@@ -684,7 +691,8 @@ function CoverText({
         </button>
       </EditBar>
     ) : null;
-  const Tag = e.kind === "title" ? "h1" : "div";
+  const Tag =
+    e.kind === "title" ? (titleHeadingLevel === 1 ? "h1" : "h2") : "div";
   return (
     <Tag
       ref={frame}
@@ -705,7 +713,7 @@ function CoverText({
       }
       onClick={editable ? select : undefined}
       role={e.kind === "title" ? "heading" : undefined}
-      aria-level={e.kind === "title" ? 1 : undefined}
+      aria-level={e.kind === "title" ? titleHeadingLevel : undefined}
       tabIndex={editable ? -1 : undefined}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && event.key === "Enter") {

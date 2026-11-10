@@ -396,7 +396,7 @@ function InlineEmailEditor({
       <EditorHeader
         className="template-editor-header email-editor-header"
         title={template.name}
-        titleEditor={<h1 className="email-editor-name">{template.name}</h1>}
+        titleEditor={<span className="email-editor-name">{template.name}</span>}
         backLabel="Emails"
         backHref="/studio/emails"
         save={save}

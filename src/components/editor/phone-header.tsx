@@ -59,7 +59,9 @@ export function PhoneEditorHeader({
       </button>
       {!editingTitle && <YeswellBrand mark reversed />}
       <div className="phone-header-title">
-        <strong title={editingTitle ?? title}>{editingTitle ?? title}</strong>
+        <h1 className="editor-page-heading" title={editingTitle ?? title}>
+          {editingTitle ?? title}
+        </h1>
         {!editingTitle && <small role="status">{status}</small>}
       </div>
       {!editingTitle && aiPending > 0 && (

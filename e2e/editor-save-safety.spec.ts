@@ -306,7 +306,7 @@ test("proposal and template headers share save states and centred fixed-size pan
     const proposal = path.startsWith("/proposals");
     await expect(page.locator(".editor-document-header")).toBeVisible();
     await expect(
-      page.getByRole(proposal ? "link" : "button", {
+      page.getByRole("link", {
         name: proposal ? "Back to proposals" : "Back to templates",
         exact: true,
       }),

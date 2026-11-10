@@ -418,7 +418,10 @@ test("seventh Social media starter shows the four plans, keeps Growth selected a
   }).at(-1)!;
   await f.repo.put("templates", social);
   await page.goto("/studio/templates");
-  await expect(page.locator(".starter-pill")).toHaveCount(7);
+  await expect(page.locator("[data-starter-status]")).toHaveCount(7);
+  await expect(
+    page.locator(".starter-pill").filter({ hasText: "Starter" }),
+  ).toHaveCount(0);
   await expect(
     page.getByText(social.description!, { exact: true }),
   ).toBeVisible();

@@ -448,7 +448,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
     .click();
   await expect(bands(page).first()).toContainText("Template shared note");
   await page
-    .getByRole("button", { name: "Back to templates", exact: true })
+    .getByRole("link", { name: "Back to templates", exact: true })
     .click();
   await page.getByRole("button", { name: "New template", exact: true }).click();
   await page.getByRole("tab", { name: "Styles", exact: true }).click();

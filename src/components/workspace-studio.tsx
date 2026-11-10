@@ -836,8 +836,8 @@ export function WorkspaceStudio({
         <style>{fontCss(draft)}</style>
         <article className="paper proposal-typography font-preview">
           <small>PREVIEW</small>
-          <h1>A proposal for your next chapter</h1>
-          <h2>Overview</h2>
+          <div data-sample-heading="1">A proposal for your next chapter</div>
+          <div data-sample-heading="2">Overview</div>
           <p>
             Thank you for sharing your plans. This proposal sets out the work,
             the investment and the next steps.

@@ -102,7 +102,7 @@ export function PdfPreviewViewer({
       }}
     >
       <header>
-        <strong>Preview — not signed</strong>
+        <h2 className="pdf-preview-heading">Preview — not signed</h2>
         <DialogActions className="pdf-viewer-actions">
           <Button
             aria-label="Zoom out"

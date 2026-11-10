@@ -9,7 +9,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { Button, Icon } from "./ui";
+import { Icon } from "./ui";
 import { ChevronLeft } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { useHistoryStatus } from "./editor-history";
@@ -79,11 +79,13 @@ export function EditorHeader({
   onReassign,
   onReplaceBlock,
   titleEditor,
+  externalHeading = false,
   savedLabel,
   dirtyLabel,
   meta,
 }: {
   titleEditor?: ReactNode;
+  externalHeading?: boolean;
   savedLabel?: string;
   dirtyLabel?: string;
   meta?: ReactNode;
@@ -297,9 +299,13 @@ export function EditorHeader({
           {backLabel}
         </a>
         <span className="editor-header-divider" aria-hidden="true" />
-        <span className="editor-header-title" title={title} aria-label={title}>
+        <h1
+          className="editor-header-title editor-page-heading"
+          title={title}
+          aria-label={title}
+        >
           {title}
-        </span>
+        </h1>
         <div
           className="editor-save-status"
           data-state={state}
@@ -453,19 +459,29 @@ export function EditorHeader({
   return (
     <header className={`editor-document-header button-on-ink ${className}`}>
       <div className="editor-header-identity">
-        <Button
-          className="editor-back-link"
+        <a
+          className="editor-back-link editor-navigation-link"
+          href={backHref}
           title={`Back to ${backLabel.toLowerCase()}`}
           aria-label={`Back to ${backLabel.toLowerCase()}`}
-          disabled={leaving}
-          onClick={goBack}
+          aria-disabled={leaving || undefined}
+          onClick={onBackLink}
         >
-          <PanelChevron direction="left" />
+          <ChevronLeft size={16} aria-hidden="true" />
           {backLabel}
-        </Button>
-        <span className="editor-header-title" title={title}>
-          {titleEditor ?? title}
-        </span>
+        </a>
+        {titleEditor ? (
+          <>
+            {!externalHeading && <h1 className="sr-only">{title}</h1>}
+            <div className="editor-header-title" title={title}>
+              {titleEditor}
+            </div>
+          </>
+        ) : (
+          <h1 className="editor-header-title editor-page-heading" title={title}>
+            {title}
+          </h1>
+        )}
       </div>
       <div
         className="editor-save-status"

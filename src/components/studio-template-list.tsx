@@ -261,18 +261,19 @@ export function StudioTemplateList({
         <>
           <TemplateWarnings templates={templates} catalog={data.catalog} />
           {templates.some((t) => t.starter_key) && (
-            <p className="staff-surface staff-surface-note muted">
+            <p className="studio-template-note muted">
               Starter terms are a starting point, not legal advice. Have an
               attorney review them before you use them.
             </p>
           )}
           {sampleCount > 0 && (
-            <p className="staff-surface staff-surface-note">
+            <p className="studio-template-note muted">
               {withCount(sampleCount, "sample template")} to start from. Edit or
               delete the samples as needed. They have no preset prices.
             </p>
           )}
           <style>{fontCss(data.settings)}</style>
+          <h2 className="sr-only">Templates</h2>
           <div className="studio-template-grid">
             {matchingTemplates.map((t) => (
               <div className="studio-template-card-shell" key={t.id}>
@@ -284,15 +285,12 @@ export function StudioTemplateList({
                   <TemplateThumbnail template={t} settings={data.settings} />
                   <div className="studio-template-card-footer">
                     <div>
-                      <strong
+                      <h3
                         className="studio-template-card-name"
                         data-testid="template-card-name"
                       >
                         {t.name}
-                      </strong>
-                      {t.starter_key && (
-                        <span className="starter-pill">Starter</span>
-                      )}
+                      </h3>
                       {t.sample && <span className="starter-pill">Sample</span>}
                     </div>
                     {t.source_starter_key && (
@@ -317,7 +315,15 @@ export function StudioTemplateList({
                         </span>
                       )
                     )}
-                    <small>
+                    <small
+                      data-starter-status={
+                        t.starter_key
+                          ? t.starter_edited
+                            ? "edited"
+                            : "default"
+                          : undefined
+                      }
+                    >
                       {
                         t.content.filter(
                           (b) => b.type === "heading" && (b.level ?? 1) === 1,
@@ -337,8 +343,8 @@ export function StudioTemplateList({
                       {t.starter_key
                         ? t.starter_edited
                           ? edited(t.id)
-                            ? lastEdit(t.id).replace(/^Edited/, "edited")
-                            : "edited"
+                            ? lastEdit(t.id)
+                            : "Edited"
                           : "Default"
                         : lastEdit(t.id).replace(/^Edited/, "edited")}
                     </small>
@@ -406,6 +412,7 @@ export function StudioTemplateList({
         </>
       ) : (
         <>
+          <h2 className="t-section-title">Saved blocks</h2>
           <StudioFilters
             label="Block types"
             value={type}

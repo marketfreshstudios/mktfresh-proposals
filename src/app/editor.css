@@ -13,14 +13,18 @@
 .document-reading :is(h1, h2, h3, h4) {
   font-family: var(--proposal-heading, "Source Serif 4", serif);
 }
-:is(.staff-foundation, .client-flow) .document-reading h1 {
+:is(.staff-foundation, .client-flow)
+  .document-reading
+  :is(h1, h2:where(.cover-title-line)) {
   font-size: 40px;
   line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.025em;
   margin: 12px 0 20px;
 }
-:is(.staff-foundation, .client-flow) .document-reading h2 {
+:is(.staff-foundation, .client-flow)
+  .document-reading
+  h2:not(:where(.cover-title-line)) {
   font-size: 25px;
   line-height: 1.25;
   font-weight: 600;
@@ -46,7 +50,7 @@
   padding-bottom: 20px;
   color: var(--paper-muted);
 }
-.document-cover h1 textarea {
+.document-cover :is(h1, h2:where(.cover-title-line)) textarea {
   display: block;
   resize: none;
   overflow: hidden;
@@ -62,7 +66,7 @@
   letter-spacing: inherit;
   box-sizing: content-box;
 }
-.document-cover h1 textarea:hover {
+.document-cover :is(h1, h2:where(.cover-title-line)) textarea:hover {
   outline: 1px dashed var(--block-active-outline);
 }
 .editor-breadcrumb {
@@ -410,10 +414,14 @@
     padding: 26px 20px;
     max-width: none;
   }
-  :is(.staff-foundation, .client-flow) .document-reading h1 {
+  :is(.staff-foundation, .client-flow)
+    .document-reading
+    :is(h1, h2:where(.cover-title-line)) {
     font-size: 30px;
   }
-  :is(.staff-foundation, .client-flow) .document-reading h2,
+  :is(.staff-foundation, .client-flow)
+    .document-reading
+    h2:not(:where(.cover-title-line)),
   .document-reading .document-heading {
     font-size: 24px;
     line-height: 1.25;
@@ -472,7 +480,7 @@
 .block-review-action {
   flex: none;
 }
-.document-cover h1 textarea {
+.document-cover :is(h1, h2:where(.cover-title-line)) textarea {
   min-height: 1.15em;
 }
 .document-reading .tiptap {
@@ -597,12 +605,12 @@
     max-width: 640px;
   }
 }
-.document-cover h1 {
+.document-cover :is(h1, h2:where(.cover-title-line)) {
   position: relative;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.document-cover h1 .cover-title-measure {
+.document-cover :is(h1, h2:where(.cover-title-line)) .cover-title-measure {
   display: block;
   visibility: hidden;
   min-height: 1.15em;
@@ -611,7 +619,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.document-cover h1 textarea {
+.document-cover :is(h1, h2:where(.cover-title-line)) textarea {
   position: absolute;
   inset: 0;
   height: 100% !important;
@@ -2713,9 +2721,9 @@
     box-sizing: border-box;
     position: relative;
   }
-  .editor-v2 .editor-sidebar-header strong,
-  .editor-v2-sections-drawer .editor-sidebar-header strong {
-    margin-right: auto;
+  .editor-v2 .editor-sidebar-header .editor-sections-heading,
+  .editor-v2-sections-drawer .editor-sidebar-header .editor-sections-heading {
+    margin: 0 auto 0 0;
     font: 600 13px/18px var(--font-ui);
   }
   :is(.editor-v2, .editor-v2-drawer, .editor-v2-sections-drawer)
@@ -4616,7 +4624,7 @@
     flex-direction: column;
     gap: 1px;
   }
-  .phone-header-title strong {
+  .phone-header-title .editor-page-heading {
     font: 600 13px/18px var(--font-ui);
     white-space: nowrap;
     overflow: hidden;
@@ -5742,10 +5750,14 @@
   max-width: 100%;
   padding: 0;
 }
-:is(.editor-v2-panel, .editor-v2-sheet) .style-sample h1 {
+:is(.editor-v2-panel, .editor-v2-sheet)
+  .style-sample
+  [data-sample-heading="1"] {
   zoom: var(--editor-preview-title-scale);
 }
-:is(.editor-v2-panel, .editor-v2-sheet) .style-sample :is(h2, h3, h4) {
+:is(.editor-v2-panel, .editor-v2-sheet)
+  .style-sample
+  [data-sample-heading]:not([data-sample-heading="1"]) {
   zoom: var(--editor-preview-heading-scale);
 }
 :is(.editor-v2-panel, .editor-v2-sheet) .style-sample .style-body {
@@ -5753,7 +5765,12 @@
 }
 :is(.editor-v2-panel, .editor-v2-sheet)
   .style-sample
-  :is(h3, h4, h3 + p, h4 + p) {
+  :is(
+    [data-sample-heading="3"],
+    [data-sample-heading="4"],
+    [data-sample-heading="3"] + p,
+    [data-sample-heading="4"] + p
+  ) {
   display: none;
 }
 :is(.editor-v2-panel, .editor-v2-sheet)
@@ -5841,15 +5858,22 @@
   background: var(--paper);
   color: var(--paper-ink);
 }
-:is(.editor-v2-panel, .editor-v2-sheet) .style-sample h1 {
+:is(.editor-v2-panel, .editor-v2-sheet)
+  .style-sample
+  [data-sample-heading="1"] {
   margin-top: 0;
   margin-bottom: 0;
 }
-:is(.editor-v2-panel, .editor-v2-sheet) .style-sample h2 {
+:is(.editor-v2-panel, .editor-v2-sheet)
+  .style-sample
+  [data-sample-heading="2"] {
   margin-top: 17px;
   margin-bottom: 0;
 }
-:is(.editor-v2-panel, .editor-v2-sheet) .style-sample h2 + p {
+:is(.editor-v2-panel, .editor-v2-sheet)
+  .style-sample
+  [data-sample-heading="2"]
+  + p {
   margin-top: 5px;
   margin-bottom: 0;
   line-height: 1.6;
@@ -7457,7 +7481,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   padding: 12px;
   margin-top: 12px;
 }
-.band-own-pages h4 {
+.band-own-pages h3 {
   margin: 0 0 8px;
   color: var(--ink-muted);
   text-transform: uppercase;
@@ -8428,17 +8452,13 @@ body:has(.studio-v3-editor) {
   width: 220px;
   min-width: 100px;
   max-width: 100%;
-  padding: 4px 0;
+  padding: 4px 11px;
   height: 36px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--ink);
   font: 600 14px/20px var(--font-ui);
   text-overflow: ellipsis;
-}
-.studio-v3-editor .studio-inline-name:focus {
-  border-color: var(--border-strong);
-  background: var(--surface);
 }
 .studio-v3-editor .editor-save-status {
   position: static;
@@ -8539,8 +8559,7 @@ body:has(.studio-v3-editor) {
   display: grid;
   gap: 20px;
 }
-.template-fonts-row > h3,
-.template-band-heading > h3 {
+.template-band-heading > h2 {
   color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -8946,7 +8965,6 @@ body:has(.studio-v3-editor) {
 .block-frame[data-active="true"] .linked-block-note {
   bottom: calc(100% + 56px);
 }
-.saved-block-usage h3,
 .saved-block-save-scope legend {
   font: 600 11px/16px var(--font-ui);
   color: var(--ink-muted);
@@ -9119,13 +9137,6 @@ body:has(.studio-v3-editor) {
   width: max-content;
   min-width: 0;
   max-width: calc(100vw - 16px);
-}
-
-.editor-document-header .editor-back-link {
-  border-radius: 10px;
-}
-.studio-v3-editor .editor-header-identity > .button-wrap .editor-back-link {
-  border-radius: 0;
 }
 
 .toolbar-popover.studio-template-actions .starter-actions-menu {

@@ -256,24 +256,34 @@ export function documentStyleCss(
   styles?: ResolvedStyles,
   accent = "#365c4a",
   content?: Block[],
+  surface?: "editor" | "type-sample",
 ) {
   const boxCss = blockContentCss(content);
   if (!styles) return boxCss;
   const scope = ".proposal-typography.proposal-typography";
   const roots = [".document-reading", ".print-root", ".style-sample"];
+  const headingTags: Record<Exclude<StyleLevel, "body">, string> = {
+    title: surface === "editor" ? 'h2:where([data-cover-kind="title"])' : "h1",
+    heading1:
+      surface === "editor" ? 'h2:not(:where([data-cover-kind="title"]))' : "h2",
+    heading2: "h3",
+    heading3: "h4",
+  };
   const selector = (level: StyleLevel) => {
     const tags =
-      level === "title"
-        ? ["h1"]
-        : level === "body"
-          ? [
-              ".block-content",
-              "[data-document-block]",
-              ".print-atom",
-              ".style-body",
-              ".field-editor-content",
-            ]
-          : [level === "heading1" ? "h2" : level === "heading2" ? "h3" : "h4"];
+      level === "body"
+        ? [
+            ".block-content",
+            "[data-document-block]",
+            ".print-atom",
+            ".style-body",
+            ".field-editor-content",
+          ]
+        : [
+            surface === "type-sample"
+              ? `[data-sample-heading="${headingTags[level].slice(1)}"]`
+              : headingTags[level],
+          ];
     return roots
       .flatMap((root) =>
         tags.map((tag) => `${scope}${root} ${tag},${scope} ${root} ${tag}`),

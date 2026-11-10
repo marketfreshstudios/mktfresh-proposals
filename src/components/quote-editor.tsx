@@ -934,7 +934,7 @@ function QuoteEditorContent({
   const doc = documents.find((d) => d.id === documentId);
   const refPanel = (
     <div className="stack">
-      <p className="eyebrow">Pricing reference · read only</p>
+      <h2 className="t-section-title">Pricing reference · read only</h2>
       {documents.length > 1 && (
         <Field label="Document">
           <Select
@@ -2935,10 +2935,12 @@ function QuoteEditorContent({
                       ),
                       p.workspace_settings?.accent_colour,
                       p.content,
+                      "editor",
                     )}
                   </style>
                   {p.content.length > 0 && (
                     <DocumentCover
+                      titleHeadingLevel={2}
                       contentHeight={
                         pageGeometry(
                           resolveStyles(

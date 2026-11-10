@@ -364,7 +364,10 @@ test("first-run and filtered empty states stay on white surfaces", async ({
   });
   await page.goto("/studio/templates");
   await expect(page.getByText("Sample", { exact: true })).toHaveCount(3);
-  await expect(page.getByText("Starter", { exact: true })).toHaveCount(7);
+  const defaults = page.locator('[data-starter-status="default"]');
+  await expect(defaults).toHaveCount(7);
+  await expect(defaults.filter({ hasText: /Default$/ })).toHaveCount(7);
+  await expect(page.getByText("Starter", { exact: true })).toHaveCount(0);
   await capture(page, "templates-samples");
   await page.getByRole("button", { name: /Website proposal/ }).click();
   await page.getByRole("menuitem", { name: "Delete sample" }).click();

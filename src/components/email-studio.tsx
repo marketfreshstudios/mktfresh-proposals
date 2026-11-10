@@ -62,7 +62,15 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
     <Skeleton kind="table" label="Loading emails…" />
   );
   if (id) {
-    if (!templates || !data) return loading;
+    if (!templates || !data)
+      return (
+        <>
+          <header className="page-header">
+            <h1>Emails</h1>
+          </header>
+          {loading}
+        </>
+      );
     const t = templates.find((t) => t.key === id);
     return t ? (
       <EmailEditor
@@ -74,9 +82,14 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
         }
       />
     ) : (
-      <Banner tone="danger" title="Email not found">
-        <a href="/studio/emails">Back to Emails</a>
-      </Banner>
+      <>
+        <header className="page-header">
+          <h1>Emails</h1>
+        </header>
+        <Banner tone="danger" title="Email not found">
+          <a href="/studio/emails">Back to Emails</a>
+        </Banner>
+      </>
     );
   }
   return (

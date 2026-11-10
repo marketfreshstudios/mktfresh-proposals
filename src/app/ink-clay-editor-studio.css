@@ -273,7 +273,7 @@
     .studio-product-terms h3,
     .connection-title h3,
     .studio-email-stage h2,
-    .saved-block-usage h3,
+    .saved-block-usage h2,
     .saved-block-save-options h3,
     .activity-day h2,
     .studio-saved-preview h2,
@@ -448,4 +448,65 @@
 /* Conditional clause labels are staff annotations on the light paper. */
 .ink-clay .template-paged-paper .clause-open > small {
   color: var(--paper-muted);
+}
+
+/* Inline editor identity is navigation plus an editable title, not a button group. */
+.staff-foundation.ink-clay .editor-document-header .editor-back-link {
+  flex: none;
+  border: 0;
+  background: transparent;
+}
+.staff-foundation.ink-clay .editor-document-header .editor-back-link svg {
+  color: inherit;
+}
+.staff-foundation.ink-clay
+  .editor-document-header
+  input.studio-inline-name:not(.proposal-typography *) {
+  border-color: transparent;
+  background: transparent;
+}
+.staff-foundation.ink-clay
+  .editor-document-header
+  input.studio-inline-name:not(.proposal-typography *):is(
+    :hover,
+    :focus-visible
+  ) {
+  border-color: var(--chrome-line);
+  background: var(--chrome-on);
+}
+.editor-document-header .editor-page-heading {
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+.editor-v2-header .editor-page-heading {
+  font: 600 15px/20px var(--font-ui);
+}
+.editor-phone-header .phone-header-title .editor-page-heading {
+  font: 600 13px/18px var(--font-ui);
+}
+/* Match the existing cover ornaments for the staff cover's H2. */
+.staff-foundation [data-cover-layout="centered"] h2.cover-title-line::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--cover-color);
+  margin: 24px auto;
+}
+.staff-foundation [data-cover-backdrop="true"] h2.cover-title-line {
+  background: rgba(0, 0, 0, 0.78);
+  color: white !important;
+  padding: 8px !important;
+  border-radius: 4px;
+}
+.editor-sidebar-header .editor-sections-heading {
+  margin: 0 auto 0 0;
+  font: 600 13px/18px var(--font-ui);
+}
+.pdf-viewer .pdf-preview-heading {
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
 }

@@ -99,11 +99,14 @@
   border: 1px solid #d7d3c9;
   margin: auto;
 }
-.font-preview h1 {
+.font-preview [data-sample-heading="1"] {
+  font-family: var(--proposal-heading, var(--font-serif));
+  font-weight: 600;
   font-size: 27px;
   line-height: 1.2;
 }
-.font-preview h2 {
+.font-preview [data-sample-heading="2"] {
+  font: 600 24px/32px var(--proposal-heading, var(--font-serif));
   margin: 24px 0 12px;
 }
 .font-preview p {

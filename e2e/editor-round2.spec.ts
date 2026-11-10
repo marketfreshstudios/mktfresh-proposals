@@ -157,7 +157,9 @@ for (const width of [1440, 375]) {
       await open();
       await page
         .locator(
-          kind === "proposal" ? ".document-cover h1" : ".template-cover h1",
+          kind === "proposal"
+            ? ".document-cover .cover-title-line"
+            : ".template-cover .cover-title-line",
         )
         .dispatchEvent("pointerdown");
       await expect(menu).toHaveCount(0);
@@ -367,10 +369,9 @@ for (const width of [1440, 375]) {
     await expect.poll(() => f.current().style_overrides?.title?.size).toBe(44);
     if (width === 375)
       await page.getByRole("button", { name: "Done", exact: true }).click();
-    await expect(page.locator(".editor-paper .document-cover h1")).toHaveCSS(
-      "font-size",
-      "44px",
-    );
+    await expect(
+      page.locator(".editor-paper .document-cover .cover-title-line"),
+    ).toHaveCSS("font-size", "44px");
     const editorHeading = await frame.locator("h3").evaluate((el) => ({
       size: getComputedStyle(el).fontSize,
       font: getComputedStyle(el).fontFamily,
@@ -527,7 +528,7 @@ test("Workspace and templates save style overrides and show responsive live samp
       exact: true,
     })
     .fill("18");
-  const sample = styles.locator(".style-sample h3");
+  const sample = styles.locator('.style-sample [data-sample-heading="3"]');
   await expect(sample).toHaveCSS("font-size", "26px");
   await expect(sample).toHaveCSS("font-family", /Lora/);
   await expect(sample).toHaveCSS("text-transform", "uppercase");

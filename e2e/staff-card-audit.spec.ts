@@ -1,5 +1,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
+import AxeBuilder from "@axe-core/playwright";
+import { starterTemplates } from "../seed/starter-templates";
+import { accountSections } from "../src/lib/staff-account-model";
+import { emailStudioPreview } from "../src/lib/email-studio";
 import { emailTemplates } from "../src/lib/email-templates";
 import { listViews, viewKey } from "../src/lib/proposal-state";
 import {
@@ -69,6 +73,19 @@ async function fixture(page: Page) {
   await page.route("**/api/email-templates", (route) =>
     route.fulfill({ json: emails }),
   );
+  await page.route("**/api/email-templates/*/preview", async (route) => {
+    const request = route.request();
+    const preview = await emailStudioPreview(
+      f.repo,
+      { put: async () => {}, get: async () => new Uint8Array() },
+      staff,
+      new URL(request.url()).pathname.split("/").at(-2)!,
+      request.postDataJSON(),
+    );
+    await route.fulfill({
+      json: { ...preview.result, values: preview.values, context: {} },
+    });
+  });
   await page.route("**/api/workspace_events", async (route) =>
     route.fulfill({ json: await activity(f.repo) }),
   );
@@ -625,4 +642,225 @@ test("staff data tables hover in Mist in light mode and preserve dark mode", asy
   const row = page.locator(".proposal-row").first();
   await row.hover();
   await expect(row).toHaveCSS("background-color", "rgb(44, 43, 39)");
+});
+
+test("staff pages and account states have one title and a sequential heading outline", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const savedBlock = (
+    await f.repo.entities<{ id: string }>("content_library")
+  )[0];
+  const routes = [
+    "/",
+    "/proposals",
+    "/proposals?view=archived",
+    `/proposals/${f.draft.id}?view=record`,
+    `/proposals/${f.draft.id}?action=edit`,
+    "/clients",
+    `/clients/${f.draft.client.id}`,
+    "/reports",
+    "/studio",
+    "/studio/templates",
+    "/studio/templates?view=blocks",
+    `/studio/templates/${f.templates[0].id}`,
+    `/studio/blocks/${savedBlock.id}`,
+    "/studio/emails",
+    `/studio/emails/${f.emails[0].key}`,
+    "/studio/products",
+    `/studio/products?item=${f.products[0].id}`,
+    "/studio/connections",
+    "/studio/activity",
+    ...["stripe", "quickbooks", "email", "assistants", "imports"].map(
+      (key) => `/studio/connections/${key}`,
+    ),
+    ...workspaceSections.map(([key]) => `/studio/workspace?view=${key}`),
+    ...accountSections.map(([key]) => (key ? `/account/${key}` : "/account")),
+  ];
+
+  const outlines: Record<string, string[]> = {};
+  async function check(label: string) {
+    await expect(
+      page
+        .getByRole("heading", { level: 1 })
+        .and(page.locator(":not(.email-real-renderer *)"))
+        .first(),
+    ).toBeVisible();
+    await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(
+      0,
+    );
+    await expect
+      .soft(page.locator("h1:not(.email-rendered *)"), label)
+      .toHaveCount(1, { timeout: 1500 });
+    await expect
+      .soft(
+        page
+          .getByRole("heading", { level: 1 })
+          .and(page.locator(":not(.email-real-renderer *)")),
+        label,
+      )
+      .toHaveCount(1, { timeout: 1500 });
+    await expect
+      .soft(page.getByRole("heading").first(), label)
+      .toHaveJSProperty("tagName", "H1");
+    const audit = await new AxeBuilder({ page })
+      // The proposal being authored has its own headings chosen by its author.
+      .exclude(".editor-paper, .studio-blocks, .email-real-renderer")
+      .withRules(["heading-order"])
+      .analyze();
+    expect
+      .soft(
+        audit.violations.flatMap((v) => v.nodes.map((n) => n.html)),
+        label,
+      )
+      .toEqual([]);
+    if (process.env.CAPTURE_STAFF_HEADINGS) {
+      outlines[label] = await page
+        .locator("h1, h2, h3, h4, h5, h6")
+        .evaluateAll((elements) =>
+          elements
+            .filter(
+              (el) =>
+                el.getClientRects().length &&
+                !el.closest(".editor-paper, .studio-blocks, [inert]"),
+            )
+            .map(
+              (el) =>
+                `${el.tagName} ${el.textContent?.trim().replace(/\s+/g, " ")}`,
+            ),
+        );
+    }
+  }
+  for (const url of routes) {
+    await page.goto(url);
+    if (url === `/studio/emails/${f.emails[0].key}`) {
+      const preview = page.getByRole("document", { name: "Email preview" });
+      await expect(preview.locator("h1.email-title")).toBeVisible();
+      await expect(preview.getByRole("heading", { level: 1 })).toHaveCount(1);
+    }
+    await check(url);
+  }
+  await page.goto("/proposals");
+  await page
+    .getByRole("button", { name: "New proposal", exact: true })
+    .first()
+    .click();
+  const newProposal = page.getByRole("dialog", { name: "New proposal" });
+  await expect(newProposal.getByRole("heading", { level: 2 })).toHaveText(
+    "New proposal",
+  );
+  await expect(newProposal.getByRole("heading", { level: 3 })).toHaveText([
+    "Client",
+    "Proposal",
+    "What happens next",
+  ]);
+
+  await page.goto("/login");
+  await check("/login");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await check("Forgot password");
+  await page.route("**/api/auth/reset-password", (route) =>
+    route.fulfill({
+      json: { expires_in_minutes: 60 },
+    }),
+  );
+  await page.getByLabel("Email address").fill("person@example.test");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Check your email", level: 1 }),
+  ).toBeVisible();
+  await check("Check your email");
+  for (const url of [
+    "/set-password",
+    "/login/confirm-email",
+    "/login?state=paused",
+    "/login?state=removed",
+    "/login?state=signed-out",
+    "/login?state=two-step",
+  ]) {
+    await page.goto(url);
+    await check(url);
+  }
+  if (process.env.CAPTURE_STAFF_HEADINGS)
+    await writeFile(
+      "/tmp/yeswell-staff-outlines.json",
+      JSON.stringify(outlines, null, 2),
+    );
+});
+
+test("Templates notes, Saved blocks heading and borderless ink editor headers", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  const starter = starterTemplates(f.repo.workspaceId)[0];
+  await f.repo.put("templates", starter);
+  const sample = {
+    ...starter,
+    id: crypto.randomUUID(),
+    starter_key: undefined,
+    name: "Sample proposal",
+    sample: true,
+  };
+  await f.repo.put("templates", sample);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  async function capture(name: string) {
+    if (!process.env.CAPTURE_STAFF_HEADINGS) return;
+    const directory = "docs/screenshots/staff-headings";
+    await mkdir(directory, { recursive: true });
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({
+      path: `${directory}/${name}.png`,
+      animations: "disabled",
+    });
+  }
+  await page.goto("/studio/templates");
+  const notes = page.locator(".studio-template-note");
+  await expect(notes).toHaveCount(2);
+  for (const note of await notes.all()) {
+    await expect(note).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(note).toHaveCSS("border-top-width", "0px");
+  }
+  await expect(page.locator('[data-starter-status="default"]')).toContainText(
+    "Default",
+  );
+  await expect(
+    page.locator(".starter-pill").filter({ hasText: "Starter" }),
+  ).toHaveCount(0);
+  await capture("templates-1440");
+  await page.goto("/studio/templates?view=blocks");
+  await expect(
+    page.getByRole("heading", { name: "Saved blocks", level: 2 }),
+  ).toBeVisible();
+  await capture("saved-blocks-1440");
+
+  for (const [url, back, name] of [
+    [`/studio/templates/${starter.id}`, "Templates", "template-editor"],
+    [`/proposals/${f.draft.id}?action=edit`, "Proposals", "proposal-editor"],
+    [`/studio/emails/${f.emails[0].key}`, "Emails", "email-editor"],
+  ]) {
+    await page.goto(url);
+    const link = page.getByRole("link", {
+      name: `Back to ${back.toLowerCase()}`,
+      exact: true,
+    });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveCSS("border-top-width", "0px");
+    await expect(link).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(link.locator("svg")).toHaveCSS(
+      "color",
+      await link.evaluate((el) => getComputedStyle(el).color),
+    );
+    if (name === "template-editor") {
+      const title = page.getByRole("textbox", { name: "Template name" });
+      await expect(title).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+      await expect(title).toHaveAttribute("title", starter.name);
+      await expect(title).toHaveCSS("padding-left", "11px");
+      await expect(title).toHaveCSS("padding-right", "11px");
+      await expect(
+        page.locator(".editor-document-header .starter-pill"),
+      ).toHaveCount(0);
+    }
+    if (name !== "email-editor") await capture(`${name}-1440`);
+  }
 });

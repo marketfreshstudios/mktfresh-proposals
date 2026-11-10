@@ -697,6 +697,7 @@ export function QuoteItemsPanel({
       items.filter((i) => (i.choice_group_id ?? i.id) === id);
   const quotePanel = (
     <div className="quote-panel stack">
+      <h2 className="sr-only">{proposalContent ? "Quote" : "Default quote"}</h2>
       <p className="muted">
         {intro ??
           "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}

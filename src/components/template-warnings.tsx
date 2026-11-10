@@ -13,7 +13,9 @@ export function TemplateWarnings({
   if (!affected.length) return null;
   return (
     <section className="card stack" aria-label="Inactive template defaults">
-      <h3>Templates with inactive or missing pricing items</h3>
+      <h2 className="t-section-title">
+        Templates with inactive or missing pricing items
+      </h2>
       <p role="alert">
         These defaults will be skipped when creating a proposal. Review the
         template before using its default quote.

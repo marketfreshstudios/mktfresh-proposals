@@ -16,7 +16,7 @@ export function PointerFocus() {
       const radio = label?.control;
       pressed =
         event.target.closest(
-          'button, .btn, [role="tab"], [data-tab-style] > a, input[type="radio"]',
+          'button, .btn, .editor-navigation-link, [role="tab"], [data-tab-style] > a, input[type="radio"]',
         ) ?? (radio?.matches('input[type="radio"]') ? radio : null);
       // Clicking a control that already owns focus can leave :focus-visible on.
       pressed?.setAttribute("data-pointer-focus", "");
