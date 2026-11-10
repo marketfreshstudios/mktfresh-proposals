@@ -140,11 +140,15 @@
   display: grid;
   align-content: start;
   gap: 4px;
+  container-type: inline-size;
 }
 .ink-clay .home-pipeline-amounts .t-hero-number {
-  font-size: clamp(26px, 8.6cqi, 52px);
+  font-size: min(
+    clamp(26px, 18cqi, 52px),
+    calc((100cqi - var(--pipeline-suffix-width)) / var(--pipeline-figure-width))
+  );
   line-height: 1.08;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 .home-pipeline-amounts span,
 .ink-clay .home-pipeline-amounts small {

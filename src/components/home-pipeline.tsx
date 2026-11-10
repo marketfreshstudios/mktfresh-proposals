@@ -1,6 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { withCount } from "../lib/count-label";
 import {
   homePipeline,
@@ -132,12 +138,25 @@ export function HomePipeline({
   const [range, setRange] = useState(savedRange ?? "month");
   const [saveError, setSaveError] = useState(false);
   const choice = useRef(0);
+  const allTime = useMemo(
+    () => homePipeline(proposals, "all", new Date(), timezone),
+    [proposals, timezone],
+  );
   const summary = useMemo(() => {
-    const next = homePipeline(proposals, range, new Date(), timezone);
-    if (!Object.keys(next.amounts).length)
-      next.amounts[currency] = zeroPipelineAmounts;
-    return next;
-  }, [proposals, range, timezone, currency]);
+    const next =
+      range === "all"
+        ? allTime
+        : homePipeline(proposals, range, new Date(), timezone);
+    // Keep rows and interval columns in place as currencies enter or leave a range.
+    const currencies = Object.keys(allTime.amounts);
+    const amounts = Object.fromEntries(
+      (currencies.length ? currencies : [currency]).map((code) => [
+        code,
+        next.amounts[code] ?? zeroPipelineAmounts,
+      ]),
+    );
+    return { ...next, amounts };
+  }, [allTime, proposals, range, timezone, currency]);
   const shown = usePipelineMotion(summary);
   const total = (value: HomePipelineSummary) =>
     withCount(
@@ -164,12 +183,30 @@ export function HomePipeline({
     label: string,
     suffix?: string,
   ) {
+    const largest = money(allTime.amounts[code]?.[key] ?? 0, code);
+    // Reserve room for cents when the all-time amount happens to round to dollars.
+    const figureWidth = [...largest].reduce(
+      (width, character) =>
+        width +
+        (/[0-9]/.test(character)
+          ? 0.54
+          : /[.,\s]/.test(character)
+            ? 0.32
+            : 0.75),
+      largest.includes(".") ? 0 : 1.4,
+    );
     return (
       <div>
         <strong
           className="t-hero-number"
           data-pipeline-amount={key}
           aria-hidden="true"
+          style={
+            {
+              "--pipeline-figure-width": figureWidth,
+              "--pipeline-suffix-width": suffix ? "32px" : "0px",
+            } as CSSProperties
+          }
         >
           <span className="home-pipeline-figure">
             {[...money(value[key], code)].map((character, index) =>
@@ -240,7 +277,7 @@ export function HomePipeline({
             >
               {amount(value, "month", code, "Recurring", "/mo")}
               {amount(value, "once", code, "One-time")}
-              {Boolean(summary.amounts[code]?.year) &&
+              {Boolean(allTime.amounts[code]?.year) &&
                 amount(value, "year", code, "Yearly", "/yr")}
             </div>
           );

@@ -21,7 +21,7 @@ async function capture(page: Page, name: string, area?: "full" | "pipeline") {
   }
 }
 
-async function fixture(page: Page) {
+async function fixture(page: Page, multiCurrency = false) {
   const { draft, repo, service, settings, members } = await setup();
   settings.timezone = "America/New_York";
   settings.currency = "USD";
@@ -196,6 +196,13 @@ async function fixture(page: Page) {
       last_error: "Checkout was not finished",
     },
   ];
+  if (multiCurrency) {
+    const birch = items.find(
+      (proposal) => proposal.client.company === "Birch Outfitters",
+    )!;
+    birch.currency = "CAD";
+    birch.quote[0].sublines[0].interval = "year";
+  }
   const byId = new Map(items.map((proposal) => [proposal.id, proposal]));
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -378,4 +385,25 @@ test("Home range supports keyboard navigation, reduced motion, and a saved choic
     (await track.boundingBox())!.width,
     0,
   );
+});
+
+test("Home keeps currency and yearly amount rows in place when a range excludes them", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1080 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.clock.setFixedTime(now);
+  await fixture(page, true);
+  await page.goto("/");
+  await expect(count(page)).toHaveText("6 proposals");
+  const yearly = page.locator(
+    '[aria-label="CAD"] [data-pipeline-amount="year"]',
+  );
+  await expect(yearly).toHaveText("CA$0/yr");
+  await page.evaluate(() => document.fonts.ready);
+  const attention = page.getByRole("heading", { name: "Needs your attention" });
+  const initialY = (await attention.boundingBox())!.y;
+  await choose(page, "All time").click();
+  await expect(yearly).toHaveText("CA$200/yr");
+  expect((await attention.boundingBox())!.y).toBe(initialY);
 });
