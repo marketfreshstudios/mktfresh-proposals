@@ -273,7 +273,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await row.hover();
       await expect(row).toHaveCSS(
         "background-color",
-        theme === "light" ? "rgb(238, 236, 230)" : "rgb(44, 43, 39)",
+        theme === "light" ? "rgb(244, 247, 247)" : "rgb(44, 43, 39)",
       );
       await link.focus();
       await expect(row).toHaveCSS("outline-style", "solid");

@@ -396,3 +396,227 @@ test.describe("Staff content surfaces", () => {
     }
   });
 });
+
+const ownerReviewEvidence = "docs/screenshots/staff-loading-and-hover";
+async function captureOwnerReview(page: Page, name: string) {
+  if (process.env.CAPTURE_STAFF_LOADING !== "1") return;
+  await mkdir(ownerReviewEvidence, { recursive: true });
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({
+    path: `${ownerReviewEvidence}/${name}.png`,
+    animations: "disabled",
+  });
+}
+
+test("staff routes show their heading and static controls before data arrives", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  const savedBlock = (
+    await f.repo.entities<{ id: string }>("content_library")
+  )[0];
+  const cases = [
+    { url: "/", heading: "Home", control: "New proposal" },
+    { url: "/proposals", heading: "Proposals", control: "Proposal views" },
+    { url: `/proposals/${f.draft.id}?view=record`, heading: "Proposal" },
+    { url: "/reports", heading: "Reports", control: "Export CSV" },
+    { url: "/clients", heading: "Clients", control: "Billing in Stripe" },
+    {
+      url: `/clients/${f.draft.client.id}`,
+      heading: "Client record",
+      control: "Edit client",
+    },
+    { url: "/studio", heading: "Studio" },
+    {
+      url: "/studio/templates",
+      heading: "Templates & blocks",
+      control: "Templates and saved blocks",
+    },
+    {
+      url: "/studio/templates?view=blocks",
+      heading: "Templates & blocks",
+      control: "Search blocks",
+    },
+    {
+      url: `/studio/templates/${f.templates[0].id}`,
+      heading: "Templates & blocks",
+    },
+    { url: `/studio/blocks/${savedBlock.id}`, heading: "Studio" },
+    {
+      url: "/studio/products",
+      heading: "Products",
+      control: "Search products",
+    },
+    { url: "/studio/emails", heading: "Emails", control: "Email audiences" },
+    { url: `/studio/emails/${f.emails[0].key}`, heading: "Emails" },
+    {
+      url: "/studio/activity",
+      heading: "Activity log",
+      control: "Search activity",
+    },
+    {
+      url: "/studio/workspace?view=team",
+      heading: "Workspace",
+      control: "Workspace sections",
+    },
+    { url: "/studio/connections", heading: "Connections" },
+    { url: "/studio/connections/stripe", heading: "Stripe" },
+    { url: "/studio/connections/quickbooks", heading: "QuickBooks" },
+    {
+      url: "/studio/connections?view=email",
+      heading: "Email sending",
+      control: "Open sending domain",
+    },
+    { url: "/studio/connections?view=assistants", heading: "AI assistants" },
+    {
+      url: "/studio/connections?view=imports",
+      heading: "Import from Proposify",
+      control: "View imported proposals",
+    },
+  ];
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const { url, heading, control } of cases) {
+    const hold = Promise.withResolvers<void>();
+    const session = "**/api/auth/session";
+    const reports = "**/api/reports?*";
+    const waitForRelease = async (route: import("@playwright/test").Route) => {
+      await hold.promise;
+      await route.fallback();
+    };
+    await page.route(session, waitForRelease);
+    await page.route(reports, waitForRelease);
+    try {
+      await page.goto(url);
+      await expect(
+        page.getByRole("heading", { name: heading, level: 1, exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator(":is(.skeleton, .report-skeleton)").first(),
+      ).toBeVisible();
+      if (control)
+        await expect(
+          page
+            .getByRole("main")
+            .getByLabel(control, { exact: true })
+            .or(
+              page
+                .getByRole("main")
+                .getByRole("button", { name: control, exact: true }),
+            )
+            .or(
+              page
+                .getByRole("main")
+                .getByRole("link", { name: control, exact: true }),
+            ),
+        ).toBeVisible();
+    } finally {
+      hold.resolve();
+      await page.unroute(session, waitForRelease);
+      await page.unroute(reports, waitForRelease);
+    }
+  }
+});
+
+test("Reports and Clients keep their header and filter positions during loading", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const f = await fixture(page);
+  for (const [company, first_name, last_name] of [
+    ["Pine & Paper", "Kim", "Rivera"],
+    ["Harbor Dental", "Maya", "Chen"],
+    ["Northwind Studio", "Sam", "Lee"],
+  ]) {
+    await f.repo.put("clients", {
+      ...f.draft.client,
+      id: crypto.randomUUID(),
+      company,
+      first_name,
+      last_name,
+      email: `${first_name.toLowerCase()}@example.test`,
+    });
+  }
+  for (const { title, endpoint, filters, loaded, captureName } of [
+    {
+      title: "Reports",
+      endpoint: "**/api/reports?*",
+      filters: ".report-filterbar",
+      loaded: ".report-metric",
+      captureName: "reports",
+    },
+    {
+      title: "Clients",
+      endpoint: "**/api/clients",
+      filters: ".clients-directory-v4 .list-tools",
+      loaded: ".client-table-row",
+      captureName: "clients",
+    },
+  ]) {
+    const hold = Promise.withResolvers<void>();
+    const waitForRelease = async (route: import("@playwright/test").Route) => {
+      await hold.promise;
+      await route.fallback();
+    };
+    await page.route(endpoint, waitForRelease);
+    const heading = page.getByRole("heading", {
+      name: title,
+      level: 1,
+      exact: true,
+    });
+    const controls = page.locator(filters);
+    try {
+      await page.goto(
+        title === "Reports" ? "/reports?range=last-90" : "/clients",
+      );
+      await expect(heading).toBeVisible();
+      await expect(controls).toBeVisible();
+      await expect(
+        page.locator(":is(.skeleton, .report-skeleton)").first(),
+      ).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      const titleY = (await heading.boundingBox())!.y;
+      const filtersY = (await controls.boundingBox())!.y;
+      await captureOwnerReview(page, `${captureName}-loading-1440`);
+      hold.resolve();
+      await expect(page.locator(loaded).first()).toBeVisible();
+      expect((await heading.boundingBox())!.y).toBeCloseTo(titleY, 0);
+      expect((await controls.boundingBox())!.y).toBeCloseTo(filtersY, 0);
+      await captureOwnerReview(page, `${captureName}-loaded-1440`);
+    } finally {
+      hold.resolve();
+      await page.unroute(endpoint, waitForRelease);
+    }
+  }
+});
+
+test("staff data tables hover in Mist in light mode and preserve dark mode", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await fixture(page);
+  const mist = "rgb(244, 247, 247)";
+  for (const [url, rowSelector] of [
+    ["/proposals", ".proposal-row"],
+    ["/", ".proposal-row"],
+    ["/clients", ".client-table-row"],
+    ["/studio/templates?view=blocks", ".saved-block-table .staff-table-row"],
+    ["/studio/products", ".product-table .staff-table-row"],
+    ["/studio/emails", ".email-list-row"],
+    ["/studio/activity", ".activity-row-v3"],
+    ["/reports", ".report-breakdown-table tbody tr"],
+  ]) {
+    await page.goto(url);
+    const row = page.locator(rowSelector).first();
+    await row.hover();
+    await expect(
+      url === "/reports" ? row.locator("td").first() : row,
+    ).toHaveCSS("background-color", mist);
+    if (url === "/proposals")
+      await captureOwnerReview(page, "proposals-row-hover-1440");
+  }
+  await page.evaluate(() => localStorage.setItem("proposal-theme", "dark"));
+  await page.goto("/proposals");
+  const row = page.locator(".proposal-row").first();
+  await row.hover();
+  await expect(row).toHaveCSS("background-color", "rgb(44, 43, 39)");
+});

@@ -1029,6 +1029,7 @@ for (const width of [1440, 768, 375]) {
         screenshot?: string,
       ) => {
         await expect(page.locator(selector).first()).toBeVisible();
+        await expect(page.locator(`${selector} .skeleton`)).toHaveCount(0);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth),

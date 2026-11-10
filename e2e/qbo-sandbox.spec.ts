@@ -775,6 +775,9 @@ test("Connections and setup use the official provider artwork", async ({
     });
   }
   async function expectMarks(...providers: string[]) {
+    await expect(
+      page.getByRole("status", { name: "Loading connection…" }),
+    ).toHaveCount(0);
     for (const provider of providers) {
       const mark = page.locator(`[data-provider-mark="${provider}"]`);
       await expect(mark).toBeVisible();

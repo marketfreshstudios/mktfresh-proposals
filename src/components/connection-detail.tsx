@@ -27,7 +27,7 @@ import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { publicBankState } from "../lib/billing-confirmation";
 import { chromeIcons } from "./staff-icons";
 import { confirmDialog } from "./dialog-actions";
-import { Sheet } from "./foundation";
+import { Sheet, Skeleton } from "./foundation";
 import { api, Banner, Button, post } from "./ui";
 import { useMoney } from "./money-context";
 import { useQuickBooksItemName } from "./quickbooks-fields";
@@ -47,7 +47,7 @@ export function ConnectionDetailLayout({
 }: {
   name: string;
   mark: ReactNode;
-  status: string;
+  status?: string;
   tone?: "success" | "warning" | "info";
   subtitle: string;
   actions?: ReactNode;
@@ -70,7 +70,7 @@ export function ConnectionDetailLayout({
           <div>
             <div className="connection-detail-title">
               <h1 className="t-page-title">{name}</h1>
-              <span className={`pill ${tone ?? ""}`}>{status}</span>
+              {status && <span className={`pill ${tone ?? ""}`}>{status}</span>}
             </div>
             <p>{subtitle}</p>
           </div>
@@ -81,6 +81,59 @@ export function ConnectionDetailLayout({
       </div>
       {children}
     </article>
+  );
+}
+
+export const connectionDetails = {
+  stripe: {
+    name: "Stripe",
+    mark: <ProviderMark provider="stripe" />,
+    subtitle: "Recurring payments, subscriptions and your product list.",
+  },
+  quickbooks: {
+    name: "QuickBooks",
+    mark: <ProviderMark provider="qbo" />,
+    subtitle: "One-time invoices for signed proposals.",
+  },
+  email: {
+    name: "Email sending",
+    mark: "E",
+    subtitle:
+      "Proposals send from the selected staff member. Replies follow your workspace rules.",
+    actions: (
+      <a className="btn" href="/studio/workspace?view=email-sending">
+        Open sending domain
+      </a>
+    ),
+  },
+  assistants: {
+    name: "AI assistants",
+    mark: "AI",
+    subtitle:
+      "Read reference data and draft proposals. A person always reviews and sends.",
+  },
+  imports: {
+    name: "Import from Proposify",
+    mark: "P",
+    subtitle:
+      "Past proposals are kept as read-only PDFs linked to their clients.",
+    actions: (
+      <a className="btn" href="/proposals?view=imported">
+        View imported proposals
+      </a>
+    ),
+  },
+};
+
+export function ConnectionDetailLoading({
+  page,
+}: {
+  page: keyof typeof connectionDetails;
+}) {
+  return (
+    <ConnectionDetailLayout {...connectionDetails[page]}>
+      <Skeleton kind="table" label="Loading connection…" />
+    </ConnectionDetailLayout>
   );
 }
 
@@ -848,8 +901,7 @@ export function BillingConnectionDetail({
 
   return (
     <ConnectionDetailLayout
-      name={name}
-      mark={<ProviderMark provider={provider} />}
+      {...connectionDetails[qbo ? "quickbooks" : "stripe"]}
       status={status}
       tone={
         stripeSetup || stripeDisconnecting
@@ -859,11 +911,6 @@ export function BillingConnectionDetail({
             : reconnect
               ? "warning"
               : undefined
-      }
-      subtitle={
-        qbo
-          ? "One-time invoices for signed proposals."
-          : "Recurring payments, subscriptions and your product list."
       }
       actions={(connected || reconnect) && !stripeSetup ? actions : undefined}
     >

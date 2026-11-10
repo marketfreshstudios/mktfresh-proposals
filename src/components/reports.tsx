@@ -268,12 +268,11 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
     <div className="reports" aria-busy={loading}>
       <header className="report-header">
         <div>
-          {report && (
-            <p className="t-eyebrow">
-              {dateCaption(report.range)} · {count.format(proposalCount)}{" "}
-              {proposalCount === 1 ? "proposal" : "proposals"}
-            </p>
-          )}
+          <p className="t-eyebrow">
+            {report
+              ? `${dateCaption(report.range)} · ${count.format(proposalCount)} ${proposalCount === 1 ? "proposal" : "proposals"}`
+              : reportRanges.find(([value]) => value === filters.range)?.[1]}
+          </p>
           <h1 className="t-page-title">Reports</h1>
         </div>
         <div className="report-phone-ranges">{rangeTabs("phone-ranges")}</div>
@@ -439,6 +438,7 @@ function ReportSkeleton() {
           <div key={i} />
         ))}
       </div>
+      <div className="report-skeleton-track" aria-hidden="true" />
       <div className="report-skeleton-track" aria-hidden="true" />
     </div>
   );

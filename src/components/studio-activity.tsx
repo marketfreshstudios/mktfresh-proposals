@@ -20,15 +20,16 @@ import {
 import { eventLabel } from "../lib/event-label";
 import { api, Button, Banner } from "./ui";
 import { Skeleton } from "./foundation";
-export function ActivityStudio({ data }: { data: Data }) {
+export function ActivityStudio({
+  data,
+  initialFilter,
+}: {
+  data: Data | null;
+  initialFilter: "All" | "Team";
+}) {
   const [rows, setRows] = useState<ActivityRow[] | null>(null),
     [error, setError] = useState(""),
-    [filter, setFilter] = useState(() =>
-      typeof window !== "undefined" &&
-      new URLSearchParams(location.search).get("view") === "team"
-        ? "Team"
-        : "All",
-    ),
+    [filter, setFilter] = useState<string>(initialFilter),
     [query, setQuery] = useState(""),
     [limit, setLimit] = useState(50);
   async function load() {
@@ -59,10 +60,10 @@ export function ActivityStudio({ data }: { data: Data }) {
     String(
       e.metadata.actor_name ??
         (e.actor.startsWith("staff:")
-          ? (data.staff.find((m) => `staff:${m.user_id}` === e.actor)
+          ? (data?.staff.find((m) => `staff:${m.user_id}` === e.actor)
               ?.display_name ?? "Staff member")
           : e.actor.startsWith("ai:")
-            ? (data.assistants.find((m) => `ai:${m.id}` === e.actor)?.name ??
+            ? (data?.assistants.find((m) => `ai:${m.id}` === e.actor)?.name ??
               "Assistant")
             : e.actor === "client"
               ? "Client"
@@ -75,7 +76,7 @@ export function ActivityStudio({ data }: { data: Data }) {
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  const timezone = data.settings?.timezone ?? "UTC";
+  const timezone = data?.settings?.timezone ?? "UTC";
   const day = (when: string) =>
     new Intl.DateTimeFormat("en-CA", {
       timeZone: timezone,
@@ -106,7 +107,9 @@ export function ActivityStudio({ data }: { data: Data }) {
           Everything that happened in the workspace, by whom. Proposal records
           keep their own full audit trail.
         </p>
-        <Button onClick={exportRows}>Export CSV</Button>
+        <Button onClick={exportRows} disabled={!rows || !data}>
+          Export CSV
+        </Button>
       </div>
       <div className="studio-list-tools">
         <StudioFilters
@@ -139,8 +142,8 @@ export function ActivityStudio({ data }: { data: Data }) {
         >
           {error}
         </Banner>
-      ) : rows === null ? (
-        <Skeleton />
+      ) : rows === null || !data ? (
+        <Skeleton kind="table" label="Loading activity…" />
       ) : filtered.length ? (
         [...groups].map(([date, events]) => (
           <section key={date} className="activity-day">

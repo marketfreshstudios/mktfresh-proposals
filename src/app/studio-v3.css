@@ -253,6 +253,14 @@
   gap: 20px;
   margin-bottom: 24px;
 }
+.staff-foundation.ink-clay .studio-list-intro .btn {
+  transition: none;
+}
+.staff-foundation.ink-clay .studio-list-intro .btn:disabled {
+  --button-fill: var(--surface);
+  --button-label: var(--ink-muted);
+  opacity: 1;
+}
 .studio-list-intro p {
   color: var(--ink-muted);
   margin: 0;

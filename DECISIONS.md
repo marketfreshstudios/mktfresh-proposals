@@ -988,3 +988,9 @@ When the five needed steps are done, Show opens the details and Dismiss hides th
 The required and optional groups have a hairline and a 44px gutter at desktop widths and stack with a horizontal divider on narrow screens. Setup icons and progress use the ink palette, with success checks for completed steps and approved artwork for Stripe and QuickBooks. Signing uses the shared Lucide pen-tool for the Company signatory step, existing Staff signing glyphs, and the separate Proposals row action.
 
 New workspaces get three editable Sample templates with no preset prices: Website proposal, Care plan, and Monthly retainer. They appear in Studio beside the existing read-only starter library. A super admin can delete a sample without touching existing proposals or library starters. The insert trigger applies before deploy and never backfills existing workspaces, including workspace 1. Empty states and inline filtered messages use the shared card or table surface.
+
+### Staff loading and table hover (Nov 9, 2026)
+
+Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available.
+
+Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.

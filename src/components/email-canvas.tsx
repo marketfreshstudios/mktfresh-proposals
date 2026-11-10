@@ -125,6 +125,7 @@ export function EmailCanvas({
       <div
         className="email-real-renderer"
         ref={host}
+        role="group"
         aria-label="Email preview"
       />
       {targets && (
