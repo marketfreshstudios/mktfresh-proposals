@@ -374,6 +374,7 @@ export function ToolsPanel<T extends string = EditorTab>({
                 el.tabIndex >= 0 &&
                 !el.matches(":disabled") &&
                 el.getClientRects().length > 0 &&
+                el.checkVisibility() &&
                 getComputedStyle(el).visibility === "visible",
             );
             const first = tabbable[0];

@@ -244,3 +244,22 @@ for (const width of [1440, 375]) {
     });
   }
 }
+
+// Preserve the owner-approved #154 header while moving the primary into Send.
+test("Review & send yields its clay primary to the open Send card", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await fixture(page, false);
+  const header = page.locator(".editor-document-header");
+  const action = header.getByRole("button", {
+    name: "Review & send",
+    exact: true,
+  });
+  await expect(action).toHaveClass(/action/);
+  await action.click();
+  await expect(action).not.toHaveClass(/action/);
+  await expect(page.locator(".send-action-card .action")).toBeVisible();
+  await openEditorPanel(page, "Quote");
+  await expect(action).toHaveClass(/action/);
+});

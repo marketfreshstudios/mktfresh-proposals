@@ -9478,3 +9478,13 @@ dialog.foundation-sheet.block-style-sheet {
     font-size: 11px;
   }
 }
+.ink-clay
+  .editor-sidepanel.sidebar-rail
+  > .editor-sidebar-header
+  > .sidebar-arrow {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
