@@ -1,3 +1,5 @@
+import { TemplateBandsSchema } from "./page-bands";
+import { validatePagePlan } from "./page-plan";
 import type { Block, Proposal, Quote } from "./model";
 import type { StyleOverrides } from "./proposal-styles";
 import type { WorkspaceSettings } from "./workspace";
@@ -17,6 +19,31 @@ export function authoringPreview(
 ): Proposal {
   const date = "2026-01-01T12:00:00.000Z";
   const newCover = input.cover?.layout && input.cover.layout !== "custom";
+  // The editor shows every conditional clause and its editing hint. The
+  // client/PDF have a different source, even when the default selects that clause.
+  let pagination: typeof input.pagination;
+  if (
+    input.pagination &&
+    !input.content.some((block) =>
+      block.clauses?.some((clause) => clause.show_when),
+    )
+  ) {
+    try {
+      const plan = validatePagePlan(input.pagination, input.content);
+      if (
+        plan.starts.every(
+          (start) =>
+            !start.part ||
+            input.content
+              .find((block) => block.id === start.block)
+              ?.clauses?.some((clause) => clause.id === start.part),
+        )
+      )
+        pagination = plan;
+    } catch {
+      // Invalid preview caches are disposable. Print measures this source instead.
+    }
+  }
   return {
     id: input.id,
     revision: 0,
@@ -54,9 +81,9 @@ export function authoringPreview(
     first_viewed_at: null,
     client_signed_at: null,
     completed_at: null,
-    pagination: input.pagination,
+    pagination,
     header_footer: input.header_footer
-      ? { ...input.header_footer, overrides: {} }
+      ? { ...TemplateBandsSchema.parse(input.header_footer), overrides: {} }
       : undefined,
     cover: input.cover,
     content: input.content,

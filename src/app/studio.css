@@ -337,6 +337,9 @@
 .contract-clause-list p {
   font-family: var(--font-serif);
   margin: 8px 0 0;
+}
+/* A paginated clause is document text, not a two-line card summary. */
+.contract-clause-list p:not(.template-paged-paper *) {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

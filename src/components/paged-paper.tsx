@@ -65,7 +65,7 @@ export function PagedPaper({
   enabled?: boolean;
   sheets?: boolean;
   contentKey: string;
-  onPagination: (value: BrowserPages) => void;
+  onPagination: (value: BrowserPages, contentKey: string) => void;
 }) {
   const bandEditing = useBandEditing();
   useLayoutEffect(() => {
@@ -489,7 +489,7 @@ export function PagedPaper({
         setSources(value);
         root!.dataset.pagination = JSON.stringify(value.plan);
         root!.dataset.pageAssignments = JSON.stringify(value.assignments);
-        v.onPagination(value);
+        v.onPagination(value, v.contentKey);
       } finally {
         running = false;
         observe();

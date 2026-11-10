@@ -263,7 +263,7 @@ export async function sealedPdf(
           { fn: applyPagePlan.toString(), plan: version.pagination },
         )
       : await page.evaluate<ReturnType<typeof paginatePrintDocument>>(
-          `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root")); })()`,
+          `(() => { const __name = value => value; return (${paginatePrintDocument.toString()})(document.querySelector(".print-root"), ${Boolean(options?.preview && version.version_no === 0 && version.header_footer)}); })()`,
         );
     layout.sheets = await page.evaluate<ReturnType<typeof collectPrintSheets>>(
       `(() => { const __name = value => value; return (${collectPrintSheets.toString()})(Array.from(document.querySelectorAll(".print-sheet"))); })()`,

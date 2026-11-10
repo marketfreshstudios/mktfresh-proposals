@@ -282,17 +282,40 @@ function QuoteEditorContent({
   const live = !!p.token && p.versions.length > 0 && !closed && !locked;
   const paper = useRef<HTMLElement>(null),
     reviewCursor = useRef(-1);
-  const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
-  const pagePlan = useRef(initial.pagination);
+  const proposalLayoutKey = JSON.stringify([
+    p.title,
+    printView(p.content, p.quote),
+    p.valid_until,
+    p.cover,
+    bands,
+    resolveStyles(
+      p.workspace_settings,
+      p.template_style_overrides,
+      p.style_overrides,
+    ),
+    p.client,
+    p.sender,
+    p.workspace_settings?.logo,
+    p.workspace_settings?.logo_icon,
+  ]);
+  const [browserPages, setBrowserPages] = useState<
+    (BrowserPages & { layoutKey: string }) | null
+  >(null);
+  const pagePlan = useRef<Proposal["pagination"]>(undefined);
   const pdfPreview = usePdfPreview({
     ...p,
-    pagination: browserPages?.plan ?? p.pagination,
+    pagination: locked
+      ? p.versions.at(-1)?.pagination
+      : browserPages?.layoutKey === proposalLayoutKey
+        ? browserPages.plan
+        : undefined,
   });
-  const receivePagination = (value: BrowserPages) => {
+  const receivePagination = (value: BrowserPages, layoutKey: string) => {
     if (staleRef.current) return;
     pagePlan.current = value.plan;
+    const measured = { ...value, layoutKey };
     setBrowserPages((old) =>
-      JSON.stringify(old) === JSON.stringify(value) ? old : value,
+      JSON.stringify(old) === JSON.stringify(measured) ? old : measured,
     );
   };
   const panels = useEditorPanels(
@@ -674,6 +697,7 @@ function QuoteEditorContent({
       try {
         while (dirtyRef.current) {
           if (staleRef.current || offlineRef.current) return false;
+          pagePlan.current = undefined;
           paper.current?.dispatchEvent(new Event("pagination-flush"));
           const captured = generation.current,
             value = latest.current;
@@ -759,6 +783,7 @@ function QuoteEditorContent({
       setSending(true);
       try {
         if (!(await settleEdits())) return false;
+        pagePlan.current = undefined;
         paper.current?.dispatchEvent(new Event("pagination-flush"));
         await post(`/api/proposals/${p.id}/send`, {
           revision: revision.current,
@@ -2910,15 +2935,7 @@ function QuoteEditorContent({
                         : undefined
                     }
                     content={p.content}
-                    contentKey={JSON.stringify([
-                      p.title,
-                      printView(p.content, p.quote),
-                      p.valid_until,
-                      p.style_overrides,
-                      p.template_style_overrides,
-                      p.cover,
-                      bands,
-                    ])}
+                    contentKey={proposalLayoutKey}
                     onPagination={receivePagination}
                   />
                   <style>

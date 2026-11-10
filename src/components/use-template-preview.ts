@@ -2,22 +2,23 @@
 import { staffErrorMessage } from "./staff-sign-in";
 import { printView, viewKey } from "../lib/print-view";
 import { usePrintPreview } from "./use-print-preview";
-import type { Template, Item } from "../lib/model";
-import { templateDefaultQuote } from "../lib/template-quote";
+import type { Template, Quote } from "../lib/model";
+import type { PagePlan } from "../lib/page-plan";
 import type { PdfPreview } from "../lib/pdf-preview";
 import type { WorkspaceSettings } from "../lib/workspace";
 export function useTemplatePreview(
   template: Template | null,
-  catalog: Item[],
+  quote: Quote,
+  measuredPlan: PagePlan | undefined,
   enabled: boolean,
   settings?: WorkspaceSettings | null,
 ) {
   const input = template
     ? {
         id: template.id,
-        pagination: template.pagination,
+        pagination: measuredPlan,
         content: template.content,
-        quote: templateDefaultQuote(template, catalog).quote,
+        quote,
         header_footer: template.header_footer,
         cover: template.cover,
         style_overrides: template.style_overrides ?? {},

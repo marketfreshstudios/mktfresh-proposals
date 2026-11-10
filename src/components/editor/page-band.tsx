@@ -784,7 +784,10 @@ export function PageBand(props: Props) {
               </label>
               <button
                 onClick={() => {
-                  insertImage("workspace-logo", "Workspace logo");
+                  insertImage(
+                    kind === "header" ? "workspace-brand" : "workspace-logo",
+                    "Workspace logo",
+                  );
                 }}
               >
                 Use workspace logo

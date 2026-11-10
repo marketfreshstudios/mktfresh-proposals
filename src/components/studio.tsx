@@ -37,7 +37,10 @@ import {
 import { savedBlocks } from "../lib/linked-blocks";
 import { LinkedBlockNote } from "./editor/linked-block-note";
 import type { SavedBlock } from "../lib/model";
-import { templateAuthoringItems } from "../lib/template-quote";
+import {
+  templateAuthoringItems,
+  templateDefaultQuote,
+} from "../lib/template-quote";
 import { studioDate } from "../lib/studio-v3";
 import { curatedFonts } from "../lib/proposal-fonts";
 import { confirmDialog } from "./dialog-actions";
@@ -1019,14 +1022,13 @@ function TemplatesStudioContent({
     applyModel(value);
   };
   const templatePaper = useRef<HTMLDivElement>(null);
-  const [browserPages, setBrowserPages] = useState<BrowserPages | null>(null);
-  const pagePlan = useRef<import("../lib/page-plan").PagePlan | undefined>(
-    undefined,
-  );
-  const receivePagination = (value: BrowserPages) => {
-    pagePlan.current = value.plan;
+  const [browserPages, setBrowserPages] = useState<
+    (BrowserPages & { layoutKey: string }) | null
+  >(null);
+  const receivePagination = (value: BrowserPages, layoutKey: string) => {
+    const measured = { ...value, layoutKey };
     setBrowserPages((old) =>
-      JSON.stringify(old) === JSON.stringify(value) ? old : value,
+      JSON.stringify(old) === JSON.stringify(measured) ? old : measured,
     );
   };
   const templatePanels = useEditorPanels(
@@ -1093,20 +1095,37 @@ function TemplatesStudioContent({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [templatePanels.canLeft, templatePanels.canRight]);
+  const templateStyles = resolveStyles(
+    data.settings,
+    mode === "templates" ? draft?.style_overrides : undefined,
+  );
+  const previewQuote = draft
+    ? templateDefaultQuote(draft, data.catalog).quote
+    : [];
+  const templateLayoutKey = JSON.stringify([
+    draft?.id,
+    printView(content, previewQuote),
+    draft?.cover,
+    draft?.header_footer,
+    templateStyles,
+    data.settings?.company_name,
+    data.settings?.owner,
+    data.settings?.business_state,
+    data.settings?.default_validity_days,
+    data.settings?.logo,
+    data.settings?.logo_icon,
+  ]);
   const templatePreview = useTemplatePreview(
-    draft
-      ? { ...draft, pagination: browserPages?.plan ?? draft.pagination }
-      : null,
-    data.catalog,
+    draft,
+    previewQuote,
+    browserPages?.layoutKey === templateLayoutKey
+      ? browserPages.plan
+      : undefined,
     mode === "templates",
     data.settings,
   );
   const previewRef = useRef(templatePreview);
   previewRef.current = templatePreview;
-  const templateStyles = resolveStyles(
-    data.settings,
-    mode === "templates" ? draft?.style_overrides : undefined,
-  );
   const blockSpaces = documentSpacing(content, templateStyles);
   const templateMetrics = pageMetrics(templateStyles);
   const currentContent = useRef(content);
@@ -1206,7 +1225,6 @@ function TemplatesStudioContent({
             return true;
           if (!navigator.onLine)
             throw new Error("Offline — changes kept on this device");
-          templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
           const result = await post(captured.path, {
             ...captured.value,
             expected_revision: studioRevisions.current.get(captured.key),
@@ -1218,7 +1236,7 @@ function TemplatesStudioContent({
                 }
               : {}),
             ...(captured.path === "/api/templates"
-              ? { pagination: pagePlan.current }
+              ? { pagination: undefined }
               : {}),
           });
           forceScope = false;
@@ -2268,14 +2286,7 @@ function TemplatesStudioContent({
                             ? "/api/workspace-logo"
                             : undefined
                         }
-                        contentKey={JSON.stringify([
-                          printView(content, templatePreview.quote),
-                          draft?.default_quote,
-                          draft?.default_items,
-                          draft?.style_overrides,
-                          draft?.cover,
-                          draft?.header_footer,
-                        ])}
+                        contentKey={templateLayoutKey}
                         onPagination={receivePagination}
                         sheets
                       />
@@ -3303,10 +3314,10 @@ function TemplatesStudioContent({
       {previewOpen && (
         <PdfPreviewViewer
           load={async () => {
-            templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
             await new Promise<void>((resolve) =>
               requestAnimationFrame(() => resolve()),
             );
+            templatePaper.current?.dispatchEvent(new Event("pagination-flush"));
             return previewRef.current.ensure();
           }}
           close={() => setPreviewOpen(false)}
