@@ -3,7 +3,9 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { paymentPlanClause } from "../seed/oiot-clause";
 import { catalogQuoteItem } from "../src/lib/quote-model";
-import { ItemSchema, type Proposal } from "../src/lib/model";
+import { ItemSchema, type Item, type Proposal } from "../src/lib/model";
+import { renderBlocks, variables } from "../src/lib/presentation";
+import { connectAssistant } from "./mcp-client";
 import { setup, signature } from "../tests/helpers";
 import { openQuoteRow, openEditorPanel } from "./editor-ui";
 
@@ -11,7 +13,13 @@ const headers = { Authorization: "Bearer e2e-staff-secret-only" };
 const capture = process.env.CAPTURE_OIOT === "1";
 const shots = "docs/screenshots/oiot-terms";
 
-async function fixture(request: APIRequestContext) {
+async function fixture(
+  request: APIRequestContext,
+  {
+    withoutClause = false,
+    catalogSku,
+  }: { withoutClause?: boolean; catalogSku?: string } = {},
+) {
   const { settings } = await setup();
   const client = crypto.randomUUID(),
     template = crypto.randomUUID();
@@ -25,7 +33,7 @@ async function fixture(request: APIRequestContext) {
   });
   const plan = ItemSchema.parse({
     id: crypto.randomUUID(),
-    sku: "oiot-test-" + template,
+    sku: catalogSku ?? "oiot-test-" + template,
     name: "Website Build — Own It Over Time",
     amount: 17500,
     interval: "month",
@@ -87,9 +95,11 @@ async function fixture(request: APIRequestContext) {
     id: template,
     name: "Website design and build",
     active: true,
-    content: blocks,
+    content: withoutClause
+      ? blocks.filter((block) => block.type !== "contract")
+      : blocks,
     default_quote: [],
-    default_items: quote,
+    default_items: withoutClause ? [] : quote,
   });
   return {
     draft: (await post("proposals", {
@@ -98,6 +108,7 @@ async function fixture(request: APIRequestContext) {
       client_id: client,
     })) as Proposal,
     planId: plan.id,
+    templateId: template,
     post,
   };
 }
@@ -132,9 +143,7 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   });
   await kickoff.fill("1500");
   await kickoff.press("Tab");
-  await expect(
-    row.getByRole("spinbutton", { name: "Amount Kickoff" }),
-  ).toHaveValue("1500");
+  await expect(kickoff).toHaveValue("1500");
   await row
     .getByRole("spinbutton", { name: "Website purchase price" })
     .fill("3750");
@@ -260,4 +269,244 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
       file,
       shots + "/pdf-clause",
     ]);
+});
+
+test("catalog kickoff stays editable after Enter and Tab without clause 4.4", async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1040 });
+  const { draft, planId } = await fixture(request, { withoutClause: true });
+  expect(draft.content.some((block) => block.type === "contract")).toBe(false);
+  const get = async (): Promise<Proposal> =>
+    (await request.get(`/api/proposals/${draft.id}`, { headers })).json();
+  const savedItem = async () =>
+    (await get()).quote.find((item) => item.pricing_item_id === planId);
+  await page.goto(`/proposals/${draft.id}`);
+  await expect(
+    page.getByRole("tab", { name: "Quote", exact: true }),
+  ).toBeVisible();
+  await openEditorPanel(page, "Quote");
+  await page
+    .getByRole("combobox", { name: "Add product" })
+    .selectOption(planId);
+  const row = await openQuoteRow(page, "Own It Over Time");
+  const kickoff = row.getByRole("spinbutton", {
+    name: "Own It Over Time kickoff",
+  });
+  const price = row.getByRole("spinbutton", { name: "Website purchase price" });
+  await expect(kickoff).toBeVisible();
+  await kickoff.fill("1200.25");
+  await kickoff.press("Enter");
+  await expect(kickoff).toBeFocused();
+  await expect
+    .poll(async () =>
+      (await savedItem())?.sublines.filter((line) => line.oiot_kickoff),
+    )
+    .toEqual([
+      expect.objectContaining({ amount: 120025, interval: "one_time", qty: 1 }),
+    ]);
+  const kickoffId = (await savedItem())?.sublines.find(
+    (line) => line.oiot_kickoff,
+  )?.id;
+  await kickoff.fill("1500");
+  await kickoff.press("Tab");
+  await expect(price).toBeFocused();
+  await price.fill("3750");
+  await expect.poll(savedItem).toMatchObject({
+    oiot_purchase_price: 375000,
+    sublines: [
+      expect.objectContaining({
+        id: kickoffId,
+        amount: 150000,
+        interval: "one_time",
+        oiot_kickoff: true,
+      }),
+      expect.objectContaining({ amount: 17500, interval: "month" }),
+    ],
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("tab", { name: "Quote", exact: true }),
+  ).toBeVisible();
+  const reopened = await openQuoteRow(page, "Own It Over Time");
+  await expect(
+    reopened.getByRole("spinbutton", { name: "Own It Over Time kickoff" }),
+  ).toHaveValue("1500");
+  await expect(
+    reopened.getByRole("spinbutton", { name: "Website purchase price" }),
+  ).toHaveValue("3750");
+
+  if (process.env.CAPTURE_OIOT_KICKOFF === "1") {
+    const dir = "docs/screenshots/oiot-kickoff-entry";
+    mkdirSync(dir, { recursive: true });
+    await reopened
+      .getByRole("spinbutton", { name: "Own It Over Time kickoff" })
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({ path: dir + "/quote-panel-1440.png" });
+    await page.setViewportSize({ width: 375, height: 850 });
+    await expect(
+      page.getByRole("button", { name: /^Open Quote/ }),
+    ).toBeVisible();
+    const phone = await openQuoteRow(page, "Own It Over Time");
+    await phone
+      .getByRole("spinbutton", { name: "Own It Over Time kickoff" })
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({ path: dir + "/quote-panel-375.png" });
+  }
+});
+
+test("MCP fills an omitted kickoff and preserves exact amounts through proposal and template tools", async ({
+  page,
+  request,
+}) => {
+  const { draft, planId, templateId } = await fixture(request, {
+    catalogSku: "oiot-monthly-175",
+  });
+  const call = await connectAssistant(
+    request,
+    headers,
+    "proposals:read proposals:draft templates:edit",
+  );
+  const catalog: Item[] = await call("list_catalog", {});
+  const product = catalog.find((item) => item.sku === "oiot-monthly-175");
+  expect(product).toMatchObject({
+    id: planId,
+    amount: 17500,
+    interval: "month",
+  });
+  const plan = catalogQuoteItem(product!, 0, crypto.randomUUID(), [
+    crypto.randomUUID(),
+  ]);
+  const kickoff = {
+    id: crypto.randomUUID(),
+    label: "Kickoff",
+    interval: "one_time" as const,
+    qty: 1,
+    oiot_kickoff: true as const,
+    amount: 150000,
+    list_amount: null,
+    stripe_lookup_key: null,
+    qbo_item_ref: null,
+  };
+  const entered = {
+    ...plan,
+    oiot_purchase_price: 375000,
+    sublines: [...plan.sublines, kickoff],
+  };
+  const input = {
+    title: "Connector website quote",
+    brief:
+      "Quote the exact kickoff and website purchase price supplied by the user.",
+    client_id: draft.client.id,
+    template_id: templateId,
+    content_markdown: "# Scope\n\nDesign and build the website.",
+  };
+  let proposal = await call("create_proposal_draft", {
+    ...input,
+    items: [plan],
+  });
+  const missing = await call("check_ready", { id: proposal.id });
+  expect(missing.errors).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining("oiot_kickoff: true"),
+      expect.stringContaining("items[].oiot_purchase_price"),
+    ]),
+  );
+  proposal = await call("set_quote_lines", {
+    id: proposal.id,
+    revision: proposal.revision,
+    items: [{ ...plan, oiot_purchase_price: 375000 }],
+  });
+  const saved = await call("get_proposal", { id: proposal.id });
+  expect(saved.items).toEqual([
+    expect.objectContaining({
+      ai_entered: true,
+      oiot_purchase_price: 375000,
+      sublines: [
+        expect.objectContaining({ amount: 17500, interval: "month" }),
+        expect.objectContaining({
+          amount: 150000,
+          interval: "one_time",
+          qty: 1,
+          oiot_kickoff: true,
+          list_amount: null,
+        }),
+      ],
+    }),
+  ]);
+  const ready = await call("check_ready", { id: proposal.id });
+  expect(ready.errors).toEqual([
+    expect.stringContaining("Confirm review of AI changes"),
+  ]);
+  await page.goto(`/proposals/${proposal.id}`);
+  await expect(
+    page.getByRole("tab", { name: "Quote", exact: true }),
+  ).toBeVisible();
+  const aiRow = await openQuoteRow(page, "Own It Over Time");
+  await expect(
+    aiRow.getByText(
+      "Review the kickoff and website purchase price entered by the assistant.",
+    ),
+  ).toBeVisible();
+  await expect(
+    aiRow.getByRole("spinbutton", { name: "Own It Over Time kickoff" }),
+  ).toHaveValue("1500");
+  await expect(
+    aiRow.getByRole("spinbutton", { name: "Website purchase price" }),
+  ).toHaveValue("3750");
+
+  proposal = await call("set_quote_lines", {
+    id: proposal.id,
+    revision: proposal.revision,
+    items: [entered],
+  });
+  expect(proposal.items[0]).toMatchObject({ ...entered, ai_entered: true });
+
+  const staffDraft: Proposal = await (
+    await request.get(`/api/proposals/${proposal.id}`, { headers })
+  ).json();
+  const html = renderBlocks(
+    staffDraft.content,
+    staffDraft.quote,
+    variables(staffDraft),
+  );
+  expect(html).toContain("kickoff payment of $1,500");
+  expect(html).toContain("full purchase price is $3,750");
+
+  const revised = {
+    ...entered,
+    oiot_purchase_price: 400000,
+    sublines: [...plan.sublines, { ...kickoff, amount: 175000 }],
+  };
+  const updated = await call("update_proposal_draft", {
+    id: proposal.id,
+    revision: proposal.revision,
+    items: [revised],
+  });
+  expect(updated.items[0]).toMatchObject(revised);
+  const created = await call("create_proposal_draft", {
+    ...input,
+    items: [entered],
+  });
+  expect(created.items[0]).toMatchObject(entered);
+
+  const template = await call("create_template", {
+    name: "Connector website defaults",
+    content: "# Scope\n\nDesign and build the website.",
+    default_quote_items: [entered],
+  });
+  const initial = await call("get_template", {
+    template_id: template.template_id,
+  });
+  expect(initial.default_quote_items[0]).toMatchObject(entered);
+  await call("update_template", {
+    template_id: template.template_id,
+    revision: initial.revision,
+    default_quote_items: [revised],
+  });
+  const changed = await call("get_template", {
+    template_id: template.template_id,
+  });
+  expect(changed.default_quote_items[0]).toMatchObject(revised);
 });

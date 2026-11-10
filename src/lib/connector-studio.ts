@@ -133,7 +133,7 @@ export const connectorStudioDescriptions: Record<string, string> = {
   upload_image:
     "Validate a locally resized PNG/JPEG under 700 KB and 16 megapixels, exactly as Studio's embedded image validator. No WebP/SVG, remote URLs, asset store or new scope. Returns image_ref as a self-contained data:image/png|jpeg;base64,... value; use it directly in Markdown: ![descriptive alt](IMAGE_REF){width=120}. Images must occupy their own paragraph. Width is CSS pixels at canonical page width, converted to the editor's percentage sizing and clamped with locked proportions/minimum 16px height. Requires templates:edit. Original embedded bytes (including EXIF, as in Studio) are retained; resize/clean the logo locally first. Markdown allows 100,000 prose characters and 1,100,000 total including image data.",
   create_template:
-    "Create a hidden template for human review. content is proposal Markdown: # section, ##/### subheads, paragraphs, bold/italic and flat lists. cover maps line IDs (eyebrow, title, prepared_for, byline, date, validity) to text with valid fields. default_quote_items uses set_quote_lines items/sublines; supply exact provided or list_catalog amounts, never invent or calculate prices. Requires templates:edit; reconnect to grant it.",
+    "Create a hidden template for human review. content is proposal Markdown: # section, ##/### subheads, paragraphs, bold/italic and flat lists. cover maps line IDs (eyebrow, title, prepared_for, byline, date, validity) to text with valid fields. default_quote_items uses set_quote_lines items/sublines; use provided or list_catalog amounts and follow the plan instructions below. Requires templates:edit; reconnect to grant it.",
   get_template:
     "Read a template as content Markdown with preservation markers, cover text keyed by stored line id, default_quote_items, revision and a block-id/type summary. Implicit cover title inherits proposal.title and is omitted from cover. Starters are read-only: duplicate_template first. " +
     markerRules +
@@ -141,7 +141,7 @@ export const connectorStudioDescriptions: Record<string, string> = {
   update_template:
     "Update a non-starter template using the latest get_template revision; on 409 read again, merge and retry. Provided content replaces the body subject to marker/removal guards; provided default_quote_items replace the quote; cover merges only supplied text lines, retaining images/layout/spacing. Omitted fields remain unchanged. " +
     markerRules +
-    "remove_blocks requires content. Edited text supports the same Markdown as proposals; unchanged marked blocks keep their exact rich data. Staff can Restore previous version. Starters are read-only: duplicate_template first. Availability is human-only. Supply agreed or exact list_catalog amounts, never invent/calculate prices. Requires templates:edit.",
+    "remove_blocks requires content. Edited text supports the same Markdown as proposals; unchanged marked blocks keep their exact rich data. Staff can Restore previous version. Starters are read-only: duplicate_template first. Availability is human-only. Use agreed or exact list_catalog amounts and follow the plan instructions below. Requires templates:edit.",
   duplicate_template:
     "Copy any template, including a read-only Yeswell starter, into a hidden editable template. Use this before customizing a starter. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
   create_saved_block:

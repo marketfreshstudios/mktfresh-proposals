@@ -4,7 +4,9 @@ import {
   oiotPlan,
   oiotKickoff,
   oiotKickoffField,
+  oiotKickoffRequired,
   oiotPurchasePriceField,
+  oiotPurchasePriceRequired,
 } from "./oiot";
 import { businessStateError } from "./business-state";
 import { authoringErrors } from "./authoring-guidance";
@@ -46,8 +48,6 @@ export function readiness(
     errors.push(e instanceof Error ? e.message : "Invalid quote items");
   }
   const offers = p.quote.filter((item) => oiotItem(item, p.content, catalog));
-  const kickoffError = `Enter the kickoff amount for ${oiotPlan.name}`;
-  const priceError = `Enter the website purchase price for ${oiotPlan.name}`;
   if (offers.length > 1) errors.push(`Offer only one ${oiotPlan.name} option`);
   if (offers.length === 1) {
     const offer = offers[0];
@@ -60,8 +60,9 @@ export function readiness(
       errors.push(
         `Configure the ${oiotPlan.paidPayments}-payment step-down in Studio Products, then re-add ${oiotPlan.name}`,
       );
-    if (!kickoff) errors.push(kickoffError);
-    if (offer.oiot_purchase_price === undefined) errors.push(priceError);
+    if (!kickoff) errors.push(oiotKickoffRequired);
+    if (offer.oiot_purchase_price === undefined)
+      errors.push(oiotPurchasePriceRequired);
     if (
       kickoff &&
       offer.oiot_purchase_price !== undefined &&
@@ -192,9 +193,11 @@ export function readiness(
   } catch (e) {
     const message = e instanceof Error ? e.message : "Invalid proposal content";
     if (message === `Unresolved variable: ${oiotKickoffField}`) {
-      if (!errors.includes(kickoffError)) errors.push(kickoffError);
+      if (!errors.includes(oiotKickoffRequired))
+        errors.push(oiotKickoffRequired);
     } else if (message === `Unresolved variable: ${oiotPurchasePriceField}`) {
-      if (!errors.includes(priceError)) errors.push(priceError);
+      if (!errors.includes(oiotPurchasePriceRequired))
+        errors.push(oiotPurchasePriceRequired);
     } else if (
       message !== "Unresolved variable: workspace.state" ||
       !errors.includes(businessStateError)

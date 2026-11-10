@@ -1,9 +1,11 @@
 import { oiotPlan } from "../../seed/oiot-plan";
 export { oiotPlan } from "../../seed/oiot-plan";
-import type { Block, Item, Quote, QuoteItem } from "./model";
+import type { Block, Item, Quote, QuoteItem, Subline } from "./model";
 
 export const oiotKickoffField = "oiot.kickoff";
 export const oiotPurchasePriceField = "oiot.purchase_price";
+export const oiotKickoffRequired = `Enter the kickoff amount for ${oiotPlan.name}`;
+export const oiotPurchasePriceRequired = `Enter the website purchase price for ${oiotPlan.name}`;
 type Clause = NonNullable<Block["clauses"]>[number];
 export const finalOiotClause = (clause: Clause) =>
   clause.body_format === "oiot_run_in";
@@ -34,12 +36,15 @@ export function oiotItem(
   );
 }
 
-export function oiotKickoff(item: QuoteItem) {
-  const lines = item.sublines.filter(
-    (line) =>
-      line.interval === "one_time" &&
-      (line.oiot_kickoff || line.label?.trim().toLowerCase() === "kickoff"),
+export function isOiotKickoffLine(line: Subline) {
+  return (
+    line.interval === "one_time" &&
+    (line.oiot_kickoff || line.label?.trim().toLowerCase() === "kickoff")
   );
+}
+
+export function oiotKickoff(item: QuoteItem) {
+  const lines = item.sublines.filter(isOiotKickoffLine);
   return lines.length === 1 ? lines[0] : undefined;
 }
 
