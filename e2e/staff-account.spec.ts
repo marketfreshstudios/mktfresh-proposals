@@ -170,20 +170,30 @@ test("account pages save edits, keep alerts scoped, and follow R22 at 1440, 768 
   );
   await page.getByRole("button", { name: "Light mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  settings.company_signatory!.image = null;
   await page.goto("/account/signature");
-  await expect(
-    page.getByRole("button", { name: "Save signature" }),
-  ).toBeVisible();
-  await capture(page, "1b3-signature-1440");
+  const savedSignature = page.getByRole("img", {
+    name: "Stored company signature",
+  });
+  const noSignature = page.getByText("No signature saved yet", { exact: true });
+  await expect(noSignature).toBeVisible();
+  await expect(savedSignature).toHaveCount(0);
   await page.getByRole("button", { name: "Save signature" }).click();
   await expect(
     page.getByRole("status").getByText("Saved", { exact: true }),
   ).toBeVisible();
+  await expect(noSignature).toHaveCount(0);
+  await expect(savedSignature).toBeVisible();
+  await expect(savedSignature).toHaveAttribute(
+    "src",
+    settings.company_signatory!.image!,
+  );
+  await page.reload();
+  await expect(savedSignature).toBeVisible();
+  await capture(page, "1b3-signature-1440");
   signatory = false;
   await page.reload();
-  await expect(
-    page.getByRole("img", { name: "Stored company signature" }),
-  ).toBeVisible();
+  await expect(savedSignature).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Save signature" }),
   ).toHaveCount(0);
@@ -241,7 +251,27 @@ test("account pages save edits, keep alerts scoped, and follow R22 at 1440, 768 
       await expect(
         page.getByRole("button", { name: "Save signature" }),
       ).toBeEnabled();
+      await expect(savedSignature).toBeVisible();
+      await savedSignature.evaluate((image) =>
+        image.scrollIntoView({ block: "center", behavior: "instant" }),
+      );
+      const preview = (await savedSignature.boundingBox())!;
+      const navigation = (await page
+        .getByRole("navigation", { name: "Phone navigation" })
+        .boundingBox())!;
+      expect(preview.y + preview.height).toBeLessThanOrEqual(navigation.y);
       await capture(page, "1g-signature-375");
+
+      signatory = false;
+      await page.reload();
+      await expect(savedSignature).toBeVisible();
+      settings.company_signatory!.image = null;
+      await page.reload();
+      await expect(noSignature).toBeVisible();
+      await expect(savedSignature).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Save signature" }),
+      ).toHaveCount(0);
     }
   }
 });

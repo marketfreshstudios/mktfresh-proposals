@@ -522,6 +522,23 @@ function Preferences({ workspaceZone }: { workspaceZone: string }) {
   );
 }
 
+function CurrentSignature({ image }: { image: Signatory["image"] }) {
+  return (
+    <figure className="account-current-signature">
+      <figcaption>Current company signature</figcaption>
+      {image ? (
+        <img
+          className="account-stored-signature"
+          src={image}
+          alt="Stored company signature"
+        />
+      ) : (
+        <p className="muted">No signature saved yet</p>
+      )}
+    </figure>
+  );
+}
+
 function AccountSignature({ data }: { data: Data }) {
   const signature = data.settings?.company_signatory;
   const user = data.user.actor.slice(6);
@@ -535,13 +552,7 @@ function AccountSignature({ data }: { data: Data }) {
   if (signature.user_id !== user)
     return (
       <>
-        {signature.image && (
-          <img
-            className="account-stored-signature"
-            src={signature.image}
-            alt="Stored company signature"
-          />
-        )}
+        <CurrentSignature image={signature.image} />
         <p>
           <strong>{signature.name}</strong> · Company signature
         </p>
@@ -746,16 +757,7 @@ function SignatureEditor({
           Save signature
         </Button>
       </div>
-      {current.signature.image && (
-        <details className="account-current-signature">
-          <summary>Current company signature</summary>
-          <img
-            className="account-stored-signature"
-            src={current.signature.image}
-            alt="Stored company signature"
-          />
-        </details>
-      )}
+      <CurrentSignature image={current.signature.image} />
     </>
   );
 }

@@ -259,17 +259,27 @@
   justify-content: flex-end;
   margin-top: 16px;
 }
+.account-current-signature {
+  margin: 12px 0;
+}
+.account-current-signature figcaption {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.account-current-signature p {
+  margin: 0;
+  font-size: 14px;
+}
 .account-stored-signature {
   display: block;
-  max-height: 125px;
-  max-width: 100%;
-  margin: 12px 0;
+  width: min(100%, 280px);
+  height: 80px;
+  padding: 8px;
+  object-fit: contain;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-}
-.account-current-signature {
-  margin-top: 12px;
 }
 .account-phone-pages,
 .account-phone-back,
