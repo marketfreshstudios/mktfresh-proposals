@@ -630,7 +630,12 @@ function InlineEmailEditor({
         </ToolbarPopover>
       )}
       {notice && (
-        <ToastSurface>
+        <ToastSurface
+          onDismiss={() => {
+            setNotice("");
+            setUndoReset(null);
+          }}
+        >
           {notice}
           {undoReset && (
             <>

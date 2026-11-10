@@ -86,6 +86,26 @@ test("visible staff tabs detect builds, poll every five minutes, snooze thirty m
   await page.goto("/proposals");
   await expect(notice(page)).toBeVisible();
 });
+test("the shared dismiss button snoozes a deployment notice", async ({
+  page,
+}) => {
+  const f = await buildFixture(page);
+  f.update();
+  await page.goto("/");
+  await notice(page)
+    .getByRole("button", { name: "Dismiss notification" })
+    .click();
+  await expect(notice(page)).toHaveCount(0);
+  await page.goto("/proposals");
+  await expect(notice(page)).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(sessionStorage).some((key) =>
+        key.startsWith("yeswell-update-later:"),
+      ),
+    ),
+  ).toBe(true);
+});
 test("a focus during the initial build check queues a fresh check instead of dropping the update", async ({
   page,
 }) => {
@@ -353,10 +373,7 @@ for (const width of [1440, 768, 375])
           ),
         ).toBe(true);
         await focusedBefore.dispose();
-        await expect(n).toHaveCSS(
-          "background-color",
-          theme === "dark" ? "rgb(242, 245, 245)" : "rgb(24, 34, 38)",
-        );
+        await expect(n).toHaveCSS("background-color", "rgb(24, 34, 38)");
         expect(
           (
             await new AxeBuilder({ page })
@@ -364,7 +381,13 @@ for (const width of [1440, 768, 375])
               .analyze()
           ).violations,
         ).toEqual([]);
-        for (const button of await n.getByRole("button").all()) {
+        const close = n.getByRole("button", { name: "Dismiss notification" });
+        await expect(close).toHaveCSS("width", "32px");
+        await expect(close).toHaveCSS("height", "32px");
+        for (const button of [
+          n.getByRole("button", { name: "Later", exact: true }),
+          n.getByRole("button", { name: "Reload", exact: true }),
+        ]) {
           const box = (await button.boundingBox())!;
           expect(box.height).toBeGreaterThanOrEqual(44);
           expect(box.width).toBeGreaterThanOrEqual(44);

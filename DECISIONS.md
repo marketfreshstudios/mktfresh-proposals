@@ -1131,6 +1131,10 @@ starter and never-sent drafts with matching legacy quote and clause defaults.
 Edited quote data and published versions remain unchanged. Staff can review
 and update any drafts skipped by the guard. Billing verification uses Stripe
 test fixtures.
+### Shared notifications · owner, Nov 10
+
+- Record, editor, account, contact, and deployment toasts share one surface with a Harbor dark background, light text actions, and a Lucide dismiss control. The dismiss icon has a 32px circular target with a background on hover or keyboard focus only.
+- The deployment notice retains its position, reload safeguards, and snooze behavior. Dismiss uses the same snooze as Later. Persistent inline field errors and banners keep their existing patterns. No hosted SQL is needed.
 ## 2026-11-10 · Client records, archive and delete
 
 The client record puts the shared Proposals and Activity tables in the main

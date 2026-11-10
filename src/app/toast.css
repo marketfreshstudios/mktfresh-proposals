@@ -1,0 +1,109 @@
+.toast-surface {
+  /* Shared Harbor colors also apply when a toast is portaled outside the shell. */
+  --toast-ground: #182226;
+  --toast-text: #ffffff;
+  --toast-link: #d3dee1;
+  --toast-line: rgba(255, 255, 255, 0.22);
+  --toast-hover: rgba(255, 255, 255, 0.12);
+  --toast-focus: rgba(255, 255, 255, 0.34);
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid var(--toast-line);
+  border-radius: var(--radius-md);
+  background: var(--toast-ground);
+  color: var(--toast-text);
+  box-shadow: var(--shadow-menu);
+  font: 500 14px/1.5 var(--font-ui);
+}
+.toast-surface[popover] {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: auto;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+}
+.toast-surface[popover]:not(:popover-open) {
+  display: none;
+}
+@media (max-width: 699px) {
+  .toast-surface[popover] {
+    bottom: 88px;
+  }
+}
+.toast-body {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toast-surface
+  :is(button, a):not(:where(.toast-dismiss, .notice-later, .notice-reload)) {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: none;
+  color: var(--toast-link);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.toast-surface
+  :is(button, a):not(:where(.toast-dismiss, .notice-reload)):hover {
+  color: var(--toast-text);
+}
+.toast-surface :is(button, a):not(.toast-dismiss):focus-visible {
+  outline: 2px solid var(--toast-text);
+  outline-offset: 2px;
+}
+.toast-surface .toast-dismiss {
+  display: inline-grid;
+  flex: 0 0 32px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  outline: 0;
+  background: transparent;
+  color: var(--toast-text);
+  cursor: pointer;
+}
+.toast-surface .toast-dismiss:hover:not(:disabled) {
+  background: var(--toast-hover);
+}
+.toast-surface .toast-dismiss:focus-visible {
+  outline: 0;
+  background: var(--toast-focus);
+}
+.toast-surface .toast-dismiss:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.band-notices .toast-body {
+  display: grid;
+}
+.band-notice-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.band-notice-row + .band-notice-row {
+  border-top: 1px solid var(--toast-line);
+}

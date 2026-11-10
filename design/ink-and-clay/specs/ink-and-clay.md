@@ -8,6 +8,7 @@ Visual references:
 
 ## 1. Palette rules
 
+0. **No beige.** Neutrals are cool grays from the ink family, matching `src/app/ink-clay-tokens.css`: page #F1F4F5, sunken and segment #E8EDEF, border #DCE3E6, control border #C2CDD2, deep canvas #D5DEE1, muted text #56646A. Only clay (#B4532A / #E07A4A) is warm.
 1. **Chrome is ink** (`--chrome`). This covers the desktop sidebar, the tablet top bar, the phone tab bar, the editor top bar and phone page headers. Text on chrome uses `--chrome-ink`, and inactive items use `--chrome-muted`. The active nav item gets a `--chrome-on` background and a 3×16px `--chrome-marker` bar on its left.
 2. **One hero card per screen** (`--hero`, white text). On Home it's the pipeline card, on the record it's "Next step", and on Reports it's the value signed figures. Never more than one per view.
 3. **Clay (`--action`) appears only on the single next action** on a screen: New proposal, Send, Send update, Review AI draft, Review & countersign. Every other button is an outline pill (`1.5px solid --border-strong`).
@@ -23,6 +24,12 @@ Visual references:
 - Page titles, the hero number, and staff section headings on the page background use `--font-title` (DM Serif Display, weight 400). Use the Home 2b1 section style on every staff page. Card titles and subsections use Instrument Sans, 16px/600; numbers other than the hero use tabular Instrument Sans. Heading levels follow the nesting rules in the design README.
 - Sizes are in the `.t-*` classes. The phone sizes in the comments apply below 700px.
 - Money and counts in tables use `tabular-nums`.
+
+- **Spacing controls** (live `SpacingInput`): the label sits above a row with a range slider (fills the width, ink fill on a #DCE3E6 track, 18px white thumb with an ink border) and an 84px number box with its unit. Used for Spacing below header / above footer, Spacing above / below line, text Space above / below, and cover Opacity, Size and Focal point. The slider's max is the space left on the page. Past it, show "Max {n} px on this page".
+- **Disclosure chevron** (live `DisclosureChevron`): Lucide ChevronRight, 10px, stroke 3, `--ink-muted`. It sits to the LEFT of the card title with an 8px gap and rotates 90° when open. Don't use ⌄ or a right-side chevron.
+- **Panel collapse** (live `PanelChevron` in `.panel-collapse`): a 40×40 button holding a 12px Lucide ChevronRight in `--ink-muted`, at the right end of the tab row. Its label is "Collapse tools sidebar", with the tooltip "Collapse panel (⌘\ / Ctrl+\)". The rail's expand button uses ChevronLeft.
+- **Separators** (owner, 10 Nov): never use a bullet (·) between items in UI copy. Use a pipe (" | "), a comma or a line break.
+- **Editor tools panel cards** (Redesign 23, turn 2): see `editor-panel-cards.md`.
 
 ## 3. Shell by width
 
