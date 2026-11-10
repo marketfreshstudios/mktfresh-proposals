@@ -303,7 +303,7 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
   ).toHaveAttribute("placeholder", "Search fields");
   await expect(panel.locator(".field-search label")).toHaveCount(0);
   const first = panel.getByRole("button", {
-    name: "Client first name — {{client.first_name}}",
+    name: "Client first name {{client.first_name}} Jane",
     exact: true,
   });
   await expect(first).toContainText("First name");

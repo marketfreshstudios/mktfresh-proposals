@@ -42,7 +42,7 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
     "Click into a paragraph, then choose a field to insert it. Or type {{ in any paragraph.",
   );
   const field = panel.getByRole("button", {
-    name: "Client first name — {{client.first_name}}",
+    name: /^Client first name /,
     exact: true,
   });
   await expect(field.locator("code")).toHaveText("{{client.first_name}}");

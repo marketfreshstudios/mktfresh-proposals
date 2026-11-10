@@ -243,6 +243,10 @@ test("template insertion keeps the whole group in one undo step; local edits res
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/studio/templates/${template.id}`);
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Saved blocks" })
+    .click();
   const original = template.content.length;
   await page
     .getByRole("menuitem", { name: "Results group", exact: true })
@@ -539,8 +543,12 @@ test("group drag and keyboard insertion each remain one undo step", async ({
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(`/studio/templates/${template.id}`);
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Saved blocks" })
+    .click();
   const source = page.getByRole("menuitem", {
-      name: "Three details",
+      name: /^Three details/,
       exact: true,
     }),
     original = template.content.length;

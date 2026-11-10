@@ -439,7 +439,12 @@ test("Studio edits shared template bands with history, and proposals inherit the
   expect(created.header_footer?.shared).toEqual(saved.header_footer.shared);
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const reset = page.locator(".band-reset");
-  await expect(reset).toContainText("Restores the built-in header and footer.");
+  await expect(reset).not.toContainText(
+    "Restores the built-in header and footer.",
+  );
+  await expect(
+    reset.getByRole("button", { name: "Reset to default", exact: true }),
+  ).toBeVisible();
   await reset
     .getByRole("button", { name: "Reset to default", exact: true })
     .click();
@@ -457,13 +462,13 @@ test("Studio edits shared template bands with history, and proposals inherit the
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const settings = page.locator(".band-settings");
   await expect(
-    settings.getByRole("button", { name: "Edit shared header", exact: true }),
+    settings.getByRole("button", { name: "Edit header", exact: true }),
   ).toBeEnabled();
   await settings
     .getByRole("switch", { name: "Header show on cover", exact: true })
     .check();
   await settings
-    .getByRole("button", { name: "Edit shared header", exact: true })
+    .getByRole("button", { name: "Edit header", exact: true })
     .click();
   await expect(bands(page).first()).toHaveAttribute(
     "data-band-state",
@@ -511,14 +516,19 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   const settings = page.locator(".band-settings");
   await settings
-    .getByRole("button", { name: "Edit shared header", exact: true })
+    .getByRole("button", { name: "Edit header", exact: true })
     .click();
   await expect(bands(page).first()).toHaveAttribute(
     "data-band-state",
     "editing",
   );
   await page.keyboard.press("Escape");
-  await settings
+  await page
+    .locator(".styles-action-row")
+    .getByRole("button", { name: "Reset to template", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
     .getByRole("button", { name: "Reset to template", exact: true })
     .click();
   await expect(bands(page).first()).toContainText("Current template header");
@@ -529,7 +539,7 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
   expect(f.active().header_footer?.overrides).toEqual(hf.overrides);
   await page
     .getByRole("status")
-    .filter({ hasText: "Shared header and footer reset" })
+    .filter({ hasText: "Styles reset" })
     .getByRole("button", { name: "Undo", exact: true })
     .click();
   await expect
@@ -539,7 +549,12 @@ test("Styles edits scroll to a band, and Reset uses current template bands with 
     "Current template header",
   );
   f.repo.catalog.get("templates")!.delete(template.id);
-  await settings
+  await page
+    .locator(".styles-action-row")
+    .getByRole("button", { name: "Reset to template", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
     .getByRole("button", { name: "Reset to template", exact: true })
     .click();
   await expect(bands(page).first()).toContainText("Example Studio");

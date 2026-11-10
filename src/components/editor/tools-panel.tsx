@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { PanelChevron } from "../editor-header";
 import { Disclosure } from "../ui";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 /** Shared disclosure for the R23 tools cards. Callers retain their own state. */
 export function PanelCard({
   title,
@@ -35,6 +35,8 @@ export function PanelCard({
   actions?: ReactNode;
   nested?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(!!open);
+  useEffect(() => setExpanded(!!open), [open]);
   const heading = (
     <PanelHeading nested={nested} className="panel-card-title">
       {title}
@@ -57,9 +59,12 @@ export function PanelCard({
     <details
       className={`editor-panel-card ${className}`}
       open={open}
-      onToggle={(event) => onToggle?.(event.currentTarget.open)}
+      onToggle={(event) => {
+        setExpanded(event.currentTarget.open);
+        onToggle?.(event.currentTarget.open);
+      }}
     >
-      <Disclosure className="panel-card-header">
+      <Disclosure className="panel-card-header" aria-expanded={expanded}>
         {heading}
         {count !== undefined && (
           <span className="panel-card-count">{count}</span>

@@ -1,4 +1,5 @@
 "use client";
+import { TemplateStylesAction } from "./editor/template-styles-action";
 
 import { PanelHeading } from "./editor/panel-heading";
 import { staffFromAddress } from "../lib/email-identity";
@@ -54,7 +55,12 @@ import { signatureHtml } from "../lib/signature-presentation";
 import { QuoteTable } from "./quote-table";
 import { DocumentTotals } from "./document-totals";
 import { EditorHeader, PanelChevron, useCurrentState } from "./editor-header";
-import { ToolsPanel, PanelTabs, type EditorTab } from "./editor/tools-panel";
+import {
+  ToolsPanel,
+  PanelTabs,
+  PanelCard,
+  type EditorTab,
+} from "./editor/tools-panel";
 import { SectionsPanel } from "./editor/sections-panel";
 import { ReadOnlyRegion } from "./editor/read-only-region";
 import { EditorNotice } from "./editor/editor-notice";
@@ -1106,249 +1112,234 @@ function QuoteEditorContent({
       : "");
   const sendPanel = (
     <div className="send-panel stack">
-      <PanelHeading className="t-card-title">Readiness</PanelHeading>
-      <ul className="send-checklist">
-        {ready.errors
-          .filter((e) => !e.startsWith("Confirm review of AI changes"))
-          .map((e, n) => (
-            <li className="readiness-row blocker" key={n}>
+      <PanelCard
+        title="Readiness"
+        className="send-readiness-card"
+        open
+        count={ready.errors.length ? `${ready.errors.length} to fix` : "Ready"}
+      >
+        <ul className="send-checklist">
+          {ready.errors
+            .filter((e) => !e.startsWith("Confirm review of AI changes"))
+            .map((e, n) => (
+              <li className="readiness-row blocker" key={n}>
+                <span className="readiness-badge" aria-hidden="true">
+                  <TriangleAlert aria-hidden="true" />
+                </span>
+                <div>
+                  <p>
+                    <strong>Needs attention.</strong>{" "}
+                    {e === businessStateError ? (
+                      <a href={businessStateUrl} target="_blank" rel="noopener">
+                        {e}
+                      </a>
+                    ) : (
+                      e
+                    )}
+                  </p>
+                  {e === "Choose which Stripe customer this client is" && (
+                    <a href={`/clients/${p.client.id}#stripe-customers`}>
+                      Choose Stripe customer
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          {[
+            ...ready.warnings,
+            ...(pdfPreview.data?.layout.overflow_pages ?? []).map(
+              (page) => `Page ${page} overflows in the PDF | Preview PDF`,
+            ),
+            ...((pdfPreview.data?.layout.pricing_pages ?? 0) > 1
+              ? [
+                  `Pricing table spans ${pdfPreview.data!.layout.pricing_pages} pages — use Standard density or trim descriptions.`,
+                ]
+              : []),
+          ].map((e, n) => (
+            <li className="readiness-row warning" key={n}>
               <span className="readiness-badge" aria-hidden="true">
-                <TriangleAlert aria-hidden="true" />
+                <Icon name="review" />
               </span>
               <div>
                 <p>
-                  <strong>Needs attention.</strong>{" "}
-                  {e === businessStateError ? (
-                    <a href={businessStateUrl} target="_blank" rel="noopener">
-                      {e}
-                    </a>
+                  {e.includes(": custom — check scope and price") ? (
+                    <>
+                      <strong>Custom line.</strong> {e.split(": custom —")[0]}{" "}
+                      has a manual price. Check the scope and price.
+                    </>
                   ) : (
-                    e
+                    <>
+                      <strong>Review.</strong> {e}
+                    </>
                   )}
                 </p>
-                {e === "Choose which Stripe customer this client is" && (
-                  <a href={`/clients/${p.client.id}#stripe-customers`}>
-                    Choose Stripe customer
-                  </a>
-                )}
               </div>
             </li>
           ))}
-        {[
-          ...ready.warnings,
-          ...(pdfPreview.data?.layout.overflow_pages ?? []).map(
-            (page) => `Page ${page} overflows in the PDF · Preview PDF`,
-          ),
-          ...((pdfPreview.data?.layout.pricing_pages ?? 0) > 1
-            ? [
-                `Pricing table spans ${pdfPreview.data!.layout.pricing_pages} pages — use Standard density or trim descriptions.`,
-              ]
-            : []),
-        ].map((e, n) => (
-          <li className="readiness-row warning" key={n}>
-            <span className="readiness-badge" aria-hidden="true">
-              <Icon name="review" />
-            </span>
-            <div>
-              <p>
-                {e.includes(": custom — check scope and price") ? (
-                  <>
-                    <strong>Custom line.</strong> {e.split(": custom —")[0]} has
-                    a manual price. Check the scope and price.
-                  </>
-                ) : (
-                  <>
-                    <strong>Review.</strong> {e}
-                  </>
-                )}
-              </p>
-            </div>
-          </li>
-        ))}
-        {ready.errors.every((e) =>
-          e.startsWith("Confirm review of AI changes"),
-        ) && (
-          <li className="readiness-row success">
-            <span className="readiness-badge" aria-hidden="true">
-              <Icon name="verified" />
-            </span>
-            <p>Quote, contract and signature blocks are in place.</p>
-          </li>
-        )}
-      </ul>
-      {/* A fast review response must not detach the native control mid-activation. */}
-      <div
-        className="send-ai-review readiness-row blocker"
-        hidden={pending.length === 0}
-      >
-        <span className="readiness-badge" aria-hidden="true">
-          <TriangleAlert aria-hidden="true" />
-        </span>
-        <div className="send-ai-review-body">
-          <p>
-            <strong>
-              {pending.length} AI-written{" "}
-              {pending.length === 1 ? "section" : "sections"}.
-            </strong>{" "}
-            {pending.map((title) => resolveLabel(title, map)).join(", ")}
-          </p>
+          {ready.errors.every((e) =>
+            e.startsWith("Confirm review of AI changes"),
+          ) && (
+            <li className="readiness-row success">
+              <span className="readiness-badge" aria-hidden="true">
+                <Icon name="verified" />
+              </span>
+              <p>Quote, contract and signature blocks are in place.</p>
+            </li>
+          )}
+        </ul>
+        {/* A fast review response must not detach the native control mid-activation. */}
+        <div
+          className="send-ai-review readiness-row blocker"
+          hidden={pending.length === 0}
+        >
+          <span className="readiness-badge" aria-hidden="true">
+            <TriangleAlert aria-hidden="true" />
+          </span>
+          <div className="send-ai-review-body">
+            <p>
+              <strong>
+                {pending.length} AI-written{" "}
+                {pending.length === 1 ? "section" : "sections"}.
+              </strong>{" "}
+              {pending.map((title) => resolveLabel(title, map)).join(", ")}
+            </p>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => {
+                  setConfirmed(e.target.checked);
+                  if (e.target.checked)
+                    void review(
+                      contentSections(p.content)
+                        .filter((s) => s.pending)
+                        .map((s) => s.id),
+                      true,
+                    );
+                }}
+              />
+              I've reviewed these AI-written sections
+            </label>
+            <button type="button" className="text-link" onClick={showReview}>
+              Show me
+            </button>
+          </div>
+        </div>
+      </PanelCard>
+      <PanelCard title="Email" open>
+        <fieldset className="delivery-choice">
+          <legend>How will you deliver it?</legend>
           <label className="check">
             <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(e) => {
-                setConfirmed(e.target.checked);
-                if (e.target.checked)
-                  void review(
-                    contentSections(p.content)
-                      .filter((s) => s.pending)
-                      .map((s) => s.id),
-                    true,
-                  );
-              }}
+              type="radio"
+              name="proposal-delivery"
+              value="email"
+              checked={delivery === "email"}
+              onChange={() => setDelivery("email")}
             />
-            I've reviewed these AI-written sections
+            Email it from the app
           </label>
-          <button type="button" className="text-link" onClick={showReview}>
-            Show me
-          </button>
-        </div>
-      </div>
-      <fieldset className="delivery-choice">
-        <legend>How will you deliver it?</legend>
-        <label className="check">
-          <input
-            type="radio"
-            name="proposal-delivery"
-            value="email"
-            checked={delivery === "email"}
-            onChange={() => setDelivery("email")}
-          />
-          Email it from the app
-        </label>
-        <label className="check">
-          <input
-            type="radio"
-            name="proposal-delivery"
-            value="manual"
-            checked={delivery === "manual"}
-            onChange={() => setDelivery("manual")}
-          />
-          I'll send it myself
-        </label>
-      </fieldset>
-      <Field label="Valid until">
-        <ValidityField
-          timezone={settings?.timezone ?? "UTC"}
-          value={p.valid_until}
-          onChange={(valid_until) => change({ valid_until })}
-        />
-      </Field>
-      {delivery === "manual" ? (
-        <section className="manual-client-contact" aria-label="Client contact">
-          <header>
-            <strong>Client contact</strong>
-            <button
-              type="button"
-              className="text-link"
-              onClick={async () => {
-                if (await save()) setEditClientOpen(true);
-              }}
-            >
-              Edit client
-            </button>
-          </header>
-          <p>
-            {p.client.company} ·{" "}
-            {[p.client.first_name, p.client.last_name]
-              .filter(Boolean)
-              .join(" ")}
-          </p>
-          <div className="manual-contact-email">
-            <span>{p.client.email}</span>
-            <CopyContactButton kind="email" value={p.client.email} />
-          </div>
-          {p.client.billing_email && (
-            <p>Billing email: {p.client.billing_email}</p>
-          )}
-        </section>
-      ) : (
-        <>
-          <Field label="From">
-            <Select value={sender} onChange={(e) => setSender(e.target.value)}>
-              {staff.map((s) => {
-                const from =
-                  (settings && staffFromAddress(s.email, settings)) ?? s.email;
-                const name =
-                  from === s.email
-                    ? `${s.display_name} · ${settings?.company_name ?? ""}`
-                    : s.display_name;
-                return (
-                  <option key={s.user_id} value={s.user_id}>
-                    {name} &lt;{from}&gt;
-                  </option>
-                );
-              })}
-            </Select>
-          </Field>
-          {(() => {
-            const selected = staff.find((person) => person.user_id === sender);
-            const from =
-              selected &&
-              settings &&
-              staffFromAddress(selected.email, settings);
-            return from && from !== selected?.email ? (
-              <small>Replies go to {selected?.email}.</small>
-            ) : null;
-          })()}
-          <Field label="To">
+          <label className="check">
             <input
-              value={`${p.client.first_name} ${p.client.last_name} <${p.client.email}>`}
-              readOnly
+              type="radio"
+              name="proposal-delivery"
+              value="manual"
+              checked={delivery === "manual"}
+              onChange={() => setDelivery("manual")}
             />
-          </Field>
-        </>
-      )}
-      {delivery === "email" && (
-        <>
-          {(emailError || emailValidation) && (
-            <Banner tone="danger" title="Check the email">
-              {emailError || emailValidation}
-              {emailError && (
-                <Button onClick={() => setEmailRetry((n) => n + 1)}>
-                  Retry email template
-                </Button>
-              )}
-            </Banner>
-          )}
-          <Field label="Subject">
-            <SubjectField
-              value={emailSubject}
-              disabled={!emailLoaded}
-              map={{
-                ...emailValues(p),
-                "sender.name":
-                  staff.find((m) => m.user_id === sender)?.display_name ??
-                  user?.staff_name ??
-                  "",
-              }}
-              onChange={(value) => {
-                subjectEdited.current = true;
-                setEmailSubject(value);
-              }}
-            />
-          </Field>
-          <div className="field send-email-note">
-            <span>Note</span>
-            {emailLoaded ? (
-              <FieldEditor
-                standalone
-                label="Note"
-                allowLinks
-                value={note}
-                onChange={(v) => {
-                  setNote(v);
+            I'll send it myself
+          </label>
+        </fieldset>
+        {delivery === "manual" ? (
+          <section
+            className="manual-client-contact"
+            aria-label="Client contact"
+          >
+            <header>
+              <strong>Client contact</strong>
+              <button
+                type="button"
+                className="text-link"
+                onClick={async () => {
+                  if (await save()) setEditClientOpen(true);
                 }}
+              >
+                Edit client
+              </button>
+            </header>
+            <p>
+              {p.client.company} |{" "}
+              {[p.client.first_name, p.client.last_name]
+                .filter(Boolean)
+                .join(" ")}
+            </p>
+            <div className="manual-contact-email">
+              <span>{p.client.email}</span>
+              <CopyContactButton kind="email" value={p.client.email} />
+            </div>
+            {p.client.billing_email && (
+              <p>Billing email: {p.client.billing_email}</p>
+            )}
+          </section>
+        ) : (
+          <>
+            <Field label="From">
+              <Select
+                value={sender}
+                onChange={(e) => setSender(e.target.value)}
+              >
+                {staff.map((s) => {
+                  const from =
+                    (settings && staffFromAddress(s.email, settings)) ??
+                    s.email;
+                  const name =
+                    from === s.email
+                      ? `${s.display_name} | ${settings?.company_name ?? ""}`
+                      : s.display_name;
+                  return (
+                    <option key={s.user_id} value={s.user_id}>
+                      {name} &lt;{from}&gt;
+                    </option>
+                  );
+                })}
+              </Select>
+            </Field>
+            {(() => {
+              const selected = staff.find(
+                (person) => person.user_id === sender,
+              );
+              const from =
+                selected &&
+                settings &&
+                staffFromAddress(selected.email, settings);
+              return from && from !== selected?.email ? (
+                <small>Replies go to {selected?.email}.</small>
+              ) : null;
+            })()}
+            <Field label="To">
+              <input
+                value={`${p.client.first_name} ${p.client.last_name} <${p.client.email}>`}
+                readOnly
+              />
+            </Field>
+          </>
+        )}
+        {delivery === "email" && (
+          <>
+            {(emailError || emailValidation) && (
+              <Banner tone="danger" title="Check the email">
+                {emailError || emailValidation}
+                {emailError && (
+                  <Button onClick={() => setEmailRetry((n) => n + 1)}>
+                    Retry email template
+                  </Button>
+                )}
+              </Banner>
+            )}
+            <Field label="Subject">
+              <SubjectField
+                value={emailSubject}
+                disabled={!emailLoaded}
                 map={{
                   ...emailValues(p),
                   "sender.name":
@@ -1356,53 +1347,87 @@ function QuoteEditorContent({
                     user?.staff_name ??
                     "",
                 }}
-                showNames={false}
+                onChange={(value) => {
+                  subjectEdited.current = true;
+                  setEmailSubject(value);
+                }}
               />
-            ) : (
-              <p role="status">Loading email template…</p>
-            )}
-          </div>
-          <p className="muted">
-            Subject and note start from your{" "}
-            <a href="/studio/emails/proposal_sent">Proposal sent email</a>.
-            Edits here apply only to this send.
-          </p>
-        </>
-      )}
-      <label className="check">
-        <Switch
-          checked={protectedLink}
-          onChange={(e) => setProtected(e.target.checked)}
-        />
-        Require a password
-      </label>
-      {protectedLink && (
-        <Field label="Password">
-          <input
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={password}
-            placeholder={
-              p.password_hash
-                ? "Leave blank to keep current password"
-                : "At least 8 characters"
-            }
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </Field>
-      )}
-      <small>
-        {delivery === "email"
-          ? "The client link is added automatically. "
-          : "The app won't email this link or send automatic reminders unless you turn them on in the record. "}
-        {delivery === "email" && (
-          <>
-            From must match{" "}
-            {settings?.sending_domain || "the workspace’s verified domain"}.
+            </Field>
+            <div className="field send-email-note">
+              <span>Note</span>
+              {emailLoaded ? (
+                <FieldEditor
+                  standalone
+                  label="Note"
+                  allowLinks
+                  value={note}
+                  onChange={(v) => {
+                    setNote(v);
+                  }}
+                  map={{
+                    ...emailValues(p),
+                    "sender.name":
+                      staff.find((m) => m.user_id === sender)?.display_name ??
+                      user?.staff_name ??
+                      "",
+                  }}
+                  showNames={false}
+                />
+              ) : (
+                <p role="status">Loading email template…</p>
+              )}
+            </div>
+            <p className="muted">
+              Subject and note start from your{" "}
+              <a href="/studio/emails/proposal_sent">Proposal sent email</a>.
+              Edits here apply only to this send.
+            </p>
           </>
         )}
-      </small>
+      </PanelCard>
+      <PanelCard title="Link settings">
+        <Field label="Valid until">
+          <ValidityField
+            timezone={settings?.timezone ?? "UTC"}
+            value={p.valid_until}
+            onChange={(valid_until) => change({ valid_until })}
+          />
+        </Field>
+        <label className="check">
+          <Switch
+            checked={protectedLink}
+            onChange={(e) => setProtected(e.target.checked)}
+          />
+          Require a password
+        </label>
+        {protectedLink && (
+          <Field label="Password">
+            <input
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={password}
+              placeholder={
+                p.password_hash
+                  ? "Leave blank to keep current password"
+                  : "At least 8 characters"
+              }
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+        )}
+        <small>
+          {delivery === "email"
+            ? "The client link is added automatically. "
+            : "The app won't email this link or send automatic reminders unless you turn them on in the record. "}
+          {delivery === "email" && (
+            <>
+              From must match{" "}
+              {settings?.sending_domain || "the workspace’s verified domain"}.
+            </>
+          )}
+        </small>
+      </PanelCard>
       <footer className="send-panel-footer">
         <div className="send-card-preview">
           <Button
@@ -1585,6 +1610,7 @@ function QuoteEditorContent({
         )
       ) : tab === "Fields" ? (
         <FieldOptions
+          cards
           map={map}
           onInsert={(path) => {
             if (drawer) {
@@ -1666,6 +1692,40 @@ function QuoteEditorContent({
             inherited={p.template_style_overrides}
             value={p.style_overrides}
             onChange={(style_overrides) => change({ style_overrides })}
+            templateAction={
+              <TemplateStylesAction
+                id={p.id}
+                templateId={p.template_id}
+                revision={p.revision}
+                disabled={locked || stale || offline}
+                prepare={save}
+                onApplied={async (styles) => {
+                  // A sent proposal keeps its published style snapshot; saving a template must not publish a new version.
+                  if (latest.current.status !== "draft") return async () => {};
+                  const before = {
+                    style_overrides: latest.current.style_overrides,
+                    template_style_overrides:
+                      latest.current.template_style_overrides,
+                  };
+                  change({
+                    style_overrides: {},
+                    template_style_overrides: styles,
+                  });
+                  await save();
+                  return async () => {
+                    if (
+                      JSON.stringify(
+                        latest.current.template_style_overrides,
+                      ) === JSON.stringify(styles) &&
+                      !Object.keys(latest.current.style_overrides ?? {}).length
+                    ) {
+                      change(before);
+                      await save();
+                    }
+                  };
+                }}
+              />
+            }
             resetLabel="Reset to template"
             onReset={() => change({ style_overrides: {} })}
           />

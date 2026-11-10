@@ -296,12 +296,12 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Pages with their own", exact: true }),
-  ).toContainText("Page 2 · footer hidden");
+  ).toContainText("Page 2 | footer hidden");
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 page · 1 unique",
+    "Shared on 1 page | 1 unique",
   );
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 page · 1 hidden",
+    "Shared on 1 page | 1 hidden",
   );
   await capture(page, "1i-1440-styles");
   await page
@@ -376,7 +376,7 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   );
   await page.getByRole("menuitem", { name: /Hide on this page/ }).click();
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 0 pages · 1 unique · 1 hidden",
+    "Shared on 0 pages | 1 unique | 1 hidden",
   );
 });
 test("reflow follows the anchor once; deleting it transfers the band and page deletion Undo restores both", async ({

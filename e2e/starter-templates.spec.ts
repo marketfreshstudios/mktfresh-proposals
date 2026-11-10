@@ -170,7 +170,7 @@ test("Business state autosaves, is available as a field, and readiness links to 
       .getByText("Business state", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Business state — {{business.state}}" }),
+    page.getByRole("button", { name: /^Business\ state / }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Edit business state in Workspace" }),

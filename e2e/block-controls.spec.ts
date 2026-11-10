@@ -689,6 +689,7 @@ test("block controls own one block and never move document content on hover, foc
                 .locator(".quote-editor-top")
                 .getByRole("button", { name: "Review & send", exact: true })
                 .click();
+            await page.getByText("Link settings", { exact: true }).click();
             await expect(
               page.locator('input[aria-label="Valid until"]:visible'),
             ).toBeVisible();

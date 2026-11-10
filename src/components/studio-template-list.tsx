@@ -125,6 +125,8 @@ export function StudioTemplateList({
         e.metadata.entity_id === id &&
         ([
           "templates_saved",
+          "template_styles_saved_from_proposal",
+          "template_styles_save_undone",
           "connector_template_updated",
           "starter_reset_undone",
         ].includes(e.type) ||

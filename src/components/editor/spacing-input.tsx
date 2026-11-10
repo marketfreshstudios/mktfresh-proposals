@@ -10,6 +10,7 @@ export function SpacingInput({
   max,
   ariaLabel = label,
   inputStep = "any",
+  step = 1,
   unit = "px",
 }: {
   label: string;
@@ -28,7 +29,7 @@ export function SpacingInput({
     [clamped, setClamped] = useState(false);
   const dragging = useRef(false),
     engine = history?.controller?.engine;
-  const limit = Math.max(min, Math.floor(max));
+  const limit = Math.max(min, step >= 1 ? Math.floor(max) : max);
   useEffect(() => setRaw(String(value)), [value]);
   useEffect(() => () => engine?.endGroup(id), [engine, id]);
   const change = (n: number) => {
@@ -50,7 +51,7 @@ export function SpacingInput({
           aria-label={`${ariaLabel} slider`}
           min={min}
           max={limit}
-          step={1}
+          step={step}
           value={Math.min(value, limit)}
           onPointerDown={() => {
             dragging.current = true;
@@ -69,7 +70,8 @@ export function SpacingInput({
               change(
                 value +
                   (["ArrowLeft", "ArrowDown"].includes(e.key) ? -1 : 1) *
-                    (e.shiftKey ? 10 : 1),
+                    (e.shiftKey ? 10 : 1) *
+                    step,
               );
             }
           }}

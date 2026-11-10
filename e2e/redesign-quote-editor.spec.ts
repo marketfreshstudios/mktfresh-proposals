@@ -269,7 +269,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
     page
       .locator(".editor-sidepanel .field-options")
       .getByRole("button", {
-        name: "Client first name — {{client.first_name}}",
+        name: /^Client first name /,
         exact: true,
       })
       .locator(".field-option-label"),

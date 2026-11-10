@@ -271,7 +271,7 @@ test("column selection writes the existing style fields and returns to proposal 
   ).toHaveCount(0);
   const card = panelButton(
     styles,
-    "Columns layout 33 / 33 / 33 · medium gap · top",
+    "Columns layout 33 / 33 / 33 | medium gap | top",
   );
   await expect(card).toHaveAttribute("aria-expanded", "true");
   await expect(panelButton(styles, "Paste style")).toBeDisabled();
@@ -336,7 +336,7 @@ test("column selection writes the existing style fields and returns to proposal 
     .toEqual(["40px", "center"]);
   await panelButton(
     styles,
-    "Columns layout 33 / 33 / 33 · large gap · center",
+    "Columns layout 33 / 33 / 33 | large gap | center",
   ).click();
   await choose(styles, "Styles scope", "This proposal");
   await expect(radio(styles, "Styles scope", "This proposal")).toBeChecked();
@@ -346,7 +346,7 @@ test("column selection writes the existing style fields and returns to proposal 
     .click();
   await expect(radio(styles, "Styles scope", "Selection")).toBeChecked();
   await expect(
-    panelButton(styles, "Columns layout 33 / 33 / 33 · large gap · center"),
+    panelButton(styles, "Columns layout 33 / 33 / 33 | large gap | center"),
   ).toHaveAttribute("aria-expanded", "false");
 
   await choose(styles, "Background", "Color 2");
@@ -399,12 +399,12 @@ test("column clipboard replaces styles, names canvas targets, and pastes to all 
   await page.keyboard.press("Control+Alt+c");
   const tabs = styles.getByRole("tablist", { name: "Columns" });
   const column1 = tabs.getByRole("tab", { name: /Column 1/ });
-  await expect(column1).toHaveAccessibleName("Column 1 · style copied");
+  await expect(column1).toHaveAccessibleName("Column 1 | style copied");
   await column1.press("End");
   await expect(tabs.getByRole("tab", { name: "Column 3" })).toBeFocused();
   await panelButton(
     styles,
-    "Columns layout 33 / 33 / 33 · medium gap · top",
+    "Columns layout 33 / 33 / 33 | medium gap | top",
   ).click();
   await group(2).hover();
   const hoverPaste = panelButton(group(2), "Paste style into Column 2");

@@ -429,7 +429,7 @@ function styleSummary(style?: BlockStyle, settings?: WorkspaceSettings | null) {
       (style?.margin_above || style?.margin_below) && "stacking space",
     ]
       .filter(Boolean)
-      .join(" · ") || "No style"
+      .join(" | ") || "No style"
   );
 }
 
@@ -496,7 +496,7 @@ function ColumnTabs({
           key={column.id}
           type="button"
           role="tab"
-          aria-label={`Column ${n + 1}${clipboard.sourceKey === columnStyleKey(column.id) ? " · style copied" : ""}`}
+          aria-label={`Column ${n + 1}${clipboard.sourceKey === columnStyleKey(column.id) ? " | style copied" : ""}`}
           aria-selected={column.id === current}
           aria-controls="column-style-tab-panel"
           tabIndex={column.id === current ? 0 : -1}
@@ -528,7 +528,7 @@ function ColumnTabs({
             )}
           </span>
           {clipboard.sourceKey === columnStyleKey(column.id) && (
-            <small className="column-copy-label"> · style copied</small>
+            <small className="column-copy-label"> | style copied</small>
           )}
         </button>
       ))}
@@ -630,7 +630,7 @@ export function SelectionStyles({
               <span>
                 <strong>Columns layout</strong>
                 <small>
-                  {layoutLabel(columns.layout)} · {gapLabel[columns.gap]} gap ·{" "}
+                  {layoutLabel(columns.layout)} | {gapLabel[columns.gap]} gap |{" "}
                   {columns.align}
                 </small>
               </span>

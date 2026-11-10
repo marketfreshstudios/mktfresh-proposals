@@ -61,7 +61,7 @@ test("Studio template shell autosaves and reuses Quote, Fields, Blocks and Style
     ).toBeVisible();
   }
   await expect(
-    page.getByText("Header & footer", { exact: true }),
+    page.getByText("Shared header & footer", { exact: true }),
   ).toBeVisible();
 });
 test("Saved block keeps explicit save, safe types, duplicate and deletion", async ({
@@ -162,7 +162,7 @@ test("Plain contract clauses edit and insert fields without inert rich-text cont
   await bar.getByRole("button", { name: "Insert field", exact: true }).click();
   await page
     .getByRole("button", {
-      name: "Client company — {{client.company}}",
+      name: /^Client company /,
       exact: true,
     })
     .click();

@@ -1,4 +1,5 @@
 "use client";
+import { PanelCard } from "./editor/tools-panel";
 import { ToolbarPopover } from "./toolbar-popover";
 import {
   Fragment,
@@ -21,7 +22,9 @@ export function FieldOptions({
   search = true,
   variant = "panel",
   labels,
+  cards = false,
 }: {
+  cards?: boolean;
   labels?: Record<string, string>;
   map: Record<string, string>;
   onInsert: (path: string) => void;
@@ -29,6 +32,9 @@ export function FieldOptions({
   variant?: "panel" | "menu";
 }) {
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    Client: true,
+  });
   const keys = Object.keys(map).filter(
     (path) =>
       !(path === "workspace.state" && "business.state" in map) &&
@@ -37,7 +43,9 @@ export function FieldOptions({
         .includes(query.toLowerCase()),
   );
   return (
-    <div className={`field-options field-options-${variant}`}>
+    <div
+      className={`field-options field-options-${variant}${cards ? " field-options-cards" : ""}`}
+    >
       {variant === "panel" && (
         <p className="fields-hint">
           Click into a paragraph, then choose a field to insert it. Or type{" "}
@@ -71,9 +79,9 @@ export function FieldOptions({
                 ? "Job"
                 : fieldGroup(path)) === group,
         );
-        return items.length ? (
-          <section key={group} className="field-option-group">
-            <h3>{group}</h3>
+        if (!items.length) return null;
+        const rows = (
+          <>
             {items.map((path) => (
               <Fragment key={path}>
                 <button
@@ -83,7 +91,9 @@ export function FieldOptions({
                   key={path}
                   onClick={() => onInsert(path)}
                   aria-label={
-                    labels ? undefined : `${fieldLabel(path)} — {{${path}}}`
+                    labels
+                      ? undefined
+                      : `${fieldLabel(path)} {{${path}}} ${map[path] && map[path] !== `{{${path}}}` ? map[path] : "—"}`
                   }
                 >
                   <span className="field-option-label">
@@ -114,8 +124,26 @@ export function FieldOptions({
                 )}
               </Fragment>
             ))}
+          </>
+        );
+        return variant === "panel" && cards ? (
+          <PanelCard
+            key={group}
+            title={group}
+            className="field-option-group"
+            open={query ? true : !!expanded[group]}
+            onToggle={(open) => {
+              if (!query) setExpanded((old) => ({ ...old, [group]: open }));
+            }}
+          >
+            {rows}
+          </PanelCard>
+        ) : (
+          <section key={group} className="field-option-group">
+            <h3>{group}</h3>
+            {rows}
           </section>
-        ) : null;
+        );
       })}
       {!keys.length && <p className="muted">No matching fields</p>}
     </div>

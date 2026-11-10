@@ -1,4 +1,5 @@
 "use client";
+import { PanelCard } from "./editor/tools-panel";
 import { PanelHeading } from "./editor/panel-heading";
 import { Select, Switch } from "./form-controls";
 import { CoverSettings } from "./cover-settings";
@@ -67,7 +68,9 @@ export function ProposalStyles({
   hidePageMargins = false,
   cover,
   onCover,
+  templateAction,
 }: {
+  templateAction?: import("react").ReactNode;
   cover?: Cover;
   onCover?: (cover: Cover) => void;
   scope?: "workspace" | "template";
@@ -90,6 +93,16 @@ export function ProposalStyles({
     [phone, setPhone] = useState(false),
     [fonts, setFonts] = useState<ProposalFont[]>([]);
   const id = useId();
+  const history = useEditorHistory();
+  const panel = scope !== "workspace";
+  const [resetUndo, setResetUndo] = useState<number | null>(null);
+  const [resetting, setResetting] = useState(false),
+    [resetError, setResetError] = useState("");
+  useEffect(() => {
+    if (resetUndo === null) return;
+    const timer = setTimeout(() => setResetUndo(null), 5000);
+    return () => clearTimeout(timer);
+  }, [resetUndo]);
   useEffect(() => {
     api<ProposalFont[]>("/api/workspace-fonts")
       .then(setFonts)
@@ -138,6 +151,55 @@ export function ProposalStyles({
   const contrast = whiteContrast(
     styleColour(selected.colour, settings?.accent_colour),
   );
+  const quoteColors = (
+    <details
+      className={
+        panel
+          ? "style-typography-details quote-neutral-settings"
+          : "style-accordion"
+      }
+    >
+      <Disclosure>Quote colors</Disclosure>
+      <div className="style-accordion-body">
+        <p className="muted">
+          These colors appear in the editor, client page, and PDF.
+        </p>
+        {(
+          [
+            ["group_fill", "Choice group background"],
+            ["group_border", "Choice group border"],
+            ["dividers", "Quote dividers"],
+            ["shaded_fill", "Quote header and totals background"],
+          ] as const
+        ).map(([key, label]) => {
+          const palette = styles.layout?.quote_neutrals ?? legacyQuoteNeutrals;
+          return (
+            <ColorPicker
+              key={key}
+              label={label}
+              value={palette[key]}
+              settings={settings}
+              onChange={(color) =>
+                onChange({
+                  ...value,
+                  quote_neutrals: styles.layout?.quote_neutrals
+                    ? { ...value?.quote_neutrals, [key]: color }
+                    : { ...palette, [key]: color },
+                })
+              }
+            />
+          );
+        })}
+        <Button
+          onClick={() =>
+            onChange({ ...value, quote_neutrals: harborQuoteNeutrals })
+          }
+        >
+          Use Harbor defaults
+        </Button>
+      </div>
+    </details>
+  );
   return (
     <section
       className="proposal-styles stack"
@@ -145,9 +207,6 @@ export function ProposalStyles({
         scope === "workspace" ? "Text and page styles" : "Proposal styles"
       }
     >
-      {onCover && (
-        <CoverSettings value={cover} onChange={onCover} settings={settings} />
-      )}
       <p className="muted style-scope-note">
         {scope === "workspace"
           ? "Defaults for new proposals. Sent and signed documents keep their saved styles."
@@ -155,351 +214,315 @@ export function ProposalStyles({
             ? "Changes apply to new proposals made from this template."
             : "Changes apply to this proposal only. Workspace defaults live in Studio → Workspace."}
       </p>
-      <details className="style-accordion">
-        <Disclosure>Quote colors</Disclosure>
-        <div className="style-accordion-body">
-          <p className="muted">
-            These colors appear in the editor, client page, and PDF.
-          </p>
-          {(
-            [
-              ["group_fill", "Choice group background"],
-              ["group_border", "Choice group border"],
-              ["dividers", "Quote dividers"],
-              ["shaded_fill", "Quote header and totals background"],
-            ] as const
-          ).map(([key, label]) => {
-            const palette =
-              styles.layout?.quote_neutrals ?? legacyQuoteNeutrals;
-            return (
-              <ColorPicker
-                key={key}
-                label={label}
-                value={palette[key]}
-                settings={settings}
-                onChange={(color) =>
-                  onChange({
-                    ...value,
-                    quote_neutrals: styles.layout?.quote_neutrals
-                      ? { ...value?.quote_neutrals, [key]: color }
-                      : { ...palette, [key]: color },
-                  })
-                }
-              />
-            );
-          })}
-          <Button
-            onClick={() =>
-              onChange({ ...value, quote_neutrals: harborQuoteNeutrals })
-            }
+      {!panel && quoteColors}
+      {onCover && (
+        <CoverSettings value={cover} onChange={onCover} settings={settings} />
+      )}
+      <StyleCard panel={panel} title="Text styles" open={!headerFooter}>
+        <label className="field">
+          Text level
+          <Select
+            value={level}
+            onChange={(e) => setLevel(e.target.value as StyleLevel)}
           >
-            Use Harbor defaults
-          </Button>
-        </div>
-      </details>
-      <details className="style-accordion" open={!headerFooter}>
-        <Disclosure>Text styles</Disclosure>
-        <div className="style-accordion-body">
+            {styleLevels.map((l) => (
+              <option key={l} value={l}>
+                {styleLabels[l]}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <div className="style-font-grid">
           <label className="field">
-            Text level
+            Font
             <Select
-              value={level}
-              onChange={(e) => setLevel(e.target.value as StyleLevel)}
+              aria-label={`${styleLabels[level]} font`}
+              value={
+                typeof selected.font === "string"
+                  ? selected.font
+                  : selected.font.id
+              }
+              onChange={(e) =>
+                patch({
+                  font:
+                    uploads.find((f) => f.id === e.target.value) ??
+                    (e.target.value as FontChoice),
+                })
+              }
             >
-              {styleLevels.map((l) => (
-                <option key={l} value={l}>
-                  {styleLabels[l]}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <div className="style-font-grid">
-            <label className="field">
-              Font
-              <Select
-                aria-label={`${styleLabels[level]} font`}
-                value={
-                  typeof selected.font === "string"
-                    ? selected.font
-                    : selected.font.id
-                }
-                onChange={(e) =>
-                  patch({
-                    font:
-                      uploads.find((f) => f.id === e.target.value) ??
-                      (e.target.value as FontChoice),
-                  })
-                }
-              >
-                {["Serif", "Sans", "Monospace"].map((category) => (
-                  <optgroup key={category} label={category}>
-                    {curatedFonts
-                      .filter((f) => f.category === category)
-                      .map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
-                  </optgroup>
-                ))}
-                {!!uploads.length && (
-                  <optgroup label="Uploaded">
-                    {uploads.map((f) => (
+              {["Serif", "Sans", "Monospace"].map((category) => (
+                <optgroup key={category} label={category}>
+                  {curatedFonts
+                    .filter((f) => f.category === category)
+                    .map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.name}
                       </option>
                     ))}
-                  </optgroup>
-                )}
-              </Select>
-            </label>
-            {field(
-              "Size (px)",
-              "size",
-              level === "body" ? 14 : 8,
-              level === "body" ? 18 : 96,
-            )}
-          </div>
-          <fieldset className="style-colors">
-            <legend>Color</legend>
-            <div role="group" aria-label="Color choices">
-              {(["ink", "accent", "custom"] as const).map((colour) => (
-                <button
-                  key={colour}
-                  type="button"
-                  aria-pressed={
-                    colour === "custom"
-                      ? selected.colour.startsWith("#")
-                      : selected.colour === colour
-                  }
-                  onClick={() =>
-                    patch({
-                      colour:
-                        colour === "custom"
-                          ? selected.colour.startsWith("#")
-                            ? selected.colour
-                            : "#25241f"
-                          : colour,
-                    })
-                  }
-                >
-                  <span
-                    className="style-swatch"
-                    style={{
-                      background: styleColour(
-                        colour === "custom"
-                          ? selected.colour.startsWith("#")
-                            ? selected.colour
-                            : "#25241f"
-                          : colour,
-                        settings?.accent_colour,
-                      ),
-                    }}
-                  />
-                  {colour === "ink"
-                    ? "Ink"
-                    : colour === "accent"
-                      ? "Accent"
-                      : "Custom"}
-                </button>
+                </optgroup>
               ))}
-            </div>
-          </fieldset>
-          {selected.colour.startsWith("#") && (
-            <div className="field">
-              <span>Custom color</span>
-              <ColorPicker
-                label="Custom"
-                value={selected.colour}
-                settings={settings}
-                onChange={(colour) => patch({ colour })}
-              />
-            </div>
+              {!!uploads.length && (
+                <optgroup label="Uploaded">
+                  {uploads.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </Select>
+          </label>
+          {field(
+            "Size (px)",
+            "size",
+            level === "body" ? 14 : 8,
+            level === "body" ? 18 : 96,
           )}
-          <p
-            className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
-            role={contrast < 4.5 ? "alert" : undefined}
-          >
-            {contrast.toFixed(2)}:1 against white paper
-            {contrast < 4.5
-              ? " — small text uses a darker readable shade"
-              : " · Passes contrast"}
-          </p>
-          <div className="style-spacing-grid">
-            {field("Weight", "weight", 100, 900)}
-            <SpacingInput
-              label="Space above (px)"
-              ariaLabel={`${styleLabels[level]} space above (px)`}
-              value={selected.space_above}
-              max={Math.max(
-                0,
-                pageGeometry(styles, headerFooter, 1).content.height -
-                  selected.size * textLineHeight(styles, level) -
-                  selected.space_below,
-              )}
-              inputStep="any"
-              onChange={(space_above) => patch({ space_above })}
-            />
-            <SpacingInput
-              label="Space below (px)"
-              ariaLabel={`${styleLabels[level]} space below (px)`}
-              value={selected.space_below}
-              max={Math.max(
-                0,
-                pageGeometry(styles, headerFooter, 1).content.height -
-                  selected.size * textLineHeight(styles, level) -
-                  selected.space_above,
-              )}
-              inputStep="any"
-              onChange={(space_below) => patch({ space_below })}
-            />
-          </div>
-          <details className="style-typography-details">
-            <Disclosure>Typography details</Disclosure>
-            <label className="field">
-              Letter case
-              <Select
-                value={selected.letter_case}
-                onChange={(e) =>
+        </div>
+        <fieldset className="style-colors">
+          <legend>Color</legend>
+          <div role="group" aria-label="Color choices">
+            {(["ink", "accent", "custom"] as const).map((colour) => (
+              <button
+                key={colour}
+                type="button"
+                aria-pressed={
+                  colour === "custom"
+                    ? selected.colour.startsWith("#")
+                    : selected.colour === colour
+                }
+                onClick={() =>
                   patch({
-                    letter_case: e.target.value as TextStyle["letter_case"],
+                    colour:
+                      colour === "custom"
+                        ? selected.colour.startsWith("#")
+                          ? selected.colour
+                          : "#25241f"
+                        : colour,
                   })
                 }
               >
-                <option value="normal">Normal</option>
-                <option value="uppercase">Uppercase</option>
-              </Select>
-            </label>
-            {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
-          </details>
-          <hr />
-          <div className="style-preview-heading">
-            <strong>Sample</strong>
-            <Button
-              type="button"
-              className="style-reset"
-              onClick={async () => {
-                if (
-                  await confirmDialog({
-                    title: `${resetLabel}?`,
-                    confirmLabel: resetLabel,
-                  })
-                )
-                  (onReset ?? (() => onChange({})))();
-              }}
-            >
-              {resetLabel}
-            </Button>
-            <div role="group" aria-label="Sample page width">
-              <button
-                type="button"
-                aria-pressed={!phone}
-                onClick={() => setPhone(false)}
-              >
-                Desktop
-              </button>
-              <button
-                type="button"
-                aria-pressed={phone}
-                onClick={() => setPhone(true)}
-              >
-                Phone
-              </button>
-            </div>
-          </div>
-          <div
-            className="style-preview-viewport"
-            data-width={phone ? "phone" : "desktop"}
-          >
-            <div
-              id={id}
-              className="proposal-typography style-sample"
-              data-level={level}
-            >
-              <style>
-                {curatedFontFaces(curatedFonts)}
-                {styleFontFaces(styles)}
-                {documentStyleCss(
-                  styles,
-                  settings?.accent_colour,
-                  undefined,
-                  "type-sample",
-                ).replaceAll(
-                  ".proposal-typography.proposal-typography",
-                  `[id="${id}"]`,
-                )}
-              </style>
-              <div data-sample-heading="1">
-                A proposal for your next chapter
-              </div>
-              <div data-sample-heading="2">Our approach</div>
-              <p className="style-body">
-                Clear goals and thoughtful work, shaped around your business.
-              </p>
-              <div data-sample-heading="3">Built around you</div>
-              <p className="style-body">
-                Each detail supports the outcome we agree on together.
-              </p>
-              <div data-sample-heading="4">The next step</div>
-              <p className="style-body">
-                Review your proposal and let us know what you think.
-              </p>
-            </div>
-          </div>
-        </div>
-      </details>
-      <details className="style-accordion" open={!headerFooter}>
-        <Disclosure>
-          {hidePageMargins ? "Density" : "Page & margins"}
-        </Disclosure>
-        <div className="style-accordion-body">
-          <fieldset className="style-density">
-            <legend>Density</legend>
-            <div role="group" aria-label="Density choices">
-              {(["standard", "comfortable"] as const).map((density) => (
-                <button
-                  key={density}
-                  type="button"
-                  aria-pressed={styles.layout!.density === density}
-                  onClick={() => onChange({ ...value, density })}
-                >
-                  {density === "standard" ? "Standard" : "Comfortable"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          {!hidePageMargins && (
-            <ProposalLayoutOptions
-              styles={styles}
-              value={value}
-              onChange={onChange}
-            />
-          )}
-          {!hidePageMargins && (
-            <fieldset className="style-fields style-margin-grid">
-              <legend>Page margins (inches)</legend>
-              {(["top", "right", "bottom", "left"] as const).map((side) => (
-                <StyleNumber
-                  key={side}
-                  name={side[0].toUpperCase() + side.slice(1)}
-                  ariaLabel={`Page margin ${side}`}
-                  value={styles.layout!.margins[side]}
-                  min={0.25}
-                  max={2}
-                  step={0.05}
-                  onChange={(n) =>
-                    onChange({
-                      ...value,
-                      margins: { ...value?.margins, [side]: n },
-                    })
-                  }
+                <span
+                  className="style-swatch"
+                  style={{
+                    background: styleColour(
+                      colour === "custom"
+                        ? selected.colour.startsWith("#")
+                          ? selected.colour
+                          : "#25241f"
+                        : colour,
+                      settings?.accent_colour,
+                    ),
+                  }}
                 />
-              ))}
-            </fieldset>
-          )}
+                {colour === "ink"
+                  ? "Ink"
+                  : colour === "accent"
+                    ? "Accent"
+                    : "Custom"}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {selected.colour.startsWith("#") && (
+          <div className="field">
+            <span>Custom color</span>
+            <ColorPicker
+              label="Custom"
+              value={selected.colour}
+              settings={settings}
+              onChange={(colour) => patch({ colour })}
+            />
+          </div>
+        )}
+        <p
+          className={`style-contrast ${contrast < 4.5 ? "warning" : "success"}`}
+          role={contrast < 4.5 ? "alert" : undefined}
+        >
+          {contrast.toFixed(2)}:1 against white paper
+          {contrast < 4.5
+            ? " — small text uses a darker readable shade"
+            : " | Passes contrast"}
+        </p>
+        <div className="style-spacing-grid">
+          {field("Weight", "weight", 100, 900)}
+          <SpacingInput
+            label="Space above (px)"
+            ariaLabel={`${styleLabels[level]} space above (px)`}
+            value={selected.space_above}
+            max={Math.max(
+              0,
+              pageGeometry(styles, headerFooter, 1).content.height -
+                selected.size * textLineHeight(styles, level) -
+                selected.space_below,
+            )}
+            inputStep="any"
+            onChange={(space_above) => patch({ space_above })}
+          />
+          <SpacingInput
+            label="Space below (px)"
+            ariaLabel={`${styleLabels[level]} space below (px)`}
+            value={selected.space_below}
+            max={Math.max(
+              0,
+              pageGeometry(styles, headerFooter, 1).content.height -
+                selected.size * textLineHeight(styles, level) -
+                selected.space_above,
+            )}
+            inputStep="any"
+            onChange={(space_below) => patch({ space_below })}
+          />
         </div>
-      </details>
-      {scope === "template" && (
+        <details className="style-typography-details">
+          <Disclosure>Typography details</Disclosure>
+          <label className="field">
+            Letter case
+            <Select
+              value={selected.letter_case}
+              onChange={(e) =>
+                patch({
+                  letter_case: e.target.value as TextStyle["letter_case"],
+                })
+              }
+            >
+              <option value="normal">Normal</option>
+              <option value="uppercase">Uppercase</option>
+            </Select>
+          </label>
+          {field("Letter spacing (em)", "letter_spacing", -0.1, 0.5, 0.005)}
+        </details>
+        <hr />
+        <div className="style-preview-heading">
+          <strong>Sample</strong>
+          {!panel && (
+            <>
+              {" "}
+              <Button
+                type="button"
+                className="style-reset"
+                onClick={async () => {
+                  if (
+                    await confirmDialog({
+                      title: `${resetLabel}?`,
+                      confirmLabel: resetLabel,
+                    })
+                  )
+                    (onReset ?? (() => onChange({})))();
+                }}
+              >
+                {resetLabel}
+              </Button>
+            </>
+          )}
+          <div role="group" aria-label="Sample page width">
+            <button
+              type="button"
+              aria-pressed={!phone}
+              onClick={() => setPhone(false)}
+            >
+              Desktop
+            </button>
+            <button
+              type="button"
+              aria-pressed={phone}
+              onClick={() => setPhone(true)}
+            >
+              Phone
+            </button>
+          </div>
+        </div>
+        <div
+          className="style-preview-viewport"
+          data-width={phone ? "phone" : "desktop"}
+        >
+          <div
+            id={id}
+            className="proposal-typography style-sample"
+            data-level={level}
+          >
+            <style>
+              {curatedFontFaces(curatedFonts)}
+              {styleFontFaces(styles)}
+              {documentStyleCss(
+                styles,
+                settings?.accent_colour,
+                undefined,
+                "type-sample",
+              ).replaceAll(
+                ".proposal-typography.proposal-typography",
+                `[id="${id}"]`,
+              )}
+            </style>
+            <div data-sample-heading="1">A proposal for your next chapter</div>
+            <div data-sample-heading="2">Our approach</div>
+            <p className="style-body">
+              Clear goals and thoughtful work, shaped around your business.
+            </p>
+            <div data-sample-heading="3">Built around you</div>
+            <p className="style-body">
+              Each detail supports the outcome we agree on together.
+            </p>
+            <div data-sample-heading="4">The next step</div>
+            <p className="style-body">
+              Review your proposal and let us know what you think.
+            </p>
+          </div>
+        </div>
+      </StyleCard>
+      <StyleCard
+        panel={panel}
+        title={hidePageMargins ? "Density" : "Page & margins"}
+        open={!headerFooter}
+      >
+        <fieldset className="style-density">
+          <legend>Density</legend>
+          <div role="group" aria-label="Density choices">
+            {(["standard", "comfortable"] as const).map((density) => (
+              <button
+                key={density}
+                type="button"
+                aria-pressed={styles.layout!.density === density}
+                onClick={() => onChange({ ...value, density })}
+              >
+                {density === "standard" ? "Standard" : "Comfortable"}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {!hidePageMargins && (
+          <ProposalLayoutOptions
+            styles={styles}
+            value={value}
+            onChange={onChange}
+          />
+        )}
+        {!hidePageMargins && (
+          <fieldset className="style-fields style-margin-grid">
+            <legend>Page margins (inches)</legend>
+            {(["top", "right", "bottom", "left"] as const).map((side) => (
+              <SpacingInput
+                key={side}
+                label={side[0].toUpperCase() + side.slice(1)}
+                ariaLabel={`Page margin ${side}`}
+                value={styles.layout!.margins[side]}
+                min={0.25}
+                max={2}
+                step={0.05}
+                inputStep={0.05}
+                unit="in"
+                onChange={(n) =>
+                  onChange({
+                    ...value,
+                    margins: { ...value?.margins, [side]: n },
+                  })
+                }
+              />
+            ))}
+          </fieldset>
+        )}
+        {panel && quoteColors}
+      </StyleCard>
+      {scope === "template" && !panel && (
         <div className="template-band-heading">
           <PanelHeading>Header & footer</PanelHeading>
           <p>
@@ -517,9 +540,96 @@ export function ProposalStyles({
           pages={bandPages}
           onReset={onResetBands}
           resetLabel={bandsResetLabel}
+          panel={panel}
         />
       )}
+      {panel && (
+        <div className="styles-action-row">
+          <Button
+            className="style-reset"
+            disabled={resetting}
+            onClick={async () => {
+              if (
+                !(await confirmDialog({
+                  title: `${resetLabel}?`,
+                  confirmLabel: resetLabel,
+                }))
+              )
+                return;
+              setResetting(true);
+              setResetError("");
+              const engine = history?.controller?.engine;
+              const before = engine?.past.at(-1)?.id;
+              engine?.beginGroup(id);
+              try {
+                (onReset ?? (() => onChange({})))();
+                if (scope !== "template") await onResetBands?.();
+              } catch (e) {
+                setResetError(
+                  e instanceof Error
+                    ? e.message
+                    : "Could not reset styles. Try again.",
+                );
+              } finally {
+                engine?.endGroup(id);
+                setResetting(false);
+              }
+              const after = engine?.past.at(-1)?.id;
+              setResetUndo(after !== before ? (after ?? null) : null);
+            }}
+          >
+            {resetLabel}
+          </Button>
+          {templateAction}
+          {resetError && <p role="alert">{resetError}</p>}
+        </div>
+      )}
+      {resetUndo !== null && (
+        <ToastSurface onDismiss={() => setResetUndo(null)}>
+          Styles reset{" "}
+          <button
+            onClick={() => {
+              history?.controller?.undo(undefined, resetUndo);
+              setResetUndo(null);
+            }}
+          >
+            Undo
+          </button>
+        </ToastSurface>
+      )}
     </section>
+  );
+}
+
+function StyleCard({
+  panel,
+  title,
+  children,
+  open = false,
+  className = "",
+  bodyClassName = "",
+}: {
+  panel: boolean;
+  title: string;
+  children: import("react").ReactNode;
+  open?: boolean;
+  className?: string;
+  bodyClassName?: string;
+}) {
+  return panel ? (
+    <PanelCard
+      title={title}
+      open={open}
+      className={className}
+      bodyClassName={`style-accordion-body ${bodyClassName}`}
+    >
+      {children}
+    </PanelCard>
+  ) : (
+    <details className={`style-accordion ${className}`} open={open}>
+      <Disclosure>{title}</Disclosure>
+      <div className={`style-accordion-body ${bodyClassName}`}>{children}</div>
+    </details>
   );
 }
 
@@ -586,7 +696,9 @@ function BandSettings({
   onReset,
   resetLabel,
   pages,
+  panel = false,
 }: {
+  panel?: boolean;
   styles: ReturnType<typeof resolveStyles>;
   onReset?: () => void | Promise<void>;
   resetLabel: string;
@@ -662,7 +774,7 @@ function BandSettings({
     return `${sharedPagesLabel(shared(kind))}${(["unique", "hidden"] as const)
       .map((source) => {
         const count = excluded.filter((p) => p.source === source).length;
-        return count ? ` · ${count} ${source}` : "";
+        return count ? ` | ${count} ${source}` : "";
       })
       .join("")}`;
   };
@@ -686,158 +798,168 @@ function BandSettings({
             ),
           );
         return (
-          <details className="style-accordion band-section" key={kind} open>
-            <Disclosure>{title}</Disclosure>
-            <div className="style-accordion-body band-spacing-settings">
-              {toggle(
-                kind === "header" ? "showHeader" : "showFooter",
-                title,
-                subtitle(kind),
-              )}
-              <label className="band-setting">
-                <span>
-                  <strong>Show on cover</strong>
-                </span>
-                <span className="band-switch-hit">
-                  <Switch
-                    className="band-switch-input"
-                    aria-label={`${title} show on cover`}
-                    checked={bandOnCover(value, kind)}
-                    onChange={(e) => update({ showOnCover: e.target.checked })}
-                  />
-                </span>
-              </label>
-              <fieldset className="band-height">
-                <legend>Distance from edge</legend>
-                <div role="group" aria-label={`${title} distance from edge`}>
-                  {([0.25, 0.3, 0.4, 0.5] as const).map((distanceIn) => (
-                    <button
-                      type="button"
-                      key={distanceIn}
-                      aria-pressed={spacing.distanceIn === distanceIn}
-                      onClick={() => update({ distanceIn })}
-                    >
-                      {distanceIn} in
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-              <fieldset className="band-height">
-                <legend>Height</legend>
-                <div role="group" aria-label={`${title} height`}>
-                  {(
-                    [
-                      ["Small", 0.25],
-                      ["Medium", 0.4],
-                      ["Large", 0.6],
-                      ["X-Large", 0.8],
-                    ] as const
-                  ).map(([name, heightIn]) => (
-                    <button
-                      type="button"
-                      key={name}
-                      aria-pressed={spacing.heightIn === heightIn}
-                      onClick={() => update({ heightIn })}
-                    >
-                      {name}
-                      <small>{heightIn} in</small>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+          <StyleCard
+            panel={panel}
+            key={kind}
+            title={title}
+            className="band-section"
+            bodyClassName="band-spacing-settings"
+            open={!panel || kind === "header"}
+          >
+            {toggle(
+              kind === "header" ? "showHeader" : "showFooter",
+              title,
+              subtitle(kind),
+            )}
+            <label className="band-setting">
+              <span>
+                <strong>Show on cover</strong>
+              </span>
+              <span className="band-switch-hit">
+                <Switch
+                  className="band-switch-input"
+                  aria-label={`${title} show on cover`}
+                  checked={bandOnCover(value, kind)}
+                  onChange={(e) => update({ showOnCover: e.target.checked })}
+                />
+              </span>
+            </label>
+            <fieldset className="band-height">
+              <legend>Distance from edge</legend>
+              <div role="group" aria-label={`${title} distance from edge`}>
+                {([0.25, 0.3, 0.4, 0.5] as const).map((distanceIn) => (
+                  <button
+                    type="button"
+                    key={distanceIn}
+                    aria-pressed={spacing.distanceIn === distanceIn}
+                    onClick={() => update({ distanceIn })}
+                  >
+                    {distanceIn} in
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="band-height">
+              <legend>Height</legend>
+              <div role="group" aria-label={`${title} height`}>
+                {(
+                  [
+                    ["Small", 0.25],
+                    ["Medium", 0.4],
+                    ["Large", 0.6],
+                    ["X-Large", 0.8],
+                  ] as const
+                ).map(([name, heightIn]) => (
+                  <button
+                    type="button"
+                    key={name}
+                    aria-pressed={spacing.heightIn === heightIn}
+                    onClick={() => update({ heightIn })}
+                  >
+                    {name}
+                    <small>{heightIn} in</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <SpacingInput
+              label={
+                kind === "header"
+                  ? "Spacing below header"
+                  : "Spacing above footer"
+              }
+              value={spacing.spaceToContent}
+              max={bandSpacingLimit(styles, value, kind, "spaceToContent")}
+              onChange={(spaceToContent) => update({ spaceToContent })}
+            />
+            <label className="band-setting">
+              <span>
+                <strong>Divider line</strong>
+              </span>
+              <span className="band-switch-hit">
+                <Switch
+                  className="band-switch-input"
+                  aria-label={`${title} divider line`}
+                  checked={bandDivider(value, kind)}
+                  onChange={(e) => update({ divider: e.target.checked })}
+                />
+              </span>
+            </label>
+            {bandDivider(value, kind) && (
               <SpacingInput
                 label={
                   kind === "header"
-                    ? "Spacing below header"
-                    : "Spacing above footer"
+                    ? "Spacing above line"
+                    : "Spacing below line"
                 }
-                value={spacing.spaceToContent}
-                max={bandSpacingLimit(styles, value, kind, "spaceToContent")}
-                onChange={(spaceToContent) => update({ spaceToContent })}
+                value={spacing.spaceByLine}
+                max={bandSpacingLimit(styles, value, kind, "spaceByLine")}
+                onChange={(spaceByLine) => update({ spaceByLine })}
               />
-              <label className="band-setting">
-                <span>
-                  <strong>Divider line</strong>
-                </span>
-                <span className="band-switch-hit">
-                  <Switch
-                    className="band-switch-input"
-                    aria-label={`${title} divider line`}
-                    checked={bandDivider(value, kind)}
-                    onChange={(e) => update({ divider: e.target.checked })}
-                  />
-                </span>
-              </label>
-              {bandDivider(value, kind) && (
-                <SpacingInput
-                  label={
-                    kind === "header"
-                      ? "Spacing above line"
-                      : "Spacing below line"
-                  }
-                  value={spacing.spaceByLine}
-                  max={bandSpacingLimit(styles, value, kind, "spaceByLine")}
-                  onChange={(spaceByLine) => update({ spaceByLine })}
-                />
-              )}
-              <p className="band-margin-note" role="status">
-                {(() => {
-                  const edge = kind === "header" ? "top" : "bottom",
-                    label = kind === "header" ? "Top" : "Bottom",
-                    effective = geometry.margins[edge],
-                    base = geometry.baseMargins[edge],
-                    inches = Number((effective / 96).toFixed(2));
-                  return effective > base
-                    ? `${label} margin grows to ${inches} in to fit the ${kind}`
-                    : `${label} margin: ${inches} in (fits)`;
-                })()}
-              </p>
-            </div>
-          </details>
+            )}
+            <p className="band-margin-note" role="status">
+              {(() => {
+                const edge = kind === "header" ? "top" : "bottom",
+                  label = kind === "header" ? "Top" : "Bottom",
+                  effective = geometry.margins[edge],
+                  base = geometry.baseMargins[edge],
+                  inches = Number((effective / 96).toFixed(2));
+                return effective > base
+                  ? `${label} margin grows to ${inches} in to fit the ${kind}`
+                  : `${label} margin: ${inches} in (fits)`;
+              })()}
+            </p>
+          </StyleCard>
         );
       })}
-      <div className="band-style-actions">
-        <button
-          type="button"
-          disabled={!shared("header")}
-          onClick={() => editing?.edit("header")}
-        >
-          Edit shared header
-        </button>
-        <button
-          type="button"
-          disabled={!shared("footer")}
-          onClick={() => editing?.edit("footer")}
-        >
-          Edit shared footer
-        </button>
-      </div>
-      {own.length > 0 && (
-        <section className="band-own-pages" aria-label="Pages with their own">
-          <h3>Pages with their own</h3>
-          {own.map((p) => (
-            <div key={`${p.page}-${p.kind}`}>
-              <span>
-                Page {p.page} · {p.kind}
-                {p.source === "hidden" ? " hidden" : ""}
-              </span>
-              <button
-                type="button"
-                onClick={() => editing?.goTo(p.kind, p.page)}
-              >
-                Go to
-                <span className="sr-only">
-                  {" "}
-                  page {p.page} {p.kind}
+      <PanelCard
+        title="Shared header & footer"
+        collapsible={false}
+        className="shared-bands-card"
+      >
+        <div className="band-style-actions">
+          <Button
+            type="button"
+            disabled={!shared("header")}
+            onClick={() => editing?.edit("header")}
+          >
+            Edit header
+          </Button>
+          <Button
+            type="button"
+            disabled={!shared("footer")}
+            onClick={() => editing?.edit("footer")}
+          >
+            Edit footer
+          </Button>
+        </div>
+        {own.length > 0 && (
+          <section className="band-own-pages" aria-label="Pages with their own">
+            <h3>Pages with their own ({own.length})</h3>
+            {own.map((p) => (
+              <div key={`${p.page}-${p.kind}`}>
+                <span>
+                  Page {p.page} | {p.kind}
+                  {p.source === "hidden" ? " hidden" : ""}
                 </span>
-              </button>
-            </div>
-          ))}
-          <button type="button" onClick={(e) => setConfirm(e.currentTarget)}>
-            Use shared on every page
-          </button>
-        </section>
-      )}
+                <button
+                  type="button"
+                  onClick={() => editing?.goTo(p.kind, p.page)}
+                >
+                  Go to
+                  <span className="sr-only">
+                    {" "}
+                    page {p.page} {p.kind}
+                  </span>
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={(e) => setConfirm(e.currentTarget)}>
+              Use shared on every page
+            </button>
+          </section>
+        )}
+      </PanelCard>
       {confirm && (
         <ToolbarPopover
           className="band-popover band-popover-confirm"
@@ -859,7 +981,7 @@ function BandSettings({
           />
         </ToolbarPopover>
       )}
-      {onReset && (
+      {onReset && (!panel || resetLabel === "Reset to default") && (
         <div className="band-reset">
           <button
             type="button"
@@ -885,17 +1007,21 @@ function BandSettings({
           >
             {resetBusy ? "Resetting…" : resetLabel}
           </button>
-          <p>
-            {resetLabel === "Reset to default"
-              ? "Restores the built-in header and footer."
-              : "Restores the template's shared header and footer. Pages with their own keep them."}
-          </p>
+          {!panel && (
+            <>
+              <p>
+                {resetLabel === "Reset to default"
+                  ? "Restores the built-in header and footer."
+                  : "Restores the template's shared header and footer. Pages with their own keep them."}
+              </p>
+            </>
+          )}
           {resetError && <p role="alert">{resetError}</p>}
         </div>
       )}
       {resetUndo !== null && (
         <ToastSurface onDismiss={() => setResetUndo(null)}>
-          Shared header and footer reset ·{" "}
+          Shared header and footer reset |{" "}
           <button
             onClick={() => {
               history?.controller?.undo(undefined, resetUndo);
@@ -976,14 +1102,14 @@ export function ProposalLayoutOptions({
           }}
         >
           <option value="current">
-            Current ·{" "}
+            Current |{" "}
             {Object.values(margins).every((n) => n === margins.top)
               ? `${margins.top} in`
               : "Custom"}
           </option>
-          <option value="narrow">Narrow · 0.6 in</option>
-          <option value="normal">Normal · 0.9 in</option>
-          <option value="wide">Wide · 1.1 in</option>
+          <option value="narrow">Narrow | 0.6 in</option>
+          <option value="normal">Normal | 0.9 in</option>
+          <option value="wide">Wide | 1.1 in</option>
         </Select>,
       )}
       {row(

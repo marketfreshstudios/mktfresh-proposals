@@ -1,4 +1,5 @@
 "use client";
+import { PanelCard } from "./editor/tools-panel";
 import { Select } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import { Disclosure, Field, Button, post } from "./ui";
@@ -99,8 +100,7 @@ export function CoverSettings({
         ? appearance.panelText
         : appearance.text;
   return (
-    <details className="style-accordion cover-settings-accordion">
-      <Disclosure>Cover</Disclosure>
+    <PanelCard title="Cover" className="cover-settings-accordion">
       <div className="cover-settings">
         <Field label="Cover layout">
           <Select
@@ -116,7 +116,7 @@ export function CoverSettings({
             }
           >
             {layout === "custom" && (
-              <option value="custom">Custom · existing arrangement</option>
+              <option value="custom">Custom | existing arrangement</option>
             )}
             {coverLayouts.map((v) => (
               <option key={v} value={v}>
@@ -162,7 +162,7 @@ export function CoverSettings({
                   {layout === "split" && !appearance.backdrop
                     ? "the panel"
                     : "the cover"}{" "}
-                  · AA contrast
+                  | AA contrast
                 </span>
               </div>
             )}
@@ -304,7 +304,7 @@ export function CoverSettings({
                   change({ graphic: e.target.value as typeof b.graphic })
                 }
               >
-                <option value="auto">Automatic · logo icon or built-in</option>
+                <option value="auto">Automatic | logo icon or built-in</option>
                 {iconWidth >= 1024 && (
                   <option value="logo-icon">Logo icon</option>
                 )}
@@ -366,7 +366,7 @@ export function CoverSettings({
               {elements
                 .filter((e) => e.label !== undefined)
                 .map((e) => (
-                  <Field key={e.id} label={`Label · ${e.label || e.id}`}>
+                  <Field key={e.id} label={`Label | ${e.label || e.id}`}>
                     <input
                       aria-label={`Cover label ${e.id}`}
                       value={e.label}
@@ -410,6 +410,6 @@ export function CoverSettings({
         )}
         {error && <p role="alert">{error}</p>}
       </div>
-    </details>
+    </PanelCard>
   );
 }
