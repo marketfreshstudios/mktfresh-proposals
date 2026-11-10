@@ -54,7 +54,7 @@ async function expectReadable(control: Locator, state: string) {
   expect(contrast, state).toBeGreaterThanOrEqual(4.5);
 }
 
-async function expectTabFocus(tab: Locator) {
+async function expectTabFocus(tab: Locator, arrows = false) {
   await tab.click();
   await expect(tab).toHaveAttribute("aria-selected", "true");
   await expect(tab).toHaveCSS("outline-style", "none");
@@ -64,10 +64,16 @@ async function expectTabFocus(tab: Locator) {
   await tab.press("Shift+Tab");
   await expect(tab).not.toBeFocused();
   await expect(tab).toHaveCSS("box-shadow", selectedShadow);
-  await tab.page().keyboard.press("Tab");
+  if (arrows) {
+    await tab.press("ArrowLeft");
+    await tab.page().keyboard.press("ArrowRight");
+  } else {
+    await tab.page().keyboard.press("Tab");
+  }
   await expect(tab).toBeFocused();
   await expect(tab).toHaveCSS("outline-style", "solid");
   await tab.click();
+  await expect(tab).toBeFocused();
   await expect(tab).toHaveCSS("outline-style", "none");
 }
 
@@ -112,7 +118,10 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await expect(quote).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await screenshot(page, "editor-tabs-1440");
   await screenshot(page, "editor-proposals-hover-1440");
-  await expectTabFocus(page.getByRole("tab", { name: "Fields", exact: true }));
+  await expectTabFocus(
+    page.getByRole("tab", { name: "Fields", exact: true }),
+    true,
+  );
 
   await page.goto("/studio/templates");
   const templates = page
