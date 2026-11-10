@@ -1,7 +1,13 @@
 import { quoteTableHtml } from "./quote-table";
 import { sublineLabel } from "./subline-label";
+import { choiceRequired } from "./quote-options";
 import type { Quote } from "./model";
-import { orderedItems, selected, quoteSublines } from "./quote-model";
+import {
+  orderedItems,
+  selected,
+  quoteSublines,
+  visibleQuote,
+} from "./quote-model";
 import { formatMoney, intervalSuffix } from "./money";
 const esc = (v: string) =>
   v.replace(
@@ -20,7 +26,7 @@ export function documentQuote(
 ) {
   if (layout === "table")
     return `<section class="print-pricing-table"><h2>Your investment</h2><p>Optional items are your choice. Totals update as you go.</p>${quoteTableHtml(quote, currency, cents)}${documentTotalsHtml(quote, currency, cents)}</section>`;
-  const items = orderedItems(quote),
+  const items = orderedItems(visibleQuote(quote)),
     units = Array.from(new Set(items.map((i) => i.choice_group_id ?? i.id))),
     fmt = (n: number) => formatMoney(n, currency, cents);
   const row = (i: (typeof items)[number]) => {
@@ -36,7 +42,7 @@ export function documentQuote(
   const rendered = units.map((id) => {
     const group = items.filter((i) => (i.choice_group_id ?? i.id) === id);
     return group[0].choice_group_id
-      ? `<section class="flow-choice-group print-choice-group" data-print-unit="${esc(group[0].id)}"><h3>Choose one</h3>${group.map(row).join("")}</section>`
+      ? `<section class="flow-choice-group print-choice-group" data-print-unit="${esc(group[0].id)}"><h3>${choiceRequired(group[0]) ? "Choose one" : "Choose up to one"}</h3>${group.map(row).join("")}</section>`
       : `<section class="print-pricing-unit" data-print-unit="${esc(group[0].id)}">${row(group[0])}</section>`;
   });
   const heading =

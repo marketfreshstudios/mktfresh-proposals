@@ -1,5 +1,5 @@
 import { businessState, businessStateError } from "./business-state";
-import { finalOiotVisibility } from "./oiot";
+import { quoteChangesPageContent } from "./oiot";
 import {
   ColumnsOverflowError,
   columnsOverflowMessage,
@@ -1118,10 +1118,7 @@ export class ProposalService {
       const v = p.versions.at(-1)!;
       const before = v.quote;
       v.quote = chooseItem(before, input.item_id, input.selected);
-      if (
-        finalOiotVisibility(v.content, before) !==
-        finalOiotVisibility(v.content, v.quote)
-      )
+      if (quoteChangesPageContent(v.content, before, v.quote))
         delete v.pagination;
       if (!p.live_blockers?.length) p.quote = structuredClone(v.quote);
       v.variables_resolved = variables(publishedPresentation(p), v.quote);
@@ -1476,7 +1473,8 @@ export function publicResult(
             qbo_item_ref: _qbo,
             oiot_kickoff: _kickoff,
             ...s
-          }) => s,
+          }) =>
+            item.oiot_build && _kickoff ? { ...s, oiot_kickoff: _kickoff } : s,
         ),
       }),
     ),

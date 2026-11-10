@@ -12,7 +12,8 @@ import {
 import { defaultTemplateBands } from "../src/lib/page-bands";
 import { catalogQuoteItem } from "../src/lib/quote-model";
 import type { Block, Item, Template } from "../src/lib/model";
-import { paymentPlanClause } from "./oiot-clause";
+import { paymentPlanClause, planAwarePaymentPlanClause } from "./oiot-clause";
+import { marketFreshWebsiteChoices } from "./oiot-quote";
 export { paymentPlanClause } from "./oiot-clause";
 
 export const starterCoverLayouts: Partial<
@@ -84,6 +85,12 @@ export function starterTemplates(
       ? starterCatalogProducts(number, options.catalog ?? [])
       : [];
     const id = starterId(workspace, source.key);
+    const websiteChoices =
+      options.marketfresh && number === 1
+        ? marketFreshWebsiteChoices(options.catalog ?? [], (key) =>
+            starterId(id, `website-choice:${key}`),
+          )
+        : null;
     const coverLine = (
       kind: CoverElement["kind"],
       text?: string,
@@ -94,8 +101,12 @@ export function starterTemplates(
       align: "left",
       ...(text === undefined ? {} : { content: fieldNodes(coverText(text)) }),
     });
-    const markdown =
-      options.marketfresh && number === 7
+    const markdown = websiteChoices
+      ? source.markdown.replace(
+          "[If the client chooses Own It Over Time, add the kickoff as a one-time Custom line with its amount, then delete this note.]",
+          "[Enter the agreed kickoff and website purchase price on the Own It Over Time Build option, then delete this note.]",
+        )
+      : options.marketfresh && number === 7
         ? source.markdown
             .replaceAll("[Facebook and Instagram]", "Facebook and Instagram")
             .replaceAll("[$200]", "$200")
@@ -133,11 +144,15 @@ export function starterTemplates(
       },
     );
     if (options.marketfresh && number === 1) {
-      const clause = structuredClone(paymentPlanClause);
-      // Missing products leave the quote empty; retain the original conditional wording.
-      clause.show_when.pricing_item_id =
-        products[1]?.item?.id ?? clause.show_when.pricing_item_id;
-      clauses.splice(4, 0, clause);
+      if (websiteChoices)
+        clauses.splice(4, 0, structuredClone(planAwarePaymentPlanClause));
+      else {
+        const clause = structuredClone(paymentPlanClause);
+        // Missing products leave the quote empty; retain the original conditional wording.
+        clause.show_when.pricing_item_id =
+          products[1]?.item?.id ?? clause.show_when.pricing_item_id;
+        clauses.splice(4, 0, clause);
+      }
     }
     content.push(
       { type: "page_break" },
@@ -157,40 +172,42 @@ export function starterTemplates(
     content.forEach((b, index) => (b.id = starterId(id, `block-${index}`)));
     // A missing/inactive member leaves the entire template quote empty.
     const complete = products.every((p) => !p.issue);
-    const default_items = complete
-      ? products.map(({ item: product }, index) => {
-          const item = product!;
-          const quote = catalogQuoteItem(
-            item,
-            index,
-            starterId(id, `quote-${index}`),
-            [],
-          );
-          // Kickoff is proposal-specific: staff add a separately priced Custom line.
-          if (number === 1 && index === 1)
-            quote.sublines = quote.sublines.filter(
-              (s) => s.interval !== "one_time",
+    const default_items =
+      websiteChoices ??
+      (complete
+        ? products.map(({ item: product }, index) => {
+            const item = product!;
+            const quote = catalogQuoteItem(
+              item,
+              index,
+              starterId(id, `quote-${index}`),
+              [],
             );
-          const choice =
-            (number === 1 && index < 2) ||
-            number === 2 ||
-            number === 3 ||
-            number === 7;
-          const checked =
-            number === 1
-              ? index === 0
-              : number === 7
-                ? index === 1
-                : number === 4;
-          return {
-            ...quote,
-            optional: choice || (number === 1 && index === 2),
-            selected: checked,
-            default_selected: checked,
-            choice_group_id: choice ? starterId(id, "choices") : null,
-          };
-        })
-      : [];
+            // Kickoff is proposal-specific: staff add a separately priced Custom line.
+            if (number === 1 && index === 1)
+              quote.sublines = quote.sublines.filter(
+                (s) => s.interval !== "one_time",
+              );
+            const choice =
+              (number === 1 && index < 2) ||
+              number === 2 ||
+              number === 3 ||
+              number === 7;
+            const checked =
+              number === 1
+                ? index === 0
+                : number === 7
+                  ? index === 1
+                  : number === 4;
+            return {
+              ...quote,
+              optional: choice || (number === 1 && index === 2),
+              selected: checked,
+              default_selected: checked,
+              choice_group_id: choice ? starterId(id, "choices") : null,
+            };
+          })
+        : []);
     const cover = applyCoverLayout(
       {
         logo_mode: "brand",

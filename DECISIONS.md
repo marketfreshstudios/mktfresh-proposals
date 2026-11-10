@@ -1100,3 +1100,34 @@ Owner decision, November 10: Harbor cool ink-tinted neutrals replace beige. The 
 - An authenticated client preview can render a known field whose value is still missing, such as Business state, with its field label. Sending and published content still require real values. Preview access remains workspace-scoped through the existing verified staff session; content or service failures show their own messages.
 - Selecting Own It Over Time reveals and scrolls to its clause heading after document layout is ready. The landing leaves room for editor and client chrome and honors reduced motion.
 - Contract clauses are fully expanded on the client page and in the staff client preview. Clients must be able to read every applicable term without expanding it. Conditional terms still follow the selected offer. The editor, PDF, and signed evidence retain their existing document behavior.
+
+## 2026-11-10 · Conditional quote choices and Own It Over Time care
+
+Options and groups can depend on another selected quote option. Catalog
+defaults can refer to a catalog item that appears once in the quote. Missing or
+circular dependencies block sending. Hidden options are deselected and omitted
+from totals, billing, and PDFs. A newly revealed required group restores its
+staff-selected default. Groups without the new requirement flag retain their
+previous signing rule.
+
+MarketFresh offers Own It Now and Own It Over Time as Build choices. Each
+reveals its own care group. Own It Now care is optional. Own It Over Time care
+requires Standard or Pro, with Standard as the default. Staff enter the agreed
+kickoff and website purchase price before sending. Drafts can have an unpriced
+Build choice while those amounts are unknown. The previously approved connector
+kickoff derivation is unchanged. The chosen plan's catalog price and schedule
+fill the always-expanded clause and freeze with the signed version.
+
+Standard steps from `oiot-monthly-175` to `hosted-standard-100`; Pro steps from
+`oiot-pro-monthly-239` to `hosted-pro-164`. The new plans schedule the lower
+price at the end of the current billing period only after Stripe reports the
+30th qualifying paid invoice. Missed payments delay the transition. Previously
+signed proposals keep their existing terms and scheduling behavior.
+
+Apply `20261110210500_oiot_standard_pro.sql` after deploying the app. The
+previous schema rejects an unpriced Build choice. The migration records the
+Pro schedule when the matching catalog item has none, and converts the Website
+starter and never-sent drafts with matching legacy quote and clause defaults.
+Edited quote data and published versions remain unchanged. Staff can review
+and update any drafts skipped by the guard. Billing verification uses Stripe
+test fixtures.

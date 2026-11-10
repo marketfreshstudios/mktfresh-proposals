@@ -1,6 +1,11 @@
 "use client";
 import { quickBooksInvoiceTiming } from "../lib/proposal-state";
-import { finalOiotVisibility, revealedOiotClause } from "../lib/oiot";
+import { choiceRequired, visibleQuote } from "../lib/quote-options";
+import {
+  oiotCareVariables,
+  quoteChangesPageContent,
+  revealedOiotClause,
+} from "../lib/oiot";
 import { useTermsJump } from "./use-terms-jump";
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
@@ -439,18 +444,21 @@ function NewClientFlow({
       "quote.one_time_total": fmt(t.one_time_total),
       "quote.monthly_total": fmt(t.monthly_total),
       "quote.yearly_total": fmt(t.yearly_total),
-      "quote.selected_items": quote
+      ...oiotCareVariables(quote, fmt),
+      "quote.selected_items": visibleQuote(quote)
         .filter((l) => !l.optional || l.selected)
         .map((l) => l.name)
         .join(", "),
     };
     setP({
       ...p,
-      pagination:
-        finalOiotVisibility(p.content, p.quote as QuoteItem[]) ===
-        finalOiotVisibility(p.content, quote)
-          ? p.pagination
-          : undefined,
+      pagination: quoteChangesPageContent(
+        p.content,
+        p.quote as QuoteItem[],
+        quote,
+      )
+        ? undefined
+        : p.pagination,
       quote,
       totals: t,
       variables,
@@ -1540,7 +1548,7 @@ function ChosenItems({
 }) {
   return (
     <ul className="flow-chosen">
-      {orderedItems(p.quote as QuoteItem[])
+      {orderedItems(visibleQuote(p.quote as QuoteItem[]))
         .filter((i) => !i.optional || i.selected)
         .map((i) => (
           <li key={i.id}>
@@ -1854,7 +1862,7 @@ function ClientItems({
   busy: boolean;
   onToggle?: (id: string, value: boolean) => void;
 }) {
-  const items = orderedItems(p.quote as QuoteItem[]),
+  const items = orderedItems(visibleQuote(p.quote as QuoteItem[])),
     units = Array.from(new Set(items.map((i) => i.choice_group_id ?? i.id)));
   function option(i: QuoteItem) {
     const active = !i.optional || !!i.selected;
@@ -1876,6 +1884,17 @@ function ClientItems({
             type={i.choice_group_id ? "radio" : "checkbox"}
             name={i.choice_group_id ?? i.id}
             aria-label={`${i.name} · ${active ? "included" : "not included"}`}
+            aria-description={
+              i.choice_group_id && !choiceRequired(i)
+                ? "Activate the selected option again to clear it."
+                : undefined
+            }
+            onClick={(event) => {
+              if (active && i.choice_group_id && !choiceRequired(i)) {
+                event.preventDefault();
+                onToggle?.(i.id, false);
+              }
+            }}
             checked={active}
             disabled={busy || frozen}
             onChange={(e) => onToggle?.(i.id, e.target.checked)}
@@ -1914,11 +1933,15 @@ function ClientItems({
         return group[0].choice_group_id ? (
           <div
             role="radiogroup"
-            aria-label="Choose one"
+            aria-label={
+              choiceRequired(group[0]) ? "Choose one" : "Choose up to one"
+            }
             className="flow-choice-group"
             key={id}
           >
-            <h3>Choose one</h3>
+            <h3>
+              {choiceRequired(group[0]) ? "Choose one" : "Choose up to one"}
+            </h3>
             {group.map(option)}
           </div>
         ) : (

@@ -5,6 +5,7 @@ import {
   oiotKickoff,
   oiotKickoffField,
   oiotPurchasePriceField,
+  oiotCareVariables,
 } from "./oiot";
 import { blockBoxCss, columnBoxStyle, cssDeclarations } from "./block-style";
 import { columnGridStyle, columnRejection, columnsSchema } from "./columns";
@@ -21,6 +22,7 @@ import {
   selected,
   selectedContent,
   orderedItems,
+  visibleQuote,
 } from "./quote-model";
 import { formatMoney } from "./money";
 import {
@@ -87,7 +89,7 @@ export function variables(p: Proposal, quote = p.quote) {
     "quote.one_time_total": fmt(t.one_time_total),
     "quote.monthly_total": fmt(t.monthly_total),
     "quote.yearly_total": fmt(t.yearly_total),
-    "quote.selected_items": cloneQuote(quote)
+    "quote.selected_items": visibleQuote(cloneQuote(quote))
       .filter(selected)
       .map((l) => l.name)
       .join(", "),
@@ -101,7 +103,7 @@ export function variables(p: Proposal, quote = p.quote) {
     "business.state": businessState(p.workspace_settings),
     "sender.name": p.sender?.display_name ?? p.workspace_settings?.owner ?? "",
   });
-  for (const raw of quoteSublines(quote)) {
+  for (const raw of quoteSublines(quote, false, true)) {
     const l = raw;
     map[`quote.item.${l.stripe_lookup_key ?? l.id}.price`] = fmt(l.amount);
   }
@@ -112,6 +114,7 @@ export function variables(p: Proposal, quote = p.quote) {
     offer?.oiot_purchase_price === undefined
       ? ""
       : fmt(offer.oiot_purchase_price);
+  Object.assign(map, oiotCareVariables(quote, fmt));
   return map;
 }
 export const permitsEmptyVariable = (path: string) =>
@@ -293,7 +296,7 @@ export function renderBlocks(
             .join("")}</section>`;
         }
         case "pricing_table": {
-          const items = orderedItems(quote),
+          const items = orderedItems(visibleQuote(quote)),
             groups = Array.from(
               new Set(items.map((i) => i.choice_group_id ?? i.id)),
             ),

@@ -1,4 +1,5 @@
 import oldCovers from "../seed/starter-covers-pr-a.json" with { type: "json" };
+import { planAwarePaymentPlanClause } from "../seed/oiot-clause";
 import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
 import { validateItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
@@ -81,12 +82,14 @@ it("MarketFresh defaults resolve to existing items; care has no default, and 4.4
   const catalog = await repo.entities<Item>("pricing_items");
   const templates = starterTemplates(workspace, { marketfresh: true, catalog });
   expect(templates.map((t) => t.default_items!.length)).toEqual([
-    0, 3, 3, 2, 1, 0, 0,
+    0, 8, 3, 2, 1, 0, 0,
   ]);
   for (const t of templates) validateItems(t.default_items!);
   for (const t of templates)
     for (const item of t.default_items!)
-      expect(catalog.some((i) => i.id === item.pricing_item_id)).toBe(true);
+      if (item.oiot_build) expect(item.sublines).toEqual([]);
+      else
+        expect(catalog.some((i) => i.id === item.pricing_item_id)).toBe(true);
   expect(templates[1].default_items![2]).toMatchObject({
     optional: true,
     selected: false,
@@ -101,7 +104,7 @@ it("MarketFresh defaults resolve to existing items; care has no default, and 4.4
     templates[1].content
       .find((b) => b.type === "contract")!
       .clauses!.find((c) => c.id === "payment-plan"),
-  ).toEqual(paymentPlanClause);
+  ).toEqual(planAwarePaymentPlanClause);
   expect(paymentPlanClause.show_when.pricing_item_id).toBe(
     catalog.find((i) => i.sku === "oiot-monthly")?.id,
   );
@@ -290,7 +293,7 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
       [existingWorkspace],
     );
     expect(defaults.rows.map((r) => r.data.default_items!.length)).toEqual([
-      0, 3, 3, 2, 1, 0, 0,
+      0, 8, 3, 2, 1, 0, 0,
     ]);
     const id = starterId(workspace, "general-project");
     await db.query(

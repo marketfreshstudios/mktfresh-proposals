@@ -43,7 +43,9 @@ Use a real family UUID from the workspace. Catalog lines snapshot the catalog ID
 
 ## Own It Over Time
 
-Use the same Own It Over Time quote item in proposal `items` or template `default_quote_items`.
+Keep the draft's existing quote structure in proposal `items` or template `default_quote_items`. When the quote has a separate Build option marked `oiot_build: true`, keep its group and visibility rules. Put `oiot_purchase_price` and its one-time kickoff subline on that Build option. Keep the required care group's Standard (`oiot-monthly-175`) and Pro (`oiot-pro-monthly-239`) monthly prices and schedules from `list_catalog`. Standard is the default. The chosen plan fills `{{oiot.monthly}}`, `{{oiot.step_down}}` and `{{oiot.step_down_plan}}` in the terms. If the Build price is unknown, leave it unpriced and tell the user. Sending requires the agreed amounts.
+
+For an existing quote that uses a single combined Own It Over Time item:
 
 1. Find the active SKU `oiot-monthly-175` in `list_catalog`. Set `pricing_item_id` to the returned catalog UUID. Keep the $175 monthly subline, its Stripe lookup key, and the catalog schedule and term. Give the quote item and its sublines unique quote UUIDs.
 2. Set `oiot_purchase_price` to the known Own It Now price in integer cents, using a price supplied by the user or found in the catalog or proposal. For example, $3,750 is `375000`. This field appears in the terms and does not add another charge.
@@ -99,7 +101,7 @@ A new item is:
 }
 ```
 
-Use UUIDs for item/sub-line/group identities. Intervals are `one_time`, `month`, `year`. To offer alternatives, make every member optional, give them the same `choice_group_id`, and choose at most one `default_selected`. The client must select exactly one before signing. Groups render contiguously and billing receives only the chosen item's sub-lines. Different intervals always remain separate totals.
+Use UUIDs for item/sub-line/group identities. Intervals are `one_time`, `month`, `year`. To offer alternatives, make every member optional, give them the same `choice_group_id`, and choose at most one `default_selected`. Groups render contiguously. Set `choice_group_required: true` on every member and choose one default to require exactly one selection. Set it to `false` to allow none. Older groups without the field retain their signing rule. Put `show_when: {"kind":"quote_item","id":"OPTION_UUID"}` on an option or on every member of a conditional group. A catalog condition can instead use `"kind":"catalog_item"` with the prerequisite catalog UUID when the quote contains it exactly once. Hidden options are deselected and omitted from totals, billing and the PDF. Different intervals always remain separate totals.
 
 Amounts are supplied by the author; the app only sums them. AI text remains pending per section. AI-entered catalog overrides require a staff **Use list price** or **Keep** decision; send confirmation cannot bypass those price holds. Ordinary saving does not mark sections reviewed. An AI tool cannot send, sign, countersign, choose the email sender or approve its own changes. Contract clauses come from the template; conditional clauses are evaluated against selected catalog item IDs and frozen at signature.
 

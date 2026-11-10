@@ -1,6 +1,7 @@
 "use client";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import type { PublicProposal } from "./client-proposal";
+import { choiceRequired } from "../lib/quote-options";
 import { orderedItems, selected } from "../lib/quote-model";
 import { QuoteSchema } from "../lib/model";
 import { pageGeometry } from "../lib/page-bands";
@@ -183,6 +184,14 @@ export function ClientPageSheets({
         latest.current.onToggle?.(input.dataset.clientItem!, input.checked);
     };
     shadow.addEventListener("change", change);
+    const clear = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      if (!input.matches("input[data-clear-choice=true]") || input.disabled)
+        return;
+      event.preventDefault();
+      latest.current.onToggle?.(input.dataset.clientItem!, false);
+    };
+    shadow.addEventListener("click", clear);
     const focus = (event: Event) => {
       const input = event.target as HTMLInputElement;
       if (input.dataset.clientItem) focusItem = input.dataset.clientItem;
@@ -212,7 +221,10 @@ export function ClientPageSheets({
         for (const attr of [...unit.attributes])
           group.setAttribute(attr.name, attr.value);
         group.setAttribute("role", "radiogroup");
-        group.setAttribute("aria-label", "Choose one");
+        group.setAttribute(
+          "aria-label",
+          unit.querySelector("h3")?.textContent ?? "Choose one",
+        );
         group.append(...unit.childNodes);
         unit.replaceWith(group);
       }
@@ -243,6 +255,15 @@ export function ClientPageSheets({
         input.dataset.clientItem = item.id;
         input.className = "client-sheet-input";
         input.checked = selected(item);
+        const canClear = item.choice_group_id && !choiceRequired(item);
+        input.dataset.clearChoice =
+          canClear && selected(item) ? "true" : "false";
+        if (canClear)
+          input.setAttribute(
+            "aria-description",
+            "Activate the selected option again to clear it.",
+          );
+        else input.removeAttribute("aria-description");
         input.disabled =
           current.busy || (tableRow && el.dataset.layoutReady !== "true");
         input.setAttribute(
@@ -495,6 +516,7 @@ export function ClientPageSheets({
       document.fonts.removeEventListener("loadingdone", fontsLoaded);
       el.removeEventListener("client-controls-change", syncControls);
       shadow.removeEventListener("change", change);
+      shadow.removeEventListener("click", clear);
       shadow.removeEventListener("focusin", focus);
       document.removeEventListener("pointerdown", outside, true);
     };

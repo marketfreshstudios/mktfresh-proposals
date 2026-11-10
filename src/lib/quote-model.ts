@@ -9,13 +9,25 @@ import {
   type Item,
   type Block,
 } from "./model";
-import { isOiotKickoffLine, oiotItem, oiotPlan } from "./oiot";
+import {
+  isOiotKickoffLine,
+  oiotItem,
+  oiotPlan,
+  clauseApplies,
+  oiotPlanDetails,
+} from "./oiot";
+import {
+  applyQuoteVisibility,
+  choiceGroups,
+  choiceRequired,
+  selected,
+  validateQuoteConditions,
+  visibleQuote,
+} from "./quote-options";
+export { selected, visibleQuote } from "./quote-options";
 /** Clone the current model; malformed/flat quote inputs are rejected. */
 export function cloneQuote(quote: Quote): QuoteItem[] {
   return structuredClone(QuoteSchema.parse(quote));
-}
-export function selected(item: QuoteItem) {
-  return !item.optional || (item.selected ?? item.default_selected);
 }
 export function orderedItems(quote: Quote) {
   const items = cloneQuote(quote).sort((a, b) => a.order - b.order),
@@ -54,21 +66,36 @@ export function validateItems(quote: Quote, requireChoice = false) {
       "A schedule requires exactly one recurring sub-line",
     );
   }
-  const groups = new Set(items.map((i) => i.choice_group_id).filter(Boolean));
-  for (const id of groups) {
-    const group = items.filter((i) => i.choice_group_id === id);
+  validateQuoteConditions(items, requireChoice);
+  const visible = new Set(visibleQuote(items).map((item) => item.id));
+  for (const group of choiceGroups(items).values()) {
+    const required = choiceRequired(group[0]);
+    const defaults = group.filter((item) => item.default_selected);
+    const shown = group.filter((item) => visible.has(item.id));
     check(
-      group.filter((i) => i.default_selected).length <= 1,
+      group.every((item) => choiceRequired(item) === required),
+      "Use the same requirement for every option in a choice group",
+    );
+    check(
+      defaults.length <= 1,
       "Choose at most one default in each choice group",
     );
+    if (
+      requireChoice &&
+      group.some((item) => item.choice_group_required === true)
+    )
+      check(
+        defaults.length === 1,
+        "Choose a default for each required choice group",
+      );
     check(
-      group.filter(selected).length <= 1,
+      shown.filter(selected).length <= 1,
       "Choose only one item in each choice group",
     );
-    if (requireChoice)
+    if (requireChoice && required && shown.length)
       check(
-        group.filter(selected).length === 1,
-        "Choose one item in each choice group before signing",
+        shown.filter(selected).length === 1,
+        "Choose one item in each required choice group before signing",
       );
   }
   return items;
@@ -79,14 +106,15 @@ export function draftItems(quote: Quote): QuoteItem[] {
     selected: !i.optional || i.default_selected,
   }));
   validateItems(items);
-  return items;
+  return applyQuoteVisibility(items);
 }
 /** Provider DTOs only. Proposal storage and public/MCP inputs always use items. */
 export function quoteSublines(
   quote: Quote,
   onlySelected = false,
+  includeHidden = false,
 ): BillingLine[] {
-  return orderedItems(quote)
+  return orderedItems(includeHidden ? quote : visibleQuote(quote))
     .filter((i) => !onlySelected || selected(i))
     .flatMap((i) =>
       i.sublines.map((s) => ({
@@ -122,18 +150,25 @@ export function chooseItem(
   const items = cloneQuote(quote),
     item = items.find((i) => i.id === id);
   check(item?.optional, "Only optional items can be toggled");
+  check(
+    visibleQuote(quote).some((option) => option.id === id),
+    "This option is not currently available",
+    409,
+  );
   if (item.choice_group_id) {
     check(
-      value,
-      "Choose a replacement item instead of clearing a choice group",
+      value || !choiceRequired(item),
+      "Choose a replacement item instead of clearing a required choice group",
     );
+    if (!value && !selected(item)) return items;
     for (const other of items.filter(
       (i) => i.choice_group_id === item.choice_group_id,
     ))
-      other.selected = other.id === id;
+      other.selected = value && other.id === id;
   } else item.selected = value;
-  validateItems(items);
-  return items;
+  const updated = applyQuoteVisibility(items, quote);
+  validateItems(updated);
+  return updated;
 }
 export function catalogQuoteItem(
   item: Item,
@@ -170,17 +205,13 @@ export function catalogQuoteItem(
     default_selected: true,
     selected: true,
     choice_group_id: null,
+    ...(item.quote_show_when ? { show_when: item.quote_show_when } : {}),
     min_term_months: item.min_term_months,
     schedule: item.schedule,
     plan_terms: item.plan_terms,
   });
 }
 export function selectedContent(content: Block[], quote: Quote) {
-  const included = new Set(
-    cloneQuote(quote)
-      .filter(selected)
-      .map((i) => i.pricing_item_id),
-  );
   for (const b of content.filter((b) => b.type === "contract")) {
     check((b.clauses?.length ?? 0) <= 50, "Contract has too many clauses");
     check(
@@ -195,16 +226,14 @@ export function selectedContent(content: Block[], quote: Quote) {
           ...b,
           clauses: (b.clauses ?? [])
             .map((c) => ContractClauseSchema.parse(c))
-            .filter(
-              (c) => !c.show_when || included.has(c.show_when.pricing_item_id),
-            )
+            .filter((clause) => clauseApplies(clause, quote))
             .map((c) => ({ ...c, show_when: null })),
         }
       : structuredClone(b),
   );
 }
 export function quoteRange(quote: Quote) {
-  const items = cloneQuote(quote),
+  const items = cloneQuote(visibleQuote(quote)),
     min = { one_time_total: 0, monthly_total: 0, yearly_total: 0 },
     max = { ...min };
   const sums = (i: QuoteItem) => {
@@ -230,7 +259,8 @@ export function quoteRange(quote: Quote) {
       const v = items
         .filter((i) => i.choice_group_id === id)
         .map((i) => sums(i)[key]);
-      min[key] += Math.min(...v);
+      if (choiceRequired(items.find((i) => i.choice_group_id === id)!))
+        min[key] += Math.min(...v);
       max[key] += Math.max(...v);
     }
   }
@@ -244,7 +274,12 @@ export function prepareQuote(
 ): QuoteItem[] {
   return draftItems(quote).map((i) => {
     const item = catalog.find((c) => c.id === i.pricing_item_id);
-    const ownItOverTime = oiotItem(i, [], item ? [item] : []);
+    const carePlan =
+      i.show_when &&
+      quote.some((option) => option.oiot_build) &&
+      oiotPlanDetails(i, catalog);
+    const ownItOverTime =
+      i.oiot_build || (oiotItem(i, [], item ? [item] : []) && !i.show_when);
     const sublines = [...i.sublines];
     if (
       ai &&
@@ -270,6 +305,9 @@ export function prepareQuote(
     }
     return {
       ...i,
+      ...(carePlan
+        ? { plan_terms: { ...i.plan_terms, oiot_paid_step_down: true } }
+        : {}),
       ...(ai ? { ai_entered: true, price_review: undefined } : {}),
       sublines: sublines.map((s) => {
         // A designated kickoff is entered for this quote, even if an older

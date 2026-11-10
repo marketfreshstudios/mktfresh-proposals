@@ -20,7 +20,10 @@ export function starterClauseAudit(
       for (const clause of block.clauses ?? []) {
         if (clause.id !== "payment-plan" && !/^4\.4\b/.test(clause.heading))
           continue;
-        const target = clause.show_when?.pricing_item_id;
+        const target =
+          clause.show_when?.kind === "item_selected"
+            ? clause.show_when.pricing_item_id
+            : undefined;
         const item = catalog.find((i) => i.id === target);
         rows.push({
           kind,

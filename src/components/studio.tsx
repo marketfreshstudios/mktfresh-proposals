@@ -23,7 +23,7 @@ import { useConnectorRestore } from "./connector-restore";
 import { useStarterActions } from "./starter-library";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
-import { finalOiotClause } from "../lib/oiot";
+import { clauseCatalogItem, finalOiotClause, oiotPlan } from "../lib/oiot";
 import { PlainClauseText } from "./editor/plain-clause-text";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { ToolsPanel } from "./editor/tools-panel";
@@ -638,6 +638,12 @@ function CatalogItem({
                 ...i,
                 ...Object.fromEntries(f),
                 display_name: f.get("display_name") || undefined,
+                quote_show_when: f.get("quote_show_when_id")
+                  ? {
+                      kind: "catalog_item",
+                      id: f.get("quote_show_when_id"),
+                    }
+                  : undefined,
                 amount: Math.round(Number(f.get("price")) * 100),
                 active: f.get("active") === "on",
                 legacy: f.get("legacy") === "on",
@@ -810,6 +816,21 @@ function CatalogItem({
             />
             Legacy · hidden from new quotes
           </label>
+          <Field label="Show on quotes only when">
+            <Select
+              name="quote_show_when_id"
+              defaultValue={i?.quote_show_when?.id ?? ""}
+            >
+              <option value="">Always</option>
+              {sellableCatalogue(data.catalog)
+                .filter((product) => product.id !== i?.id)
+                .map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {itemDisplayName(product)} is chosen
+                  </option>
+                ))}
+            </Select>
+          </Field>
           <fieldset className="stack">
             <legend>Plan terms</legend>
             <Field label="Minimum commitment (months)">
@@ -3085,12 +3106,15 @@ function TemplatesStudioContent({
                                           {c.show_when && (
                                             <small>
                                               Shown when ·{" "}
-                                              {data.catalog.find(
-                                                (i) =>
-                                                  i.id ===
-                                                  c.show_when?.pricing_item_id,
-                                              )?.name ??
-                                                "Unavailable item"}{" "}
+                                              {c.show_when.kind ===
+                                              "oiot_plan_selected"
+                                                ? `${oiotPlan.name} care plan`
+                                                : (data.catalog.find(
+                                                    (i) =>
+                                                      i.id ===
+                                                      clauseCatalogItem(c),
+                                                  )?.name ??
+                                                  "Unavailable item")}{" "}
                                               selected
                                             </small>
                                           )}
@@ -3487,22 +3511,29 @@ function BlockPanel({
           {c.show_when && (
             <Field label="When the quote includes and the client selects">
               <Select
-                value={c.show_when.pricing_item_id}
+                value={clauseCatalogItem(c) ?? c.show_when.kind}
                 onChange={(e) =>
                   update({
-                    show_when: {
-                      kind: "item_selected",
-                      pricing_item_id: e.target.value,
-                    },
+                    show_when:
+                      e.target.value === "oiot_plan_selected"
+                        ? { kind: "oiot_plan_selected" }
+                        : {
+                            kind: "item_selected",
+                            pricing_item_id: e.target.value,
+                          },
                   })
                 }
               >
                 <option value="">Choose an item</option>
+                {finalOiotClause(c) && (
+                  <option value="oiot_plan_selected">
+                    An {oiotPlan.name} care plan
+                  </option>
+                )}
                 {data.catalog
                   .filter(
                     (i) =>
-                      (i.active && !i.legacy) ||
-                      i.id === c.show_when?.pricing_item_id,
+                      (i.active && !i.legacy) || i.id === clauseCatalogItem(c),
                   )
                   .toSorted((a, b) =>
                     itemDisplayName(a).localeCompare(itemDisplayName(b)),
