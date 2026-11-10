@@ -2111,6 +2111,7 @@ async function handleRoute(
             : {
                 ...stored,
                 ...input,
+                pagination: input.pagination,
                 content: reviewBlocks(input.content as Block[], false),
               };
         }

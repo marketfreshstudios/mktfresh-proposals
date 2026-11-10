@@ -114,7 +114,8 @@ export function paginateClientDocument(
   fitStoredImages(root);
   sizeListMarkers(root);
   if (plan) applyPagePlan(root, plan);
-  else paginatePrintDocument(root);
+  else
+    paginatePrintDocument(root, Boolean(p.preview_can_send && p.header_footer));
   // The unplanned PDF paginator emits atoms rather than source wrappers.
   for (const atom of root.querySelectorAll<HTMLElement>("[data-source-block]"))
     if (!atom.dataset.printBlock)

@@ -318,7 +318,10 @@ test("inline band image uploads, cursor insertion, workspace sources and deletio
     await expect
       .poll(() =>
         bandImages(f.active().header_footer!.shared[kind]).some(
-          (i) => i.slot === 1 && i.node.attrs?.src === "workspace-logo",
+          (i) =>
+            i.slot === 1 &&
+            i.node.attrs?.src ===
+              (kind === "header" ? "workspace-brand" : "workspace-logo"),
         ),
       )
       .toBe(true);

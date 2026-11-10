@@ -269,7 +269,10 @@ export function collectPrintSheets(sheets: HTMLElement[]) {
 /** Runs in Chromium for both the sealing job and the read-only preview/layout endpoint.
  * Splits oversize text with DOM Ranges, preserving markup. Content is never evaluated.
  */
-export function paginatePrintDocument(root: HTMLElement): {
+export function paginatePrintDocument(
+  root: HTMLElement,
+  respectContentArea = false,
+): {
   pages: number;
   boundaries: PageBoundary[];
 } {
@@ -278,7 +281,8 @@ export function paginatePrintDocument(root: HTMLElement): {
   const sources = Array.from(root.children) as HTMLElement[];
   const flow =
     getComputedStyle(root).getPropertyValue("--document-flow").trim() === "max";
-  const checkContentEdge = root.dataset.finalOiot === "true";
+  const checkContentEdge =
+    respectContentArea || root.dataset.finalOiot === "true";
   root.replaceChildren();
   let page!: HTMLElement,
     count = 0,

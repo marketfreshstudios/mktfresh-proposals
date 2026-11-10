@@ -19,6 +19,8 @@ import { automaticRemindersEnabled, isAutomaticReminder } from "./delivery";
 import {
   proposalBands,
   HeaderFooterSettingsSchema,
+  TemplateBandsSchema,
+  upgradeLegacyHeader,
   type HeaderFooterSettings,
 } from "./page-bands";
 import {
@@ -349,7 +351,10 @@ export class ProposalService {
         actor.actor.startsWith("ai:"),
       ),
 
-      header_footer: proposalBands(template.header_footer),
+      header_footer: proposalBands(
+        template.header_footer &&
+          TemplateBandsSchema.parse(template.header_footer),
+      ),
       template_style_overrides: structuredClone(template.style_overrides ?? {}),
       cover: loadedCover(template.cover),
       creation_warnings: defaults.warnings,
@@ -639,7 +644,14 @@ export class ProposalService {
           "Only staff can edit headers and footers",
           403,
         );
-        p.header_footer = HeaderFooterSettingsSchema.parse(input.header_footer);
+        const parsed = HeaderFooterSettingsSchema.parse(input.header_footer);
+        p.header_footer = {
+          ...parsed,
+          shared: {
+            ...parsed.shared,
+            header: upgradeLegacyHeader(parsed.shared.header),
+          },
+        };
       }
       if (input.cover !== undefined) {
         check(

@@ -210,6 +210,54 @@ export function bandLineSpace(
   // padding with the shared divider off. Keep that historical render unchanged.
   return s.divider === false ? 0 : s.spaceByLine;
 }
+/** Convert only the retired first-slot default; preserve authored band content. */
+export function upgradeLegacyHeader(header: Band): Band {
+  const old = header.slots[0];
+  const children = old?.content[0]?.content;
+  const image = children?.[0];
+  const name = children?.[1];
+  if (
+    old?.content.length !== 1 ||
+    old.content[0].type !== "paragraph" ||
+    old.content[0].text !== undefined ||
+    old.content[0].attrs ||
+    old.content[0].marks ||
+    children?.length !== 2 ||
+    image?.type !== "image" ||
+    image.attrs?.src !== "workspace-logo" ||
+    image.attrs.alt !== "Workspace logo" ||
+    image.attrs.height !== 18 ||
+    Object.keys(image.attrs).length !== 3 ||
+    image.marks ||
+    image.content ||
+    image.text !== undefined ||
+    name?.type !== "text" ||
+    name.text !== "{{workspace.name}}" ||
+    name.marks ||
+    name.content ||
+    name.attrs
+  )
+    return header;
+  return {
+    ...header,
+    slots: [
+      {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              { ...image, attrs: { ...image.attrs, src: "workspace-brand" } },
+              { type: "text", text: "" },
+            ],
+          },
+        ],
+      },
+      ...header.slots.slice(1),
+    ],
+  };
+}
+
 const switches = {
   headerSpacing: BandSpacingSchema.optional(),
   footerSpacing: BandSpacingSchema.optional(),
@@ -231,6 +279,10 @@ export const TemplateBandsSchema = z
   .transform((value) => ({
     ...value,
     bandHeightIn: undefined,
+    shared: {
+      ...value.shared,
+      header: upgradeLegacyHeader(value.shared.header),
+    },
     headerSpacing: editableBandSpacing(value, "header"),
     footerSpacing: editableBandSpacing(value, "footer"),
   }));
