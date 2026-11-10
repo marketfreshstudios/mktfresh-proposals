@@ -6,6 +6,7 @@ import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
+import { useStaffDates } from "./staff-account-context";
 import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
 import { chromeIcons } from "./staff-icons";
 import { Sheet } from "./foundation";
@@ -37,6 +38,7 @@ export function TeamStudio({
   embedded?: boolean;
   run: (fn: () => Promise<unknown>, success?: string) => Promise<void>;
 }) {
+  const { date: staffDate, personal } = useStaffDates(data.settings?.timezone);
   const [people, setPeople] = useState<TeamPerson[]>([]),
     [recent, setRecent] = useState<TeamAudit[]>([]),
     [dialog, setDialog] = useState<Dialog | null>(null),
@@ -192,7 +194,7 @@ export function TeamStudio({
                 ) : person.status === "invited" && person.invited_at ? (
                   <>
                     <span
-                      title={`Invited ${date(person.invited_at)} · Not accepted yet`}
+                      title={`Invited ${personal ? staffDate(person.invited_at) : date(person.invited_at)} · Not accepted yet`}
                     >
                       Invite sent
                       <span className="sr-only"> · Not accepted yet</span>
@@ -207,10 +209,18 @@ export function TeamStudio({
               <span className="team-mobile-label">Last sign-in</span>
               {person.last_sign_in_at ? (
                 <time dateTime={person.last_sign_in_at}>
-                  {new Date(person.last_sign_in_at).toLocaleString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+                  {personal
+                    ? staffDate(person.last_sign_in_at, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : new Date(person.last_sign_in_at).toLocaleString(
+                        undefined,
+                        {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        },
+                      )}
                 </time>
               ) : (
                 "Never"

@@ -25,6 +25,7 @@ import { api, post, Button, Empty, Banner } from "./ui";
 import { confirmDialog } from "./dialog-actions";
 import { withCount } from "../lib/count-label";
 import { TemplateWarnings } from "./template-warnings";
+import { useStaffDates } from "./staff-account-context";
 const blockType = (b: Block) =>
   b.type === "contract"
     ? "Contract clause"
@@ -89,6 +90,7 @@ export function StudioTemplateList({
   blocks?: boolean;
 }) {
   const savedTemplates = data?.templates;
+  const { date: staffDate, personal } = useStaffDates(data?.settings?.timezone);
   const [refreshed, setRefreshed] = useState<{
     source: typeof savedTemplates;
     templates: Template[];
@@ -118,7 +120,7 @@ export function StudioTemplateList({
   const lastEdit = (id: string) => {
     const e = edited(id);
     return e
-      ? `Edited ${studioDate(e.created_at)} · ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
+      ? `Edited ${personal ? staffDate(e.created_at) : studioDate(e.created_at)} · ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
       : "Default";
   };
   const library = data?.library ?? [];

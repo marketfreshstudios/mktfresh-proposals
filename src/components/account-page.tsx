@@ -58,11 +58,7 @@ export function AccountPage({
         <p>Only you see these settings. Workspace settings are in Studio.</p>
       </header>
       <div className="account-page-layout">
-        <nav
-          aria-label="Account sections"
-          className="account-section-nav"
-          data-tab-style="underline"
-        >
+        <nav aria-label="Account sections" className="account-section-nav">
           {accountSections.map(([value, text]) => (
             <a
               key={value}
@@ -96,6 +92,33 @@ export function AccountPage({
               {accountSections.slice(1).map(([value, text]) => (
                 <a href={`/account/${value}`} key={value}>
                   <strong>{text}</strong>
+                  {account && value === "notifications" && (
+                    <small>
+                      {
+                        accountNotifications.filter(
+                          ({ key }) =>
+                            account.notifications[key] !== false &&
+                            (key !== "staff_viewed" ||
+                              settings?.engagement_notifications?.email ===
+                                true),
+                        ).length
+                      }{" "}
+                      on
+                    </small>
+                  )}
+                  {account && value === "preferences" && (
+                    <small>
+                      {account.theme
+                        ? account.theme[0].toUpperCase() +
+                          account.theme.slice(1)
+                        : "System"}{" "}
+                      ·{" "}
+                      {(account.timezone ?? settings?.timezone ?? "UTC")
+                        .split("/")
+                        .at(-1)
+                        ?.replaceAll("_", " ")}
+                    </small>
+                  )}
                   <ChevronRight size={16} aria-hidden="true" />
                 </a>
               ))}
@@ -116,7 +139,10 @@ export function AccountPage({
               Reload to try again.
             </Banner>
           ) : section === "" ? (
-            <Profile email={data.user.staff_email ?? ""} />
+            <Profile
+              email={data.user.staff_email ?? ""}
+              workspaceReplyTo={settings?.email_reply_to === "workspace"}
+            />
           ) : section === "notifications" ? (
             <Notifications
               viewedEnabled={settings?.engagement_notifications?.email === true}
@@ -156,7 +182,13 @@ export function AccountAvatar({
   );
 }
 
-function Profile({ email }: { email: string }) {
+function Profile({
+  email,
+  workspaceReplyTo,
+}: {
+  email: string;
+  workspaceReplyTo: boolean;
+}) {
   const { account, accept, saved } = useStaffAccount()!;
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -263,7 +295,10 @@ function Profile({ email }: { email: string }) {
         <div>
           <strong>Email</strong>
           <p>
-            {email} · used to sign in and as the reply-to on proposals you send
+            {email} ·{" "}
+            {workspaceReplyTo
+              ? "used to sign in. Proposal replies go to the workspace email."
+              : "used to sign in and as the reply-to on proposals you send"}
           </p>
         </div>
       </div>

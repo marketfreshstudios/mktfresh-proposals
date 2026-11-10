@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import type { Data } from "./staff-app";
 import { api, Button, Banner, date } from "./ui";
 import { Skeleton } from "./foundation";
+import { useStaffDates } from "./staff-account-context";
 import { EmailEditor } from "./email-editor";
 
 import {
@@ -37,6 +38,7 @@ function previewHtml(html: string, dark?: boolean) {
     );
 }
 export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
+  const { date: staffDate, personal } = useStaffDates(data?.settings?.timezone);
   const [staffTab, setStaffTab] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[] | null>(null),
     [error, setError] = useState("");
@@ -134,7 +136,7 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
                       {!editableEmail(t)
                         ? "Read-only"
                         : t.updated_at
-                          ? `Edited ${studioDate(t.updated_at)} · ${data?.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
+                          ? `Edited ${personal ? staffDate(t.updated_at) : studioDate(t.updated_at)} · ${data?.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
                           : "Default"}
                     </span>
                     <StaffTableOpen
@@ -162,6 +164,7 @@ export function ProposalEmailLog({
   id: string;
   revision: number;
 }) {
+  const { date: staffDate } = useStaffDates();
   const [logs, setLogs] = useState<EmailLog[]>([]),
     [error, setError] = useState("");
   useEffect(() => {
@@ -191,7 +194,7 @@ export function ProposalEmailLog({
           ? logs.map((log) => (
               <details key={log.id} className="staff-table-row">
                 <Disclosure>
-                  {log.snapshot.subject} · {date(log.sent_at)}
+                  {log.snapshot.subject} · {staffDate(log.sent_at)}
                 </Disclosure>
                 <dl>
                   <dt>To</dt>
@@ -199,7 +202,12 @@ export function ProposalEmailLog({
                   <dt>From</dt>
                   <dd>{log.snapshot.from}</dd>
                   <dt>Sent</dt>
-                  <dd>{new Date(log.sent_at).toLocaleString()}</dd>
+                  <dd>
+                    {staffDate(log.sent_at, {
+                      dateStyle: "medium",
+                      timeStyle: "medium",
+                    })}
+                  </dd>
                 </dl>
                 <iframe
                   className="email-log-preview"

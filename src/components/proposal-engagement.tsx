@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api, Button, Disclosure } from "./ui";
+import { useStaffDates } from "./staff-account-context";
 import type { engagementReport } from "../lib/engagement-server";
 import {
   engagementAgo,
@@ -9,13 +10,6 @@ import {
 } from "../lib/engagement";
 
 type Report = Awaited<ReturnType<typeof engagementReport>>;
-function exact(value: string, timezone: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "long",
-    timeZone: timezone,
-  }).format(new Date(value));
-}
 export function ProposalEngagement({
   id,
   timezone,
@@ -27,6 +21,9 @@ export function ProposalEngagement({
   notify?: boolean;
   knownRecipient?: boolean;
 }) {
+  const { date } = useStaffDates(timezone);
+  const exact = (value: string) =>
+    date(value, { dateStyle: "medium", timeStyle: "long" });
   const [report, setReport] = useState<Report | null>(null),
     [error, setError] = useState("");
   const load = async () => {
@@ -137,11 +134,11 @@ export function ProposalEngagement({
               Last viewed{" "}
               <time
                 dateTime={report.last_viewed_at}
-                title={exact(report.last_viewed_at, timezone)}
+                title={exact(report.last_viewed_at)}
               >
                 {engagementAgo(report.last_viewed_at)}
               </time>
-              <small>{exact(report.last_viewed_at, timezone)}</small>
+              <small>{exact(report.last_viewed_at)}</small>
             </p>
           )}
           <h3>Time by section</h3>
@@ -174,13 +171,11 @@ export function ProposalEngagement({
                     {engagementDuration(s.active_ms)}
                   </span>
                 </div>
-                <time dateTime={s.started_at}>
-                  {exact(s.started_at, timezone)}
-                </time>
+                <time dateTime={s.started_at}>{exact(s.started_at)}</time>
                 <small>
                   {s.ended_at
-                    ? `Ended ${exact(s.ended_at, timezone)}`
-                    : `Last activity ${exact(s.last_at, timezone)}`}
+                    ? `Ended ${exact(s.ended_at)}`
+                    : `Last activity ${exact(s.last_at)}`}
                 </small>
                 {s.actions.length > 0 && (
                   <details>

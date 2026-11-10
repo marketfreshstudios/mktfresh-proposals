@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   themes,
+  formatStaffDate,
   type StaffAccount,
   type StaffAccountPatch,
   type StaffTheme,
@@ -155,27 +156,10 @@ export function useStaffDates(defaultZone?: string) {
     },
   ) {
     if (!value) return "Not yet";
-    const day = new Date(value);
-    if (account?.date_format === "iso") {
-      const parts = new Intl.DateTimeFormat("en", {
-        timeZone: timezone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).formatToParts(day);
-      return ["year", "month", "day"]
-        .map((part) => parts.find((p) => p.type === part)?.value)
-        .join("-");
-    }
-    return new Intl.DateTimeFormat(undefined, {
-      ...(account?.date_format
-        ? {
-            dateStyle:
-              account.date_format === "numeric" ? "short" : account.date_format,
-          }
-        : fallback),
-      timeZone: timezone,
-    }).format(day);
+    return formatStaffDate(value, account, {
+      ...fallback,
+      timeZone: defaultZone,
+    });
   }
   function time(
     value: string | Date,
@@ -184,10 +168,15 @@ export function useStaffDates(defaultZone?: string) {
       minute: "2-digit",
     },
   ) {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat("en-US", {
       ...options,
       timeZone: timezone,
     }).format(new Date(value));
   }
-  return { timezone, date, time };
+  return {
+    timezone,
+    date,
+    time,
+    personal: Boolean(account?.timezone || account?.date_format),
+  };
 }

@@ -488,7 +488,10 @@ async function handleRoute(
           contact: {
             name: p.sender?.display_name ?? settings?.owner ?? "",
             email: p.sender?.email ?? settings?.email ?? "",
-            phone: p.sender?.phone,
+            phone:
+              expired || p.status === "declined" || p.archived_at
+                ? p.sender?.phone
+                : undefined,
             job_title: p.sender?.job_title,
             photo_url: p.sender?.photo_path
               ? `/api/public/${token}/brand/sender-photo`

@@ -126,3 +126,45 @@ export function staffInitials(name: string) {
     .map((part) => part[0].toUpperCase())
     .join("");
 }
+
+export function formatStaffDate(
+  value: string | Date,
+  account: Pick<StaffAccount, "timezone" | "date_format"> | undefined,
+  fallback: Intl.DateTimeFormatOptions,
+) {
+  const timeZone = account?.timezone ?? fallback.timeZone;
+  const instant = new Date(
+    typeof value === "string" && value.length === 10
+      ? value + "T12:00:00Z"
+      : value,
+  );
+  if (account?.date_format === "iso") {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(instant);
+    const day = ["year", "month", "day"]
+      .map((part) => parts.find((item) => item.type === part)?.value)
+      .join("-");
+    return fallback.timeStyle
+      ? day +
+          ", " +
+          new Intl.DateTimeFormat("en-US", {
+            timeZone,
+            timeStyle: fallback.timeStyle,
+          }).format(instant)
+      : day;
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    ...(account?.date_format
+      ? {
+          dateStyle:
+            account.date_format === "numeric" ? "short" : account.date_format,
+          timeStyle: fallback.timeStyle,
+        }
+      : fallback),
+    timeZone,
+  }).format(instant);
+}

@@ -2,7 +2,7 @@ import { sha256 } from "./content";
 import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { AppError, check, type Actor, type Proposal } from "./model";
 import { proposalOwnerId } from "./proposal-owner";
-import { SupabaseRepository, supabase, type Repository } from "./repository";
+import { SupabaseRepository, type Repository } from "./repository";
 import type { Storage } from "./storage";
 import {
   staffName,
@@ -25,7 +25,7 @@ type AccountActor = Actor & {
 
 async function savedAccount(repo: Repository, id: string) {
   if (repo instanceof SupabaseRepository) {
-    const { data, error } = await supabase()
+    const { data, error } = await repo.db
       .from("staff_accounts")
       .select("data")
       .eq("workspace_id", repo.workspaceId)
@@ -125,7 +125,7 @@ export async function saveStaffAccount(
       : null;
     if (changesName) check(after.first_name, "Enter your first name.");
     if (repo instanceof SupabaseRepository) {
-      const { data, error } = await supabase().rpc("save_staff_account", {
+      const { data, error } = await repo.db.rpc("save_staff_account", {
         target_workspace: repo.workspaceId,
         target_user: id,
         expected: before,
@@ -242,7 +242,6 @@ export async function saveAccountSignature(
   image: string,
 ) {
   const id = accountId(repo, actor);
-  await validateSignatureImage(image);
   async function save() {
     const settings = (
       await repo.entities<WorkspaceSettings>("workspace_settings")
@@ -258,8 +257,13 @@ export async function saveAccountSignature(
       "The company signature changed. Reload and try again.",
       409,
     );
+    try {
+      await validateSignatureImage(image);
+    } catch (error) {
+      throw new AppError(400, (error as Error).message);
+    }
     if (repo instanceof SupabaseRepository) {
-      const { data, error } = await supabase().rpc("save_account_signature", {
+      const { data, error } = await repo.db.rpc("save_account_signature", {
         target_workspace: repo.workspaceId,
         target_user: id,
         expected: signatory,

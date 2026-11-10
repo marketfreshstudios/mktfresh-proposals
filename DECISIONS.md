@@ -994,3 +994,17 @@ New workspaces get three editable Sample templates with no preset prices: Websit
 Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available. Each loading area has a named status. The Templates page keeps one New template action in the header, including when the list is empty.
 
 Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.
+
+### Redesign 22 A · Your account (Nov 9, 2026)
+
+The account menu links to Your account and Notifications. The desktop account has section navigation, tablet uses underline tabs, and the phone index links to each subpage. A phone profile opens at `/account?view=profile`. Each staff account has one workspace, so Switch workspace is omitted. Profile email and the sign-in email on Security are read-only until the security PR. Sign-in links remain out of scope.
+
+First and last name save to the existing staff display name in the same transaction as the private profile record. Photos are validated as square JPG or PNG at least 256 × 256, then resized and re-encoded into the existing private image store. A staff member can update only their own profile. Staff can see profile avatars in the same workspace's Activity log. Sending snapshots the profile used for that proposal's email and client contact card. A sender photo can be requested through its proposal link; the public response exposes no storage path. The profile phone is used for the dead-end contact card.
+
+Notifications lists first view, client question, decline, completion, and billing setup emails. There is no In app column or new notification inbox. Expiry and Claude draft emails are not sent today and have no switch. Individual preferences filter existing email recipients. First-view email and question admin recipients still follow their workspace rules, and the ownership switch can only narrow delivery. Required countersign and billing alerts and signed-copy delivery keep their existing rules.
+
+The designated company signatory can update the image in the existing Workspace signatory setting, even when their role is Staff. The server checks the designation and current signatory version. The workspace name, signing authority, consent and other signatory settings stay outside this endpoint. Existing signatures and sealed PDFs keep their original image.
+
+Theme is shared by the account page and menu, and System follows the device. Existing browser theme is the fallback until a personal theme is set. A personal time zone and date format change staff display only. Proposal validity, client-facing dates, PDFs, and report calculations retain the workspace time zone.
+
+Apply the service-only staff account migration before deployment. Row-level security and explicit grants keep the account table and write functions unavailable to the public and authenticated database roles.

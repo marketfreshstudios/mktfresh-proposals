@@ -56,23 +56,29 @@ export function StudioAccount({
   const roleName =
     role === "owner" ? "Super admin" : role === "member" ? "Staff" : undefined;
   const avatar = (
-    <span className="avatar account-avatar" aria-hidden="true">
-      {photo ? <img src={photo} alt="" /> : staffInitials(name)}
+    <span
+      className="avatar account-avatar"
+      data-initials={photo ? undefined : staffInitials(name)}
+      aria-hidden="true"
+    >
+      {photo && <img src={photo} alt="" />}
     </span>
   );
   return (
     <div className="studio-account">
       <button
         className="studio-account-trigger"
-        aria-label={`${label ?? name} · Account menu`}
         aria-haspopup="dialog"
         aria-expanded={!!anchor}
         onClick={(e) => setAnchor(e.currentTarget)}
       >
         {mark ?? avatar}
         <span className="account-trigger-label">
-          <strong>{label ?? name}</strong>
+          <strong>{label ?? name}</strong>{" "}
           {!label && roleName && <small>{roleName}</small>}
+          <span className="sr-only">
+            {label === "Account" ? " menu" : " Account menu"}
+          </span>
         </span>
       </button>
       {anchor && (
