@@ -24,7 +24,9 @@ export const ClientSchema = z.object({
   qbo_customer_id: z.string().nullable().default(null),
   stripe_customer_id: z.string().nullable().default(null),
 });
-export type Client = z.infer<typeof ClientSchema>;
+export type Client = z.infer<typeof ClientSchema> & {
+  archived_at?: string | null;
+};
 const cents = z.number().int().min(0).max(100000000);
 export const ScheduleSchema = z.object({
   after_paid_invoices: z.number().int().positive(),
