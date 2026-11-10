@@ -1,6 +1,8 @@
 "use client";
 import { PanelHeading } from "./editor/panel-heading";
-import { useState } from "react";
+import { PanelCard } from "./editor/tools-panel";
+import { useLayoutEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { Select, Switch } from "./form-controls";
 import { oiotItem, oiotKickoff, oiotPlan, oiotPlanDetails } from "../lib/oiot";
 import type { Block, QuoteItem, Item } from "../lib/model";
@@ -94,6 +96,36 @@ export function QuoteItemsPanel({
   const money = useMoney(),
     range = quoteRange(totalsItems),
     setItems = onChange;
+  const panel = useRef<HTMLDivElement>(null);
+  const focusSubline = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (!focusSubline.current) return;
+    const label = panel.current?.querySelector<HTMLTextAreaElement>(
+      `[data-subline-label="${focusSubline.current}"]`,
+    );
+    if (label) {
+      label.focus();
+      focusSubline.current = null;
+    }
+  }, [items, expandedItem]);
+  function addSubline(item: QuoteItem) {
+    const id = uid();
+    focusSubline.current = id;
+    updateItem(item.id, {
+      sublines: [
+        ...item.sublines,
+        {
+          id,
+          amount: 0,
+          list_amount: null,
+          interval: "one_time",
+          qty: 1,
+          stripe_lookup_key: null,
+          qbo_item_ref: null,
+        },
+      ],
+    });
+  }
   function updateItem(id: string, update: Partial<QuoteItem>) {
     setItems(items.map((i) => (i.id === id ? { ...i, ...update } : i)));
   }
@@ -248,12 +280,12 @@ export function QuoteItemsPanel({
             ],
       });
     const tag = i.choice_group_id
-      ? `Choose one${i.default_selected ? " · default" : ""}`
-      : i.source === "custom" && !i.optional
-        ? "Required · custom line"
-        : i.optional
-          ? `Optional · ${i.default_selected ? "ticked for client" : "not ticked"}`
-          : "Required";
+      ? i.default_selected
+        ? "Default"
+        : ""
+      : i.optional
+        ? `Optional${i.default_selected ? " | Default" : ""}`
+        : "";
     const amount = i.sublines
       .map(
         (s) =>
@@ -277,8 +309,9 @@ export function QuoteItemsPanel({
         ));
     return (
       <section
-        className="quote-item quote-row"
+        className="editor-panel-card quote-item quote-row"
         data-expanded={expanded}
+        data-open={expanded}
         data-details={itemDetails === i.id}
         data-default={i.default_selected}
         data-optional={i.optional}
@@ -303,9 +336,7 @@ export function QuoteItemsPanel({
         >
           <span className="quote-row-caption">
             <strong>{i.name || "Untitled item"}</strong>
-            <small data-custom={i.source === "custom" && !i.optional}>
-              {tag}
-            </small>
+            {tag && <small>{tag}</small>}
           </span>
           {aiPrice && (
             <span
@@ -382,18 +413,28 @@ export function QuoteItemsPanel({
                 </Field>
               </div>
             )}
+            <div className="quote-price-heading">
+              <span>
+                Price
+                {i.sublines.length > 1
+                  ? ` | ${i.sublines.length} sub-lines`
+                  : ""}
+              </span>
+            </div>
             {i.sublines.map((s) => (
               <div className="subline" key={s.id}>
-                <div className="subline-grid">
+                <div
+                  className="subline-grid"
+                  data-wide-amount={s.amount >= 1000000}
+                >
                   <div className="subline-label">
-                    {i.sublines.length === 1 ? (
-                      <span>Shown as the item price</span>
-                    ) : (
+                    {i.sublines.length > 1 && (
                       <div
                         className="subline-label-edit"
                         data-label={s.label || sublineLabel(s)}
                       >
                         <textarea
+                          data-subline-label={s.id}
                           rows={1}
                           aria-label={`Sub-line label for ${i.name}`}
                           placeholder={sublineLabel({ ...s, label: "" })}
@@ -426,13 +467,13 @@ export function QuoteItemsPanel({
                           updateItem(i.id, { sublines: removeSubline(i, s.id) })
                         }
                       >
-                        ×
+                        <X size={16} aria-hidden="true" />
                       </button>
                     )}
                   </div>
                   {s.id !== kickoff?.id && (
                     <div className="subline-amount">
-                      <Field label={`Amount · ${currency}`}>
+                      <Field label={`Amount | ${currency}`}>
                         <span className="currency-input">
                           <span aria-hidden="true">
                             {new Intl.NumberFormat("en-US", {
@@ -593,23 +634,13 @@ export function QuoteItemsPanel({
                 </details>
               </div>
             ))}
-            {(i.schedule || i.min_term_months) && (
-              <p className="quote-plan-note">
-                {i.schedule && (
-                  <>
-                    {money(
-                      i.sublines.find((s) => s.interval !== "one_time")
-                        ?.amount ?? 0,
-                      currency,
-                    )}
-                    /mo for {i.schedule.after_paid_invoices} paid invoices, then{" "}
-                    {money(i.schedule.then.amount, currency)}/mo.{" "}
-                  </>
-                )}
-                {i.min_term_months && (
-                  <>{i.min_term_months}-month minimum commitment.</>
-                )}
-              </p>
+            {!i.oiot_build && (
+              <Button
+                className="quote-add-subline"
+                onClick={() => addSubline(i)}
+              >
+                Add sub-line
+              </Button>
             )}
             {ambiguousSublines(i) && (
               <p className="subline-warning">
@@ -661,9 +692,7 @@ export function QuoteItemsPanel({
                     checked={i.default_selected}
                     onChange={(e) => defaultItem(i, e.target.checked)}
                   />
-                  {i.choice_group_id
-                    ? "Selected for client"
-                    : "Ticked for client"}
+                  Make default selection
                 </label>
               )}
             </div>
@@ -729,30 +758,6 @@ export function QuoteItemsPanel({
             </details>
 
             <footer className="quote-item-footer">
-              {" "}
-              {!i.oiot_build && (
-                <Button
-                  variant="ghost"
-                  onClick={() =>
-                    updateItem(i.id, {
-                      sublines: [
-                        ...i.sublines,
-                        {
-                          id: uid(),
-                          amount: 0,
-                          list_amount: null,
-                          interval: "one_time",
-                          qty: 1,
-                          stripe_lookup_key: null,
-                          qbo_item_ref: null,
-                        },
-                      ],
-                    })
-                  }
-                >
-                  Sub-line
-                </Button>
-              )}
               <button
                 type="button"
                 aria-expanded={itemDetails === i.id}
@@ -774,6 +779,7 @@ export function QuoteItemsPanel({
               </Button>
               <Button
                 aria-label="Done editing quote line"
+                className="quote-done studio-primary"
                 onClick={(event) => {
                   event.currentTarget
                     .closest(".quote-row")
@@ -796,11 +802,11 @@ export function QuoteItemsPanel({
     unitItems = (id: string) =>
       items.filter((i) => (i.choice_group_id ?? i.id) === id);
   const quotePanel = (
-    <div className="quote-panel stack">
+    <div ref={panel} className="quote-panel stack">
       <PanelHeading className="sr-only">
         {proposalContent ? "Quote" : "Default quote"}
       </PanelHeading>
-      <p className="muted">
+      <p className="muted quote-intro">
         {intro ??
           "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}
       </p>
@@ -827,15 +833,20 @@ export function QuoteItemsPanel({
               }
             >
               {unitItems(id)[0].choice_group_id ? (
-                <div className="editor-choice-group">
-                  <header>
-                    <PanelHeading nested>Choose one</PanelHeading>
-                    {!unitItems(id).some((item) => item.oiot_build) && (
+                <PanelCard
+                  title="Choose one"
+                  nested
+                  collapsible={false}
+                  className="editor-choice-group"
+                  bodyClassName="quote-choice-well"
+                  actions={
+                    !unitItems(id).some((item) => item.oiot_build) ? (
                       <Button variant="ghost" onClick={() => unlink(id)}>
                         Unlink
                       </Button>
-                    )}
-                  </header>
+                    ) : null
+                  }
+                >
                   <details className="quote-group-settings">
                     <Disclosure>Choice group settings</Disclosure>
                     <label className="check">
@@ -885,34 +896,37 @@ export function QuoteItemsPanel({
                       </Sortable>
                     ))}
                   </Reorder>
-                </div>
+                </PanelCard>
               ) : (
                 itemCard(unitItems(id)[0])
               )}
             </Sortable>
           ))}
         </Reorder>
-        <div className="quote-add-row">
-          <Field label="Add product">
-            <Select
-              value=""
-              onChange={(e) => {
-                const item = catalog.find((i) => i.id === e.target.value);
-                if (item) addItem(item);
-              }}
-            >
-              <option value="">Add product</option>
-              {sellableCatalogue(catalog)
-                .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {itemDisplayName(c)}
-                  </option>
-                ))}
-            </Select>
-          </Field>
-          <Button onClick={() => addItem()}>Custom line</Button>
-        </div>
+        <details className="quote-add-picker">
+          <summary>Add from catalog or a custom line</summary>
+          <div className="quote-add-row">
+            <Field label="Add product">
+              <Select
+                value=""
+                onChange={(e) => {
+                  const item = catalog.find((i) => i.id === e.target.value);
+                  if (item) addItem(item);
+                }}
+              >
+                <option value="">Add product</option>
+                {sellableCatalogue(catalog)
+                  .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {itemDisplayName(c)}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Button onClick={() => addItem()}>Custom line</Button>
+          </div>
+        </details>
       </div>
       <footer>
         <p className="eyebrow">Client sees by default</p>
@@ -921,14 +935,14 @@ export function QuoteItemsPanel({
           {items.some((item) => item.show_when)
             ? "Across visible choices"
             : "Across all choices"}{" "}
-          · {money(range.min.one_time_total, currency)}–
-          {money(range.max.one_time_total, currency)} one-time ·{" "}
+          | {money(range.min.one_time_total, currency)}–
+          {money(range.max.one_time_total, currency)} one-time |{" "}
           {money(range.min.monthly_total, currency)}–
           {money(range.max.monthly_total, currency)}/mo
           {visibleQuote(totalsItems).some((i) =>
             i.sublines.some((s) => s.interval === "year"),
           ) &&
-            ` · ${money(range.min.yearly_total, currency)}–${money(range.max.yearly_total, currency)}/yr`}
+            ` | ${money(range.min.yearly_total, currency)}–${money(range.max.yearly_total, currency)}/yr`}
         </p>
       </footer>
     </div>

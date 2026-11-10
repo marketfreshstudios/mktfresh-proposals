@@ -1173,3 +1173,21 @@ evidence, which keep their original IDs, contents, and workspace. The deletion
 logs the client and removed draft IDs in workspace Activity. Existing
 append-only protections stay in force. Apply
 `20261110202400_client_archives_and_safe_delete.sql` before deploying the app.
+
+## Editor tools panel cards, R23 — November 10, 2026
+
+The owner approved R23's nested quote cards, open-card shadows, 15px card
+headings, and filled ink Done and Save to template actions as tools-panel
+exceptions to R19. The editor header keeps its clay Review & send action,
+except while Send is open. Readiness keeps the solid Lucide icons from #151,
+without circles. Save to template belongs in the second panel PR and copies
+shared header/footer content and global settings; unique-page overrides stay
+on the proposal.
+
+The first PR establishes the shared card component and the 380px tools panel,
+then applies the Quote presentation. Default metadata replaces the old row
+tags, Add sub-line sits beside the sub-lines and focuses the new label, and
+billing mapping remains reachable inside each sub-line. Generated Quote copy
+uses pipes as separators. The add-product and custom-line controls are in the
+single Add from catalog or a custom line disclosure. The document renderer,
+quote amounts, and save/history paths retain their existing contracts.

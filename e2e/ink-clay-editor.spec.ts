@@ -146,10 +146,10 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   expect(f.active().quote[1].sublines[0].interval).toBe("one_time");
 
   await toggles.first().press("Space");
-  await expect(rows.first().getByText("Selected for client")).toBeVisible();
+  await expect(rows.first().getByText("Make default selection")).toBeVisible();
   await rows
     .first()
-    .getByRole("radio", { name: "Selected for client" })
+    .getByRole("radio", { name: "Make default selection" })
     .check();
   await toggles.last().click();
   await expect(
@@ -157,7 +157,7 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   ).toHaveCount(1);
   await rows
     .last()
-    .getByRole("checkbox", { name: "Ticked for client" })
+    .getByRole("checkbox", { name: "Make default selection" })
     .check();
   await rows
     .last()

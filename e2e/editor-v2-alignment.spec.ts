@@ -177,7 +177,7 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   await expect(body.getByText("Description", { exact: true })).toHaveCount(0);
   await expect(
     body.getByText("Shown as the item price", { exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     body.getByRole("textbox", { name: /^Sub-line label for/ }),
   ).toHaveCount(0);
@@ -190,7 +190,7 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   await expect(
     body.getByRole("combobox", { name: "Link as alternative", exact: true }),
   ).toBeVisible();
-  await body.getByRole("button", { name: "Sub-line", exact: true }).click();
+  await body.getByRole("button", { name: "Add sub-line", exact: true }).click();
   await expect(
     body.getByRole("textbox", { name: /^Sub-line label for/ }),
   ).toHaveCount(2);
@@ -198,6 +198,9 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   await expect(
     body.getByRole("combobox", { name: "Custom family", exact: true }),
   ).toHaveCount(0);
+  await panel
+    .getByText("Add from catalog or a custom line", { exact: true })
+    .click();
   await panel.getByRole("button", { name: "Custom line", exact: true }).click();
   const custom = panel.locator(".quote-row-body");
   await expect(

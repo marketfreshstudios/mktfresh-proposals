@@ -1,5 +1,5 @@
 "use client";
-import { PanelDialogContext } from "./panel-heading";
+import { PanelDialogContext, PanelHeading } from "./panel-heading";
 import {
   Braces,
   CircleDollarSign,
@@ -9,7 +9,66 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { PanelChevron } from "../editor-header";
+import { Disclosure } from "../ui";
 import { useEffect, useRef, type ReactNode } from "react";
+/** Shared disclosure for the R23 tools cards. Callers retain their own state. */
+export function PanelCard({
+  title,
+  children,
+  count,
+  open,
+  onToggle,
+  className = "",
+  bodyClassName = "",
+  collapsible = true,
+  actions,
+  nested = false,
+}: {
+  title: ReactNode;
+  children: ReactNode;
+  count?: ReactNode;
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
+  className?: string;
+  bodyClassName?: string;
+  collapsible?: boolean;
+  actions?: ReactNode;
+  nested?: boolean;
+}) {
+  const heading = (
+    <PanelHeading nested={nested} className="panel-card-title">
+      {title}
+    </PanelHeading>
+  );
+  const body = (
+    <div className={`panel-card-body ${bodyClassName}`}>{children}</div>
+  );
+  if (!collapsible)
+    return (
+      <section className={`editor-panel-card ${className}`} data-open="true">
+        <header className="panel-card-header">
+          {heading}
+          {actions}
+        </header>
+        {body}
+      </section>
+    );
+  return (
+    <details
+      className={`editor-panel-card ${className}`}
+      open={open}
+      onToggle={(event) => onToggle?.(event.currentTarget.open)}
+    >
+      <Disclosure className="panel-card-header">
+        {heading}
+        {count !== undefined && (
+          <span className="panel-card-count">{count}</span>
+        )}
+      </Disclosure>
+      {body}
+    </details>
+  );
+}
 export const editorTabs = [
   "Quote",
   "Fields",
@@ -50,7 +109,7 @@ export function PanelRail<T extends string = EditorTab>({
           title="Open panel (⌘\\ / Ctrl+\\)"
           onClick={onToggle}
         >
-          <PanelChevron direction="left" double />
+          <PanelChevron direction="left" />
         </button>
       </div>
       {tabs.map((tab) => (
@@ -217,6 +276,17 @@ export function ToolsPanel<T extends string = EditorTab>({
             <span>Done</span>
           </button>
         )}
+        {mode !== "sheet" && (
+          <button
+            type="button"
+            className="sidebar-arrow panel-collapse"
+            aria-label="Collapse tools sidebar"
+            title="Collapse panel (⌘\\ / Ctrl+\\)"
+            onClick={close}
+          >
+            <PanelChevron direction="right" />
+          </button>
+        )}
       </div>
       <div
         role="tabpanel"
@@ -229,15 +299,6 @@ export function ToolsPanel<T extends string = EditorTab>({
           {actions}
         </PanelDialogContext>
       </div>
-      <button
-        type="button"
-        className="sidebar-arrow panel-collapse"
-        aria-label="Collapse tools sidebar"
-        title="Collapse panel (⌘\\ / Ctrl+\\)"
-        onClick={close}
-      >
-        <PanelChevron direction="right" double />
-      </button>
     </>
   );
   return (

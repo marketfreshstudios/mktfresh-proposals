@@ -33,7 +33,7 @@
     .segmented .btn,
     [role="tab"]
   ) {
-  border: var(--button-stroke, 1.5px) solid
+  border: var(--button-stroke, 1.5px) var(--button-border-style, solid)
     var(--button-fill, var(--button-outline, var(--border-strong)));
   border-radius: var(--button-radius, var(--radius-pill));
   background: var(--button-fill, transparent);

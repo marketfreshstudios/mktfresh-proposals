@@ -9083,3 +9083,398 @@ dialog.foundation-sheet.block-style-sheet {
 .block-background-controls {
   grid-column: 1 / -1;
 }
+
+/* R23 tools cards. These rules style editor chrome, outside the document. */
+.staff-foundation.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .editor-tools-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  min-height: 64px;
+  padding: 12px 8px 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.staff-foundation.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .editor-tools-header
+  .panel-collapse {
+  position: static;
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.staff-foundation.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .editor-tab-content {
+  padding: 14px;
+  background: var(--surface-preview);
+}
+.ink-clay .editor-panel-card {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+.ink-clay .editor-panel-card:is([open], [data-open="true"]) {
+  border-color: var(--panel-card-open-border);
+  box-shadow: var(--panel-card-shadow);
+}
+.ink-clay .editor-panel-card > .panel-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 50px;
+  margin: 0;
+  padding: 0 16px;
+  border-radius: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+.ink-clay .editor-panel-card > .panel-card-header::-webkit-details-marker {
+  display: none;
+}
+.ink-clay .editor-panel-card .panel-card-title {
+  flex: 1;
+  margin: 0;
+  font: 600 15px/20px var(--font-ui);
+  color: var(--ink-title);
+}
+.ink-clay .editor-panel-card > .panel-card-body {
+  padding: 14px 16px 16px;
+}
+.ink-clay .editor-panel-card[open] > .panel-card-header {
+  border-bottom: 1px solid var(--border);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.ink-clay .panel-card-count {
+  font: 500 13px/18px var(--font-ui);
+  color: var(--ink-muted);
+}
+.ink-clay .quote-panel,
+.ink-clay .quote-panel .quote-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ink-clay .quote-panel .quote-intro {
+  display: none;
+}
+.ink-clay .quote-panel .quote-row {
+  padding: 0;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+.ink-clay .quote-panel .quote-row[data-expanded="true"] {
+  border-color: var(--panel-card-open-border);
+  box-shadow: var(--panel-card-shadow);
+}
+.ink-clay .quote-panel .quote-row-toggle {
+  min-height: 52px;
+  padding: 8px 12px 8px 32px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--ink);
+}
+.ink-clay .quote-panel .quote-row[data-expanded="true"] > .quote-row-toggle {
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 13px 13px 0 0;
+}
+.ink-clay .quote-panel .quote-row-caption strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ink-clay .quote-panel .quote-row-caption small {
+  font: 500 11px/16px var(--font-ui);
+  color: var(--ink-muted);
+}
+.ink-clay .quote-panel .quote-row-amount {
+  font-variant-numeric: tabular-nums;
+}
+.ink-clay .quote-panel .quote-row-amount small {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.ink-clay .quote-panel .quote-row-body {
+  gap: 10px;
+  padding: 12px;
+}
+.ink-clay .quote-panel .editor-choice-group {
+  padding: 0;
+  overflow: visible;
+  border: 1px solid var(--panel-card-open-border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.ink-clay .quote-panel .editor-choice-group > header {
+  min-height: 50px;
+  padding: 0 16px 0 32px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-title);
+}
+.ink-clay .quote-panel .editor-choice-group > header :is(h2, h3, h4) {
+  margin: 0;
+  color: var(--ink-title);
+  font: 600 15px/20px var(--font-ui);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.ink-clay .quote-panel .editor-choice-group > header .btn {
+  --button-outline: transparent;
+  --button-wash: transparent;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ink-clay .quote-panel .quote-choice-well {
+  padding: 12px;
+  background: var(--surface-sunken);
+  border-radius: 0 0 13px 13px;
+}
+.ink-clay .quote-panel .quote-choice-well > .quote-sortable + .quote-sortable {
+  margin-top: 8px;
+}
+.ink-clay .quote-panel .quote-choice-well .quote-row {
+  border-radius: 10px;
+  box-shadow: var(--panel-option-shadow);
+}
+.ink-clay .quote-panel .quote-choice-well .quote-row-toggle {
+  border-radius: 9px;
+}
+.ink-clay
+  .quote-panel
+  .quote-choice-well
+  .quote-row[data-expanded="true"]
+  > .quote-row-toggle {
+  border-radius: 9px 9px 0 0;
+}
+.ink-clay .quote-panel .quote-price-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-muted);
+  font: 700 11px/16px var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ink-clay .quote-panel .quote-price-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.ink-clay .quote-panel .quote-row-body .subline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-preview);
+}
+.ink-clay .quote-panel .quote-row-body .subline-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px 116px;
+  gap: 6px;
+  align-items: end;
+}
+.ink-clay .quote-panel .subline-label {
+  grid-column: 1 / -1;
+}
+.ink-clay .quote-panel .subline-label:empty {
+  display: none;
+}
+.ink-clay .quote-panel .subline-grid .field {
+  display: flex;
+  gap: 4px;
+  font: 600 11px/16px var(--font-ui);
+  color: var(--ink-muted);
+}
+.ink-clay
+  .quote-panel
+  .subline-grid
+  .field
+  > span:first-child:not(.currency-input) {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
+.ink-clay .quote-panel .subline-grid .currency-input {
+  padding-inline: 6px;
+  gap: 2px;
+  background: var(--surface);
+}
+.ink-clay .quote-panel .subline-grid .currency-input input {
+  font-size: 13px;
+  appearance: textfield;
+}
+.ink-clay
+  .quote-panel
+  .subline-grid
+  .currency-input
+  input::-webkit-inner-spin-button,
+.ink-clay
+  .quote-panel
+  .subline-grid
+  .currency-input
+  input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.ink-clay .quote-panel .subline-interval select {
+  width: 116px;
+  padding-left: 8px;
+  font-size: 12px;
+}
+.ink-clay .quote-panel .quote-row-body :is(input, select, textarea) {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+.ink-clay .quote-panel .quote-mapping-details {
+  display: block;
+  margin: 0;
+}
+.ink-clay .quote-panel .quote-mapping-details > summary {
+  color: var(--ink-title);
+  font: 600 12px/18px var(--font-ui);
+}
+.ink-clay .quote-panel .quote-add-subline {
+  border-style: dashed;
+  min-height: 36px;
+  padding-inline: 12px;
+  font-size: 12px;
+}
+.ink-clay .quote-panel .quote-row-body .item-options {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.ink-clay .quote-panel .item-options .check {
+  gap: 6px;
+  margin: 0;
+  font: 500 12px/18px var(--font-ui);
+  white-space: nowrap;
+}
+.ink-clay .quote-panel .item-options .check + .check {
+  min-height: 22px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+.ink-clay .quote-panel .quote-item-footer {
+  gap: 8px;
+  padding-top: 10px;
+  flex-wrap: nowrap;
+}
+.ink-clay .quote-panel .quote-item-footer .btn {
+  --button-outline: transparent;
+  --button-wash: transparent;
+  min-height: 32px;
+  padding-inline: 0;
+  font-size: 12px;
+}
+.ink-clay .quote-panel .quote-item-footer > button {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ink-clay .quote-panel .quote-item-footer .quote-done {
+  padding-inline: 14px;
+}
+.ink-clay .quote-panel .quote-add-picker > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-button);
+  color: var(--ink);
+  font: 600 12px/18px var(--font-ui);
+  cursor: pointer;
+  list-style: none;
+}
+.ink-clay .quote-panel .quote-add-picker > summary::-webkit-details-marker {
+  display: none;
+}
+.ink-clay .quote-panel .quote-add-picker .quote-add-row {
+  padding-top: 10px;
+}
+@media (max-width: 699px) {
+  .ink-clay .quote-panel .quote-row-body .item-options {
+    gap: 6px;
+  }
+  .ink-clay .quote-panel .item-options .check + .check {
+    padding-left: 6px;
+  }
+  .ink-clay .quote-panel .quote-item-footer .btn,
+  .ink-clay .quote-panel .quote-add-subline {
+    min-height: 44px;
+  }
+}
+.ink-clay .quote-panel .quote-row[data-expanded="true"] > .quote-row-toggle,
+.ink-clay .quote-panel .item-options .check {
+  color: var(--ink);
+}
+/* Keep longer entered amounts readable without compressing Qty or Interval. */
+.ink-clay .quote-panel .subline-grid[data-wide-amount="true"] .subline-amount {
+  grid-column: 1 / -1;
+}
+.ink-clay .quote-panel .subline-quantity {
+  grid-column: 2;
+}
+.ink-clay .quote-panel .subline-interval {
+  grid-column: 3;
+}
+.ink-clay .quote-panel .quote-add-subline {
+  --button-border-style: dashed;
+}
+.ink-clay .quote-panel > footer .totals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ink-clay .quote-panel > footer .totals > div {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ink-clay .quote-panel .quote-item-footer [aria-label^="Remove"] {
+  --button-ink: var(--danger);
+}
+.ink-clay .quote-panel .quote-sortable > .drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 699px) {
+  .ink-clay .quote-panel .item-options .check {
+    font-size: 11px;
+  }
+}

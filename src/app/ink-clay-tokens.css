@@ -33,6 +33,9 @@
   --border: #dce3e6;
   --border-strong: #c2cdd2;
   --border-control: #c2cdd2;
+  --panel-card-open-border: #b9c9ce;
+  --panel-card-shadow: 0 6px 18px rgba(19, 48, 58, 0.1);
+  --panel-option-shadow: 0 1px 2px rgba(19, 48, 58, 0.08);
   /* Hero card: the one filled card per screen (Home pipeline, record "Next step", value signed) */
   --hero: #13303a;
   --hero-ink: #ffffff;
@@ -116,6 +119,9 @@
   --border: #2a3a41;
   --border-strong: #4a5d65;
   --border-control: #4a5d65;
+  --panel-card-open-border: #6f8892;
+  --panel-card-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  --panel-option-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   --hero: #1f3f4b;
   --hero-muted: #a9bcc2;
   --action: #e07a4a;

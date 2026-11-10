@@ -359,7 +359,7 @@ test("sub-line placeholders, duplicate hint, 3→2→1 removal and undo stay in 
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto(`/proposals/${f.draft.id}`);
-  const row = page.getByRole("button", { name: /^Sub-line service Required/ });
+  const row = page.getByRole("button", { name: /^Sub-line service/ });
   if ((await row.getAttribute("aria-expanded")) !== "true") await row.click();
   const labels = page.getByRole("textbox", {
     name: "Sub-line label for Sub-line service",
@@ -388,7 +388,7 @@ test("sub-line placeholders, duplicate hint, 3→2→1 removal and undo stay in 
   await expect(labels).toHaveCount(0);
   await expect(
     page.getByText("Shown as the item price", { exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /^Remove sub-line/ }),
   ).toHaveCount(0);
