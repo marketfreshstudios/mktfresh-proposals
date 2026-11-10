@@ -1,5 +1,6 @@
 import { coverLayoutCss, sidePhotoCoverCss } from "../lib/cover-graphics";
 import { coverBrandCss } from "../lib/cover-render";
+import { PointerFocus } from "../components/pointer-focus";
 import "./globals.css";
 import "./foundation.css";
 import "./client-flow.css";
@@ -37,7 +38,10 @@ export default function RootLayout({
       <head>
         <style>{coverBrandCss + coverLayoutCss + sidePhotoCoverCss}</style>
       </head>
-      <body>{children}</body>
+      <body>
+        <PointerFocus />
+        {children}
+      </body>
     </html>
   );
 }

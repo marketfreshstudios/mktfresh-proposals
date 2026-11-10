@@ -201,7 +201,7 @@
   cursor: default;
   color: var(--ink-muted);
 }
-.column-choices > label:has(:focus-visible) {
+.column-choices > label:has(> input:focus-visible:not([data-pointer-focus])) {
   outline: var(--focus-outline);
   outline-offset: 1px;
   z-index: 1;

@@ -59,6 +59,8 @@
   color: var(--hero-body);
 }
 .ink-clay .home-pipeline {
+  --focus-outline: 2px solid var(--hero-ink);
+  --focus-offset: 2px;
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -113,9 +115,9 @@
   color: var(--hero);
   background: var(--hero-ink);
 }
-.home-pipeline-range input:focus-visible + span {
-  outline: 2px solid var(--hero-ink);
-  outline-offset: 2px;
+.home-pipeline-range input:focus-visible:not([data-pointer-focus]) + span {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 .ink-clay .home-pipeline-save-error {
   margin: 0;

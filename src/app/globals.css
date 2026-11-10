@@ -35,6 +35,13 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--focus-ring);
 }
+:where(button, .btn, [role="tab"], [data-tab-style] > a):focus:not(
+    :focus-visible
+  ),
+:root [data-pointer-focus]:focus {
+  --focus-outline: none;
+  outline: none;
+}
 button {
   border-radius: var(--radius-button);
   cursor: pointer;

@@ -63,11 +63,6 @@
   }
 }
 
-.deployment-notice .btn:focus:not(:focus-visible) {
-  outline: none;
-  box-shadow: none;
-}
-
 .block-feedback-toast.deployment-notice.ink-clay[popover],
 .ink-clay .deployment-inline {
   border-color: var(--toast);

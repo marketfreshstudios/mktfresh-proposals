@@ -54,6 +54,23 @@ async function expectReadable(control: Locator, state: string) {
   expect(contrast, state).toBeGreaterThanOrEqual(4.5);
 }
 
+async function expectTabFocus(tab: Locator) {
+  await tab.click();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+  await expect(tab).toHaveCSS("outline-style", "none");
+  const selectedShadow = await tab.evaluate(
+    (element) => getComputedStyle(element).boxShadow,
+  );
+  await tab.press("Shift+Tab");
+  await expect(tab).not.toBeFocused();
+  await expect(tab).toHaveCSS("box-shadow", selectedShadow);
+  await tab.page().keyboard.press("Tab");
+  await expect(tab).toBeFocused();
+  await expect(tab).toHaveCSS("outline-style", "solid");
+  await tab.click();
+  await expect(tab).toHaveCSS("outline-style", "none");
+}
+
 test("tab sets and real record and editor navigation use readable shared styles", async ({
   page,
 }) => {
@@ -61,7 +78,7 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/proposals");
   await expectStraightTabIndicator(page.getByRole("tab", { name: /^All/ }));
-  await page.getByRole("tab", { name: /^Drafts/ }).click();
+  await expectTabFocus(page.getByRole("tab", { name: /^Drafts/ }));
   await expectStraightTabIndicator(page.getByRole("tab", { name: /^Drafts/ }));
   await screenshot(page, "proposal-tabs-1440");
 
@@ -95,6 +112,7 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await expect(quote).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await screenshot(page, "editor-tabs-1440");
   await screenshot(page, "editor-proposals-hover-1440");
+  await expectTabFocus(page.getByRole("tab", { name: "Fields", exact: true }));
 
   await page.goto("/studio/templates");
   const templates = page
@@ -178,13 +196,20 @@ test("button variants keep their text readable in hover, active and focus on pap
         await page.mouse.down();
         await expectReadable(button, `${theme} ${label} active`);
         await page.mouse.up();
+        await expect(button).toBeFocused();
+        await expect(button).toHaveCSS("outline-style", "none");
+        await expect(button).toHaveCSS("box-shadow", "none");
         await page.mouse.move(20, 20);
         await page.keyboard.press("Tab");
         await button.focus();
         expect(
           await button.evaluate((el) => el.matches(":focus-visible")),
         ).toBe(true);
+        await expect(button).toHaveCSS("outline-style", "solid");
         await expectReadable(button, `${theme} ${label} focus`);
+        await button.click();
+        await expect(button).toBeFocused();
+        await expect(button).toHaveCSS("outline-style", "none");
       }
     }
   }

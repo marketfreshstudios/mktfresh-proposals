@@ -294,9 +294,10 @@ test("Home animates Pipeline amounts and stage widths without moving its section
 
   const time = await page.evaluate(() => Date.now());
   await page.clock.pauseAt(time + 100);
-  await choose(page, "All time").evaluate((element: HTMLElement) =>
-    element.click(),
-  );
+  const allTime = choose(page, "All time");
+  const { x, y, width, height } = (await allTime.boundingBox())!;
+  await page.mouse.click(x + width / 2, y + height / 2);
+  await expect(allTime).toHaveCSS("outline-style", "none");
   await expect(amount(page, "month")).toHaveText("$640/mo");
   await capture(page, "range-0ms", "pipeline");
   await page.clock.runFor(120);
@@ -406,4 +407,28 @@ test("Home keeps currency and yearly amount rows in place when a range excludes 
   await choose(page, "All time").click();
   await expect(yearly).toHaveText("CA$200/yr");
   expect((await attention.boundingBox())!.y).toBe(initialY);
+});
+
+test("Pipeline range shows its focus ring for keyboard Tab only", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.clock.setFixedTime(now);
+  await fixture(page);
+  await page.goto("/");
+  const segment = choose(page, "3 months");
+  const radio = controls(page).getByRole("radio", { name: "3 months" });
+
+  await segment.click();
+  await expect(radio).toBeChecked();
+  await expect(segment).toHaveCSS("outline-style", "none");
+  await expect(segment).toHaveCSS("box-shadow", "none");
+
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(radio).toBeFocused();
+  await expect(segment).toHaveCSS("outline-style", "solid");
+
+  await segment.click();
+  await expect(segment).toHaveCSS("outline-style", "none");
 });
