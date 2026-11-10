@@ -20,6 +20,8 @@ export type EmailLayoutContent = {
   button: { label: string; url: string };
   workspace: string;
   sender: string;
+  senderTitle?: string;
+  senderPhoto?: string;
   contact: string;
   accent: string;
   logo?: string;
@@ -99,7 +101,8 @@ ${c.test ? '<p style="margin:0 0 12px"><span class="email-test-tag" style="displ
 <a class="email-cta" href="${e(c.button.url)}" style="display:block;word-break:break-word;overflow-wrap:anywhere;padding:14px 24px;border-radius:9999px;font-family:${e(bodyFont)};font-size:16px;font-weight:600;line-height:22px;color:${accentText(action)};text-decoration:none;mso-padding-alt:0"><!--[if mso]><i style="mso-font-width:150%;mso-text-raise:21pt" hidden>&emsp;</i><span style="mso-text-raise:10.5pt"><![endif]-->${e(c.button.label)}<!--[if mso]></span><i style="mso-font-width:150%" hidden>&emsp;&#8203;</i><![endif]--></a>
 </td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:30px"><tr><td class="email-line" style="border-top:1px solid #e0ddd4;padding-top:18px">
-<p class="email-muted" style="font-size:12px;line-height:19px;color:#625f56;margin:0">Sent by ${e(c.sender)} at ${e(c.workspace)}</p>
+${c.senderPhoto ? `<img src="${e(c.senderPhoto)}" alt="" width="32" height="32" style="display:block;border-radius:50%;margin:0 0 8px">` : ""}
+<p class="email-muted" style="font-size:12px;line-height:19px;color:#625f56;margin:0">Sent by ${e(c.sender)} at ${e(c.workspace)}</p>${c.senderTitle ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#625f56;margin:0">${e(c.senderTitle)}</p>` : ""}
 ${c.staff ? '<p class="email-muted" style="font-size:12px;line-height:19px;color:#625f56;margin:6px 0 0">Yeswell · Staff notification</p>' : ""}
 ${c.contact ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#625f56;margin:6px 0 0;white-space:pre-line">${e(c.contact)}</p>` : ""}
 ${c.poweredBy && !c.staff ? `<p class="email-muted" style="font-size:11px;line-height:18px;color:#625f56;margin:18px 0 0"><a href="https://yeswell.co" rel="noopener" style="color:#625f56;text-decoration:none"><img src="${e(c.poweredBy.origin)}/favicon-16.png" width="14" height="14" alt="" style="vertical-align:middle;margin-right:5px">Powered by Yeswell</a></p>` : ""}
@@ -111,6 +114,7 @@ ${c.poweredBy && !c.staff ? `<p class="email-muted" style="font-size:11px;line-h
     c.bodyText,
     `${c.button.label}: ${c.button.url}`,
     `Sent by ${c.sender} at ${c.workspace}`,
+    c.senderTitle,
     c.contact,
     c.staff ? "Yeswell · Staff notification" : "",
     c.poweredBy && !c.staff ? "Powered by Yeswell · https://yeswell.co" : "",

@@ -25,6 +25,7 @@ import "./ink-clay-editor-studio.css";
 import "./column-styles.css";
 import "./ink-clay-client-account.css";
 import "./staff-tables.css";
+import "./staff-account.css";
 
 export default function RootLayout({
   children,

@@ -119,6 +119,8 @@ export function eventLabel(
     font_uploaded: "Proposal font uploaded",
     team_password_reset_requested: "Password reset requested",
     team_updated: "Staff display name updated",
+    staff_profile_updated: "Staff profile updated",
+    staff_signature_updated: "Company signature updated",
   };
   return labels[e.type] ?? "Activity recorded";
 }

@@ -266,6 +266,11 @@ export function renderTemplate(
     bodyText: body.text,
     workspace: s?.company_name ?? "Workspace",
     sender: p.sender?.display_name ?? s?.owner ?? "Staff",
+    senderTitle: t.staff ? undefined : p.sender?.job_title,
+    senderPhoto:
+      !t.staff && p.sender?.photo_path && p.token
+        ? proposalLink(p).replace("/p/", "/api/public/") + "/brand/sender-photo"
+        : undefined,
     contact: [s?.email, s?.phone, s?.address].filter(Boolean).join(" · "),
     accent: s?.accent_colour ?? "#365c4a",
     fonts: s?.proposal_fonts,

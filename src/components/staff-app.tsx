@@ -46,6 +46,8 @@ import { ClientPicker } from "./client-picker";
 import { ValidityField } from "./validity-field";
 import { defaultValidUntil } from "../lib/validity";
 import { StaffShell } from "./staff-shell";
+import { AccountPage } from "./account-page";
+import { staffName, type StaffAccount } from "../lib/staff-account-model";
 import { Sheet, Skeleton } from "./foundation";
 import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
 import { withDraftSettings } from "../lib/proposal-settings";
@@ -81,6 +83,7 @@ export type Data = {
   app_url: string;
   connections?: ConnectionStatus | null;
   user: Actor & { staff_home_banner_dismissed?: boolean };
+  account?: StaffAccount;
   signatory_version: string;
   staff: {
     user_id: string;
@@ -89,6 +92,7 @@ export type Data = {
     email: string;
     role: string;
     status?: string;
+    photo_url?: string;
   }[];
   settings: WorkspaceSettings | null;
   workspace_defaults?: WorkspaceSettings;
@@ -156,7 +160,8 @@ function StaffAppContent({
     }
   }
   function openNew() {
-    if (reportShell) location.href = "/proposals?new=1";
+    if (reportShell || section === "account")
+      location.href = "/proposals?new=1";
     else setNewOpen(true);
   }
   const [data, setData] = useState<Data | null>(null),
@@ -172,11 +177,12 @@ function StaffAppContent({
         settings: WorkspaceSettings | null;
         workspace_defaults?: WorkspaceSettings;
         user: Data["user"];
+        account?: StaffAccount;
         signatory_version: string;
         app_url: string;
         staff: Data["staff"];
       }>("/api/auth/session");
-      if (reportShell) {
+      if (reportShell || section === "account") {
         setData({
           ...session,
           total: 0,
@@ -219,6 +225,7 @@ function StaffAppContent({
         workspace_defaults: session.workspace_defaults,
         app_url: session.app_url,
         user: session.user,
+        account: session.account,
         signatory_version: session.signatory_version,
         staff: session.staff ?? [],
         proposals: proposals.items,
@@ -550,6 +557,19 @@ function StaffAppContent({
         />
       );
   }
+  async function signout() {
+    await post("/api/auth/logout");
+    location.href = "/login";
+  }
+  if (section === "account")
+    content = (
+      <AccountPage
+        id={id}
+        profile={query.view === "profile"}
+        data={data}
+        onSignout={() => void signout()}
+      />
+    );
   return (
     <StaffShell
       path={path}
@@ -557,16 +577,31 @@ function StaffAppContent({
       settings={data?.settings ?? data?.workspace_defaults ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}
+      role={data?.user.staff_role}
+      account={data?.account}
+      onAccountChanged={(account) =>
+        setData(
+          (current) =>
+            current && {
+              ...current,
+              account,
+              user: {
+                ...current.user,
+                staff_name:
+                  staffName(account.first_name, account.last_name) ||
+                  current.user.staff_name,
+              },
+            },
+        )
+      }
       onNew={openNew}
-      onSignout={async () => {
-        await post("/api/auth/logout");
-        location.href = "/login";
-      }}
+      onSignout={() => void signout()}
     >
       <ContactToast />
       {section !== "" &&
         section !== "reports" &&
         section !== "clients" &&
+        section !== "account" &&
         !connectionDetail && (
           <header className="page-header">
             <div>

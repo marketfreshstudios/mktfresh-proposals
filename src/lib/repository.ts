@@ -50,6 +50,7 @@ export type EntityTable =
   | "templates"
   | "content_library"
   | "workspace_events"
+  | "staff_accounts"
   | "workspace_settings"
   | "workspace_documents"
   | "custom_families"

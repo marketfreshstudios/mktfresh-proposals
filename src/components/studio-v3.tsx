@@ -81,6 +81,8 @@ export function StudioHome({ data }: { data: Data }) {
       <div className="studio-phone-account">
         <StudioAccount
           name={data.user.staff_name ?? "Staff"}
+          email={data.user.staff_email}
+          role={data.user.staff_role}
           label="Account"
           mark={
             data.settings?.logo_icon ? (

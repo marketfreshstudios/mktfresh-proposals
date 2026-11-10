@@ -76,7 +76,13 @@ type Brand = {
   logo?: string | null;
   logo_icon?: string | null;
   accent_colour?: string;
-  contact?: { name: string; email: string; phone?: string };
+  contact?: {
+    name: string;
+    email: string;
+    phone?: string;
+    job_title?: string;
+    photo_url?: string;
+  };
   ended?: string | null;
   valid_until?: string | null;
   timezone?: string;
@@ -259,7 +265,9 @@ function NewClientFlow({
     checkoutReturned && signed && !returnConfirmed && !bankState;
   const contact = {
     ...(p?.contact ?? brand.contact ?? { name: "", email: brand.email }),
-    phone: p?.company.phone ?? brand.phone ?? brand.contact?.phone,
+    phone: brand.contact?.phone ?? p?.company.phone ?? brand.phone,
+    job_title: brand.contact?.job_title,
+    photo_url: brand.contact?.photo_url,
   };
   const engagement = useClientEngagement(
     p,
@@ -1468,16 +1476,21 @@ function SenderCard({
   return (
     <div className="flow-sender-card" aria-label="Sender contact">
       <span className="flow-brand-mark" aria-hidden="true">
-        {name
-          .trim()
-          .split(/\s+/)
-          .slice(0, 2)
-          .map((part) => part[0])
-          .join("")
-          .toUpperCase()}
+        {contact.photo_url ? (
+          <img src={contact.photo_url} alt="" width={36} height={36} />
+        ) : (
+          name
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join("")
+            .toUpperCase()
+        )}
       </span>
       <div>
         <strong>{name}</strong>
+        {contact.job_title && <div className="muted">{contact.job_title}</div>}
         <div className="flow-sender-details">
           {contact.email && (
             <a href={`mailto:${contact.email}`}>{contact.email}</a>
