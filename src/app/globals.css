@@ -25,6 +25,11 @@ select,
 textarea {
   font: inherit;
 }
+/* Owner 10 Nov: paragraph fields grow up/down only and never past their container. */
+textarea {
+  resize: vertical;
+  max-width: 100%;
+}
 button,
 a,
 input,
