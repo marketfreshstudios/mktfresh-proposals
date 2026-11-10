@@ -146,7 +146,7 @@ it("four SKU UUIDs form one choice group with Growth selected; prices come from 
       ).toBe(mode === "missing" ? "missing" : "inactive");
     }
 });
-it("guidance blocks readiness, the library is read-only and the historical updater leaves the seventh alone", async () => {
+it("guidance blocks readiness and the historical updater leaves the editable seventh starter alone", async () => {
   const f = await setup(),
     t = get(true, socialCatalog());
   const preview = authoringPreview(
@@ -161,25 +161,33 @@ it("guidance blocks readiness, the library is read-only and the historical updat
   expect(authoringErrors(preview).join(" ")).toContain("Overview");
   expect(authoringErrors(preview).join(" ")).toContain("Choosing a plan");
   await f.repo.put("templates", t);
-  await expect(
-    aiTool(
-      f.repo,
-      { actor: "ai:Claude", workspace_id: ws, ip: "", user_agent: "test" },
-      "update_template",
-      { template_id: t.id, revision: studioRevision(t), name: "Not allowed" },
-      ["templates:edit"],
-    ),
-  ).rejects.toMatchObject({ status: 403 });
+  await aiTool(
+    f.repo,
+    { actor: "ai:Claude", workspace_id: ws, ip: "", user_agent: "test" },
+    "update_template",
+    {
+      template_id: t.id,
+      revision: studioRevision(t),
+      cover: { eyebrow: "Our social plan" },
+    },
+    ["templates:edit"],
+  );
+  const edited = (await f.repo.entities<Template>("templates")).find(
+    (v) => v.id === t.id,
+  )!;
+  expect(edited).not.toEqual(t);
+  expect(edited.starter_key).toBe(t.starter_key);
   const copy = (await libraryStarterAction(f.repo, staff, t.id, "copy", {
     name: "My social plan",
   })) as Template;
   expect(copy.source_starter_key).toBe(t.starter_key);
   expect(copy.starter_key).toBeUndefined();
+  expect(copy.cover).toEqual(edited.cover);
   expect(
     (await f.repo.entities<Template>("templates")).find((v) => v.id === t.id),
-  ).toEqual(t);
+  ).toEqual(edited);
   expect(
-    starterBrandUpdates(ws, socialCatalog(), [t]).some(
+    starterBrandUpdates(ws, socialCatalog(), [t, edited]).some(
       (row) => row.after.starter_key === t.starter_key,
     ),
   ).toBe(false);

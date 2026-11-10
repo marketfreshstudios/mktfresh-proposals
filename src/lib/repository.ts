@@ -506,7 +506,7 @@ export class MemoryRepository implements Repository {
       table === "templates" &&
       ((current as any)?.starter_key || (replacement as any).starter_key)
     )
-      throw new AppError(403, "Duplicate the starter first");
+      throw new AppError(403, "Starter writes require the starter save path");
     if (this.catalog.get("workspace_events")?.has(audit.id))
       throw new AppError(409, "Append-only history");
     if (!this.catalog.has(table)) this.catalog.set(table, new Map());

@@ -1027,23 +1027,7 @@ function TemplatesStudioContent({
     applyModel,
     () => model.current,
   );
-  const [copyWithoutEdit, setCopyWithoutEdit] = useState(false);
-  const [starterAttempt, setStarterAttempt] = useState<Template | null>(null),
-    [starterGeneration, setStarterGeneration] = useState(0);
   const editDraft = (next: typeof draft) => {
-    if (model.current.draft?.starter_key && next) {
-      if (serialise(next) !== serialise(model.current.draft)) {
-        (document.activeElement as HTMLElement)?.blur();
-        setIndex(null);
-        setFields(false);
-        setInsertAt(null);
-        setMoreAnchor(null);
-        setTemplateToolsOpen(false);
-        setStarterAttempt((pending) => pending ?? structuredClone(next));
-        setStarterGeneration((n) => n + 1);
-      }
-      return;
-    }
     const value = { ...model.current, draft: next };
     history.record(model.current, value);
     applyModel(value);
@@ -1160,7 +1144,6 @@ function TemplatesStudioContent({
   resourceRef.current = resource();
   const currentResource = resourceRef.current,
     templateDirty =
-      !(mode === "templates" && draft?.starter_key) &&
       !!currentResource.value &&
       savedModels.current.get(currentResource.key) !==
         serialise(currentResource.value);
@@ -1223,8 +1206,6 @@ function TemplatesStudioContent({
     return () => window.removeEventListener("beforeunload", warn);
   }, [mode]);
   function saveTemplate(): Promise<boolean> {
-    if (mode === "templates" && model.current.draft?.starter_key)
-      return Promise.resolve(true);
     if (templateFlight.current) return templateFlight.current;
     const draftScope = mode === "blocks" && updateDraftsRef.current;
     const approvedDraftIds = usage.drafts.map((p) => p.id);
@@ -1273,7 +1254,11 @@ function TemplatesStudioContent({
             resourceRef.current.key === captured.key &&
             serialise(resourceRef.current.value) === serialise(captured.value)
           ) {
-            const next = { ...model.current.draft!, ...result };
+            const next = {
+              ...model.current.draft!,
+              ...result,
+              connector_restore_event_id: result.connector_restore_event_id,
+            };
             savedModels.current.set(captured.key, serialise(next));
             applyModel({ ...model.current, draft: next });
             resourceRef.current = { ...captured, value: next };
@@ -1362,7 +1347,7 @@ function TemplatesStudioContent({
     mode === "templates" ? draft : null,
     data.user.staff_role === "owner",
     async (next) => {
-      setStarterAttempt(null);
+      studioRevisions.current.set(`templates:${next.id}`, next.revision);
       selection.clear();
       setIndex(null);
       savedModels.current.set(`templates:${next.id}`, serialise(next));
@@ -1372,11 +1357,9 @@ function TemplatesStudioContent({
     () => {
       allowLeave.current = true;
     },
-    starterAttempt,
+    saveTemplate,
   );
   useEffect(() => {
-    if (new URLSearchParams(location.search).get("copy") === "without-edit")
-      setCopyWithoutEdit(true);
     if (new URLSearchParams(location.search).get("preview") === "1")
       setPreviewOpen(true);
   }, []);
@@ -1989,7 +1972,6 @@ function TemplatesStudioContent({
           reuse: blockFeedback.reuse,
           remove: blockFeedback.remove,
         }}
-        locked={!!starterAttempt && !!draft?.starter_key}
         compactPhone
         compact={templatePanels.compact}
         map={map}
@@ -2032,9 +2014,7 @@ function TemplatesStudioContent({
           }
           savedLabel={
             mode === "templates"
-              ? draft?.starter_key
-                ? "Yeswell starter · read-only"
-                : "Saved · changes apply to new proposals"
+              ? "Saved · changes apply to new proposals"
               : "Saved"
           }
           dirtyLabel="Edited · not saved"
@@ -2133,7 +2113,7 @@ function TemplatesStudioContent({
                 Preview
               </Button>
               <Button
-                className={`studio-desktop-action ${starterAttempt ? "" : "studio-primary"}`}
+                className="studio-desktop-action studio-primary"
                 variant="primary"
                 disabled={!draft?.active}
                 title={
@@ -2170,23 +2150,6 @@ function TemplatesStudioContent({
             </>
           )}
         </EditorHeader>
-        {copyWithoutEdit && (
-          <Banner title="Your copy is ready">
-            The unfinished change could not be applied. Continue editing here.
-          </Banner>
-        )}
-        {starterAttempt && draft?.starter_key && (
-          <div className="starter-edit-notice" role="status">
-            <span>This is a Yeswell starter. Make a copy to customize it.</span>
-            <Button
-              variant="primary"
-              className="studio-primary"
-              onClick={starterActions.copy}
-            >
-              Make a copy
-            </Button>
-          </div>
-        )}
         {starterActions.dialogs}
         {connectorRestore.feedback}
         {templateRecovery && (
@@ -2280,7 +2243,6 @@ function TemplatesStudioContent({
                   }
                 >
                   <div
-                    key={draft?.starter_key ? starterGeneration : undefined}
                     ref={templatePaper}
                     data-sheet-view={mode === "templates" ? "true" : undefined}
                     data-editor-density={

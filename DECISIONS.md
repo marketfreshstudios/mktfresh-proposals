@@ -687,7 +687,7 @@ Browser CI uses **six shards and a thirty-minute timeout per browser job**, incl
 
 ## Starter library and Reset to starter (November 6, 2026)
 
-Owner decision: `starter_key` identifies a read-only library template. Staff may open, preview, use or copy it; the ordinary template write/delete paths reject changes. The first editor mutation is retained separately, the original paper is restored, and the inline Make a copy bar appears. Naming the copy applies that retained operation to a normal template with `source_starter_key`; later edits use the existing serialized autosave/history. Non-starter templates and existing proposals/versions retain their behavior. Copy provenance appears in the header and list cards.
+Original November 6 behavior (superseded by the November 10 in-place editing decision below): `starter_key` identified a read-only library template. Staff may open, preview, use or copy it; the ordinary template write/delete paths reject changes. The first editor mutation is retained separately, the original paper is restored, and the inline Make a copy bar appears. Naming the copy applies that retained operation to a normal template with `source_starter_key`; later edits use the existing serialized autosave/history. Non-starter templates and existing proposals/versions retain their behavior. Copy provenance appears in the header and list cards.
 
 Super admins can hide/show a starter and reset its content, cover, bands, quote and styles to the current workspace seed. Identity/name/availability are retained. Catalog choices and conditional clauses use the existing SKU-first seed resolver. Reset and its eight-second Undo are atomic compare-and-swap operations with append-only workspace events; a later concurrent change blocks Undo rather than overwriting it. “Make a copy first” names and saves the edited backup before Reset, then stays on the starter with Undo. Apply `20261106205000_starter_library.sql` **before deploying**; no data backfill or proposal/version update is performed.
 
@@ -698,6 +698,14 @@ The deployment notice never moves focus when appearing. The prior banner screens
 Copy fallback: valid first mutations are applied to the copy. If an unfinished value cannot pass the existing template/font/content validation (for example an unfinished recovered style value), copy the original instead, show “The unfinished change could not be applied. Continue editing here.”, and never persist invalid template data. The naming dialog determines the copy’s name. The prompt stays visible below the header while scrolling, closes the transient inspector/drawer, and disables document controls until a copy is made; unrelated templates retain their current behavior.
 
 Draft CI on `74dd0d5`, shard 6/6: the new Staff test mocked `/api/auth`, but the real session request was `/api/auth/session`. It therefore exercised a Super admin fixture and correctly saw the admin actions. The fixture now covers the session path and explicitly asserts the returned role is Staff; the forbidden-action assertion and server-side 403 tests remain unchanged. This was deterministic test setup, not a flaky production permission check.
+
+### Starter templates are editable in place (November 10, 2026)
+
+Owner decision: edit a starter in Studio with the normal autosave and revision checks. Duplicate is optional and still records the source starter. The card shows Default or Edited by comparing the saved authored content, cover, bands, quote and styles with the shipped starter. Super admins alone can hide/show or Reset to default; Reset restores the workspace's shipped values and keeps the template ID, name and availability. The shared destructive confirmation explains that existing proposals keep their copy. Reset still supports Undo while no newer write has occurred.
+
+The connector can update a starter in place with `templates:edit` and the revision from `get_template`. The same 409 and Restore previous version rules apply. Studio saves, connector writes and Restore use the existing workspace-scoped `replace_library_starter` function when the row is a starter, preserving its key and committing the audit event atomically. No hosted SQL or data backfill is needed for in-place editing. The connector still cannot change availability, reset, or delete templates.
+
+Future releases may insert missing starters. An update to an existing starter must match the full authored state of a known previously shipped seed and compare the row again at write time; skip every customized or concurrently changed row. Keep the existing guarded seed writers. The #138 cover rollout was applied before in-place editing; its cover-only guard is not sufficient for future updates to editable starters.
 
 ## Claude connector — templates and saved blocks
 
@@ -987,6 +995,10 @@ The dark editor header uses a text link with a Lucide chevron for navigation and
 
 The Proposals header counts the same records as All, excluding archived proposals and Proposify imports. The header and tabs use the same list state so an archive or undo updates both.
 
+### Viewed is a primary proposal view (Nov 10, 2026)
+
+The existing Viewed filter and count appear between Sent and Won and are removed from More views. Tablet and phone use the same tabs in one horizontally scrollable row in place of the native select. More views stays visible beside the tabs, and keyboard navigation reveals the selected tab. The existing view predicates and counts are unchanged.
+
 ### Proposal table Edit and Countersign icons (Nov 9, 2026)
 
 Proposals and Home Recent proposals share the four existing action slots. Edit uses Lucide square-pen and Countersign uses pen-tool, with the same borderless icon treatment and tooltip as the other actions. Desktop targets and empty slots are 40px; tablet and phone cards and touch targets use 44px. The Countersign button only opens the existing record sheet and respects the existing signer permissions. Edit on an archived unsigned proposal still unarchives before opening the editor.
@@ -1052,3 +1064,9 @@ Buttons and tabs use the shared keyboard focus ring. A pointer press suppresses 
 ## Own It Over Time kickoff entry — November 10, 2026
 
 Owner decision, November 10: the AI may derive the kickoff as purchase price minus $2,250. The purchase price comes from the supplied, catalog or proposal Own It Now price. No other price calculation is permitted. If the connector receives the purchase price alone, it fills the kickoff and marks the item for staff review. The $3,500 threshold is guidance to lead with Own It Now. The kickoff is one one-time subline of the active monthly catalog item, identified by `oiot_kickoff`. The purchase price is stored separately on the same item and does not add a charge. A designated kickoff keeps its entered amount without matching a historical catalog preset. The connector reports the exact missing fields, while the shared sending rules still validate the supplied amounts and require staff review. The editor keeps one named kickoff input before and after entry and commits it on Enter or when focus leaves. No hosted SQL is needed.
+
+## Starter defaults and edit history — November 10, 2026
+
+The Website design & build cover uses Auto for its graphic. Apply the targeted migration before deploy: it changes only the exact #138 cover for MarketFresh and the matching new-workspace seed payload. It leaves edited covers and proposal versions alone.
+
+Opening an editor supplies missing defaults without writing to storage. Identical saves keep the same revision and produce no activity, for ordinary templates and starters alike. Starter cards compare their current authored content, cover, header/footer, quote and styles to the shipped seed, ignoring editor normalization and cached pagination. Undo back to the shipped content returns the card to Default. Edit dates come from actual edit events; old normalization events do not set them. Guarded data migrations still use exact equality when they require it.

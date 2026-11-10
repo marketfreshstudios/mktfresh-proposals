@@ -135,15 +135,15 @@ export const connectorStudioDescriptions: Record<string, string> = {
   create_template:
     "Create a hidden template for human review. content is proposal Markdown: # section, ##/### subheads, paragraphs, bold/italic and flat lists. cover maps line IDs (eyebrow, title, prepared_for, byline, date, validity) to text with valid fields. default_quote_items uses set_quote_lines items/sublines; use provided or list_catalog amounts and follow the plan instructions below. Requires templates:edit; reconnect to grant it.",
   get_template:
-    "Read a template as content Markdown with preservation markers, cover text keyed by stored line id, default_quote_items, revision and a block-id/type summary. Implicit cover title inherits proposal.title and is omitted from cover. Starters are read-only: duplicate_template first. " +
+    "Read a template as content Markdown with preservation markers, cover text keyed by stored line id, default_quote_items, revision and a block-id/type summary. Implicit cover title inherits proposal.title and is omitted from cover. Starters can be updated in place or duplicated. " +
     markerRules +
     "Read-only metadata (active, starter_key, blocks) is not an update argument. Use the returned revision when writing. Preservation markers are only for update_template, never for proposal Markdown.",
   update_template:
-    "Update a non-starter template using the latest get_template revision; on 409 read again, merge and retry. Provided content replaces the body subject to marker/removal guards; provided default_quote_items replace the quote; cover merges only supplied text lines, retaining images/layout/spacing. Omitted fields remain unchanged. " +
+    "Update any template, including a Yeswell starter, using the latest get_template revision; on 409 read again, merge and retry. Provided content replaces the body subject to marker/removal guards; provided default_quote_items replace the quote; cover merges only supplied text lines, retaining images/layout/spacing. Omitted fields remain unchanged. " +
     markerRules +
-    "remove_blocks requires content. Edited text supports the same Markdown as proposals; unchanged marked blocks keep their exact rich data. Staff can Restore previous version. Starters are read-only: duplicate_template first. Availability is human-only. Use agreed or exact list_catalog amounts and follow the plan instructions below. Requires templates:edit.",
+    "remove_blocks requires content. Edited text supports the same Markdown as proposals; unchanged marked blocks keep their exact rich data. Staff can Restore previous version. Availability and Reset to default are human-only. Use agreed or exact list_catalog amounts and follow the plan instructions below. Requires templates:edit.",
   duplicate_template:
-    "Copy any template, including a read-only Yeswell starter, into a hidden editable template. Use this before customizing a starter. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
+    "Copy any template, including a Yeswell starter, into a hidden editable template. Use this only when a separate copy is wanted. A person must review and enable it in Studio. No proposals are changed. Requires templates:edit.",
   create_saved_block:
     "Create a reusable text, list, group or plain contract_clause block. Group content is an ordered mini document in proposal Markdown (#/##/### headings, paragraphs, lists and embedded PNG/JPEG images), never pricing tables, signatures or contracts. Text/list content uses proposal Markdown (no HTML or images); contract_clause uses plain text or {clauses:[{id,heading,body,show_when}]}. Only templates and new proposals use later saved-block updates; existing drafts are never updated by the connector. Requires templates:edit.",
   update_saved_block:
@@ -763,11 +763,6 @@ export async function connectorStudioTool(
       (t) => t.id === input.template_id,
     );
     check(before, "Template not found", 404);
-    check(
-      !before.starter_key,
-      "Yeswell starters are read-only. Call duplicate_template first, then update the new template.",
-      403,
-    );
     assertStudioRevision("templates", before, input.revision);
     const templateWidth = pageMetrics(
       resolveStyles(settings, before.style_overrides),

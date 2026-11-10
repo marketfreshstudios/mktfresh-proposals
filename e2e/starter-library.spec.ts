@@ -9,8 +9,13 @@ import {
   libraryTemplates,
   TemplateInputSchema,
 } from "../src/lib/template-library";
+import {
+  studioEntityViews,
+  writeStudioEntity,
+} from "../src/lib/studio-history";
 import { blockText } from "../src/lib/editor-document";
-import type { Template, Item } from "../src/lib/model";
+import { applyCoverLayout } from "../src/lib/cover";
+import type { Audit, Template, Item } from "../src/lib/model";
 async function fixture(page: Page, edited = false, member = false) {
   const f = await editorFixture(page),
     seeds = workspaceStarterTemplates(
@@ -21,6 +26,7 @@ async function fixture(page: Page, edited = false, member = false) {
   const starter = structuredClone(seeds[0]);
   if (edited) {
     starter.content[1].text = "Owner's custom overview";
+    starter.cover = applyCoverLayout(starter.cover!, "split");
     await f.repo.put("templates", starter);
   }
   const writes: any[] = [],
@@ -47,9 +53,14 @@ async function fixture(page: Page, edited = false, member = false) {
     try {
       if (req.method() === "GET")
         return r.fulfill({
-          json: await libraryTemplates(
+          json: await studioEntityViews(
             f.repo,
-            await f.repo.entities<Template>("templates"),
+            "templates",
+            await libraryTemplates(
+              f.repo,
+              await f.repo.entities<Template>("templates"),
+            ),
+            actor,
           ),
         });
       if (parts[3])
@@ -62,19 +73,23 @@ async function fixture(page: Page, edited = false, member = false) {
             req.postDataJSON(),
           ),
         });
-      const value = TemplateInputSchema.parse(req.postDataJSON());
-      writes.push(value);
-      if (
-        (await f.repo.entities<Template>("templates")).find(
-          (t) => t.id === value.id,
-        )?.starter_key
-      )
-        return r.fulfill({
-          status: 403,
-          json: { error: "Starters are read-only" },
-        });
-      await f.repo.put("templates", value);
-      return r.fulfill({ json: value });
+      const input = req.postDataJSON();
+      const value = TemplateInputSchema.parse(input) as Template;
+      const current = (await f.repo.entities<Template>("templates")).find(
+        (t) => t.id === value.id,
+      );
+      const saved = await writeStudioEntity(
+        f.repo,
+        "templates",
+        current ?? null,
+        value,
+        actor,
+        {
+          revision: input.expected_revision,
+        },
+      );
+      writes.push(saved);
+      return r.fulfill({ json: (await libraryTemplates(f.repo, [saved]))[0] });
     } catch (e) {
       return r.fulfill({
         status: (e as any).status ?? 400,
@@ -85,47 +100,87 @@ async function fixture(page: Page, edited = false, member = false) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   return { ...f, starter, seeds, writes };
 }
+
 async function shot(page: Page, name: string) {
-  if (process.env.CAPTURE_STARTER_LIBRARY) {
-    await mkdir("docs/screenshots/starter-library", { recursive: true });
+  if (process.env.CAPTURE_EDITABLE_STARTERS === "1") {
+    const dir = "docs/screenshots/editable-starters";
+    await mkdir(dir, { recursive: true });
+    await page.evaluate(() => document.fonts.ready);
     await page.screenshot({
-      path: `docs/screenshots/starter-library/${name}.png`,
+      path: `${dir}/${name}.png`,
+      animations: "disabled",
     });
   }
 }
-async function attempt(page: Page, f: Awaited<ReturnType<typeof fixture>>) {
-  await page.goto(`/studio/templates/${f.starter.id}`);
-  const b = f.starter.content.find((b) => b.type === "paragraph")!;
-  const text = page
-    .locator(`[data-block-id="template-${b.id}"] .tiptap`)
-    .first();
-  await text.scrollIntoViewIfNeeded();
-  await text.click();
-  await text.fill("My retained customization.");
-  await expect(page.locator(".starter-edit-notice")).toHaveText(
-    /This is a Yeswell starter. Make a copy to customize it./,
-  );
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
-  expect(f.writes).toEqual([]);
-  await page
-    .locator(".studio-template-main")
-    .evaluate((el) => el.scrollTo({ top: 0 }));
-  return b;
-}
-test("starter typing stays read-only; named copy gets the attempted edit and provenance", async ({
+type Fixture = Awaited<ReturnType<typeof fixture>>;
+const url = (f: Fixture) => `/studio/templates/${f.starter.id}`;
+const bodyBlock = (f: Fixture) =>
+  f.starter.content.find((b) => b.type === "paragraph")!;
+const bodyEditor = (page: Page, f: Fixture) =>
+  page.locator(`[data-block-id="template-${bodyBlock(f).id}"] .tiptap`).first();
+const card = (page: Page, f: Fixture) =>
+  page.locator(`.studio-template-card[href="${url(f)}"]`);
+const current = async (f: Fixture) =>
+  (await f.repo.entities<Template>("templates")).find(
+    (t) => t.id === f.starter.id,
+  )!;
+const body = (t: Template, f: Fixture) =>
+  blockText(t.content.find((b) => b.id === bodyBlock(f).id)!);
+const more = (page: Page) =>
+  page.getByRole("button", { name: "More editor actions", exact: true });
+
+test("starter cover and text autosave in place and the card shows Edited; Duplicate keeps a separate copy", async ({
   page,
 }) => {
-  const f = await fixture(page),
-    b = await attempt(page, f);
-  await shot(page, "starter-edit-bar-1440");
+  const f = await fixture(page);
+  await page.goto(url(f));
+  await expect(page.locator(".template-editor-header")).not.toContainText(
+    "read-only",
+  );
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await page.locator(".cover-settings-accordion > summary").click();
+  await page.getByLabel("Cover layout", { exact: true }).selectOption("split");
   await page
-    .locator(".starter-edit-notice")
-    .getByRole("button", { name: "Make a copy", exact: true })
+    .getByLabel("Cover background", { exact: true })
+    .selectOption("solid");
+  await expect
+    .poll(async () => (await current(f)).cover?.background?.type)
+    .toBe("solid");
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+  await expect(page.locator(".document-cover:visible").first()).toHaveAttribute(
+    "data-cover-layout",
+    "split",
+  );
+  await shot(page, "starter-cover-edit-1440");
+
+  await bodyEditor(page, f).fill("My custom starter wording.");
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe("My custom starter wording.");
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+  await page.reload();
+  await expect(bodyEditor(page, f)).toHaveText("My custom starter wording.");
+  await expect(page.locator(".document-cover:visible").first()).toHaveAttribute(
+    "data-cover-layout",
+    "split",
+  );
+  expect((await current(f)).cover?.background?.type).toBe("solid");
+  await page
+    .getByRole("link", { name: "Back to templates", exact: true })
     .click();
+  await expect(
+    card(page, f).locator('[data-starter-status="edited"]'),
+  ).toContainText("Edited");
+  await shot(page, "starter-edited-card-1440");
+
+  await page
+    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Duplicate", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Name your template" });
   await expect(
     dialog.getByRole("button", { name: "Cancel", exact: true }),
@@ -133,256 +188,163 @@ test("starter typing stays read-only; named copy gets the attempted edit and pro
   await expect(dialog.getByLabel("Template name")).toHaveValue(
     `${f.starter.name} (copy)`,
   );
-  await shot(page, "name-dialog-1440");
-  await dialog.getByRole("button", { name: "Make copy", exact: true }).click();
-  await page.waitForURL(/\/studio\/templates\/(?!.*\?)/);
+  await dialog
+    .getByRole("button", { name: "Duplicate template", exact: true })
+    .click();
   await expect(page.locator(".template-editor-header")).toContainText(
     `Based on ${f.starter.name}`,
   );
   const copy = (await f.repo.entities<Template>("templates")).find(
     (t) => t.source_starter_key === f.starter.starter_key,
   )!;
+  expect(copy.id).not.toBe(f.starter.id);
   expect(copy.starter_key).toBeUndefined();
-  expect(blockText(copy.content.find((v) => v.id === b.id)!)).toBe(
-    "My retained customization.",
-  );
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
-  await shot(page, "copy-based-on-1440");
-  const copiedText = page
-    .locator(`[data-block-id="template-${b.id}"] .tiptap`)
-    .first();
-  await copiedText.scrollIntoViewIfNeeded();
-  await copiedText.click();
-  await copiedText.fill("A second edit to my copy.");
-  await expect
-    .poll(async () =>
-      blockText(
-        (await f.repo.entities<Template>("templates"))
-          .find((t) => t.id === copy.id)!
-          .content.find((v) => v.id === b.id)!,
-      ),
-    )
-    .toBe("A second edit to my copy.");
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
-  await page.goto("/studio/templates");
-  const card = page
-    .locator(".studio-template-card")
-    .filter({ hasText: copy.name });
-  await expect(card).toContainText(`Based on ${f.starter.name}`);
+  expect(body(copy, f)).toBe("My custom starter wording.");
+  expect(copy.cover).toEqual((await current(f)).cover);
+  expect(await current(f)).toMatchObject({
+    id: f.starter.id,
+    starter_key: f.starter.starter_key,
+  });
 });
-test("starter cards preview/use/copy and reset with backup and exact Undo; Staff has no reset/hide", async ({
+
+test("opening does not log edits, and undoing a saved change returns the starter to Default", async ({
+  page,
+}) => {
+  const f = await fixture(page);
+  const back = () =>
+    page.getByRole("link", { name: "Back to templates", exact: true }).click();
+  const edits = async () =>
+    (await f.repo.entities<Audit>("workspace_events")).filter(
+      (event) => event.type === "templates_saved",
+    );
+  const expectDefault = async () => {
+    await expect(
+      card(page, f).locator('[data-starter-status="default"]'),
+    ).toContainText("Default");
+    await expect(card(page, f)).not.toContainText(/edited /i);
+  };
+
+  await page.goto(url(f));
+  const before = await edits();
+  await bodyEditor(page, f).click();
+  await back();
+  await expectDefault();
+  expect(f.writes).toHaveLength(0);
+  expect(await edits()).toEqual(before);
+
+  await card(page, f).click();
+  await bodyEditor(page, f).fill("A real starter change.");
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe("A real starter change.");
+  const [edited] = await libraryTemplates(f.repo, [await current(f)]);
+  expect(edited.starter_edited).toBe(true);
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+
+  await page
+    .locator(".template-editor-header")
+    .getByRole("button", { name: "Undo", exact: true })
+    .click();
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe(body(f.starter, f));
+  await expect(
+    page.locator(".template-editor-header").getByRole("status"),
+  ).toContainText("Saved");
+  await back();
+  await expectDefault();
+});
+
+test("Reset to default confirms, preserves identity, supports Undo and supplies the revision for the next edit", async ({
   page,
 }) => {
   const f = await fixture(page, true);
-  await page.goto("/studio/templates");
-  await expect(page.locator("[data-starter-status]")).toHaveCount(7);
-  await expect(
-    page.locator(".starter-pill").filter({ hasText: "Starter" }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
-    .click();
-  await expect(
-    page.getByRole("menuitem", { name: "Reset to starter", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: /Delete/ })).toHaveCount(0);
-  await shot(page, "cards-menu-1440");
-  await page
-    .getByRole("menuitem", { name: "Reset to starter", exact: true })
-    .click();
+  await page.goto(url(f));
   const reset = page.getByRole("dialog", {
-    name: `Reset ${f.starter.name} to the latest starter?`,
+    name: `Reset “${f.starter.name}” to default?`,
   });
-  await expect(
-    reset.getByRole("button", { name: "Cancel", exact: true }),
-  ).toBeFocused();
-  await shot(page, "reset-dialog-1440");
+  async function openReset() {
+    await more(page).click();
+    await page
+      .getByRole("menuitem", { name: "Reset to default", exact: true })
+      .click();
+    await expect(
+      reset.getByRole("button", { name: "Cancel", exact: true }),
+    ).toBeFocused();
+  }
+  await openReset();
+  await expect(reset).toContainText(
+    "Proposals already created from this template keep their copy.",
+  );
+  await shot(page, "starter-reset-1440");
+  await reset.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(await current(f)).toEqual(f.starter);
+  await openReset();
   await reset
-    .getByRole("button", { name: "Make a copy first", exact: true })
-    .click();
-  await page
-    .getByRole("dialog", { name: "Name your template" })
-    .getByRole("button", { name: "Make copy", exact: true })
+    .getByRole("button", { name: "Reset to default", exact: true })
     .click();
   const toast = page.getByRole("status").filter({ hasText: "Starter reset" });
   await expect(toast).toBeVisible();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    )!.content,
-  ).toEqual(f.seeds[0].content);
-  const backup = (await f.repo.entities<Template>("templates")).find(
-    (t) => t.source_starter_key === f.starter.starter_key,
-  )!;
-  expect(backup.content).toEqual(f.starter.content);
+  expect(await current(f)).toEqual(f.seeds[0]);
   await toast.getByRole("button", { name: "Undo", exact: true }).click();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
-  await page
-    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
-    .click();
-  await page
-    .getByRole("menuitem", { name: "Reset to starter", exact: true })
-    .click();
-  await page
-    .getByRole("dialog", {
-      name: `Reset ${f.starter.name} to the latest starter?`,
-    })
-    .getByRole("button", { name: "Cancel", exact: true })
-    .click();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
-  await page
-    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
-    .click();
-  await page
-    .getByRole("menuitem", { name: "Reset to starter", exact: true })
-    .click();
-  await page
-    .getByRole("dialog", {
-      name: `Reset ${f.starter.name} to the latest starter?`,
-    })
-    .getByRole("button", { name: "Reset to starter", exact: true })
+  await expect.poll(() => current(f)).toEqual(f.starter);
+  await openReset();
+  await reset
+    .getByRole("button", { name: "Reset to default", exact: true })
     .click();
   await expect(toast).toBeVisible();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    )!.content,
-  ).toEqual(f.seeds[0].content);
-  await toast.getByRole("button", { name: "Undo", exact: true }).click();
-  await page.goto(`/studio/templates/${f.starter.id}`);
+  await bodyEditor(page, f).fill("An edit after reset.");
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe("An edit after reset.");
   await page
     .getByRole("button", { name: "New proposal from this", exact: true })
     .click();
   await page.waitForURL(new RegExp(`template=${f.starter.id}`));
 });
-test("style, quote and insert attempts prompt without changing the library; phone bar fits", async ({
+
+test("Staff can edit and duplicate starters, while Reset and Hide remain super-admin actions", async ({
   page,
 }) => {
-  const f = await fixture(page);
-  await page.goto(`/studio/templates/${f.starter.id}`);
-  await page.getByRole("tab", { name: "Styles", exact: true }).click();
-  await page.getByText("Text styles", { exact: true }).click();
-  await page.getByRole("spinbutton", { name: /size \(px\)/ }).fill("24");
-  await expect(page.locator(".starter-edit-notice")).toBeVisible();
-  expect(f.writes).toEqual([]);
-  await page.reload();
-  await page.getByRole("tab", { name: "Quote", exact: true }).click();
-  await page.getByRole("button", { name: "Custom line", exact: true }).click();
-  await expect(page.locator(".starter-edit-notice")).toBeVisible();
-  expect(f.writes).toEqual([]);
-  await page.reload();
-  await page.getByRole("tab", { name: "Blocks", exact: true }).click();
-  await page
-    .getByRole("tabpanel", { name: "Blocks" })
-    .getByRole("menuitem", { name: /Paragraph/ })
-    .first()
-    .click();
-  await expect(page.locator(".starter-edit-notice")).toBeVisible();
-  expect(f.writes).toEqual([]);
-  await page.reload();
-  await page.getByRole("tab", { name: "Styles", exact: true }).click();
-  await page.locator(".cover-settings-accordion>summary").click();
-  await page.getByLabel("Cover layout", { exact: true }).selectOption("split");
-  await expect(page.locator(".starter-edit-notice")).toBeVisible();
-  expect(f.writes).toEqual([]);
-  await page.setViewportSize({ width: 375, height: 850 });
-  await attempt(page, f);
-  const bar = await page.locator(".starter-edit-notice").boundingBox(),
-    button = await page
-      .locator(".starter-edit-notice")
-      .getByRole("button", { name: "Make a copy", exact: true })
-      .boundingBox();
-  expect(button!.y).toBeGreaterThanOrEqual(bar!.y + 8);
-  expect(button!.y + button!.height).toBeLessThanOrEqual(
-    bar!.y + bar!.height - 7,
-  );
-  await shot(page, "starter-edit-bar-375");
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
-    375,
-  );
-});
-test("Staff can copy but cannot reset or hide a starter", async ({ page }) => {
   const f = await fixture(page, true, true);
-  await page.goto("/studio/templates");
+  await page.goto(url(f));
   expect(
     await page.evaluate(
       async () =>
         (await (await fetch("/api/auth/session")).json()).user.staff_role,
     ),
   ).toBe("member");
-  await page
-    .getByRole("button", { name: `Actions for ${f.starter.name}`, exact: true })
-    .click();
+  await bodyEditor(page, f).fill("A Staff edit.");
+  await expect
+    .poll(async () => body(await current(f), f))
+    .toBe("A Staff edit.");
+  await more(page).click();
   await expect(
-    page.getByRole("menuitem", { name: "Make a copy", exact: true }),
+    page.getByRole("menuitem", { name: "Duplicate", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("menuitem", {
-      name: /Reset to starter|Hide from new proposals/,
+      name: /Reset to default|Hide from new proposals/,
     }),
   ).toHaveCount(0);
 });
-test("an unfinished recovered style opens a clean editable copy with an explicit explanation", async ({
+
+test("starter quote and styles use the same in-place autosave", async ({
   page,
 }) => {
   const f = await fixture(page);
-  await page.addInitScript(
-    ({ id, value, workspace }) => {
-      for (const key of ["workspace", workspace])
-        localStorage.setItem(
-          `studio-unsaved:${key}:templates:${id}`,
-          JSON.stringify(value),
-        );
-    },
-    {
-      id: f.starter.id,
-      value: { ...f.starter, style_overrides: { body: { size: 0 } } },
-      workspace: f.repo.workspaceId,
-    },
-  );
-  await page.goto(`/studio/templates/${f.starter.id}`);
-  await page
-    .getByRole("button", { name: "Restore my edits", exact: true })
-    .click();
-  await page
-    .locator(".starter-edit-notice")
-    .getByRole("button", { name: "Make a copy", exact: true })
-    .click();
-  await page
-    .getByRole("dialog", { name: "Name your template" })
-    .getByRole("button", { name: "Make copy", exact: true })
-    .click();
-  await page.waitForURL(/copy=without-edit/);
-  await expect(
-    page.getByText(
-      "The unfinished change could not be applied. Continue editing here.",
-      { exact: true },
-    ),
-  ).toBeVisible();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.source_starter_key === f.starter.starter_key,
-    )!.style_overrides,
-  ).toBeUndefined();
-  expect(
-    (await f.repo.entities<Template>("templates")).find(
-      (t) => t.id === f.starter.id,
-    ),
-  ).toEqual(f.starter);
+  await page.goto(url(f));
+  await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await page.getByText("Text styles", { exact: true }).click();
+  await page.getByRole("spinbutton", { name: /size \(px\)/ }).fill("24");
+  await expect
+    .poll(async () => (await current(f)).style_overrides?.title?.size)
+    .toBe(24);
+  await page.getByRole("tab", { name: "Quote", exact: true }).click();
+  await page.getByRole("button", { name: "Custom line", exact: true }).click();
+  await expect
+    .poll(async () => (await current(f)).default_items?.length)
+    .toBe(1);
 });

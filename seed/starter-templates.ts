@@ -215,8 +215,6 @@ export function starterTemplates(
       },
       starterCoverLayouts[source.key] ?? "editorial",
     );
-    if (source.key === "website-design-build" && cover.background)
-      cover.background.graphic = "ring";
     return {
       id,
       name: source.name,

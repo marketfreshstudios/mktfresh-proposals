@@ -399,7 +399,7 @@ test("every starter field is highlighted in template and proposal editors, while
   ).toBe(true);
 });
 
-test("seventh Social media starter shows the four plans, keeps Growth selected and stays read-only", async ({
+test("seventh Social media starter shows the four plans and keeps Growth selected", async ({
   page,
 }) => {
   const f = await fixture(page, true),
@@ -474,12 +474,4 @@ test("seventh Social media starter shows the four plans, keeps Growth selected a
     await page.screenshot({
       path: "docs/screenshots/social-starter/investment-1440.png",
     });
-  const text = paper.locator(".tiptap").first();
-  await text.scrollIntoViewIfNeeded();
-  await text.click();
-  await text.fill("My attempted customization");
-  await expect(page.locator(".starter-edit-notice")).toBeVisible();
-  expect(
-    (await f.repo.entities<any>("templates")).find((t) => t.id === social.id),
-  ).toEqual(social);
 });

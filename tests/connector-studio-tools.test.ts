@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { setup } from "./helpers";
+import { setup, staff } from "./helpers";
 import {
   connectorStudioSchemas,
   connectorStudioTool,
@@ -8,7 +8,11 @@ import {
   connectorCover,
   savedBlockView,
 } from "../src/lib/connector-studio";
-import { studioRevision } from "../src/lib/studio-history";
+import {
+  restoreConnectorChange,
+  studioEntityViews,
+  studioRevision,
+} from "../src/lib/studio-history";
 import { workspaceStarterTemplates } from "../seed/starter-templates";
 import type { Item, Template, Audit } from "../src/lib/model";
 const actor = (workspace_id: string) => ({
@@ -329,7 +333,7 @@ it("new tools enforce the separate scope without widening an existing proposal g
       ]),
     ).rejects.toMatchObject({ status: 403 });
 });
-it("template metadata merges, quotes replace exactly, and starters refuse writes with the copy hint", async () => {
+it("template metadata merges, quotes replace exactly, and starter edits can be restored", async () => {
   const f = await setup(),
     template = (await f.repo.entities<Template>("templates"))[0],
     proposals = await f.repo.list();
@@ -357,13 +361,32 @@ it("template metadata merges, quotes replace exactly, and starters refuse writes
     await f.repo.entities<Item>("pricing_items"),
   )[0];
   await f.repo.put("templates", starter);
+  const edited = (await call(f, "update_template", {
+    template_id: starter.id,
+    revision: studioRevision(starter),
+    cover: { eyebrow: "A customized starter" },
+  })) as Template;
+  expect(edited).toMatchObject({
+    id: starter.id,
+    active: starter.active,
+    starter_key: starter.starter_key,
+  });
+  expect(edited.revision).not.toBe(studioRevision(starter));
   await expect(
     call(f, "update_template", {
       template_id: starter.id,
       revision: studioRevision(starter),
-      name: "Cannot edit",
+      cover: { eyebrow: "Stale" },
     }),
-  ).rejects.toThrow(/duplicate_template first/);
+  ).rejects.toMatchObject({ status: 409 });
+  const [view] = await studioEntityViews(f.repo, "templates", [edited], staff);
+  expect(view.connector_restore_event_id).toBeDefined();
+  await restoreConnectorChange(f.repo, view.connector_restore_event_id!, staff);
+  expect(
+    (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === starter.id,
+    ),
+  ).toEqual(starter);
   expect(await f.repo.list()).toEqual(proposals);
   await expect(
     call(f, "create_saved_block", {

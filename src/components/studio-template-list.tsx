@@ -117,12 +117,23 @@ export function StudioTemplateList({
   }, []);
   const edited = (id: string) =>
     events.find((e) => e.metadata.entity_id === id);
-  const lastEdit = (id: string) => {
-    const e = edited(id);
-    return e
+  const templateEdit = (id: string) =>
+    events.find(
+      (e) =>
+        e.metadata.entity_id === id &&
+        ([
+          "templates_saved",
+          "connector_template_updated",
+          "starter_reset_undone",
+        ].includes(e.type) ||
+          (e.type === "connector_change_restored" &&
+            e.metadata.entity_table === "templates")),
+    );
+  const editLabel = (e: Activity | undefined) =>
+    e
       ? `Edited ${personal ? staffDate(e.created_at) : studioDate(e.created_at)} · ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
       : "Default";
-  };
+  const lastEdit = (id: string) => editLabel(edited(id));
   const library = data?.library ?? [];
   const items = library.filter(
     (b) =>
@@ -342,11 +353,14 @@ export function StudioTemplateList({
                       ·{" "}
                       {t.starter_key
                         ? t.starter_edited
-                          ? edited(t.id)
-                            ? lastEdit(t.id)
+                          ? templateEdit(t.id)
+                            ? editLabel(templateEdit(t.id))
                             : "Edited"
                           : "Default"
-                        : lastEdit(t.id).replace(/^Edited/, "edited")}
+                        : editLabel(templateEdit(t.id)).replace(
+                            /^Edited/,
+                            "edited",
+                          )}
                     </small>
                   </div>
                 </a>

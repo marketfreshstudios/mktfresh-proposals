@@ -129,7 +129,7 @@ In proposal Markdown, `#` creates Heading 1 and starts a section; `##` and `###`
 
 Template/saved-block writes require a separate `templates:edit` grant: “Create and edit templates and saved blocks; nothing is sent.” Existing proposal-only connections do not gain this permission through refresh; reconnect and approve it. Read tools still require `proposals:read`. Human sending/signing and the proposal draft-only limit are unchanged.
 
-Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters are read-only: duplicate them before customizing. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog or proposal values. The kickoff calculation above is the only exception to copying amounts. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
+Created and duplicated templates start unavailable for new proposals (`active:false`) until a person enables them in Studio. Starters can be updated in place with `update_template`; use `duplicate_template` only to make a separate copy. Availability, Reset and deletion are never connector actions. Use supplied prices or exact catalog or proposal values. The kickoff calculation above is the only exception to copying amounts. Unknown fields are rejected with the valid field list; bracketed drafting guidance remains allowed in templates.
 
 Saved Text and List blocks accept Markdown; Contract clause blocks keep Studio's plain-text clause bodies. Existing fixed Image blocks are read-only. Each write commits an Activity event atomically with the entity, attributed to Claude and the consenting staff member. Updates retain the full previous state. A Super admin or that recorded editor can Restore while the entity still matches Claude's saved version. Later changes produce a 409, including if a staff save races the Restore. No existing proposal or frozen version changes.
 
@@ -139,7 +139,7 @@ Deployment requires `supabase/migrations/20261107090000_connector_studio_history
 
 ### Template read / modify / write
 
-`get_template {template_id}` (legacy `{id}` still works) returns `content` Markdown, `cover` text by stored line ID, `default_quote_items` in the same item/sub-line shape as `set_quote_lines`, and `revision`. It also returns read-only name/availability/starter metadata and a compact `blocks` inventory with IDs, labels and `requires_remove_blocks`.
+`get_template {template_id}` (legacy `{id}` still works) returns `content` Markdown, `cover` text by stored line ID, `default_quote_items` in the same item/sub-line shape as `set_quote_lines`, and `revision`. It also returns the name, read-only availability and starter metadata, and a compact `blocks` inventory with IDs, labels and `requires_remove_blocks`.
 
 Call `update_template {template_id, revision, name?, description?, content?, cover?, default_quote_items?, remove_blocks?}`. Provided Markdown and quote items replace those fields; cover text merges only supplied lines. Omitted fields remain unchanged. Do not send read-only metadata as update arguments. New and duplicated templates remain hidden until staff enable them; updating an available template keeps its availability.
 
@@ -153,7 +153,7 @@ Omitting a text/list/heading/image/divider marker removes that block. Omitting a
 
 Preservation markers are for `update_template` and group `update_saved_block`; do not copy them into proposal draft Markdown.
 
-Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore. These operations never update existing proposals or frozen versions.
+Use the fresh revision after a 409; reread, merge and retry, never blindly overwrite. The previous state remains available through staff Restore, including for in-place starter changes. These operations never update existing proposals or frozen versions.
 
 ### Case-study links and logos
 

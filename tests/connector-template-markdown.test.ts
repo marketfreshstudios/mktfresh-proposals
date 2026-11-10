@@ -343,20 +343,22 @@ it("get/update descriptions publish every guard and the new scope is enforced", 
     ),
   ).rejects.toMatchObject({ status: 403 });
 });
-it("public template tools refuse starter edits, duplicate first, and never expose availability changes", async () => {
+it("public template tools edit starters in place, can duplicate, and never expose availability changes", async () => {
   const f = await fixture();
   await f.repo.put("templates", {
     ...f.template,
     starter_key: "sample-starter",
   });
   const starter = await f.read();
-  await expect(
-    f.call("update_template", {
-      template_id: f.template.id,
-      revision: starter.revision,
-      content: starter.content,
-    }),
-  ).rejects.toThrow(/duplicate_template first/);
+  const updated = await f.call("update_template", {
+    template_id: f.template.id,
+    revision: starter.revision,
+    content: starter.content.replace("# Case studies", "# Edited starter"),
+  });
+  expect(updated.template_id).toBe(f.template.id);
+  expect((await f.read()).content).toContain("# Edited starter");
+  expect((await f.read()).starter_key).toBe(starter.starter_key);
+  const savedStarter = await f.current();
   const copy = await f.call("duplicate_template", {
     template_id: f.template.id,
     name: "Our editable copy",
@@ -367,7 +369,7 @@ it("public template tools refuse starter edits, duplicate first, and never expos
   await f.call("update_template", {
     template_id: copy.template_id,
     revision: view.revision,
-    content: view.content.replace("# Case studies", "# Our stories"),
+    content: view.content.replace("# Edited starter", "# Our stories"),
   });
   expect(
     (await f.call("get_template", { template_id: copy.template_id })).content,
@@ -382,7 +384,7 @@ it("public template tools refuse starter edits, duplicate first, and never expos
     }),
   ).rejects.toThrow();
   expect((await f.current()).starter_key).toBe("sample-starter");
-  expect((await f.current()).content).toEqual(f.template.content);
+  expect(await f.current()).toEqual(savedStarter);
 });
 
 it("a stale read gets actionable 409 before parsing markers removed by a concurrent edit", async () => {
