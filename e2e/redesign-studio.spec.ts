@@ -496,13 +496,18 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       ]) {
         scenario = state;
         await page.goto("/");
-        await expect(page.locator(".home-v4")).toBeVisible();
+        await expect(
+          page.getByRole("heading", {
+            level: 1,
+            name: /^(Welcome to Yeswell|Good )/,
+          }),
+        ).toBeVisible();
         await capture(state, frame, width, theme);
       }
       scenario = "loading";
       await page.goto("/proposals");
       await expect(
-        page.getByRole("status", { name: "Loading your workspace…" }),
+        page.getByRole("status", { name: "Loading proposals…" }),
       ).toBeVisible();
       await capture("loading", "8c", width, theme);
       scenario = "normal";

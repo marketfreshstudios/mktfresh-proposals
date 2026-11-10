@@ -265,7 +265,7 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
     report?.pipeline.reduce((sum, stage) => sum + stage.count, 0) ?? 0;
 
   return (
-    <div className="reports" aria-busy={loading}>
+    <div className="reports">
       <header className="report-header">
         <div>
           <p className="t-eyebrow">

@@ -280,7 +280,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       ]) {
         await page.goto(url);
         await expect(
-          page.getByText("Loading your workspace…", { exact: true }),
+          page.getByRole("status", { name: /^Loading / }),
         ).toHaveCount(0);
         await capture(name, frame, width, theme);
         if (name === "proposals") {
@@ -420,9 +420,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         ).toBeVisible();
       await capture("studio", "Responsive Studio navigation", width, theme);
       await page.goto(`/clients/${unused.id}`);
-      await expect(
-        page.getByText("Loading your workspace…", { exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(
+        0,
+      );
       await page
         .getByRole("button", { name: "Delete client", exact: true })
         .click();

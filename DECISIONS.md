@@ -991,6 +991,6 @@ New workspaces get three editable Sample templates with no preset prices: Websit
 
 ### Staff loading and table hover (Nov 9, 2026)
 
-Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available.
+Staff pages show their heading and static controls while data loads. Reports reserves the date line and uses placeholders sized for the metrics and summary panels. Clients keeps its heading, New client action, views, search, and table header in place. Record titles use the route's label until the record supplies its name. Counts, connection status, and actions that depend on returned data appear when available. Each loading area has a named status. The Templates page keeps one New template action in the header, including when the list is empty.
 
 Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.

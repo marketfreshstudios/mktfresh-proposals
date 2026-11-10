@@ -88,13 +88,20 @@ export function StudioTemplateList({
   data: Data | null;
   blocks?: boolean;
 }) {
-  const [templates, setTemplates] = useState(data?.templates ?? []);
   const savedTemplates = data?.templates;
-  useEffect(() => {
-    if (savedTemplates) setTemplates(savedTemplates);
-  }, [savedTemplates]);
+  const [refreshed, setRefreshed] = useState<{
+    source: typeof savedTemplates;
+    templates: Template[];
+  }>();
+  const templates =
+    refreshed && refreshed.source === savedTemplates
+      ? refreshed.templates
+      : (savedTemplates ?? []);
   const refreshTemplates = async () => {
-    setTemplates(await api<Template[]>("/api/templates"));
+    setRefreshed({
+      source: savedTemplates,
+      templates: await api<Template[]>("/api/templates"),
+    });
   };
   const [query, setQuery] = useState(""),
     [type, setType] = useState("All"),
@@ -352,11 +359,6 @@ export function StudioTemplateList({
             <Empty
               title={
                 query ? "No matching templates" : "Create your first template"
-              }
-              action={
-                query ? undefined : (
-                  <Button onClick={create}>New template</Button>
-                )
               }
             />
           )}

@@ -491,7 +491,10 @@ test("staff routes show their heading and static controls before data arrives", 
         page.getByRole("heading", { name: heading, level: 1, exact: true }),
       ).toBeVisible();
       await expect(
-        page.locator(":is(.skeleton, .report-skeleton)").first(),
+        page
+          .getByRole("main")
+          .getByRole("status", { name: /^Loading / })
+          .first(),
       ).toBeVisible();
       if (control)
         await expect(
@@ -571,7 +574,10 @@ test("Reports and Clients keep their header and filter positions during loading"
       await expect(heading).toBeVisible();
       await expect(controls).toBeVisible();
       await expect(
-        page.locator(":is(.skeleton, .report-skeleton)").first(),
+        page
+          .getByRole("main")
+          .getByRole("status", { name: /^Loading / })
+          .first(),
       ).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       const titleY = (await heading.boundingBox())!.y;

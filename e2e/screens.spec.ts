@@ -216,7 +216,9 @@ test("all screen states in both themes, with explicit visual fixtures", async ({
         theme,
       );
       await page.goto(url);
-      await expect(page.getByText("Loading your workspace…")).toHaveCount(0);
+      await expect(page.getByRole("status", { name: /^Loading / })).toHaveCount(
+        0,
+      );
       await expect(page.getByText("Opening your proposal…")).toHaveCount(0);
       if (prepare) await prepare();
       if (
