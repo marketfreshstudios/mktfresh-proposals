@@ -42,6 +42,7 @@ type AccountContext = {
   save: (
     patch: StaffAccountPatch,
     undo?: StaffAccountPatch,
+    options?: { quiet?: boolean },
   ) => Promise<StaffAccount | undefined>;
   setTheme: (theme: StaffTheme) => Promise<void>;
   accept: (account: StaffAccount) => void;
@@ -78,7 +79,11 @@ export function StaffAccountProvider({
   function accept(next: StaffAccount) {
     onChanged?.(next);
   }
-  function save(patch: StaffAccountPatch, undo?: StaffAccountPatch) {
+  function save(
+    patch: StaffAccountPatch,
+    undo?: StaffAccountPatch,
+    options?: { quiet?: boolean },
+  ) {
     const operation = queue.current
       .catch(() => {})
       .then(async () => {
@@ -87,7 +92,7 @@ export function StaffAccountProvider({
           body: JSON.stringify(patch),
         });
         accept(next);
-        setToast({ undo });
+        if (!options?.quiet) setToast({ undo });
         return next;
       });
     queue.current = operation;

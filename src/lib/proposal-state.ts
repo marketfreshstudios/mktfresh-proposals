@@ -8,6 +8,7 @@ export const listViews = [
   "Sent",
   "Viewed",
   "Not viewed",
+  "Expiring",
   "Won",
   "Needs countersign",
   "Lost",

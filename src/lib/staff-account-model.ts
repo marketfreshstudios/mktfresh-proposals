@@ -48,6 +48,14 @@ export function accountNotification(key: string): key is AccountNotification {
 
 export const themes = ["light", "dark", "system"] as const;
 export type StaffTheme = (typeof themes)[number];
+export const homePipelineRanges = [
+  "month",
+  "3-months",
+  "6-months",
+  "year",
+  "all",
+] as const;
+export type HomePipelineRange = (typeof homePipelineRanges)[number];
 export const staffDateFormats = ["medium", "long", "numeric", "iso"] as const;
 export const staffTimeZones = ["UTC", ...Intl.supportedValuesOf("timeZone")];
 
@@ -96,6 +104,7 @@ export const StaffAccountPatchSchema = z
     theme: z.enum(themes).optional(),
     timezone: staffTimezone.nullable().optional(),
     date_format: z.enum(staffDateFormats).optional(),
+    home_pipeline_range: z.enum(homePipelineRanges).optional(),
     notifications: notificationValues.optional(),
     own_proposals_only: z.boolean().optional(),
   })
@@ -110,6 +119,7 @@ export type StaffAccount = {
   theme: StaffTheme | null;
   timezone: string | null;
   date_format: (typeof staffDateFormats)[number] | null;
+  home_pipeline_range?: HomePipelineRange;
   notifications: Partial<Record<AccountNotification, boolean>>;
   own_proposals_only: boolean;
   photo_url: string | null;

@@ -494,14 +494,14 @@ test("Home keeps the three areas in place and shows one compact Expiring message
   await page.setViewportSize({ width: 1440, height: 960 });
   await fixture(page);
   await page.goto("/");
-  const pipeline = page.getByRole("region", { name: /Open pipeline/ });
+  const pipeline = page.getByRole("region", { name: /Pipeline/ });
   const expiring = page.getByRole("region", { name: "Expiring this week" });
   await expect(pipeline).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Pricing references" }),
   ).toHaveCount(0);
   await expect(
-    expiring.getByRole("link", { name: "All proposals" }),
+    expiring.getByRole("link", { name: "View all", exact: true }),
   ).toBeVisible();
   await expect(
     expiring.getByText("Nothing closes in the next 7 days."),
@@ -509,9 +509,9 @@ test("Home keeps the three areas in place and shows one compact Expiring message
   await expect(expiring.locator("p")).toHaveCount(1);
   await expect(expiring.locator("svg.lucide-check")).toHaveCount(1);
   const bar = pipeline.locator(".home-pipeline-bar");
-  await expect(bar).toHaveCSS("column-gap", "3px");
+  await expect(bar).toHaveCSS("border-radius", "4px");
   await expect(bar.locator("span")).toHaveCount(3);
-  await expect(bar.locator("span").first()).toHaveCSS("border-radius", "4px");
+  await expect(bar.locator("span").first()).toHaveCSS("border-radius", "0px");
   expect((await expiring.boundingBox())!.height).toBeLessThan(
     (await pipeline.boundingBox())!.height,
   );

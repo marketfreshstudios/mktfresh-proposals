@@ -60,6 +60,9 @@ function accountView(saved: SavedAccount | null, name: string): StaffAccount {
     theme: saved?.theme ?? null,
     timezone: saved?.timezone ?? null,
     date_format: saved?.date_format ?? null,
+    ...(saved?.home_pipeline_range
+      ? { home_pipeline_range: saved.home_pipeline_range }
+      : {}),
     notifications: saved?.notifications ?? {},
     own_proposals_only: saved?.own_proposals_only ?? false,
     photo_url: saved?.photo_path
