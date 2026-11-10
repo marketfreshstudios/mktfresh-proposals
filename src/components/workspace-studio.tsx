@@ -102,6 +102,7 @@ export function WorkspaceStudio({
   run: Runner;
   initial?: string;
 }) {
+  const fontInput = useRef<HTMLInputElement>(null);
   const [section, setSection] = useState(() =>
     workspaceInitialSection(initial),
   );
@@ -779,10 +780,14 @@ export function WorkspaceStudio({
           {fontSelect("Headings", "heading")}
           {fontSelect("Body text", "body")}
         </div>
-        <Field label="Upload a font file · WOFF2 or TTF, under 1 MB">
+        <div className="field">
+          <span>Upload a font file · WOFF2 or TTF, under 1 MB</span>
           <input
+            ref={fontInput}
+            aria-label="Upload a font file · WOFF2 or TTF, under 1 MB"
             type="file"
             accept=".woff2,.ttf"
+            hidden
             disabled={!licensed || uploading}
             onChange={async (e) => {
               const file = e.target.files?.[0];
@@ -812,7 +817,14 @@ export function WorkspaceStudio({
               }
             }}
           />
-        </Field>
+          <Button
+            className="action"
+            disabled={!licensed || uploading}
+            onClick={() => fontInput.current?.click()}
+          >
+            Upload font
+          </Button>
+        </div>
         <label className="check-row">
           <input
             type="checkbox"

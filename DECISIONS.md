@@ -995,6 +995,10 @@ Staff pages show their heading and static controls while data loads. Reports res
 
 Staff table rows use Mist (#F4F7F7, the preview surface token) in light mode. Dark table hover keeps the existing treatment.
 
+### Primary create buttons (Nov 9, 2026)
+
+Clients uses one clay New client button in its header, including on an empty list. Products uses clay for New custom family whenever it is shown; Add one-time product and Save item and terms on an existing product are outline. The create-product dialog has its own clay submit. The first-run Products screen keeps Connect Stripe as its next action. Proposal fonts uses clay for Upload font with the existing PDF embedding license gate. Team uses clay for Invite. Home, Proposals, Templates and Saved blocks already give the page’s single creation action the clay treatment. Emails has no create action.
+
 ### Redesign 22 A · Your account (Nov 9, 2026)
 
 The account menu links to Your account and Notifications. The desktop account has section navigation, tablet uses underline tabs, and the phone index links to each subpage. A phone profile opens at `/account?view=profile`. Each staff account has one workspace, so Switch workspace is omitted. Profile email and the sign-in email on Security are read-only until the security PR. Sign-in links remain out of scope.
@@ -1003,7 +1007,7 @@ First and last name save to the existing staff display name in the same transact
 
 Notifications lists first view, client question, decline, completion, and billing setup emails. There is no In app column or new notification inbox. Expiry and Claude draft emails are not sent today and have no switch. Individual preferences filter existing email recipients. First-view email and question admin recipients still follow their workspace rules, and the ownership switch can only narrow delivery. Required countersign and billing alerts and signed-copy delivery keep their existing rules.
 
-The designated company signatory can update the image in the existing Workspace signatory setting, even when their role is Staff. The server checks the designation and current signatory version. The workspace name, signing authority, consent and other signatory settings stay outside this endpoint. Existing signatures and sealed PDFs keep their original image.
+The designated company signatory can update the image in the existing Workspace signatory setting, even when their role is Staff. The server checks the designation and current signatory version. The workspace name, signing authority, consent and other signatory settings stay outside this endpoint. Existing signatures and sealed PDFs keep their original image. Both the editable and read-only account views show a framed preview of the saved company signature or an explicit empty state.
 
 Theme is shared by the account page and menu, and System follows the device. Existing browser theme is the fallback until a personal theme is set. A personal time zone and date format change staff display only. Proposal validity, client-facing dates, PDFs, and report calculations retain the workspace time zone.
 
