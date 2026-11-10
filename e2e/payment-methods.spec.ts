@@ -45,7 +45,7 @@ test("Payment methods autosave for Super admins and are read-only for Staff, at 
   await input.selectOption("card_ach");
   await expect.poll(() => f.settings.payment_methods).toBe("card_ach");
   await expect(
-    page.locator(".workspace-section-card [role=status]"),
+    page.locator(".workspace-section [role=status]"),
   ).toHaveText("Saved");
   await shot(page, "billing-ach-1440");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);

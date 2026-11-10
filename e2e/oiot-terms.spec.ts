@@ -247,9 +247,14 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
 
   await page.setViewportSize({ width: 375, height: 850 });
   const phoneClause = page
-    .locator(".flow-contract details")
+    .locator(".flow-contract .contract > section")
     .filter({ hasText: "4.4 Own It Over Time" });
-  await phoneClause.locator("summary").click();
+  await expect(
+    phoneClause.getByRole("heading", { name: "4.4 Own It Over Time" }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".flow-contract details, .flow-contract summary"),
+  ).toHaveCount(0);
   await expect(
     phoneClause.getByText("Ownership.", { exact: true }),
   ).toHaveJSProperty("tagName", "STRONG");
@@ -675,3 +680,113 @@ test("MCP fills an omitted kickoff and preserves exact amounts through proposal 
   });
   expect(changed.default_quote_items[0]).toMatchObject(revised);
 });
+
+for (const width of [1440, 375]) {
+  test(`selecting Own It Over Time lands at the clause in the editor and client at ${width}`, async ({
+    page,
+    request,
+  }) => {
+    page.setDefaultTimeout(12000);
+    await page.setViewportSize({ width, height: width === 375 ? 850 : 1040 });
+    await page.emulateMedia({
+      reducedMotion: width === 375 ? "reduce" : "no-preference",
+    });
+    const { draft, planId, post } = await fixture(request);
+    const quote = draft.quote.map((item) =>
+      item.pricing_item_id !== planId
+        ? item
+        : {
+            ...item,
+            oiot_purchase_price: 375000,
+            sublines: [
+              ...item.sublines,
+              {
+                id: crypto.randomUUID(),
+                interval: "one_time",
+                label: "Kickoff",
+                amount: 150000,
+                qty: 1,
+                list_amount: null,
+                stripe_lookup_key: null,
+                qbo_item_ref: "mock-services",
+                oiot_kickoff: true,
+              },
+            ],
+          },
+    );
+    const patch = async (revision: number, value: unknown) => {
+      const response = await request.patch(`/api/proposals/${draft.id}`, {
+        headers,
+        data: { revision, quote: value },
+      });
+      expect(response.ok(), await response.text()).toBe(true);
+      return (await response.json()) as Proposal;
+    };
+    const get = async (): Promise<Proposal> =>
+      (await request.get(`/api/proposals/${draft.id}`, { headers })).json();
+    await patch(draft.revision, quote);
+    await page.goto(`/proposals/${draft.id}/edit`);
+    await expect(
+      page.locator(".editor-page-sheets[data-layout-settled=true]"),
+    ).toBeVisible();
+    const row = await openQuoteRow(page, "Own It Over Time");
+    await row.getByRole("radio", { name: "Selected for client" }).click();
+
+    const clause = page.getByRole("heading", {
+      name: "4.4 Own It Over Time",
+      exact: true,
+    });
+    const checkLanding = async (scroller?: string) => {
+      await expect(clause).toBeVisible();
+      await expect
+        .poll(() =>
+          clause.evaluate((el, selector) => {
+            const viewport = selector
+              ? document.querySelector(selector)!.getBoundingClientRect()
+              : undefined;
+            const heading = el.getBoundingClientRect();
+            const top = viewport?.top ?? 0;
+            return (
+              heading.top >= top + 8 &&
+              heading.top <= top + 32 &&
+              heading.bottom < (viewport?.bottom ?? innerHeight)
+            );
+          }, scroller),
+        )
+        .toBe(true);
+    };
+    const evidence = async (surface: string) => {
+      if (process.env.CAPTURE_PREVIEW_TERMS !== "1") return;
+      const gallery = "docs/screenshots/client-preview-terms";
+      mkdirSync(gallery, { recursive: true });
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        path: `${gallery}/${surface}-${width}.png`,
+        animations: "disabled",
+      });
+    };
+    await checkLanding(".editor-document-region");
+    await evidence("editor-landing");
+    await expect
+      .poll(
+        async () =>
+          (await get()).quote.find((item) => item.pricing_item_id === planId)
+            ?.default_selected,
+      )
+      .toBe(true);
+    const saved = await patch((await get()).revision, quote);
+    const sent = (await post(`proposals/${draft.id}/send`, {
+      revision: saved.revision,
+      delivery_method: "manual",
+    })) as Proposal;
+    await page.goto(`/p/${sent.token}`);
+    await expect(clause).toHaveCount(0);
+    await page.getByRole("radio", { name: /Own It Over Time/ }).check();
+    await checkLanding();
+    await expect(page.getByText("Ownership.", { exact: true })).toBeVisible();
+    await expect(
+      page.locator("#proposal-document details, #proposal-document summary"),
+    ).toHaveCount(0);
+    await evidence("client-terms-landing");
+  });
+}

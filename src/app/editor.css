@@ -514,13 +514,13 @@
 .document-reading .draft-block[data-ai="true"]::before {
   display: none;
 }
-.document-reading :is(.contract-editor, .flow-contract) details {
+.document-reading .contract-editor details {
   border: 0;
   border-top: 1px solid var(--paper-border);
   padding: 16px 0;
   margin: 0;
 }
-.document-reading :is(.contract-editor, .flow-contract) summary {
+.document-reading .contract-editor summary {
   font: 600 16px/1.65 var(--proposal-body, "Source Serif 4", serif);
 }
 .document-reading .contract-editor > .button-wrap {
@@ -597,7 +597,7 @@
 :is(.staff-foundation, .client-flow) .paper.document-reading {
   max-width: 704px;
 }
-.document-reading :is(.contract-editor, .flow-contract) summary {
+.document-reading .contract-editor summary {
   min-height: 44px;
 }
 @media (min-width: 700px) and (max-width: 1099px) {
