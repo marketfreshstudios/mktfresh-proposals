@@ -123,7 +123,11 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   await expect(
     ai.getByRole("button", { name: "Mark this AI-written block reviewed" }),
   ).toHaveCSS("color", marker.color);
-  await expect(page.locator(".quote-workspace .action:visible")).toHaveCount(0);
+  // Owner 10 Nov: the header Review & send is the screen's one clay action.
+  await expect(page.locator(".quote-workspace .action:visible")).toHaveCount(1);
+  await expect(page.locator(".quote-workspace .action:visible")).toHaveClass(
+    /\beditor-header-send\b/,
+  );
   await capture(page, "editor-quote-1440");
 
   const toggles = rows.locator(".quote-row-toggle");
@@ -164,6 +168,16 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
     .poll(() => f.active().quote.map((item) => item.default_selected))
     .toEqual([true, false, true]);
 
+  // Owner 10 Nov: Review & send is the clay primary until the Send panel's
+  // own clay Send button is on screen.
+  if (
+    !(
+      await page
+        .getByRole("tab", { name: "Send", exact: true })
+        .getAttribute("aria-selected")
+    )?.includes("true")
+  )
+    await expect(page.locator(".editor-header-send")).toHaveClass(/\baction\b/);
   await page.getByRole("tab", { name: "Send", exact: true }).click();
   const send = page.locator(".send-action-card");
   await expect(send.getByRole("button", { name: /^Send to/ })).toBeDisabled();

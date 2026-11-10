@@ -2736,6 +2736,7 @@ function QuoteEditorContent({
             window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
         }}
         onReviewSend={() => openTools("Send")}
+        sendPanelOpen={tab === "Send" && (panels.right || drawer)}
         title={p.title}
         backLabel="Proposals"
         backHref="/proposals"
