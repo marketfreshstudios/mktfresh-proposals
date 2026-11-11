@@ -56,6 +56,7 @@ import { StaffShell } from "./staff-shell";
 import { AccountPage } from "./account-page";
 import { staffName, type StaffAccount } from "../lib/staff-account-model";
 import { Sheet, Skeleton } from "./foundation";
+import { DetailsLoading, EditorLoading } from "./proposal-loading";
 import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
 import { withDraftSettings } from "../lib/proposal-settings";
 import type { ReferenceDocument } from "../lib/documents";
@@ -457,6 +458,14 @@ function StaffAppContent({
           }
         />
       );
+    } else if (section === "proposals" && id && id !== "new") {
+      content =
+        query.view === "record" ||
+        (action && !["edit", "send"].includes(action)) ? (
+          <DetailsLoading />
+        ) : (
+          <EditorLoading />
+        );
     } else {
       content = <Skeleton kind={id ? "document" : "table"} />;
     }
@@ -616,12 +625,17 @@ function StaffAppContent({
   const ownsHeading =
     isValidElement(content) &&
     (content.type === RecordV4 ||
+      content.type === DetailsLoading ||
+      content.type === EditorLoading ||
       content.type === ProposalEditor ||
       content.type === TemplatesStudio);
   return (
     <StaffShell
       path={path}
-      record={isValidElement(content) && content.type === RecordV4}
+      record={
+        isValidElement(content) &&
+        (content.type === RecordV4 || content.type === DetailsLoading)
+      }
       settings={data?.settings ?? data?.workspace_defaults ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}

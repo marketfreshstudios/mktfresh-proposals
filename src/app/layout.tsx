@@ -8,6 +8,7 @@ import { PointerFocus } from "../components/pointer-focus";
 import { TapDebug } from "../components/tap-debug";
 import "./globals.css";
 import "./foundation.css";
+import "./proposal-loading.css";
 import "./client-flow.css";
 import "./client-sheets.css";
 import "./records.css";
