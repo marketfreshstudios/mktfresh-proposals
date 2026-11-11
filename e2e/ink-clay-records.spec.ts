@@ -939,7 +939,13 @@ test("Viewed is a counted primary tab that stays reachable at desktop, tablet an
     if (width === 375) {
       expect(dimensions.content).toBeGreaterThan(dimensions.viewport);
       await expect(viewed).toHaveCSS("min-height", "44px");
-      expect(await tabs.evaluate((list) => list.scrollLeft)).toBe(0);
+      // Count chips widen the tabs; the selected tab must be fully in view.
+      const [list, tab] = [
+        (await tabs.boundingBox())!,
+        (await viewed.boundingBox())!,
+      ];
+      expect(tab.x).toBeGreaterThanOrEqual(list.x - 1);
+      expect(tab.x + tab.width).toBeLessThanOrEqual(list.x + list.width + 1);
     }
     if (process.env.CAPTURE_VIEWED_TAB === "1" && width !== 768) {
       await viewed.click();
