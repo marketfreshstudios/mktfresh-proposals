@@ -387,7 +387,7 @@ export function CatalogStudio({
             <StaffTable className="studio-data-table product-table">
               <StaffTableHead className="studio-table-head">
                 <span>Product</span>
-                <span>Price</span>
+                <span className="num-col">Price</span>
                 <span>Plan terms</span>
                 <span>Source</span>
               </StaffTableHead>
@@ -412,7 +412,7 @@ export function CatalogStudio({
                     <strong>{itemDisplayName(i)}</strong>
                     <small>{i.description}</small>
                   </span>
-                  <span>
+                  <span className="num-col">
                     <span className="catalog-price">
                       {(i.sublines ?? [i])
                         .map(

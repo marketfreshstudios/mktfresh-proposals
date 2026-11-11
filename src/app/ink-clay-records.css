@@ -801,14 +801,14 @@
     .proposal-rows.with-row-actions.has-owner
     :is(.proposal-row, .proposal-row-head) {
     grid-template-columns:
-      minmax(0, 2.15fr) minmax(0, 1.1fr) repeat(2, minmax(0, 0.65fr))
+      minmax(0, 2.15fr) minmax(0, 1.1fr) repeat(2, minmax(max-content, 0.65fr))
       minmax(0, 0.85fr) minmax(0, 0.95fr) 196px;
   }
   .ink-clay
     .proposal-rows.with-row-actions.has-owner.has-yearly
     :is(.proposal-row, .proposal-row-head) {
     grid-template-columns:
-      minmax(0, 2fr) minmax(0, 1.05fr) repeat(3, minmax(0, 0.65fr))
+      minmax(0, 2fr) minmax(0, 1.05fr) repeat(3, minmax(max-content, 0.65fr))
       minmax(0, 0.85fr) minmax(0, 0.9fr) 196px;
   }
 }
@@ -1340,4 +1340,11 @@
 .ink-clay .proposal-directory .more-views-trigger[data-active="true"] {
   border-color: var(--ink-title);
   color: var(--ink-title);
+}
+
+/* Owner 10 Nov: empty amounts are muted so a dash never reads as part of the
+   next column. */
+.ink-clay .proposal-rows .no-amount {
+  color: var(--ink-muted);
+  opacity: 0.6;
 }
