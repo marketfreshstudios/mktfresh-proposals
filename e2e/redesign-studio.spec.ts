@@ -193,9 +193,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   expect(settings.default_validity_days).toBe(45);
   expect(settings.company_signatory!.image!.length).toBeGreaterThan(1000);
   await page.reload();
@@ -228,9 +228,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
   await expect(
     page.getByText("Workspace settings saved", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   expect(typeof settings.proposal_fonts?.body).toBe("object");
   const chosen = settings.proposal_fonts!.body;
   if (typeof chosen !== "string") {
@@ -252,9 +252,9 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     page.getByText(/fine for backgrounds and large text/),
   ).toBeVisible();
   await page.getByRole("button", { name: "Done", exact: true }).click();
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   await page.goto("/proposals?new=1");
   await page
     .getByLabel("Title", { exact: true })
@@ -528,10 +528,10 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         ),
       ).toHaveText(
         width < 700
-          ? "Offline · saved on this device"
+          ? "Offline | saved on this device"
           : width < 960
             ? "Offline"
-            : "Offline · saved on this device",
+            : "Offline | saved on this device",
       );
       await capture("editor-offline", "8e", width, theme);
       await context.setOffline(false);
@@ -542,7 +542,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
             : ".editor-save-status",
         ),
       ).toHaveText(
-        width < 700 ? "Draft · Saved" : width < 960 ? "Saved" : "Draft · Saved",
+        width < 700 ? "Draft | Saved" : width < 960 ? "Saved" : "Draft | Saved",
       );
       rejectSave = true;
       await page

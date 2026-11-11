@@ -12,6 +12,7 @@ export function PhoneEditorHeader({
   aiPending,
   locked,
   onBack,
+  backLabel = "Proposals",
   onDone,
   onNextAi,
   onPreviewPdf,
@@ -29,6 +30,7 @@ export function PhoneEditorHeader({
   aiPending: number;
   locked: boolean;
   onBack(): void;
+  backLabel?: string;
   onDone?(): void;
   onNextAi?(): void;
   onPreviewPdf?(): void;
@@ -51,8 +53,12 @@ export function PhoneEditorHeader({
       <button
         type="button"
         className="phone-header-back"
-        aria-label={editingTitle ? "Done editing section" : "Back to proposals"}
-        title={editingTitle ? "Done" : "Back to proposals"}
+        aria-label={
+          editingTitle
+            ? "Done editing section"
+            : `Back to ${backLabel.toLowerCase()}`
+        }
+        title={editingTitle ? "Done" : `Back to ${backLabel.toLowerCase()}`}
         onClick={editingTitle ? onDone : onBack}
       >
         <ChevronLeft size={18} aria-hidden="true" />

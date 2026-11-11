@@ -220,6 +220,7 @@ export function QuoteGroupSort({
     if (source) return source.id === group.id;
     return !group.locked && !units.find((unit) => unit.id === id)?.options;
   }
+  const endMargin = 64;
   const collision: CollisionDetection = ({ pointerCoordinates, active }) => {
     const current = state.current;
     const panel = bounds.current?.getBoundingClientRect();
@@ -231,8 +232,10 @@ export function QuoteGroupSort({
       !root.current ||
       pointer.x < panel.left ||
       pointer.x > panel.right ||
-      pointer.y < panel.top ||
-      pointer.y > panel.bottom
+      // Allow a margin past the ends so an option can leave a group that is
+      // first or last in the list by dragging just past it.
+      pointer.y < panel.top - endMargin ||
+      pointer.y > panel.bottom + endMargin
     )
       return [];
     const id = String(active.id);

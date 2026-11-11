@@ -373,12 +373,25 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                   <div
                     className="block-scope"
                     onPointerDownCapture={(e) => {
+                      const target = e.target as Element;
                       if (
-                        !(e.target as Element).closest(
+                        target.closest(
                           ".field-editor,[data-editor-chrome],[role=dialog]",
                         )
                       )
-                        activate(null);
+                        return;
+                      // A touch on a control must not change the page before
+                      // its click: iOS would hold the tap as a hover preview.
+                      // Focus moves to the control on click, and onFocusCapture
+                      // releases the text toolbar then.
+                      if (
+                        e.pointerType !== "mouse" &&
+                        target.closest(
+                          "button, a[href], [role=button], [role=tab]",
+                        )
+                      )
+                        return;
+                      activate(null);
                     }}
                     onFocusCapture={(e) => {
                       if (

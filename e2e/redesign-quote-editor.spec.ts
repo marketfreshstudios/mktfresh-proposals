@@ -304,7 +304,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   await page.getByRole("button", { name: "Keep $2,600", exact: true }).click();
   await expect.poll(() => patches).toBeGreaterThan(0);
   await expect(
-    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
+    page.getByText(/^(All changes saved|Draft \| Saved)$/, { exact: true }),
   ).toBeVisible();
   const drag = page.getByRole("button", {
     name: "Drag " + quote[0].name,

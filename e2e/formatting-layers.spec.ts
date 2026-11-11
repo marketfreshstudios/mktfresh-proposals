@@ -309,7 +309,7 @@ test("formatting rows stay above content and every button is reachable in all ed
       `send note ${width}`,
     );
     await expect(
-      page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
+      page.getByText(/^(All changes saved|Draft \| Saved)$/, { exact: true }),
     ).toBeVisible();
     await page.goto(`/studio/templates/${template.id}`);
     if (width === 1440)
