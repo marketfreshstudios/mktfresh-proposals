@@ -710,7 +710,7 @@ export function ProposalRows({
               >
                 <a
                   className="proposal-row-link"
-                  href={`/proposals/${p.id}`}
+                  href={`/proposals/${p.id}?view=record`}
                   aria-label={`Open ${p.client.company}: ${p.title}`}
                   onClick={rememberList}
                 />
