@@ -1,10 +1,20 @@
 "use client";
 import { ToastSurface } from "./toast-surface";
 import { StaffSectionHeading } from "./staff-section-heading";
+import { StaffPerson } from "./staff-person";
 import { withCount } from "../lib/count-label";
 import { Empty } from "./ui";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
-import { ChevronDown } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  CircleX,
+  CreditCard,
+  EyeOff,
+  FileInput,
+  Hourglass,
+  type LucideIcon,
+} from "lucide-react";
 import { chromeIcons, SigningIcon } from "./staff-icons";
 import { Archive, ArchiveRestore, Copy, SquarePen } from "lucide-react";
 import {
@@ -662,19 +672,28 @@ export function ProposalRows({
         ) : (
           visible.map((p) => {
             const t = totals(p.quote);
+            const ownerMember = data.staff.find(
+              (m) =>
+                m.user_id ===
+                (reportSender
+                  ? (p.sender?.user_id ?? proposalOwnerId(p))
+                  : proposalOwnerId(p)),
+            );
+            const ownerName =
+              ownerMember?.display_name ??
+              (reportSender ? p.sender?.display_name : undefined) ??
+              p.owner?.display_name ??
+              p.sender?.display_name;
             const owner = showOwner ? (
               <span className="proposal-owner" data-label="Owner">
-                {data.staff.find(
-                  (m) =>
-                    m.user_id ===
-                    (reportSender
-                      ? (p.sender?.user_id ?? proposalOwnerId(p))
-                      : proposalOwnerId(p)),
-                )?.display_name ??
-                  (reportSender ? p.sender?.display_name : undefined) ??
-                  p.owner?.display_name ??
-                  p.sender?.display_name ??
-                  "—"}
+                {ownerName ? (
+                  <StaffPerson
+                    name={ownerName}
+                    photo={ownerMember?.photo_url}
+                  />
+                ) : (
+                  <span className="muted">No owner</span>
+                )}
               </span>
             ) : null;
             return (
@@ -894,6 +913,20 @@ const primaryViews = [
 const otherViews = listViews.filter(
   (v) => !primaryViews.some((primary) => primary === v),
 );
+// Owner 10 Nov: More views reads as a compact menu: icon, name, count on the
+// right, the current view checked; follow-up views first, then storage.
+const moreViewGroups: (typeof otherViews)[number][][] = [
+  otherViews.filter((v) => v !== "Archived" && v !== "Imported"),
+  otherViews.filter((v) => v === "Archived" || v === "Imported"),
+];
+const moreViewIcons: Record<(typeof otherViews)[number], LucideIcon> = {
+  "Not viewed": EyeOff,
+  Expiring: Hourglass,
+  Lost: CircleX,
+  "Billing issues": CreditCard,
+  Archived: Archive,
+  Imported: FileInput,
+} as Record<(typeof otherViews)[number], LucideIcon>;
 
 export function ProposalListV4({
   data,
@@ -1056,14 +1089,18 @@ export function ProposalListV4({
             className="btn more-views-trigger"
             aria-haspopup="dialog"
             aria-label={
-              activeExtra ? `${activeExtra} · More views` : "More views"
+              activeExtra ? `More views, showing ${activeExtra}` : "More views"
             }
             aria-expanded={more}
+            data-active={activeExtra ? "true" : undefined}
             onClick={() => setMore(!more)}
           >
             <span>
-              {activeExtra ? `${activeExtra} · More` : "More"}
-              <span className="more-views-suffix"> views</span>
+              {activeExtra ?? (
+                <>
+                  More<span className="more-views-suffix"> views</span>
+                </>
+              )}
             </span>
             <ChevronDown size={14} aria-hidden="true" />
           </button>
@@ -1074,16 +1111,45 @@ export function ProposalListV4({
               anchor={moreTrigger.current}
               onClose={() => setMore(false)}
             >
-              <nav className="action-menu" aria-label="Other proposal views">
-                {otherViews.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    aria-current={view === viewKey(name) ? "page" : undefined}
-                    onClick={() => change(viewKey(name))}
-                  >
-                    {name} <small>{data ? counts[name] : "–"}</small>
-                  </button>
+              <nav
+                className="action-menu views-menu"
+                aria-label="Other proposal views"
+              >
+                {moreViewGroups.map((group, index) => (
+                  <div className="views-menu-group" key={index}>
+                    {group.map((name) => {
+                      const ViewIcon = moreViewIcons[name];
+                      const current = view === viewKey(name);
+                      const count = data ? counts[name] : undefined;
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          className="views-menu-item"
+                          aria-current={current ? "page" : undefined}
+                          onClick={() => change(viewKey(name))}
+                        >
+                          <ViewIcon
+                            className="views-menu-icon"
+                            size={16}
+                            aria-hidden="true"
+                          />
+                          <span className="views-menu-label">{name}</span>
+                          <span
+                            className="views-menu-count"
+                            data-zero={count === 0 ? "true" : undefined}
+                          >
+                            {count ?? "–"}
+                          </span>
+                          <Check
+                            className="views-menu-check"
+                            size={16}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
               </nav>
             </Sheet>
@@ -2476,12 +2542,21 @@ export function RecordV4({
               <div>
                 <dt>Owner</dt>
                 <dd>
-                  {data.staff.find(
-                    (member) => member.user_id === proposalOwnerId(p),
-                  )?.display_name ||
-                    p.owner?.display_name ||
-                    p.sender?.display_name ||
-                    person(p.created_by, data)}
+                  <StaffPerson
+                    name={
+                      data.staff.find(
+                        (member) => member.user_id === proposalOwnerId(p),
+                      )?.display_name ||
+                      p.owner?.display_name ||
+                      p.sender?.display_name ||
+                      person(p.created_by, data)
+                    }
+                    photo={
+                      data.staff.find(
+                        (member) => member.user_id === proposalOwnerId(p),
+                      )?.photo_url
+                    }
+                  />
                 </dd>
               </div>
               <div>

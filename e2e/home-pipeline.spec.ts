@@ -323,7 +323,7 @@ test("Home animates Pipeline amounts and stage widths without moving its section
   await page.clock.resume();
   await page.getByRole("link", { name: "View all 5" }).click();
   await expect(
-    page.getByRole("button", { name: /Expiring.*More views/ }),
+    page.getByRole("button", { name: "More views, showing Expiring" }),
   ).toBeVisible();
   await expect(page.locator(".proposal-row")).toHaveCount(5);
   await page.goto("/");
