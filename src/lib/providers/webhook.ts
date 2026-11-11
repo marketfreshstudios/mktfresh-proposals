@@ -1,3 +1,13 @@
+import {
+  acceptedAdoptedStepDown,
+  readStripeAdoption,
+  subscriptionId,
+} from "../stripe-adoption";
+import {
+  adoptedStripeSubscription,
+  ownsCreatedStripeSubscription,
+  stripeLink,
+} from "../stripe-subscription-link";
 import { bankPaymentState } from "./stripe-payment-state";
 import {
   completedCheckouts,
@@ -84,38 +94,49 @@ export async function receiveStripeWebhook(
   )
     return { received: true, ignored: true };
   let object = payload.data.object;
+  let adopted: Proposal | null = null;
   if (payload.type.startsWith("invoice.")) {
-    if (account && typeof object.subscription !== "string")
+    if (
+      typeof object.subscription !== "string" ||
+      !subscriptionId.test(object.subscription)
+    )
       return { received: true, ignored: true };
-    check(
-      typeof object.subscription === "string",
-      "Subscription invoice required",
-    );
+    adopted = await repo.byAdoptedStripeSubscription(object.subscription);
     object = await provider.api.get<Record<string, any>>(
       `/v1/subscriptions/${object.subscription}`,
       {},
     );
   }
-  if (account && !object.metadata?.proposal_id)
-    return { received: true, ignored: true };
-  const proposal = await repo.get(String(object.metadata?.proposal_id));
-  check(
-    proposal && proposal.client_signed_at,
-    "Signed proposal not found",
-    404,
-  );
-  check(
-    !object.metadata?.workspace_id ||
-      object.metadata.workspace_id === repo.workspaceId,
-    "Workspace mismatch",
-    403,
-  );
-  const billing = proposal.billing_links.find((l) => l.provider === "stripe");
-  check(
-    billing?.external_customer_id === object.customer,
-    "Webhook customer does not match signed proposal",
-    403,
-  );
+  let proposal: Proposal;
+  if (adopted) {
+    const linked = adoptedStripeSubscription(stripeLink(adopted))!;
+    check(
+      object.livemode === false &&
+        linked.id === object.id &&
+        linked.customerId === object.customer &&
+        linked.accountId === (account ?? null),
+      "Webhook subscription does not match the workspace link.",
+      403,
+    );
+    proposal = adopted;
+  } else {
+    if (!object.metadata?.proposal_id) return { received: true, ignored: true };
+    const signed = await repo.get(String(object.metadata.proposal_id));
+    check(signed && signed.client_signed_at, "Signed proposal not found", 404);
+    check(
+      !object.metadata?.workspace_id ||
+        object.metadata.workspace_id === repo.workspaceId,
+      "Workspace mismatch",
+      403,
+    );
+    const billing = stripeLink(signed);
+    check(
+      billing?.external_customer_id === object.customer,
+      "Webhook customer does not match signed proposal",
+      403,
+    );
+    proposal = signed;
+  }
   await mutate(repo, proposal.id, (p) => {
     if (p.jobs.some((j) => j.id === p.id + ":webhook:" + payload.id)) return;
     queue(p, "stripe_webhook", "webhook:" + payload.id, { event: payload });
@@ -452,11 +473,75 @@ export async function executeStripeWebhook(
         });
     });
   } else {
+    const link = p.billing_links.find((l) => l.provider === "stripe")!;
+    const adopted = adoptedStripeSubscription(link);
+    const expansion = adopted ? { "expand[]": "items.data.price.product" } : {};
     const sub = await provider.api.get<any>(
       `/v1/subscriptions/${object.subscription}`,
-      {},
+      expansion,
     );
-    const link = p.billing_links.find((l) => l.provider === "stripe")!;
+    if (adopted) {
+      check(
+        sub.livemode === false &&
+          sub.id === adopted.id &&
+          sub.customer === adopted.customerId &&
+          adopted.accountId === (provider.api.accountId ?? null),
+        "Invoice does not match the linked subscription.",
+        403,
+      );
+      const identity = {
+        linkedAt: adopted.linkedAt,
+        linkedBy: adopted.linkedBy,
+      };
+      let snapshot = await readStripeAdoption(provider.api, p, sub, identity);
+      const line =
+        !p.archived_at && incoming.type === "invoice.paid"
+          ? acceptedAdoptedStepDown(p, snapshot)
+          : undefined;
+      if (line) {
+        await provider.configureSchedule(
+          sub,
+          line,
+          `${p.id}:linked:${sub.id}:step-down`,
+          p.id,
+          { preserveMetadata: true },
+        );
+        const fresh = await provider.api.get<typeof sub>(
+          `/v1/subscriptions/${sub.id}`,
+          expansion,
+        );
+        check(
+          fresh.id === adopted.id && fresh.customer === adopted.customerId,
+          "Linked subscription changed.",
+          409,
+        );
+        snapshot = await readStripeAdoption(provider.api, p, fresh, identity);
+      }
+      await mutate(repo, p.id, (current) => {
+        const currentLink = stripeLink(current);
+        if (
+          !currentLink ||
+          adoptedStripeSubscription(currentLink)?.id !== adopted.id
+        )
+          return;
+        currentLink.metadata = {
+          ...currentLink.metadata,
+          adopted_subscription: snapshot,
+        };
+        if (
+          !current.events.some(
+            (e) =>
+              e.type === "billing_invoice_updated" &&
+              e.metadata.provider_event_id === incoming.id,
+          )
+        )
+          event(current, "billing_invoice_updated", system, {
+            provider_event_id: incoming.id,
+            type: incoming.type,
+          });
+      });
+      return;
+    }
     check(
       sub.livemode === false &&
         sub.customer === link.external_customer_id &&
@@ -471,7 +556,8 @@ export async function executeStripeWebhook(
         (l.stripe_lookup_key ?? `custom:${l.custom_family_id}`) ===
           sub.metadata.plan,
     );
-    if (line) await provider.configureSchedule(sub, line, j.id, p.id);
+    if (line && ownsCreatedStripeSubscription(link, sub.id))
+      await provider.configureSchedule(sub, line, j.id, p.id);
     const bank = (link.metadata?.bank_payments ?? {}) as Record<
       string,
       { state: string; subscription_ids: string[] }

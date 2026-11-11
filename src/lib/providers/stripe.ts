@@ -548,6 +548,7 @@ export class StripeProvider implements BillingProvider {
     line: BillingLine,
     key: string,
     proposal: string,
+    options?: { preserveMetadata?: boolean },
   ) {
     check(line.schedule, "Schedule required");
     const paid: { id: string; amount_paid: number; status: string }[] = [];
@@ -617,16 +618,22 @@ export class StripeProvider implements BillingProvider {
           progress.remaining === 0
             ? sub.current_period_end
             : Math.floor(end.getTime() / 1000),
-        metadata: this.terms(line, proposal),
+        ...(!options?.preserveMetadata
+          ? { metadata: this.terms(line, proposal) }
+          : {}),
         proration_behavior: "none",
       },
       {
         items: [{ price: next.id, quantity: line.qty }],
         iterations: 1,
-        metadata: {
-          plan: line.schedule.then.lookup_key,
-          proposal_id: proposal,
-        },
+        ...(!options?.preserveMetadata
+          ? {
+              metadata: {
+                plan: line.schedule.then.lookup_key,
+                proposal_id: proposal,
+              },
+            }
+          : {}),
         proration_behavior: "none",
       },
     ];

@@ -1339,3 +1339,38 @@ The countersign sheet uses the same saved company image and accessible
 name at every width. If the image is missing, the script-style name
 identifies the designated signatory; the existing setup warning still
 blocks countersigning.
+
+### Link an existing Stripe subscription
+
+Staff can link a subscription to a native, unarchived proposal marked won
+or signed by the client when the accepted quote (or the manually won
+record's quote) has a recurring amount. The Billing issues view includes
+these records until a Stripe subscription is associated. The lookup
+requires the client's verified Stripe customer in the workspace's
+connected test account. One subscription can be adopted once per
+workspace. The link is stored on the proposal's billing record with the
+provider's prices, paid-invoice count, and any existing schedule. The
+activity log records who linked it. Linking never writes to Stripe and
+does not send a billing confirmation, change the proposal or signed
+terms, or attach any metadata in Stripe.
+
+An open Checkout or a running or queued Stripe billing job must finish
+first; otherwise the old flow could create a second subscription.
+Existing-subscription item additions count as a billing association, but
+do not give Yeswell ownership of a schedule. A linked subscription's
+recorded Stripe schedule takes precedence over Yeswell's default plan
+and is shown without changes. Where no schedule exists, a threshold
+already recorded in Stripe takes precedence for display. If Stripe's
+terms cannot be verified against the signed quote (including a legacy
+35-payment plan versus a signed 30-payment plan), staff see the recorded
+progress but automatic step-down is disabled. No new price is calculated.
+
+The invoice webhook routes linked subscriptions by the local workspace
+record, not by new Stripe metadata. It refreshes the recorded details and
+can step down an unscheduled linked plan only after the required paid
+invoices and a match to the signed plan. Existing Yeswell-created
+subscriptions retain their automatic behavior; metadata alone no longer
+authorizes changes to an unrelated subscription. Link storage requires
+the generated lookup column and unique workspace index from
+`20261111063827_linked_stripe_subscription_lookup.sql` before deploy.
+Existing proposal access rules are unchanged.

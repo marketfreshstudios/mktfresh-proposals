@@ -56,6 +56,16 @@ import {
   stripeBillingStatus,
 } from "../lib/billing-confirmation";
 import { RecordBillingRow, StripeBillingDetails } from "./billing-breakdown";
+import {
+  LinkedStripeSubscription,
+  StripeSubscriptionLinkSheet,
+  stripeLinkedAmount,
+} from "./stripe-subscription-link";
+import {
+  adoptedStripeSubscription,
+  needsStripeLink,
+  stripeLinkBlocker,
+} from "../lib/stripe-subscription-link";
 import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
@@ -155,9 +165,11 @@ export function ProposalBadges({ p }: { p: Proposal }) {
         ? ["Needs countersign", "warning"]
         : p.client_signed_at && billingIssues(p)
           ? ["Billing issue", "danger"]
-          : p.client_signed_at && billingOpen(p)
-            ? ["Billing to finish", "info"]
-            : null;
+          : needsStripeLink(p)
+            ? ["Needs linking", "warning"]
+            : p.client_signed_at && billingOpen(p)
+              ? ["Billing to finish", "info"]
+              : null;
   return (
     <span className="pills">
       <span className={`pill ${status.tone}`} data-proposal-status={p.status}>
@@ -2312,7 +2324,11 @@ export function RecordV4({
     !!p.token &&
     ["sent", "viewed"].includes(p.status) &&
     (!expires || Date.parse(expires) > Date.now());
+  const [linkingStripe, setLinkingStripe] = useState(false);
+  const needsLink = needsStripeLink(p);
+  const linkBlocked = needsLink ? stripeLinkBlocker(p) : undefined;
   const stripe = p.billing_links.find((link) => link.provider === "stripe");
+  const adopted = adoptedStripeSubscription(stripe);
   const resend =
     !archive &&
     actualSigned &&
@@ -2408,38 +2424,53 @@ export function RecordV4({
       !bankState &&
       /^sub_/.test(stripe.external_object_id ?? ""));
   const nextCharge =
-    stripe && stripeActive
-      ? completedCheckouts(stripe)
-          .flatMap((completion) => completion.subscriptions)
-          .map((subscription) => subscription.next_billing_at)
-          .filter(
-            (date): date is string => !!date && Date.parse(date) >= Date.now(),
-          )
-          .sort()[0]
-      : undefined;
+    adopted?.nextBillingAt &&
+    adopted.status === "active" &&
+    Date.parse(adopted.nextBillingAt) >= Date.now()
+      ? adopted.nextBillingAt
+      : stripe && stripeActive
+        ? completedCheckouts(stripe)
+            .flatMap((completion) => completion.subscriptions)
+            .map((subscription) => subscription.next_billing_at)
+            .filter(
+              (date): date is string =>
+                !!date && Date.parse(date) >= Date.now(),
+            )
+            .sort()[0]
+        : undefined;
   const recurringDescription = [
-    recurringAmount,
-    stripeActive ? "Stripe subscription" : "Stripe Checkout",
+    adopted
+      ? adopted.prices.map(stripeLinkedAmount).join(" | ")
+      : recurringAmount,
+    adopted || stripeActive
+      ? "Stripe subscription"
+      : needsLink && !resend
+        ? "No linked subscription"
+        : "Stripe Checkout",
     nextCharge &&
       `next charge ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: timezone }).format(new Date(nextCharge))}`,
   ]
     .filter(Boolean)
     .join(" | ");
-  const stripeChip =
-    bankState === "failed" || stripe?.status === "failed"
-      ? { text: "Needs attention", tone: "danger" }
-      : bankState === "processing"
-        ? { text: "Bank payment processing", tone: "warning" }
-        : stripe?.metadata?.requires_checkout
-          ? { text: "Waiting for checkout", tone: "warning" }
-          : stripeActive
-            ? { text: "Active", tone: "success" }
-            : stripe?.status === "succeeded"
-              ? { text: stripeStatus?.labels[0] ?? "Ready", tone: "success" }
-              : {
-                  text: stripe || actualSigned ? "In progress" : "Not started",
-                  tone: "neutral",
-                };
+  const stripeChip = adopted
+    ? { text: "Linked", tone: "success" }
+    : needsLink
+      ? { text: "Needs linking", tone: "warning" }
+      : bankState === "failed" || stripe?.status === "failed"
+        ? { text: "Needs attention", tone: "danger" }
+        : bankState === "processing"
+          ? { text: "Bank payment processing", tone: "warning" }
+          : stripe?.metadata?.requires_checkout
+            ? { text: "Waiting for checkout", tone: "warning" }
+            : stripeActive
+              ? { text: "Active", tone: "success" }
+              : stripe?.status === "succeeded"
+                ? { text: stripeStatus?.labels[0] ?? "Ready", tone: "success" }
+                : {
+                    text:
+                      stripe || actualSigned ? "In progress" : "Not started",
+                    tone: "neutral",
+                  };
   const markAsInvoiced =
     qbo?.status === "needs_review" &&
     !qbo.external_object_id &&
@@ -2456,10 +2487,11 @@ export function RecordV4({
 
   const stripeIntegrated =
     native &&
-    (stripe
-      ? !stripe.metadata?.skipped
-      : !!data.connections?.stripe &&
-        !!(billable.monthly_total || billable.yearly_total));
+    (needsLink ||
+      (stripe
+        ? !stripe.metadata?.skipped
+        : !!data.connections?.stripe &&
+          !!(billable.monthly_total || billable.yearly_total)));
   const qboIntegrated =
     native &&
     (qbo
@@ -2482,16 +2514,18 @@ export function RecordV4({
       (issues ||
         recordJobs.some((job) => job.status === "failed" || !!job.last_error)));
   const billingStatus =
-    issues || resend
-      ? "Needs attention"
-      : actualSigned &&
-          !billingOpen(p) &&
-          !invoiceWaiting &&
-          billingLinks.some((link) => link.status === "succeeded")
-        ? "Set up"
-        : invoiceWaiting || (!stripeIntegrated && qboIntegrated)
-          ? "Starts after you countersign"
-          : "Starts after signing";
+    needsLink && !issues && !resend
+      ? "Needs linking"
+      : issues || resend
+        ? "Needs attention"
+        : actualSigned &&
+            !billingOpen(p) &&
+            !invoiceWaiting &&
+            billingLinks.some((link) => link.status === "succeeded")
+          ? "Set up"
+          : invoiceWaiting || (!stripeIntegrated && qboIntegrated)
+            ? "Starts after you countersign"
+            : "Starts after signing";
   const nextReminder =
     open && reminders ? nextRecordReminder(p, expires) : null;
   const nextReminderDetail = nextReminder
@@ -3033,6 +3067,17 @@ export function RecordV4({
       data-client-signed={actualSigned || undefined}
       data-awaiting-countersign={signature || undefined}
     >
+      {linkingStripe && (
+        <StripeSubscriptionLinkSheet
+          p={p}
+          onClose={() => setLinkingStripe(false)}
+          onLinked={(next) => {
+            setLinkingStripe(false);
+            onChanged(next);
+            setAlready("Stripe subscription linked.");
+          }}
+        />
+      )}
       {share && p.token && (
         <ManualDeliveryConfirmation
           p={p}
@@ -3306,9 +3351,34 @@ export function RecordV4({
                         )
                       }
                     >
-                      {stripe &&
-                      (stripeStatus?.labels.length ||
-                        stripeStatus?.subscriptions.length) ? (
+                      {adopted ? (
+                        <>
+                          {recurringDescription}
+                          <LinkedStripeSubscription
+                            subscription={adopted}
+                            dashboardUrl={
+                              data.connections?.stripe_connect?.dashboardUrl
+                            }
+                            date={dateOnly}
+                          />
+                        </>
+                      ) : needsLink ? (
+                        <div className="stripe-link-notice">
+                          <p>{recurringDescription}</p>
+                          {linkBlocked ? (
+                            <p className="muted">{linkBlocked}</p>
+                          ) : (
+                            <Button onClick={() => setLinkingStripe(true)}>
+                              Link a Stripe subscription
+                            </Button>
+                          )}
+                          {resend && (
+                            <span className="pill warning">Needs linking</span>
+                          )}
+                        </div>
+                      ) : stripe &&
+                        (stripeStatus?.labels.length ||
+                          stripeStatus?.subscriptions.length) ? (
                         <details className="record-provider-details">
                           <Disclosure>{recurringDescription}</Disclosure>
                           <StripeBillingDetails
@@ -3320,7 +3390,7 @@ export function RecordV4({
                         </details>
                       ) : (
                         recurringDescription
-                      )}
+                      )}{" "}
                       {stripe?.last_error && (
                         <p className="record-billing-problem">
                           {stripe.last_error}

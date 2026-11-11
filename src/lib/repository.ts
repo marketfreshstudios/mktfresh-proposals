@@ -1,3 +1,7 @@
+import {
+  adoptedStripeSubscription,
+  stripeLink,
+} from "./stripe-subscription-link";
 import { clientDeleteBlocker } from "./client-retention";
 import {
   questionsReadable,
@@ -137,6 +141,7 @@ export interface Repository {
   ): Promise<boolean>;
   get(id: string): Promise<Proposal | null>;
   byToken(token: string): Promise<Proposal | null>;
+  byAdoptedStripeSubscription(id: string): Promise<Proposal | null>;
   list(search?: string): Promise<Proposal[]>;
   save(p: Proposal, expected: number): Promise<void>;
   entities<T>(table: EntityTable): Promise<T[]>;
@@ -772,6 +777,14 @@ export class MemoryRepository implements Repository {
         : null,
     );
   }
+  async byAdoptedStripeSubscription(id: string) {
+    const row = [...this.rows.values()].find(
+      (p) =>
+        (p.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId &&
+        adoptedStripeSubscription(stripeLink(p))?.id === id,
+    );
+    return row ? structuredClone(row) : null;
+  }
   async byToken(token: string) {
     return structuredClone(
       [...this.rows.values()].find(
@@ -807,6 +820,20 @@ export class MemoryRepository implements Repository {
       )
     )
       throw new AppError(409, "Client link collision; retry");
+    const subscription = adoptedStripeSubscription(stripeLink(p));
+    if (
+      subscription &&
+      [...this.rows.values()].some(
+        (row) =>
+          row.id !== p.id &&
+          (row.workspace_id ?? LOCAL_WORKSPACE_ID) === this.workspaceId &&
+          adoptedStripeSubscription(stripeLink(row))?.id === subscription.id,
+      )
+    )
+      throw new AppError(
+        409,
+        "This Stripe subscription is already linked to another proposal.",
+      );
     this.rows.set(
       p.id,
       structuredClone({ ...p, workspace_id: this.workspaceId }),
@@ -1036,6 +1063,10 @@ export class LocalRepository extends MemoryRepository {
   override async get(id: string) {
     await this.ready;
     return super.get(id);
+  }
+  override async byAdoptedStripeSubscription(id: string) {
+    await this.ready;
+    return super.byAdoptedStripeSubscription(id);
   }
   override async byToken(token: string) {
     await this.ready;
@@ -1662,6 +1693,16 @@ export class SupabaseRepository implements Repository {
     if (error) throw error;
     return (data?.state as Proposal) ?? null;
   }
+  async byAdoptedStripeSubscription(id: string) {
+    const { data, error } = await this.db
+      .from("proposals")
+      .select("state")
+      .eq("workspace_id", this.workspaceId)
+      .eq("adopted_stripe_subscription_id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return (data?.state as Proposal | undefined) ?? null;
+  }
   async byToken(token: string) {
     const { data, error } = await this.db
       .from("proposals")
@@ -1698,6 +1739,14 @@ export class SupabaseRepository implements Repository {
       expected_revision: expected,
     });
     if (error) {
+      if (
+        error.code === "23505" &&
+        error.message.includes("proposals_adopted_stripe_subscription")
+      )
+        throw new AppError(
+          409,
+          "This Stripe subscription is already linked to another proposal.",
+        );
       if (error.code === "40001" || error.code === "23505")
         throw new AppError(409, "Proposal changed; reload and try again");
       throw error;
