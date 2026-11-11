@@ -148,11 +148,7 @@ export function Sheet({
           aria-label="Close"
           onClick={onClose}
         >
-          {surface === "staff" ? (
-            <chromeIcons.close size={18} aria-hidden="true" />
-          ) : (
-            "×"
-          )}
+          <chromeIcons.close size={18} aria-hidden="true" />
         </button>
       </header>
       {children}

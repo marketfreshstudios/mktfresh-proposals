@@ -5,13 +5,16 @@ import {
   type Page,
 } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import { setup } from "../tests/helpers";
 import type { EmailLog } from "../src/lib/email-templates";
 import type { Proposal } from "../src/lib/model";
 
+test.use({ hasTouch: true });
+
 const staff = { Authorization: "Bearer e2e-staff-secret-only" };
 const client = { Origin: "http://127.0.0.1:3100" };
-const shots = "docs/screenshots/proposal-questions";
+const shots = ".data/evidence/r25-questions";
 async function capture(page: Page, name: string) {
   if (process.env.CAPTURE_QUESTIONS !== "1") return;
   mkdirSync(shots, { recursive: true });
@@ -20,6 +23,9 @@ async function capture(page: Page, name: string) {
     animations: "disabled",
   });
 }
+
+const scopeText =
+  "A clear plan for the first milestone, followed by a review of the work together.";
 
 async function sent(
   request: APIRequestContext,
@@ -31,7 +37,8 @@ async function sent(
   const clientId = uid(),
     template = uid(),
     item = uid(),
-    scope = uid();
+    scope = uid(),
+    paragraph = uid();
   for (const [path, data] of [
     ["workspace_settings", settings],
     [
@@ -64,9 +71,9 @@ async function sent(
         content: [
           { id: scope, type: "heading", text: "Scope", level: 1 },
           {
-            id: uid(),
+            id: paragraph,
             type: "paragraph",
-            text: "A clear plan for the first milestone, followed by a review of the work together.",
+            text: scopeText,
           },
           { id: uid(), type: "pricing_table" },
           { id: uid(), type: "signature_block", role: "client" },
@@ -112,15 +119,16 @@ async function sent(
     },
   });
   expect(response.ok(), await response.text()).toBe(true);
-  return { p: (await response.json()) as Proposal, scope };
+  return { p: (await response.json()) as Proposal, scope, paragraph };
 }
 
 test("client question reaches staff, receives a plain-text reply on the same link, and leaves review and signing intact", async ({
   page,
   request,
 }) => {
+  page.setDefaultTimeout(12000);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const { p, scope } = await sent(request, "Website project");
+  const { p, scope, paragraph } = await sent(request, "Website project");
   const clientUrl = `/p/${p.token}`,
     staffUrl = `/proposals/${p.id}`;
   const log = async () =>
@@ -131,25 +139,83 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await expect(
     page.getByRole("button", { name: "Ask a question", exact: true }),
   ).toBeVisible();
-  await capture(page, "client-ask-1440");
-  await page
-    .getByRole("link", { name: "Ask about this: Scope", exact: true })
-    .click();
-  const form = page.getByRole("dialog", { name: "Ask a question" });
+  const pageAsk = page
+    .getByRole("button", { name: "Ask about this page", exact: true })
+    .first();
+  const sheet = page.getByRole("region", { name: "Page 1", exact: true });
+  await expect(pageAsk).toBeVisible();
+  const frame = (await sheet.boundingBox())!;
+  const pageButton = (await pageAsk.boundingBox())!;
+  expect(
+    Math.abs(pageButton.x + pageButton.width / 2 - (frame.x + frame.width)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(pageButton.y + pageButton.height / 2 - frame.y),
+  ).toBeLessThanOrEqual(1);
+  const totals = page.getByRole("group", { name: "Proposal totals" });
+  await expect(totals).toContainText("$2,750");
+  await expect(totals.getByText("Monthly", { exact: true })).toHaveCount(0);
   await expect(
-    form.getByRole("combobox", { name: "Section", exact: true }),
-  ).toHaveValue(`section:${scope}`);
+    page.locator("#proposal-document .signature-date").first(),
+  ).toHaveText(`${p.client.company} | Date signed`);
+  await capture(page, "client-ask-1440");
+  const block = page.locator(`[data-document-block="${scope}"]`);
+  await expect(block).toHaveAttribute("tabindex", "0");
+  const frozenPlan = await page
+    .locator("#proposal-document")
+    .getAttribute("data-page-plan");
+  await block.hover();
+  const askBlock = page.getByRole("button", { name: "Ask about this heading" });
+  await expect(askBlock).toBeVisible();
+  expect((await askBlock.boundingBox())!.x).toBeGreaterThanOrEqual(
+    (await block.boundingBox())!.x + (await block.boundingBox())!.width,
+  );
+  await capture(page, "r25-desktop-block");
+  await block.focus();
+  await block.press("Enter");
+  const form = page.getByRole("dialog", { name: "Ask a question" });
+  await expect(form.getByText("Scope", { exact: true })).toHaveCount(1);
+  await expect(form.locator(".question-excerpt")).toHaveCount(0);
+  await form.getByRole("button", { name: "Change" }).click();
+  await expect(form.getByRole("combobox", { name: "Section" })).toHaveValue(
+    `section:${scope}`,
+  );
+  await form.getByRole("button", { name: "Cancel" }).click();
+  await expect(block).toBeFocused();
+  await page.locator(`[data-document-block="${paragraph}"]`).press("Enter");
+  await expect(form.getByText("Scope", { exact: true })).toBeVisible();
+  await expect(form.locator(".question-excerpt")).toHaveText(scopeText);
   await expect(form.getByLabel("Your email")).toHaveCount(0);
   const text = process.env.CAPTURE_QUESTIONS
     ? "Can we review the first milestone together before moving to the next phase?"
     : "Can we review the first milestone? <img src=x onerror=alert(1)>";
   await form.getByLabel("Your question", { exact: true }).fill(text);
+  await capture(page, "r25-desktop-form");
+  expect(
+    (await new AxeBuilder({ page }).include(".client-ask-popover").analyze())
+      .violations,
+  ).toEqual([]);
   await form
     .getByRole("button", { name: "Send question", exact: true })
     .click();
   const questions = page.getByRole("region", { name: "Your questions" });
   await expect(questions.getByText(text, { exact: true })).toBeVisible();
   await expect(questions.locator("img")).toHaveCount(0);
+  await expect(
+    page.getByText("Your question | waiting for a reply"),
+  ).toBeVisible();
+  await expect(page.locator("#proposal-document")).toHaveAttribute(
+    "data-page-plan",
+    frozenPlan!,
+  );
+  const threadData = await (
+    await request.get(`/api/proposals/${p.id}/questions`, { headers: staff })
+  ).json();
+  const id = threadData.threads[0].id;
+  expect(threadData.threads[0]).toMatchObject({
+    block_id: paragraph,
+    excerpt: scopeText,
+  });
   await expect(
     page.getByRole("button", { name: "Review and sign", exact: true }),
   ).toBeEnabled();
@@ -184,6 +250,17 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await capture(page, "staff-questions-1440");
   await panel.getByRole("button", { name: "Send reply", exact: true }).click();
   await expect(panel.getByText("Answered", { exact: true })).toBeVisible();
+  for (const method of ["PATCH", "DELETE"]) {
+    const response = await request.fetch(
+      `/api/public/${p.token}/questions/${id}`,
+      {
+        method,
+        headers: client,
+        ...(method === "PATCH" ? { data: { text: "Too late" } } : {}),
+      },
+    );
+    expect(response.status()).toBe(409);
+  }
   await expect
     .poll(
       async () =>
@@ -202,16 +279,78 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await page.goto(reply.button_url);
   await expect(questions.getByText(/set up a call to review/)).toBeVisible();
   await capture(page, "client-reply-1440");
-  await page.setViewportSize({ width: 375, height: 850 });
-  await page
+  await page.setViewportSize({ width: 375, height: 780 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const header = page.locator(".flow-header");
+  const progress = (await header
+    .getByRole("navigation", { name: "Proposal progress" })
+    .boundingBox())!;
+  const headerButton = (await header
     .getByRole("button", { name: "Ask a question", exact: true })
-    .click();
+    .boundingBox())!;
+  expect(headerButton.y).toBeGreaterThan(progress.y + progress.height);
+  await capture(page, "r25-phone-reading");
+  await page.getByRole("link", { name: "Questions", exact: true }).click();
+  const history = page.getByRole("dialog", { name: "Your questions" });
+  await expect(history.getByText(/set up a call to review/)).toBeVisible();
+  await capture(page, "r25-phone-history");
+  await history.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(totals.getByText("Monthly", { exact: true })).toHaveCount(0);
+  await expect(
+    page.locator("#proposal-document .signature-date").first(),
+  ).toHaveText(`${p.client.company} | Date signed`);
+  const phoneHeading = page.locator(`[data-document-block="${scope}"]`);
+  await phoneHeading.tap();
+  await expect(phoneHeading).not.toHaveAttribute("tabindex", "0");
+  await expect(
+    page.getByRole("button", { name: "Ask about this heading" }),
+  ).toHaveCount(0);
+  await expect(form).toHaveCount(0);
+  await header
+    .getByRole("button", { name: "Ask a question", exact: true })
+    .tap();
+  await form.getByRole("button", { name: "Change" }).click();
+  await form
+    .getByRole("combobox", { name: "Section" })
+    .selectOption(`section:${scope}`);
+  await expect(form.getByText("Scope", { exact: true })).toHaveCount(1);
+  await form.getByRole("button", { name: "Cancel" }).click();
+  const phoneBlock = page.locator(`[data-document-block="${paragraph}"]`);
+  await phoneBlock.tap();
+  const phoneAsk = page.getByRole("button", {
+    name: "Ask about this paragraph",
+  });
+  await expect(phoneAsk).toHaveCSS("height", "44px");
+  await capture(page, "r25-phone-block");
+  await phoneAsk.tap();
   await expect(form.getByLabel("Your question", { exact: true })).toBeVisible();
   await form
     .getByLabel("Your question", { exact: true })
     .fill("Can we make the review call in the morning?");
-  await capture(page, "client-ask-375");
-  await form.getByRole("button", { name: "Cancel", exact: true }).click();
+  await capture(page, "r25-phone-form");
+  expect(
+    (await new AxeBuilder({ page }).include(".client-question-sheet").analyze())
+      .violations,
+  ).toEqual([]);
+  await form.getByRole("button", { name: "Send question" }).click();
+  await expect(
+    page
+      .getByRole("status")
+      .getByText("Question sent. We’ll email you when there’s a reply."),
+  ).toBeVisible();
+  await capture(page, "r25-phone-marker");
+  await page.getByRole("link", { name: "Questions", exact: true }).click();
+  await history.getByRole("button", { name: "Edit", exact: true }).click();
+  const edit = page.getByRole("dialog", { name: "Edit question" });
+  await edit.getByLabel("Your question").fill("Can we meet on Tuesday?");
+  await edit.getByRole("button", { name: "Save question" }).click();
+  await expect(history.getByText("Can we meet on Tuesday?")).toBeVisible();
+  await history.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Delete question?" })
+    .getByRole("button", { name: "Delete question" })
+    .click();
+  await expect(history.getByText("Can we meet on Tuesday?")).toHaveCount(0);
   const stored: Proposal = await (
     await request.get(`/api/proposals/${p.id}`, { headers: staff })
   ).json();
@@ -242,6 +381,21 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
   expect((await request.post(url, { headers, data: body })).status()).toBe(201);
   const { p: other } = await sent(request, "Other proposal");
   expect(
+    (
+      await request.delete(`/api/public/${other.token}/questions/${body.id}`, {
+        headers: client,
+      })
+    ).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.patch(`${url}/${body.id}`, {
+        headers: client,
+        data: { text: "Password required" },
+      })
+    ).status(),
+  ).toBe(401);
+  expect(
     await (await request.get(`/api/public/${other.token}/questions`)).json(),
   ).toMatchObject({ threads: [] });
   expect(
@@ -261,6 +415,8 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
         })
       ).status(),
     ).toBe(201);
+  const deleted = await request.delete(`${url}/${body.id}`, { headers });
+  expect(deleted.status()).toBe(200);
   const limited = await request.post(url, {
     headers,
     data: { ...body, id: crypto.randomUUID() },
@@ -288,5 +444,5 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
     can_reply: false,
     threads: expect.any(Array),
   });
-  expect(result.threads).toHaveLength(10);
+  expect(result.threads).toHaveLength(9);
 });

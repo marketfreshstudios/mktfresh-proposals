@@ -1,5 +1,8 @@
 import { clientDeleteBlocker } from "./client-retention";
 import {
+  type ClientQuestionMutation,
+  type ClientQuestionMutationResult,
+  type QuestionTombstone,
   questionsReadable,
   questionsWritable,
   summarizeQuestions,
@@ -79,6 +82,9 @@ export interface Repository {
     user: string,
   ): Promise<Record<string, QuestionSummary>>;
   writeQuestion(change: QuestionWrite): Promise<QuestionWriteResult>;
+  mutateClientQuestion(
+    change: ClientQuestionMutation,
+  ): Promise<ClientQuestionMutationResult>;
   claimQuestionMail(proposal?: string): Promise<QuestionDelivery | null>;
   finishQuestionMail(
     mail: QuestionDelivery,
@@ -193,8 +199,15 @@ export class MemoryRepository implements Repository {
       )
         .filter((row) => sectionIds.has(row.id))
         .map(({ id, targets }) => ({ id, targets })),
-      questions: (await this.entities<QuestionThread>("proposal_questions"))
-        .filter((row) => questionIds.has(row.proposal_id))
+      questions: (
+        await this.entities<QuestionThread | QuestionTombstone>(
+          "proposal_questions",
+        )
+      )
+        .filter(
+          (row): row is QuestionThread =>
+            !("deleted_at" in row) && questionIds.has(row.proposal_id),
+        )
         .map(({ proposal_id, status, replies, created_at }) => ({
           proposal_id,
           status,
@@ -230,8 +243,15 @@ export class MemoryRepository implements Repository {
     );
   }
   async questionThreads(id: string) {
-    return (await this.entities<QuestionThread>("proposal_questions"))
-      .filter((row) => row.proposal_id === id)
+    return (
+      await this.entities<QuestionThread | QuestionTombstone>(
+        "proposal_questions",
+      )
+    )
+      .filter(
+        (row): row is QuestionThread =>
+          !("deleted_at" in row) && row.proposal_id === id,
+      )
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
   }
   async questionCounts(ids: string[], user: string) {
@@ -242,6 +262,42 @@ export class MemoryRepository implements Repository {
       ),
       user,
     );
+  }
+  async mutateClientQuestion({
+    proposal,
+    id,
+    revision,
+    text,
+  }: ClientQuestionMutation): Promise<ClientQuestionMutationResult> {
+    const p = this.rows.get(proposal);
+    if (
+      !p ||
+      (p.workspace_id ?? LOCAL_WORKSPACE_ID) !== this.workspaceId ||
+      !questionsWritable(p)
+    )
+      return { result: "closed" };
+    if (p.revision !== revision) return { result: "stale" };
+    const rows = this.entityMap("proposal_questions");
+    const prior = rows.get(id) as
+      QuestionThread | QuestionTombstone | undefined;
+    if (!prior || prior.proposal_id !== proposal || "deleted_at" in prior)
+      return { result: "missing" };
+    if (prior.replies.length) return { result: "replied" };
+    if (text === null) {
+      const removed: QuestionTombstone = {
+        id,
+        proposal_id: proposal,
+        created_at: prior.created_at,
+        revision: prior.revision + 1,
+        status: "resolved",
+        deleted_at: new Date().toISOString(),
+      };
+      rows.set(id, removed);
+      return { result: "saved" };
+    }
+    const thread = { ...prior, question: text, revision: prior.revision + 1 };
+    rows.set(id, thread);
+    return { result: "saved", thread: structuredClone(thread) };
   }
   async writeQuestion({
     thread,
@@ -875,6 +931,9 @@ export class LocalRepository extends MemoryRepository {
     this.tail = run.catch(() => {});
     return run;
   }
+  override async mutateClientQuestion(change: ClientQuestionMutation) {
+    return this.localTransaction(() => super.mutateClientQuestion(change));
+  }
   override async writeQuestion(change: QuestionWrite) {
     return this.localTransaction(() => super.writeQuestion(change));
   }
@@ -1335,6 +1394,7 @@ export class SupabaseRepository implements Repository {
             "proposal_id,status,first_reply:data->replies->0->>id,asked_at:created_at,first_reply_at:data->replies->0->>created_at",
           )
           .eq("workspace_id", this.workspaceId)
+          .is("data->>deleted_at", null)
           .in("proposal_id", ids)
           .order("id")
           .range(from, from + 499),
@@ -1390,7 +1450,8 @@ export class SupabaseRepository implements Repository {
       let query = this.db
         .from("proposal_questions")
         .select("data")
-        .eq("workspace_id", this.workspaceId);
+        .eq("workspace_id", this.workspaceId)
+        .is("data->>deleted_at", null);
       if (filters.proposal) query = query.eq("proposal_id", filters.proposal);
       if (filters.open)
         query = query.in("proposal_id", filters.open).eq("status", "open");
@@ -1409,6 +1470,22 @@ export class SupabaseRepository implements Repository {
   async questionCounts(ids: string[], user: string) {
     if (!ids.length) return {};
     return summarizeQuestions(await this.questionRows({ open: ids }), user);
+  }
+  async mutateClientQuestion({
+    proposal,
+    id,
+    revision,
+    text,
+  }: ClientQuestionMutation): Promise<ClientQuestionMutationResult> {
+    const { data, error } = await this.db.rpc("edit_client_proposal_question", {
+      p_workspace: this.workspaceId,
+      p_proposal: proposal,
+      p_question: id,
+      p_revision: revision,
+      p_text: text,
+    });
+    if (error) throw error;
+    return data as ClientQuestionMutationResult;
   }
   async writeQuestion({
     thread,

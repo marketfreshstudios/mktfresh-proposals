@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { workspaceStaff } from "./auth";
 import { prepareEmail, logSentEmail } from "./email-templates";
-import { engagementTargets } from "./engagement";
+import { questionExcerpt, questionTargets } from "./question-targets";
 import type { Mailer } from "./jobs";
 import { proposalLink, appOrigin } from "./links";
 import { AppError, check, type Actor, type Proposal } from "./model";
@@ -96,13 +96,27 @@ export async function askQuestion(
   const contact =
     questionContact(p) ?? threads.at(-1)?.contact ?? input.contact;
   check(contact, "Enter your name and email to ask a question.");
-  const section =
-    input.section &&
-    engagementTargets(p).find(
-      (t) => t.kind === "section" && t.key === input.section,
-    );
+  const version = p.versions.at(-1)!;
+  const targets = questionTargets(
+    version.content,
+    version.quote,
+    version.variables_resolved,
+  );
+  const target = input.block_id
+    ? targets.blocks.get(input.block_id)
+    : undefined;
   check(
-    !input.section || section,
+    !input.block_id ||
+      (target &&
+        (input.excerpt === undefined ||
+          questionExcerpt(input.excerpt) === target.excerpt)),
+    "That block has changed. Reload the proposal and try again.",
+    409,
+  );
+  const key = target?.section ?? input.section;
+  const label = key ? targets.sections.get(key) : undefined;
+  check(
+    !key || label,
     "That section has changed. Reload the proposal and try again.",
     409,
   );
@@ -119,7 +133,12 @@ export async function askQuestion(
     created_at: new Date().toISOString(),
     revision: 0,
     status: "open",
-    ...(section ? { section: { key: section.key, label: section.label } } : {}),
+    ...(key && label
+      ? { section: { key, label: target?.label ?? label } }
+      : {}),
+    ...(target?.block_id
+      ? { block_id: target.block_id, excerpt: target.excerpt }
+      : {}),
     contact,
     question: input.text,
     replies: [],
@@ -150,6 +169,44 @@ export async function askQuestion(
   }
   check(result === "saved", "Questions are read-only for this proposal.", 410);
   return publicQuestion(thread);
+}
+
+export async function editClientQuestion(
+  repo: Repository,
+  p: Proposal,
+  id: string,
+  text: string | null,
+) {
+  check(
+    questionsWritable(p),
+    "Questions are read-only for this proposal.",
+    410,
+  );
+  const changed = await repo.mutateClientQuestion({
+    proposal: p.id,
+    revision: p.revision,
+    id,
+    text,
+  });
+  check(changed.result !== "missing", "Question not found", 404);
+  check(
+    changed.result !== "replied",
+    "This question already has a reply.",
+    409,
+  );
+  check(
+    changed.result !== "closed",
+    "Questions are read-only for this proposal.",
+    410,
+  );
+  check(
+    changed.result === "saved",
+    "The proposal changed. Reload and try again.",
+    409,
+  );
+  return changed.thread
+    ? publicQuestion(changed.thread)
+    : { deleted: true as const };
 }
 
 export async function changeQuestion(

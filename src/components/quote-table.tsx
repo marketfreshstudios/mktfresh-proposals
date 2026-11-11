@@ -113,6 +113,7 @@ export function QuoteTable({
               role="row"
               className="print-pricing-card quote-table-row"
               data-print-unit={r.item.id}
+              data-client-question-id={clientReading ? r.item.id : undefined}
             >
               <th scope="row" role="rowheader">
                 {g.choice && n === 0 && (
