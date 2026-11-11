@@ -31,6 +31,7 @@
     .notice-later,
     .action-menu .btn,
     .segmented .btn,
+    .toast-surface *,
     [role="tab"]
   ) {
   border: var(--button-stroke, 1.5px) solid
@@ -45,6 +46,7 @@
     .notice-later,
     .action-menu .btn,
     .segmented .btn,
+    .toast-surface *,
     [role="tab"]
   ):is(:hover, :active, :focus-visible):not(:disabled, [aria-disabled="true"]) {
   background: var(--button-fill-hover, var(--button-wash, var(--segment)));
