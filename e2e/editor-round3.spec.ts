@@ -394,7 +394,7 @@ test("Fields tab remembers cursor across tabs and closes tablet drawer before re
     await expect(panel).toContainText("{{client.first_name}}");
     await panel
       .getByRole("button", {
-        name: "Client first name — {{client.first_name}}",
+        name: /^Client first name /,
         exact: true,
       })
       .click();

@@ -87,8 +87,12 @@ for (const template of [false, true]) {
       paper.locator(`[data-block-id="${prefix}${content[n].id}"]`);
     await frame(6).locator(".tiptap").click();
     await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+    await page
+      .locator(".blocks-panel summary")
+      .filter({ hasText: "Saved blocks" })
+      .click();
     const source = page.getByRole("menuitem", {
-      name: "Case study group",
+      name: /^Case study group/,
       exact: true,
     });
     const read = async () =>

@@ -1199,3 +1199,53 @@ panel arrows remain 40px square in both states. Drawer focus excludes controls
 inside closed native disclosures, including Chromium's retained layout boxes.
 The approved #154 header treatment is integrated unchanged: Review & send is
 clay until the Send panel is visible, when the panel's Send is the clay action.
+
+## Remaining editor tools cards — November 10, 2026
+
+Fields, Blocks, Styles, and Send use the same R23 disclosure cards at a 380px
+panel width. The card treatment is scoped to editor Fields; the email editor's
+existing field sheet keeps its layout. Search opens matching Fields and Blocks
+cards. Existing field groups appear when their data is available; no fields or
+saved blocks are invented. Native menu semantics remain inside each Blocks
+card, with separate accessible names and descriptions. The font-size action's
+accessible name includes its visible Default/Mixed/size value.
+
+Styles keeps the document/selection switch and every typography, cover, band,
+and page control. Shared band actions and unique-page rows share one card.
+Reset to template groups the existing text-style and shared-band resets into
+one confirmed, undoable operation; unique-page overrides and existing
+visibility-switch behavior are preserved. Template editors retain their
+separate Reset to default bands action. Reset helper prose is removed.
+
+Save to template is staff-only and uses the existing workspace-scoped template
+compare-and-swap helpers; no hosted SQL is needed. It copies the resolved
+style settings and shared header/footer content, spacing, and visibility,
+never content, cover, quote, fields, or page-specific band overrides. The
+confirmation lists differences. A stale template or proposal revision returns
+409 and requires a fresh confirmation; it never retries a write blindly. A
+five-second Undo checks the saved template revision before restoring it.
+Starter templates are edited in place, with the existing semantic Edited and
+Reset behavior. The template Activity entry identifies the source proposal
+and staff member.
+
+A draft clears equivalent own style overrides against the newly saved
+inherited snapshot through its existing proposal save/revision/history path;
+Undo restores that authoring baseline when no later style change intervened.
+Unsigned sent proposals may save styles to their template, but keep their own
+published style snapshot. Cleaning up equivalent overrides on a sent record
+would otherwise publish an unnecessary new immutable version. Signed/locked
+editors remain read-only. Other proposals, all frozen versions, and sealed
+PDFs are untouched. The connector has no new tool.
+
+Generated tools-panel separators use pipes, commas, or line breaks, including
+the existing Columns selection controls and Saved block Used in/Details tabs.
+Stored user text and copy elsewhere are unchanged. Readiness retains #151's
+solid Lucide icons without circles. From/To/Note and the manual-delivery and
+email-template controls stay in Email; expiry/password are in Link settings.
+
+The rebased panel retains #155's required-choice and conditional-visibility
+controls, Build-row sub-line restrictions, and locked catalog care prices.
+Quote colors from #149 remain available inside Page & margins. Explicit Cards
+and the equivalent omitted layout/color defaults compare as unchanged for
+Save to template. Fractional spacing keys round their UI increments to avoid
+floating-point tails; existing field limits and saved units stay the same.

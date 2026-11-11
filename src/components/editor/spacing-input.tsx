@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useId, useRef } from "react";
+import { useEffect, useState, useId, useRef, type CSSProperties } from "react";
 import { useEditorHistory } from "../editor-history";
 /** One page-bounded spacing control, shared by cover, bands and typography. */
 export function SpacingInput({
@@ -10,6 +10,7 @@ export function SpacingInput({
   max,
   ariaLabel = label,
   inputStep = "any",
+  step = 1,
   unit = "px",
 }: {
   label: string;
@@ -28,7 +29,7 @@ export function SpacingInput({
     [clamped, setClamped] = useState(false);
   const dragging = useRef(false),
     engine = history?.controller?.engine;
-  const limit = Math.max(min, Math.floor(max));
+  const limit = Math.max(min, step >= 1 ? Math.floor(max) : max);
   useEffect(() => setRaw(String(value)), [value]);
   useEffect(() => () => engine?.endGroup(id), [engine, id]);
   const change = (n: number) => {
@@ -47,10 +48,15 @@ export function SpacingInput({
       <div className="spacing-slider-row">
         <input
           type="range"
+          style={
+            {
+              "--spacing-progress": `${Math.max(0, Math.min(100, ((value - min) / (limit - min || 1)) * 100))}%`,
+            } as CSSProperties
+          }
           aria-label={`${ariaLabel} slider`}
           min={min}
           max={limit}
-          step={1}
+          step={step}
           value={Math.min(value, limit)}
           onPointerDown={() => {
             dragging.current = true;
@@ -66,10 +72,15 @@ export function SpacingInput({
               )
             ) {
               e.preventDefault();
+              const direction = ["ArrowLeft", "ArrowDown"].includes(e.key)
+                ? -1
+                : 1;
               change(
-                value +
-                  (["ArrowLeft", "ArrowDown"].includes(e.key) ? -1 : 1) *
-                    (e.shiftKey ? 10 : 1),
+                Number(
+                  (value + direction * (e.shiftKey ? 10 : 1) * step).toFixed(
+                    12,
+                  ),
+                ),
               );
             }
           }}

@@ -1,4 +1,5 @@
 "use client";
+import { PanelCard } from "./editor/tools-panel";
 import { PanelHeading } from "./editor/panel-heading";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
@@ -1710,35 +1711,6 @@ function TemplatesStudioContent({
   );
   const templateTools = draft && (
     <div className="template-style-panel">
-      <section className="template-fonts-row">
-        <PanelHeading className="t-card-title">Fonts</PanelHeading>
-        <div>
-          <strong>
-            {[templateStyles.title.font, templateStyles.body.font]
-              .map((f) =>
-                typeof f === "string"
-                  ? (curatedFonts.find((v) => v.id === f)?.name ?? f)
-                  : f.name,
-              )
-              .join(" · ")}
-          </strong>
-          <small>From Workspace › Proposal fonts</small>
-          <button
-            type="button"
-            onClick={() => {
-              const panel = document.querySelector(".template-style-panel");
-              const accordion =
-                panel?.querySelector<HTMLDetailsElement>("details");
-              if (accordion) accordion.open = true;
-              panel
-                ?.querySelector<HTMLElement>('select[aria-label$="font"]')
-                ?.focus();
-            }}
-          >
-            Change
-          </button>
-        </div>
-      </section>
       <ProposalStyles
         cover={draft.cover}
         onCover={(cover) => editDraft({ ...draft, cover })}
@@ -1794,83 +1766,86 @@ function TemplatesStudioContent({
   const panelBody =
     mode === "blocks" && tab === "Used in" ? (
       <section className="saved-block-usage stack" aria-label="Used in">
-        <PanelHeading className="t-card-title">Templates · linked</PanelHeading>
-        {usage.templates.length ? (
-          usage.templates.map((t) => (
+        <PanelCard title="Templates | linked" open>
+          {usage.templates.length ? (
+            usage.templates.map((t) => (
+              <a
+                className="saved-block-usage-row"
+                key={t.id}
+                href={`/studio/templates/${t.id}`}
+              >
+                <strong>{t.name}</strong>
+                <small>
+                  {t.edited ? "Edited here | kept on save" : "Updates on save"}
+                </small>
+              </a>
+            ))
+          ) : (
+            <p className="muted">Not linked to any templates yet.</p>
+          )}
+        </PanelCard>
+        <PanelCard title="Drafts with a copy" count={usage.drafts.length} open>
+          {usage.drafts.map((p) => (
             <a
               className="saved-block-usage-row"
-              key={t.id}
-              href={`/studio/templates/${t.id}`}
+              key={p.id}
+              href={`/proposals/${p.id}/edit`}
             >
-              <strong>{t.name}</strong>
+              <strong>{p.title}</strong>
               <small>
-                {t.edited ? "Edited here · kept on save" : "Updates on save"}
+                {p.status} |{" "}
+                {data.staff.find((m) => m.user_id === p.owner)?.display_name ??
+                  p.owner}
               </small>
             </a>
-          ))
-        ) : (
-          <p className="muted">Not linked to any templates yet.</p>
-        )}
-        <PanelHeading className="t-card-title">
-          Drafts with a copy · {usage.drafts.length}
-        </PanelHeading>
-        {usage.drafts.map((p) => (
-          <a
-            className="saved-block-usage-row"
-            key={p.id}
-            href={`/proposals/${p.id}/edit`}
-          >
-            <strong>{p.title}</strong>
-            <small>
-              {p.status} ·{" "}
-              {data.staff.find((m) => m.user_id === p.owner)?.display_name ??
-                p.owner}
-            </small>
-          </a>
-        ))}
-        {!usage.drafts.length && (
-          <p className="muted">No drafts have a copy.</p>
-        )}
-        <fieldset className="saved-block-save-scope">
-          <legend>WHEN YOU SAVE</legend>
-          <label>
-            <input
-              type="radio"
-              name="saved-block-scope"
-              disabled={templateBusy}
-              checked={!updateDrafts}
-              onChange={() => setUpdateDrafts(false)}
-            />
-            <span>
-              <strong>Templates and new proposals</strong>
-              <small>
-                Drafts keep their current copy. This is the safe default.
-              </small>
-            </span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="saved-block-scope"
-              disabled={templateBusy}
-              checked={updateDrafts}
-              onChange={() => setUpdateDrafts(true)}
-            />
-            <span>
-              <strong>
-                Also update {usage.drafts.length}{" "}
-                {usage.drafts.length === 1 ? "draft" : "drafts"}
-              </strong>
-              <small>
-                Replaces this block in the drafts listed above. Any edits made
-                to it in those drafts are lost.
-              </small>
-            </span>
-          </label>
-        </fieldset>
+          ))}
+          {!usage.drafts.length && (
+            <p className="muted">No drafts have a copy.</p>
+          )}
+        </PanelCard>
+        <PanelCard title="When you save" collapsible={false}>
+          <fieldset className="saved-block-save-scope">
+            <legend className="sr-only">WHEN YOU SAVE</legend>
+            <label>
+              <input
+                type="radio"
+                name="saved-block-scope"
+                disabled={templateBusy}
+                checked={!updateDrafts}
+                onChange={() => setUpdateDrafts(false)}
+              />
+              <span>
+                <strong>Templates and new proposals</strong>
+                <small>
+                  Drafts keep their current copy. This is the safe default.
+                </small>
+              </span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="saved-block-scope"
+                disabled={templateBusy}
+                checked={updateDrafts}
+                onChange={() => setUpdateDrafts(true)}
+              />
+              <span>
+                <strong>
+                  Also update {usage.drafts.length}{" "}
+                  {usage.drafts.length === 1 ? "draft" : "drafts"}
+                </strong>
+                <small>
+                  Replaces this block in the drafts listed above. Any edits made
+                  to it in those drafts are lost.
+                </small>
+              </span>
+            </label>
+          </fieldset>
+        </PanelCard>
       </section>
     ) : tab === "Fields" ? (
       <FieldOptions
+        cards
         map={map}
         onInsert={(path) => {
           if (templatePanels.phone || templateToolsOpen) {
@@ -1880,7 +1855,12 @@ function TemplatesStudioContent({
         }}
       />
     ) : mode === "blocks" && tab === "Details" && saved ? (
-      <div className="saved-block-details stack">
+      <PanelCard
+        title="Block details"
+        open
+        className="saved-block-details"
+        bodyClassName="stack"
+      >
         <Field label="Name">
           <input
             aria-label="Block name"
@@ -1920,7 +1900,7 @@ function TemplatesStudioContent({
           )}
         {edited && (
           <p className="muted">
-            Edited {studioDate(edited.created_at)} · {eventAuthor(edited)}
+            Edited {studioDate(edited.created_at)} | {eventAuthor(edited)}
           </p>
         )}
         {created && (
@@ -1935,7 +1915,7 @@ function TemplatesStudioContent({
           Removes it from Saved blocks. Copies already in templates and
           proposals stay as they are.
         </p>
-      </div>
+      </PanelCard>
     ) : tab === "Blocks" ? (
       templateBlocks
     ) : tab === "Styles" ? (
@@ -3369,6 +3349,7 @@ function TemplatesStudioContent({
       {fields && (
         <Sheet title="Fields" onClose={() => setFields(false)}>
           <FieldOptions
+            cards
             map={map}
             onInsert={(path) => {
               setFields(false);

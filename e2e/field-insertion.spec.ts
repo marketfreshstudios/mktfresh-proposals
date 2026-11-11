@@ -152,7 +152,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await expect(
     panel
       .getByRole("button", {
-        name: "Client address — {{client.address}}",
+        name: /^Client\ address /,
         exact: true,
       })
       .locator(".field-option-value"),
@@ -162,7 +162,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .fill("first name");
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -182,7 +182,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .fill("client.first_name");
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -197,7 +197,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   panel = await choices(375);
   await panel
     .getByRole("button", {
-      name: "Client company — {{client.company}}",
+      name: /^Client company /,
       exact: true,
     })
     .click();
@@ -219,7 +219,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   panel = await choices(375);
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -237,7 +237,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   panel = await choices(375);
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -255,7 +255,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .fill("client.company");
   await panel
     .getByRole("button", {
-      name: "Client company — {{client.company}}",
+      name: /^Client company /,
       exact: true,
     })
     .click();
@@ -280,7 +280,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await captureState("field-picker");
   await menu
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -294,7 +294,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
     .fill("client.company");
   await menu
     .getByRole("button", {
-      name: "Client company — {{client.company}}",
+      name: /^Client company /,
       exact: true,
     })
     .click();
@@ -308,7 +308,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   panel = await choices(375);
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();
@@ -344,7 +344,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   });
   await panel
     .getByRole("button", {
-      name: "Client company — {{client.company}}",
+      name: /^Client company /,
       exact: true,
     })
     .click();
@@ -386,7 +386,7 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   panel = await choices(375);
   await panel
     .getByRole("button", {
-      name: "Client first name — {{client.first_name}}",
+      name: /^Client first name /,
       exact: true,
     })
     .click();

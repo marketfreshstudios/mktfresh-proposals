@@ -1,3 +1,8 @@
+import {
+  templateStyleTarget,
+  saveTemplateStyles,
+  undoTemplateStyles,
+} from "../src/lib/template-style-transfer";
 import { publicResult } from "../src/lib/service";
 import { proposalAction } from "../src/lib/proposal-actions";
 import type { Page } from "@playwright/test";
@@ -80,6 +85,26 @@ export async function editorFixture(
           signatory_version: "fixture",
         };
       else if (parts[0] === "proposals") {
+        if (["template-styles", "undo-template-styles"].includes(parts[2])) {
+          const result =
+            parts[2] === "undo-template-styles"
+              ? await undoTemplateStyles(
+                  f.repo,
+                  active.id,
+                  req.postDataJSON().event_id,
+                  staff,
+                )
+              : req.method() === "GET"
+                ? await templateStyleTarget(f.repo, active.id, staff)
+                : await saveTemplateStyles(
+                    f.repo,
+                    active.id,
+                    req.postDataJSON(),
+                    staff,
+                  );
+          await route.fulfill({ json: result });
+          return;
+        }
         if (req.method() === "PATCH") {
           const input = req.postDataJSON();
           patches.push(input);

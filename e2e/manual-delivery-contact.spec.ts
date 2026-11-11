@@ -62,6 +62,7 @@ for (const width of [1440, 768, 375])
     await subject.fill("Keep this personal subject");
     const note = page.getByRole("textbox", { name: "Note", exact: true });
     await note.fill("Keep this personal note");
+    await page.getByText("Link settings", { exact: true }).click();
     await page
       .getByRole("switch", { name: "Require a password", exact: true })
       .check();

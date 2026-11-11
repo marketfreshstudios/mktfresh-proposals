@@ -1167,7 +1167,9 @@ for (const width of [1440, 768, 375]) {
           await page.getByRole("tab", { name: "Used in", exact: true }).click();
         }
       }
-      await expect(usage.getByText("WHEN YOU SAVE")).toBeVisible();
+      await expect(
+        usage.getByRole("heading", { name: "When you save", exact: true }),
+      ).toBeVisible();
       await expect(usage.getByText("Updates on save")).toBeVisible();
       await audit(
         "saved block editor",

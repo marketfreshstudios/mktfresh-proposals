@@ -1,4 +1,6 @@
 "use client";
+import { PanelCard } from "./editor/tools-panel";
+import { GripVertical } from "lucide-react";
 import { useControlLayout } from "./editor/control-layout";
 import { useManagedPopover } from "./editor-popovers";
 import { createPortal } from "react-dom";
@@ -35,6 +37,7 @@ export function BlockMenu({
   useManagedPopover(variant === "menu", onClose);
   const [host, setHost] = useState<Element | null>(null),
     [query, setQuery] = useState(""),
+    [expanded, setExpanded] = useState<Record<string, boolean>>({ Text: true }),
     [active, setActive] = useState(0),
     [error, setError] = useState("");
   const ref = useRef<HTMLElement>(null),
@@ -255,9 +258,11 @@ export function BlockMenu({
     while (options[n]?.disabled)
       n = (n + step + options.length) % options.length;
     setActive(n);
-    ref.current
-      ?.querySelectorAll<HTMLButtonElement>("[role=menuitem]")
-      [n]?.focus();
+    const row =
+      ref.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]")[n];
+    const card = row?.closest("details");
+    if (card) card.open = true;
+    row?.focus();
   };
   if (!host) return null;
   const Surface = variant === "panel" ? "div" : phone ? "dialog" : "div";
@@ -289,6 +294,7 @@ export function BlockMenu({
           : `block-popover block-owned-dialog ${phone ? "phone-block-menu" : ""}`
       }
       onKeyDown={(e) => {
+        if ((e.target as HTMLElement).closest("summary")) return;
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
@@ -353,77 +359,118 @@ export function BlockMenu({
           setActive(0);
         }}
       />
-      <div className="block-menu-options" role="menu" aria-label="Block types">
-        {["Text", "Media", "Proposal", "Saved blocks"].map(
-          (group) =>
-            options.some((o) => o.group === group) && (
-              <section key={group} role="group" aria-label={group}>
-                <h3>{group}</h3>
-                {options.map(
-                  (option, i) =>
-                    option.group === group && (
-                      <button
-                        key={`${i}-${option.name}`}
-                        type="button"
-                        role="menuitem"
-                        disabled={option.disabled}
-                        aria-disabled={option.disabled || undefined}
-                        tabIndex={i === active ? 0 : -1}
-                        aria-label={optionName(option)}
-                        aria-description={
-                          option.disabled ? option.description : undefined
-                        }
-                        title={option.disabled ? option.description : undefined}
-                        className={i === active ? "active" : ""}
-                        onFocus={() => setActive(i)}
-                        onMouseEnter={() => setActive(i)}
-                        draggable={!option.disabled && !!option.block}
-                        onDragStart={(event) => {
-                          event.dataTransfer.setData(
-                            "application/x-yeswell-block",
-                            JSON.stringify([
-                              option.block,
-                              ...(option.extra ?? []),
-                            ]),
-                          );
-                          event.dataTransfer.effectAllowed = "copy";
-                          onDragStart?.();
-                        }}
-                        onClick={() => choose(option)}
-                      >
-                        <span className="block-menu-icon">
-                          <Icon name={option.icon} />
-                        </span>
-                        <span>
-                          <strong>{optionName(option)}</strong>
-                          <small>{option.description}</small>
-                        </span>
-                        {variant === "panel" &&
-                          option.group === "Saved blocks" && (
-                            <>
-                              <span className="saved-block-insert-caption">
-                                Insert
-                              </span>
-                              <span
-                                className="saved-block-drag-cue"
-                                aria-hidden="true"
-                              >
-                                ⋮⋮
-                              </span>
-                            </>
-                          )}
-                      </button>
-                    ),
-                )}
-              </section>
-            ),
-        )}
+      <div
+        className="block-menu-options"
+        role={variant === "panel" ? "group" : "menu"}
+        aria-label="Block types"
+      >
+        {["Text", "Media", "Proposal", "Saved blocks"].map((group) => {
+          if (!options.some((o) => o.group === group)) return null;
+          const rows = (
+            <>
+              {" "}
+              {options.map(
+                (option, i) =>
+                  option.group === group && (
+                    <button
+                      key={`${i}-${option.name}`}
+                      type="button"
+                      role="menuitem"
+                      disabled={option.disabled}
+                      aria-disabled={option.disabled || undefined}
+                      tabIndex={variant === "panel" ? 0 : i === active ? 0 : -1}
+                      aria-label={
+                        variant === "panel" ? undefined : optionName(option)
+                      }
+                      aria-description={
+                        variant === "panel" || option.disabled
+                          ? option.description
+                          : undefined
+                      }
+                      title={option.disabled ? option.description : undefined}
+                      className={i === active ? "active" : ""}
+                      onFocus={() => setActive(i)}
+                      onMouseEnter={() => setActive(i)}
+                      draggable={!option.disabled && !!option.block}
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData(
+                          "application/x-yeswell-block",
+                          JSON.stringify([
+                            option.block,
+                            ...(option.extra ?? []),
+                          ]),
+                        );
+                        event.dataTransfer.effectAllowed = "copy";
+                        onDragStart?.();
+                      }}
+                      onClick={() => choose(option)}
+                    >
+                      <span className="block-menu-icon">
+                        <Icon name={option.icon} />
+                      </span>
+                      <span>
+                        <strong>{optionName(option)}</strong>
+                        <small aria-hidden={variant === "panel" || undefined}>
+                          {variant === "panel"
+                            ? option.description.replaceAll(" · ", " | ")
+                            : option.description}
+                        </small>
+                      </span>
+                      {variant === "panel" &&
+                        option.group === "Saved blocks" && (
+                          <>
+                            <span
+                              className="saved-block-insert-caption"
+                              aria-hidden="true"
+                            >
+                              Insert
+                            </span>
+                            <span
+                              className="saved-block-drag-cue"
+                              aria-hidden="true"
+                            >
+                              <GripVertical size={16} />
+                            </span>
+                          </>
+                        )}
+                    </button>
+                  ),
+              )}
+            </>
+          );
+          return variant === "panel" ? (
+            <PanelCard
+              key={group}
+              title={group}
+              count={
+                group === "Saved blocks"
+                  ? options.filter((o) => o.group === group).length
+                  : undefined
+              }
+              open={query ? true : !!expanded[group]}
+              onToggle={(open) => {
+                if (!query) setExpanded((old) => ({ ...old, [group]: open }));
+              }}
+            >
+              <div role="menu" aria-label={group}>
+                {rows}
+              </div>
+            </PanelCard>
+          ) : (
+            <section key={group} role="group" aria-label={group}>
+              <h3>{group}</h3>
+              {rows}
+            </section>
+          );
+        })}
         {!options.length && <p className="muted">No matching blocks</p>}
       </div>
       {error && <p role="alert">{error}</p>}
       <input
         ref={file}
         type="file"
+        aria-label="Upload block image"
+        tabIndex={-1}
         className="sr-only"
         accept="image/png,image/jpeg"
         onChange={(e) => {

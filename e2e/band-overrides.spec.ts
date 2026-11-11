@@ -296,14 +296,31 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Pages with their own", exact: true }),
-  ).toContainText("Page 2 · footer hidden");
-  await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 page · 1 unique",
+  ).toContainText("Page 2 | Footer hidden");
+  await expect(page.locator(".band-own-pages-title")).toHaveCSS(
+    "text-transform",
+    "none",
+  );
+  await expect(page.locator(".band-page-go").first()).toHaveCSS(
+    "border-top-width",
+    "1px",
   );
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 1 page · 1 hidden",
+    "Shared on 1 page | 1 unique",
+  );
+  await expect(page.locator(".band-settings")).toContainText(
+    "Shared on 1 page | 1 hidden",
   );
   await capture(page, "1i-1440-styles");
+  if (process.env.CAPTURE_PANEL_CARDS === "1") {
+    const { mkdir } = await import("node:fs/promises");
+    const directory = "docs/screenshots/editor-panel-cards-rest";
+    await mkdir(directory, { recursive: true });
+    const shared = page.locator(".shared-bands-card");
+    await shared.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${directory}/2d-own-pages-1440.png` });
+    await shared.screenshot({ path: `${directory}/2d-own-pages-card.png` });
+  }
   await page
     .getByRole("button", { name: "Go to page 2 header", exact: true })
     .click();
@@ -376,7 +393,7 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   );
   await page.getByRole("menuitem", { name: /Hide on this page/ }).click();
   await expect(page.locator(".band-settings")).toContainText(
-    "Shared on 0 pages · 1 unique · 1 hidden",
+    "Shared on 0 pages | 1 unique | 1 hidden",
   );
 });
 test("reflow follows the anchor once; deleting it transfers the band and page deletion Undo restores both", async ({

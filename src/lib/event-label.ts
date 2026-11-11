@@ -116,6 +116,8 @@ export function eventLabel(
     pricing_items_saved: "Product saved",
     content_library_deleted: "Saved block deleted",
     catalog_synced: "Products synced",
+    template_styles_saved_from_proposal: `Styles saved from proposal ${String(e.metadata.proposal_title ?? "")} by ${String(e.metadata.editor_name ?? actorName)}`,
+    template_styles_save_undone: "Template styles save undone",
     templates_saved: "Template saved",
     content_library_saved: "Reusable block saved",
     font_uploaded: "Proposal font uploaded",

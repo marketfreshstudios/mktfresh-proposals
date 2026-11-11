@@ -336,7 +336,7 @@ export function FontSizePicker({
         type="button"
         ref={trigger}
         disabled={!editor}
-        aria-label="Size"
+        aria-label={`Size ${value ?? "Default"}`}
         title="Size"
         aria-haspopup={inline ? undefined : "menu"}
         aria-expanded={open}

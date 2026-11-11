@@ -9478,6 +9478,328 @@ dialog.foundation-sheet.block-style-sheet {
     font-size: 11px;
   }
 }
+
+/* R23 cards on the remaining tools tabs; document typography is untouched. */
+.ink-clay
+  :is(.field-options-cards, .blocks-panel, .proposal-styles, .send-panel) {
+  gap: 10px;
+}
+.ink-clay .blocks-panel {
+  padding: 0;
+}
+.ink-clay :is(.field-options-cards, .blocks-panel) input[type="search"] {
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+.ink-clay .field-options-cards .fields-hint {
+  margin: 0 0 2px;
+  color: var(--ink-muted);
+  font: 400 12px/18px var(--font-ui);
+}
+.ink-clay :is(.field-options-cards, .blocks-panel) .panel-card-body {
+  padding: 0;
+}
+.ink-clay .field-options-cards .panel-card-title,
+.ink-clay .blocks-panel .panel-card-title {
+  padding: 0;
+  margin: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  font: 600 15px/20px var(--font-ui);
+  color: var(--ink-title);
+}
+.ink-clay .field-options-cards .field-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "label value" "token token";
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 16px;
+  gap: 2px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.ink-clay .field-options-cards .field-option:last-child {
+  border-bottom: 0;
+}
+.ink-clay .field-options-cards .field-option-label {
+  grid-area: label;
+  font-weight: 600;
+}
+.ink-clay .field-options-cards .field-option-value {
+  grid-area: value;
+  color: var(--ink-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ink-clay .field-options-cards .field-option code {
+  grid-area: token;
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: transparent;
+  padding: 0;
+}
+.ink-clay .field-options-cards .business-field-link {
+  display: block;
+  padding: 8px 16px;
+  color: var(--ink-title);
+}
+.ink-clay .blocks-panel .block-menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ink-clay .blocks-panel .block-menu-options button {
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 12px 16px;
+  background: transparent;
+}
+.ink-clay .blocks-panel .block-menu-options button:last-child {
+  border-bottom: 0;
+}
+.ink-clay .blocks-panel .block-menu-options button:disabled {
+  opacity: 0.55;
+}
+.ink-clay .blocks-panel .block-menu-icon {
+  width: 20px;
+  color: var(--ink-muted);
+}
+.ink-clay .blocks-panel .saved-block-insert-caption {
+  margin-left: auto;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .proposal-styles.stack {
+  gap: 10px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .style-scope-note {
+  margin: 0 0 2px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .style-accordion-body {
+  padding: 16px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .editor-panel-card
+  .panel-card-body.style-accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .style-spacing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .spacing-slider-row {
+  grid-template-columns: minmax(0, 1fr) 84px;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .proposal-styles .cover-settings {
+  padding: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .shared-bands-card
+  > .panel-card-header {
+  border-bottom: 1px solid var(--border);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .shared-bands-card
+  > .panel-card-body {
+  padding: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-style-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px 16px;
+  margin: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-style-actions
+  .button-wrap,
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .styles-action-row
+  .button-wrap {
+  min-width: 0;
+  width: 100%;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-style-actions
+  .btn {
+  width: 100%;
+  white-space: nowrap;
+  padding-inline: 12px;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .proposal-styles .band-own-pages {
+  border-top: 1px solid var(--border);
+  background: var(--surface-preview);
+  padding: 14px 16px;
+  margin: 0;
+  border-radius: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-own-pages
+  .band-own-pages-title {
+  font: 600 12px/18px var(--font-ui);
+  margin: 0 0 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-own-pages
+  .band-page-go {
+  min-height: 32px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-button);
+  padding: 0 12px;
+}
+@media (max-width: 959px) {
+  .ink-clay
+    :is(.editor-v2-panel, .tools-sheet)
+    .proposal-styles
+    .band-own-pages
+    .band-page-go {
+    min-height: 44px;
+  }
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-own-pages
+  > div {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-own-pages
+  > button {
+  border: 0;
+  background: transparent;
+  padding: 6px 0 0;
+  text-decoration: underline;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .styles-action-row {
+  display: flex;
+  gap: 8px;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .styles-action-row
+  .btn {
+  width: 100%;
+  white-space: nowrap;
+  padding-inline: 12px;
+}
+.ink-clay .send-panel .send-checklist {
+  margin: 0;
+  padding: 0;
+}
+.ink-clay .send-panel .readiness-badge {
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.ink-clay .send-panel .panel-card-count {
+  background: var(--st-review-soft);
+  color: var(--st-review-ink);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.ink-clay .send-panel .send-panel-footer {
+  gap: 10px;
+  margin: 0;
+}
+.ink-clay .field-options-cards .field-option {
+  color: var(--ink);
+}
+.ink-clay .styles-action-row {
+  flex-wrap: wrap;
+}
+.ink-clay .styles-action-row > .button-wrap {
+  flex: 1;
+}
+.ink-clay .styles-action-row > .template-style-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.ink-clay .send-panel .muted a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ink-clay .field-options-cards {
+  max-height: none;
+  overflow: visible;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .editor-tab-content:has(.selection-styles > .proposal-styles) {
+  padding: 14px;
+}
+.ink-clay .selection-styles:has(> .proposal-styles) {
+  padding: 0;
+  gap: 10px;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .proposal-styles .band-settings {
+  gap: 10px;
+}
+.ink-clay .send-panel input[readonly] {
+  background: var(--surface-preview);
+  color: var(--ink);
+}
+
+.ink-clay .field-options-cards .field-option:hover {
+  border-color: var(--border);
+  background: var(--surface-preview);
+}
+
 .ink-clay
   .editor-sidepanel.sidebar-rail
   > .editor-sidebar-header
@@ -9490,4 +9812,127 @@ dialog.foundation-sheet.block-style-sheet {
 }
 .ink-clay .quote-panel .quote-row-body .field > span {
   color: var(--ink-muted);
+}
+/* Reuse the live SpacingInput with R23's field label, numeric box and thumb. */
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-field > label {
+  font: 600 13px/18px var(--font-ui);
+  color: var(--ink);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"] {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--ink-title) var(--spacing-progress),
+    var(--border) var(--spacing-progress)
+  );
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  background: var(--surface);
+  border: 2px solid var(--ink-title);
+  border-radius: 50%;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  .spacing-number {
+  width: 84px;
+  height: 38px;
+  gap: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-number:has(input:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-number
+  > input:focus-visible {
+  outline: 0;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .shared-bands-card {
+  border-color: var(--border);
+  box-shadow: none;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .shared-bands-card
+  > .panel-card-header {
+  cursor: default;
+  border-bottom: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .shared-bands-card
+  .band-style-actions {
+  padding-top: 0;
+}
+@media (max-width: 959px) {
+  .ink-clay
+    :is(.editor-v2-panel, .tools-sheet)
+    .spacing-slider-row
+    .spacing-number {
+    height: 44px;
+  }
+  .ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+    height: 42px;
+  }
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+  color: var(--ink);
+}
+.ink-clay .saved-block-usage .editor-panel-card .saved-block-usage-row {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+}
+.ink-clay
+  .saved-block-usage
+  .editor-panel-card
+  .saved-block-usage-row:last-child {
+  border-bottom: 0;
+}
+.ink-clay .saved-block-usage .saved-block-save-scope {
+  border: 0;
+  margin: 0;
+  padding: 0;
 }

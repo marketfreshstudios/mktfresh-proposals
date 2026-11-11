@@ -95,7 +95,7 @@ test("inline email subject/body keep cursor, marks, fields and explicit saves; r
     .click();
   await page
     .locator(".email-format-more:popover-open")
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .click();
   await page.getByRole("menuitemradio", { name: "24 px", exact: true }).click();
   await expect(body.locator('[data-inline-size="24"]').first()).toBeVisible();

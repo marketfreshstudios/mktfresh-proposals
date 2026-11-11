@@ -1,3 +1,8 @@
+import {
+  templateStyleTarget,
+  saveTemplateStyles,
+  undoTemplateStyles,
+} from "./template-style-transfer";
 import { normalizedPhone } from "./client-contact";
 import { businessDetailsSnapshot } from "./business-details";
 import { waitingForInvoiceCountersignature } from "./proposal-state";
@@ -2094,6 +2099,29 @@ async function handleRoute(
         return json(await rt.service.create(input, user), 201);
       }
       uuid.parse(id);
+      if (action === "template-styles") {
+        if (method === "GET")
+          return json(await templateStyleTarget(rt.repo, id, user));
+        if (method === "POST") {
+          const input = z
+            .object({
+              revision: z.string().regex(/^[a-f0-9]{64}$/),
+              proposal_revision: z.number().int().nonnegative(),
+            })
+            .strict()
+            .parse(await body(req));
+          return json(await saveTemplateStyles(rt.repo, id, input, user));
+        }
+      }
+      if (action === "undo-template-styles" && method === "POST") {
+        const input = z
+          .object({ event_id: uuid })
+          .strict()
+          .parse(await body(req));
+        return json(
+          await undoTemplateStyles(rt.repo, id, input.event_id, user),
+        );
+      }
       if (method === "POST" && action === "replace-saved-block") {
         const input = z
           .object({ revision: z.number().int(), saved_block_id: uuid })

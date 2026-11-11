@@ -143,7 +143,12 @@ for (const width of [1440, 375])
       await page.keyboard.press("Escape");
       await expect(menu).toHaveCount(0);
       await expect(trigger).toBeFocused();
-      await frame.getByRole("button", { name: "Size", exact: true }).click();
+      await frame
+        .getByRole("button", {
+          name: /^Size (Default|Mixed|[0-9]+)$/,
+          exact: true,
+        })
+        .click();
       const sizes = page.getByRole("menu", { name: "Font size", exact: true });
       await rowsFit(sizes);
       await sizes

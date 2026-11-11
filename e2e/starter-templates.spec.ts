@@ -164,13 +164,14 @@ test("Business state autosaves, is available as a field, and readiness links to 
   );
   await page.goto(`/proposals/${changed.id}/edit`);
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
+  await page.getByText("Sender & workspace", { exact: true }).click();
   await expect(
     page
       .locator(".field-option-label")
       .getByText("Business state", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Business state — {{business.state}}" }),
+    page.getByRole("button", { name: /^Business\ state / }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Edit business state in Workspace" }),

@@ -152,7 +152,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await page.locator(selector).click();
   await selectText(page, selector, 6, 7);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "30 px", exact: true }).click();
@@ -205,7 +205,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await expect(page.locator(selector)).toHaveText(originalText);
   await selectText(page, selector, originalText.length, originalText.length);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "20 px", exact: true }).click();
@@ -235,7 +235,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
     { first: selector, second },
   );
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "20 px", exact: true }).click();
@@ -253,12 +253,15 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await selectText(page, selector, 0, 11);
   await expect(
     page
-      .getByRole("button", { name: "Size", exact: true })
+      .getByRole("button", {
+        name: /^Size (Default|Mixed|[0-9]+)$/,
+        exact: true,
+      })
       .filter({ visible: true }),
   ).toContainText("Mixed");
   await selectText(page, selector, 6, 7);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   const sizeOptions = await page
@@ -307,7 +310,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await page.getByRole("button", { name: "Close PDF preview" }).click();
   await selectText(page, selector, 6, 7);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page
@@ -322,7 +325,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await page.locator(h).click();
   await selectText(page, h, 0, 1);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "30 px", exact: true }).click();
@@ -335,7 +338,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await page.getByRole("textbox", { name: "header column 1" }).click();
   await page
     .locator(".band-edit-bar")
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .click();
   await expect(
     page.getByRole("menuitemradio", { name: "30 px", exact: true }),
@@ -349,7 +352,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await page.locator(selector).click();
   await selectText(page, selector, 6, 7);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "30 px", exact: true }).click();
@@ -476,7 +479,7 @@ test("enlarging rich text reflows the frozen-width layout and PDF together and k
   const length = (await page.locator(selector).innerText()).length;
   await selectText(page, selector, 0, length);
   await page
-    .getByRole("button", { name: "Size", exact: true })
+    .getByRole("button", { name: /^Size (Default|Mixed|[0-9]+)$/, exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole("menuitemradio", { name: "30 px", exact: true }).click();

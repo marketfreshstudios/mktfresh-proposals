@@ -324,7 +324,10 @@ test("toolbar roving keys and Tab traverse text, bar, above, handle, below and A
   await expect(style).toBeFocused();
   await page.keyboard.press("ArrowRight");
   await expect(
-    bar.getByRole("button", { name: "Size", exact: true }),
+    bar.getByRole("button", {
+      name: /^Size (Default|Mixed|[0-9]+)$/,
+      exact: true,
+    }),
   ).toBeFocused();
   await page.keyboard.press("ArrowLeft");
   await expect(style).toBeFocused();
