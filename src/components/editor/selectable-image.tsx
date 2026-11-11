@@ -1,4 +1,5 @@
 "use client";
+import { listenOutsidePress } from "../../lib/outside-press";
 import {
   useEffect,
   useLayoutEffect,
@@ -90,7 +91,7 @@ export function SelectableImage({
   };
   useEffect(() => {
     if (!selected) return;
-    const outside = (e: PointerEvent) => {
+    const outside = (e: Event) => {
       if (
         !root.current?.contains(e.target as Node) &&
         !(e.target as Element).closest(`[data-image-toolbar="${id}"]`)
@@ -99,8 +100,7 @@ export function SelectableImage({
         setPanel(null);
       }
     };
-    document.addEventListener("pointerdown", outside, true);
-    return () => document.removeEventListener("pointerdown", outside, true);
+    return listenOutsidePress(outside);
   }, [selected]);
   useEffect(() => {
     const el = root.current;

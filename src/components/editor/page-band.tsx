@@ -1,4 +1,5 @@
 "use client";
+import { listenOutsidePress } from "../../lib/outside-press";
 import { FontSizePicker } from "../inline-font-size";
 import { useHasEditorPopover } from "../editor-popovers";
 import { bandRichText } from "./band-rich-text";
@@ -135,7 +136,7 @@ export function PageBand(props: Props) {
       setMenu(null);
       return;
     }
-    const outside = (e: PointerEvent) => {
+    const outside = (e: Event) => {
       const el = e.target as Element;
       if (
         !root.current?.contains(el) &&
@@ -157,10 +158,10 @@ export function PageBand(props: Props) {
       e.stopImmediatePropagation();
       done(true);
     };
-    document.addEventListener("pointerdown", outside, true);
+    const stopOutside = listenOutsidePress(outside);
     window.addEventListener("keydown", escape, true);
     return () => {
-      document.removeEventListener("pointerdown", outside, true);
+      stopOutside();
       window.removeEventListener("keydown", escape, true);
     };
   }, [editing, selected, menu]);
