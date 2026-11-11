@@ -1,4 +1,7 @@
 /* Reading chrome only. The document still uses its workspace styles and shared Letter plan. */
+.client-flow {
+  --client-reading-page-width: 720px;
+}
 .flow-r25-reading {
   --client-deep-accent: color-mix(
     in srgb,
@@ -130,9 +133,14 @@
   box-shadow: inset 0 0 0 1px var(--client-choice-line);
 }
 @media (min-width: 1100px) {
+  .client-flow:not(.flow-phone-preview)
+    .flow-result
+    > :is(.client-document-sheets, .flow-document) {
+    width: min(100%, var(--client-reading-page-width));
+  }
   .client-flow.flow-r25-reading:not(.flow-phone-preview) .flow-review {
     width: min(1140px, 100%);
-    grid-template-columns: minmax(0, 720px) 340px;
+    grid-template-columns: minmax(0, var(--client-reading-page-width)) 340px;
     gap: 24px 40px;
   }
   .flow-r25-reading:not(.flow-phone-preview) .flow-reading-rail {
@@ -320,15 +328,16 @@
     text-decoration: none;
   }
   .client-flow.flow-r25-reading.client-flow .flow-review {
-    padding: 0;
+    padding: 0 max(16px, env(safe-area-inset-right)) 0
+      max(16px, env(safe-area-inset-left));
     background: var(--surface);
   }
   .client-flow.flow-r25-reading.client-flow .paper.document-reading {
     border: 0;
     border-radius: 0;
-    --editor-sheet-left: 20px;
-    --editor-sheet-right: 20px;
-    padding: 24px 20px;
+    --editor-sheet-left: max(16px, env(safe-area-inset-left));
+    --editor-sheet-right: max(16px, env(safe-area-inset-right));
+    padding: 24px 0;
     box-shadow: none;
   }
   .flow-r25-reading
