@@ -50,7 +50,7 @@ export function oiotItem(
 }
 
 /**
- * The Own It Over Time build line: the one a choice group protects. A care
+ * The financed build line: the one a choice group protects. A care
  * plan alone (monthly only, no one-time line) is an OIOT item but not the build,
  * so it can move in and out of groups like any option.
  */
