@@ -1357,3 +1357,10 @@ the full width.
 The question controls belong to the follow-up. They will sit outside measured
 Letter content so they cannot reflow it. Clients can edit or delete only an
 unanswered question while the proposal is still open for questions.
+
+### Client choice amount separators
+
+The desktop choices rail joins displayed sub-line amounts with a spaced
+plus in one text run. This keeps both spaces visible while allowing the
+amounts to wrap in a narrow rail. The amounts stay separate, and the
+signing summary keeps its stacked amounts.

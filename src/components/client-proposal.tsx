@@ -1390,7 +1390,7 @@ function NewClientFlow({
                         billing={recurring || requiresCheckout}
                       />
                       <h2>Your choices</h2>
-                      <ChosenItems proposal={p} />
+                      <ChosenItems proposal={p} inlineAmounts />
                     </div>
                     <ReviewTotals proposal={p} />
                     <div className="flow-review-actions">
@@ -1669,9 +1669,11 @@ function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
 function ChosenItems({
   proposal: p,
   terms = false,
+  inlineAmounts = false,
 }: {
   proposal: PublicProposal;
   terms?: boolean;
+  inlineAmounts?: boolean;
 }) {
   return (
     <ul className="flow-chosen">
@@ -1691,14 +1693,26 @@ function ChosenItems({
                 />
               )}
             </span>
-            <span>
-              {i.sublines.map((s) => (
-                <span key={s.id} style={{ display: "block" }}>
-                  {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
-                  {intervalSuffix(s.interval)}
-                </span>
-              ))}
-            </span>
+            {inlineAmounts ? (
+              <span className="flow-choice-amounts">
+                {i.sublines
+                  .map(
+                    (s) =>
+                      formatMoney(s.amount * s.qty, p.currency, p.money_cents) +
+                      intervalSuffix(s.interval),
+                  )
+                  .join(" + ")}
+              </span>
+            ) : (
+              <span>
+                {i.sublines.map((s) => (
+                  <span key={s.id} style={{ display: "block" }}>
+                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+                    {intervalSuffix(s.interval)}
+                  </span>
+                ))}
+              </span>
+            )}
           </li>
         ))}
     </ul>

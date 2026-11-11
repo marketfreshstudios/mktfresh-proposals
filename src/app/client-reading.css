@@ -79,6 +79,12 @@
 .flow-r25-reading .flow-choices .flow-progress {
   margin-bottom: 12px;
 }
+.flow-choices .flow-chosen li > .flow-choice-amounts {
+  flex-shrink: 0;
+  max-inline-size: 60%;
+  white-space: normal;
+  text-align: end;
+}
 .flow-r25-reading .flow-choice-contact {
   font-size: 13px;
   margin-bottom: 0;
