@@ -445,3 +445,15 @@ it("migrates the exact legacy starter and matching draft after deploy while pres
     await db.close();
   }
 });
+
+it("only the OIOT build locks a choice group; an OIOT care plan alone does not", async () => {
+  const { quote, build, catalog, content } = await scenario();
+  const { oiotBuildItem, oiotItem } = await import("../src/lib/oiot");
+  expect(oiotBuildItem(build, content, catalog)).toBe(true);
+  const plans = quote.filter(
+    (item) => !item.oiot_build && oiotItem(item, content, catalog),
+  );
+  expect(plans.length).toBeGreaterThan(0);
+  for (const plan of plans)
+    expect(oiotBuildItem(plan, content, catalog), plan.name).toBe(false);
+});

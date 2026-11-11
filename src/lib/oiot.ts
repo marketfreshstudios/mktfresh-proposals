@@ -49,6 +49,23 @@ export function oiotItem(
   );
 }
 
+/**
+ * The Own It Over Time build line: the one a choice group protects. A care
+ * plan alone (monthly only, no one-time line) is an OIOT item but not the build,
+ * so it can move in and out of groups like any option.
+ */
+export function oiotBuildItem(
+  item: QuoteItem,
+  content: Block[],
+  catalog: Item[] = [],
+) {
+  return (
+    !!item.oiot_build ||
+    (oiotItem(item, content, catalog) &&
+      item.sublines.some((line) => line.interval === "one_time"))
+  );
+}
+
 export function isOiotKickoffLine(line: Subline) {
   return (
     line.interval === "one_time" &&
