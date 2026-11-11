@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type { BillingLink, Proposal } from "../lib/model";
 import {
   proposalInvoiceRef,
@@ -8,7 +8,8 @@ import {
   quickBooksCustomerReview,
 } from "../lib/qbo-mapping";
 import { useMoney } from "./money-context";
-import { api, Button, post } from "./ui";
+import { RecordBillingRow } from "./billing-breakdown";
+import { api, Button, Disclosure, post } from "./ui";
 
 type Invoice = {
   number: string;
@@ -28,10 +29,14 @@ export function QuickBooksBilling({
   proposal,
   link,
   onRefresh,
+  amount,
+  manualAction,
 }: {
   proposal: Proposal;
   link: BillingLink;
   onRefresh: () => Promise<void>;
+  amount: string;
+  manualAction?: ReactNode;
 }) {
   const [details, setDetails] = useState<Details>();
   const [error, setError] = useState("");
@@ -83,30 +88,62 @@ export function QuickBooksBilling({
       setBusy(false);
     }
   };
+  const status =
+    invoice?.status ??
+    (link.status === "succeeded"
+      ? "Ready"
+      : link.metadata?.action === "Invoice manually"
+        ? "Invoice manually"
+        : "Billing to finish");
   return (
-    <div className="quickbooks-billing">
-      <p>
-        Proposal reference{" "}
-        {details?.reference ?? proposalInvoiceRef(proposal.id)}
-      </p>
-      <p>
-        Invoices go to{" "}
-        {details?.email ??
-          String(
-            link.metadata?.billing_email ?? qboBillingEmail(proposal.client),
-          )}
-      </p>
-      {invoice && (
-        <div className="quickbooks-invoice">
+    <RecordBillingRow
+      label="One-time"
+      end={
+        manualAction ?? (
+          <span
+            className={`pill ${link.status === "succeeded" ? "success" : "warning"}`}
+          >
+            {status}
+          </span>
+        )
+      }
+    >
+      <details className="record-provider-details">
+        <Disclosure>
+          {amount} |{" "}
+          {invoice
+            ? `QuickBooks invoice ${invoice.number}`
+            : "QuickBooks invoice"}
+        </Disclosure>
+        <div className="quickbooks-billing">
           <p>
-            <strong>Invoice {invoice.number}</strong> · {invoice.status}
-            {invoice.amount !== undefined &&
-              ` · ${money(invoice.amount, invoice.currency ?? proposal.currency)}`}
+            Proposal reference{" "}
+            {details?.reference ?? proposalInvoiceRef(proposal.id)}
           </p>
-          <a href={invoice.url} target="_blank" rel="noreferrer">
-            Open in QuickBooks
-          </a>
+          <p>
+            Invoices go to{" "}
+            {details?.email ??
+              String(
+                link.metadata?.billing_email ??
+                  qboBillingEmail(proposal.client),
+              )}
+          </p>
+          {invoice && (
+            <div className="quickbooks-invoice">
+              {invoice.amount !== undefined && (
+                <p>
+                  {money(invoice.amount, invoice.currency ?? proposal.currency)}
+                </p>
+              )}
+              <a href={invoice.url} target="_blank" rel="noreferrer">
+                Open in QuickBooks
+              </a>
+            </div>
+          )}
         </div>
+      </details>
+      {link.last_error && (
+        <p className="record-billing-problem">{link.last_error}</p>
       )}
       {details?.refresh_error && <p role="status">{details.refresh_error}</p>}
       {reconnect && (
@@ -153,6 +190,6 @@ export function QuickBooksBilling({
         </>
       )}
       {error && <p role="alert">{error}</p>}
-    </div>
+    </RecordBillingRow>
   );
 }

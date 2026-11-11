@@ -90,7 +90,9 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await screenshot(page, "proposal-tabs-1440");
 
   await page.goto(`/proposals/${f.draft.id}?view=record`);
-  const edit = page.getByRole("link", { name: "Edit", exact: true });
+  const edit = page
+    .locator(".record-toolbar")
+    .getByRole("link", { name: "Edit", exact: true });
   await edit.hover();
   await expectReadable(edit, "Record Edit hover");
   await screenshot(page, "record-edit-hover-1440");
@@ -157,13 +159,16 @@ test("tab sets and real record and editor navigation use readable shared styles"
 test("button variants keep their text readable in hover, active and focus on paper and ink", async ({
   page,
 }) => {
-  await editorFixture(page);
+  const { draft } = await editorFixture(page);
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/proposals");
-  // Inject the matrix only after hydration; earlier, React regenerates the
-  // shell on a hydration mismatch and removes it (flaky hover timeouts).
+  // The tabs render before the client loads proposals. Wait for the actual
+  // row so hydration cannot replace the test matrix after it is mounted.
   await expect(
-    page.getByRole("tablist", { name: "Proposal views" }),
+    page.getByRole("link", {
+      name: `Open ${draft.client.company}: ${draft.title}`,
+      exact: true,
+    }),
   ).toBeVisible();
   await page.emulateMedia({ reducedMotion: "reduce" });
   const matrix = page.locator("#button-state-check");

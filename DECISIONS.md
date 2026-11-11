@@ -1263,3 +1263,60 @@ Blocks keeps the Saved blocks card visible with a zero count when empty.
 Team and Job cards in the shared Fields picker depend on the supplied
 fields. The proposal field map supplies neither group. Team and job
 notification emails supply the corresponding fields.
+
+## Phone proposal editor tools and caret
+
+The phone proposal editor keeps the full paged document mounted when staff
+select a block. Selecting a block previously changed the page projection and
+hid the tool dock before WebKit had placed the caret. A single tap from the
+resting dock already opened a tool in emulation. Once the tools opened, the
+old dock was behind the native modal.
+
+The phone tools dialog now includes the dock at its bottom, below the scrollable
+tool content. Tap the selected tool, use its close button, press Escape, or tap
+the backdrop to close it. Focus returns to the opening tool. Explicit focus
+on the tool before the dialog opens prevents native focus restoration from
+scrolling back to a document field when it closes.
+
+The editor follows the visual viewport as the keyboard opens and closes. Its
+formatting bar sits above the dock. Add above and Add below sit in that bar so
+the controls do not cover nearby text in the paged document. The document
+scrolls only enough to expose the caret. A single touch click uses the rendered text position when
+WebKit snaps the caret to a word edge. Text selection gestures keep their
+native behavior. The proposal's text styles and page measurements stay the same.
+
+## R24 proposal details, desktop
+
+The proposal details page follows frames 4a–4n2 with five lifecycle
+steps and a separate billing status. The hero holds the one filled
+action when available. Expiration stays visible until both signatures,
+as shown in 4e. Manual invoicing and failed-job recovery keep their
+billing controls available even when the proposal uses neither integration.
+
+An unsigned Sent or Viewed record uses the existing live blockers to
+show Edits not live. An open client question keeps priority in the hero.
+The published date comes from the latest immutable published version.
+The published staff preview uses the existing preview authorization and
+does not count as a client view. Fix in editor opens Readiness and
+focuses the first blocker. The Timeline labels the existing edit event.
+
+Extend link uses the existing reopen action. It keeps the client link
+and applies the workspace's default validity period without sending
+another email. Imports keep their existing read-only action rules;
+archived proposals must be unarchived before using staff preview.
+The client question flow and email log keep their existing behavior.
+Phone and tablet frames 5a–5h are delivered separately. No migration.
+
+### R24 desktop review
+
+Billing rows use the proposal amounts and the provider metadata already on
+the record. Stripe dates appear only when a future charge is recorded.
+Invoice reference, recipient, and provider links are available by opening
+the corresponding row. Manual actions and customer review remain in their
+provider row, and Retry billing sits in the section heading. Background job
+details open when a failed or linked job needs attention.
+
+The record shows compact signature metadata with the original signature
+mark. Full signing evidence remains available on the Evidence view.
+Countersigned records fill all five milestone markers and retain the
+accessible current-step label. The email log starts collapsed.

@@ -2,19 +2,30 @@ import { fieldLabel } from "./field-labels";
 import { proposalBands } from "./page-bands";
 import { freezeStyles } from "./proposal-styles";
 import { draftItems } from "./quote-model";
-import type { Proposal } from "./model";
+import { check, type Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
 import { publicResult } from "./service";
 import { variables, versionHash } from "./content";
 import { permitsEmptyVariable } from "./presentation";
+type PreviewMode = "working" | "published";
+
 export function previewProposal(
   proposal: Proposal,
   settings: WorkspaceSettings,
+  mode: PreviewMode = "working",
 ) {
+  if (mode === "published")
+    check(
+      proposal.source === "native" &&
+        proposal.sent_at &&
+        proposal.versions.length,
+      "Published proposal unavailable",
+      404,
+    );
   const p = structuredClone(proposal);
   p.workspace_settings =
     p.status === "draft" ? settings : (p.workspace_settings ?? settings);
-  if (!p.signers.length) {
+  if (mode === "working" && !p.signers.length) {
     delete p.published_state;
     p.quote = draftItems(p.quote);
     const map = variables(p);
@@ -61,11 +72,18 @@ export function previewProposal(
   return p;
 }
 
-export function previewResult(proposal: Proposal, settings: WorkspaceSettings) {
+export function previewResult(
+  proposal: Proposal,
+  settings: WorkspaceSettings,
+  mode: PreviewMode = "working",
+) {
   return {
-    ...publicResult(previewProposal(proposal, settings), {
+    ...publicResult(previewProposal(proposal, settings, mode), {
       showPoweredBy: settings.show_powered_by !== false,
     }),
-    preview_can_send: proposal.status === "draft" && !proposal.archived_at,
+    preview_can_send:
+      mode === "working" &&
+      proposal.status === "draft" &&
+      !proposal.archived_at,
   };
 }

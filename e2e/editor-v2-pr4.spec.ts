@@ -103,7 +103,7 @@ test("tablet tools overlay the page with a trapped focus and close on Escape", a
   await page.keyboard.press("Escape");
   await expect(drawer).toHaveCount(0);
 });
-test("phone sheets trap focus; selected text docks above the visual viewport and insertion pills open a modal block menu", async ({
+test("phone sheets trap focus; selected text docks above the visual viewport and toolbar insertion opens a modal block menu", async ({
   page,
 }) => {
   const f = await editorFixture(page);
@@ -128,7 +128,7 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
   expect(
     await sheet.evaluate((el) => el.contains(document.activeElement)),
   ).toBe(true);
-  await sheet.getByRole("button", { name: "Done", exact: true }).click();
+  await sheet.getByRole("button", { name: "Close Quote", exact: true }).click();
   await expect(sheet).toHaveCount(0);
   const block = page.locator(`[data-block-id="block-${f.content[1].id}"]`);
   const plan = await page
@@ -141,10 +141,10 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
       .locator(".editor-phone-header")
       .getByRole("button", { name: "Done", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".document-cover").first()).not.toBeVisible();
-  await expect(
-    page.locator(".editor-paper > [data-phone-section]:visible"),
-  ).toHaveCount(1);
+  await expect(page.locator(".document-cover").first()).toBeVisible();
+  expect(
+    await page.locator(".editor-paper > [data-phone-section]:visible").count(),
+  ).toBeGreaterThan(1);
   await expect(page.locator(".editor-paper")).toHaveAttribute(
     "data-pagination",
     plan!,
@@ -161,12 +161,16 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
     window.visualViewport!.dispatchEvent(new Event("resize"));
   });
   await expect
-    .poll(async () =>
-      Math.round(
-        (await bar.boundingBox())!.y + (await bar.boundingBox())!.height,
-      ),
-    )
+    .poll(async () => {
+      const dock = (await page.locator(".editor-phone-dock").boundingBox())!;
+      return Math.round(dock.y + dock.height);
+    })
     .toBe(550);
+  const dock = (await page.locator(".editor-phone-dock").boundingBox())!;
+  const formatting = (await bar.boundingBox())!;
+  expect(
+    Math.abs(formatting.y + formatting.height - dock.y),
+  ).toBeLessThanOrEqual(1);
   const remove = bar.getByRole("button", { name: "Delete block", exact: true });
   await remove.scrollIntoViewIfNeeded();
   await expect(remove).toBeInViewport();
@@ -179,8 +183,8 @@ test("phone sheets trap focus; selected text docks above the visual viewport and
     name: "Add a block below",
     exact: true,
   });
-  await expect(above).toHaveCSS("height", "32px");
-  await expect(below).toHaveCSS("height", "32px");
+  await expect(above).toHaveCSS("height", "44px");
+  await expect(below).toHaveCSS("height", "44px");
   await above.click();
   const menu = page.getByRole("dialog", { name: "Add a block", exact: true });
   await expect(menu).toBeVisible();
@@ -308,6 +312,18 @@ test("sent editor publishes on its existing link, keeps invalid work off the cli
   expect(previous.content.some((b: any) => b.type === "pricing_table")).toBe(
     true,
   );
+  await page.goto(`/p/${sent.id}?preview=published`);
+  await expect(page.getByText("Preview of published version")).toBeVisible();
+  await expect(page.locator("#proposal-document")).toContainText(
+    "This saved text is live on the same link.",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Your investment" }),
+  ).toBeVisible();
+  await page.goto(`/proposals/${sent.id}?view=send&focus=readiness`);
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "Add a pricing table" }),
+  ).toBeFocused();
   const { signature } = await import("../tests/helpers");
   await f.signRemote({
     ...signature(f.active().revision),

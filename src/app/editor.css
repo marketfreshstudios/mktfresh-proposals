@@ -4485,7 +4485,7 @@
     height: 100%;
     overflow: auto;
     min-width: 0;
-    padding: 12px 0 100px;
+    padding: 12px 0 calc(var(--phone-editor-dock-height) + 56px);
     background: var(--surface-page);
   }
   .editor-phone-header {
@@ -4594,9 +4594,6 @@
   }
   .editor-phone-dock small {
     font: 500 10px/14px var(--font-ui);
-  }
-  [data-phone-editing="true"] .editor-phone-dock {
-    display: none;
   }
   .quote-workspace.editor-v2 .pdf-paper-viewport {
     display: block !important;
@@ -4735,6 +4732,11 @@
       transparent,
       var(--editor-tool-ground)
     );
+  }
+  .editor-insert-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
   }
   .editor-gutter.editor-insert-edges {
     position: absolute;
@@ -4945,48 +4947,9 @@
   width: 100%;
 }
 
-/* Redesign 11 frame 1d: editing isolates one section; reading keeps full sheets.
-   Only the visible projection changes. The Letter-width measurement clone still
-   contains every block and keeps its original pagination and PDF break points. */
 @media (max-width: 699px) {
   .editor-gutter {
     z-index: var(--z-block-controls);
-  }
-  [data-phone-editing="true"] .editor-paper:not([data-page-measurement]) {
-    min-height: calc(100dvh - 132px) !important;
-    background: var(--paper) !important;
-    padding-top: 52px !important;
-    padding-bottom: 100px !important;
-  }
-  [data-phone-editing="true"]
-    .editor-paper:not([data-page-measurement])
-    > :is(
-      .document-cover,
-      .editor-page-sheets,
-      .document-end,
-      .document-page-count
-    ),
-  [data-phone-editing="true"]
-    .editor-paper:not([data-page-measurement])
-    > [data-phone-section]:not([data-phone-section-active="true"]) {
-    display: none !important;
-  }
-  [data-phone-editing="true"]
-    .editor-paper:not([data-page-measurement])
-    [data-layout-space] {
-    margin-top: 0 !important;
-  }
-  [data-phone-editing="true"]
-    .editor-paper:not([data-page-measurement])
-    [data-pagination-spacer] {
-    display: none !important;
-  }
-  [data-phone-editing="true"]
-    .editor-paper:not([data-page-measurement])
-    .document-section
-    > .block-sortable
-    + .block-sortable {
-    margin-top: 44px !important;
   }
 }
 @media (max-width: 699px) {
@@ -5125,8 +5088,7 @@
 
 @media (max-width: 699px) {
   [data-template-phone-editing="true"]
-    .template-paged-paper:not([data-page-measurement]),
-  [data-phone-editing="true"] .editor-paper:not([data-page-measurement]) {
+    .template-paged-paper:not([data-page-measurement]) {
     --sheet-block-gap: 44px !important;
   }
 }
@@ -5143,9 +5105,57 @@
 }
 @media (max-width: 699px) {
   .quote-workspace.editor-v2[data-shell-mode="phone"] {
+    --phone-editor-dock-height: calc(
+      59px + max(6px, env(safe-area-inset-bottom))
+    );
     position: fixed;
-    inset: 0;
+    inset: 0 0 var(--phone-editor-bottom-inset, 0px);
+    height: auto;
     z-index: var(--z-editor-header);
+  }
+  .quote-workspace .editor-phone-dock[data-persistent-tools] {
+    bottom: var(--phone-editor-bottom-inset, 0px);
+  }
+  .quote-workspace .editor-edit-bar.rich-toolbar[data-dock="keyboard"] {
+    bottom: calc(
+      var(--phone-editor-dock-height) + var(--phone-editor-bottom-inset, 0px)
+    );
+  }
+  .editor-v2-sheet[data-phone-tools] {
+    bottom: var(--phone-editor-bottom-inset, 0px);
+    max-height: min(88dvh, var(--phone-editor-visible-height, 88dvh));
+    border-bottom: 0;
+  }
+  .editor-v2-sheet[data-phone-tools] > .editor-phone-dock {
+    position: static;
+    flex: none;
+    margin-inline: -16px;
+  }
+  .editor-v2-sheet[data-phone-tools] > .editor-tools-header h2 {
+    flex: 1;
+    margin: 0;
+    color: var(--ink-title);
+    font: 600 15px/20px var(--font-ui);
+    outline: none;
+  }
+  .editor-v2-sheet .editor-tools-header > .editor-phone-tool-close {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--ink-title);
+  }
+  .quote-workspace[data-shell-mode="phone"]
+    :is(
+      button:not(.drag-handle, .image-resize-handle),
+      a,
+      input,
+      select,
+      textarea,
+      [contenteditable="true"]
+    ) {
+    touch-action: manipulation;
   }
   .studio-template-layout[data-template-phone-editing="true"] {
     position: fixed;
@@ -7251,7 +7261,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     font-size: 28px;
   }
   .quote-workspace:has([data-band-editing])
-    :is(.editor-phone-header, .editor-phone-dock) {
+    :is(.editor-phone-header, .editor-phone-dock:not([role="tablist"])) {
     visibility: hidden;
   }
   .band-edit-bar.editor-edit-bar[data-band-dock="keyboard"] {
@@ -7850,7 +7860,7 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 
 @media (max-width: 699px) {
   .quote-workspace.editor-v2:has(.document-cover [data-cover-selected="true"])
-    .editor-phone-dock {
+    .editor-phone-dock:not([role="tablist"]) {
     display: none;
   }
 }
@@ -8882,7 +8892,7 @@ body:has(.studio-v3-editor) {
   display: none;
 }
 @media (max-width: 699px) {
-  [data-phone-select-mode="true"] .editor-phone-dock {
+  [data-phone-select-mode="true"] .editor-phone-dock:not([role="tablist"]) {
     display: none;
   }
   .block-selection-check {
@@ -9934,4 +9944,17 @@ dialog.foundation-sheet.block-style-sheet {
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+@media (max-width: 699px) {
+  /* Keep iOS from zooming the phone tools when an input gets focus. */
+  .staff-foundation.ink-clay
+    .editor-v2-sheet[data-phone-tools]
+    :is(
+      input:not([type="radio"], [type="checkbox"], [type="color"]),
+      select,
+      textarea
+    ) {
+    font-size: 16px;
+  }
 }

@@ -23,7 +23,7 @@ import {
   oiotKickoffField,
   oiotPurchasePriceField,
 } from "../lib/oiot";
-import { ProposalQuestions } from "./proposal-questions";
+import { ProposalQuestions, useProposalQuestions } from "./proposal-questions";
 import type { QuestionSummary } from "../lib/proposal-questions";
 import { Select, Switch } from "./form-controls";
 import {
@@ -33,7 +33,12 @@ import {
 } from "./proposal-engagement";
 import { DialogActions } from "./dialog-actions";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
-import { automaticRemindersEnabled } from "../lib/delivery";
+import {
+  automaticRemindersEnabled,
+  isAutomaticReminder,
+} from "../lib/delivery";
+import { clientReminderAllowed, dueClientReminders } from "../lib/reminders";
+import { afterLocalDays } from "../lib/reminder-time";
 import { ReassignDialog } from "./reassign-proposal";
 import { ReplaceSavedBlockDialog } from "./replace-saved-block";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
@@ -44,10 +49,11 @@ import {
 } from "../lib/job-presentation";
 import { Disclosure } from "./ui";
 import {
+  completedCheckouts,
   publicBankState,
   stripeBillingStatus,
 } from "../lib/billing-confirmation";
-import { StripeBillingDetails } from "./billing-breakdown";
+import { RecordBillingRow, StripeBillingDetails } from "./billing-breakdown";
 import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
@@ -69,7 +75,14 @@ import {
   type ReportFilters,
 } from "../lib/report-filters";
 import type { Data } from "./staff-app";
-import type { Proposal, Client, Audit, QuoteItem, Signer } from "../lib/model";
+import type {
+  Proposal,
+  Client,
+  Audit,
+  Quote,
+  QuoteItem,
+  Signer,
+} from "../lib/model";
 import {
   canCountersign,
   needsCountersign,
@@ -92,7 +105,7 @@ import { fontCss } from "../lib/proposal-fonts";
 import { eventLabel } from "../lib/event-label";
 import { statusDisplay } from "../lib/status-display";
 import { readableDate } from "../lib/validity";
-import { formatStaffDate } from "../lib/staff-account-model";
+import { formatStaffDate, staffInitials } from "../lib/staff-account-model";
 import { onBehalfText } from "../lib/workspace";
 import {
   api,
@@ -1591,6 +1604,166 @@ function QuoteSummary({ p }: { p: Proposal }) {
     </>
   );
 }
+function RecordQuote({
+  quote,
+  currency,
+  signed,
+}: {
+  quote: Quote;
+  currency: string;
+  signed: boolean;
+}) {
+  const money = useMoney();
+  const amounts = totals(quote);
+  return (
+    <>
+      <div className="record-quote-lines">
+        {orderedItems(quote).map((item) => (
+          <div
+            key={item.id}
+            className="record-quote-line"
+            data-chosen={selected(item)}
+          >
+            <div>
+              <strong>{item.name}</strong>
+              {(item.optional || item.choice_group_id) && (
+                <small>
+                  {[
+                    item.optional ? "Optional" : "",
+                    selected(item) ? (signed ? "Selected" : "Default") : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" | ")}
+                </small>
+              )}
+            </div>
+            <div className="record-quote-line-amounts">
+              {item.sublines.map((line) => (
+                <span key={line.id}>
+                  {line.label && <small>{line.label} </small>}
+                  {line.qty !== 1 && <small>{line.qty} × </small>}
+                  {money(line.amount * line.qty, currency)}
+                  {line.interval === "month"
+                    ? "/mo"
+                    : line.interval === "year"
+                      ? "/yr"
+                      : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="record-quote-totals">
+        <h3>{signed ? "Accepted totals" : "Client sees by default"}</h3>
+        <dl>
+          <div>
+            <dt>One-time</dt>
+            <dd>{money(amounts.one_time_total, currency)}</dd>
+          </div>
+          <div>
+            <dt>Monthly</dt>
+            <dd>{money(amounts.monthly_total, currency)}/mo</dd>
+          </div>
+          {!!amounts.yearly_total && (
+            <div>
+              <dt>Yearly</dt>
+              <dd>{money(amounts.yearly_total, currency)}/yr</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+    </>
+  );
+}
+
+function RecordLifecycle({
+  proposal,
+  data,
+}: {
+  proposal: Proposal;
+  data: Data;
+}) {
+  const steps = [
+    ["Draft", proposal.created_at],
+    ["Sent", proposal.sent_at],
+    ["Viewed", proposal.first_viewed_at],
+    ["Client signed", proposal.client_signed_at],
+    [
+      "Countersigned",
+      proposal.signers.find((signer) => signer.role === "company")?.signed_at,
+    ],
+  ] as const;
+  const current = steps.findLastIndex(([, at]) => !!at);
+  const completed = current === steps.length - 1;
+  return (
+    <ol className="record-lifecycle" aria-label="Proposal lifecycle">
+      {steps.map(([label, at], index) => (
+        <li
+          key={label}
+          data-step={
+            completed || index < current
+              ? "done"
+              : index === current
+                ? "current"
+                : "future"
+          }
+          aria-current={index === current ? "step" : undefined}
+        >
+          <span className="record-step-content">
+            <span className="record-step-marker" aria-hidden="true" />
+            <span>{label}</span>
+            <span className="sr-only">
+              {at
+                ? timestamp(at, data)
+                : index < current
+                  ? "Complete"
+                  : "Waiting"}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function nextRecordReminder(p: Proposal, expires: string | null | undefined) {
+  const now = new Date();
+  const end = expires ? Date.parse(expires) : Infinity;
+  const rules = p.workspace_settings?.reminder_rules;
+  const days = rules
+    ? Math.max(rules.unopened_days ?? 0, rules.viewed_days ?? 0) *
+      rules.stop_after
+    : 0;
+  const horizon = Math.min(
+    end - 1,
+    Date.parse(
+      afterLocalDays(
+        now.toISOString(),
+        days,
+        p.workspace_settings?.timezone ?? "UTC",
+      ),
+    ),
+  );
+  const candidates = [
+    ...p.jobs
+      .filter(
+        (job) =>
+          (job.status === "pending" || job.status === "running") &&
+          isAutomaticReminder(job) &&
+          clientReminderAllowed(p, job, now),
+      )
+      .map((job) => job.available_at),
+    ...dueClientReminders(p, new Date(horizon)).map(({ at }) => at),
+  ]
+    .map(Date.parse)
+    .filter((time) => Number.isFinite(time) && time < end);
+  if (!candidates.length) return null;
+  return new Date(
+    Math.max(now.getTime(), Math.min(...candidates)),
+  ).toISOString();
+}
+
 function SignatureEvidence({ signer, data }: { signer: Signer; data: Data }) {
   return (
     <section className="signature-evidence">
@@ -1601,7 +1774,7 @@ function SignatureEvidence({ signer, data }: { signer: Signer; data: Data }) {
       )}
       <strong>
         {signer.name}
-        {signer.title && ` · ${signer.title}`}
+        {signer.title && ` | ${signer.title}`}
       </strong>
       <p>{signer.email}</p>
       <small>{timestamp(signer.signed_at, data)}</small>
@@ -1609,6 +1782,40 @@ function SignatureEvidence({ signer, data }: { signer: Signer; data: Data }) {
     </section>
   );
 }
+function RecordSignature({ signer, data }: { signer: Signer; data: Data }) {
+  const timeZone = data.settings?.timezone ?? "UTC";
+  return (
+    <>
+      <div className="record-signature-mark">
+        {signer.image ? (
+          <img src={signer.image} alt={`${signer.name}’s signature`} />
+        ) : (
+          <span>{signer.typed_name || signer.name}</span>
+        )}
+      </div>
+      <strong>
+        {signer.name}
+        {signer.title && ` | ${signer.title}`}
+      </strong>
+      <small>
+        <time dateTime={signer.signed_at}>
+          {formatStaffDate(signer.signed_at, data.account, {
+            dateStyle: "medium",
+            timeZone,
+          })}
+          {" | "}
+          {formatStaffDate(signer.signed_at, data.account, {
+            timeStyle: "short",
+            timeZone,
+          })}
+        </time>
+        {signer.applied_by &&
+          ` | applied by ${signer.applied_by.name === signer.applied_by.email ? "staff" : signer.applied_by.name}`}
+      </small>
+    </>
+  );
+}
+
 export function CountersignSheet({
   p,
   data,
@@ -1637,7 +1844,7 @@ export function CountersignSheet({
     );
   return (
     <Sheet
-      title={`Countersign · ${p.client.company}`}
+      title={`Countersign | ${p.client.company}`}
       className="record-countersign-sheet"
       onClose={() => {
         if (!busy) onClose();
@@ -1758,10 +1965,10 @@ export function CountersignSheet({
                     <h3>Company signature</h3>
                     <img src={s.image} alt={`${s.name}'s stored signature`} />
                     <strong>
-                      {s.name} · {s.title}
+                      {s.name} | {s.title}
                     </strong>
                     <p>
-                      {data.settings?.company_name} ·{" "}
+                      {data.settings?.company_name} |{" "}
                       {readableDate(new Date().toISOString())}
                     </p>
                   </section>
@@ -1893,12 +2100,22 @@ export function RecordV4({
     [invoiceBusy, setInvoiceBusy] = useState(false),
     [recordBusy, setRecordBusy] = useState(false),
     [error, setError] = useState("");
+  const money = useMoney();
   const company = p.signers.find((s) => s.role === "company"),
+    clientSigner = p.signers.find((s) => s.role === "client"),
     actualSigned = !!p.client_signed_at,
     v = p.versions.at(-1),
     signature = needsCountersign(p),
     issues = billingIssues(p),
     native = p.source === "native";
+  const questions = useProposalQuestions(native && p.token ? p.id : null);
+  const [engagement, setEngagement] = useState<{
+    views: number;
+    last_viewed_at: string | null;
+  } | null>(null);
+  const firstOpenQuestion = questions.data?.threads.find(
+    (thread) => thread.status === "open",
+  );
   const invoiceWaiting = waitingForInvoiceCountersignature(p);
   const billingLinks = p.billing_links.filter(
     (link) => !invoiceWaiting || link.provider !== "qbo",
@@ -1990,113 +2207,484 @@ export function RecordV4({
     setRecordBusy(true);
     setError("");
     try {
-      onChanged(
-        await post<Proposal>(`/api/proposals/${p.id}/actions`, {
-          revision: p.revision,
-          action,
-        }),
-      );
+      const next = await post<Proposal>(`/api/proposals/${p.id}/actions`, {
+        revision: p.revision,
+        action,
+      });
+      if (action === "duplicate") {
+        router.push(`/proposals/${next.id}`);
+        return;
+      }
+      onChanged(next);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setRecordBusy(false);
     }
   }
-  const billingSubject = p.client.first_name
-    ? `${p.client.first_name} ${p.client.last_name}`.trim()
-    : p.client.company;
-  const nextOwner =
-    archive || !native || complete || p.marked_won_by
-      ? "nothing to do"
-      : attention
-        ? billingSubject
-        : signature
-          ? data.settings?.company_signatory?.name || "company signatory"
-          : open || resend
-            ? billingSubject
-            : "you";
-  const nextTitle = archive
-    ? "This proposal is archived."
-    : !native
-      ? "Imported from Proposify."
-      : p.marked_won_by
-        ? `Marked as won by ${person(p.marked_won_by, data)}, no client signature.`
-        : attention
-          ? resend
-            ? "Stripe Checkout wasn’t finished."
-            : "Review the billing handoff."
-          : signature
-            ? `${clientName} signed. Countersign to finish.`
-            : failedJob
-              ? `${jobName(
-                  failedJob,
-                  p.billing_links
-                    .filter((link) => link.status !== "succeeded")
-                    .map((link) => link.provider),
-                )} needs attention.`
-              : complete
-                ? "Signed, countersigned and billed."
-                : p.status === "viewed"
-                  ? "The client is reviewing your proposal."
-                  : p.status === "sent"
-                    ? "Waiting for the client to open the proposal."
-                    : p.status === "declined"
-                      ? "This proposal is closed."
-                      : p.status === "expired"
-                        ? "The client link expired."
-                        : p.status === "draft"
-                          ? "Review and send your proposal."
-                          : resend
-                            ? "The client still needs to finish billing setup."
-                            : "Billing is being prepared.";
-  const nextDetail = attention
-    ? "Signatures are safe. Use the available billing actions below."
-    : signature
-      ? "The client’s chosen scope and prices are frozen. Review the signed proposal before applying the company signature."
-      : p.marked_won_by
-        ? "No electronic signature or automatic billing was created."
-        : open && p.first_viewed_at
-          ? `First opened ${timestamp(p.first_viewed_at, data)}.`
-          : complete &&
-              p.files.some(
-                (file) => file.kind === "sealed" && file.stage === "company",
-              )
-            ? "The sealed agreement is available to download."
-            : "";
-  const primary = archive ? (
+  const clientFullName =
+    [p.client.first_name, p.client.last_name].filter(Boolean).join(" ") ||
+    p.client.company;
+  const dateOnly = (value: string) =>
+    formatStaffDate(value, data.account, {
+      dateStyle: "medium",
+      timeZone: timezone,
+    });
+  const ownerId = proposalOwnerId(p);
+  const owner = data.staff.find((member) => member.user_id === ownerId);
+  const ownerName =
+    owner?.display_name ||
+    p.owner?.display_name ||
+    p.sender?.display_name ||
+    person(p.created_by, data);
+  const reasons = editable && open && v ? (p.live_blockers ?? []) : [];
+  const editsNotLive = reasons.length > 0;
+  const publishedDate = editsNotLive ? dateOnly(v!.created_at) : "";
+  const previewLiveUrl = `/p/${p.id}?preview=published`;
+  const fixUrl = `${recordUrl}?view=send&focus=readiness`;
+  const unpublishedEdit = editsNotLive
+    ? p.events.findLast((event) => event.type === "edited")
+    : undefined;
+  const displayQuote = editsNotLive ? p.quote : (v?.quote ?? p.quote);
+  const displayedTotals = totals(displayQuote);
+  const billable = totals(v?.quote ?? p.quote);
+  const qbo = p.billing_links.find((link) => link.provider === "qbo");
+  const recurringAmount = [
+    billable.monthly_total
+      ? `${money(billable.monthly_total, p.currency)}/mo`
+      : null,
+    billable.yearly_total
+      ? `${money(billable.yearly_total, p.currency)}/yr`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const oneTimeAmount = money(billable.one_time_total, p.currency);
+  const stripeStatus = stripe ? stripeBillingStatus(stripe) : null;
+  const bankState = stripe ? publicBankState(stripe) : undefined;
+  const stripeActive =
+    stripeStatus?.labels.includes("Subscription active") ||
+    (stripe?.status === "succeeded" &&
+      !stripe.metadata?.requires_checkout &&
+      !bankState &&
+      /^sub_/.test(stripe.external_object_id ?? ""));
+  const nextCharge =
+    stripe && stripeActive
+      ? completedCheckouts(stripe)
+          .flatMap((completion) => completion.subscriptions)
+          .map((subscription) => subscription.next_billing_at)
+          .filter(
+            (date): date is string => !!date && Date.parse(date) >= Date.now(),
+          )
+          .sort()[0]
+      : undefined;
+  const recurringDescription = [
+    recurringAmount,
+    stripeActive ? "Stripe subscription" : "Stripe Checkout",
+    nextCharge &&
+      `next charge ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: timezone }).format(new Date(nextCharge))}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const stripeChip =
+    bankState === "failed" || stripe?.status === "failed"
+      ? { text: "Needs attention", tone: "danger" }
+      : bankState === "processing"
+        ? { text: "Bank payment processing", tone: "warning" }
+        : stripe?.metadata?.requires_checkout
+          ? { text: "Waiting for checkout", tone: "warning" }
+          : stripeActive
+            ? { text: "Active", tone: "success" }
+            : stripe?.status === "succeeded"
+              ? { text: stripeStatus?.labels[0] ?? "Ready", tone: "success" }
+              : {
+                  text: stripe || actualSigned ? "In progress" : "Not started",
+                  tone: "neutral",
+                };
+  const markAsInvoiced =
+    qbo?.status === "needs_review" &&
+    !qbo.external_object_id &&
+    !qbo.metadata?.customer_candidates ? (
+      <Button
+        onClick={() => {
+          setError("");
+          setInvoice(true);
+        }}
+      >
+        Mark as invoiced
+      </Button>
+    ) : undefined;
+
+  const stripeIntegrated =
+    native &&
+    (stripe
+      ? !stripe.metadata?.skipped
+      : !!data.connections?.stripe &&
+        !!(billable.monthly_total || billable.yearly_total));
+  const qboIntegrated =
+    native &&
+    (qbo
+      ? !qbo.metadata?.skipped &&
+        !qbo.metadata?.manual_invoice &&
+        qbo.metadata?.action !== "Invoice manually"
+      : !!data.connections?.qbo && billable.one_time_total > 0);
+  const billingIntegrated = stripeIntegrated || qboIntegrated;
+  const recordJobs = unfinishedJobs(p).filter(
+    (job) =>
+      job.kind !== "email" ||
+      job.payload.to === p.client.email ||
+      !!job.last_error,
+  );
+  const showBilling =
+    billingIntegrated ||
+    manual ||
+    invoiceWaiting ||
+    (native &&
+      (issues ||
+        recordJobs.some((job) => job.status === "failed" || !!job.last_error)));
+  const billingStatus =
+    issues || resend
+      ? "Needs attention"
+      : actualSigned &&
+          !billingOpen(p) &&
+          !invoiceWaiting &&
+          billingLinks.some((link) => link.status === "succeeded")
+        ? "Set up"
+        : invoiceWaiting || (!stripeIntegrated && qboIntegrated)
+          ? "Starts after you countersign"
+          : "Starts after signing";
+  const nextReminder =
+    open && reminders ? nextRecordReminder(p, expires) : null;
+  const nextReminderDetail = nextReminder
+    ? `The next automatic reminder is on ${dateOnly(nextReminder)}.`
+    : "";
+  const outcome = p.events.findLast((event) =>
+    p.marked_lost_by ? event.type === "marked_lost" : event.type === "declined",
+  );
+  const outcomeNote = outcome?.metadata.note ?? outcome?.metadata.reason;
+  const declineReason = typeof outcomeNote === "string" ? outcomeNote : "";
+  const duplicate = (label: string) => (
+    <Button busy={recordBusy} onClick={() => void runAction("duplicate")}>
+      {label}
+    </Button>
+  );
+  const unarchive = (className = "") => (
     <Button
-      className="record-primary"
+      className={className}
       busy={recordBusy}
       onClick={() => void runAction("unarchive")}
     >
       Unarchive
     </Button>
+  );
+  const remind = (
+    <Button busy={recordBusy} onClick={() => void runAction("remind")}>
+      Send reminder now
+    </Button>
+  );
+  const resendLink = (
+    <Button
+      busy={recordBusy}
+      onClick={() => void runAction("resend_billing_link")}
+    >
+      Resend payment link
+    </Button>
+  );
+  const manualInvoice = (
+    <Button
+      onClick={() => {
+        setError("");
+        setInvoice(true);
+      }}
+    >
+      Invoice manually
+    </Button>
+  );
+  const reopen = (label: string) => (
+    <Button busy={recordBusy} onClick={() => void runAction("mark_sent")}>
+      {label}
+    </Button>
+  );
+  const canReopen =
+    editable && !!p.token && !!(p.version_count ?? p.versions.length);
+  const completeTitle = billingIntegrated
+    ? "Signed by both and billing is set up."
+    : "Signed by both.";
+  const signedFile = p.files.some(
+    (file) => file.kind === "sealed" && file.stage === "company",
+  );
+  let nextStep: {
+    eyebrow: string;
+    title: string;
+    detail?: ReactNode;
+    problem?: boolean;
+    actions: ReactNode[];
+  };
+  if (archive) {
+    nextStep = {
+      eyebrow: "Archived",
+      title: company
+        ? billingOpen(p)
+          ? "Signed by both."
+          : completeTitle
+        : "This proposal is archived.",
+      detail: "Unarchive it to show it in All proposals again.",
+      actions: [unarchive()],
+    };
+  } else if (!native) {
+    nextStep = {
+      eyebrow: "Imported | Read-only",
+      title: p.client_signed_at
+        ? `Signed in Proposify on ${dateOnly(p.client_signed_at)}.`
+        : "Imported from Proposify.",
+      detail: "The imported PDF and audit trail are available in Documents.",
+      actions: [
+        <a className="btn" href={downloadUrl}>
+          Download PDF
+        </a>,
+      ],
+    };
+  } else if (editsNotLive && !firstOpenQuestion) {
+    nextStep = {
+      eyebrow: "Edits not live",
+      title: "Your latest edits aren’t on the client’s link yet",
+      detail: (
+        <>
+          <p>
+            The client still sees the version from {publishedDate}. Fix this to
+            publish your changes:
+          </p>
+          <ul className="record-publication-reasons">
+            {reasons.slice(0, 3).map((reason, index) => (
+              <li key={index}>{reason}</li>
+            ))}
+          </ul>
+          {reasons.length > 3 && <p>and {reasons.length - 3} more</p>}
+        </>
+      ),
+      problem: true,
+      actions: [
+        <a className="btn" href={fixUrl}>
+          Fix in editor
+        </a>,
+        <a
+          className="btn"
+          href={previewLiveUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Preview what the client sees
+        </a>,
+      ],
+    };
+  } else if (attention) {
+    nextStep = {
+      eyebrow: `Billing needs attention | ${clientFullName}`,
+      title: resend
+        ? "Stripe Checkout wasn’t finished."
+        : "Review the billing handoff.",
+      detail: resend
+        ? "The client can use the payment link to finish setting up billing."
+        : "Signatures are safe. Review the billing action below.",
+      problem: true,
+      actions: [resend && resendLink, manual && manualInvoice].filter(Boolean),
+    };
+  } else if (signature) {
+    nextStep = {
+      eyebrow: `Next step | ${data.settings?.company_signatory?.name || "Company signatory"}`,
+      title: `${clientName} signed. Countersign to finish.`,
+      detail: (
+        <>
+          Signed {timestamp(p.client_signed_at!, data)}.{" "}
+          {invoiceWaiting
+            ? quickBooksInvoiceTiming
+            : "Review the signed scope and prices before applying the company signature."}
+        </>
+      ),
+      actions: authorized
+        ? [
+            <a className="btn" href={countersignUrl}>
+              Review &amp; countersign
+            </a>,
+          ]
+        : [],
+    };
+  } else if (complete) {
+    nextStep = {
+      eyebrow: "Completed | Nothing to do",
+      title: completeTitle,
+      detail: `Countersigned ${timestamp(company!.signed_at, data)}.${signedFile ? " The sealed agreement is available to download." : ""}`,
+      actions: [
+        <a className="btn" href={downloadUrl}>
+          Download sealed PDF
+        </a>,
+        typeof stripe?.metadata?.stripe_url === "string" && (
+          <a
+            className="btn"
+            href={stripe.metadata.stripe_url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open in Stripe
+          </a>
+        ),
+      ].filter(Boolean),
+    };
+  } else if (p.marked_won_by) {
+    nextStep = {
+      eyebrow: "Won | Marked by staff",
+      title: `Marked as won by ${person(p.marked_won_by, data)}.`,
+      detail: "No electronic signature or automatic billing was created.",
+      actions: [],
+    };
+  } else if (p.status === "declined") {
+    nextStep = p.marked_lost_by
+      ? {
+          eyebrow: `Lost | Marked by ${person(p.marked_lost_by, data)}${outcome ? ` on ${dateOnly(outcome.created_at)}` : ""}`,
+          title: "This proposal was marked lost.",
+          detail: declineReason || "The client link is closed.",
+          actions: canReopen
+            ? [reopen("Mark as sent again")]
+            : [duplicate("Duplicate as new draft")],
+        }
+      : {
+          eyebrow: outcome
+            ? `Declined | ${dateOnly(outcome.created_at)}`
+            : "Declined",
+          title: `${clientName} declined the proposal.`,
+          detail: declineReason ? (
+            <>Client note: “{declineReason}”</>
+          ) : (
+            "The client link is closed."
+          ),
+          actions: [
+            duplicate("Duplicate as new draft"),
+            p.client.email && (
+              <a className="btn" href={`mailto:${p.client.email}`}>
+                Email {clientName}
+              </a>
+            ),
+          ].filter(Boolean),
+        };
+  } else if (p.status === "expired") {
+    nextStep = {
+      eyebrow: expires ? `Expired | ${dateOnly(expires)}` : "Expired",
+      title: `The link expired before ${clientName} signed.`,
+      detail:
+        "Extend link reopens the same client link for the workspace’s default validity period.",
+      actions: [
+        canReopen && reopen("Extend link"),
+        duplicate("Duplicate"),
+      ].filter(Boolean),
+    };
+  } else if (open) {
+    const viewing = p.status === "viewed";
+    nextStep = {
+      eyebrow: `Next step | ${clientFullName}`,
+      title: viewing
+        ? `${clientName} is reviewing the proposal.`
+        : `Waiting for ${clientName} to open it.`,
+      detail: [
+        viewing && engagement?.last_viewed_at
+          ? `Opened ${withCount(engagement.views, "time")}, last ${timestamp(engagement.last_viewed_at, data)}.`
+          : viewing && p.first_viewed_at
+            ? `First opened ${timestamp(p.first_viewed_at, data)}.`
+            : p.sent_at
+              ? `${p.delivery_method === "manual" ? "Shared" : "Emailed"} ${timestamp(p.sent_at, data)}${p.client.email ? ` to ${p.client.email}` : ""}. Not opened yet.`
+              : "",
+        firstOpenQuestion ? "The client asked a question." : "",
+        nextReminderDetail,
+      ]
+        .filter(Boolean)
+        .join(" "),
+      actions:
+        firstOpenQuestion && questions.data?.can_reply
+          ? [
+              <Button
+                busy={questions.busy}
+                onClick={() => questions.setReplying(firstOpenQuestion.id)}
+              >
+                Reply to question
+              </Button>,
+              remind,
+            ]
+          : [
+              remind,
+              <CopyClientLink
+                token={p.token!}
+                appUrl={data.app_url}
+                label="Copy client link"
+                buttonOnly
+              />,
+            ],
+    };
+  } else {
+    nextStep = {
+      eyebrow: "Next step | You",
+      title: failedJob
+        ? `${jobName(
+            failedJob,
+            p.billing_links
+              .filter((link) => link.status !== "succeeded")
+              .map((link) => link.provider),
+          )} needs attention.`
+        : p.status === "draft"
+          ? "Review and send your proposal."
+          : resend
+            ? "The client still needs to finish billing setup."
+            : "Billing is being prepared.",
+      actions: resend ? [resendLink] : [],
+    };
+  }
+  const toolbarClass = nextStep.actions.length ? "" : "record-primary";
+  const primary = archive ? (
+    unarchive(toolbarClass)
   ) : signature ? (
     authorized ? (
-      <a className="btn record-primary action" href={countersignUrl}>
+      <a className={`btn ${toolbarClass}`} href={countersignUrl}>
         Review &amp; countersign
       </a>
     ) : (
       <Button
-        className="record-primary action"
         disabled
         title="Your staff account is not authorized to countersign."
       >
         Review &amp; countersign
       </Button>
     )
+  ) : native && p.status === "declined" && !p.signers.length ? (
+    duplicate("Duplicate")
   ) : editable ? (
     <a
-      className="btn record-primary record-edit"
+      className={`btn record-edit ${toolbarClass}`}
       href={recordUrl + "?action=edit"}
     >
       Edit
     </a>
-  ) : (
-    <a className="btn record-primary" href={downloadUrl}>
+  ) : native ? (
+    <a className={`btn ${toolbarClass}`} href={downloadUrl}>
       Download PDF
     </a>
-  );
+  ) : null;
+  const linkClosed =
+    archive ||
+    ["declined", "expired", "archived", "draft"].includes(p.status) ||
+    (["sent", "viewed"].includes(p.status) &&
+      !!expires &&
+      Date.parse(expires) <= Date.now());
+  const closedLinkNote =
+    archive || p.status === "archived"
+      ? "The client sees that the proposal is unavailable."
+      : p.status === "declined"
+        ? "The client sees that the proposal was declined."
+        : "The client sees that the link has expired.";
+  const documents = p.files
+    .filter((file) =>
+      native ? file.kind === "sealed" : file.kind === "import",
+    )
+    .sort(
+      (a, b) => Number(b.stage === "company") - Number(a.stage === "company"),
+    );
   return (
     <div className="record-v4 stack">
       {share && p.token && (
@@ -2108,7 +2696,7 @@ export function RecordV4({
       )}
       <div className="record-toolbar">
         <a href={returnUrl} className="staff-back">
-          <chromeIcons.back size={16} aria-hidden="true" /> Back to proposals
+          <chromeIcons.back size={16} aria-hidden="true" /> Proposals
         </a>
         <div className="record-primary-actions">
           {native && !archive && (
@@ -2130,13 +2718,6 @@ export function RecordV4({
           showEdit={native && (archive || signature || !!p.signers.length)}
         />
       </div>
-      <header className="record-identity">
-        <div>
-          <span>{p.client.company}</span>
-          <ProposalBadges p={p} />
-        </div>
-        <h1 className="t-page-title">{p.title}</h1>
-      </header>
       {already && (
         <ToastSurface inline onDismiss={() => setAlready("")}>
           {already}
@@ -2168,557 +2749,550 @@ export function RecordV4({
             works.
           </Banner>
         )}
-      <ol className="lifecycle" aria-label="Proposal lifecycle">
-        {[
-          ["Draft", p.created_at],
-          ["Sent", p.sent_at],
-          ["Viewed", p.first_viewed_at],
-          ["Client signed", p.client_signed_at],
-          ["Countersigned", company?.signed_at],
-          [
-            "Billing set up",
-            actualSigned && p.billing_links.length && !billingOpen(p)
-              ? p.updated_at
-              : null,
-          ],
-          ["Completed", company && !billingOpen(p) ? company.signed_at : null],
-        ].map(([label, when]) => (
-          <li key={label} className={when ? "done" : ""}>
-            <strong>{label}</strong>
-            <span className="sr-only">
-              {when ? timestamp(when, data) : "Waiting"}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <section className={`next-card ${attention ? "billing-attention" : ""}`}>
-        <div className="next-copy">
-          <span className="t-eyebrow">
-            {attention
-              ? "Billing needs attention"
-              : complete
-                ? "Completed"
-                : "Next step"}{" "}
-            · {nextOwner}
-          </span>
-          <h2>{nextTitle}</h2>
-          {nextDetail && <p>{nextDetail}</p>}
+      {archive && (
+        <div className="record-archive-note">
+          Archived{p.archived_by ? ` by ${person(p.archived_by, data)}` : ""} on{" "}
+          {dateOnly(p.archived_at!)}. It’s hidden from All proposals.
         </div>
-        <div className="actions record-next-actions">
-          {attention ? (
-            <>
-              {resend && (
-                <Button
-                  busy={recordBusy}
-                  onClick={() => void runAction("resend_billing_link")}
-                >
-                  Resend payment link
-                </Button>
-              )}
-              {manual && (
-                <Button
-                  onClick={() => {
-                    setError("");
-                    setInvoice(true);
-                  }}
-                >
-                  Invoice manually
-                </Button>
-              )}
-              {!qboIssue && (!resend || !manual) && (
-                <Button onClick={() => void retryBilling()}>
-                  Retry billing
-                </Button>
-              )}
-            </>
-          ) : signature && authorized ? (
-            <a className="btn" href={countersignUrl}>
-              Review &amp; countersign
-            </a>
-          ) : open ? (
-            <>
-              <Button
-                busy={recordBusy}
-                onClick={() => void runAction("remind")}
-              >
-                Send reminder now
-              </Button>
-              <CopyClientLink
-                token={p.token!}
-                appUrl={data.app_url}
-                label="Copy client link"
-                buttonOnly
-              />
-            </>
-          ) : complete ? (
-            <>
-              <a className="btn" href={downloadUrl}>
-                Download sealed PDF
-              </a>
-              {typeof stripe?.metadata?.stripe_url === "string" && (
-                <a
-                  className="btn"
-                  href={stripe.metadata.stripe_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open in Stripe
-                </a>
-              )}
-            </>
-          ) : resend ? (
-            <Button
-              busy={recordBusy}
-              onClick={() => void runAction("resend_billing_link")}
-            >
-              Resend payment link
-            </Button>
-          ) : null}
-        </div>
-      </section>
-      <div className="record-columns record-sheet">
-        <div className="record-aside">
-          <section className="record-quote">
-            <header className="section-heading">
-              <h2>
-                {actualSigned
-                  ? "As signed"
-                  : p.sent_at
-                    ? "Quote, as sent"
-                    : "Quote"}
-              </h2>
-              <Button onClick={() => setDocument(true)}>Open document</Button>
-            </header>
-            {p.marked_won_by ? (
-              <p>No client-signed version. Outcome recorded manually.</p>
+      )}
+      <header className="record-hero">
+        <div className="record-hero-intro">
+          <div className="record-hero-client">
+            <span>{p.client.company}</span>
+            {p.status === "declined" && !p.marked_lost_by ? (
+              <span className="pill danger" data-proposal-status={p.status}>
+                Declined
+              </span>
             ) : (
-              <QuoteSummary p={p} />
+              <ProposalBadges p={p} />
             )}
-            <small>
-              {actualSigned
-                ? "Selections are locked to the signed version."
-                : "Amounts reflect the current selected items."}
-            </small>
-          </section>
-          {actualSigned && (
-            <section className="record-signatures">
-              <h2>Signatures</h2>
-              <p>Signed proposals are locked.</p>
-              {p.signers.map((signer) => (
-                <SignatureEvidence
-                  key={signer.role}
-                  signer={signer}
-                  data={data}
-                />
-              ))}
-              {!company && (
-                <p>
-                  {data.settings?.company_signatory?.name ?? "Company"} ·
-                  Awaiting signature
-                </p>
-              )}
-            </section>
+          </div>
+          <h1 className="t-page-title">{p.title}</h1>
+          <div className="record-prepared-by">
+            <span
+              className="avatar record-owner-avatar"
+              data-initials={staffInitials(ownerName)}
+              aria-hidden="true"
+            />
+            Prepared by {ownerName}
+          </div>
+          {(native || displayQuote.length > 0) && (
+            <dl className="record-hero-amounts">
+              <div>
+                <dt>One-time</dt>
+                <dd>{money(displayedTotals.one_time_total, p.currency)}</dd>
+              </div>
+              <div>
+                <dt>Monthly</dt>
+                <dd>{money(displayedTotals.monthly_total, p.currency)}/mo</dd>
+              </div>
+            </dl>
           )}
-          <section className="record-billing stack">
-            <h2>Billing</h2>
-            {signedOiot && (
-              <div className="stack">
-                <h3>{oiotPlan.name}</h3>
-                <p>
-                  Website purchase price {signedOiot[oiotPurchasePriceField]} ·
-                  Kickoff {signedOiot[oiotKickoffField]}
-                </p>
-                <p>{oiotPlan.billingNote}</p>
+        </div>
+        {native && (
+          <div className="record-hero-progress">
+            <RecordLifecycle proposal={p} data={data} />
+            {billingIntegrated && (
+              <div
+                className="record-hero-billing"
+                data-needs-attention={billingStatus === "Needs attention"}
+              >
+                <span>Billing</span>
+                <strong>{billingStatus}</strong>
               </div>
             )}
-            {!actualSigned ? (
-              <p>
-                {p.marked_won_by
-                  ? "No billing was started by this manual win."
-                  : `Stripe billing starts after the client signs. ${quickBooksInvoiceTiming}`}
-              </p>
-            ) : (
-              <>
-                {invoiceWaiting && (
-                  <section className="billing-state">
-                    <strong>One-time invoice</strong>
-                    <span className="pill info">
-                      Waiting for countersignature
+          </div>
+        )}
+        <section
+          className="next-card record-next-step"
+          data-problem={nextStep.problem || undefined}
+        >
+          <div className="next-copy">
+            <span className="t-eyebrow">{nextStep.eyebrow}</span>
+            <h2>{nextStep.title}</h2>
+            {typeof nextStep.detail === "string"
+              ? nextStep.detail && <p>{nextStep.detail}</p>
+              : nextStep.detail}
+          </div>
+          {nextStep.actions.length > 0 && (
+            <div className="actions record-next-actions">
+              {nextStep.actions.map((action, index) => (
+                <div key={index}>{action}</div>
+              ))}
+            </div>
+          )}
+        </section>
+      </header>
+      {editsNotLive && firstOpenQuestion && (
+        <div className="record-publication-banner" role="status">
+          <p>
+            <strong>Edits not live.</strong> The client still sees the version
+            from {publishedDate}. {reasons[0]}
+            {reasons.length > 1 && `, and ${reasons.length - 1} more`}.
+          </p>
+          <a href={fixUrl}>Fix in editor</a>
+        </div>
+      )}
+      <section className="record-details record-section">
+        <StaffSectionHeading>Details</StaffSectionHeading>
+        <dl className="card record-details-values">
+          <div>
+            <dt>Client</dt>
+            <dd>
+              {clientFullName}
+              {p.client.email && (
+                <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
+              )}
+            </dd>
+          </div>
+          {p.sent_at && (
+            <div>
+              <dt>Sent</dt>
+              <dd>{dateOnly(p.sent_at)}</dd>
+            </div>
+          )}
+          {native && !(actualSigned && company) && (
+            <div>
+              <dt>Expires</dt>
+              <dd>{expires ? readableDate(expires, timezone) : "No expiry"}</dd>
+            </div>
+          )}
+          {native && p.token && (
+            <div className="record-reminders">
+              <dt>Reminders</dt>
+              <dd>
+                {open ? (
+                  <>
+                    <Switch
+                      aria-label="Automatic reminders from the app"
+                      checked={reminders}
+                      disabled={reminderBusy || !!p.signers.length}
+                      onChange={async (e) => {
+                        const enabled = e.target.checked;
+                        setReminders(enabled);
+                        setReminderBusy(true);
+                        setError("");
+                        try {
+                          onChanged(
+                            await post<Proposal>(
+                              `/api/proposals/${p.id}/reminders`,
+                              { revision: p.revision, enabled },
+                            ),
+                          );
+                        } catch (e) {
+                          setReminders(automaticRemindersEnabled(p));
+                          setError((e as Error).message);
+                        } finally {
+                          setReminderBusy(false);
+                        }
+                      }}
+                    />
+                    <span>
+                      {nextReminder
+                        ? `Next on ${dateOnly(nextReminder)}`
+                        : reminders
+                          ? "No reminders scheduled"
+                          : "Off"}
                     </span>
-                    <p>{quickBooksInvoiceTiming}</p>
-                  </section>
+                  </>
+                ) : (
+                  <span>
+                    {p.signers.length
+                      ? "Stopped after signing"
+                      : "Stopped when the link closed"}
+                  </span>
                 )}
-                {!billingLinks.length && !invoiceWaiting && (
-                  <p>Billing is being prepared.</p>
-                )}
-                {billingLinks.map((link, index) => (
-                  <section className="billing-state" key={index}>
-                    <strong>
-                      {link.provider === "stripe"
-                        ? "Stripe"
-                        : "One-time invoice"}
-                    </strong>
-                    <span
-                      className={`pill ${publicBankState(link) === "failed" ? "danger" : publicBankState(link) === "processing" ? "warning" : link.status === "succeeded" && !(link.provider === "stripe" && link.metadata?.requires_checkout) ? "success" : link.status === "failed" ? "danger" : "warning"}`}
+              </dd>
+            </div>
+          )}
+          {p.token && (
+            <div className="record-details-link">
+              <dt>Client link</dt>
+              <dd>
+                {linkClosed ? (
+                  <>
+                    <s
+                      className="record-link-url"
+                      title={new URL(`/p/${p.token}`, data.app_url).href}
                     >
-                      {link.provider === "stripe" &&
-                      link.status === "succeeded" &&
-                      stripeBillingStatus(link).labels.length
-                        ? stripeBillingStatus(link).labels[0]
-                        : link.metadata?.manual_invoice &&
-                            link.status === "succeeded"
-                          ? "Invoiced manually"
-                          : link.provider === "qbo" &&
-                              link.status !== "succeeded"
-                            ? link.metadata?.action === "Invoice manually"
-                              ? "Invoice manually"
-                              : "Billing to finish"
-                            : link.status === "succeeded"
-                              ? "Ready"
-                              : link.status === "failed"
-                                ? "Needs attention"
-                                : "In progress"}
-                    </span>
-                    {link.last_error && <p>{link.last_error}</p>}
-                    {link.provider === "stripe" &&
-                      link.metadata?.requires_checkout === true && (
-                        <div className="stack">
-                          <p>
-                            The proposal is signed. We’re waiting for Checkout
-                            confirmation.
-                          </p>
+                      {new URL(`/p/${p.token}`, data.app_url).href}
+                    </s>
+                    <small>{closedLinkNote}</small>
+                  </>
+                ) : (
+                  <CopyClientLink
+                    token={p.token}
+                    appUrl={data.app_url}
+                    label="Copy client link"
+                    iconOnly
+                  />
+                )}
+                {editsNotLive && (
+                  <small>Shows the version from {publishedDate}</small>
+                )}
+              </dd>
+            </div>
+          )}
+          {(!native || (actualSigned && company)) && (
+            <div className="record-details-documents">
+              <dt>Documents</dt>
+              <dd>
+                {documents.map((file) => (
+                  <a
+                    key={file.id}
+                    href={`/api/proposals/${p.id}/files/${file.id}`}
+                  >
+                    {file.kind === "import"
+                      ? "Imported PDF"
+                      : file.stage === "company"
+                        ? "Final sealed PDF"
+                        : "Client-signed PDF"}
+                  </a>
+                ))}
+                {!native && (
+                  <a href={`${recordUrl}?view=evidence`}>Audit trail</a>
+                )}
+                {native && !signedFile && (
+                  <small>The signed copy is being sealed.</small>
+                )}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </section>
+      <div className="record-columns">
+        <div className="record-aside">
+          {native && p.token && (
+            <ProposalQuestions questions={questions} timezone={timezone} />
+          )}
+          <section className="record-quote record-section">
+            <StaffSectionHeading
+              action={
+                <div className="record-section-actions">
+                  {editable && (
+                    <a className="btn" href={recordUrl + "?action=edit"}>
+                      Edit
+                    </a>
+                  )}
+                  <Button onClick={() => setDocument(true)}>
+                    Open document
+                  </Button>
+                </div>
+              }
+            >
+              Quote
+            </StaffSectionHeading>
+            <div className="card record-quote-card">
+              {editsNotLive && (
+                <div className="record-quote-notice">
+                  <p>
+                    Showing your latest edits. The client sees the version from{" "}
+                    {publishedDate}.
+                  </p>
+                  <a href={previewLiveUrl} target="_blank" rel="noreferrer">
+                    View live version
+                  </a>
+                </div>
+              )}
+              {p.marked_won_by ? (
+                <p className="record-card-message">
+                  No client-signed version. Outcome recorded manually.
+                </p>
+              ) : !native && !displayQuote.length ? (
+                <p className="record-card-message">
+                  Pricing is in the imported PDF.
+                </p>
+              ) : (
+                <RecordQuote
+                  quote={displayQuote}
+                  currency={p.currency}
+                  signed={actualSigned}
+                />
+              )}
+            </div>
+          </section>
+          {!p.marked_won_by && (
+            <section className="record-signatures record-section">
+              <StaffSectionHeading>Signatures</StaffSectionHeading>
+              <div className="card record-signature-card">
+                <div className="record-signature-box">
+                  <h3>Client</h3>
+                  {clientSigner ? (
+                    <RecordSignature signer={clientSigner} data={data} />
+                  ) : (
+                    <>
+                      <p className="record-signature-mark">
+                        {native ? "Not signed yet" : "See imported PDF"}
+                      </p>
+                      <strong>
+                        {clientFullName}
+                        {p.client.title && ` | ${p.client.title}`}
+                      </strong>
+                      {open && <small>Waiting on {clientName}</small>}
+                    </>
+                  )}
+                </div>
+                <div className="record-signature-box" data-next={signature}>
+                  <h3>{data.settings?.company_name ?? "Company"}</h3>
+                  {company ? (
+                    <RecordSignature signer={company} data={data} />
+                  ) : (
+                    <>
+                      <p className="record-signature-mark">
+                        {native ? "Not signed yet" : "See imported PDF"}
+                      </p>
+                      <strong>
+                        {data.settings?.company_signatory?.name ??
+                          "Company signatory"}
+                      </strong>
+                      {native && (
+                        <small>
+                          {actualSigned
+                            ? "Awaiting signature"
+                            : "After the client signs"}
+                        </small>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+          {showBilling && (
+            <section className="record-billing record-section">
+              <StaffSectionHeading
+                action={
+                  retryInBilling && (
+                    <Button onClick={() => void retryBilling()}>
+                      Retry billing
+                    </Button>
+                  )
+                }
+              >
+                Billing
+              </StaffSectionHeading>
+              {(stripeIntegrated ||
+                invoiceWaiting ||
+                qboIntegrated ||
+                qbo?.metadata?.manual_invoice ||
+                markAsInvoiced) && (
+                <dl className="card record-billing-card">
+                  {stripeIntegrated && (
+                    <RecordBillingRow
+                      label={
+                        billable.yearly_total && !billable.monthly_total
+                          ? "Yearly"
+                          : "Monthly"
+                      }
+                      end={
+                        resend ? (
                           <Button
-                            onClick={async () => {
-                              try {
-                                const next = await post<Proposal>(
-                                  `/api/proposals/${p.id}/actions`,
-                                  {
-                                    revision: p.revision,
-                                    action: "resend_billing_link",
-                                  },
-                                );
-                                onChanged(next);
-                              } catch (e) {
-                                setError(
-                                  e instanceof Error
-                                    ? e.message
-                                    : "Unable to resend the billing link",
-                                );
-                              }
-                            }}
+                            busy={recordBusy}
+                            onClick={() =>
+                              void runAction("resend_billing_link")
+                            }
                           >
                             Resend billing link
                           </Button>
-                        </div>
-                      )}
-                    {link.provider === "stripe" && (
-                      <StripeBillingDetails
-                        link={link}
-                        dashboardUrl={
-                          data.connections?.stripe_connect?.dashboardUrl
-                        }
-                      />
-                    )}
-                    {link.provider === "qbo" &&
-                      !link.metadata?.skipped &&
-                      !link.metadata?.manual_invoice && (
-                        <QuickBooksBilling
-                          proposal={p}
-                          link={link}
-                          onRefresh={onRefresh}
-                        />
-                      )}
-                    {link.provider === "qbo" &&
-                      link.status === "needs_review" &&
-                      !link.external_object_id &&
-                      !link.metadata?.customer_candidates && (
-                        <Button
-                          onClick={() => {
-                            setError("");
-                            setInvoice(true);
-                          }}
-                        >
-                          Mark as invoiced
-                        </Button>
-                      )}
-                  </section>
-                ))}
-              </>
-            )}
-            <div className="record-jobs">
-              {unfinishedJobs(p)
-                .filter(
-                  (j) =>
-                    j.kind !== "email" ||
-                    j.payload.to === p.client.email ||
-                    !!j.last_error,
-                )
-                .map((j) => (
-                  <div
-                    key={j.id}
-                    id={jobRecordAnchor(j.id)}
-                    tabIndex={-1}
-                    className={
-                      highlightedJob === j.id
-                        ? "record-job-highlight"
-                        : undefined
-                    }
-                    data-job-id={j.id}
-                  >
-                    <JobState
-                      state={
-                        j.status === "running"
-                          ? "running"
-                          : j.status === "failed" || j.last_error
-                            ? "failed"
-                            : "queued"
+                        ) : (
+                          <span className={`pill ${stripeChip.tone}`}>
+                            {stripeChip.text}
+                          </span>
+                        )
                       }
-                      label={jobName(
-                        j,
-                        p.billing_links
-                          .filter((l) => l.status !== "succeeded")
-                          .map((l) => l.provider),
-                      )}
-                      error={
-                        j.last_error
-                          ? friendlyJobError(j.last_error).message
-                          : undefined
-                      }
-                      attempts={j.attempts}
-                      onRetry={
-                        !(qboIssue && j.kind === "billing") &&
-                        j.status !== "running" &&
-                        (j.status === "failed" || j.last_error)
-                          ? () => {
-                              void post(`/api/proposals/${p.id}/retry`)
-                                .then(onRefresh)
-                                .catch((e) => setError(e.message));
+                    >
+                      {stripe &&
+                      (stripeStatus?.labels.length ||
+                        stripeStatus?.subscriptions.length) ? (
+                        <details className="record-provider-details">
+                          <Disclosure>{recurringDescription}</Disclosure>
+                          <StripeBillingDetails
+                            link={stripe}
+                            dashboardUrl={
+                              data.connections?.stripe_connect?.dashboardUrl
                             }
-                          : undefined
+                          />
+                        </details>
+                      ) : (
+                        recurringDescription
+                      )}
+                      {stripe?.last_error && (
+                        <p className="record-billing-problem">
+                          {stripe.last_error}
+                        </p>
+                      )}
+                    </RecordBillingRow>
+                  )}
+                  {invoiceWaiting ? (
+                    <RecordBillingRow
+                      label="One-time"
+                      end={
+                        <span className="pill info">
+                          Waiting for countersignature
+                        </span>
                       }
+                    >
+                      {oneTimeAmount} | QuickBooks invoice
+                      <p>{quickBooksInvoiceTiming}</p>
+                    </RecordBillingRow>
+                  ) : qbo &&
+                    !qbo.metadata?.skipped &&
+                    !qbo.metadata?.manual_invoice ? (
+                    <QuickBooksBilling
+                      proposal={p}
+                      link={qbo}
+                      onRefresh={onRefresh}
+                      amount={oneTimeAmount}
+                      manualAction={markAsInvoiced}
                     />
-                  </div>
-                ))}
-            </div>
-            {retryInBilling && (
-              <Button onClick={() => void retryBilling()}>Retry billing</Button>
-            )}
-          </section>
-          <ProposalEmailLog id={p.id} revision={p.revision} />
-          <section className="record-files stack">
-            <h2>Files</h2>
-            {p.files
-              .filter(
-                (f) =>
-                  f.kind === "sealed" ||
-                  f.kind === "import" ||
-                  (f.stage?.startsWith("preview:") && f.version_hash),
-              )
-              .map((f) => (
-                <a
-                  key={f.id}
-                  className="file-link"
-                  href={`/api/proposals/${p.id}/files/${f.id}`}
+                  ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
+                    <RecordBillingRow
+                      label="One-time"
+                      end={
+                        <span
+                          className={`pill ${qbo?.metadata?.manual_invoice ? "success" : "neutral"}`}
+                        >
+                          {qbo?.metadata?.manual_invoice
+                            ? "Invoiced manually"
+                            : actualSigned
+                              ? "In progress"
+                              : "Not started"}
+                        </span>
+                      }
+                    >
+                      {oneTimeAmount} |{" "}
+                      {qbo?.metadata?.manual_invoice
+                        ? "Manual invoice"
+                        : "QuickBooks invoice"}
+                    </RecordBillingRow>
+                  ) : null}
+                </dl>
+              )}
+              {signedOiot && (
+                <section className="card record-billing-note">
+                  <h3>{oiotPlan.name}</h3>
+                  <p>
+                    Website purchase price {signedOiot[oiotPurchasePriceField]}{" "}
+                    | Kickoff {signedOiot[oiotKickoffField]}
+                  </p>
+                  <p>{oiotPlan.billingNote}</p>
+                </section>
+              )}
+              {recordJobs.length > 0 && (
+                <details
+                  className="card record-billing-note"
+                  open={
+                    !!highlightedJob ||
+                    recordJobs.some(
+                      (job) => job.status === "failed" || !!job.last_error,
+                    ) ||
+                    undefined
+                  }
                 >
-                  <Icon name="download" />
-                  {f.kind === "import"
-                    ? "Imported PDF"
-                    : f.stage === "company"
-                      ? "Final sealed PDF"
-                      : f.stage === "client"
-                        ? "Client-signed PDF"
-                        : "Preview PDF"}
-                </a>
-              ))}
-            {!p.files.some((f) => f.kind === "sealed") && (
-              <p>
-                {actualSigned
-                  ? "The signed copy is being sealed."
-                  : "A sealed PDF is available after signature."}
-              </p>
-            )}
-            <a href={`/api/proposals/${p.id}/download`}>
-              Download {actualSigned ? "signed copy" : "preview PDF"}
-            </a>
-            {v && (
-              <details>
-                <Disclosure>Version {v.version_no} · content hash</Disclosure>
-                <code className="hash">{v.content_hash}</code>
-              </details>
-            )}
-          </section>
+                  <Disclosure>Background jobs</Disclosure>
+                  <div className="record-jobs">
+                    {recordJobs.map((j) => (
+                      <div
+                        key={j.id}
+                        id={jobRecordAnchor(j.id)}
+                        tabIndex={-1}
+                        className={
+                          highlightedJob === j.id
+                            ? "record-job-highlight"
+                            : undefined
+                        }
+                        data-job-id={j.id}
+                      >
+                        <JobState
+                          state={
+                            j.status === "running"
+                              ? "running"
+                              : j.status === "failed" || j.last_error
+                                ? "failed"
+                                : "queued"
+                          }
+                          label={jobName(
+                            j,
+                            p.billing_links
+                              .filter((l) => l.status !== "succeeded")
+                              .map((l) => l.provider),
+                          )}
+                          error={
+                            j.last_error
+                              ? friendlyJobError(j.last_error).message
+                              : undefined
+                          }
+                          attempts={j.attempts}
+                          onRetry={
+                            !(qboIssue && j.kind === "billing") &&
+                            j.status !== "running" &&
+                            (j.status === "failed" || j.last_error)
+                              ? () => {
+                                  void post(`/api/proposals/${p.id}/retry`)
+                                    .then(onRefresh)
+                                    .catch((e) => setError(e.message));
+                                }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </section>
+          )}
+          <ProposalEmailLog id={p.id} revision={p.revision} />
         </div>
         <div className="record-support">
-          <section className="record-details">
-            <h2>Details</h2>
-            <dl>
-              <div>
-                <dt>Owner</dt>
-                <dd>
-                  <StaffPerson
-                    name={
-                      data.staff.find(
-                        (member) => member.user_id === proposalOwnerId(p),
-                      )?.display_name ||
-                      p.owner?.display_name ||
-                      p.sender?.display_name ||
-                      person(p.created_by, data)
-                    }
-                    photo={
-                      data.staff.find(
-                        (member) => member.user_id === proposalOwnerId(p),
-                      )?.photo_url
-                    }
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt>Client</dt>
-                <dd>
-                  {[p.client.first_name, p.client.last_name]
-                    .filter(Boolean)
-                    .join(" ")}
-                  {p.client.email && (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
-                    </>
-                  )}
-                </dd>
-              </div>
-              {p.sent_at && (
-                <div>
-                  <dt>Sent</dt>
-                  <dd>
-                    {timestamp(p.sent_at, data)}
-                    {p.sender && ` by ${p.sender.display_name}`}
-                  </dd>
-                </div>
-              )}
-              <div>
-                <dt>Expires</dt>
-                <dd>
-                  {expires
-                    ? readableDate(expires, data.settings?.timezone)
-                    : "No expiry"}
-                </dd>
-              </div>
-            </dl>
-            {p.token && (
-              <div className="record-link-header">
-                <CopyClientLink token={p.token} appUrl={data.app_url} />
-              </div>
-            )}
-            {native && p.token && (
-              <section className="record-reminders">
-                <label className="check">
-                  <Switch
-                    checked={reminders}
-                    disabled={
-                      reminderBusy ||
-                      !!p.archived_at ||
-                      !!p.signers.length ||
-                      !["sent", "viewed"].includes(p.status)
-                    }
-                    onChange={async (e) => {
-                      const enabled = e.target.checked;
-                      setReminders(enabled);
-                      setReminderBusy(true);
-                      setError("");
-                      try {
-                        onChanged(
-                          await post<Proposal>(
-                            `/api/proposals/${p.id}/reminders`,
-                            {
-                              revision: p.revision,
-                              enabled,
-                            },
-                          ),
-                        );
-                      } catch (e) {
-                        setReminders(automaticRemindersEnabled(p));
-                        setError((e as Error).message);
-                      } finally {
-                        setReminderBusy(false);
-                      }
-                    }}
-                  />
-                  Automatic reminders from the app
-                </label>
-                <small className="muted">
-                  {["sent", "viewed"].includes(p.status) &&
-                  !p.signers.length &&
-                  !p.archived_at
-                    ? automaticRemindersEnabled(p)
-                      ? "The app can email scheduled reminders. You can still send a reminder yourself at any time."
-                      : "Scheduled reminders are off. Send reminder still works when you need it."
-                    : "Reminders stop after signing or closing."}
-                </small>
-              </section>
-            )}
-          </section>
-          <section className="timeline">
-            <header className="section-heading">
-              <h2>Timeline</h2>
-              <a href={`/proposals/${p.id}?view=evidence`}>Evidence</a>
-            </header>
-            {p.events.toReversed().map((e) => (
-              <article key={e.id} className="timeline-entry">
-                <span className="timeline-dot">
-                  <Icon
-                    name={
-                      e.type.includes("signed")
-                        ? "signature"
-                        : e.type === "viewed"
-                          ? "viewed"
-                          : e.type.includes("failed")
-                            ? "review"
-                            : "document"
-                    }
-                  />
-                </span>
-                <div>
-                  <strong>{eventTitle(e, data)}</strong>
-                  <p>
-                    {String(
-                      e.metadata.application_statement ?? person(e.actor, data),
-                    )}
-                  </p>
-                  {typeof e.metadata.note === "string" && (
-                    <blockquote>{e.metadata.note}</blockquote>
-                  )}
-                  {typeof e.metadata.reason === "string" &&
-                    e.metadata.reason && (
-                      <blockquote>{e.metadata.reason}</blockquote>
-                    )}
-                  <div className="timeline-entry-meta">
-                    <small>{timestamp(e.created_at, data)}</small>{" "}
-                    <a href={`/proposals/${p.id}?view=evidence#event-${e.id}`}>
-                      View evidence
-                    </a>
-                  </div>
-                </div>
-              </article>
-            ))}
+          {native && (
+            <ProposalEngagement
+              knownRecipient={!!p.token && !!p.client.email}
+              id={p.id}
+              timezone={timezone}
+              notify={data.settings?.engagement_notifications?.in_app !== false}
+              onLoaded={setEngagement}
+            />
+          )}
+          <section className="timeline record-section">
+            <StaffSectionHeading
+              action={<a href={`${recordUrl}?view=evidence`}>Evidence</a>}
+            >
+              Timeline
+            </StaffSectionHeading>
+            <div
+              className="card record-timeline-list"
+              role="region"
+              aria-label="Timeline events"
+              tabIndex={0}
+            >
+              {p.events.toReversed().map((e) => {
+                const blockedEdit = unpublishedEdit?.id === e.id;
+                return (
+                  <article
+                    key={e.id}
+                    className="timeline-entry"
+                    data-unpublished={blockedEdit || undefined}
+                  >
+                    <span className="timeline-dot" aria-hidden="true" />
+                    <div>
+                      <strong>
+                        {blockedEdit
+                          ? "Edited, not live yet"
+                          : eventTitle(e, data)}
+                      </strong>
+                      <small className="timeline-entry-meta">
+                        {timestamp(e.created_at, data)} |{" "}
+                        {person(e.actor, data)}
+                      </small>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </section>
         </div>
       </div>
-      {native && p.token && (
-        <ProposalQuestions
-          key={p.id}
-          id={p.id}
-          timezone={data.settings?.timezone ?? "UTC"}
-        />
-      )}
-      {native && (
-        <ProposalEngagement
-          knownRecipient={!!p.token && !!p.client.email}
-          id={p.id}
-          timezone={data.settings?.timezone ?? "UTC"}
-          notify={data.settings?.engagement_notifications?.in_app !== false}
-        />
-      )}
       {document && (
         <Sheet title={p.title} onClose={() => setDocument(false)}>
           <style>{fontCss(p.workspace_settings ?? data.settings)}</style>

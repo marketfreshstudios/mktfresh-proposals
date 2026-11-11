@@ -158,7 +158,13 @@ export async function editorFixture(
           renders.push(value as PdfPreview);
           await options.onLayout?.(req.postDataJSON(), value as PdfPreview);
         } else if (parts[2] === "preview")
-          value = previewResult(active, f.settings);
+          value = previewResult(
+            active,
+            f.settings,
+            new URL(req.url()).searchParams.get("mode") === "published"
+              ? "published"
+              : "working",
+          );
         else value = parts[1] ? active : { items: [active], total: 1 };
       } else if (parts[0] === "templates" && req.method() === "POST") {
         value = req.postDataJSON();

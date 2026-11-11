@@ -91,10 +91,15 @@ const emptyBrand: Brand = { name: "Proposal", email: "" };
 export function ClientProposal({
   token,
   preview = false,
+  publishedPreview = false,
 }: {
   token: string;
   preview?: boolean;
+  publishedPreview?: boolean;
 }) {
+  const previewEndpoint = preview
+    ? `/api/proposals/${token}/preview${publishedPreview ? "?mode=published" : ""}`
+    : undefined;
   const [route, setRoute] = useState<{
     brand: Brand;
     initial?: PublicProposal;
@@ -110,11 +115,7 @@ export function ClientProposal({
     let active = true;
     setRoute(null);
     setFailure("");
-    void api<any>(
-      preview
-        ? `/api/proposals/${token}/preview`
-        : `/api/public/${token}/brand`,
-    )
+    void api<any>(previewEndpoint ?? `/api/public/${token}/brand`)
       .then((value) => {
         if (active)
           setRoute({
@@ -138,7 +139,7 @@ export function ClientProposal({
     return () => {
       active = false;
     };
-  }, [token, preview]);
+  }, [token, preview, previewEndpoint]);
   if (failure && preview)
     return (
       <main className="client-flow">
@@ -152,7 +153,7 @@ export function ClientProposal({
   if (failure)
     return (
       <StaffIconContext.Provider value={true}>
-        <NewClientFlow token={token} preview={preview} brand={emptyBrand} />
+        <NewClientFlow token={token} brand={emptyBrand} />
       </StaffIconContext.Provider>
     );
   if (!route)
@@ -172,7 +173,8 @@ export function ClientProposal({
       />
       <NewClientFlow
         token={token}
-        preview={preview}
+        previewEndpoint={previewEndpoint}
+        publishedPreview={publishedPreview}
         brand={route.brand}
         initial={route.initial}
       />
@@ -181,15 +183,18 @@ export function ClientProposal({
 }
 function NewClientFlow({
   token,
-  preview,
+  previewEndpoint,
+  publishedPreview,
   brand: initialBrand,
   initial,
 }: {
   token: string;
-  preview: boolean;
+  previewEndpoint?: string;
+  publishedPreview?: boolean;
   brand: Brand;
   initial?: PublicProposal;
 }) {
+  const preview = !!previewEndpoint;
   const [p, setP] = useState<PublicProposal | null>(initial ?? null),
     [brand, setBrand] = useState(initialBrand);
   const [step, setStep] = useState<"read" | "sign" | "billing" | "done">(
@@ -298,7 +303,7 @@ function NewClientFlow({
     setError("");
     try {
       const value = await api<PublicProposal>(
-        preview ? `/api/proposals/${token}/preview` : `/api/public/${token}`,
+        previewEndpoint ?? `/api/public/${token}`,
         { headers },
       );
       setP(value);
@@ -578,7 +583,11 @@ function NewClientFlow({
             <a href={`/proposals/${token}`}>
               {p?.preview_can_send ? "Back to editor" : "Back to proposal"}
             </a>
-            <strong>Preview, not sent</strong>
+            <strong>
+              {publishedPreview
+                ? "Preview of published version"
+                : "Preview, not sent"}
+            </strong>
             <span>
               Previewing as {p?.recipient.name}. Choices aren’t recorded.
             </span>

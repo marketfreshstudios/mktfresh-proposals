@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { stripeTestDashboard } from "../lib/stripe-connect-status";
 import {
   publicCompletion,
@@ -130,6 +131,24 @@ export function BillingConfirmationCard({
     </section>
   );
 }
+export function RecordBillingRow({
+  label,
+  children,
+  end,
+}: {
+  label: string;
+  children: ReactNode;
+  end: ReactNode;
+}) {
+  return (
+    <div className="record-billing-row">
+      <dt>{label}</dt>
+      <dd className="record-billing-description">{children}</dd>
+      <dd className="record-billing-end">{end}</dd>
+    </div>
+  );
+}
+
 export function StripeBillingDetails({
   link,
   dashboardUrl = stripeTestDashboard,
@@ -140,7 +159,7 @@ export function StripeBillingDetails({
   const status = stripeBillingStatus(link);
   return (
     <div className="stack stripe-billing-details">
-      {status.labels.slice(1).map((label) => (
+      {status.labels.map((label) => (
         <span className="pill success" key={label}>
           {label}
         </span>
@@ -155,7 +174,7 @@ export function StripeBillingDetails({
           {s.id}
           <span className="sr-only">
             {" "}
-            · Open subscription in Stripe test dashboard
+            | Open subscription in Stripe test dashboard
           </span>
         </a>
       ))}

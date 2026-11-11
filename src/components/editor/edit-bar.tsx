@@ -64,6 +64,7 @@ export function EditBar(
         tools: ReactNode;
         blockType: Block["type"];
         objectAction?: ReactNode;
+        insertActions?: ReactNode;
         variant?: "block";
         plainText?: boolean;
       },
@@ -211,6 +212,7 @@ function BlockEditBar({
   tools,
   blockType,
   objectAction,
+  insertActions,
   plainText = false,
 }: {
   plainText?: boolean;
@@ -219,6 +221,7 @@ function BlockEditBar({
   tools: ReactNode;
   blockType: Block["type"];
   objectAction?: ReactNode;
+  insertActions?: ReactNode;
 }) {
   const selection = useBlockSelection();
   const root = useRef<HTMLDivElement>(null),
@@ -457,6 +460,7 @@ function BlockEditBar({
             <span className="edit-divider" />
           </>
         )}
+        {insertActions}
         {!phoneActions && up}
         {!phoneActions && down}
         {!phoneActions && (

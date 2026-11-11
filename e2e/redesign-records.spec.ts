@@ -530,7 +530,8 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     delegate.actor,
   );
   await page
-    .getByRole("link", { name: "Back to proposals", exact: false })
+    .locator(".record-toolbar")
+    .getByRole("link", { name: "Proposals", exact: true })
     .click();
   await expect(page).toHaveURL(/view=needs-countersign/);
   await expect(

@@ -196,7 +196,13 @@ test.describe("Staff content surfaces", () => {
     await screenshot(page, "proposals-1440");
 
     await page.goto(`/proposals/${f.draft.id}?view=record`);
-    await surface(page.locator(".record-sheet"));
+    for (const selector of [
+      ".record-details-values",
+      ".record-quote-card",
+      ".record-signature-card",
+      ".record-timeline-list",
+    ])
+      await surface(page.locator(selector));
     await expect(
       page.locator(".proposal-email-table .empty-copy"),
     ).toContainText("No saved email copies yet.");
@@ -894,9 +900,7 @@ test("staff pages and account states have one title and a sequential heading out
   await page.goto(`/proposals/${f.draft.id}?action=edit`);
   await page.getByRole("button", { name: "Open Send", exact: true }).click();
   const tools = page.getByRole("dialog", { name: "Proposal tools" });
-  await expect(tools.getByRole("heading", { level: 2 })).toHaveText(
-    "Proposal tools",
-  );
+  await expect(tools.getByRole("heading", { level: 2 })).toHaveText("Send");
   await expect(
     tools.getByRole("heading", { level: 3, name: "Readiness" }),
   ).toBeVisible();

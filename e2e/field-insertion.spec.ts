@@ -134,7 +134,10 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
         if (fieldPanel && width < 1100)
           await page
             .getByRole("dialog", { name: "Proposal tools", exact: true })
-            .getByRole("button", { name: "Done", exact: true })
+            .getByRole("button", {
+              name: width < 700 ? "Close Fields" : "Collapse tools sidebar",
+              exact: true,
+            })
             .click();
       }
     await page.setViewportSize({ width: 375, height: 1000 });
@@ -206,7 +209,9 @@ test("field panel inserts at the remembered cursor, replaces selection and guide
   await captureState("field-replaces-selection");
   await replacing.press("End");
   await replacing.pressSequentially(" Saved after deselection.");
-  await page.mouse.click(2, 900);
+  await page.getByRole("region", { name: "Proposal document" }).click({
+    position: { x: 2, y: 60 },
+  });
   await expect(page.locator('.block-frame[data-selected="true"]')).toHaveCount(
     0,
   );

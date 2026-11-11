@@ -321,20 +321,18 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   expect(await bar.locator(".formatting-label").first().isVisible()).toBe(
     false,
   );
-  const layers = await page.evaluate(() => {
-    const header = document.querySelector<HTMLElement>(".quote-editor-top")!,
-      bar = document.querySelector<HTMLElement>(
-        ":is(.editor-edit-bar,.phone-formatting-bar)",
-      )!,
-      control = document.querySelector<HTMLElement>(
-        ".draft-block .editor-gutter",
-      )!;
-    return [control, bar, header].map((el) =>
-      Number(getComputedStyle(el).zIndex),
-    );
-  });
-  expect(layers[0]).toBeLessThan(layers[1]);
-  expect(layers[1]).toBeLessThan(layers[2]);
+  const insertActions = bar.locator(".editor-insert-bar");
+  for (const name of ["Add a block above", "Add a block below"])
+    await expect(
+      insertActions.getByRole("button", { name, exact: true }),
+    ).toBeVisible();
+  await expect(page.locator(".draft-block .editor-gutter")).toHaveCount(0);
+  const [barLayer, headerLayer] = await Promise.all(
+    [bar, page.locator(".quote-editor-top")].map((target) =>
+      target.evaluate((el) => Number(getComputedStyle(el).zIndex)),
+    ),
+  );
+  expect(barLayer).toBeLessThan(headerLayer);
   await text.evaluate((el) =>
     (el.closest<HTMLElement>(".editor-document-region") ?? window).scrollBy(
       0,

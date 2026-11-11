@@ -301,8 +301,17 @@
 .staff-foundation.ink-clay .editor-phone-dock button small {
   color: inherit;
 }
-.staff-foundation.ink-clay .editor-phone-dock button:hover {
+.staff-foundation.ink-clay .editor-phone-dock button[aria-selected="true"] {
   background: var(--segment);
+  color: var(--ink-title);
+}
+@media (hover: hover) {
+  .staff-foundation.ink-clay .editor-phone-dock button:hover {
+    background: var(--segment);
+  }
+  .staff-foundation.ink-clay .editor-phone-tool-close:hover {
+    background: var(--segment);
+  }
 }
 
 .staff-foundation.ink-clay

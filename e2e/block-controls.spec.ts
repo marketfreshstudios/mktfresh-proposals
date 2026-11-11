@@ -165,8 +165,8 @@ test("block controls own one block and never move document content on hover, foc
   }
   async function positions(p: Page) {
     await p.evaluate(() => document.fonts.ready);
-    // A phone tap enters a different section view. Measure after that transition
-    // and its existing sheet projection have committed, then detect any movement.
+    // Wait for selection and any pending page measurement before checking
+    // whether the controls move the surrounding document.
     await p.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -416,7 +416,7 @@ test("block controls own one block and never move document content on hover, foc
             });
             await pill.hover();
             const rect = (await pill.boundingBox())!;
-            expect(rect.height).toBe(32);
+            expect(rect.height).toBe(editor === "proposal" ? 44 : 32);
             expect(rect.x).toBeGreaterThanOrEqual(0);
           }
 
@@ -567,7 +567,13 @@ test("block controls own one block and never move document content on hover, foc
           await paragraph.evaluate((el) =>
             (el as HTMLElement).focus({ preventScroll: true }),
           );
-          await page.mouse.click(2, 900);
+          if (editor === "proposal" && width === 375)
+            await page
+              .getByRole("region", { name: "Proposal document" })
+              .click({
+                position: { x: 2, y: 60 },
+              });
+          else await page.mouse.click(2, 900);
           await expect(
             page.locator('.block-frame[data-selected="true"]'),
           ).toHaveCount(0);
@@ -698,7 +704,7 @@ test("block controls own one block and never move document content on hover, foc
               await page
                 .getByRole("dialog", { name: "Proposal tools", exact: true })
                 .getByRole("button", {
-                  name: /^(Done|Collapse tools sidebar)$/,
+                  name: "Close Send",
                   exact: true,
                 })
                 .click();

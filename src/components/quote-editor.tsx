@@ -84,6 +84,8 @@ import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { useEditorPanels } from "./use-editor-panels";
+import { usePhoneEditorViewport } from "./editor/phone-editor-viewport";
+import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { ProposalStyles } from "./proposal-styles";
 import {
   resolveStyles,
@@ -222,8 +224,10 @@ function QuoteEditorContent({
   user,
   documents = [],
   initialTab = "Quote",
+  focusReadiness = false,
 }: {
   initialTab?: string;
+  focusReadiness?: boolean;
   initial: Proposal;
   appUrl: string;
   settings?: WorkspaceSettings | null;
@@ -351,6 +355,9 @@ function QuoteEditorContent({
     true,
     380,
   );
+  const phoneEditor = useRef<HTMLDivElement>(null);
+  usePhoneEditorViewport(phoneEditor, panels.phone);
+  const toolsOpen = panels.phone ? phoneDrawer : panels.right;
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
   const outlineOpen =
@@ -1110,8 +1117,27 @@ function QuoteEditorContent({
     (protectedLink && !p.password_hash && password.length < 8
       ? "Enter a password with at least 8 characters."
       : "");
+  const sendPanelRoot = useRef<HTMLDivElement>(null);
+  const focusedReadiness = useRef(false);
+  const afterVisible = useVisibleEditorAction();
+  useEffect(() => {
+    if (
+      !focusReadiness ||
+      !panels.ready ||
+      focusedReadiness.current ||
+      tab !== "Send"
+    )
+      return;
+    const firstBlocker = sendPanelRoot.current?.querySelector<HTMLElement>(
+      ".readiness-row.blocker:not([hidden])",
+    );
+    if (!firstBlocker) return;
+    focusedReadiness.current = true;
+    afterVisible(firstBlocker, () => firstBlocker.focus());
+  }, [focusReadiness, panels.ready, tab, afterVisible]);
+
   const sendPanel = (
-    <div className="send-panel stack">
+    <div className="send-panel stack" ref={sendPanelRoot}>
       <PanelCard
         title="Readiness"
         className="send-readiness-card"
@@ -1122,7 +1148,7 @@ function QuoteEditorContent({
           {ready.errors
             .filter((e) => !e.startsWith("Confirm review of AI changes"))
             .map((e, n) => (
-              <li className="readiness-row blocker" key={n}>
+              <li className="readiness-row blocker" key={n} tabIndex={-1}>
                 <span className="readiness-badge" aria-hidden="true">
                   <TriangleAlert aria-hidden="true" />
                 </span>
@@ -1190,6 +1216,7 @@ function QuoteEditorContent({
         {/* A fast review response must not detach the native control mid-activation. */}
         <div
           className="send-ai-review readiness-row blocker"
+          tabIndex={-1}
           hidden={pending.length === 0}
         >
           <span className="readiness-badge" aria-hidden="true">
@@ -2629,13 +2656,11 @@ function QuoteEditorContent({
   return (
     <div
       {...blockDrop.handlers}
+      ref={phoneEditor}
       data-panels-ready={panels.ready}
       data-stale={stale}
       data-compact={panels.compact}
       data-shell-mode={panels.phone ? "phone" : "v2"}
-      data-phone-editing={
-        panels.phone && !!selection.selected && !selection.selectMode
-      }
       data-phone-select-mode={selection.selectMode}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
@@ -2819,7 +2844,7 @@ function QuoteEditorContent({
             window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
         }}
         onReviewSend={() => openTools("Send")}
-        sendPanelOpen={tab === "Send" && (panels.right || drawer)}
+        sendPanelOpen={tab === "Send" && toolsOpen}
         title={p.title}
         backLabel="Proposals"
         backHref="/proposals"
@@ -3017,14 +3042,7 @@ function QuoteEditorContent({
                       p.template_style_overrides,
                       p.style_overrides,
                     )}
-                    enabled={
-                      panels.printMode &&
-                      !(
-                        panels.phone &&
-                        selection.selected &&
-                        !selection.selectMode
-                      )
-                    }
+                    enabled={panels.printMode}
                     sheets
                     headerFooter={bands}
                     onHeaderFooter={
@@ -3178,8 +3196,9 @@ function QuoteEditorContent({
         {
           <ToolsPanel
             tab={tab as EditorTab}
-            open={panels.phone ? phoneDrawer : panels.right}
+            open={toolsOpen}
             mode={panels.phone ? "sheet" : panels.mode}
+            keepPhoneDock
             onTab={openTools}
             onToggle={toggleRight}
             sheetTitle={

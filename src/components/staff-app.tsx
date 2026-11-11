@@ -505,6 +505,7 @@ function StaffAppContent({
           appUrl={data.app_url}
           initial={p}
           initialTab={action === "send" ? "Review & send" : "Quote"}
+          focusReadiness={action === "send" && query.focus === "readiness"}
           settings={data.settings}
           connections={data.connections}
           catalog={data.catalog}

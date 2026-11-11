@@ -19,10 +19,11 @@ export async function openEditorPanel(
     if (await done.isVisible()) await done.click();
   }
   const current = page
-    .getByRole("tab", { name: tab, exact: true })
+    .getByRole("tab", { name: tab === "Quote" ? /^Quote\b/ : tab, exact: true })
     .filter({ visible: true });
   if (await current.count()) {
-    await current.first().click();
+    if ((await current.first().getAttribute("aria-selected")) !== "true")
+      await current.first().click();
     return;
   }
   await page

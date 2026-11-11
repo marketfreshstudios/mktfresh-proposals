@@ -212,9 +212,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
           await page.getByRole("button", { name: /^Open Quote\b/ }).click();
       }
       await expect(
-        page
-          .getByRole("tab", { name: "Quote", exact: true })
-          .filter({ visible: true }),
+        page.getByRole("tab", { name: /^Quote\b/ }).filter({ visible: true }),
       ).toBeVisible();
       await capture(
         "quote",
@@ -251,7 +249,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
         await page
           .locator(".tools-sheet")
           .getByRole("button", {
-            name: /^(Done|Collapse tools sidebar)$/,
+            name: width === 375 ? "Close Send" : "Collapse tools sidebar",
             exact: true,
           })
           .click();

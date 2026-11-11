@@ -198,12 +198,8 @@ export function ProposalEmailLog({
     };
   }, [id, revision]);
   return (
-    <section className="card stack">
-      <h2>Email log</h2>
-      <p className="muted">
-        Saved subject and content exactly as sent. Later template edits do not
-        change these copies.
-      </p>
+    <details className="card record-email-log">
+      <Disclosure>Email log</Disclosure>
       {error && <p role="alert">{error}</p>}
       <StaffTable inline density="compact" className="proposal-email-table">
         <StaffTableHead>Sent email</StaffTableHead>
@@ -211,7 +207,7 @@ export function ProposalEmailLog({
           ? logs.map((log) => (
               <details key={log.id} className="staff-table-row">
                 <Disclosure>
-                  {log.snapshot.subject} · {staffDate(log.sent_at)}
+                  {log.snapshot.subject} | {staffDate(log.sent_at)}
                 </Disclosure>
                 <dl>
                   <dt>To</dt>
@@ -245,6 +241,6 @@ export function ProposalEmailLog({
               </StaffTableEmpty>
             )}
       </StaffTable>
-    </section>
+    </details>
   );
 }

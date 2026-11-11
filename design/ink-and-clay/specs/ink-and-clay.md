@@ -30,6 +30,7 @@ Visual references:
 - **Panel collapse** (live `PanelChevron` in `.panel-collapse`): a 40×40 button holding a 12px Lucide ChevronRight in `--ink-muted`, at the right end of the tab row. Its label is "Collapse tools sidebar", with the tooltip "Collapse panel (⌘\ / Ctrl+\)". The rail's expand button uses ChevronLeft.
 - **Separators** (owner, 10 Nov): never use a bullet (·) between items in UI copy. Use a pipe (" | "), a comma or a line break.
 - **Editor tools panel cards** (Redesign 23, turn 2): see `editor-panel-cards.md`.
+- **Client view and Preview as client** (Redesign 25): see `client-view.md`. The client side uses the workspace brand and cool neutrals.
 
 ## 3. Shell by width
 

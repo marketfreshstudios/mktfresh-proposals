@@ -555,7 +555,7 @@ test("phone column style sheet keeps copy and paste handy and groups the remaini
   await expectStackedControls(sheet, ["Padding"]);
   await capture(page, "1f-phone-copy");
   await page.keyboard.press("Tab");
-  expect(await expectFocusRing(panelButton(sheet, "Done"), true)).toBe("0px");
+  expect(await expectFocusRing(panelButton(sheet, "Close Styles"))).toBe("50%");
   await panelButton(sheet, "Copy style").click();
   await sheet.getByRole("tab", { name: "Column 2" }).click();
   const paste = panelButton(sheet, "Paste style from Column 1");
