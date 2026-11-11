@@ -128,13 +128,6 @@
   color: var(--button-ink);
   background: var(--button-wash);
 }
-.staff-foundation.ink-clay .editor-phone-header > .phone-header-done {
-  min-height: 36px;
-  padding: 0 16px;
-  border: 1.5px solid var(--button-outline);
-  border-radius: 999px;
-  font: 600 14px/18px var(--font-ui);
-}
 .staff-foundation.ink-clay .editor-navigation-link {
   display: inline-flex;
   align-items: center;
