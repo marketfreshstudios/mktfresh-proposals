@@ -7,6 +7,7 @@ import { coverBrandCss } from "../lib/cover-render";
 import { PointerFocus } from "../components/pointer-focus";
 import "./globals.css";
 import "./foundation.css";
+import "./proposal-loading.css";
 import "./client-flow.css";
 import "./client-sheets.css";
 import "./records.css";

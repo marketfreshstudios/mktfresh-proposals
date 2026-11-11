@@ -113,10 +113,12 @@ test("Yeswell staff branding and install metadata stay separate from workspace c
       [`/proposals/${p.id}`, "editor"],
     ]) {
       await page.goto(path);
-      await expect(page.locator(".sidebar .brand img:visible")).toHaveAttribute(
-        "alt",
-        "Yeswell",
-      );
+      // The editor is full-screen, with no navigation sidebar, from its first
+      // loading frame on.
+      if (name !== "editor")
+        await expect(
+          page.locator(".sidebar .brand img:visible"),
+        ).toHaveAttribute("alt", "Yeswell");
       if (name === "editor")
         await expect(
           page.locator('.editor-page-sheets[data-layout-settled="true"]'),
