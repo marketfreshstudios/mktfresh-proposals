@@ -9958,3 +9958,25 @@ dialog.foundation-sheet.block-style-sheet {
     font-size: 16px;
   }
 }
+
+/* Drop a standalone quote line on a Choose one group to add it. */
+.quote-join-target {
+  position: relative;
+  border-radius: 12px;
+}
+.quote-join-target[data-join-over] {
+  outline: 2px solid var(--ink-title, #13303a);
+  outline-offset: 4px;
+  background: var(--segment, #e8edef);
+}
+.quote-join-hint {
+  position: absolute;
+  inset-block-start: -14px;
+  inset-inline-end: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--ink-title, #13303a);
+  color: #fff;
+  font: 600 12px/18px var(--font-ui);
+  pointer-events: none;
+}
