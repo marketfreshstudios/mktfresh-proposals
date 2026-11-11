@@ -1738,13 +1738,13 @@ function ChosenItems({
             </span>
             {inlineAmounts ? (
               <span className="flow-choice-amounts">
-                {i.sublines.map((s, index) => (
-                  <span key={s.id} className="flow-choice-amount">
-                    {index > 0 && " + "}
-                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
-                    {intervalSuffix(s.interval)}
-                  </span>
-                ))}
+                {i.sublines
+                  .map(
+                    (s) =>
+                      formatMoney(s.amount * s.qty, p.currency, p.money_cents) +
+                      intervalSuffix(s.interval),
+                  )
+                  .join(" + ")}
               </span>
             ) : (
               <span>

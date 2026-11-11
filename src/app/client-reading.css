@@ -85,10 +85,6 @@
   white-space: normal;
   text-align: end;
 }
-.flow-choice-amount {
-  display: inline-block;
-  white-space: pre;
-}
 .flow-r25-reading .flow-choice-contact {
   font-size: 13px;
   margin-bottom: 0;

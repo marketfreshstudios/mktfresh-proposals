@@ -296,6 +296,54 @@ async function clientFixture(page: Page) {
   };
 }
 
+test("desktop client choices show visible spaces on both sides of a combined amount's plus", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1060 });
+  const f = await clientFixture(page);
+  await f.open("read");
+  const choices = page.getByRole("complementary", { name: "Your choices" });
+  const combined = choices
+    .getByRole("listitem")
+    .filter({ hasText: "Own It Over Time" })
+    .locator(".flow-choice-amounts");
+  await expect(combined).toBeVisible();
+  await expect(combined).toHaveText("$500 + $175/mo");
+  const layout = await combined.evaluate((el) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const text = el.textContent!;
+    const plus = text.indexOf("+");
+    function glyph(index: number) {
+      walker.currentNode = el;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const length = node.textContent!.length;
+        if (index < length) {
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + 1);
+          const { top, width } = range.getBoundingClientRect();
+          return { top, width };
+        }
+        index -= length;
+      }
+      throw new Error("Character missing from combined amount");
+    }
+    return {
+      glyphs: [glyph(0), glyph(plus), glyph(text.length - 1)],
+      spaces: [glyph(plus - 1).width, glyph(plus + 1).width],
+    };
+  });
+  expect(new Set(layout.glyphs.map(({ top }) => top)).size).toBe(1);
+  for (const width of layout.spaces) expect(width).toBeGreaterThan(0);
+  await expect(
+    choices
+      .getByRole("listitem")
+      .filter({ hasText: "Care Standard" })
+      .locator(".flow-choice-amounts"),
+  ).toHaveText("$85/mo");
+});
+
 test("the reading summary omits a zero one-time amount on desktop and phone", async ({
   page,
 }) => {
@@ -374,12 +422,9 @@ for (const width of [1440, 1024, 768, 375]) {
       const ownIt = choices
         .locator(".flow-chosen li")
         .filter({ hasText: "Own It Over Time" });
-      const amounts = ownIt.locator(".flow-choice-amount");
+      // One line is covered by the combined-amount spacing test above.
       await expect(ownIt.locator(".flow-choice-amounts")).toHaveText(
         "$500 + $175/mo",
-      );
-      expect((await amounts.first().boundingBox())!.y).toBe(
-        (await amounts.last().boundingBox())!.y,
       );
       const document = page.locator(".client-document-sheets");
       await expect(document).toHaveCSS("width", "720px");
