@@ -477,3 +477,19 @@
 .account-screen .account-reset-link {
   margin-inline: auto;
 }
+
+/* Owner 10 Nov: the sidebar totals sit clear of the actions below them. */
+@media (min-width: 1100px) {
+  .client-flow.client-flow .flow-choices .flow-totals.document-totals {
+    margin: 12px 0 16px;
+  }
+}
+/* The workspace logo icon stands on its own; the accent tile is only for
+   the initial when there is no icon. */
+.flow-brand-mark:has(img) {
+  background: transparent;
+  border-radius: 0;
+}
+.flow-brand-mark img {
+  object-fit: contain;
+}
