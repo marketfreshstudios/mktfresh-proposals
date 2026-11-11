@@ -160,6 +160,11 @@ test("button variants keep their text readable in hover, active and focus on pap
   await editorFixture(page);
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/proposals");
+  // Inject the matrix only after hydration; earlier, React regenerates the
+  // shell on a hydration mismatch and removes it (flaky hover timeouts).
+  await expect(
+    page.getByRole("tablist", { name: "Proposal views" }),
+  ).toBeVisible();
   await page.emulateMedia({ reducedMotion: "reduce" });
   const matrix = page.locator("#button-state-check");
   const variants = {
