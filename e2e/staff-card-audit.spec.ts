@@ -900,9 +900,7 @@ test("staff pages and account states have one title and a sequential heading out
   await page.goto(`/proposals/${f.draft.id}?action=edit`);
   await page.getByRole("button", { name: "Open Send", exact: true }).click();
   const tools = page.getByRole("dialog", { name: "Proposal tools" });
-  await expect(tools.getByRole("heading", { level: 2 })).toHaveText(
-    "Proposal tools",
-  );
+  await expect(tools.getByRole("heading", { level: 2 })).toHaveText("Send");
   await expect(
     tools.getByRole("heading", { level: 3, name: "Readiness" }),
   ).toBeVisible();

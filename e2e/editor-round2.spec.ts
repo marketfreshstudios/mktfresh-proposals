@@ -368,7 +368,9 @@ for (const width of [1440, 375]) {
       .fill("44");
     await expect.poll(() => f.current().style_overrides?.title?.size).toBe(44);
     if (width === 375)
-      await page.getByRole("button", { name: "Done", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Close Styles", exact: true })
+        .click();
     await expect(
       page.locator(".editor-paper .document-cover .cover-title-line"),
     ).toHaveCSS("font-size", "44px");

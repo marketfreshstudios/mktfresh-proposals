@@ -278,9 +278,7 @@ for (const width of [1440, 375])
     }
     await openQuoteRow(page, 0);
     await expect(
-      page
-        .getByRole("tab", { name: "Quote", exact: true })
-        .filter({ visible: true }),
+      page.getByRole("tab", { name: /^Quote\b/ }).filter({ visible: true }),
     ).toHaveCSS("border-radius", "10px");
     await audit(page);
     const optional = page.getByRole("switch", {

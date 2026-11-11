@@ -573,6 +573,12 @@
     padding-inline: 0;
     padding-block-end: env(safe-area-inset-bottom, 0px);
   }
+  .editor-v2-sheet.tools-sheet[data-style-sheet][data-phone-tools] {
+    padding-block-end: 0;
+  }
+  .tools-sheet[data-style-sheet][data-phone-tools] > .editor-phone-dock {
+    margin-inline: 0;
+  }
   .tools-sheet[data-style-sheet] .editor-tools-header {
     justify-content: space-between;
     padding-inline: 18px;

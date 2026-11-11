@@ -11,12 +11,12 @@
   --chrome-ink:#F2F5F5; --chrome-muted:#A9BCC2; --chrome-line:rgba(255,255,255,.14);
   --chrome-marker:#E07A4A; /* 3px active-item bar */
   /* Surfaces */
-  --surface-page:#F3EFE7; --surface:#FFFFFF; --surface-sunken:#EEE9E0; --surface-raised:#FFFFFF;
-  --surface-deep:#DCD5C8; /* editor canvas behind the white pages */
-  --segment:#EEE9E0;      /* segmented controls, tab tracks, progress tracks */
+  --surface-page:#F1F4F5; --surface:#FFFFFF; --surface-sunken:#E8EDEF; --surface-raised:#FFFFFF;
+  --surface-deep:#D5DEE1; /* editor canvas behind the white pages */
+  --segment:#E8EDEF;      /* segmented controls, tab tracks, progress tracks */
   /* Ink */
-  --ink:#1C1B18; --ink-title:#13303A; --ink-muted:#5F5B53; --link:#13303A;
-  --border:#E4DED2; --border-strong:#CFC8BB; --border-control:#CFC8BB;
+  --ink:#1C1B18; --ink-title:#13303A; --ink-muted:#56646A; --link:#13303A;
+  --border:#DCE3E6; --border-strong:#C2CDD2; --border-control:#C2CDD2;
   /* Hero card: the one filled card per screen (Home pipeline, record "Next step", value signed) */
   --hero:#13303A; --hero-ink:#FFFFFF; --hero-muted:#A9BCC2; --hero-body:#D3DEE1;
   --hero-bar-1:#6F97A3; --hero-bar-2:#E9B48F; --hero-bar-3:#E07A4A;
@@ -24,7 +24,7 @@
   --action:#B4532A; --on-action:#FFFFFF; --action-hover:#9C4521;
   --ai:#B4532A; --ai-soft:rgba(224,122,74,.18); --ai-on-chrome:#F6C9AE;
   /* Proposal page (unchanged: must match the sealed PDF) */
-  --paper:#FFFFFF; --paper-ink:#1C1B18; --paper-muted:#5F5B53; --paper-border:#E8E4DC; --paper-well:#F6F4EF;
+  --paper:#FFFFFF; --paper-ink:#1C1B18; --paper-muted:#56646A; --paper-border:#DCE3E6; --paper-well:#F4F7F7;
   --accent:#365C4A; /* tenant */
   --on-accent:#FFFFFF;
   --accent-text:var(--accent);
@@ -32,18 +32,18 @@
   --choice-ground:color-mix(in oklch, var(--accent) 8%, white);
   --choice-border:color-mix(in oklch, var(--accent) 55%, white);
   /* Status, saturated set: soft = chip ground, ink = chip text (≥4.5:1 on soft), strong = dot / bar / left marker */
-  --st-draft-soft:#ECE7DD;  --st-draft-ink:#4A463F;  --st-draft-strong:#8A857B;
+  --st-draft-soft:#E8EDEF;  --st-draft-ink:#3E4B50;  --st-draft-strong:#7F8E94;
   --st-sent-soft:#DCE8EC;   --st-sent-ink:#13303A;   --st-sent-strong:#6F97A3;
   --st-viewed-soft:#F7EBCB; --st-viewed-ink:#7A5200; --st-viewed-strong:#C08A12;
   --st-won-soft:#DDEFE4;    --st-won-ink:#1E5A3A;    --st-won-strong:#2F7D52;
   --st-review-soft:#FBE5DA; --st-review-ink:#9A3F17; --st-review-strong:#C2551F; /* AI draft to review */
   --st-lost-soft:#F8DEDB;   --st-lost-ink:#94281B;   --st-lost-strong:#C2412F;   /* also billing issue */
-  --st-expired-soft:#ECE7DD;--st-expired-ink:#4A463F;--st-expired-strong:#8A857B;
+  --st-expired-soft:#E8EDEF;--st-expired-ink:#3E4B50;--st-expired-strong:#7F8E94;
   --success:#1E5A3A; --success-soft:#DDEFE4;
   --warning:#7A5200; --warning-soft:#F7EBCB;
   --danger:#94281B;  --danger-soft:#F8DEDB;
   --info:#13303A;    --info-soft:#DCE8EC;
-  --neutral:#4A463F; --neutral-soft:#ECE7DD;
+  --neutral:#3E4B50; --neutral-soft:#E8EDEF;
   /* Toast (update notice, undo) */
   --toast:#1C1B18; --toast-ink:#FFFFFF; --toast-muted:#D9D4CA;
   --overlay:rgba(20,18,14,.45);
