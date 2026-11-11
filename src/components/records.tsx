@@ -1,5 +1,6 @@
 "use client";
 import { ToastSurface } from "./toast-surface";
+import { timelineEvents } from "../lib/timeline";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { StaffPerson } from "./staff-person";
 import { withCount } from "../lib/count-label";
@@ -32,6 +33,7 @@ import {
   useEngagementSummaries,
 } from "./proposal-engagement";
 import { DialogActions } from "./dialog-actions";
+import { RecordDisclosure, useRecordPhone } from "./record-disclosure";
 import { CopyClientLink, ManualDeliveryConfirmation } from "./client-link";
 import {
   automaticRemindersEnabled,
@@ -216,6 +218,7 @@ export function ProposalMenu({
   showEdit = true,
   listRow = false,
   tableRow = false,
+  mobileRecord = false,
 }: {
   p: Proposal;
   data: Data;
@@ -224,6 +227,7 @@ export function ProposalMenu({
   showEdit?: boolean;
   listRow?: boolean;
   tableRow?: boolean;
+  mobileRecord?: boolean;
 }) {
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
@@ -422,7 +426,7 @@ export function ProposalMenu({
       )}
       {open && (
         <Sheet
-          title={`Actions · ${p.client.company}`}
+          title={`Actions | ${p.client.company}`}
           menu={!confirm}
           anchor={anchor.current}
           onClose={() => {
@@ -490,7 +494,7 @@ export function ProposalMenu({
                   Open record
                 </a>
               )}
-              {listRow && (
+              {(listRow || (mobileRecord && !imported && !archived)) && (
                 <a
                   href={`/p/${p.id}?preview=1`}
                   target="_blank"
@@ -1559,11 +1563,62 @@ export function HomeV4({
   );
 }
 
-function QuoteSummary({ p }: { p: Proposal }) {
+function QuoteSummary({
+  p,
+  compact = false,
+}: {
+  p: Proposal;
+  compact?: boolean;
+}) {
   const money = useMoney(),
     quote = p.versions.at(-1)?.quote ?? p.quote,
     chosen = orderedItems(quote).filter(selected),
     excluded = orderedItems(quote).filter((i) => !selected(i));
+  if (compact) {
+    const amounts = totals(quote);
+    return (
+      <>
+        <ul className="record-countersign-items">
+          {chosen.map((item) => (
+            <li key={item.id}>
+              <strong>{item.name}</strong>
+              <span>
+                {item.sublines
+                  .map((line) => {
+                    const value = money(line.amount * line.qty, p.currency);
+                    return (
+                      value +
+                      (line.interval === "month"
+                        ? "/mo"
+                        : line.interval === "year"
+                          ? "/yr"
+                          : "")
+                    );
+                  })
+                  .join(" + ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <dl className="record-countersign-totals">
+          <div>
+            <dt>One-time</dt>
+            <dd>{money(amounts.one_time_total, p.currency)}</dd>
+          </div>
+          <div>
+            <dt>Monthly</dt>
+            <dd>{money(amounts.monthly_total, p.currency)}/mo</dd>
+          </div>
+          {amounts.yearly_total > 0 && (
+            <div>
+              <dt>Yearly</dt>
+              <dd>{money(amounts.yearly_total, p.currency)}/yr</dd>
+            </div>
+          )}
+        </dl>
+      </>
+    );
+  }
   return (
     <>
       <div className="signed-items">
@@ -1694,36 +1749,44 @@ function RecordLifecycle({
       proposal.signers.find((signer) => signer.role === "company")?.signed_at,
     ],
   ] as const;
-  const current = steps.findLastIndex(([, at]) => !!at);
+  const current = Math.max(
+    0,
+    steps.findLastIndex(([, at]) => !!at),
+  );
   const completed = current === steps.length - 1;
   return (
-    <ol className="record-lifecycle" aria-label="Proposal lifecycle">
-      {steps.map(([label, at], index) => (
-        <li
-          key={label}
-          data-step={
-            completed || index < current
-              ? "done"
-              : index === current
-                ? "current"
-                : "future"
-          }
-          aria-current={index === current ? "step" : undefined}
-        >
-          <span className="record-step-content">
-            <span className="record-step-marker" aria-hidden="true" />
-            <span>{label}</span>
-            <span className="sr-only">
-              {at
-                ? timestamp(at, data)
-                : index < current
-                  ? "Complete"
-                  : "Waiting"}
+    <>
+      <p className="record-step-summary" aria-hidden="true">
+        Step {current + 1} of {steps.length} | {steps[current][0]}
+      </p>
+      <ol className="record-lifecycle" aria-label="Proposal lifecycle">
+        {steps.map(([label, at], index) => (
+          <li
+            key={label}
+            data-step={
+              completed || index < current
+                ? "done"
+                : index === current
+                  ? "current"
+                  : "future"
+            }
+            aria-current={index === current ? "step" : undefined}
+          >
+            <span className="record-step-content">
+              <span className="record-step-marker" aria-hidden="true" />
+              <span>{label}</span>
+              <span className="sr-only">
+                {at
+                  ? timestamp(at, data)
+                  : index < current
+                    ? "Complete"
+                    : "Waiting"}
+              </span>
             </span>
-          </span>
-        </li>
-      ))}
-    </ol>
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
 
@@ -1819,11 +1882,13 @@ function RecordSignature({ signer, data }: { signer: Signer; data: Data }) {
 export function CountersignSheet({
   p,
   data,
+  phone = false,
   onClose,
   onSigned,
 }: {
   p: Proposal;
   data: Data;
+  phone?: boolean;
   onClose: () => void;
   onSigned: (p: Proposal) => void;
 }) {
@@ -1842,9 +1907,23 @@ export function CountersignSheet({
       s?.name ?? "",
       data.settings?.company_name ?? "",
     );
+  const companyMark =
+    s?.name || s?.image ? (
+      <div className={phone || !s.image ? "record-signature-mark" : undefined}>
+        {s.image ? (
+          <img src={s.image} alt={`${s.name}'s stored signature`} />
+        ) : (
+          <span>
+            <span className="sr-only">Designated signatory: </span>
+            {s.name}
+          </span>
+        )}
+      </div>
+    ) : null;
   return (
     <Sheet
-      title={`Countersign | ${p.client.company}`}
+      title={phone ? "Countersign" : `Countersign | ${p.client.company}`}
+      subtitle={phone ? p.title : undefined}
       className="record-countersign-sheet"
       onClose={() => {
         if (!busy) onClose();
@@ -1872,10 +1951,38 @@ export function CountersignSheet({
         ) : (
           <>
             <section className="frozen-summary">
-              <h3>What the client agreed to</h3>
-              <QuoteSummary p={p} />
-              <p>Version {version?.version_no}</p>
-              <code className="hash">{version?.content_hash}</code>
+              <h3>
+                {phone && p.client.first_name
+                  ? `What ${p.client.first_name} agreed to`
+                  : "What the client agreed to"}
+              </h3>
+              <QuoteSummary p={p} compact={phone} />
+              {phone && version ? (
+                <details className="record-countersign-agreement">
+                  <Disclosure>Read the agreement</Disclosure>
+                  <style>
+                    {fontCss(p.workspace_settings ?? data.settings)}
+                  </style>
+                  <article
+                    className="record-document proposal-typography"
+                    dangerouslySetInnerHTML={{
+                      __html: renderBlocks(
+                        version.content,
+                        version.quote,
+                        version.variables_resolved,
+                        p.currency,
+                      ),
+                    }}
+                  />
+                  <p>Version {version.version_no}</p>
+                  <code className="hash">{version.content_hash}</code>
+                </details>
+              ) : (
+                <>
+                  <p>Version {version?.version_no}</p>
+                  <code className="hash">{version?.content_hash}</code>
+                </>
+              )}
             </section>
             {!s?.image || !s.user_id ? (
               <>
@@ -1890,6 +1997,12 @@ export function CountersignSheet({
                     />
                   )}
                 </section>
+                {companyMark && (
+                  <section className="company-signature-preview">
+                    <h3>Company signature</h3>
+                    {companyMark}
+                  </section>
+                )}
                 <Banner
                   tone="warning"
                   title={
@@ -1953,7 +2066,11 @@ export function CountersignSheet({
                   <section className="client-signature-preview">
                     <h3>Client signature</h3>
                     {client ? (
-                      <SignatureEvidence signer={client} data={data} />
+                      phone ? (
+                        <RecordSignature signer={client} data={data} />
+                      ) : (
+                        <SignatureEvidence signer={client} data={data} />
+                      )
                     ) : (
                       <Banner
                         tone="warning"
@@ -1963,23 +2080,40 @@ export function CountersignSheet({
                   </section>
                   <section className="company-signature-preview">
                     <h3>Company signature</h3>
-                    <img src={s.image} alt={`${s.name}'s stored signature`} />
+                    {companyMark}
                     <strong>
                       {s.name} | {s.title}
                     </strong>
                     <p>
-                      {data.settings?.company_name} |{" "}
-                      {readableDate(new Date().toISOString())}
+                      {phone ? (
+                        formatStaffDate(
+                          new Date().toISOString(),
+                          data.account,
+                          {
+                            dateStyle: "medium",
+                            timeZone: data.settings?.timezone ?? "UTC",
+                          },
+                        )
+                      ) : (
+                        <>
+                          {data.settings?.company_name} |{" "}
+                          {readableDate(new Date().toISOString())}
+                        </>
+                      )}
                     </p>
                   </section>
                 </div>
                 {delegated && (
                   <section>
-                    <h3>Signing on behalf of {s.name}</h3>
-                    <p>
-                      {data.user.staff_name || data.user.staff_email} will be
-                      recorded as the person applying this signature.
-                    </p>
+                    {!phone && (
+                      <>
+                        <h3>Signing on behalf of {s.name}</h3>
+                        <p>
+                          {data.user.staff_name || data.user.staff_email} will
+                          be recorded as the person applying this signature.
+                        </p>
+                      </>
+                    )}
                     <label className="check authorization-check">
                       <input
                         type="checkbox"
@@ -2006,10 +2140,14 @@ export function CountersignSheet({
                     company signature.
                   </label>
                 </section>
-                <DialogActions>
-                  <Button disabled={busy} onClick={onClose}>
-                    Cancel
-                  </Button>
+                <DialogActions
+                  className={phone ? "record-countersign-actions" : undefined}
+                >
+                  {!phone && (
+                    <Button disabled={busy} onClick={onClose}>
+                      Cancel
+                    </Button>
+                  )}
                   <Button
                     type="submit"
                     variant="primary"
@@ -2026,12 +2164,12 @@ export function CountersignSheet({
                         ? "Reload and review before signing."
                         : !canCountersign(p, data.user, data.settings)
                           ? "Your staff account is not authorized."
-                          : !consent || (delegated && !authorized)
+                          : !phone && (!consent || (delegated && !authorized))
                             ? "Confirm the required authorization and consent above."
                             : undefined
                     }
                   >
-                    Countersign as {s.name}
+                    {phone ? "Countersign" : `Countersign as ${s.name}`}
                   </Button>
                 </DialogActions>
               </form>
@@ -2101,6 +2239,7 @@ export function RecordV4({
     [recordBusy, setRecordBusy] = useState(false),
     [error, setError] = useState("");
   const money = useMoney();
+  const phone = useRecordPhone();
   const company = p.signers.find((s) => s.role === "company"),
     clientSigner = p.signers.find((s) => s.role === "client"),
     actualSigned = !!p.client_signed_at,
@@ -2379,7 +2518,7 @@ export function RecordV4({
   );
   const remind = (
     <Button busy={recordBusy} onClick={() => void runAction("remind")}>
-      Send reminder now
+      {phone ? "Send reminder" : "Send reminder now"}
     </Button>
   );
   const resendLink = (
@@ -2387,7 +2526,7 @@ export function RecordV4({
       busy={recordBusy}
       onClick={() => void runAction("resend_billing_link")}
     >
-      Resend payment link
+      {phone ? "Resend link" : "Resend payment link"}
     </Button>
   );
   const manualInvoice = (
@@ -2504,7 +2643,7 @@ export function RecordV4({
       actions: authorized
         ? [
             <a className="btn" href={countersignUrl}>
-              Review &amp; countersign
+              {phone ? "Review and countersign" : "Review & countersign"}
             </a>,
           ]
         : [],
@@ -2604,7 +2743,7 @@ export function RecordV4({
                 busy={questions.busy}
                 onClick={() => questions.setReplying(firstOpenQuestion.id)}
               >
-                Reply to question
+                {phone ? "Reply" : "Reply to question"}
               </Button>,
               remind,
             ]
@@ -2641,7 +2780,10 @@ export function RecordV4({
     unarchive(toolbarClass)
   ) : signature ? (
     authorized ? (
-      <a className={`btn ${toolbarClass}`} href={countersignUrl}>
+      <a
+        className={`btn record-toolbar-countersign ${toolbarClass}`}
+        href={countersignUrl}
+      >
         Review &amp; countersign
       </a>
     ) : (
@@ -2685,19 +2827,12 @@ export function RecordV4({
     .sort(
       (a, b) => Number(b.stage === "company") - Number(a.stage === "company"),
     );
-  return (
-    <div className="record-v4 stack">
-      {share && p.token && (
-        <ManualDeliveryConfirmation
-          p={p}
-          appUrl={data.app_url}
-          onClose={closeShare}
-        />
-      )}
-      <div className="record-toolbar">
-        <a href={returnUrl} className="staff-back">
-          <chromeIcons.back size={16} aria-hidden="true" /> Proposals
-        </a>
+  const toolbar = (
+    <div className="record-toolbar">
+      <a href={returnUrl} className="staff-back">
+        <chromeIcons.back size={16} aria-hidden="true" /> Proposals
+      </a>
+      {!phone && (
         <div className="record-primary-actions">
           {native && !archive && (
             <a
@@ -2711,13 +2846,201 @@ export function RecordV4({
           )}
           {primary}
         </div>
-        <ProposalMenu
+      )}
+      <ProposalMenu
+        p={p}
+        data={data}
+        onChanged={onChanged}
+        showEdit={
+          native && (phone || archive || signature || !!p.signers.length)
+        }
+        mobileRecord={phone}
+      />
+    </div>
+  );
+  const details = (
+    <section className="record-details record-section">
+      <StaffSectionHeading>Details</StaffSectionHeading>
+      <dl className="card record-details-values">
+        <div className="record-details-client">
+          <dt>Client</dt>
+          <dd>
+            {clientFullName}
+            {p.client.email && (
+              <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
+            )}
+          </dd>
+        </div>
+        {p.sent_at && (
+          <div>
+            <dt>Sent</dt>
+            <dd>{dateOnly(p.sent_at)}</dd>
+          </div>
+        )}
+        {native && !(actualSigned && (company || phone)) && (
+          <div className="record-details-expires">
+            <dt>Expires</dt>
+            <dd>{expires ? readableDate(expires, timezone) : "No expiry"}</dd>
+          </div>
+        )}
+        {native && p.token && (
+          <div className="record-reminders">
+            <dt>Reminders</dt>
+            <dd>
+              {open ? (
+                <>
+                  <Switch
+                    aria-label="Automatic reminders from the app"
+                    checked={reminders}
+                    disabled={reminderBusy || !!p.signers.length}
+                    onChange={async (e) => {
+                      const enabled = e.target.checked;
+                      setReminders(enabled);
+                      setReminderBusy(true);
+                      setError("");
+                      try {
+                        onChanged(
+                          await post<Proposal>(
+                            `/api/proposals/${p.id}/reminders`,
+                            { revision: p.revision, enabled },
+                          ),
+                        );
+                      } catch (e) {
+                        setReminders(automaticRemindersEnabled(p));
+                        setError((e as Error).message);
+                      } finally {
+                        setReminderBusy(false);
+                      }
+                    }}
+                  />
+                  <span>
+                    {nextReminder
+                      ? `Next on ${dateOnly(nextReminder)}`
+                      : reminders
+                        ? "No reminders scheduled"
+                        : "Off"}
+                  </span>
+                </>
+              ) : (
+                <span>
+                  {p.signers.length
+                    ? "Stopped after signing"
+                    : "Stopped when the link closed"}
+                </span>
+              )}
+            </dd>
+          </div>
+        )}
+        {p.token && (
+          <div className="record-details-link">
+            <dt>Client link</dt>
+            <dd>
+              {linkClosed ? (
+                <>
+                  <s
+                    className="record-link-url"
+                    title={new URL(`/p/${p.token}`, data.app_url).href}
+                  >
+                    {new URL(`/p/${p.token}`, data.app_url).href}
+                  </s>
+                  <small>{closedLinkNote}</small>
+                </>
+              ) : (
+                <CopyClientLink
+                  token={p.token}
+                  appUrl={data.app_url}
+                  label="Copy client link"
+                  iconOnly
+                />
+              )}
+              {editsNotLive && (
+                <small>Shows the version from {publishedDate}</small>
+              )}
+            </dd>
+          </div>
+        )}
+        {(!native || (actualSigned && company)) && (
+          <div className="record-details-documents">
+            <dt>Documents</dt>
+            <dd>
+              {documents.map((file) => (
+                <a
+                  key={file.id}
+                  href={`/api/proposals/${p.id}/files/${file.id}`}
+                >
+                  {file.kind === "import"
+                    ? "Imported PDF"
+                    : file.stage === "company"
+                      ? "Final sealed PDF"
+                      : "Client-signed PDF"}
+                </a>
+              ))}
+              {!native && (
+                <a href={`${recordUrl}?view=evidence`}>Audit trail</a>
+              )}
+              {native && !signedFile && (
+                <small>The signed copy is being sealed.</small>
+              )}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  );
+  const latestEvent = p.events.at(-1);
+  const timelineSummary = latestEvent
+    ? `Last: ${unpublishedEdit?.id === latestEvent.id ? "Edited, not live yet" : eventTitle(latestEvent, data)}, ${dateOnly(latestEvent.created_at)}`
+    : "No events";
+  const phoneActions = nextStep.actions.length
+    ? [...nextStep.actions].reverse()
+    : primary
+      ? [primary]
+      : [];
+  const timeline = (
+    <div
+      className="card record-timeline-list"
+      role="region"
+      aria-label="Timeline events"
+      tabIndex={0}
+    >
+      {timelineEvents(p.events)
+        .toReversed()
+        .map((e) => {
+          const blockedEdit = unpublishedEdit?.id === e.id;
+          return (
+            <article
+              key={e.id}
+              className="timeline-entry"
+              data-unpublished={blockedEdit || undefined}
+            >
+              <span className="timeline-dot" aria-hidden="true" />
+              <div>
+                <strong>
+                  {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
+                </strong>
+                <small className="timeline-entry-meta">
+                  {timestamp(e.created_at, data)} | {person(e.actor, data)}
+                </small>
+              </div>
+            </article>
+          );
+        })}
+    </div>
+  );
+  return (
+    <div
+      className="record-v4 stack"
+      data-client-signed={actualSigned || undefined}
+      data-awaiting-countersign={signature || undefined}
+    >
+      {share && p.token && (
+        <ManualDeliveryConfirmation
           p={p}
-          data={data}
-          onChanged={onChanged}
-          showEdit={native && (archive || signature || !!p.signers.length)}
+          appUrl={data.app_url}
+          onClose={closeShare}
         />
-      </div>
+      )}
+      {!phone && toolbar}
       {already && (
         <ToastSurface inline onDismiss={() => setAlready("")}>
           {already}
@@ -2756,6 +3079,7 @@ export function RecordV4({
         </div>
       )}
       <header className="record-hero">
+        {phone && toolbar}
         <div className="record-hero-intro">
           <div className="record-hero-client">
             <span>{p.client.company}</span>
@@ -2797,8 +3121,14 @@ export function RecordV4({
                 className="record-hero-billing"
                 data-needs-attention={billingStatus === "Needs attention"}
               >
-                <span>Billing</span>
-                <strong>{billingStatus}</strong>
+                <span>
+                  Billing<span className="record-billing-colon">:</span>
+                </span>
+                <strong>
+                  {phone && billingStatus === "Starts after you countersign"
+                    ? "After you countersign"
+                    : billingStatus}
+                </strong>
               </div>
             )}
           </div>
@@ -2814,7 +3144,7 @@ export function RecordV4({
               ? nextStep.detail && <p>{nextStep.detail}</p>
               : nextStep.detail}
           </div>
-          {nextStep.actions.length > 0 && (
+          {!phone && nextStep.actions.length > 0 && (
             <div className="actions record-next-actions">
               {nextStep.actions.map((action, index) => (
                 <div key={index}>{action}</div>
@@ -2833,138 +3163,13 @@ export function RecordV4({
           <a href={fixUrl}>Fix in editor</a>
         </div>
       )}
-      <section className="record-details record-section">
-        <StaffSectionHeading>Details</StaffSectionHeading>
-        <dl className="card record-details-values">
-          <div>
-            <dt>Client</dt>
-            <dd>
-              {clientFullName}
-              {p.client.email && (
-                <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
-              )}
-            </dd>
-          </div>
-          {p.sent_at && (
-            <div>
-              <dt>Sent</dt>
-              <dd>{dateOnly(p.sent_at)}</dd>
-            </div>
-          )}
-          {native && !(actualSigned && company) && (
-            <div>
-              <dt>Expires</dt>
-              <dd>{expires ? readableDate(expires, timezone) : "No expiry"}</dd>
-            </div>
-          )}
-          {native && p.token && (
-            <div className="record-reminders">
-              <dt>Reminders</dt>
-              <dd>
-                {open ? (
-                  <>
-                    <Switch
-                      aria-label="Automatic reminders from the app"
-                      checked={reminders}
-                      disabled={reminderBusy || !!p.signers.length}
-                      onChange={async (e) => {
-                        const enabled = e.target.checked;
-                        setReminders(enabled);
-                        setReminderBusy(true);
-                        setError("");
-                        try {
-                          onChanged(
-                            await post<Proposal>(
-                              `/api/proposals/${p.id}/reminders`,
-                              { revision: p.revision, enabled },
-                            ),
-                          );
-                        } catch (e) {
-                          setReminders(automaticRemindersEnabled(p));
-                          setError((e as Error).message);
-                        } finally {
-                          setReminderBusy(false);
-                        }
-                      }}
-                    />
-                    <span>
-                      {nextReminder
-                        ? `Next on ${dateOnly(nextReminder)}`
-                        : reminders
-                          ? "No reminders scheduled"
-                          : "Off"}
-                    </span>
-                  </>
-                ) : (
-                  <span>
-                    {p.signers.length
-                      ? "Stopped after signing"
-                      : "Stopped when the link closed"}
-                  </span>
-                )}
-              </dd>
-            </div>
-          )}
-          {p.token && (
-            <div className="record-details-link">
-              <dt>Client link</dt>
-              <dd>
-                {linkClosed ? (
-                  <>
-                    <s
-                      className="record-link-url"
-                      title={new URL(`/p/${p.token}`, data.app_url).href}
-                    >
-                      {new URL(`/p/${p.token}`, data.app_url).href}
-                    </s>
-                    <small>{closedLinkNote}</small>
-                  </>
-                ) : (
-                  <CopyClientLink
-                    token={p.token}
-                    appUrl={data.app_url}
-                    label="Copy client link"
-                    iconOnly
-                  />
-                )}
-                {editsNotLive && (
-                  <small>Shows the version from {publishedDate}</small>
-                )}
-              </dd>
-            </div>
-          )}
-          {(!native || (actualSigned && company)) && (
-            <div className="record-details-documents">
-              <dt>Documents</dt>
-              <dd>
-                {documents.map((file) => (
-                  <a
-                    key={file.id}
-                    href={`/api/proposals/${p.id}/files/${file.id}`}
-                  >
-                    {file.kind === "import"
-                      ? "Imported PDF"
-                      : file.stage === "company"
-                        ? "Final sealed PDF"
-                        : "Client-signed PDF"}
-                  </a>
-                ))}
-                {!native && (
-                  <a href={`${recordUrl}?view=evidence`}>Audit trail</a>
-                )}
-                {native && !signedFile && (
-                  <small>The signed copy is being sealed.</small>
-                )}
-              </dd>
-            </div>
-          )}
-        </dl>
-      </section>
+      {!phone && details}
       <div className="record-columns">
         <div className="record-aside">
           {native && p.token && (
             <ProposalQuestions questions={questions} timezone={timezone} />
           )}
+          {phone && complete && details}
           <section className="record-quote record-section">
             <StaffSectionHeading
               action={
@@ -2975,7 +3180,7 @@ export function RecordV4({
                     </a>
                   )}
                   <Button onClick={() => setDocument(true)}>
-                    Open document
+                    {phone ? "Open" : "Open document"}
                   </Button>
                 </div>
               }
@@ -3242,6 +3447,7 @@ export function RecordV4({
               )}
             </section>
           )}
+          {phone && !complete && details}
           <ProposalEmailLog id={p.id} revision={p.revision} />
         </div>
         <div className="record-support">
@@ -3252,47 +3458,54 @@ export function RecordV4({
               timezone={timezone}
               notify={data.settings?.engagement_notifications?.in_app !== false}
               onLoaded={setEngagement}
+              phone={phone}
             />
           )}
           <section className="timeline record-section">
-            <StaffSectionHeading
-              action={<a href={`${recordUrl}?view=evidence`}>Evidence</a>}
-            >
-              Timeline
-            </StaffSectionHeading>
-            <div
-              className="card record-timeline-list"
-              role="region"
-              aria-label="Timeline events"
-              tabIndex={0}
-            >
-              {p.events.toReversed().map((e) => {
-                const blockedEdit = unpublishedEdit?.id === e.id;
-                return (
-                  <article
-                    key={e.id}
-                    className="timeline-entry"
-                    data-unpublished={blockedEdit || undefined}
-                  >
-                    <span className="timeline-dot" aria-hidden="true" />
-                    <div>
-                      <strong>
-                        {blockedEdit
-                          ? "Edited, not live yet"
-                          : eventTitle(e, data)}
-                      </strong>
-                      <small className="timeline-entry-meta">
-                        {timestamp(e.created_at, data)} |{" "}
-                        {person(e.actor, data)}
-                      </small>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+            {phone ? (
+              <RecordDisclosure title="Timeline" summary={timelineSummary}>
+                <a
+                  className="record-phone-evidence"
+                  href={`${recordUrl}?view=evidence`}
+                >
+                  Evidence
+                </a>
+                {timeline}
+              </RecordDisclosure>
+            ) : (
+              <>
+                <StaffSectionHeading
+                  action={<a href={`${recordUrl}?view=evidence`}>Evidence</a>}
+                >
+                  Timeline
+                </StaffSectionHeading>
+                {timeline}
+              </>
+            )}
           </section>
         </div>
       </div>
+      {phone && phoneActions.length > 0 && (
+        <div
+          className="record-phone-actions"
+          role="group"
+          aria-label="Next actions"
+          data-countersign={
+            signature && authorized && !attention && !archive ? true : undefined
+          }
+        >
+          {phoneActions.map((action, index) => (
+            <div
+              key={index}
+              data-primary={
+                index === phoneActions.length - 1 ? true : undefined
+              }
+            >
+              {action}
+            </div>
+          ))}
+        </div>
+      )}
       {document && (
         <Sheet title={p.title} onClose={() => setDocument(false)}>
           <style>{fontCss(p.workspace_settings ?? data.settings)}</style>
@@ -3379,6 +3592,7 @@ export function RecordV4({
       )}
       {countersign && (!company || applying.current) && native && (
         <CountersignSheet
+          phone={phone}
           p={p}
           data={data}
           onClose={close}

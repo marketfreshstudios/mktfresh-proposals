@@ -25,6 +25,7 @@ export function Skeleton({
 }
 export function Sheet({
   title,
+  subtitle,
   onClose,
   children,
   menu = false,
@@ -33,6 +34,7 @@ export function Sheet({
   surface = "staff",
 }: {
   title: string;
+  subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   menu?: boolean;
@@ -41,6 +43,7 @@ export function Sheet({
   surface?: "staff" | "client";
 }) {
   const titleId = useId();
+  const subtitleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
   const [host, setHost] = useState<Element | null>(null);
   useEffect(() => {
@@ -104,6 +107,7 @@ export function Sheet({
   return createPortal(
     <dialog
       aria-labelledby={titleId}
+      aria-describedby={subtitle ? subtitleId : undefined}
       className={`foundation-sheet ${["Block settings", "Block style", "Edit block", "Add a block"].includes(title) ? "block-owned-dialog" : ""} ${menu ? "foundation-action-menu" : ""} ${className}`}
       ref={ref}
       onClick={(e) => {
@@ -125,9 +129,18 @@ export function Sheet({
       }}
     >
       <header>
-        <h2 id={titleId} tabIndex={-1}>
-          {title}
-        </h2>
+        {subtitle ? (
+          <div>
+            <h2 id={titleId} tabIndex={-1}>
+              {title}
+            </h2>
+            <p id={subtitleId}>{subtitle}</p>
+          </div>
+        ) : (
+          <h2 id={titleId} tabIndex={-1}>
+            {title}
+          </h2>
+        )}
         <button
           type="button"
           className={`btn ghost ${surface === "staff" ? "icon-only" : ""}`}

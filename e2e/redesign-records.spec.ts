@@ -307,10 +307,13 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       await expect(sheet).toBeVisible();
       await expect(sheet.getByRole("heading", { level: 2 })).toBeFocused();
       await expect(
-        sheet.getByRole("button", { name: "Countersign as Alex Morgan" }),
+        sheet.getByRole("button", {
+          name: width < 700 ? "Countersign" : "Countersign as Alex Morgan",
+          exact: true,
+        }),
       ).toBeDisabled();
       await expect(
-        sheet.getByText("Signing on behalf of Alex Morgan", { exact: true }),
+        sheet.getByRole("checkbox", { name: /on behalf of Alex Morgan/ }),
       ).toBeVisible();
       await capture("countersign", "3a–3c countersign sheet", width, theme);
       await sheet.evaluate((el) => {

@@ -2311,6 +2311,10 @@ async function handleRoute(
               .optional(),
             quote: QuoteSchema.optional(),
             valid_until: z.string().nullable().optional(),
+            editor_session: z
+              .string()
+              .regex(/^[A-Za-z0-9-]{8,64}$/)
+              .optional(),
           })
           .parse(await body(req));
         return json(

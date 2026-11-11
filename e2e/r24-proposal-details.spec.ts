@@ -12,16 +12,18 @@ import {
 } from "../tests/helpers";
 import { previewResult } from "../src/lib/preview";
 import type { Proposal } from "../src/lib/model";
+import { signatoryVersion } from "../src/lib/company-signatory";
 import type { StaffQuestionsResult } from "../src/lib/proposal-questions";
 
 const capture = process.env.CAPTURE_R24 === "1";
+const captureResponsive = process.env.CAPTURE_R24_RESPONSIVE === "1";
 const screenshotDir = "docs/screenshots/proposal-details-r24";
 
 async function compareFrame(page: Page, reference: Page, frame: string) {
   const design = reference.locator(`[id="${frame}"] > div`).nth(1);
   const before = await design.screenshot({ animations: "disabled" });
   const after = await page.screenshot({
-    fullPage: true,
+    fullPage: !/^5[a-f]$/.test(frame),
     animations: "disabled",
   });
   const [left, right] = await Promise.all([
@@ -53,7 +55,7 @@ async function geometry(heading: Locator, amounts: Locator) {
     );
 }
 
-test("R24 desktop record states use the saved proposal, publication, and signing data", async ({
+test("R24 record states use saved proposal, publication, and signing data at all widths", async ({
   page,
   context,
 }) => {
@@ -269,6 +271,14 @@ test("R24 desktop record states use the saved proposal, publication, and signing
     { frame: "4n", proposal: work },
     { frame: "4n2", proposal: work, question: true },
   ];
+  const delegate = {
+    ...staff,
+    actor: "staff:00000000-0000-4000-8000-000000000021",
+    staff_name: "Fran Weber",
+    staff_email: "fran@example.test",
+  };
+  const countersignRequests: Record<string, unknown>[] = [];
+  let currentActor = staff;
   let current = fixtures[0];
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -277,8 +287,9 @@ test("R24 desktop record states use the saved proposal, publication, and signing
     let value: unknown = [];
     if (parts[0] === "auth")
       value = {
-        user: staff,
+        user: currentActor,
         settings,
+        signatory_version: signatoryVersion(settings),
         staff: members,
         app_url: "http://127.0.0.1:3100",
       };
@@ -333,6 +344,10 @@ test("R24 desktop record states use the saved proposal, publication, and signing
               ]
             : [],
         };
+      } else if (parts[2] === "countersign") {
+        countersignRequests.push(route.request().postDataJSON());
+        current = { ...current, proposal: { ...completed, title: p.title } };
+        value = current.proposal;
       } else if (parts[2] === "emails") value = [];
       else if (parts[2] === "preview")
         value = previewResult(
@@ -348,7 +363,7 @@ test("R24 desktop record states use the saved proposal, publication, and signing
   });
 
   let reference: Page | undefined;
-  if (capture) {
+  if (capture || captureResponsive) {
     await mkdir(screenshotDir, { recursive: true });
     reference = await context.newPage();
     await reference.setViewportSize({ width: 1600, height: 1100 });
@@ -600,7 +615,7 @@ test("R24 desktop record states use the saved proposal, publication, and signing
           details.getByRole("link", { name: "Imported PDF" }),
         ).toBeVisible();
       }
-      if (reference) {
+      if (reference && capture) {
         await page.evaluate(() => document.fonts.ready);
         await expect(
           page.getByRole("status").filter({ hasText: "Loading engagement" }),
@@ -626,5 +641,271 @@ test("R24 desktop record states use the saved proposal, publication, and signing
       ".record-publication-banner,.record-quote-notice,.record-publication-reasons",
     ),
   ).toHaveCount(0);
+  const responsive = [
+    { frame: "5a", proposal: viewed, question: true },
+    { frame: "5b", proposal: viewed, question: true },
+    { frame: "5c", proposal: signedWaiting },
+    { frame: "5d", proposal: signedWaiting },
+    { frame: "5e", proposal: completed },
+    { frame: "5f", proposal: billingIssue },
+    { frame: "5g", proposal: viewed, question: true },
+    { frame: "5h", proposal: signedWaiting },
+  ];
+  settings.company_signatory!.authorized_user_ids.push(delegate.actor.slice(6));
+  for (const fixture of responsive) {
+    await test.step(fixture.frame, async () => {
+      const isPhone = fixture.frame < "5g";
+      const signed = !!fixture.proposal.client_signed_at;
+      currentActor = fixture.frame === "5d" ? delegate : staff;
+      current = {
+        ...fixture,
+        proposal: {
+          ...fixture.proposal,
+          title: "A website built for new patients",
+        },
+      };
+      const width = isPhone ? 375 : 768;
+      const height = isPhone ? 812 : 1024;
+      await page.setViewportSize({ width, height });
+      await page.goto(`/proposals/${fixture.proposal.id}?view=record`);
+      await expect(hero.getByRole("heading", { level: 1 })).toHaveText(
+        current.proposal.title,
+      );
+      await expect(
+        page.getByRole("navigation", { name: "Phone navigation" }),
+      ).toHaveCount(0);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+        .toBe(width);
+      const layout = page.locator(".record-v4");
+      const sectionOrder = await layout
+        .locator(
+          ".record-quote, .record-details, .record-signatures, .record-billing",
+        )
+        .evaluateAll((sections) =>
+          sections.map((section) => section.className.split(" ")[0]),
+        );
+      expect(sectionOrder).toEqual(
+        !isPhone || fixture.frame === "5e"
+          ? [
+              "record-details",
+              "record-quote",
+              "record-signatures",
+              "record-billing",
+            ]
+          : [
+              "record-quote",
+              "record-signatures",
+              "record-billing",
+              "record-details",
+            ],
+      );
+      await expect(details.getByText("Expires", { exact: true })).toHaveCount(
+        (signed && isPhone) || fixture.frame === "5e" || fixture.frame === "5f"
+          ? 0
+          : 1,
+      );
+      if (signed)
+        await expect(
+          details.getByText("Expires", { exact: true }),
+        ).toBeHidden();
+      if (!signed)
+        await expect(
+          details.getByText("Expires", { exact: true }),
+        ).toBeVisible();
+
+      if (isPhone) {
+        const dock = page.getByRole("group", {
+          name: "Next actions",
+          exact: true,
+        });
+        await expect(dock).toBeVisible();
+        const primary = dock.locator("[data-primary] .btn");
+        await expect(primary).toHaveCSS("height", "48px");
+        const fixed = (await dock.boundingBox())!;
+        expect(fixed.y + fixed.height).toBe(height);
+        await expect(hero.locator(".record-toolbar")).toBeVisible();
+        await expect(hero.locator(".record-toolbar .more-control")).toHaveCSS(
+          "height",
+          "44px",
+        );
+        await expect(hero.locator(".record-step-summary")).toHaveText(
+          fixture.frame === "5e" || fixture.frame === "5f"
+            ? "Step 5 of 5 | Countersigned"
+            : signed
+              ? "Step 4 of 5 | Client signed"
+              : "Step 3 of 5 | Viewed",
+        );
+        await expect(details).toHaveCSS(
+          "grid-template-columns",
+          /px [\d.]+px$/,
+        );
+        await expect(details.locator(".record-details-client")).toHaveCSS(
+          "grid-column",
+          "1 / -1",
+        );
+        await expect(
+          details.getByRole("button", { name: "Copy client link" }),
+        ).toHaveCSS("height", "44px");
+        await expect(layout.locator(".record-disclosure")).toHaveCount(2);
+        await expect(layout.locator(".record-disclosure[open]")).toHaveCount(0);
+        if (fixture.frame === "5a") {
+          await expect(primary).toHaveText("Reply");
+          await expect(
+            dock.getByRole("button", { name: "Send reminder" }),
+          ).toBeVisible();
+          await hero.locator(".more-control").click();
+          await expect(
+            page
+              .getByRole("dialog")
+              .getByRole("link", { name: "Preview as client" }),
+          ).toBeVisible();
+          await page.keyboard.press("Escape");
+          await expect(page.getByRole("dialog")).toHaveCount(0);
+          await dock
+            .getByRole("button", { name: "Reply", exact: true })
+            .click();
+          const reply = page.getByRole("textbox", { name: "Your reply" });
+          await expect(reply).toBeFocused();
+          await page
+            .getByRole("region", { name: "Questions" })
+            .getByRole("button", { name: "Cancel" })
+            .click();
+          await page.evaluate(() => window.scrollTo(0, 0));
+        }
+        if (fixture.frame === "5b") {
+          const timelineDisclosure = layout.locator(
+            ".timeline .record-disclosure",
+          );
+          await timelineDisclosure.locator("summary").click();
+          await expect(
+            timelineDisclosure.getByRole("region", { name: "Timeline events" }),
+          ).toBeVisible();
+          await expect(
+            timelineDisclosure.getByRole("link", { name: "Evidence" }),
+          ).toBeVisible();
+          await timelineDisclosure.locator("summary").click();
+          await quote.evaluate((node) =>
+            window.scrollBy(0, node.getBoundingClientRect().top - 58),
+          );
+          expect((await dock.boundingBox())!.y).toBe(fixed.y);
+        }
+        if (fixture.frame === "5c" || fixture.frame === "5d") {
+          await expect(primary).toHaveText("Review and countersign");
+          await expect(primary).toHaveCSS(
+            "background-color",
+            "rgb(180, 83, 42)",
+          );
+          await primary.click();
+          const dialog = page.getByRole("dialog", {
+            name: "Countersign",
+            exact: true,
+          });
+          await expect(dialog).toBeVisible();
+          await expect(dialog).toHaveCSS("border-top-left-radius", "22px");
+          const footer = (await dialog
+            .locator(".record-countersign-actions")
+            .boundingBox())!;
+          const sheet = (await dialog.boundingBox())!;
+          expect(Math.abs(footer.width - sheet.width)).toBeLessThanOrEqual(2);
+          const authorization = dialog.getByRole("checkbox", {
+            name: /on behalf of/,
+          });
+          const consent = dialog.getByRole("checkbox", {
+            name: /reviewed the agreement and consent/,
+          });
+          const submit = dialog.getByRole("button", {
+            name: "Countersign",
+            exact: true,
+          });
+          await expect(dialog.getByRole("checkbox")).toHaveCount(
+            fixture.frame === "5d" ? 2 : 1,
+          );
+          await expect(consent).toBeVisible();
+          await expect(submit).toBeDisabled();
+          if (fixture.frame === "5d") {
+            await authorization.check();
+            await expect(submit).toBeDisabled();
+            await dialog.evaluate((element) => {
+              element.scrollTop = 0;
+            });
+          } else {
+            await consent.check();
+            await expect(submit).toBeEnabled();
+            await dialog
+              .getByRole("button", { name: "Close", exact: true })
+              .click();
+            await page.waitForURL((url) => !url.searchParams.has("action"));
+          }
+        }
+        if (fixture.frame === "5e") {
+          await expect(primary).toHaveText("Download sealed PDF");
+          await expect(
+            details.getByRole("link", { name: "Final sealed PDF" }),
+          ).toBeVisible();
+        }
+        if (fixture.frame === "5f") {
+          await expect(primary).toHaveText("Resend link");
+          await expect(
+            dock.getByRole("button", { name: "Invoice manually" }),
+          ).toBeVisible();
+        }
+      } else {
+        await expect(page.locator(".shell-tablet-header")).toHaveCSS(
+          "height",
+          "64px",
+        );
+        await expect(hero.locator(".record-step-content").first()).toHaveCSS(
+          "width",
+          "84px",
+        );
+        await expect(hero.locator(".record-hero-amounts dd").first()).toHaveCSS(
+          "font-size",
+          "32px",
+        );
+        await expect(details).toHaveCSS(
+          "grid-template-columns",
+          /^(?:[\d.]+px ){3}[\d.]+px$/,
+        );
+        await expect(layout.locator(".record-next-actions")).toHaveCSS(
+          "flex-direction",
+          "column",
+        );
+        await expect(layout.locator(".record-support")).toHaveCSS(
+          "grid-template-columns",
+          /px [\d.]+px$/,
+        );
+        await expect(layout.locator(".record-phone-actions")).toHaveCount(0);
+      }
+      if (reference && captureResponsive) {
+        await page.evaluate(() => document.fonts.ready);
+        await expect(
+          page.getByRole("status").filter({ hasText: "Loading engagement" }),
+        ).toHaveCount(0);
+        await compareFrame(page, reference, fixture.frame);
+      }
+      if (fixture.frame === "5d") {
+        const dialog = page.getByRole("dialog", {
+          name: "Countersign",
+          exact: true,
+        });
+        await dialog
+          .getByRole("checkbox", { name: /reviewed the agreement and consent/ })
+          .check();
+        await dialog
+          .getByRole("button", { name: "Countersign", exact: true })
+          .click();
+        await expect.poll(() => countersignRequests.length).toBe(1);
+        expect(countersignRequests[0]).toMatchObject({
+          revision: signedWaiting.revision,
+          reviewed_hash: signedWaiting.versions.at(-1)?.content_hash,
+          signatory_version: signatoryVersion(settings),
+          authorization: true,
+          consent: true,
+        });
+        await expect(dialog).toBeHidden();
+      }
+    });
+  }
   await reference?.close();
 });
