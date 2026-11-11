@@ -34,7 +34,7 @@ function describe(node: EventTarget | null) {
  * second after a tap so it never changes the page during the tap itself.
  */
 export function TapDebug() {
-  const box = useRef<HTMLPreElement>(null);
+  const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let on = false;
     try {
@@ -131,7 +131,7 @@ export function TapDebug() {
     };
   }, []);
   return (
-    <pre
+    <div
       ref={box}
       hidden
       aria-hidden="true"
