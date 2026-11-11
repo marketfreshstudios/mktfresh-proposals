@@ -2,6 +2,7 @@ import type { Actor, Proposal } from "./model";
 import type { WorkspaceSettings } from "./workspace";
 import { afterLocalDays } from "./reminder-time";
 import { quoteSublines } from "./quote-model";
+import { needsStripeLink } from "./stripe-subscription-link";
 export const listViews = [
   "All",
   "Drafts",
@@ -93,7 +94,7 @@ export function inView(p: Proposal, view: string) {
       won: ["signed_by_client", "completed"].includes(p.status),
       "needs-countersign": needsCountersign(p),
       lost: p.status === "declined",
-      "billing-issues": billingIssues(p),
+      "billing-issues": billingIssues(p) || needsStripeLink(p),
     }[view] ?? false
   );
 }

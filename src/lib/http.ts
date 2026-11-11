@@ -1,4 +1,9 @@
 import {
+  linkStripeSubscription,
+  stripeSubscriptionOptions,
+  subscriptionId,
+} from "./stripe-adoption";
+import {
   templateStyleTarget,
   saveTemplateStyles,
   undoTemplateStyles,
@@ -2129,6 +2134,29 @@ async function handleRoute(
         return json(await rt.service.create(input, user), 201);
       }
       uuid.parse(id);
+      if (
+        action === "stripe-subscription" &&
+        path.length === 3 &&
+        (method === "GET" || method === "POST")
+      ) {
+        const p = await rt.repo.get(id);
+        check(p, "Proposal not found.", 404);
+        const api =
+          rt.worker.providers.stripe instanceof StripeProvider
+            ? rt.worker.providers.stripe.api
+            : undefined;
+        if (method === "GET")
+          return json(await stripeSubscriptionOptions(rt.repo, p, user, api));
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const input = z
+          .object({
+            revision: z.number().int().nonnegative(),
+            subscription_id: z.string().regex(subscriptionId),
+          })
+          .strict()
+          .parse(await body(req));
+        return json(await linkStripeSubscription(rt.repo, p, user, input, api));
+      }
       if (action === "template-styles") {
         if (method === "GET")
           return json(await templateStyleTarget(rt.repo, id, user));
