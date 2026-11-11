@@ -5,6 +5,7 @@ import type { Repository } from "./repository";
 export type StripePage<T> = { data: T[]; has_more: boolean };
 export interface StripeTransport {
   readonly dashboardUrl?: string;
+  readonly accountId?: string;
   get<T>(path: string, params: Record<string, string>): Promise<T>;
   post<T>(
     path: string,
@@ -96,7 +97,10 @@ export async function syncStripeCatalog(
   } while (true);
   return { imported, synced_at: new Date().toISOString() };
 }
-export async function resolveLookup(api: StripeTransport, key: string) {
+export async function resolveLookup(
+  api: Pick<StripeTransport, "get">,
+  key: string,
+) {
   const page = await api.get<StripePage<Price>>("/v1/prices", {
     "lookup_keys[]": key,
     active: "true",

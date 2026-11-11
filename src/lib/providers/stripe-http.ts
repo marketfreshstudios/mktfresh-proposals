@@ -35,6 +35,9 @@ export class StripeHttp implements StripeTransport {
       "Invalid Stripe account.",
     );
   }
+  get accountId() {
+    return this.account;
+  }
   get dashboardUrl() {
     return this.account
       ? `https://dashboard.stripe.com/${this.account}/test`

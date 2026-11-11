@@ -50,6 +50,7 @@ export function eventLabel(
       : "Reminder emailed",
     countersign_reminder_sent: "Countersign reminder emailed",
     reminder_requested: "Reminder requested",
+    stripe_subscription_linked: "Stripe subscription linked",
     marked_won: `Marked as won by ${actorName}`,
     marked_lost: `Marked as lost by ${actorName}`,
     archived: "Proposal archived",
