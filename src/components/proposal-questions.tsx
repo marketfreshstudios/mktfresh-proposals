@@ -26,11 +26,13 @@ function QuestionCard({
   thread,
   timezone,
   notify,
+  record = false,
   children,
 }: {
   thread: PublicQuestion | QuestionThread;
   timezone: string;
   notify?: boolean;
+  record?: boolean;
   children?: React.ReactNode;
 }) {
   const time = (value: string) =>
@@ -45,21 +47,41 @@ function QuestionCard({
       className="question-thread"
       tabIndex={-1}
     >
-      <header className="question-thread-heading">
-        <div>
-          <strong>
-            {"contact" in thread ? thread.contact.name : thread.name}
-          </strong>
+      {record ? (
+        <header className="record-question-meta">
+          <span>{"contact" in thread ? thread.contact.name : thread.name}</span>
+          {thread.section && <span> | {thread.section.label}</span>}
+          {" | "}
           <time dateTime={thread.created_at}>{time(thread.created_at)}</time>
-        </div>
-        <span className={`question-badge ${thread.status}`}>
-          {questionStatus[thread.status]}
-        </span>
-      </header>
-      {notify && <p className="question-note">New client question</p>}
-      {thread.section && (
-        <p className="question-section">About {thread.section.label}</p>
+          {thread.status !== "open" ? (
+            <span className={`question-badge ${thread.status}`}>
+              {questionStatus[thread.status]}
+            </span>
+          ) : (
+            <span className="sr-only"> | Open</span>
+          )}
+        </header>
+      ) : (
+        <>
+          <header className="question-thread-heading">
+            <div>
+              <strong>
+                {"contact" in thread ? thread.contact.name : thread.name}
+              </strong>
+              <time dateTime={thread.created_at}>
+                {time(thread.created_at)}
+              </time>
+            </div>
+            <span className={`question-badge ${thread.status}`}>
+              {questionStatus[thread.status]}
+            </span>
+          </header>
+          {thread.section && (
+            <p className="question-section">About {thread.section.label}</p>
+          )}
+        </>
       )}
+      {notify && <p className="question-note">New client question</p>}
       <p className="question-text">{thread.question}</p>
       {thread.replies.map((reply) => (
         <div className="question-reply" key={reply.id}>
@@ -373,7 +395,7 @@ export function useProposalQuestions(id: string | null) {
       if (currentUrl.current === url) setBusy(false);
     }
   };
-  return { data, error, replying, setReplying, busy, load, update };
+  return { data, error, replying, setReplying, busy, update };
 }
 
 export function ProposalQuestions({
@@ -383,19 +405,20 @@ export function ProposalQuestions({
   questions: ReturnType<typeof useProposalQuestions>;
   timezone: string;
 }) {
-  const { data, error, replying, setReplying, busy, load, update } = questions;
+  const { data, error, replying, setReplying, busy, update } = questions;
   const openCount =
     data?.threads.filter((thread) => thread.status === "open").length ?? 0;
   if (!data?.threads.length && !error) return null;
   return (
     <section className="record-section" aria-label="Questions">
       <StaffSectionHeading
-        action={<Button onClick={load}>Refresh questions</Button>}
+        action={
+          openCount > 0 ? (
+            <span className="pill warning">{openCount} open</span>
+          ) : undefined
+        }
       >
-        Client questions{" "}
-        {openCount > 0 && (
-          <span className="pill warning">{openCount} open</span>
-        )}
+        Client questions
       </StaffSectionHeading>
       <div className="card questions-panel">
         {error && <p role="alert">{error}</p>}
@@ -405,6 +428,7 @@ export function ProposalQuestions({
             thread={thread}
             timezone={timezone}
             notify={data.notified.includes(thread.id)}
+            record
           >
             {thread.status !== "resolved" && (
               <div className="question-thread-actions">

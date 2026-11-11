@@ -64,7 +64,9 @@ export function CopyClientLink({
   if (iconOnly)
     return (
       <div className="record-client-link">
-        <span>{url}</span>
+        <span className="record-link-url" title={url}>
+          {url}
+        </span>
         <button
           className="round-icon"
           type="button"

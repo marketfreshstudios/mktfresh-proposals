@@ -130,7 +130,9 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await shot(`checkout-${mode}`, width, theme);
         await record(`record-waiting-${mode}`, width, theme);
         await expect(
-          page.getByText("Waiting for checkout", { exact: true }),
+          page
+            .locator(".record-billing-row")
+            .getByRole("button", { name: "Resend billing link", exact: true }),
         ).toBeVisible();
         await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
         await expect(
@@ -183,6 +185,13 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
             m,
           );
         await record(`record-confirmed-${mode}`, width, theme);
+        const subscription = page
+          .locator(".record-billing-row")
+          .filter({ hasText: "Stripe subscription" });
+        await expect(subscription.locator(".record-billing-end")).toContainText(
+          "Active",
+        );
+        await subscription.locator("summary").click();
         await expect(
           page.getByText("Card saved", { exact: true }),
         ).toBeVisible();

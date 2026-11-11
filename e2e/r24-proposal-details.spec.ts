@@ -59,7 +59,18 @@ test("R24 desktop record states use the saved proposal, publication, and signing
 }) => {
   test.setTimeout(120000);
   await page.setViewportSize({ width: 1440, height: 1100 });
-  const { service, draft, settings, members } = await setup();
+  const { repo, service, draft, settings, members } = await setup();
+  settings.company_signatory!.image = await page.evaluate((name) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    canvas.height = 60;
+    const ink = canvas.getContext("2d")!;
+    ink.fillStyle = "#13303a";
+    ink.font = "italic 42px Georgia, serif";
+    ink.fillText(name, 3, 46, 294);
+    return canvas.toDataURL("image/png");
+  }, settings.company_signatory!.name);
+  await repo.put("workspace_settings", settings);
   const sent = await service.send(draft.id, staff);
   const viewed = await service.view(sent.token!, "", clientActor);
   const signed = await service.sign(
@@ -110,6 +121,7 @@ test("R24 desktop record states use the saved proposal, publication, and signing
     created_at: now,
     stage,
   }));
+  const nextCharge = new Date(Date.now() + 30 * 86400000).toISOString();
   const completed: Proposal = {
     ...countersigned,
     status: "completed",
@@ -121,13 +133,39 @@ test("R24 desktop record states use the saved proposal, publication, and signing
         status: "succeeded",
         attempts: 1,
         external_object_id: "sub_fixture",
+        metadata: {
+          completed_checkout: [
+            {
+              session_id: "cs_test_fixture",
+              mode: "subscription",
+              collection_method: "charge_automatically",
+              completed_at: now,
+              currency: "USD",
+              items: [],
+              card: { brand: "visa", last4: "4242" },
+              subscriptions: [
+                {
+                  id: "sub_fixture",
+                  status: "active",
+                  next_billing_at: nextCharge,
+                },
+              ],
+            },
+          ],
+        },
       },
       {
         provider: "qbo",
         status: "succeeded",
         attempts: 1,
         external_object_id: "invoice_fixture",
-        metadata: { manual_invoice: false },
+        metadata: {
+          invoice: {
+            number: "1042",
+            status: "Sent",
+            url: "https://sandbox.qbo.intuit.com/app/invoice?txnId=1042",
+          },
+        },
       },
     ],
   };
@@ -138,6 +176,7 @@ test("R24 desktop record states use the saved proposal, publication, and signing
     revision: 0,
     status: "open" as const,
     contact: { name: "Jane Doe", email: viewed.client.email },
+    section: { key: "fixture-investment", label: "Investment" },
     question: "Can we review the scope in a call?",
     replies: [],
     notify_users: [],
@@ -362,6 +401,12 @@ test("R24 desktop record states use the saved proposal, publication, and signing
       if (fixture.frame !== "4m") {
         await expect(status.getByRole("listitem")).toHaveCount(5);
         await expect(status.locator('[aria-current="step"]')).toHaveCount(1);
+        if (
+          fixture.proposal.signers.some((signer) => signer.role === "company")
+        ) {
+          await expect(status.locator('[data-step="done"]')).toHaveCount(5);
+          await expect(status.locator('[data-step="current"]')).toHaveCount(0);
+        }
         await geometry(
           hero.getByRole("heading", { level: 1 }),
           hero.locator(".record-hero-amounts dd"),
@@ -402,11 +447,17 @@ test("R24 desktop record states use the saved proposal, publication, and signing
       ).toBeLessThanOrEqual(260);
       if (fixture.question) {
         await expect(
-          page.getByRole("heading", { name: "Client questions 1 open" }),
+          page.getByRole("heading", { name: "Client questions", exact: true }),
         ).toBeVisible();
         await expect(
           hero.getByRole("button", { name: "Reply to question" }),
         ).toBeVisible();
+        await expect(page.locator(".record-question-meta")).toContainText(
+          "Jane Doe | Investment | ",
+        );
+        await expect(
+          page.getByRole("button", { name: "Refresh questions" }),
+        ).toHaveCount(0);
       } else {
         await expect(
           page.getByRole("region", { name: "Questions", exact: true }),
@@ -449,6 +500,56 @@ test("R24 desktop record states use the saved proposal, publication, and signing
           Math.max(...labelPositions) - Math.min(...labelPositions),
         ).toBeLessThanOrEqual(1);
       }
+      if (fixture.frame === "4f") {
+        const billing = page.locator(".record-billing-card");
+        await expect(billing.locator(".record-billing-row")).toHaveCount(2);
+        await expect(billing).toContainText(
+          "Stripe subscription | next charge",
+        );
+        await expect(billing).toContainText("QuickBooks invoice 1042");
+        await expect(
+          page.locator(".record-signature-box").last(),
+        ).toContainText("applied by");
+        await expect(page.locator(".record-signature-card")).not.toContainText(
+          /@/,
+        );
+        await expect(details.locator(".record-link-url")).toHaveCSS(
+          "white-space",
+          "nowrap",
+        );
+        await expect(details.locator(".record-link-url")).toHaveCSS(
+          "text-overflow",
+          "ellipsis",
+        );
+        await expect(
+          details.getByRole("link", { name: "Final sealed PDF" }),
+        ).toHaveCSS("text-decoration-line", "underline");
+      }
+      if (fixture.frame === "4h") {
+        await expect(
+          page
+            .locator(".record-billing > header")
+            .getByRole("button", { name: "Retry billing" }),
+        ).toBeVisible();
+        await expect(
+          page
+            .locator(".record-billing-row")
+            .first()
+            .getByRole("button", { name: "Resend billing link" }),
+        ).toBeVisible();
+        await expect(
+          page
+            .locator(".record-billing-row")
+            .last()
+            .getByRole("button", { name: "Mark as invoiced" }),
+        ).toBeVisible();
+      }
+      await expect(
+        page
+          .locator(".record-timeline-list")
+          .getByRole("link", { name: "View evidence" }),
+      ).toHaveCount(0);
+      await expect(page.locator(".record-email-log[open]")).toHaveCount(0);
       if (fixture.frame === "4g") {
         await expect(hero.locator(".record-hero-billing")).toHaveCount(0);
         await expect(

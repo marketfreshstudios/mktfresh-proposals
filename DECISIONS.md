@@ -1285,3 +1285,17 @@ another email. Imports keep their existing read-only action rules;
 archived proposals must be unarchived before using staff preview.
 The client question flow and email log keep their existing behavior.
 Phone and tablet frames 5a–5h are delivered separately. No migration.
+
+### R24 desktop review
+
+Billing rows use the proposal amounts and the provider metadata already on
+the record. Stripe dates appear only when a future charge is recorded.
+Invoice reference, recipient, and provider links are available by opening
+the corresponding row. Manual actions and customer review remain in their
+provider row, and Retry billing sits in the section heading. Background job
+details open when a failed or linked job needs attention.
+
+The record shows compact signature metadata with the original signature
+mark. Full signing evidence remains available on the Evidence view.
+Countersigned records fill all five milestone markers and retain the
+accessible current-step label. The email log starts collapsed.

@@ -49,10 +49,11 @@ import {
 } from "../lib/job-presentation";
 import { Disclosure } from "./ui";
 import {
+  completedCheckouts,
   publicBankState,
   stripeBillingStatus,
 } from "../lib/billing-confirmation";
-import { StripeBillingDetails } from "./billing-breakdown";
+import { RecordBillingRow, StripeBillingDetails } from "./billing-breakdown";
 import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { ProposalEmailLog } from "./email-studio";
@@ -1694,13 +1695,18 @@ function RecordLifecycle({
     ],
   ] as const;
   const current = steps.findLastIndex(([, at]) => !!at);
+  const completed = current === steps.length - 1;
   return (
     <ol className="record-lifecycle" aria-label="Proposal lifecycle">
       {steps.map(([label, at], index) => (
         <li
           key={label}
           data-step={
-            index < current ? "done" : index === current ? "current" : "future"
+            completed || index < current
+              ? "done"
+              : index === current
+                ? "current"
+                : "future"
           }
           aria-current={index === current ? "step" : undefined}
         >
@@ -1776,6 +1782,40 @@ function SignatureEvidence({ signer, data }: { signer: Signer; data: Data }) {
     </section>
   );
 }
+function RecordSignature({ signer, data }: { signer: Signer; data: Data }) {
+  const timeZone = data.settings?.timezone ?? "UTC";
+  return (
+    <>
+      <div className="record-signature-mark">
+        {signer.image ? (
+          <img src={signer.image} alt={`${signer.name}’s signature`} />
+        ) : (
+          <span>{signer.typed_name || signer.name}</span>
+        )}
+      </div>
+      <strong>
+        {signer.name}
+        {signer.title && ` | ${signer.title}`}
+      </strong>
+      <small>
+        <time dateTime={signer.signed_at}>
+          {formatStaffDate(signer.signed_at, data.account, {
+            dateStyle: "medium",
+            timeZone,
+          })}
+          {" | "}
+          {formatStaffDate(signer.signed_at, data.account, {
+            timeStyle: "short",
+            timeZone,
+          })}
+        </time>
+        {signer.applied_by &&
+          ` | applied by ${signer.applied_by.name === signer.applied_by.email ? "staff" : signer.applied_by.name}`}
+      </small>
+    </>
+  );
+}
+
 export function CountersignSheet({
   p,
   data,
@@ -2209,6 +2249,72 @@ export function RecordV4({
   const displayedTotals = totals(displayQuote);
   const billable = totals(v?.quote ?? p.quote);
   const qbo = p.billing_links.find((link) => link.provider === "qbo");
+  const recurringAmount = [
+    billable.monthly_total
+      ? `${money(billable.monthly_total, p.currency)}/mo`
+      : null,
+    billable.yearly_total
+      ? `${money(billable.yearly_total, p.currency)}/yr`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const oneTimeAmount = money(billable.one_time_total, p.currency);
+  const stripeStatus = stripe ? stripeBillingStatus(stripe) : null;
+  const bankState = stripe ? publicBankState(stripe) : undefined;
+  const stripeActive =
+    stripeStatus?.labels.includes("Subscription active") ||
+    (stripe?.status === "succeeded" &&
+      !stripe.metadata?.requires_checkout &&
+      !bankState &&
+      /^sub_/.test(stripe.external_object_id ?? ""));
+  const nextCharge =
+    stripe && stripeActive
+      ? completedCheckouts(stripe)
+          .flatMap((completion) => completion.subscriptions)
+          .map((subscription) => subscription.next_billing_at)
+          .filter(
+            (date): date is string => !!date && Date.parse(date) >= Date.now(),
+          )
+          .sort()[0]
+      : undefined;
+  const recurringDescription = [
+    recurringAmount,
+    stripeActive ? "Stripe subscription" : "Stripe Checkout",
+    nextCharge &&
+      `next charge ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: timezone }).format(new Date(nextCharge))}`,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+  const stripeChip =
+    bankState === "failed" || stripe?.status === "failed"
+      ? { text: "Needs attention", tone: "danger" }
+      : bankState === "processing"
+        ? { text: "Bank payment processing", tone: "warning" }
+        : stripe?.metadata?.requires_checkout
+          ? { text: "Waiting for checkout", tone: "warning" }
+          : stripeActive
+            ? { text: "Active", tone: "success" }
+            : stripe?.status === "succeeded"
+              ? { text: stripeStatus?.labels[0] ?? "Ready", tone: "success" }
+              : {
+                  text: stripe || actualSigned ? "In progress" : "Not started",
+                  tone: "neutral",
+                };
+  const markAsInvoiced =
+    qbo?.status === "needs_review" &&
+    !qbo.external_object_id &&
+    !qbo.metadata?.customer_candidates ? (
+      <Button
+        onClick={() => {
+          setError("");
+          setInvoice(true);
+        }}
+      >
+        Mark as invoiced
+      </Button>
+    ) : undefined;
+
   const stripeIntegrated =
     native &&
     (stripe
@@ -2381,13 +2487,7 @@ export function RecordV4({
         ? "The client can use the payment link to finish setting up billing."
         : "Signatures are safe. Review the billing action below.",
       problem: true,
-      actions: [
-        resend && resendLink,
-        manual && manualInvoice,
-        !qboIssue && (!resend || !manual) && (
-          <Button onClick={() => void retryBilling()}>Retry billing</Button>
-        ),
-      ].filter(Boolean),
+      actions: [resend && resendLink, manual && manualInvoice].filter(Boolean),
     };
   } else if (signature) {
     nextStep = {
@@ -2578,9 +2678,13 @@ export function RecordV4({
       : p.status === "declined"
         ? "The client sees that the proposal was declined."
         : "The client sees that the link has expired.";
-  const documents = p.files.filter((file) =>
-    native ? file.kind === "sealed" : file.kind === "import",
-  );
+  const documents = p.files
+    .filter((file) =>
+      native ? file.kind === "sealed" : file.kind === "import",
+    )
+    .sort(
+      (a, b) => Number(b.stage === "company") - Number(a.stage === "company"),
+    );
   return (
     <div className="record-v4 stack">
       {share && p.token && (
@@ -2807,7 +2911,12 @@ export function RecordV4({
               <dd>
                 {linkClosed ? (
                   <>
-                    <s>{new URL(`/p/${p.token}`, data.app_url).href}</s>
+                    <s
+                      className="record-link-url"
+                      title={new URL(`/p/${p.token}`, data.app_url).href}
+                    >
+                      {new URL(`/p/${p.token}`, data.app_url).href}
+                    </s>
                     <small>{closedLinkNote}</small>
                   </>
                 ) : (
@@ -2906,16 +3015,15 @@ export function RecordV4({
             <section className="record-signatures record-section">
               <StaffSectionHeading>Signatures</StaffSectionHeading>
               <div className="card record-signature-card">
-                <div
-                  className="record-signature-box"
-                  data-next={open && !actualSigned}
-                >
+                <div className="record-signature-box">
                   <h3>Client</h3>
                   {clientSigner ? (
-                    <SignatureEvidence signer={clientSigner} data={data} />
+                    <RecordSignature signer={clientSigner} data={data} />
                   ) : (
                     <>
-                      <p>{native ? "Not signed yet" : "See imported PDF"}</p>
+                      <p className="record-signature-mark">
+                        {native ? "Not signed yet" : "See imported PDF"}
+                      </p>
                       <strong>
                         {clientFullName}
                         {p.client.title && ` | ${p.client.title}`}
@@ -2927,10 +3035,12 @@ export function RecordV4({
                 <div className="record-signature-box" data-next={signature}>
                   <h3>{data.settings?.company_name ?? "Company"}</h3>
                   {company ? (
-                    <SignatureEvidence signer={company} data={data} />
+                    <RecordSignature signer={company} data={data} />
                   ) : (
                     <>
-                      <p>{native ? "Not signed yet" : "See imported PDF"}</p>
+                      <p className="record-signature-mark">
+                        {native ? "Not signed yet" : "See imported PDF"}
+                      </p>
                       <strong>
                         {data.settings?.company_signatory?.name ??
                           "Company signatory"}
@@ -2950,213 +3060,186 @@ export function RecordV4({
           )}
           {showBilling && (
             <section className="record-billing record-section">
-              <StaffSectionHeading>Billing</StaffSectionHeading>
-              <div className="card record-billing-card stack">
-                {signedOiot && (
-                  <div className="stack">
-                    <h3>{oiotPlan.name}</h3>
-                    <p>
-                      Website purchase price{" "}
-                      {signedOiot[oiotPurchasePriceField]} | Kickoff{" "}
-                      {signedOiot[oiotKickoffField]}
-                    </p>
-                    <p>{oiotPlan.billingNote}</p>
-                  </div>
-                )}
-                {!actualSigned ? (
-                  <>
-                    {stripeIntegrated && (
-                      <div className="record-billing-preview">
-                        <strong>Monthly</strong>
-                        <span>
-                          {[
-                            billable.monthly_total
-                              ? `${money(billable.monthly_total, p.currency)}/mo`
-                              : null,
-                            billable.yearly_total
-                              ? `${money(billable.yearly_total, p.currency)}/yr`
-                              : null,
-                            "Stripe billing starts after the client signs.",
-                          ]
-                            .filter(Boolean)
-                            .join(" | ")}
-                        </span>
-                        <span className="pill neutral">Not started</span>
-                      </div>
-                    )}
-                    {qboIntegrated && (
-                      <div className="record-billing-preview">
-                        <strong>One-time</strong>
-                        <span>
-                          {money(billable.one_time_total, p.currency)} |{" "}
-                          {quickBooksInvoiceTiming}
-                        </span>
-                        <span className="pill neutral">Not started</span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {invoiceWaiting && (
-                      <section className="billing-state">
-                        <strong>One-time invoice</strong>
-                        <span className="pill info">
-                          Waiting for countersignature
-                        </span>
-                        <p>{quickBooksInvoiceTiming}</p>
-                      </section>
-                    )}
-                    {!billingLinks.length && !invoiceWaiting && (
-                      <p>Billing is being prepared.</p>
-                    )}
-                    {billingLinks.map((link, index) => (
-                      <section className="billing-state" key={index}>
-                        <strong>
-                          {link.provider === "stripe"
-                            ? "Stripe"
-                            : "One-time invoice"}
-                        </strong>
-                        <span
-                          className={`pill ${publicBankState(link) === "failed" ? "danger" : publicBankState(link) === "processing" ? "warning" : link.status === "succeeded" && !(link.provider === "stripe" && link.metadata?.requires_checkout) ? "success" : link.status === "failed" ? "danger" : "warning"}`}
-                        >
-                          {link.provider === "stripe" &&
-                          link.status === "succeeded" &&
-                          stripeBillingStatus(link).labels.length
-                            ? stripeBillingStatus(link).labels[0]
-                            : link.metadata?.manual_invoice &&
-                                link.status === "succeeded"
-                              ? "Invoiced manually"
-                              : link.provider === "qbo" &&
-                                  link.status !== "succeeded"
-                                ? link.metadata?.action === "Invoice manually"
-                                  ? "Invoice manually"
-                                  : "Billing to finish"
-                                : link.status === "succeeded"
-                                  ? "Ready"
-                                  : link.status === "failed"
-                                    ? "Needs attention"
-                                    : "In progress"}
-                        </span>
-                        {link.last_error && <p>{link.last_error}</p>}
-                        {link.provider === "stripe" &&
-                          link.metadata?.requires_checkout === true && (
-                            <div className="stack">
-                              <p>
-                                The proposal is signed. We’re waiting for
-                                Checkout confirmation.
-                              </p>
-                              <Button
-                                onClick={async () => {
-                                  try {
-                                    const next = await post<Proposal>(
-                                      `/api/proposals/${p.id}/actions`,
-                                      {
-                                        revision: p.revision,
-                                        action: "resend_billing_link",
-                                      },
-                                    );
-                                    onChanged(next);
-                                  } catch (e) {
-                                    setError(
-                                      e instanceof Error
-                                        ? e.message
-                                        : "Unable to resend the billing link",
-                                    );
-                                  }
-                                }}
-                              >
-                                Resend billing link
-                              </Button>
-                            </div>
-                          )}
-                        {link.provider === "stripe" && (
+              <StaffSectionHeading
+                action={
+                  retryInBilling && (
+                    <Button onClick={() => void retryBilling()}>
+                      Retry billing
+                    </Button>
+                  )
+                }
+              >
+                Billing
+              </StaffSectionHeading>
+              {(stripeIntegrated ||
+                invoiceWaiting ||
+                qboIntegrated ||
+                qbo?.metadata?.manual_invoice ||
+                markAsInvoiced) && (
+                <dl className="card record-billing-card">
+                  {stripeIntegrated && (
+                    <RecordBillingRow
+                      label={
+                        billable.yearly_total && !billable.monthly_total
+                          ? "Yearly"
+                          : "Monthly"
+                      }
+                      end={
+                        resend ? (
+                          <Button
+                            busy={recordBusy}
+                            onClick={() =>
+                              void runAction("resend_billing_link")
+                            }
+                          >
+                            Resend billing link
+                          </Button>
+                        ) : (
+                          <span className={`pill ${stripeChip.tone}`}>
+                            {stripeChip.text}
+                          </span>
+                        )
+                      }
+                    >
+                      {stripe &&
+                      (stripeStatus?.labels.length ||
+                        stripeStatus?.subscriptions.length) ? (
+                        <details className="record-provider-details">
+                          <Disclosure>{recurringDescription}</Disclosure>
                           <StripeBillingDetails
-                            link={link}
+                            link={stripe}
                             dashboardUrl={
                               data.connections?.stripe_connect?.dashboardUrl
                             }
                           />
-                        )}
-                        {link.provider === "qbo" &&
-                          !link.metadata?.skipped &&
-                          !link.metadata?.manual_invoice && (
-                            <QuickBooksBilling
-                              proposal={p}
-                              link={link}
-                              onRefresh={onRefresh}
-                            />
-                          )}
-                        {link.provider === "qbo" &&
-                          link.status === "needs_review" &&
-                          !link.external_object_id &&
-                          !link.metadata?.customer_candidates && (
-                            <Button
-                              onClick={() => {
-                                setError("");
-                                setInvoice(true);
-                              }}
-                            >
-                              Mark as invoiced
-                            </Button>
-                          )}
-                      </section>
-                    ))}
-                  </>
-                )}
-                <div className="record-jobs">
-                  {recordJobs.map((j) => (
-                    <div
-                      key={j.id}
-                      id={jobRecordAnchor(j.id)}
-                      tabIndex={-1}
-                      className={
-                        highlightedJob === j.id
-                          ? "record-job-highlight"
-                          : undefined
+                        </details>
+                      ) : (
+                        recurringDescription
+                      )}
+                      {stripe?.last_error && (
+                        <p className="record-billing-problem">
+                          {stripe.last_error}
+                        </p>
+                      )}
+                    </RecordBillingRow>
+                  )}
+                  {invoiceWaiting ? (
+                    <RecordBillingRow
+                      label="One-time"
+                      end={
+                        <span className="pill info">
+                          Waiting for countersignature
+                        </span>
                       }
-                      data-job-id={j.id}
                     >
-                      <JobState
-                        state={
-                          j.status === "running"
-                            ? "running"
-                            : j.status === "failed" || j.last_error
-                              ? "failed"
-                              : "queued"
-                        }
-                        label={jobName(
-                          j,
-                          p.billing_links
-                            .filter((l) => l.status !== "succeeded")
-                            .map((l) => l.provider),
-                        )}
-                        error={
-                          j.last_error
-                            ? friendlyJobError(j.last_error).message
+                      {oneTimeAmount} | QuickBooks invoice
+                      <p>{quickBooksInvoiceTiming}</p>
+                    </RecordBillingRow>
+                  ) : qbo &&
+                    !qbo.metadata?.skipped &&
+                    !qbo.metadata?.manual_invoice ? (
+                    <QuickBooksBilling
+                      proposal={p}
+                      link={qbo}
+                      onRefresh={onRefresh}
+                      amount={oneTimeAmount}
+                      manualAction={markAsInvoiced}
+                    />
+                  ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
+                    <RecordBillingRow
+                      label="One-time"
+                      end={
+                        <span
+                          className={`pill ${qbo?.metadata?.manual_invoice ? "success" : "neutral"}`}
+                        >
+                          {qbo?.metadata?.manual_invoice
+                            ? "Invoiced manually"
+                            : actualSigned
+                              ? "In progress"
+                              : "Not started"}
+                        </span>
+                      }
+                    >
+                      {oneTimeAmount} |{" "}
+                      {qbo?.metadata?.manual_invoice
+                        ? "Manual invoice"
+                        : "QuickBooks invoice"}
+                    </RecordBillingRow>
+                  ) : null}
+                </dl>
+              )}
+              {signedOiot && (
+                <section className="card record-billing-note">
+                  <h3>{oiotPlan.name}</h3>
+                  <p>
+                    Website purchase price {signedOiot[oiotPurchasePriceField]}{" "}
+                    | Kickoff {signedOiot[oiotKickoffField]}
+                  </p>
+                  <p>{oiotPlan.billingNote}</p>
+                </section>
+              )}
+              {recordJobs.length > 0 && (
+                <details
+                  className="card record-billing-note"
+                  open={
+                    !!highlightedJob ||
+                    recordJobs.some(
+                      (job) => job.status === "failed" || !!job.last_error,
+                    ) ||
+                    undefined
+                  }
+                >
+                  <Disclosure>Background jobs</Disclosure>
+                  <div className="record-jobs">
+                    {recordJobs.map((j) => (
+                      <div
+                        key={j.id}
+                        id={jobRecordAnchor(j.id)}
+                        tabIndex={-1}
+                        className={
+                          highlightedJob === j.id
+                            ? "record-job-highlight"
                             : undefined
                         }
-                        attempts={j.attempts}
-                        onRetry={
-                          !(qboIssue && j.kind === "billing") &&
-                          j.status !== "running" &&
-                          (j.status === "failed" || j.last_error)
-                            ? () => {
-                                void post(`/api/proposals/${p.id}/retry`)
-                                  .then(onRefresh)
-                                  .catch((e) => setError(e.message));
-                              }
-                            : undefined
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-                {retryInBilling && (
-                  <Button onClick={() => void retryBilling()}>
-                    Retry billing
-                  </Button>
-                )}
-              </div>
+                        data-job-id={j.id}
+                      >
+                        <JobState
+                          state={
+                            j.status === "running"
+                              ? "running"
+                              : j.status === "failed" || j.last_error
+                                ? "failed"
+                                : "queued"
+                          }
+                          label={jobName(
+                            j,
+                            p.billing_links
+                              .filter((l) => l.status !== "succeeded")
+                              .map((l) => l.provider),
+                          )}
+                          error={
+                            j.last_error
+                              ? friendlyJobError(j.last_error).message
+                              : undefined
+                          }
+                          attempts={j.attempts}
+                          onRetry={
+                            !(qboIssue && j.kind === "billing") &&
+                            j.status !== "running" &&
+                            (j.status === "failed" || j.last_error)
+                              ? () => {
+                                  void post(`/api/proposals/${p.id}/retry`)
+                                    .then(onRefresh)
+                                    .catch((e) => setError(e.message));
+                                }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </section>
           )}
           <ProposalEmailLog id={p.id} revision={p.revision} />
@@ -3198,35 +3281,14 @@ export function RecordV4({
                           ? "Edited, not live yet"
                           : eventTitle(e, data)}
                       </strong>
-                      {typeof e.metadata.note === "string" && (
-                        <blockquote>{e.metadata.note}</blockquote>
-                      )}
-                      {typeof e.metadata.reason === "string" &&
-                        e.metadata.reason && (
-                          <blockquote>{e.metadata.reason}</blockquote>
-                        )}
-                      <div className="timeline-entry-meta">
-                        <small>
-                          {timestamp(e.created_at, data)} |{" "}
-                          {String(
-                            e.metadata.application_statement ??
-                              person(e.actor, data),
-                          )}
-                        </small>{" "}
-                        <a href={`${recordUrl}?view=evidence#event-${e.id}`}>
-                          View evidence
-                        </a>
-                      </div>
+                      <small className="timeline-entry-meta">
+                        {timestamp(e.created_at, data)} |{" "}
+                        {person(e.actor, data)}
+                      </small>
                     </div>
                   </article>
                 );
               })}
-              {v && (
-                <details>
-                  <Disclosure>Version {v.version_no} | content hash</Disclosure>
-                  <code className="hash">{v.content_hash}</code>
-                </details>
-              )}
             </div>
           </section>
         </div>

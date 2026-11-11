@@ -508,9 +508,17 @@ test("record toolbar and next step select one primary action without widening si
         toolbar.getByRole("link", { name: "Preview as client" }),
       ).toHaveCount(0);
     if (p === f.viewed) {
-      const event = page.locator(".timeline-entry-meta").first();
-      await expect(event).toContainText(/\sView evidence/);
-      await expect(event).toHaveCSS("column-gap", "10px");
+      const timeline = page.locator(".timeline");
+      await expect(
+        timeline.getByRole("link", { name: "Evidence", exact: true }),
+      ).toBeVisible();
+      await expect(
+        timeline.getByRole("link", { name: "View evidence" }),
+      ).toHaveCount(0);
+      await expect(timeline.locator(".timeline-entry-meta").first()).toHaveCSS(
+        "white-space",
+        "nowrap",
+      );
     }
     if (p === f.countersign) {
       await expect(page.locator(".record-jobs .ps-pill").first()).toHaveCSS(
