@@ -6,6 +6,7 @@
   --toast-line: rgba(255, 255, 255, 0.22);
   --toast-hover: rgba(255, 255, 255, 0.12);
   --toast-focus: rgba(255, 255, 255, 0.34);
+  --toast-pill-line: #4a5d65;
 
   display: flex;
   align-items: center;
@@ -46,25 +47,30 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.toast-surface
+/* Owner 10 Nov: toast actions (Undo, View, …) are outline pills on the dark
+   toast, with no underline, the same inside a menu or dialog as outside.
+   The shared ink-clay button rule skips toasts, so this is the one style;
+   the repeated class outranks the staff .btn base rules. */
+.toast-surface.toast-surface.toast-surface
   :is(button, a):not(:where(.toast-dismiss, .notice-later, .notice-reload)) {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   flex: none;
   min-height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-button);
-  background: none;
-  color: var(--toast-link);
+  padding: 0 16px;
+  border: 1.5px solid var(--toast-pill-line);
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--toast-text);
   font: inherit;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
   cursor: pointer;
 }
-.toast-surface
+.toast-surface.toast-surface.toast-surface
   :is(button, a):not(:where(.toast-dismiss, .notice-reload)):hover {
+  background: var(--toast-hover);
   color: var(--toast-text);
 }
 .toast-surface :is(button, a):not(.toast-dismiss):focus-visible {
@@ -106,4 +112,11 @@
 }
 .band-notice-row + .band-notice-row {
   border-top: 1px solid var(--toast-line);
+}
+/* Message text keeps the toast's type even when the toast is portaled into a
+   menu or dialog that styles its own text. */
+.toast-surface.toast-surface.toast-surface
+  :is(.toast-body, .toast-body > :not(button, a, svg)) {
+  color: var(--toast-text);
+  font: 500 14px/1.5 var(--font-ui);
 }

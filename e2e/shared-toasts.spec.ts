@@ -34,8 +34,11 @@ for (const width of [1440, 375]) {
       await expect(row).toHaveCount(0);
       await expect(toast).toHaveCSS("background-color", "rgb(24, 34, 38)");
       await expect(toast).toHaveCSS("color", "rgb(255, 255, 255)");
-      await expect(undo).toHaveCSS("color", "rgb(211, 222, 225)");
-      await expect(undo).toHaveCSS("text-decoration-line", "underline");
+      // Owner 10 Nov: toast actions are outline pills with no underline.
+      await expect(undo).toHaveCSS("color", "rgb(255, 255, 255)");
+      await expect(undo).toHaveCSS("text-decoration-line", "none");
+      await expect(undo).toHaveCSS("border-radius", "999px");
+      await expect(undo).toHaveCSS("border-top-color", "rgb(74, 93, 101)");
       await expect(close).toHaveCSS("color", "rgb(255, 255, 255)");
       await expect(close).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
       await expect(close).toHaveCSS("border-width", "0px");
