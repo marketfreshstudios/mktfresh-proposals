@@ -1906,6 +1906,19 @@ export function CountersignSheet({
       s?.name ?? "",
       data.settings?.company_name ?? "",
     );
+  const companyMark =
+    s?.name || s?.image ? (
+      <div className={phone || !s.image ? "record-signature-mark" : undefined}>
+        {s.image ? (
+          <img src={s.image} alt={`${s.name}'s stored signature`} />
+        ) : (
+          <span>
+            <span className="sr-only">Designated signatory: </span>
+            {s.name}
+          </span>
+        )}
+      </div>
+    ) : null;
   return (
     <Sheet
       title={phone ? "Countersign" : `Countersign | ${p.client.company}`}
@@ -1983,6 +1996,12 @@ export function CountersignSheet({
                     />
                   )}
                 </section>
+                {companyMark && (
+                  <section className="company-signature-preview">
+                    <h3>Company signature</h3>
+                    {companyMark}
+                  </section>
+                )}
                 <Banner
                   tone="warning"
                   title={
@@ -2060,16 +2079,7 @@ export function CountersignSheet({
                   </section>
                   <section className="company-signature-preview">
                     <h3>Company signature</h3>
-                    {phone ? (
-                      <div className="record-signature-mark">
-                        <img
-                          src={s.image}
-                          alt={`${s.name}’s stored signature`}
-                        />
-                      </div>
-                    ) : (
-                      <img src={s.image} alt={`${s.name}'s stored signature`} />
-                    )}
+                    {companyMark}
                     <strong>
                       {s.name} | {s.title}
                     </strong>

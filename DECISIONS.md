@@ -1334,3 +1334,8 @@ The phone countersign sheet keeps the existing agreement consent and
 the separate authorization for delegates. The selected items and
 separate totals appear in the sheet, with the frozen agreement and
 version available under Read the agreement.
+
+The countersign sheet uses the same saved company image and accessible
+name at every width. If the image is missing, the script-style name
+identifies the designated signatory; the existing setup warning still
+blocks countersigning.
