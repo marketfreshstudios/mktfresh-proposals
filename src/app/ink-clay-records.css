@@ -701,27 +701,6 @@
   .ink-clay .home-intro {
     flex-wrap: wrap;
   }
-  .ink-clay .record-v4 {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  }
-  .ink-clay .record-toolbar .record-primary-actions {
-    position: fixed;
-    inset: auto 0 0;
-    z-index: var(--z-sticky);
-    margin: 0;
-    padding: 10px var(--space-4) calc(10px + env(safe-area-inset-bottom));
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    justify-content: flex-end;
-  }
-  .ink-clay .record-v4 .next-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ink-clay .record-v4 .record-next-step > .record-next-actions {
-    justify-content: start;
-    flex-wrap: wrap;
-  }
   .ink-clay .clients-directory-v4 .client-table-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1516,6 +1495,13 @@
 }
 .ink-clay .record-section > .staff-section-heading {
   margin: 0;
+  /* Same height with or without action pills, so cards in the main column
+     and the rail start on the same line. */
+  min-block-size: 40px;
+  align-items: center;
+}
+.ink-clay .record-section > .engagement-panel {
+  margin-block: 0;
 }
 .record-section .staff-section-heading .pill {
   font: 600 12px/18px var(--font-ui);
@@ -1807,52 +1793,512 @@
 .record-timeline-list [data-unpublished] .timeline-dot {
   background: #c2412f;
 }
-@media (max-width: 1099px) {
+.record-step-summary,
+.record-billing-colon {
+  display: none;
+}
+
+@media (700px <= width < 1100px) {
+  .staff-foundation.ink-clay .workspace:has(.record-v4) .tablet-page-name {
+    margin-inline-start: auto;
+  }
+  .staff-foundation.ink-clay
+    .workspace:has(.record-v4)
+    .shell-tablet-header
+    .studio-account {
+    margin-inline-start: 0;
+  }
+  .staff-foundation.ink-clay .page-body:has(> .record-v4) {
+    padding-inline: 24px;
+  }
+  .ink-clay .record-v4.stack {
+    gap: 24px;
+  }
+  .record-hero {
+    padding: 22px;
+  }
+  .record-hero-intro {
+    column-gap: 16px;
+  }
+  .ink-clay .record-hero-intro h1,
+  .record-hero-amounts dd {
+    font-size: 32px;
+    line-height: 38px;
+  }
+  .record-hero-amounts {
+    gap: 20px;
+  }
+  .record-lifecycle {
+    --record-step-width: 84px;
+  }
   .record-hero-progress {
-    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .record-hero-billing {
+    padding-inline-start: 14px;
   }
   .ink-clay .record-hero .record-next-step > .record-next-actions {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .record-next-actions .btn {
+    width: 100%;
+  }
+  .record-next-actions .button-wrap {
+    display: flex;
+  }
+  .ink-clay .record-details-values {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .record-v4:not([data-client-signed])
+    .record-details-values:has(> .record-details-expires)
+    > .record-details-link {
+    grid-column: span 2;
+  }
+  .record-v4[data-client-signed] .record-details-expires,
+  .record-toolbar-countersign {
+    display: none;
+  }
+  .record-support {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .record-support > :only-child {
+    grid-column: 1 / -1;
   }
 }
+@media (width < 1100px) {
+  .ink-clay .record-v4 .record-quote-totals h3,
+  .record-v4[data-awaiting-countersign]
+    .record-hero-client
+    .pills
+    > [data-proposal-status="signed_by_client"] {
+    display: none;
+  }
+  .record-quote-totals dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .record-quote-totals dd {
+    font: 400 22px/26px var(--font-title);
+  }
+  .ink-clay .record-v4 .record-signature-card .record-signature-box h3 {
+    font: 600 12px/16px var(--font-ui);
+  }
+}
+
 @media (max-width: 699px) {
+  .staff-foundation.ink-clay .page-body:has(> .record-v4) {
+    padding-inline: 0;
+  }
+  .ink-clay .record-v4.stack {
+    gap: 24px;
+    padding-block-start: 0;
+  }
+  .record-v4:has(.record-phone-actions) {
+    padding-block-end: calc(76px + env(safe-area-inset-bottom));
+  }
+  .record-v4 :is(a, button, input, summary, textarea) {
+    scroll-margin-block-end: calc(84px + env(safe-area-inset-bottom));
+  }
+  .record-v4 > :not(.record-hero, .record-phone-actions) {
+    margin-inline: 16px;
+  }
   .record-hero {
-    padding: 18px;
+    gap: 16px;
+    padding: max(18px, env(safe-area-inset-top)) 18px 20px;
+    border-radius: 0;
+  }
+  .ink-clay .record-hero .record-toolbar {
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  .ink-clay .record-hero .record-toolbar .staff-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 44px;
+    color: var(--hero-muted);
+  }
+  .ink-clay .record-hero .more-control {
+    --button-outline: var(--record-hero-line);
+    --button-ink: var(--hero-ink);
+    --button-wash: var(--record-hero-line);
   }
   .record-hero-intro {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "client" "title" "owner" "amounts";
   }
   .ink-clay .record-hero-intro h1 {
-    font-size: 30px;
-    line-height: 36px;
+    font-size: 28px;
+    line-height: 34px;
+  }
+  .record-hero-amounts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+    text-align: start;
   }
   .record-hero-amounts dd {
     font-size: 26px;
     line-height: 32px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
-  .record-hero-amounts {
-    text-align: start;
+  .record-hero-progress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) fit-content(52%);
+    grid-template-areas: "step billing" "bar bar";
+    align-items: baseline;
+    gap: 6px 8px;
+  }
+  .ink-clay .record-step-summary {
+    display: block;
+    grid-area: step;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .record-hero-billing {
+    grid-area: billing;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 2px 4px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    color: var(--hero-muted);
+    font-size: 12px;
+  }
+  .record-hero-billing strong {
+    font-weight: 600;
+  }
+  .record-hero-billing > span {
+    font: inherit;
+    color: inherit;
+    text-transform: none;
+  }
+  .record-billing-colon {
+    display: inline;
+  }
+  .record-hero-billing[data-needs-attention="true"] {
+    color: var(--record-hero-problem);
   }
   .record-lifecycle {
-    --record-step-width: 48px;
+    grid-area: bar;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
   }
-  .record-lifecycle li:not(:last-child)::after {
-    inset-inline-start: calc(
-      var(--record-step-width) / 2 + var(--record-dot-radius) + 4px
-    );
-    inset-inline-end: calc(
-      var(--record-next-dot-radius) + 4px - var(--record-step-width) / 2
-    );
+  .record-lifecycle li {
+    min-inline-size: 0;
+    block-size: 4px;
+    border-radius: 2px;
+    background: var(--record-hero-line);
+  }
+  .record-lifecycle li[data-step="done"] {
+    background: var(--hero-ink);
+  }
+  .record-lifecycle li[data-step="current"] {
+    background: var(--chrome-marker);
+  }
+  .record-lifecycle li::after {
+    display: none;
+  }
+  .record-step-content {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
   .ink-clay .record-hero .record-next-step {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    display: block;
+    padding-block-start: 14px;
+  }
+  .ink-clay .record-v4 .record-next-step h2 {
+    font-size: 21px;
+    line-height: 26px;
+  }
+  .record-next-step .next-copy {
+    width: 100%;
+  }
+  .record-columns,
+  .record-aside,
+  .record-support {
+    gap: 24px;
+  }
+  .record-signature-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ink-clay .record-details-values {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px 18px;
+  }
+  .record-details-values
+    > :is(
+      .record-details-client,
+      .record-details-link,
+      .record-details-documents
+    ) {
+    grid-column: 1 / -1;
+  }
+  .record-client-link .round-icon {
+    --round-icon-size: 44px;
   }
   .record-section-actions,
   .record-quote-notice,
   .record-publication-banner {
     flex-wrap: wrap;
+  }
+  .record-phone-actions {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    align-items: start;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-block-start: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .record-phone-actions .button-wrap,
+  .record-phone-actions .btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .ink-clay .record-phone-actions .btn {
+    min-block-size: 48px;
+    padding-inline: 10px;
+    text-align: center;
+    white-space: normal;
+  }
+  .record-phone-actions .client-link-control {
+    padding: 0;
+    border: 0;
+  }
+  .staff-foundation.ink-clay .record-phone-actions [data-primary] .btn {
+    --button-fill: var(--ink-title);
+    --button-label: var(--surface);
+    --button-fill-hover: color-mix(
+      in srgb,
+      var(--ink-title) 90%,
+      var(--surface)
+    );
+  }
+  .staff-foundation.ink-clay
+    .record-phone-actions[data-countersign]
+    [data-primary]
+    .btn {
+    --button-fill: var(--action);
+    --button-label: var(--on-action);
+    --button-fill-hover: var(--action-hover);
+  }
+  .ink-clay .record-disclosure.card {
+    padding: 0;
+  }
+  .record-disclosure > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 10px 14px;
+    list-style: none;
+    cursor: pointer;
+  }
+  .record-disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+  .record-disclosure-title {
+    flex: none;
+    font-weight: 700;
+    color: var(--ink-title);
+  }
+  .record-disclosure-caption {
+    min-width: 0;
+    color: var(--ink-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .record-disclosure-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-start: auto;
+    color: var(--link);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .record-disclosure[open] > summary .record-disclosure-show,
+  .record-disclosure:not([open]) > summary .record-disclosure-hide {
+    display: none;
+  }
+  .record-disclosure[open] > summary svg {
+    transform: rotate(180deg);
+  }
+  .ink-clay .record-disclosure .record-timeline-list {
+    border: 0;
+    border-radius: 0;
+    padding: 10px 14px;
+  }
+  .record-phone-evidence {
+    display: inline-block;
+    margin-inline: 14px;
+    text-decoration: underline;
+  }
+  .record-disclosure .engagement-panel {
+    padding: 10px 14px 14px;
+  }
+  .staff-foundation.ink-clay .foundation-sheet.record-countersign-sheet {
+    max-height: min(690px, 100dvh);
+    padding: 0;
+    border-radius: 22px 22px 0 0;
+    overscroll-behavior: contain;
+  }
+  .staff-foundation.ink-clay .record-countersign-sheet > header {
+    position: sticky;
+    z-index: 1;
+    top: 0;
+    margin: 0;
+    padding: 23px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .record-countersign-sheet > header::before {
+    content: "";
+    position: absolute;
+    inset: 7px 0 auto;
+    width: 40px;
+    height: 5px;
+    margin-inline: auto;
+    border-radius: var(--radius-pill);
+    background: var(--border-strong);
+  }
+  .staff-foundation.ink-clay .record-countersign-sheet > header h2 {
+    font: 400 26px/32px var(--font-title);
+    color: var(--ink-title);
+  }
+  .record-countersign-sheet > header p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+  .record-countersign-sheet .countersign-sheet {
+    padding: 16px 18px 0;
+    gap: 14px;
+  }
+  .ink-clay .record-countersign-sheet .frozen-summary {
+    padding: 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--surface-preview);
+  }
+  .record-countersign-sheet .frozen-summary > h3 {
+    margin: 0 0 4px;
+  }
+  .record-countersign-sheet .frozen-summary > h3,
+  .record-countersign-sheet .countersign-previews h3 {
+    color: var(--ink-muted);
+    font: 700 12px/16px var(--font-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .record-countersign-items,
+  .record-countersign-totals {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .record-countersign-items li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding-block: 2px;
+  }
+  .record-countersign-items li > span {
+    min-width: 0;
+    text-align: end;
+    overflow-wrap: anywhere;
+  }
+  .record-countersign-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 4px;
+    padding-block-start: 4px;
+    border-block-start: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .record-countersign-totals > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 5px;
+  }
+  .record-countersign-totals dd {
+    margin: 0;
+  }
+  .record-countersign-sheet .record-countersign-agreement {
+    margin-top: 4px;
+    font-size: 13px;
+  }
+  .record-countersign-sheet .record-countersign-agreement .record-document {
+    min-width: 0;
+    padding: 10px;
+    overflow-wrap: anywhere;
+  }
+  .record-countersign-sheet .countersign-previews > section {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .record-countersign-sheet .countersign-previews .company-signature-preview {
+    border: 2px solid var(--ink-title);
+  }
+  .record-countersign-sheet .record-signature-mark img {
+    height: 30px;
+    margin: 0;
+    background: transparent;
+  }
+  .record-countersign-sheet .countersign-previews h3,
+  .record-countersign-sheet .countersign-previews p {
+    margin: 0;
+  }
+  .record-countersign-sheet .countersign-previews small,
+  .record-countersign-sheet .countersign-previews p {
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+  .staff-foundation.ink-clay
+    .record-countersign-sheet
+    .record-countersign-actions {
+    position: sticky;
+    bottom: 0;
+    width: calc(100% + 36px);
+    margin: 0 -18px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .record-countersign-sheet
+    .record-countersign-actions
+    :is(.button-wrap, .btn) {
+    width: 100%;
+  }
+  .record-countersign-sheet .record-countersign-actions .btn {
+    min-height: 48px;
   }
 }

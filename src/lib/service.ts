@@ -592,6 +592,7 @@ export class ProposalService {
       brief?: string;
       content?: Block[];
       quote?: Proposal["quote"];
+      editor_session?: string;
       valid_until?: string | null;
     },
     actor: Actor,
@@ -757,6 +758,9 @@ export class ProposalService {
             : new Date(input.valid_until).toISOString();
       }
       event(p, "edited", actor, {
+        ...(input.editor_session
+          ? { editor_session: input.editor_session }
+          : {}),
         price_decisions: cloneQuote(p.quote)
           .filter((i) => i.price_review && Object.keys(i.price_review).length)
           .map((i) => ({ item_id: i.id, decisions: i.price_review })),

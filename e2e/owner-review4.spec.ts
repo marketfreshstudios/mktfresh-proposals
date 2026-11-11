@@ -425,9 +425,11 @@ test("short copy links, visible record Edit, signature default and unchanged lin
   ).toBeVisible();
   await shot(page, "record-short-link-1440");
   await page.setViewportSize({ width: 375, height: 1000 });
+  await record.getByRole("button", { name: /More actions/ }).click();
   await expect(
-    record.getByRole("link", { name: "Edit", exact: true }),
+    page.getByRole("dialog").getByRole("link", { name: "Edit", exact: true }),
   ).toBeVisible();
+  await page.keyboard.press("Escape");
   await shot(page, "record-header-375");
   const patch = await request.patch(`/api/proposals/${p.id}`, {
     headers,
