@@ -623,6 +623,13 @@ function QuoteEditorContent({
     reviewFlight = useRef<Promise<boolean> | null>(null),
     sendFlight = useRef<Promise<boolean> | null>(null);
   const allowLeave = useRef(false);
+  // One id per open editor, so the record Timeline shows one entry per
+  // editing session instead of one per autosave.
+  const editorSession = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+  );
   const generation = useRef(0),
     revision = useRef(initial.revision),
     latest = useRef(p);
@@ -740,6 +747,7 @@ function QuoteEditorContent({
               revision: revision.current,
               ...editable(value),
               pagination: pagePlan.current,
+              editor_session: editorSession.current,
             }),
           });
           revision.current = result.revision;
