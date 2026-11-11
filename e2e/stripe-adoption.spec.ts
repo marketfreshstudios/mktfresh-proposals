@@ -2,7 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { inView } from "../src/lib/proposal-state";
-import type { Proposal } from "../src/lib/model";
+import { catalogQuoteItem } from "../src/lib/quote-model";
+import type { Item, Proposal } from "../src/lib/model";
 import type {
   AdoptedStripeSubscription,
   StripeLinkedPrice,
@@ -15,12 +16,20 @@ const capture = process.env.CAPTURE_STRIPE_LINK === "1";
 test("billing card links a client's subscription and shows progress or recorded Stripe phases", async ({
   page,
 }) => {
-  const { draft, members, settings } = await setup();
+  const { draft, repo, members, settings } = await setup();
+  const catalog = await repo.entities<Item>("pricing_items");
+  const monthly = catalogQuoteItem(
+    catalog.find((item) => item.stripe_lookup_key === "oiot-monthly-175")!,
+    1,
+    crypto.randomUUID(),
+    [crypto.randomUUID()],
+  );
   const proposed: Proposal = {
     ...draft,
     status: "completed",
     marked_won_by: staff.actor,
     title: "Website for Acme & Sons",
+    quote: [draft.quote[0], monthly],
   };
   const original: StripeLinkedPrice = {
     id: "price_StandardFixture",
@@ -144,9 +153,11 @@ test("billing card links a client's subscription and shows progress or recorded 
     .getByRole("button", { name: /Billing issues/ })
     .click();
   await expect(
-    page.getByRole("cell").getByText("Needs linking", { exact: true }),
+    page
+      .getByRole("tabpanel", { name: "Billing issues" })
+      .getByText("Needs linking", { exact: true }),
   ).toBeVisible();
-  await page.goto(`/proposals/${draft.id}`);
+  await page.goto(`/proposals/${draft.id}?view=record`);
   const billing = page.locator(".record-billing-card");
   await expect(
     billing.getByText("Needs linking", { exact: true }),

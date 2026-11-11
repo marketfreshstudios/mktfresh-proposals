@@ -475,7 +475,9 @@ export async function executeStripeWebhook(
   } else {
     const link = p.billing_links.find((l) => l.provider === "stripe")!;
     const adopted = adoptedStripeSubscription(link);
-    const expansion = adopted ? { "expand[]": "items.data.price.product" } : {};
+    const expansion: Record<string, string> = adopted
+      ? { "expand[]": "items.data.price.product" }
+      : {};
     const sub = await provider.api.get<any>(
       `/v1/subscriptions/${object.subscription}`,
       expansion,

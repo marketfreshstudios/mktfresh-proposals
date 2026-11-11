@@ -232,7 +232,31 @@ test("R24 record states use saved proposal, publication, and signing data at all
     { frame: "4f", proposal: completed },
     {
       frame: "4g",
-      proposal: { ...completed, billing_links: [] },
+      // The manual-only frame has no recurring charge. A recurring quote
+      // without a subscription now has a Needs linking Billing row.
+      proposal: {
+        ...completed,
+        billing_links: [],
+        quote: completed.quote
+          .map((item) => ({
+            ...item,
+            sublines: item.sublines.filter(
+              (line) => line.interval === "one_time",
+            ),
+          }))
+          .filter((item) => item.sublines.length),
+        versions: completed.versions.map((version) => ({
+          ...version,
+          quote: version.quote
+            .map((item) => ({
+              ...item,
+              sublines: item.sublines.filter(
+                (line) => line.interval === "one_time",
+              ),
+            }))
+            .filter((item) => item.sublines.length),
+        })),
+      },
       connected: false,
     },
     { frame: "4h", proposal: billingIssue },

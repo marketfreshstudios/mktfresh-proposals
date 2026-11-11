@@ -2303,6 +2303,9 @@
   }
 }
 
+.record-billing-row:has(.stripe-adopted-details) > :is(dt, dd) {
+  align-self: start;
+}
 .stripe-adopted-details {
   display: grid;
   gap: 8px;

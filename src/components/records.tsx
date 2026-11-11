@@ -2442,6 +2442,9 @@ export function RecordV4({
     adopted
       ? adopted.prices.map(stripeLinkedAmount).join(" | ")
       : recurringAmount,
+    adopted?.prices.length === 1 && adopted.prices[0].quantity === 1
+      ? adopted.prices[0].name
+      : null,
     adopted || stripeActive
       ? "Stripe subscription"
       : needsLink && !resend
@@ -2487,11 +2490,10 @@ export function RecordV4({
 
   const stripeIntegrated =
     native &&
-    (needsLink ||
-      (stripe
-        ? !stripe.metadata?.skipped
-        : !!data.connections?.stripe &&
-          !!(billable.monthly_total || billable.yearly_total)));
+    (stripe
+      ? !stripe.metadata?.skipped
+      : !!data.connections?.stripe &&
+        !!(billable.monthly_total || billable.yearly_total));
   const qboIntegrated =
     native &&
     (qbo
@@ -2507,6 +2509,7 @@ export function RecordV4({
       !!job.last_error,
   );
   const showBilling =
+    needsLink ||
     billingIntegrated ||
     manual ||
     invoiceWaiting ||
@@ -2518,14 +2521,16 @@ export function RecordV4({
       ? "Needs linking"
       : issues || resend
         ? "Needs attention"
-        : actualSigned &&
-            !billingOpen(p) &&
-            !invoiceWaiting &&
-            billingLinks.some((link) => link.status === "succeeded")
-          ? "Set up"
-          : invoiceWaiting || (!stripeIntegrated && qboIntegrated)
-            ? "Starts after you countersign"
-            : "Starts after signing";
+        : adopted
+          ? "Linked"
+          : actualSigned &&
+              !billingOpen(p) &&
+              !invoiceWaiting &&
+              billingLinks.some((link) => link.status === "succeeded")
+            ? "Set up"
+            : invoiceWaiting || (!stripeIntegrated && qboIntegrated)
+              ? "Starts after you countersign"
+              : "Starts after signing";
   const nextReminder =
     open && reminders ? nextRecordReminder(p, expires) : null;
   const nextReminderDetail = nextReminder
@@ -3321,13 +3326,14 @@ export function RecordV4({
               >
                 Billing
               </StaffSectionHeading>
-              {(stripeIntegrated ||
+              {(needsLink ||
+                stripeIntegrated ||
                 invoiceWaiting ||
                 qboIntegrated ||
                 qbo?.metadata?.manual_invoice ||
                 markAsInvoiced) && (
                 <dl className="card record-billing-card">
-                  {stripeIntegrated && (
+                  {(stripeIntegrated || needsLink) && (
                     <RecordBillingRow
                       label={
                         billable.yearly_total && !billable.monthly_total
@@ -3356,9 +3362,6 @@ export function RecordV4({
                           {recurringDescription}
                           <LinkedStripeSubscription
                             subscription={adopted}
-                            dashboardUrl={
-                              data.connections?.stripe_connect?.dashboardUrl
-                            }
                             date={dateOnly}
                           />
                         </>

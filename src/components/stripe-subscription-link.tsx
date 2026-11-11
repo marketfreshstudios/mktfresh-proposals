@@ -43,16 +43,19 @@ function PriceDetails({ prices }: { prices: StripeLinkedPrice[] }) {
 
 export function LinkedStripeSubscription({
   subscription: link,
-  dashboardUrl,
   date,
 }: {
   subscription: AdoptedStripeSubscription;
-  dashboardUrl?: string;
   date: (value: string) => string;
 }) {
+  const dashboard = link.accountId
+    ? `https://dashboard.stripe.com/${link.accountId}/test`
+    : stripeTestDashboard;
   return (
     <div className="stripe-adopted-details">
-      <PriceDetails prices={link.prices} />
+      {(link.prices.length > 1 || link.prices[0]?.quantity > 1) && (
+        <PriceDetails prices={link.prices} />
+      )}
       {link.schedule ? (
         <details className="record-provider-details">
           <summary>Stripe schedule</summary>
@@ -92,7 +95,7 @@ export function LinkedStripeSubscription({
         </p>
       )}
       <a
-        href={`${dashboardUrl ?? stripeTestDashboard}/subscriptions/${link.id}`}
+        href={`${dashboard}/subscriptions/${link.id}`}
         target="_blank"
         rel="noreferrer"
       >
