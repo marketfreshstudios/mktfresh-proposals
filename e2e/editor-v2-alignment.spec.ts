@@ -183,9 +183,11 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   ).toHaveCount(0);
   const optional = body.getByRole("switch", { name: "Optional", exact: true });
   if (await optional.isChecked()) await optional.uncheck();
+  // Any ungrouped line can be linked into a Choose one group; linking makes
+  // it optional, so the control no longer waits for Optional.
   await expect(
     body.getByRole("combobox", { name: "Link as alternative", exact: true }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   await optional.check();
   await expect(
     body.getByRole("combobox", { name: "Link as alternative", exact: true }),
