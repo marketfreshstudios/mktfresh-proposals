@@ -1,6 +1,7 @@
 "use client";
 import { ToastSurface } from "./toast-surface";
 import { StaffSectionHeading } from "./staff-section-heading";
+import { StaffPerson } from "./staff-person";
 import { withCount } from "../lib/count-label";
 import { Empty } from "./ui";
 import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
@@ -671,19 +672,28 @@ export function ProposalRows({
         ) : (
           visible.map((p) => {
             const t = totals(p.quote);
+            const ownerMember = data.staff.find(
+              (m) =>
+                m.user_id ===
+                (reportSender
+                  ? (p.sender?.user_id ?? proposalOwnerId(p))
+                  : proposalOwnerId(p)),
+            );
+            const ownerName =
+              ownerMember?.display_name ??
+              (reportSender ? p.sender?.display_name : undefined) ??
+              p.owner?.display_name ??
+              p.sender?.display_name;
             const owner = showOwner ? (
               <span className="proposal-owner" data-label="Owner">
-                {data.staff.find(
-                  (m) =>
-                    m.user_id ===
-                    (reportSender
-                      ? (p.sender?.user_id ?? proposalOwnerId(p))
-                      : proposalOwnerId(p)),
-                )?.display_name ??
-                  (reportSender ? p.sender?.display_name : undefined) ??
-                  p.owner?.display_name ??
-                  p.sender?.display_name ??
-                  "—"}
+                {ownerName ? (
+                  <StaffPerson
+                    name={ownerName}
+                    photo={ownerMember?.photo_url}
+                  />
+                ) : (
+                  <span className="muted">No owner</span>
+                )}
               </span>
             ) : null;
             return (
@@ -2532,12 +2542,21 @@ export function RecordV4({
               <div>
                 <dt>Owner</dt>
                 <dd>
-                  {data.staff.find(
-                    (member) => member.user_id === proposalOwnerId(p),
-                  )?.display_name ||
-                    p.owner?.display_name ||
-                    p.sender?.display_name ||
-                    person(p.created_by, data)}
+                  <StaffPerson
+                    name={
+                      data.staff.find(
+                        (member) => member.user_id === proposalOwnerId(p),
+                      )?.display_name ||
+                      p.owner?.display_name ||
+                      p.sender?.display_name ||
+                      person(p.created_by, data)
+                    }
+                    photo={
+                      data.staff.find(
+                        (member) => member.user_id === proposalOwnerId(p),
+                      )?.photo_url
+                    }
+                  />
                 </dd>
               </div>
               <div>
