@@ -1,6 +1,6 @@
 "use client";
 import { PanelCard } from "./editor/tools-panel";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Minus } from "lucide-react";
 import { useControlLayout } from "./editor/control-layout";
 import { useManagedPopover } from "./editor-popovers";
 import { createPortal } from "react-dom";
@@ -348,6 +348,12 @@ export function BlockMenu({
           )}
         </header>
       )}
+      {variant === "panel" && (
+        <p className="fields-hint">
+          Drag a block onto the page, or click to add it below the selected
+          block.
+        </p>
+      )}
       <input
         ref={input}
         type="search"
@@ -365,7 +371,11 @@ export function BlockMenu({
         aria-label="Block types"
       >
         {["Text", "Media", "Proposal", "Saved blocks"].map((group) => {
-          if (!options.some((o) => o.group === group)) return null;
+          const count = options.filter(
+            (option) => option.group === group,
+          ).length;
+          const savedCard = variant === "panel" && group === "Saved blocks";
+          if (!count && !savedCard) return null;
           const rows = (
             <>
               {" "}
@@ -406,7 +416,11 @@ export function BlockMenu({
                       onClick={() => choose(option)}
                     >
                       <span className="block-menu-icon">
-                        <Icon name={option.icon} />
+                        {option.icon === "divider" ? (
+                          <Minus width={18} height={16} aria-hidden="true" />
+                        ) : (
+                          <Icon name={option.icon} />
+                        )}
                       </span>
                       <span>
                         <strong>{optionName(option)}</strong>
@@ -442,19 +456,21 @@ export function BlockMenu({
             <PanelCard
               key={group}
               title={group}
-              count={
-                group === "Saved blocks"
-                  ? options.filter((o) => o.group === group).length
-                  : undefined
-              }
-              open={query ? true : !!expanded[group]}
+              count={savedCard ? count : undefined}
+              open={query ? count > 0 : !!expanded[group]}
               onToggle={(open) => {
                 if (!query) setExpanded((old) => ({ ...old, [group]: open }));
               }}
             >
-              <div role="menu" aria-label={group}>
-                {rows}
-              </div>
+              {count ? (
+                <div role="menu" aria-label={group}>
+                  {rows}
+                </div>
+              ) : (
+                <p className="muted saved-blocks-empty">
+                  {query ? "No matching saved blocks." : "No saved blocks yet."}
+                </p>
+              )}
             </PanelCard>
           ) : (
             <section key={group} role="group" aria-label={group}>

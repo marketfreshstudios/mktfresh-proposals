@@ -78,6 +78,9 @@ for (const width of [1440, 768, 375])
           await expect(summary).toHaveAttribute("aria-expanded", /true|false/);
         }
         if (tab === "Fields") {
+          await expect(
+            surface.getByRole("heading", { name: /^(Team|Job)$/ }),
+          ).toHaveCount(0);
           const row = surface.getByRole("button", {
             name: /Client first name/,
           });
@@ -93,7 +96,50 @@ for (const width of [1440, 768, 375])
             .getByRole("searchbox", { name: "Search fields" })
             .clear();
         }
+        if (tab === "Blocks") {
+          await expect(
+            surface.getByText(
+              "Drag a block onto the page, or click to add it below the selected block.",
+            ),
+          ).toBeVisible();
+          await expect(
+            surface
+              .getByRole("menuitem", { name: "Divider" })
+              .locator("svg.lucide-minus"),
+          ).toBeVisible();
+          const saved = surface.locator(".editor-panel-card").filter({
+            has: page.getByRole("heading", {
+              name: "Saved blocks",
+              exact: true,
+            }),
+          });
+          await expect(saved.locator(".panel-card-count")).toHaveText("0");
+          await saved.locator("summary").click();
+          await expect(saved.getByText("No saved blocks yet.")).toBeVisible();
+          await expect(saved.locator("summary")).toHaveAttribute(
+            "aria-expanded",
+            "true",
+          );
+          await saved.locator("summary").click();
+          await expect(saved.locator("summary")).toHaveAttribute(
+            "aria-expanded",
+            "false",
+          );
+          const search = surface.getByRole("searchbox", {
+            name: "Search blocks",
+          });
+          await search.fill("no blocks match this");
+          await expect(saved.locator(".panel-card-count")).toBeVisible();
+          await search.clear();
+          await expect(saved).not.toHaveAttribute("open", "");
+        }
         if (tab === "Styles") {
+          for (const name of ["Reset to template", "Save to template"]) {
+            const button = surface.getByRole("button", { name, exact: true });
+            expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(
+              40,
+            );
+          }
           const shared = surface.locator(".shared-bands-card");
           await expect(
             surface

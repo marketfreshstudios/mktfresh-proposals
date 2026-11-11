@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Select, Switch } from "./form-controls";
 import { oiotItem, oiotKickoff, oiotPlan, oiotPlanDetails } from "../lib/oiot";
-import type { Block, QuoteItem, Item } from "../lib/model";
+import type { Block, QuoteItem, Item, Subline } from "../lib/model";
 import {
   choiceRequired,
   visibleQuote,
@@ -13,17 +13,18 @@ import {
 } from "../lib/quote-options";
 import { quoteRange } from "../lib/quote-model";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
-import {
-  sublineLabel,
-  ambiguousSublines,
-  removeSubline,
-} from "../lib/subline-label";
+import { sublineLabel, removeSubline } from "../lib/subline-label";
+import { formatMoney } from "../lib/money";
+import { intervalLabel } from "../lib/presentation";
 import { DisclosureChevron } from "./disclosure-chevron";
 import { Reorder, Sortable } from "./sortable";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useMoney } from "./money-context";
 import { Button, Field, Disclosure, Totals } from "./ui";
 const uid = () => crypto.randomUUID();
+function sublinePlaceholder(line: Subline, index: number) {
+  return `Sub-line ${index + 1} | ${intervalLabel(line.interval)}`;
+}
 function OiotKickoffInput({
   amount,
   onCommit,
@@ -110,10 +111,19 @@ export function QuoteItemsPanel({
   }, [items, expandedItem]);
   function addSubline(item: QuoteItem) {
     const id = uid();
+    const [first] = item.sublines;
+    let sublines = item.sublines;
+    if (sublines.length === 1 && !first.label?.trim()) {
+      const product = catalog.find(
+        (entry) => entry.id === item.pricing_item_id,
+      );
+      const suggestion = product ? itemDisplayName(product) : item.name;
+      sublines = [{ ...first, label: suggestion.trim().slice(0, 200) }];
+    }
     focusSubline.current = id;
     updateItem(item.id, {
       sublines: [
-        ...item.sublines,
+        ...sublines,
         {
           id,
           amount: 0,
@@ -421,7 +431,7 @@ export function QuoteItemsPanel({
                   : ""}
               </span>
             </div>
-            {i.sublines.map((s) => (
+            {i.sublines.map((s, index) => (
               <div className="subline" key={s.id}>
                 <div
                   className="subline-grid"
@@ -431,13 +441,13 @@ export function QuoteItemsPanel({
                     {i.sublines.length > 1 && (
                       <div
                         className="subline-label-edit"
-                        data-label={s.label || sublineLabel(s)}
+                        data-label={s.label || sublinePlaceholder(s, index)}
                       >
                         <textarea
                           data-subline-label={s.id}
                           rows={1}
                           aria-label={`Sub-line label for ${i.name}`}
-                          placeholder={sublineLabel({ ...s, label: "" })}
+                          placeholder={sublinePlaceholder(s, index)}
                           value={s.label ?? ""}
                           onChange={(e) =>
                             updateItem(i.id, {
@@ -475,15 +485,6 @@ export function QuoteItemsPanel({
                     <div className="subline-amount">
                       <Field label={`Amount | ${currency}`}>
                         <span className="currency-input">
-                          <span aria-hidden="true">
-                            {new Intl.NumberFormat("en-US", {
-                              style: "currency",
-                              currency: currency,
-                            })
-                              .formatToParts(0)
-                              .find((part) => part.type === "currency")
-                              ?.value ?? currency}
-                          </span>
                           <input
                             aria-label={`Amount ${s.label || i.name}`}
                             type="number"
@@ -511,6 +512,12 @@ export function QuoteItemsPanel({
                               })
                             }
                           />
+                          <span
+                            className="currency-input-display"
+                            aria-hidden="true"
+                          >
+                            {formatMoney(s.amount, currency, "always")}
+                          </span>
                         </span>
                       </Field>
                     </div>
@@ -634,6 +641,12 @@ export function QuoteItemsPanel({
                 </details>
               </div>
             ))}
+            {i.sublines.length > 1 &&
+              i.sublines.some((s) => !s.label?.trim()) && (
+                <p className="subline-warning">
+                  Name these sub-lines so the client can tell them apart.
+                </p>
+              )}
             {!i.oiot_build && (
               <Button
                 className="quote-add-subline"
@@ -641,11 +654,6 @@ export function QuoteItemsPanel({
               >
                 Add sub-line
               </Button>
-            )}
-            {ambiguousSublines(i) && (
-              <p className="subline-warning">
-                Name these sub-lines so the client can tell them apart.
-              </p>
             )}
             <div className="item-options">
               <label className="check">

@@ -1249,3 +1249,17 @@ Quote colors from #149 remain available inside Page & margins. Explicit Cards
 and the equivalent omitted layout/color defaults compare as unchanged for
 Save to template. Fractional spacing keys round their UI increments to avoid
 floating-point tails; existing field limits and saved units stay the same.
+
+## R23 review follow-ups
+
+Quote amount fields display currency with two decimals while unfocused and
+use the existing number input for editing. The amount gets its own row on
+narrow cards so the formatted value, quantity, and interval stay readable.
+Adding a second sub-line suggests the catalog display name, or the quote
+item name, for an unnamed first line in the same undo step. Sub-line
+placeholders follow each line's current interval.
+
+Blocks keeps the Saved blocks card visible with a zero count when empty.
+Team and Job cards in the shared Fields picker depend on the supplied
+fields. The proposal field map supplies neither group. Team and job
+notification emails supply the corresponding fields.
