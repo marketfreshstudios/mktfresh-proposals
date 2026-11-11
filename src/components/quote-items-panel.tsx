@@ -17,7 +17,7 @@ import { sublineLabel, removeSubline } from "../lib/subline-label";
 import { formatMoney } from "../lib/money";
 import { intervalLabel } from "../lib/presentation";
 import { DisclosureChevron } from "./disclosure-chevron";
-import { Reorder, Sortable } from "./sortable";
+import { JoinTarget, Reorder, Sortable } from "./sortable";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useMoney } from "./money-context";
 import { Button, Field, Disclosure, Totals } from "./ui";
@@ -98,6 +98,7 @@ export function QuoteItemsPanel({
     range = quoteRange(totalsItems),
     setItems = onChange;
   const panel = useRef<HTMLDivElement>(null);
+  const groupCards = useRef(new Map<string, HTMLElement>());
   const focusSubline = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (!focusSubline.current) return;
@@ -231,6 +232,51 @@ export function QuoteItemsPanel({
           : i,
       ),
     );
+  }
+  const oiotGroup = (group: string) =>
+    items.some((i) => i.choice_group_id === group && i.oiot_build);
+  // Drop a standalone line on a Choose one group: it becomes the group's last
+  // option, takes the group's "must choose" setting, and is not the default.
+  function joinGroup(itemId: string, group: string) {
+    const item = items.find((i) => i.id === itemId);
+    const members = items.filter((i) => i.choice_group_id === group);
+    if (!item || item.choice_group_id || !members.length || oiotGroup(group))
+      return;
+    const rest = items.filter((i) => i.id !== itemId);
+    rest.splice(rest.findLastIndex((i) => i.choice_group_id === group) + 1, 0, {
+      ...item,
+      optional: true,
+      choice_group_id: group,
+      choice_group_required: members[0].choice_group_required,
+      default_selected: false,
+    });
+    setItems(rest);
+  }
+  // Drag an option out of its group (or use Remove from group): it becomes a
+  // standalone optional line right after the group. A group left with one
+  // option dissolves.
+  function leaveGroup(itemId: string) {
+    const item = items.find((i) => i.id === itemId);
+    const group = item?.choice_group_id;
+    if (!item || !group || oiotGroup(group)) return;
+    const others = items.filter(
+      (i) => i.choice_group_id === group && i.id !== itemId,
+    );
+    const dissolve = others.length < 2;
+    const rest = items
+      .filter((i) => i.id !== itemId)
+      .map((i) =>
+        dissolve && i.choice_group_id === group
+          ? { ...i, choice_group_id: null, choice_group_required: undefined }
+          : i,
+      );
+    const after = rest.findLastIndex((i) => others.some((o) => o.id === i.id));
+    rest.splice(after + 1, 0, {
+      ...item,
+      choice_group_id: null,
+      choice_group_required: undefined,
+    });
+    setItems(rest);
   }
   function link(item: QuoteItem, targetId: string) {
     const target = items.find((i) => i.id === targetId);
@@ -705,12 +751,22 @@ export function QuoteItemsPanel({
               )}
             </div>
             {visibilityControl([i], "Show only when")}
-            {!i.choice_group_id && i.optional ? (
+            {i.choice_group_id && !oiotGroup(i.choice_group_id) ? (
+              <Button onClick={() => leaveGroup(i.id)}>
+                Remove from group
+              </Button>
+            ) : null}
+            {!i.choice_group_id && !i.oiot_build ? (
               <Field label="Link as alternative">
                 <Select value="" onChange={(e) => link(i, e.target.value)}>
-                  <option value="">Choose another optional item</option>
+                  <option value="">Choose another item</option>
                   {items
-                    .filter((v) => v.id !== i.id && v.optional)
+                    .filter(
+                      (v) =>
+                        v.id !== i.id &&
+                        !v.oiot_build &&
+                        !(v.choice_group_id && oiotGroup(v.choice_group_id)),
+                    )
                     .map((v) => (
                       <option value={v.id} key={v.id}>
                         {v.name}
@@ -829,6 +885,13 @@ export function QuoteItemsPanel({
             );
             setItems(order.flatMap(unitItems));
           }}
+          join={{
+            canJoin: (from) =>
+              items.some(
+                (i) => i.id === from && !i.choice_group_id && !i.oiot_build,
+              ),
+            onJoin: joinGroup,
+          }}
         >
           {units.map((id) => (
             <Sortable
@@ -841,70 +904,102 @@ export function QuoteItemsPanel({
               }
             >
               {unitItems(id)[0].choice_group_id ? (
-                <PanelCard
-                  title="Choose one"
-                  nested
-                  collapsible={false}
-                  className="editor-choice-group"
-                  bodyClassName="quote-choice-well"
-                  actions={
-                    !unitItems(id).some((item) => item.oiot_build) ? (
-                      <Button variant="ghost" onClick={() => unlink(id)}>
-                        Unlink
-                      </Button>
-                    ) : null
-                  }
+                <JoinTarget
+                  id={id}
+                  label="Drop to add to this group"
+                  disabled={oiotGroup(id)}
                 >
-                  <details className="quote-group-settings">
-                    <Disclosure>Choice group settings</Disclosure>
-                    <label className="check">
-                      <Switch
-                        checked={choiceRequired(unitItems(id)[0])}
-                        onChange={(event) =>
-                          changeRequired(id, event.target.checked)
-                        }
-                      />
-                      Client must choose one
-                    </label>
-                    {!choiceRequired(unitItems(id)[0]) &&
-                      unitItems(id).some((item) => item.default_selected) && (
-                        <Button
-                          onClick={() =>
-                            setItems(
-                              items.map((item) =>
-                                item.choice_group_id === id
-                                  ? { ...item, default_selected: false }
-                                  : item,
-                              ),
-                            )
-                          }
-                        >
-                          Clear default choice
-                        </Button>
-                      )}
-                    {visibilityControl(unitItems(id), "Show group only when")}
-                  </details>
-                  <Reorder
-                    ids={unitItems(id).map((i) => i.id)}
-                    onMove={(from, to) => {
-                      const options = unitItems(id),
-                        next = arrayMove(
-                          options,
-                          options.findIndex((i) => i.id === from),
-                          options.findIndex((i) => i.id === to),
-                        );
-                      setItems(
-                        units.flatMap((u) => (u === id ? next : unitItems(u))),
-                      );
+                  <div
+                    ref={(node) => {
+                      if (node) groupCards.current.set(id, node);
+                      else groupCards.current.delete(id);
                     }}
                   >
-                    {unitItems(id).map((i) => (
-                      <Sortable key={i.id} id={i.id} label={i.name}>
-                        {itemCard(i)}
-                      </Sortable>
-                    ))}
-                  </Reorder>
-                </PanelCard>
+                    <PanelCard
+                      title="Choose one"
+                      nested
+                      collapsible={false}
+                      className="editor-choice-group"
+                      bodyClassName="quote-choice-well"
+                      actions={
+                        !unitItems(id).some((item) => item.oiot_build) ? (
+                          <Button variant="ghost" onClick={() => unlink(id)}>
+                            Unlink
+                          </Button>
+                        ) : null
+                      }
+                    >
+                      <details className="quote-group-settings">
+                        <Disclosure>Choice group settings</Disclosure>
+                        <label className="check">
+                          <Switch
+                            checked={choiceRequired(unitItems(id)[0])}
+                            onChange={(event) =>
+                              changeRequired(id, event.target.checked)
+                            }
+                          />
+                          Client must choose one
+                        </label>
+                        {!choiceRequired(unitItems(id)[0]) &&
+                          unitItems(id).some(
+                            (item) => item.default_selected,
+                          ) && (
+                            <Button
+                              onClick={() =>
+                                setItems(
+                                  items.map((item) =>
+                                    item.choice_group_id === id
+                                      ? { ...item, default_selected: false }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            >
+                              Clear default choice
+                            </Button>
+                          )}
+                        {visibilityControl(
+                          unitItems(id),
+                          "Show group only when",
+                        )}
+                      </details>
+                      <Reorder
+                        ids={unitItems(id).map((i) => i.id)}
+                        leave={
+                          oiotGroup(id)
+                            ? undefined
+                            : {
+                                container: {
+                                  get current() {
+                                    return groupCards.current.get(id) ?? null;
+                                  },
+                                },
+                                onLeave: leaveGroup,
+                              }
+                        }
+                        onMove={(from, to) => {
+                          const options = unitItems(id),
+                            next = arrayMove(
+                              options,
+                              options.findIndex((i) => i.id === from),
+                              options.findIndex((i) => i.id === to),
+                            );
+                          setItems(
+                            units.flatMap((u) =>
+                              u === id ? next : unitItems(u),
+                            ),
+                          );
+                        }}
+                      >
+                        {unitItems(id).map((i) => (
+                          <Sortable key={i.id} id={i.id} label={i.name}>
+                            {itemCard(i)}
+                          </Sortable>
+                        ))}
+                      </Reorder>
+                    </PanelCard>
+                  </div>
+                </JoinTarget>
               ) : (
                 itemCard(unitItems(id)[0])
               )}
