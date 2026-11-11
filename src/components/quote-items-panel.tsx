@@ -554,8 +554,6 @@ export function QuoteItemsPanel({
           )}
           <strong className="quote-row-amount">
             {i.oiot_build && !kickoff ? "Kickoff needed" : amount}
-            {i.sublines.length === 1 &&
-              i.sublines[0].interval === "one_time" && <small> one-time</small>}
           </strong>
           <DisclosureChevron open={expanded} />
         </button>
@@ -1162,7 +1160,7 @@ export function QuoteItemsPanel({
             ? "Across visible choices"
             : "Across all choices"}{" "}
           | {money(range.min.one_time_total, currency)}–
-          {money(range.max.one_time_total, currency)} one-time |{" "}
+          {money(range.max.one_time_total, currency)} |{" "}
           {money(range.min.monthly_total, currency)}–
           {money(range.max.monthly_total, currency)}/mo
           {visibleQuote(totalsItems).some((i) =>
