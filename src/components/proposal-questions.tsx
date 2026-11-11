@@ -13,6 +13,7 @@ import type { PublicProposal } from "./client-proposal";
 import { DialogActions } from "./dialog-actions";
 import { Select } from "./form-controls";
 import { Sheet } from "./foundation";
+import { StaffSectionHeading } from "./staff-section-heading";
 import { api, Button, post } from "./ui";
 
 const questionStatus = {
@@ -325,84 +326,117 @@ function AskForm({
   );
 }
 
-export function ProposalQuestions({
-  id,
-  timezone,
-}: {
-  id: string;
-  timezone: string;
-}) {
-  const url = `/api/proposals/${id}/questions`;
-  const [data, setData] = useState<StaffQuestionsResult | null>(null);
+export function useProposalQuestions(id: string | null) {
+  const url = id ? `/api/proposals/${id}/questions` : null;
+  const currentUrl = useRef(url);
+  currentUrl.current = url;
+  const [snapshot, setSnapshot] = useState<{
+    url: string;
+    result: StaffQuestionsResult;
+  } | null>(null);
   const [error, setError] = useState("");
   const [replying, setReplying] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const load = () =>
-    api<StaffQuestionsResult>(url)
-      .then((result) => {
-        if (Array.isArray(result.threads)) setData(result);
-      })
-      .catch((e) => setError(e.message));
+  const data = snapshot?.url === url ? snapshot.result : null;
+  const load = async () => {
+    if (!url) return;
+    setError("");
+    try {
+      const result = await api<StaffQuestionsResult>(url);
+      if (currentUrl.current === url && Array.isArray(result.threads))
+        setSnapshot({ url, result });
+    } catch (e) {
+      if (currentUrl.current === url) setError((e as Error).message);
+    }
+  };
   useEffect(() => {
+    setReplying(null);
+    setBusy(false);
     void load();
-  }, [id]);
+  }, [url]);
   useQuestionAnchor(!!data);
   const update = async (thread: string, action: object) => {
+    if (!url) return;
     setError("");
     setBusy(true);
     try {
-      setData(await post<StaffQuestionsResult>(`${url}/${thread}`, action));
+      const result = await post<StaffQuestionsResult>(
+        `${url}/${thread}`,
+        action,
+      );
+      if (currentUrl.current !== url) return;
+      setSnapshot({ url, result });
       setReplying(null);
     } catch (e) {
-      setError((e as Error).message);
+      if (currentUrl.current === url) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (currentUrl.current === url) setBusy(false);
     }
   };
+  return { data, error, replying, setReplying, busy, load, update };
+}
+
+export function ProposalQuestions({
+  questions,
+  timezone,
+}: {
+  questions: ReturnType<typeof useProposalQuestions>;
+  timezone: string;
+}) {
+  const { data, error, replying, setReplying, busy, load, update } = questions;
+  const openCount =
+    data?.threads.filter((thread) => thread.status === "open").length ?? 0;
+  if (!data?.threads.length && !error) return null;
   return (
-    <section className="card questions-panel" aria-label="Questions">
-      <header className="section-heading">
-        <h2>Questions</h2>
-        <Button onClick={load}>Refresh questions</Button>
-      </header>
-      {error && <p role="alert">{error}</p>}
-      {data && !data.threads.length && (
-        <p className="muted">No questions yet.</p>
-      )}
-      {data?.threads.map((thread) => (
-        <QuestionCard
-          key={thread.id}
-          thread={thread}
-          timezone={timezone}
-          notify={data.notified.includes(thread.id)}
-        >
-          {thread.status !== "resolved" && (
-            <div className="question-thread-actions">
-              {data.can_reply && (
-                <Button onClick={() => setReplying(thread.id)} disabled={busy}>
-                  Reply
+    <section className="record-section" aria-label="Questions">
+      <StaffSectionHeading
+        action={<Button onClick={load}>Refresh questions</Button>}
+      >
+        Client questions{" "}
+        {openCount > 0 && (
+          <span className="pill warning">{openCount} open</span>
+        )}
+      </StaffSectionHeading>
+      <div className="card questions-panel">
+        {error && <p role="alert">{error}</p>}
+        {data?.threads.map((thread) => (
+          <QuestionCard
+            key={thread.id}
+            thread={thread}
+            timezone={timezone}
+            notify={data.notified.includes(thread.id)}
+          >
+            {thread.status !== "resolved" && (
+              <div className="question-thread-actions">
+                {data.can_reply && (
+                  <Button
+                    onClick={() => setReplying(thread.id)}
+                    disabled={busy}
+                  >
+                    Reply
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  onClick={() => void update(thread.id, { action: "resolve" })}
+                  disabled={busy}
+                >
+                  Mark resolved
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                onClick={() => void update(thread.id, { action: "resolve" })}
-                disabled={busy}
-              >
-                Mark resolved
-              </Button>
-            </div>
-          )}
-          {replying === thread.id && (
-            <ReplyForm
-              busy={busy}
-              onClose={() => setReplying(null)}
-              send={(reply, text) =>
-                update(thread.id, { action: "reply", id: reply, text })
-              }
-            />
-          )}
-        </QuestionCard>
-      ))}
+              </div>
+            )}
+            {replying === thread.id && (
+              <ReplyForm
+                busy={busy}
+                onClose={() => setReplying(null)}
+                send={(reply, text) =>
+                  update(thread.id, { action: "reply", id: reply, text })
+                }
+              />
+            )}
+          </QuestionCard>
+        ))}
+      </div>
     </section>
   );
 }
@@ -418,6 +452,8 @@ function ReplyForm({
 }) {
   const [text, setText] = useState("");
   const id = useRef(crypto.randomUUID());
+  const input = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => input.current?.focus(), []);
   return (
     <form
       className="stack question-form"
@@ -429,6 +465,7 @@ function ReplyForm({
       <label className="field">
         Your reply
         <textarea
+          ref={input}
           rows={4}
           maxLength={questionLimit}
           required

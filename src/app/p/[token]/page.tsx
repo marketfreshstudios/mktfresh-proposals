@@ -6,10 +6,12 @@ export default async function Page({
   params: Promise<{ token: string }>;
   searchParams: Promise<{ preview?: string }>;
 }) {
+  const { preview } = await searchParams;
   return (
     <ClientProposal
       token={(await params).token}
-      preview={(await searchParams).preview === "1"}
+      preview={preview === "1" || preview === "published"}
+      publishedPreview={preview === "published"}
     />
   );
 }

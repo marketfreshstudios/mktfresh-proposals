@@ -196,7 +196,13 @@ test.describe("Staff content surfaces", () => {
     await screenshot(page, "proposals-1440");
 
     await page.goto(`/proposals/${f.draft.id}?view=record`);
-    await surface(page.locator(".record-sheet"));
+    for (const selector of [
+      ".record-details-values",
+      ".record-quote-card",
+      ".record-signature-card",
+      ".record-timeline-list",
+    ])
+      await surface(page.locator(selector));
     await expect(
       page.locator(".proposal-email-table .empty-copy"),
     ).toContainText("No saved email copies yet.");

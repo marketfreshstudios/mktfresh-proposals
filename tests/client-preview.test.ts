@@ -25,6 +25,37 @@ it("draft preview renders branding and content without changing state, tokens, e
   expect(JSON.stringify(await repo.get(draft.id))).toBe(before);
   expect(draft.token).toBeNull();
 });
+it("published preview uses the last good version while the normal staff preview shows the saved edits", async () => {
+  const { repo, service, draft, settings } = await setup();
+  const sent = await service.send(draft.id, staff);
+  const work = await service.edit(
+    sent.id,
+    {
+      revision: sent.revision,
+      title: "Working proposal title",
+      content: sent.content.filter((block) => block.type !== "pricing_table"),
+    },
+    staff,
+  );
+  expect(work.live_blockers).toContain("Add a pricing table");
+  const before = await repo.get(work.id);
+
+  const published = previewResult(work, settings, "published");
+  expect(published).toMatchObject({
+    title: sent.title,
+    sent_at: sent.versions.at(-1)!.created_at,
+    version_no: sent.versions.at(-1)!.version_no,
+    reviewed_hash: sent.versions.at(-1)!.content_hash,
+    content: sent.versions.at(-1)!.content,
+    engagement_allowed: false,
+    preview_can_send: false,
+  });
+  expect(previewResult(work, settings).title).toBe(work.title);
+  expect(await repo.get(work.id)).toEqual(before);
+  expect(() => previewResult(draft, settings, "published")).toThrow(
+    "Published proposal unavailable",
+  );
+});
 it("alphabetizes sellable items by display name and snapshots display names into new quote lines", async () => {
   const { repo } = await setup();
   const [base] = await repo.entities<Item>("pricing_items");
@@ -104,13 +135,16 @@ it("unmapped one-time lines can send and become Invoice manually needs-review it
   expect(spy).not.toHaveBeenCalled();
 });
 
-it("preview data requires staff authentication", async () => {
-  const { handle } = await import("../src/lib/http");
-  const response = await handle(
-    new Request(
-      "http://localhost/api/proposals/00000000-0000-4000-8000-000000000001/preview",
-    ),
-    ["proposals", "00000000-0000-4000-8000-000000000001", "preview"],
-  );
-  expect(response.status).toBe(401);
-});
+it.each(["", "?mode=published"])(
+  "preview data requires staff authentication (%s)",
+  async (query) => {
+    const { handle } = await import("../src/lib/http");
+    const response = await handle(
+      new Request(
+        `http://localhost/api/proposals/00000000-0000-4000-8000-000000000001/preview${query}`,
+      ),
+      ["proposals", "00000000-0000-4000-8000-000000000001", "preview"],
+    );
+    expect(response.status).toBe(401);
+  },
+);

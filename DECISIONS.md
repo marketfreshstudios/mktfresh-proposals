@@ -1263,3 +1263,25 @@ Blocks keeps the Saved blocks card visible with a zero count when empty.
 Team and Job cards in the shared Fields picker depend on the supplied
 fields. The proposal field map supplies neither group. Team and job
 notification emails supply the corresponding fields.
+
+## R24 proposal details, desktop
+
+The proposal details page follows frames 4a–4n2 with five lifecycle
+steps and a separate billing status. The hero holds the one filled
+action when available. Expiration stays visible until both signatures,
+as shown in 4e. Manual invoicing and failed-job recovery keep their
+billing controls available even when the proposal uses neither integration.
+
+An unsigned Sent or Viewed record uses the existing live blockers to
+show Edits not live. An open client question keeps priority in the hero.
+The published date comes from the latest immutable published version.
+The published staff preview uses the existing preview authorization and
+does not count as a client view. Fix in editor opens Readiness and
+focuses the first blocker. The Timeline labels the existing edit event.
+
+Extend link uses the existing reopen action. It keeps the client link
+and applies the workspace's default validity period without sending
+another email. Imports keep their existing read-only action rules;
+archived proposals must be unarchived before using staff preview.
+The client question flow and email log keep their existing behavior.
+Phone and tablet frames 5a–5h are delivered separately. No migration.

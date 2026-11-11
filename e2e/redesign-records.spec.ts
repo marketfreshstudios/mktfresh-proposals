@@ -529,9 +529,7 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
   expect(signed.signers.find((s) => s.role === "company")?.actor).toBe(
     delegate.actor,
   );
-  await page
-    .getByRole("link", { name: "Back to proposals", exact: false })
-    .click();
+  await page.getByRole("link", { name: "Proposals", exact: true }).click();
   await expect(page).toHaveURL(/view=needs-countersign/);
   await expect(
     page.getByRole("button", { name: "Countersign", exact: true }),

@@ -1,5 +1,6 @@
 "use client";
 import { DialogActions } from "./dialog-actions";
+import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Proposal } from "../lib/model";
 import { Button, Field } from "./ui";
@@ -10,12 +11,14 @@ export function CopyClientLink({
   menu = false,
   buttonOnly = false,
   label = "Copy link",
+  iconOnly = false,
 }: {
   token: string;
   appUrl: string;
   menu?: boolean;
   buttonOnly?: boolean;
   label?: string;
+  iconOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false),
     [error, setError] = useState("");
@@ -57,6 +60,27 @@ export function CopyClientLink({
           </p>
         )}
       </>
+    );
+  if (iconOnly)
+    return (
+      <div className="record-client-link">
+        <span>{url}</span>
+        <button
+          className="round-icon"
+          type="button"
+          aria-label={label}
+          title={copied ? "Copied" : label}
+          onClick={() => void copy()}
+        >
+          <Copy size={16} aria-hidden="true" />
+        </button>
+        {copied && (
+          <span className="sr-only" role="status">
+            Copied
+          </span>
+        )}
+        {error && <small role="alert">{error}</small>}
+      </div>
     );
   return (
     <div className="client-link-control">

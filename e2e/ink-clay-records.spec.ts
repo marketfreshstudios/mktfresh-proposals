@@ -471,7 +471,7 @@ test("record toolbar and next step select one primary action without widening si
     [f.countersign, "Review & countersign", "record-signed"],
     [f.completed, "Download PDF", "record-completed"],
     [f.billing, "Download PDF", "record-billing"],
-    [f.lost, "Edit", ""],
+    [f.lost, "Duplicate", ""],
     [f.expired, "Edit", ""],
     [f.manual, "Download PDF", ""],
     [f.archived, "Unarchive", ""],
@@ -479,21 +479,30 @@ test("record toolbar and next step select one primary action without widening si
   ] as const) {
     await page.goto(record(p));
     const toolbar = page.locator(".record-toolbar");
-    await expect(toolbar.locator(".record-primary")).toHaveCount(1);
-    await expect(toolbar.locator(".record-primary")).toHaveAccessibleName(
-      label,
+    const heroPrimary = page.locator(
+      ".record-next-actions > div:first-child .btn",
     );
-    await expect(toolbar.locator(".record-primary svg")).toHaveCount(0);
-    if (label === "Review & countersign")
-      await expect(toolbar.locator(".record-primary")).toHaveCSS(
+    if (p === f.imported) {
+      await expect(
+        toolbar.getByRole("link", { name: "Download PDF", exact: true }),
+      ).toHaveCount(0);
+      await expect(heroPrimary).toHaveAccessibleName("Download PDF");
+    } else {
+      const toolbarAction = toolbar
+        .getByRole("button", { name: label, exact: true })
+        .or(toolbar.getByRole("link", { name: label, exact: true }));
+      await expect(toolbarAction).toBeVisible();
+      await expect(toolbarAction.locator("svg")).toHaveCount(0);
+    }
+    if (await heroPrimary.count()) {
+      await expect(heroPrimary).toHaveCSS(
         "background-color",
-        "rgb(180, 83, 42)",
+        "rgb(255, 255, 255)",
       );
-    else
-      await expect(toolbar.locator(".record-primary")).toHaveCSS(
-        "background-color",
-        "rgb(19, 48, 58)",
-      );
+      await expect(toolbar.locator(".record-primary")).toHaveCount(0);
+    } else {
+      await expect(toolbar.locator(".record-primary")).toHaveCount(1);
+    }
     if (p === f.imported || p === f.archived)
       await expect(
         toolbar.getByRole("link", { name: "Preview as client" }),
@@ -512,7 +521,7 @@ test("record toolbar and next step select one primary action without widening si
     if (shot) await capture(page, `${shot}-1440`);
     if (p === f.billing) {
       const hero = page.locator(".next-card");
-      await expect(hero).toHaveClass(/billing-attention/);
+      await expect(hero).toHaveAttribute("data-problem", "true");
       await expect(
         hero.getByRole("button", { name: "Resend payment link" }),
       ).toBeVisible();
@@ -524,9 +533,7 @@ test("record toolbar and next step select one primary action without widening si
       ).toHaveCount(0);
     }
     if (p === f.manual) {
-      await expect(
-        page.getByText(/Marked as won by .*no client signature/),
-      ).toBeVisible();
+      await expect(page.getByText(/Marked as won by /)).toBeVisible();
       await expect(page.locator(".record-signatures")).toHaveCount(0);
     }
   }
@@ -656,7 +663,11 @@ for (const width of [1440, 768, 375]) {
         expect(
           results.violations.map((issue) => [
             issue.id,
-            issue.nodes.map((node) => node.target),
+            issue.nodes.map((node) => ({
+              target: node.target,
+              summary: node.failureSummary,
+              html: node.html,
+            })),
           ]),
           `${theme} ${path} at ${width}`,
         ).toEqual([]);
