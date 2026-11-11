@@ -4,7 +4,13 @@ import { PanelCard } from "./editor/tools-panel";
 import { useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Select, Switch } from "./form-controls";
-import { oiotItem, oiotKickoff, oiotPlan, oiotPlanDetails } from "../lib/oiot";
+import {
+  oiotBuildItem,
+  oiotItem,
+  oiotKickoff,
+  oiotPlan,
+  oiotPlanDetails,
+} from "../lib/oiot";
 import {
   QuoteItemSchema,
   type Block,
@@ -295,7 +301,7 @@ export function QuoteItemsPanel({
     (groups.get(group) ?? []).filter((item) => !item.choice_group_placeholder);
   const oiotGroup = (group: string) =>
     groupOptions(group).some((item) =>
-      oiotItem(item, proposalContent ?? [], catalog),
+      oiotBuildItem(item, proposalContent ?? [], catalog),
     );
   const units = [
     ...new Set(items.map((item) => item.choice_group_id ?? item.id)),
@@ -339,7 +345,13 @@ export function QuoteItemsPanel({
     );
     const source = item?.choice_group_id;
     if (target.group) {
-      if (!item || (!source && (item.oiot_build || oiotGroup(target.group))))
+      if (
+        !item ||
+        (source !== target.group &&
+          (item.oiot_build ||
+            oiotGroup(target.group) ||
+            (!!source && oiotGroup(source))))
+      )
         return;
       const next = groupOptions(target.group).filter(
         (option) => option.id !== itemId,
