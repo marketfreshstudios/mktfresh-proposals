@@ -211,7 +211,7 @@ test("phone client content has a single inset, full-width details and unwrapped 
     expect(inset.right).toBeLessThanOrEqual(16);
     expect(inset.scroll).toBe(inset.width);
     const totalsInset = await page
-      .locator(".flow-choices .flow-totals > div > span")
+      .locator(".flow-choices .flow-totals > div > strong")
       .first()
       .evaluate((el) => el.getBoundingClientRect().left);
     expect(totalsInset).toBeLessThanOrEqual(16);
