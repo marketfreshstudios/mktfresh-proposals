@@ -1,6 +1,6 @@
 # Proposal details page: build spec (Redesign 24)
 
-Visual reference: `Redesign 24 - Proposal Details.dc.html`, frames 4a–4m (one per state). Tokens are in `specs/tokens.css` and match `src/app/ink-clay-tokens.css`. Copy rule: never use "·" as a separator. Use " | ", a comma or a line break.
+Visual reference: `Redesign 24 - Proposal Details.dc.html`: frames 4a–4n2 (one per state, desktop 1440) and 5a–5h (phone 375 and tablet 768). Tokens are in `specs/tokens.css` and match `src/app/ink-clay-tokens.css`. Copy rule: never use "·" as a separator. Use " | ", a comma or a line break.
 
 Target: `RecordV4` in `src/components/records.tsx`, with styles in `src/app/ink-clay-records.css`. Keep every API call, guard and handler. This is a re-layout and a hierarchy change.
 
@@ -52,10 +52,61 @@ Target: `RecordV4` in `src/components/records.tsx`, with styles in `src/app/ink-
 - **4k Lost (marked by staff):** Mark as sent again.
 - **4l Archived:** a neutral banner, with Unarchive as the main button.
 - **4m Proposify import:** read-only. No Preview, no Edit, no steps, no Engagement.
-- **No "changes not sent" state:** saved edits go live in the client view right away.
+- **No "changes not sent" state:** saved edits go live in the client view right away, unless an edit breaks a send rule (4n, 4n2).
+
+## 2a. 4n / 4n2: Edits not live
+Applies only to Sent or Viewed proposals that aren't signed yet. A saved edit that breaks a send rule (required pricing missing, kickoff amount not entered, an unfinished [bracketed note], business state not set, and so on) saves but doesn't go live. The client keeps the last version that passed. Use the reasons the app already returns (the editor header shows "Not live" and the first reason).
+
+**4n (no open question; based on 4c):**
+- **Hero row 3, problem variant:**
+  - Eyebrow "Edits not live" in #FF9A8C.
+  - Headline "Your latest edits aren't on the client's link yet".
+  - Sentence "The client still sees the version from {date}. Fix this to publish your changes:"
+  - Then a list of reasons, at most 3, plus "and {n} more" when there are more.
+  - Buttons: **Fix in editor** (white, opens the editor at the first problem) and **Preview what the client sees** (ghost, opens the live version in preview).
+- **Steps:** stay on Viewed. There is no extra step.
+- **Details › Client link:** the URL and copy button as usual, then a muted note "Shows the version from {date}".
+- **Quote card:** a slim neutral notice at the top (#F4F7F7, hairline below) reading "Showing your latest edits. The client sees the version from {date}.", with a "View live version" text link.
+- **Timeline:** the newest entry is "Edited, not live yet | {time} | {person}", with a red (#C2412F) dot.
+- Everything else matches 4c.
+
+**4n2 (with an open client question; based on 4b):**
+- The question keeps the hero (Reply to question).
+- A slim banner above Details (#FBE9E7 ground, #F0C5BE border, #5A1D14 text, 12px corners) reads "**Edits not live.** The client still sees the version from {date}. {first reason}, and {n} more.", with a "Fix in editor" text link.
+- The Client link note, Quote notice and Timeline entry are the same as 4n.
+
+**Never shown** once either party has signed.
+
+**Tests:**
+- Not-live reasons render, capped at 3 with "and n more".
+- The banner replaces the hero variant when an open question exists.
+- The state is absent after signing.
+
+## 2b. Phone and tablet (frames 5a–5h)
+**Phone (under 700px):**
+- **Hero:** becomes the ink page header, containing:
+  - "‹ Proposals" and a 44px ⋯ button
+  - client name and chips
+  - the title in DM Serif 28/34
+  - "Prepared by"
+  - One-time and Monthly in DM Serif 26
+  - a compact progress line, "Step {n} of 5 | {status}", over a 5-segment bar (done white, current #E07A4A, future #36525C), with "Billing: {status}" on the same line when billing is integrated
+  - the next step
+- **Bottom bar:** sticky and white, holding the state's actions as 48px pills. Countersign is clay, other main actions are ink, secondary actions are outline. The phone tab bar is hidden inside a proposal.
+- **Section order:** Client questions (only when asked), Quote, Signatures, Billing (only when integrated), Details, Engagement, Timeline. On Completed, Details moves above Quote.
+- **Details:** a two-column grid. Client, Client link and Documents span both columns. The copy icon is a 44px target.
+- **Engagement and Timeline:** collapsed to one-line cards with a summary, "Show" and a chevron.
+- **Countersign:** a bottom sheet (690px, 22px top corners, grab handle) showing what was agreed, both signature boxes, the on-behalf checkbox and a full-width clay Countersign button.
+
+**Tablet (700–1099px):**
+- The 64px ink top bar, then the desktop order in one column.
+- Hero figures at 32/38. The steps use 84px columns. The hero buttons stack on the right.
+- Details is a four-column row.
+- Signatures shows two boxes side by side.
+- Engagement and Timeline sit side by side at the bottom.
 
 ## 3. Not in scope
-The client question flow, the email log (`ProposalEmailLog`), and tablet and phone layouts. For now, below 1100px stack Details, then the main column, then the right column.
+The client question flow and the email log (`ProposalEmailLog`).
 
 ## 4. Done when
 - Every state matches its frame at 1440.
