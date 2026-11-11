@@ -1058,7 +1058,7 @@ function TemplatesStudioContent({
     templatePaper,
     true,
     true,
-    tab === "Styles" ? 380 : 400,
+    380,
   );
   function openTab(value: string) {
     setTab(value);

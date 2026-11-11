@@ -343,7 +343,7 @@ function QuoteEditorContent({
     paper,
     true,
     true,
-    tab === "Styles" ? 380 : 400,
+    380,
   );
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
@@ -992,7 +992,7 @@ function QuoteEditorContent({
   const refPanel = (
     <div className="stack">
       <PanelHeading className="t-card-title">
-        Pricing reference · read only
+        Pricing reference | read only
       </PanelHeading>
       {documents.length > 1 && (
         <Field label="Document">
@@ -1012,7 +1012,7 @@ function QuoteEditorContent({
         <>
           <PanelHeading nested>{doc.name}</PanelHeading>
           <p>
-            Version {doc.version} ·{" "}
+            Version {doc.version} |{" "}
             {doc.fetched_at
               ? new Date(doc.fetched_at).toLocaleString()
               : "Pasted text"}
@@ -3116,7 +3116,7 @@ function QuoteEditorContent({
                 ? "Column style"
                 : undefined
             }
-            totals={`${money(totals(items).one_time_total, p.currency)} · ${money(totals(items).monthly_total, p.currency)}/mo`}
+            totals={`${money(totals(items).one_time_total, p.currency)} | ${money(totals(items).monthly_total, p.currency)}/mo`}
             onCloseComplete={() => {
               const path = pendingField.current;
               pendingField.current = null;

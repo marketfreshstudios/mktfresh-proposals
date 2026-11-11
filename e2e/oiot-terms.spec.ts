@@ -183,7 +183,9 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
     .toBe(375000);
   if (capture) await page.screenshot({ path: shots + "/quote-panel-1440.png" });
 
-  const defaultPlan = row.getByRole("radio", { name: "Selected for client" });
+  const defaultPlan = row.getByRole("radio", {
+    name: "Make default selection",
+  });
   await defaultPlan.check();
   const clause = page
     .locator(".contract-editor details")
@@ -208,7 +210,7 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
     await page.screenshot({ path: runInShots + "/proposal-editor-1440.png" });
   }
   const now = await openQuoteRow(page, "Own It Now");
-  await now.getByRole("radio", { name: "Selected for client" }).check();
+  await now.getByRole("radio", { name: "Make default selection" }).check();
   await expect
     .poll(
       async () =>
@@ -457,6 +459,9 @@ test("catalog kickoff stays editable after Enter and Tab without clause 4.4", as
     page.getByRole("tab", { name: "Quote", exact: true }),
   ).toBeVisible();
   await openEditorPanel(page, "Quote");
+  await page
+    .getByText("Add from catalog or a custom line", { exact: true })
+    .click();
   await page
     .getByRole("combobox", { name: "Add product" })
     .selectOption(planId);
@@ -730,7 +735,7 @@ for (const width of [1440, 375]) {
       page.locator(".editor-page-sheets[data-layout-settled=true]"),
     ).toBeVisible();
     const row = await openQuoteRow(page, "Own It Over Time");
-    await row.getByRole("radio", { name: "Selected for client" }).click();
+    await row.getByRole("radio", { name: "Make default selection" }).click();
 
     const clause = page.getByRole("heading", {
       name: "4.4 Own It Over Time",

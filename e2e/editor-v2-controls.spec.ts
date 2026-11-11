@@ -169,7 +169,7 @@ test("924px preserves the modal tools drawer: scrim, focus trap and Escape", asy
   );
   expect(backdrop).not.toBe("rgba(0, 0, 0, 0)");
   const controls = drawer.locator(
-    'button:not(:disabled):not([tabindex="-1"]),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
+    ':is(button:not(:disabled):not([tabindex="-1"]),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]):visible',
   );
   async function nativeWrap(key: "Tab" | "Shift+Tab", target: typeof controls) {
     await page.keyboard.press(key);

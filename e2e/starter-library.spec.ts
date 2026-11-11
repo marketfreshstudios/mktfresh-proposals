@@ -343,6 +343,9 @@ test("starter quote and styles use the same in-place autosave", async ({
     .poll(async () => (await current(f)).style_overrides?.title?.size)
     .toBe(24);
   await page.getByRole("tab", { name: "Quote", exact: true }).click();
+  await page
+    .getByText("Add from catalog or a custom line", { exact: true })
+    .click();
   await page.getByRole("button", { name: "Custom line", exact: true }).click();
   await expect
     .poll(async () => (await current(f)).default_items?.length)
