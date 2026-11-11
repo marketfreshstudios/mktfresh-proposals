@@ -199,6 +199,11 @@ test("Template Blocks insert saved copies, guard signatures and undo paired inse
   await page.goto(`/studio/templates/${f.template.id}`);
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
   const panel = page.getByRole("tabpanel", { name: "Blocks", exact: true });
+  for (const group of ["Saved blocks", "Proposal"])
+    await panel
+      .locator(".blocks-panel summary")
+      .filter({ hasText: group })
+      .click();
   await panel
     .getByRole("menuitem", { name: "Reusable introduction", exact: true })
     .click();
@@ -294,6 +299,10 @@ test("Studio editors evidence and responsive tools", async ({ page }) => {
       await page.locator(".quote-row-toggle").first().click();
     await shot(file);
     if (tab === "Blocks") {
+      await page
+        .locator(".blocks-panel summary")
+        .filter({ hasText: "Saved blocks" })
+        .click();
       await page
         .getByRole("menuitem", { name: "Reusable introduction", exact: true })
         .scrollIntoViewIfNeeded();

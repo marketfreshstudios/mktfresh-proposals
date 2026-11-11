@@ -9790,3 +9790,122 @@ dialog.foundation-sheet.block-style-sheet {
 .ink-clay .quote-panel .quote-row-body .field > span {
   color: var(--ink-muted);
 }
+/* Reuse the live SpacingInput with R23's field label, numeric box and thumb. */
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-field > label {
+  font: 600 13px/18px var(--font-ui);
+  color: var(--ink);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"] {
+  appearance: none;
+  background: transparent;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--ink-title) var(--spacing-progress),
+    var(--border) var(--spacing-progress)
+  );
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  > input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  background: var(--surface);
+  border: 2px solid var(--ink-title);
+  border-radius: 50%;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-slider-row
+  .spacing-number {
+  width: 84px;
+  height: 38px;
+  gap: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--border-control);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-number:has(input:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .spacing-number
+  > input:focus-visible {
+  outline: 0;
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .shared-bands-card {
+  border-color: var(--border);
+  box-shadow: none;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .shared-bands-card
+  > .panel-card-header {
+  cursor: default;
+  border-bottom: 0;
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .shared-bands-card
+  .band-style-actions {
+  padding-top: 0;
+}
+@media (max-width: 959px) {
+  .ink-clay
+    :is(.editor-v2-panel, .tools-sheet)
+    .spacing-slider-row
+    .spacing-number {
+    height: 44px;
+  }
+  .ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+    height: 42px;
+  }
+}
+.ink-clay :is(.editor-v2-panel, .tools-sheet) .spacing-number > input {
+  color: var(--ink);
+}
+.ink-clay .saved-block-usage .editor-panel-card .saved-block-usage-row {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+}
+.ink-clay
+  .saved-block-usage
+  .editor-panel-card
+  .saved-block-usage-row:last-child {
+  border-bottom: 0;
+}
+.ink-clay .saved-block-usage .saved-block-save-scope {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}

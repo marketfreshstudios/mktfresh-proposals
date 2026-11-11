@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useId, useRef } from "react";
+import { useEffect, useState, useId, useRef, type CSSProperties } from "react";
 import { useEditorHistory } from "../editor-history";
 /** One page-bounded spacing control, shared by cover, bands and typography. */
 export function SpacingInput({
@@ -48,6 +48,11 @@ export function SpacingInput({
       <div className="spacing-slider-row">
         <input
           type="range"
+          style={
+            {
+              "--spacing-progress": `${Math.max(0, Math.min(100, ((value - min) / (limit - min || 1)) * 100))}%`,
+            } as CSSProperties
+          }
           aria-label={`${ariaLabel} slider`}
           min={min}
           max={limit}
@@ -67,11 +72,15 @@ export function SpacingInput({
               )
             ) {
               e.preventDefault();
+              const direction = ["ArrowLeft", "ArrowDown"].includes(e.key)
+                ? -1
+                : 1;
               change(
-                value +
-                  (["ArrowLeft", "ArrowDown"].includes(e.key) ? -1 : 1) *
-                    (e.shiftKey ? 10 : 1) *
-                    step,
+                Number(
+                  (value + direction * (e.shiftKey ? 10 : 1) * step).toFixed(
+                    12,
+                  ),
+                ),
               );
             }
           }}

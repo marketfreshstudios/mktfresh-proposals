@@ -82,6 +82,7 @@ test("From lists the workspace team, defaults to the current user and submits a 
     await expect(
       page.getByRole("textbox", { name: "Note", exact: true }),
     ).toBeVisible();
+    await page.getByText("Link settings", { exact: true }).click();
     await page
       .getByRole("switch", { name: "Require a password", exact: true })
       .check();

@@ -37,7 +37,7 @@ test("panel rows expand one at a time, retain prices/mappings, fields insert saf
   await panel.getByRole("tab", { name: "Fields", exact: true }).click();
   await expect(
     panel.getByRole("searchbox", { name: "Search fields" }),
-  ).toHaveCSS("height", "40px");
+  ).toHaveCSS("height", "44px");
   await expect(panel.locator(".fields-hint")).toHaveText(
     "Click into a paragraph, then choose a field to insert it. Or type {{ in any paragraph.",
   );

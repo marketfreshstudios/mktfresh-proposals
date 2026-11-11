@@ -104,6 +104,7 @@ export async function confirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   destructive = false,
+  confirmVariant = "primary",
 }: {
   title: string;
   description?: string;
@@ -111,6 +112,7 @@ export async function confirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  confirmVariant?: "primary" | "action";
 }): Promise<boolean> {
   const { createRoot } = await import("react-dom/client");
   return new Promise((resolve) => {
@@ -154,7 +156,7 @@ export async function confirmDialog({
             </button>
             <button
               type="button"
-              className={`btn ${destructive ? "danger" : "primary"}`}
+              className={`btn ${destructive ? "danger" : confirmVariant}`}
               data-dialog-destructive={destructive ? "true" : undefined}
               onClick={() => finish(true)}
             >

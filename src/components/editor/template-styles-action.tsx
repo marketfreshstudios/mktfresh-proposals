@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, Button, post } from "../ui";
+import { api, ApiError, Button, post } from "../ui";
 import { confirmDialog } from "../dialog-actions";
 import { ToastSurface } from "../toast-surface";
 import type { StyleOverrides } from "../../lib/proposal-styles";
@@ -17,14 +17,18 @@ export function TemplateStylesAction({
   revision,
   prepare,
   onApplied,
+  onConflict,
   disabled,
+  disabledReason,
 }: {
   id: string;
   templateId?: string | null;
   revision: number;
   disabled?: boolean;
+  disabledReason?: string;
   prepare: () => Promise<boolean>;
   onApplied: (styles: StyleOverrides) => Promise<() => Promise<void>>;
+  onConflict: () => Promise<void>;
 }) {
   const [target, setTarget] = useState<Target | null>(null),
     [missing, setMissing] = useState(false),
@@ -62,7 +66,7 @@ export function TemplateStylesAction({
   }, [undo]);
   if (!templateId || missing) return null;
   const reason = disabled
-    ? "This proposal is locked"
+    ? (disabledReason ?? "This proposal is locked")
     : !target?.changes
       ? "Loading template styles"
       : !target.changes.length
@@ -88,7 +92,8 @@ export function TemplateStylesAction({
             if (
               !(await confirmDialog({
                 title: `Save styles to ${fresh.name}?`,
-                description: `Save these styles to ${fresh.name}? New proposals from it will use them. Existing proposals don't change.`,
+                description:
+                  "New proposals from it will use these styles. Existing proposals don't change.",
                 details: (
                   <ul>
                     {fresh.changes.map((item) => (
@@ -97,6 +102,7 @@ export function TemplateStylesAction({
                   </ul>
                 ),
                 confirmLabel: "Save to template",
+                confirmVariant: "action",
               }))
             )
               return;
@@ -116,6 +122,13 @@ export function TemplateStylesAction({
                 ? e.message
                 : "Could not save template styles.",
             );
+            if (e instanceof ApiError && e.status === 409) {
+              try {
+                await onConflict();
+              } catch {
+                /* Keep the original conflict visible; never retry a write. */
+              }
+            }
             // Refresh for a new confirmation; a conflict is never retried automatically.
             setRefresh((n) => n + 1);
           } finally {

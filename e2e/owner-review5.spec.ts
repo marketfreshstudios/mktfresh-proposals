@@ -12,6 +12,10 @@ test("Blocks and plus menu insert the signer pair once, with its heading and one
   await page.goto(`/proposals/${f.draft.id}`);
   await page.locator(`[data-block-id="block-${id}"] .tiptap`).click();
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Proposal" })
+    .click();
   await captureReview5(page, "blocks-tab-1440");
   await page
     .locator(".blocks-panel")
@@ -67,6 +71,10 @@ test("Blocks supports pointer drop and Studio inserts the same signatures", asyn
   });
   await page.goto(`/proposals/${f.draft.id}`);
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Proposal" })
+    .click();
   const item = page
     .locator(".blocks-panel")
     .getByRole("menuitem", { name: "Heading 2", exact: true });
@@ -81,6 +89,10 @@ test("Blocks supports pointer drop and Studio inserts the same signatures", asyn
     .toBe(true);
   await page.goto(`/studio/templates/${f.draft.template_id}`);
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Proposal" })
+    .click();
   await page
     .locator(".blocks-panel")
     .getByRole("menuitem", { name: "Signatures", exact: true })

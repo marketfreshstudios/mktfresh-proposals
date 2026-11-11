@@ -313,7 +313,7 @@ test("Fields, Styles, Send and headingless Sections match the measured panel hie
   await panel.getByText("Page & margins", { exact: true }).click();
   await expect(
     panel.getByRole("spinbutton", { name: "Page margin top", exact: true }),
-  ).toHaveCSS("height", "34px");
+  ).toHaveCSS("height", "36px");
   await expect(
     panel.getByRole("combobox", { name: "Text level", exact: true }),
   ).toHaveCSS("height", "38px");

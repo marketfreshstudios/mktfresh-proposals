@@ -13,6 +13,7 @@ import {
   resolveStyles,
   StyleOverridesSchema,
   styleLabels,
+  legacyQuoteNeutrals,
 } from "./proposal-styles";
 import type { Repository } from "./repository";
 import { storedStudioEntity, studioRevision } from "./studio-history";
@@ -35,6 +36,7 @@ function inheritedStyles(
     ...text,
     ...layout,
     quote_layout: layout?.quote_layout ?? "cards",
+    quote_neutrals: layout?.quote_neutrals ?? legacyQuoteNeutrals,
   });
   function differences(
     value: Record<string, unknown>,
@@ -85,10 +87,15 @@ function changedSettings(
         changes.push(
           `${styleLabels[level]}: ${key.replaceAll("_", " ")} (${display(oldStyles[level][key])} → ${display(nextStyles[level][key])})`,
         );
-  for (const key of Object.keys(nextStyles.layout ?? {}) as (keyof NonNullable<
-    typeof nextStyles.layout
-  >)[])
-    if (!same(oldStyles.layout?.[key], nextStyles.layout?.[key]))
+  const layout = (styles: ReturnType<typeof resolveStyles>) => ({
+    ...styles.layout!,
+    quote_layout: styles.layout?.quote_layout ?? "cards",
+    quote_neutrals: styles.layout?.quote_neutrals ?? legacyQuoteNeutrals,
+  });
+  const oldLayout = layout(oldStyles),
+    nextLayout = layout(nextStyles);
+  for (const key of Object.keys(nextLayout) as (keyof typeof nextLayout)[])
+    if (!same(oldLayout[key], nextLayout[key]))
       changes.push(
         key === "quote_layout"
           ? "Quote layout"

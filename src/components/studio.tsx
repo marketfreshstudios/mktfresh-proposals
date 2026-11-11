@@ -1805,7 +1805,7 @@ function TemplatesStudioContent({
         </PanelCard>
         <PanelCard title="When you save" collapsible={false}>
           <fieldset className="saved-block-save-scope">
-            <legend>WHEN YOU SAVE</legend>
+            <legend className="sr-only">WHEN YOU SAVE</legend>
             <label>
               <input
                 type="radio"

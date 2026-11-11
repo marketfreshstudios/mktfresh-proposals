@@ -1242,3 +1242,10 @@ the existing Columns selection controls and Saved block Used in/Details tabs.
 Stored user text and copy elsewhere are unchanged. Readiness retains #151's
 solid Lucide icons without circles. From/To/Note and the manual-delivery and
 email-template controls stay in Email; expiry/password are in Link settings.
+
+The rebased panel retains #155's required-choice and conditional-visibility
+controls, Build-row sub-line restrictions, and locked catalog care prices.
+Quote colors from #149 remain available inside Page & margins. Explicit Cards
+and the equivalent omitted layout/color defaults compare as unchanged for
+Save to template. Fractional spacing keys round their UI increments to avoid
+floating-point tails; existing field limits and saved units stay the same.

@@ -219,6 +219,10 @@ test("Styles switches retain content space and breaks, keep overrides and show c
       })
       .first(),
   ).not.toHaveAttribute("open");
+  await panel
+    .locator(".band-section > summary")
+    .filter({ hasText: /^Footer$/ })
+    .click();
   const header = panel.getByRole("switch", { name: "Header", exact: true }),
     footer = panel.getByRole("switch", { name: "Footer", exact: true });
   await expect(header).toBeChecked();
@@ -326,6 +330,10 @@ test("new Studio templates start with shared bands and save template switches wi
   await styles
     .getByRole("switch", { name: "Header show on cover", exact: true })
     .check();
+  await styles
+    .locator(".band-section > summary")
+    .filter({ hasText: /^Footer$/ })
+    .click();
   await styles
     .getByRole("switch", { name: "Footer show on cover", exact: true })
     .check();

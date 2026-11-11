@@ -81,6 +81,10 @@ test("Columns layout, add menu, narrowing and unwrap each use one Undo", async (
   await settled(paper);
   await paper.locator('[data-block-id="block-overview"] .tiptap').click();
   await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+  await page
+    .locator(".blocks-panel summary")
+    .filter({ hasText: "Proposal" })
+    .click();
   await page.getByRole("menuitem", { name: "Columns", exact: true }).click();
   const grid = paper.getByRole("region", { name: "Columns", exact: true });
   const frame = grid.locator(
@@ -193,9 +197,15 @@ for (const template of [false, true]) {
     const emptyTarget = first.locator(".column-drop-area");
     await emptyTarget.scrollIntoViewIfNeeded();
     await page.getByRole("tab", { name: "Blocks", exact: true }).click();
+    await page
+      .locator(".blocks-panel summary")
+      .filter({ hasText: "Saved blocks" })
+      .click();
     const line = await drag(
       page,
-      page.getByRole("menuitem", { name: group.name, exact: true }),
+      page
+        .getByRole("menuitem")
+        .filter({ has: page.getByText(group.name, { exact: true }) }),
       emptyTarget,
     );
     await expect(line).toHaveAttribute("data-drop-column", columns.items[0].id);

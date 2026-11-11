@@ -1698,7 +1698,20 @@ function QuoteEditorContent({
                 templateId={p.template_id}
                 revision={p.revision}
                 disabled={locked || stale || offline}
+                disabledReason={
+                  locked
+                    ? "Signed proposals are read-only"
+                    : stale
+                      ? "Reload the proposal before saving styles"
+                      : offline
+                        ? "Go online to save styles"
+                        : undefined
+                }
                 prepare={save}
+                onConflict={async () => {
+                  setStale(true);
+                  await reloadConflict();
+                }}
                 onApplied={async (styles) => {
                   // A sent proposal keeps its published style snapshot; saving a template must not publish a new version.
                   if (latest.current.status !== "draft") return async () => {};

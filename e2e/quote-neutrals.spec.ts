@@ -89,6 +89,7 @@ test("Harbor quote colors paint the editor, client page and PDF without changing
 
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
+  await page.getByText("Page & margins", { exact: true }).click();
   await page.getByText("Quote colors", { exact: true }).click();
   const colorControl = page.getByRole("button", {
     name: "Edit choice group background color",

@@ -164,6 +164,7 @@ test("Business state autosaves, is available as a field, and readiness links to 
   );
   await page.goto(`/proposals/${changed.id}/edit`);
   await page.getByRole("tab", { name: "Fields", exact: true }).click();
+  await page.getByText("Sender & workspace", { exact: true }).click();
   await expect(
     page
       .locator(".field-option-label")

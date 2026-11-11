@@ -38,6 +38,10 @@ for (const width of [1440, 768, 375])
     test(`Fields, Blocks, Styles and Send cards at ${width} ${theme}`, async ({
       page,
     }) => {
+      await page.addInitScript(
+        (mode) => localStorage.setItem("proposal-theme", mode),
+        theme,
+      );
       await page.setViewportSize({
         width,
         height: width === 1440 ? 1700 : 1100,
@@ -63,6 +67,7 @@ for (const width of [1440, 768, 375])
               .getByRole("button", { name: "Open Blocks", exact: true })
               .click();
         } else await openEditorPanel(page, tab);
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         const surface = panel(page);
         await expect(
           surface.locator(".editor-panel-card").first(),
@@ -141,65 +146,70 @@ for (const width of [1440, 768, 375])
       }
     });
   }
-test("Save to template confirms, writes styles and shared bands, clears redundant draft overrides and supports Undo", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 1100 });
-  const f = await open(page);
-  const template = (await f.repo.entities<Template>("templates")).find(
-    (t) => t.id === f.active().template_id,
-  )!;
-  await openEditorPanel(page, "Styles");
-  const surface = panel(page);
-  await surface
-    .getByRole("spinbutton", { name: "Spacing below header", exact: true })
-    .fill("31");
-  await surface
-    .getByRole("spinbutton", { name: "Spacing below header", exact: true })
-    .blur();
-  await expect
-    .poll(() => f.active().header_footer?.headerSpacing.spaceToContent)
-    .toBe(31);
-  await expect(
-    surface.getByRole("button", { name: "Save to template", exact: true }),
-  ).toBeEnabled();
-  await shot(page, "save-to-template", 1440, "light");
-  await surface
-    .getByRole("button", { name: "Save to template", exact: true })
-    .click();
-  const dialog = page.getByRole("dialog", {
-    name: `Save styles to ${template.name}?`,
-  });
-  await expect(dialog).toBeVisible();
-  await expect(
-    dialog.getByRole("button", { name: "Cancel", exact: true }),
-  ).toBeFocused();
-  await expect(dialog).toContainText("Existing proposals don't change.");
-  if (capture)
-    await page.screenshot({
-      path: `${shots}/save-to-template-confirm-1440-light.png`,
+for (const width of [1440, 375]) {
+  test(`Save to template confirms, writes styles and shared bands, clears redundant draft overrides and supports Undo at ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1100 });
+    const f = await open(page);
+    const template = (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === f.active().template_id,
+    )!;
+    await openEditorPanel(page, "Styles");
+    const surface = panel(page);
+    await surface
+      .getByRole("spinbutton", { name: "Spacing below header", exact: true })
+      .fill("31");
+    await surface
+      .getByRole("spinbutton", { name: "Spacing below header", exact: true })
+      .blur();
+    await expect
+      .poll(() => f.active().header_footer?.headerSpacing.spaceToContent)
+      .toBe(31);
+    await expect(
+      surface.getByRole("button", { name: "Save to template", exact: true }),
+    ).toBeEnabled();
+    await surface
+      .getByRole("button", { name: "Save to template", exact: true })
+      .scrollIntoViewIfNeeded();
+    await shot(page, "save-to-template", width, "light");
+    await surface
+      .getByRole("button", { name: "Save to template", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: `Save styles to ${template.name}?`,
     });
-  await dialog
-    .getByRole("button", { name: "Save to template", exact: true })
-    .click();
-  const toast = page
-    .getByRole("status")
-    .filter({ hasText: "Styles saved to template" });
-  await expect(toast).toBeVisible();
-  const saved = (await f.repo.entities<Template>("templates")).find(
-    (t) => t.id === template.id,
-  )!;
-  expect(saved.header_footer?.headerSpacing.spaceToContent).toBe(31);
-  expect(saved.content).toEqual(template.content);
-  expect(saved.cover).toEqual(template.cover);
-  expect(saved.default_items).toEqual(template.default_items);
-  await expect.poll(() => f.active().style_overrides).toEqual({});
-  await toast.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect
-    .poll(async () =>
-      (await f.repo.entities<Template>("templates")).find(
-        (t) => t.id === template.id,
-      ),
-    )
-    .toEqual(template);
-});
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Cancel", exact: true }),
+    ).toBeFocused();
+    await expect(dialog).toContainText("Existing proposals don't change.");
+    if (capture)
+      await page.screenshot({
+        path: `${shots}/save-to-template-confirm-${width}-light.png`,
+      });
+    await dialog
+      .getByRole("button", { name: "Save to template", exact: true })
+      .click();
+    const toast = page
+      .getByRole("status")
+      .filter({ hasText: "Styles saved to template" });
+    await expect(toast).toBeVisible();
+    const saved = (await f.repo.entities<Template>("templates")).find(
+      (t) => t.id === template.id,
+    )!;
+    expect(saved.header_footer?.headerSpacing.spaceToContent).toBe(31);
+    expect(saved.content).toEqual(template.content);
+    expect(saved.cover).toEqual(template.cover);
+    expect(saved.default_items).toEqual(template.default_items);
+    await expect.poll(() => f.active().style_overrides).toEqual({});
+    await toast.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect
+      .poll(async () =>
+        (await f.repo.entities<Template>("templates")).find(
+          (t) => t.id === template.id,
+        ),
+      )
+      .toEqual(template);
+  });
+}

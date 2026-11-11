@@ -429,6 +429,7 @@ test("independent line settings match editor and PDF geometry and hide only thei
       exact: true,
     }),
   ).toBeVisible();
+  await footer.locator(":scope > summary").click();
   await footer.getByRole("switch", { name: "Footer divider line" }).uncheck();
   await expect(
     footer.getByRole("slider", {

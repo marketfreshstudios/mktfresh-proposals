@@ -108,7 +108,10 @@ for (const width of [1440, 1024, 375])
       ["Size", ".inline-size-popover"],
       ["More block actions", ".block-more-menu"],
     ] as const) {
-      trigger = frame.getByRole("button", { name, exact: true });
+      trigger = frame.getByRole("button", {
+        name: name === "Size" ? /^Size (Default|Mixed|[0-9]+)$/ : name,
+        exact: true,
+      });
       await trigger.click();
       const popup =
         name === "More block actions"

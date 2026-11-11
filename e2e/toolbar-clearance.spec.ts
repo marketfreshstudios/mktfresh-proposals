@@ -121,7 +121,10 @@ test("dense paragraphs keep full-size toolbar actions and menu focus stable", as
   const bar = owner.locator(".editor-edit-bar");
   await attachedBar(bar, owner);
   for (const name of ["More block actions", "Text style", "Size"]) {
-    const button = bar.getByRole("button", { name, exact: true });
+    const button = bar.getByRole("button", {
+      name: name === "Size" ? /^Size (Default|Mixed|[0-9]+)$/ : name,
+      exact: true,
+    });
     await button.click();
     await expect(button).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByRole("menu")).toBeVisible();
