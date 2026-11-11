@@ -38,7 +38,9 @@ export function TapDebug() {
   useEffect(() => {
     let on = false;
     try {
-      const flag = new URLSearchParams(location.search).get("tapdebug");
+      // Accept the switch anywhere in the address, e.g. after an existing
+      // query written with a second "?" or in the hash.
+      const flag = /tapdebug=([01])/.exec(location.href)?.[1];
       if (flag === "1") sessionStorage.setItem(KEY, "1");
       if (flag === "0") sessionStorage.removeItem(KEY);
       on = sessionStorage.getItem(KEY) === "1";
@@ -78,7 +80,9 @@ export function TapDebug() {
       characterData: true,
     });
     const flush = () => {
-      el.textContent = lines.slice(-26).join("\n");
+      el.textContent = lines.length
+        ? lines.slice(-26).join("\n")
+        : "Tap log on. Tap a button once, then wait.";
     };
     const log = (event: Event) => {
       const now = performance.now();
