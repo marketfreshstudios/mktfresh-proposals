@@ -90,6 +90,7 @@ import { useEditorPanels } from "./use-editor-panels";
 import { useTemplatePreview } from "./use-template-preview";
 import { authoringPreview } from "../lib/authoring-preview";
 import { variables } from "../lib/presentation";
+import { conditionalGroupNotes } from "../lib/quote-options";
 import { documentQuote } from "../lib/document-quote";
 import { documentSpacing } from "../lib/document-spacing";
 import {
@@ -1455,46 +1456,44 @@ function TemplatesStudioContent({
       })),
     });
   }
-  function addDefault(item?: Item) {
+  function addDefault(item?: Item, insert?: (value: QuoteItem) => QuoteItem[]) {
     const id = crypto.randomUUID();
-    changeDefaults([
-      ...defaults,
-      item
-        ? catalogQuoteItem(
-            item,
-            defaults.length,
-            id,
-            Array.from({ length: item.sublines?.length ?? 1 }, () =>
-              crypto.randomUUID(),
-            ),
-          )
-        : {
-            id,
-            order: defaults.length,
-            name: "Custom item",
-            description: "",
-            source: "custom",
-            pricing_item_id: null,
-            custom_family_id: null,
-            sublines: [
-              {
-                id: crypto.randomUUID(),
-                amount: 0,
-                list_amount: null,
-                interval: "one_time",
-                qty: 1,
-                stripe_lookup_key: null,
-                qbo_item_ref: null,
-              },
-            ],
-            optional: false,
-            default_selected: true,
-            choice_group_id: null,
-            min_term_months: null,
-            schedule: null,
-            plan_terms: null,
-          },
-    ]);
+    const value: QuoteItem = item
+      ? catalogQuoteItem(
+          item,
+          defaults.length,
+          id,
+          Array.from({ length: item.sublines?.length ?? 1 }, () =>
+            crypto.randomUUID(),
+          ),
+        )
+      : {
+          id,
+          order: defaults.length,
+          name: "Custom item",
+          description: "",
+          source: "custom",
+          pricing_item_id: null,
+          custom_family_id: null,
+          sublines: [
+            {
+              id: crypto.randomUUID(),
+              amount: 0,
+              list_amount: null,
+              interval: "one_time",
+              qty: 1,
+              stripe_lookup_key: null,
+              qbo_item_ref: null,
+            },
+          ],
+          optional: false,
+          default_selected: true,
+          choice_group_id: null,
+          min_term_months: null,
+          schedule: null,
+          plan_terms: null,
+        };
+    changeDefaults(insert ? insert(value) : [...defaults, value]);
     setExpandedDefault(id);
   }
   const patch = (next: Block[]) => {
@@ -2887,16 +2886,29 @@ function TemplatesStudioContent({
                                   />
                                 </h2>
                               ) : b.type === "pricing_table" ? (
-                                <div
-                                  dangerouslySetInnerHTML={{
-                                    __html: documentQuote(
-                                      templatePreview.quote,
-                                      data.settings?.currency ?? "USD",
-                                      data.settings?.money?.cents,
-                                      quoteLayout(templateStyles),
+                                <>
+                                  {conditionalGroupNotes(defaults).map(
+                                    (note) => (
+                                      <p
+                                        key={note.id}
+                                        className="quote-condition-note"
+                                        data-editor-chrome
+                                      >
+                                        {note.label} | {note.text}
+                                      </p>
                                     ),
-                                  }}
-                                />
+                                  )}
+                                  <div
+                                    dangerouslySetInnerHTML={{
+                                      __html: documentQuote(
+                                        templatePreview.quote,
+                                        data.settings?.currency ?? "USD",
+                                        data.settings?.money?.cents,
+                                        quoteLayout(templateStyles),
+                                      ),
+                                    }}
+                                  />
+                                </>
                               ) : ["heading", "paragraph"].includes(b.type) ? (
                                 <div
                                   className="template-text-preview"

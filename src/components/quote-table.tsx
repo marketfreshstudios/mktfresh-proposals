@@ -1,7 +1,7 @@
 "use client";
 import type { Quote, QuoteItem } from "../lib/model";
 import { quoteTableGroups, quoteTableColumns } from "../lib/quote-table";
-import { choiceRequired } from "../lib/quote-options";
+import { printedChoiceGroupLabel, choiceRequired } from "../lib/quote-options";
 import { selected } from "../lib/quote-model";
 export function QuoteTable({
   quote,
@@ -117,8 +117,15 @@ export function QuoteTable({
             >
               <th scope="row" role="rowheader">
                 {g.choice && n === 0 && (
-                  <span className="quote-table-choice">
-                    {choiceRequired(r.item) ? "Choose one" : "Choose up to one"}
+                  <span
+                    className="quote-table-choice"
+                    style={
+                      r.item.choice_group_label
+                        ? { overflowWrap: "anywhere" }
+                        : undefined
+                    }
+                  >
+                    {printedChoiceGroupLabel(r.item)}
                   </span>
                 )}
                 <span className="quote-table-item">

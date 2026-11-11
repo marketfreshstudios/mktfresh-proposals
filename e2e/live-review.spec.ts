@@ -674,7 +674,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       ).toBeVisible();
       if (!(await quotePanel.isVisible())) await openQuote.click();
       await page
-        .getByText("Add from catalog or a custom line", { exact: true })
+        .getByText("Add from catalog or a custom item", { exact: true })
         .click();
       await expect(
         page

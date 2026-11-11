@@ -81,6 +81,8 @@ export const QuoteItemSchema = z
     oiot_build: z.literal(true).optional(),
     show_when: QuoteConditionSchema.optional(),
     choice_group_required: z.boolean().optional(),
+    choice_group_label: z.string().trim().min(1).max(80).optional(),
+    choice_group_placeholder: z.literal(true).optional(),
     id: z.string().uuid(),
     order: z.number().int().nonnegative(),
     name: z.string().min(1).max(200),
@@ -102,10 +104,40 @@ export const QuoteItemSchema = z
     ai_entered: z.boolean().optional(),
     price_review: z.record(z.string(), z.enum(["keep", "list"])).optional(),
   })
-  .refine((item) => item.sublines.length > 0 || item.oiot_build === true, {
-    message: "Add at least one priced line",
-    path: ["sublines"],
+  .refine(
+    (item) =>
+      item.sublines.length > 0 ||
+      item.oiot_build ||
+      item.choice_group_placeholder,
+    {
+      message: "Add at least one priced line",
+      path: ["sublines"],
+    },
+  )
+  .refine((item) => !item.choice_group_label || !!item.choice_group_id, {
+    message: "Group names belong to choice groups",
+    path: ["choice_group_label"],
   })
+  .refine(
+    (item) =>
+      !item.choice_group_placeholder ||
+      (!!item.choice_group_id &&
+        item.id === item.choice_group_id &&
+        item.optional &&
+        !item.default_selected &&
+        !item.selected &&
+        item.source === "custom" &&
+        !item.pricing_item_id &&
+        !item.custom_family_id &&
+        !item.sublines.length &&
+        !item.schedule &&
+        !item.oiot_build),
+    {
+      message:
+        "An empty choice group cannot contain a priced or selectable item",
+      path: ["choice_group_placeholder"],
+    },
+  )
   .refine(
     (item) =>
       !item.oiot_build ||

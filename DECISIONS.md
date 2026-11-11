@@ -1391,3 +1391,22 @@ omits an excerpt when it repeats the section name. The reading summary
 hides zero-value totals and joins an item's separate amounts on one line
 when space allows. The signature date separator changes on the client
 screen only, preserving the PDF and sealed rendering.
+
+## Named quote option groups
+
+The Quote panel uses one sorter for standalone items, group cards and
+group options. The gap and moving rows preview one drop. The proposal or
+template changes only on drop, so Undo restores both order and membership.
+
+The quote stores a group's name on its options. Empty groups use a draft
+record with no price or selection. Adding an option replaces that record.
+Readiness blocks groups with fewer than two options. Explicit group names
+appear in documents and print. Older snapshots retain their existing
+headings, including “Choose up to one” for optional groups.
+
+New items added through a group's Add menu inherit its visibility
+condition. Dragging or linking an existing item preserves that item's
+condition, as in #180. The same applies when it leaves a group. The
+editor describes conditional groups without exposing hidden options to
+clients or changing their totals. Own It Over Time groups can be
+reordered internally and moved as units. Their membership stays fixed.

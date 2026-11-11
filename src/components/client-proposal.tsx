@@ -1,6 +1,10 @@
 "use client";
 import { quickBooksInvoiceTiming } from "../lib/proposal-state";
-import { choiceRequired, visibleQuote } from "../lib/quote-options";
+import {
+  printedChoiceGroupLabel,
+  choiceRequired,
+  visibleQuote,
+} from "../lib/quote-options";
 import {
   oiotCareVariables,
   quoteChangesPageContent,
@@ -2101,14 +2105,18 @@ function ClientItems({
         return group[0].choice_group_id ? (
           <div
             role="radiogroup"
-            aria-label={
-              choiceRequired(group[0]) ? "Choose one" : "Choose up to one"
-            }
+            aria-label={printedChoiceGroupLabel(group[0])}
             className="flow-choice-group"
             key={id}
           >
-            <h3>
-              {choiceRequired(group[0]) ? "Choose one" : "Choose up to one"}
+            <h3
+              style={
+                group[0].choice_group_label
+                  ? { overflowWrap: "anywhere" }
+                  : undefined
+              }
+            >
+              {printedChoiceGroupLabel(group[0])}
             </h3>
             {group.map(option)}
           </div>

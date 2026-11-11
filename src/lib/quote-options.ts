@@ -7,6 +7,15 @@ export const selected = (item: QuoteItem) =>
 export const choiceRequired = (item: QuoteItem) =>
   !!item.choice_group_id && item.choice_group_required !== false;
 
+export const defaultChoiceGroupLabel = "Choose one";
+export const choiceGroupLabel = (item: QuoteItem) =>
+  item.choice_group_label ?? defaultChoiceGroupLabel;
+
+// Preserve the wording in snapshots made before named groups.
+export const printedChoiceGroupLabel = (item: QuoteItem) =>
+  item.choice_group_label ??
+  (choiceRequired(item) ? defaultChoiceGroupLabel : "Choose up to one");
+
 export function choiceGroups(quote: Quote) {
   const groups = new Map<string, QuoteItem[]>();
   for (const item of quote) {
@@ -19,13 +28,18 @@ export function choiceGroups(quote: Quote) {
   return groups;
 }
 
-function conditionTarget(quote: Quote, item: QuoteItem) {
+export function conditionTarget(quote: Quote, item: QuoteItem) {
   const condition = item.show_when;
   if (!condition) return;
   if (condition.kind === "quote_item")
-    return quote.find((candidate) => candidate.id === condition.id);
+    return quote.find(
+      (candidate) =>
+        !candidate.choice_group_placeholder && candidate.id === condition.id,
+    );
   const matches = quote.filter(
-    (candidate) => candidate.pricing_item_id === condition.id,
+    (candidate) =>
+      !candidate.choice_group_placeholder &&
+      candidate.pricing_item_id === condition.id,
   );
   return matches.length === 1 ? matches[0] : undefined;
 }
@@ -70,9 +84,12 @@ export function quoteVisibility(quote: Quote) {
 }
 
 export function visibleQuote(quote: Quote) {
-  if (!quote.some((item) => item.show_when)) return quote;
+  if (!quote.some((item) => item.show_when || item.choice_group_placeholder))
+    return quote;
   const visible = quoteVisibility(quote);
-  return quote.filter((item) => visible.get(item.id));
+  return quote.filter(
+    (item) => !item.choice_group_placeholder && visible.get(item.id),
+  );
 }
 
 /** Activate defaults on reveal and clear hidden selections, including nested conditions. */
@@ -108,4 +125,23 @@ export function applyQuoteVisibility(quote: Quote, before?: Quote): Quote {
   }
   for (const item of next) apply(item);
   return next;
+}
+
+/** Editor-only notes. These describe the dependency without exposing hidden prices. */
+export function conditionalGroupNotes(quote: Quote) {
+  return [...choiceGroups(quote).entries()].flatMap(([id, group]) => {
+    const target = conditionTarget(quote, group[0]);
+    if (
+      !target ||
+      !group.every((item) => conditionTarget(quote, item)?.id === target.id)
+    )
+      return [];
+    return [
+      {
+        id,
+        label: choiceGroupLabel(group[0]),
+        text: `Shows when ${target.name} is chosen`,
+      },
+    ];
+  });
 }

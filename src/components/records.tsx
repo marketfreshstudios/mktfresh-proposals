@@ -1670,10 +1670,13 @@ function RecordQuote({
 }) {
   const money = useMoney();
   const amounts = totals(quote);
+  const pricedItems = orderedItems(
+    quote.filter((item) => !item.choice_group_placeholder),
+  );
   return (
     <>
       <div className="record-quote-lines">
-        {orderedItems(quote).map((item) => (
+        {pricedItems.map((item) => (
           <div
             key={item.id}
             className="record-quote-line"

@@ -1,6 +1,6 @@
 import { quoteTableHtml } from "./quote-table";
 import { sublineLabel } from "./subline-label";
-import { choiceRequired } from "./quote-options";
+import { printedChoiceGroupLabel } from "./quote-options";
 import type { Quote } from "./model";
 import {
   orderedItems,
@@ -42,7 +42,7 @@ export function documentQuote(
   const rendered = units.map((id) => {
     const group = items.filter((i) => (i.choice_group_id ?? i.id) === id);
     return group[0].choice_group_id
-      ? `<section class="flow-choice-group print-choice-group" data-print-unit="${esc(group[0].id)}"><h3>${choiceRequired(group[0]) ? "Choose one" : "Choose up to one"}</h3>${group.map(row).join("")}</section>`
+      ? `<section class="flow-choice-group print-choice-group" data-print-unit="${esc(group[0].id)}"><h3${group[0].choice_group_label ? ' style="overflow-wrap:anywhere"' : ""}>${esc(printedChoiceGroupLabel(group[0]))}</h3>${group.map(row).join("")}</section>`
       : `<section class="print-pricing-unit" data-print-unit="${esc(group[0].id)}">${row(group[0])}</section>`;
   });
   const heading =

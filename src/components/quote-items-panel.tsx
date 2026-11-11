@@ -5,9 +5,19 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Select, Switch } from "./form-controls";
 import { oiotItem, oiotKickoff, oiotPlan, oiotPlanDetails } from "../lib/oiot";
-import type { Block, QuoteItem, Item, Subline } from "../lib/model";
+import {
+  QuoteItemSchema,
+  type Block,
+  type QuoteItem,
+  type Item,
+  type Subline,
+} from "../lib/model";
 import {
   choiceRequired,
+  choiceGroupLabel,
+  choiceGroups,
+  conditionTarget,
+  defaultChoiceGroupLabel,
   visibleQuote,
   validateQuoteConditions,
 } from "../lib/quote-options";
@@ -17,8 +27,7 @@ import { sublineLabel, removeSubline } from "../lib/subline-label";
 import { formatMoney } from "../lib/money";
 import { intervalLabel } from "../lib/presentation";
 import { DisclosureChevron } from "./disclosure-chevron";
-import { JoinTarget, Reorder, Sortable } from "./sortable";
-import { arrayMove } from "@dnd-kit/sortable";
+import { QuoteGroupSort, type QuoteDrop } from "./quote-group-sort";
 import { useMoney } from "./money-context";
 import { Button, Field, Disclosure, Totals } from "./ui";
 const uid = () => crypto.randomUUID();
@@ -62,6 +71,40 @@ function OiotKickoffInput({
   );
 }
 
+function GroupName({
+  id,
+  value,
+  onSave,
+}: {
+  id: string;
+  value: string;
+  onSave: (value: string) => void;
+}) {
+  const [entry, setEntry] = useState<string | null>(null);
+  return (
+    <input
+      className="quote-group-name"
+      data-quote-group-name={id}
+      aria-label="Option group name"
+      minLength={1}
+      maxLength={80}
+      value={entry ?? value}
+      onChange={(event) => setEntry(event.currentTarget.value)}
+      onBlur={() => {
+        const name = entry?.trim();
+        if (name && name !== value) onSave(name);
+        setEntry(null);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 /** One quote panel for proposals and template defaults; callers own history and persistence. */
 export function QuoteItemsPanel({
   items,
@@ -87,7 +130,7 @@ export function QuoteItemsPanel({
   aiUnreviewed?: boolean;
   proposalContent?: Block[];
   onChange: (next: QuoteItem[]) => void;
-  addItem: (item?: Item) => void;
+  addItem: (item?: Item, insert?: (value: QuoteItem) => QuoteItem[]) => void;
   expandedItem: string | null;
   setExpandedItem: (id: string | null) => void;
   itemDetails: string | null;
@@ -98,9 +141,20 @@ export function QuoteItemsPanel({
     range = quoteRange(totalsItems),
     setItems = onChange;
   const panel = useRef<HTMLDivElement>(null);
-  const groupCards = useRef(new Map<string, HTMLElement>());
+  const focusGroup = useRef<string | null>(null);
+  const groups = choiceGroups(items);
   const focusSubline = useRef<string | null>(null);
   useLayoutEffect(() => {
+    if (focusGroup.current) {
+      const name = panel.current?.querySelector<HTMLInputElement>(
+        `[data-quote-group-name="${focusGroup.current}"]`,
+      );
+      if (name) {
+        name.focus();
+        name.select();
+        focusGroup.current = null;
+      }
+    }
     if (!focusSubline.current) return;
     const label = panel.current?.querySelector<HTMLTextAreaElement>(
       `[data-subline-label="${focusSubline.current}"]`,
@@ -156,7 +210,8 @@ export function QuoteItemsPanel({
   function changeRequired(group: string, required: boolean) {
     const rows = items.filter((item) => item.choice_group_id === group);
     const defaultId =
-      rows.find((item) => item.default_selected)?.id ?? rows[0].id;
+      rows.find((item) => item.default_selected)?.id ??
+      rows.find((item) => !item.choice_group_placeholder)?.id;
     setItems(
       items.map((item) =>
         item.choice_group_id === group
@@ -173,13 +228,7 @@ export function QuoteItemsPanel({
   }
   function visibilityControl(rows: QuoteItem[], label: string) {
     const condition = rows[0].show_when;
-    const id =
-      condition?.kind === "quote_item"
-        ? condition.id
-        : condition
-          ? (items.find((item) => item.pricing_item_id === condition.id)?.id ??
-            condition.id)
-          : undefined;
+    const id = conditionTarget(items, rows[0])?.id ?? condition?.id;
     const ids = new Set(rows.map((item) => item.id));
     const changes = (parent?: string) =>
       items.map((item) =>
@@ -193,8 +242,22 @@ export function QuoteItemsPanel({
           : item,
       );
     const selectable = items.filter(
-      (item) => !ids.has(item.id) && item.optional,
+      (item) =>
+        !ids.has(item.id) && item.optional && !item.choice_group_placeholder,
     );
+    function option(item: QuoteItem) {
+      let disabled = false;
+      try {
+        validateQuoteConditions(changes(item.id));
+      } catch {
+        disabled = true;
+      }
+      return (
+        <option key={item.id} value={item.id} disabled={disabled}>
+          {item.name} is chosen
+        </option>
+      );
+    }
     return (
       <Field label={label}>
         <Select
@@ -207,95 +270,180 @@ export function QuoteItemsPanel({
               Previous option unavailable
             </option>
           )}
-          {selectable.map((item) => {
-            let disabled = false;
-            try {
-              validateQuoteConditions(changes(item.id));
-            } catch {
-              disabled = true;
-            }
-            return (
-              <option key={item.id} value={item.id} disabled={disabled}>
-                {item.name} is chosen
-              </option>
+          {selectable.filter((item) => !item.choice_group_id).map(option)}
+          {[...groups.entries()].map(([group, members]) => {
+            const candidates = selectable.filter(
+              (item) => item.choice_group_id === group,
             );
+            return candidates.length ? (
+              <optgroup key={group} label={choiceGroupLabel(members[0])}>
+                {candidates.map(option)}
+              </optgroup>
+            ) : null;
           })}
         </Select>
       </Field>
     );
   }
+  const clearGroup = (item: QuoteItem): QuoteItem => ({
+    ...item,
+    choice_group_id: null,
+    choice_group_required: undefined,
+    choice_group_label: undefined,
+  });
+  const groupOptions = (group: string) =>
+    (groups.get(group) ?? []).filter((item) => !item.choice_group_placeholder);
+  const oiotGroup = (group: string) =>
+    groupOptions(group).some((item) =>
+      oiotItem(item, proposalContent ?? [], catalog),
+    );
+  const units = [
+    ...new Set(items.map((item) => item.choice_group_id ?? item.id)),
+  ];
+  const unitItems = (id: string) =>
+    groups.get(id) ?? items.filter((item) => item.id === id);
+
   function unlink(group: string) {
+    if (oiotGroup(group)) return;
     setItems(
-      items.map((i) =>
-        i.choice_group_id === group
-          ? { ...i, choice_group_id: null, choice_group_required: undefined }
-          : i,
+      items.flatMap((item) =>
+        item.choice_group_id !== group
+          ? [item]
+          : item.choice_group_placeholder
+            ? []
+            : [clearGroup(item)],
       ),
     );
   }
-  const oiotGroup = (group: string) =>
-    items.some((i) => i.choice_group_id === group && i.oiot_build);
-  // Drop a standalone line on a Choose one group: it becomes the group's last
-  // option, takes the group's "must choose" setting, and is not the default.
-  function joinGroup(itemId: string, group: string) {
-    const item = items.find((i) => i.id === itemId);
-    const members = items.filter((i) => i.choice_group_id === group);
-    if (!item || item.choice_group_id || !members.length || oiotGroup(group))
-      return;
-    const rest = items.filter((i) => i.id !== itemId);
-    rest.splice(rest.findLastIndex((i) => i.choice_group_id === group) + 1, 0, {
+  function join(
+    item: QuoteItem,
+    group: string,
+    inheritVisibility = false,
+  ): QuoteItem {
+    const [first] = groups.get(group) ?? [];
+    return {
       ...item,
       optional: true,
       choice_group_id: group,
-      choice_group_required: members[0].choice_group_required,
+      choice_group_label: first?.choice_group_label,
+      choice_group_required: first?.choice_group_required,
       default_selected: false,
-    });
-    setItems(rest);
+      ...(inheritVisibility || first?.choice_group_placeholder
+        ? { show_when: first?.show_when }
+        : {}),
+    };
   }
-  // Drag an option out of its group (or use Remove from group): it becomes a
-  // standalone optional line right after the group. A group left with one
-  // option dissolves.
-  function leaveGroup(itemId: string) {
-    const item = items.find((i) => i.id === itemId);
-    const group = item?.choice_group_id;
-    if (!item || !group || oiotGroup(group)) return;
-    const others = items.filter(
-      (i) => i.choice_group_id === group && i.id !== itemId,
+  function drop(itemId: string, target: QuoteDrop) {
+    const item = items.find(
+      (option) => option.id === itemId && !option.choice_group_placeholder,
     );
-    const dissolve = others.length < 2;
-    const rest = items
-      .filter((i) => i.id !== itemId)
-      .map((i) =>
-        dissolve && i.choice_group_id === group
-          ? { ...i, choice_group_id: null, choice_group_required: undefined }
-          : i,
+    const source = item?.choice_group_id;
+    if (target.group) {
+      if (!item || (!source && (item.oiot_build || oiotGroup(target.group))))
+        return;
+      const next = groupOptions(target.group).filter(
+        (option) => option.id !== itemId,
       );
-    const after = rest.findLastIndex((i) => others.some((o) => o.id === i.id));
-    rest.splice(after + 1, 0, {
-      ...item,
-      choice_group_id: null,
-      choice_group_required: undefined,
-    });
-    setItems(rest);
+      next.splice(
+        target.index,
+        0,
+        source === target.group ? item : join(item, target.group),
+      );
+      setItems(
+        units
+          .filter((id) => id !== itemId)
+          .flatMap((id) => (id === target.group ? next : unitItems(id))),
+      );
+      return;
+    }
+    if (source && oiotGroup(source)) return;
+    const order = units.filter((id) => id !== itemId);
+    order.splice(target.index, 0, itemId);
+    const remaining = source
+      ? groupOptions(source).filter((option) => option.id !== itemId)
+      : [];
+    setItems(
+      order.flatMap((id) => {
+        if (id === itemId && source) return [clearGroup(item!)];
+        if (id === source)
+          return remaining.length === 1 ? remaining.map(clearGroup) : remaining;
+        return unitItems(id);
+      }),
+    );
+  }
+  function leaveGroup(itemId: string) {
+    const group = items.find((item) => item.id === itemId)?.choice_group_id;
+    if (group) drop(itemId, { group: null, index: units.indexOf(group) + 1 });
   }
   function link(item: QuoteItem, targetId: string) {
     const target = items.find((i) => i.id === targetId);
     if (!target) return;
-    const group = target.choice_group_id ?? uid();
+    if (target.choice_group_id) {
+      drop(item.id, {
+        group: target.choice_group_id,
+        index: groupOptions(target.choice_group_id).length,
+      });
+      return;
+    }
+    const group = uid();
     setItems(
       items.map((i) =>
-        i.id === item.id || i.id === target.id
-          ? {
-              ...i,
-              optional: true,
-              choice_group_id: group,
-              choice_group_required: target.choice_group_required,
-              default_selected:
-                i.id === target.id ? target.default_selected : false,
-            }
-          : i,
+        i.id === target.id
+          ? { ...i, optional: true, choice_group_id: group }
+          : i.id === item.id
+            ? join(i, group)
+            : i,
       ),
     );
+  }
+  function emptyGroup(
+    id: string,
+    name = defaultChoiceGroupLabel,
+    previous?: QuoteItem,
+  ) {
+    return QuoteItemSchema.parse({
+      id,
+      order: items.length,
+      name,
+      source: "custom",
+      sublines: [],
+      optional: true,
+      default_selected: false,
+      choice_group_id: id,
+      choice_group_placeholder: true,
+      choice_group_label: name,
+      choice_group_required: previous?.choice_group_required ?? true,
+      show_when: previous?.show_when,
+    });
+  }
+  function createGroup() {
+    const id = uid();
+    focusGroup.current = id;
+    setItems([...items, emptyGroup(id)]);
+  }
+  function addToGroup(group: string, product?: Item) {
+    addItem(product, (value) =>
+      units.flatMap((id) =>
+        id === group
+          ? [...groupOptions(group), join(value, group, true)]
+          : unitItems(id),
+      ),
+    );
+  }
+  function removeItem(item: QuoteItem) {
+    if (
+      item.choice_group_id &&
+      groupOptions(item.choice_group_id).length === 1
+    ) {
+      const group = item.choice_group_id;
+      setItems(
+        items.map((i) =>
+          i.id === item.id
+            ? emptyGroup(group, choiceGroupLabel(item), item)
+            : i,
+        ),
+      );
+    } else setItems(items.filter((i) => i.id !== item.id));
   }
   function itemCard(i: QuoteItem) {
     const expanded = expandedItem === i.id;
@@ -707,11 +855,7 @@ export function QuoteItemsPanel({
                   checked={i.optional}
                   disabled={
                     i.oiot_build ||
-                    items.some(
-                      (item) =>
-                        item.oiot_build &&
-                        item.choice_group_id === i.choice_group_id,
-                    )
+                    (!!i.choice_group_id && oiotGroup(i.choice_group_id))
                   }
                   onChange={(e) => {
                     if (!e.target.checked && i.choice_group_id) {
@@ -719,9 +863,7 @@ export function QuoteItemsPanel({
                         items.map((v) =>
                           v.choice_group_id === i.choice_group_id
                             ? {
-                                ...v,
-                                choice_group_id: null,
-                                choice_group_required: undefined,
+                                ...clearGroup(v),
                                 ...(v.id === i.id
                                   ? { optional: false, default_selected: true }
                                   : {}),
@@ -765,6 +907,7 @@ export function QuoteItemsPanel({
                       (v) =>
                         v.id !== i.id &&
                         !v.oiot_build &&
+                        !v.choice_group_placeholder &&
                         !(v.choice_group_id && oiotGroup(v.choice_group_id)),
                     )
                     .map((v) => (
@@ -836,7 +979,7 @@ export function QuoteItemsPanel({
                 variant="ghost"
                 aria-label={`Remove ${i.name}`}
                 onClick={() => {
-                  setItems(items.filter((item) => item.id !== i.id));
+                  removeItem(i);
                 }}
               >
                 Remove
@@ -860,11 +1003,47 @@ export function QuoteItemsPanel({
       </section>
     );
   }
-  const units = Array.from(
-      new Set(items.map((i) => i.choice_group_id ?? i.id)),
-    ),
-    unitItems = (id: string) =>
-      items.filter((i) => (i.choice_group_id ?? i.id) === id);
+  function addPicker(group?: string) {
+    const menuAdd = (product?: Item) =>
+      group ? addToGroup(group, product) : addItem(product);
+    return (
+      <details className="quote-add-picker">
+        <summary>
+          {group
+            ? "Add item to this group"
+            : "Add from catalog or a custom item"}
+        </summary>
+        <div className="quote-add-row">
+          <Field label="Add product">
+            <Select
+              value=""
+              onChange={(e) => {
+                const product = catalog.find(
+                  (item) => item.id === e.target.value,
+                );
+                if (product) menuAdd(product);
+              }}
+            >
+              <option value="">Add product</option>
+              {sellableCatalogue(catalog)
+                .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {itemDisplayName(c)}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          <Button onClick={() => menuAdd()}>Custom item</Button>
+          {!group && (
+            <Button className="quote-create-group" onClick={createGroup}>
+              Create an option group
+            </Button>
+          )}
+        </div>
+      </details>
+    );
+  }
   const quotePanel = (
     <div ref={panel} className="quote-panel stack">
       <PanelHeading className="sr-only">
@@ -875,161 +1054,105 @@ export function QuoteItemsPanel({
           "Enter agreed prices. The app never sets prices. Use the drag handles to reorder; the client sees this order."}
       </p>
       <div className="quote-cards">
-        <Reorder
-          ids={units}
-          onMove={(from, to) => {
-            const order = arrayMove(
-              units,
-              units.indexOf(from),
-              units.indexOf(to),
-            );
-            setItems(order.flatMap(unitItems));
-          }}
-          join={{
-            canJoin: (from) =>
-              items.some(
-                (i) => i.id === from && !i.choice_group_id && !i.oiot_build,
-              ),
-            onJoin: joinGroup,
-          }}
-        >
-          {units.map((id) => (
-            <Sortable
-              key={id}
-              id={id}
-              label={
-                unitItems(id)[0].choice_group_id
-                  ? "choice group"
-                  : unitItems(id)[0].name
-              }
-            >
-              {unitItems(id)[0].choice_group_id ? (
-                <JoinTarget
-                  id={id}
-                  label="Drop to add to this group"
-                  disabled={oiotGroup(id)}
-                >
-                  <div
-                    ref={(node) => {
-                      if (node) groupCards.current.set(id, node);
-                      else groupCards.current.delete(id);
-                    }}
-                  >
-                    <PanelCard
-                      title="Choose one"
-                      nested
-                      collapsible={false}
-                      className="editor-choice-group"
-                      bodyClassName="quote-choice-well"
-                      actions={
-                        !unitItems(id).some((item) => item.oiot_build) ? (
-                          <Button variant="ghost" onClick={() => unlink(id)}>
-                            Unlink
-                          </Button>
-                        ) : null
-                      }
-                    >
-                      <details className="quote-group-settings">
-                        <Disclosure>Choice group settings</Disclosure>
-                        <label className="check">
-                          <Switch
-                            checked={choiceRequired(unitItems(id)[0])}
-                            onChange={(event) =>
-                              changeRequired(id, event.target.checked)
-                            }
-                          />
-                          Client must choose one
-                        </label>
-                        {!choiceRequired(unitItems(id)[0]) &&
-                          unitItems(id).some(
-                            (item) => item.default_selected,
-                          ) && (
-                            <Button
-                              onClick={() =>
-                                setItems(
-                                  items.map((item) =>
-                                    item.choice_group_id === id
-                                      ? { ...item, default_selected: false }
-                                      : item,
-                                  ),
-                                )
+        <QuoteGroupSort
+          bounds={panel}
+          units={units.map((id) => {
+            const group = groups.get(id);
+            return group
+              ? {
+                  id,
+                  label: choiceGroupLabel(group[0]),
+                  dragLabel: group[0].choice_group_label ?? "choice group",
+                  options: groupOptions(id).map((item) => ({
+                    id: item.id,
+                    label: item.name,
+                  })),
+                  locked: oiotGroup(id),
+                }
+              : { id, label: unitItems(id)[0].name };
+          })}
+          onDrop={drop}
+          renderItem={(id) => itemCard(items.find((item) => item.id === id)!)}
+          renderGroup={(id, options) => {
+            const members = groups.get(id)!;
+            const name = choiceGroupLabel(members[0]);
+            const locked = oiotGroup(id);
+            return (
+              <PanelCard
+                title={
+                  <GroupName
+                    id={id}
+                    value={name}
+                    onSave={(name) =>
+                      setItems(
+                        items.map((item) =>
+                          item.choice_group_id === id
+                            ? {
+                                ...item,
+                                choice_group_label: name,
+                                ...(item.choice_group_placeholder
+                                  ? { name }
+                                  : {}),
                               }
-                            >
-                              Clear default choice
-                            </Button>
-                          )}
-                        {visibilityControl(
-                          unitItems(id),
-                          "Show group only when",
-                        )}
-                      </details>
-                      <Reorder
-                        ids={unitItems(id).map((i) => i.id)}
-                        leave={
-                          oiotGroup(id)
-                            ? undefined
-                            : {
-                                container: {
-                                  get current() {
-                                    return groupCards.current.get(id) ?? null;
-                                  },
-                                },
-                                onLeave: leaveGroup,
-                              }
-                        }
-                        onMove={(from, to) => {
-                          const options = unitItems(id),
-                            next = arrayMove(
-                              options,
-                              options.findIndex((i) => i.id === from),
-                              options.findIndex((i) => i.id === to),
-                            );
-                          setItems(
-                            units.flatMap((u) =>
-                              u === id ? next : unitItems(u),
-                            ),
-                          );
-                        }}
-                      >
-                        {unitItems(id).map((i) => (
-                          <Sortable key={i.id} id={i.id} label={i.name}>
-                            {itemCard(i)}
-                          </Sortable>
-                        ))}
-                      </Reorder>
-                    </PanelCard>
-                  </div>
-                </JoinTarget>
-              ) : (
-                itemCard(unitItems(id)[0])
-              )}
-            </Sortable>
-          ))}
-        </Reorder>
-        <details className="quote-add-picker">
-          <summary>Add from catalog or a custom line</summary>
-          <div className="quote-add-row">
-            <Field label="Add product">
-              <Select
-                value=""
-                onChange={(e) => {
-                  const item = catalog.find((i) => i.id === e.target.value);
-                  if (item) addItem(item);
-                }}
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                }
+                nested
+                collapsible={false}
+                className="editor-choice-group"
+                bodyClassName="quote-choice-well"
+                actions={
+                  !locked && (
+                    <Button variant="ghost" onClick={() => unlink(id)}>
+                      Unlink
+                    </Button>
+                  )
+                }
               >
-                <option value="">Add product</option>
-                {sellableCatalogue(catalog)
-                  .filter((c) => !items.some((i) => i.pricing_item_id === c.id))
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {itemDisplayName(c)}
-                    </option>
-                  ))}
-              </Select>
-            </Field>
-            <Button onClick={() => addItem()}>Custom line</Button>
-          </div>
-        </details>
+                <details className="quote-group-settings">
+                  <Disclosure>Choice group settings</Disclosure>
+                  <label className="check">
+                    <Switch
+                      checked={choiceRequired(members[0])}
+                      onChange={(event) =>
+                        changeRequired(id, event.target.checked)
+                      }
+                    />
+                    Client must choose one
+                  </label>
+                  {!choiceRequired(members[0]) &&
+                    members.some((item) => item.default_selected) && (
+                      <Button
+                        onClick={() =>
+                          setItems(
+                            items.map((item) =>
+                              item.choice_group_id === id
+                                ? { ...item, default_selected: false }
+                                : item,
+                            ),
+                          )
+                        }
+                      >
+                        Clear default choice
+                      </Button>
+                    )}
+                  {visibilityControl(members, "Show group only when")}
+                </details>
+                <div className="quote-group-options">{options}</div>
+                {!groupOptions(id).length && (
+                  <p className="quote-empty-group muted">
+                    Drag an item here, or add one below.
+                  </p>
+                )}
+                {!locked && addPicker(id)}
+              </PanelCard>
+            );
+          }}
+        />
+        {addPicker()}
       </div>
       <footer>
         <p className="eyebrow">Client sees by default</p>

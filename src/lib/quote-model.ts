@@ -77,6 +77,17 @@ export function validateItems(quote: Quote, requireChoice = false) {
       "Use the same requirement for every option in a choice group",
     );
     check(
+      group.every(
+        (item) => item.choice_group_label === group[0].choice_group_label,
+      ),
+      "Use the same name for every option in a choice group",
+    );
+    check(
+      group.length === 1 ||
+        group.every((item) => !item.choice_group_placeholder),
+      "Remove the empty group record when adding options",
+    );
+    check(
       defaults.length <= 1,
       "Choose at most one default in each choice group",
     );
@@ -273,6 +284,7 @@ export function prepareQuote(
   ai = false,
 ): QuoteItem[] {
   return draftItems(quote).map((i) => {
+    if (i.choice_group_placeholder) return i;
     const item = catalog.find((c) => c.id === i.pricing_item_id);
     const carePlan =
       i.show_when &&
