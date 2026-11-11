@@ -687,7 +687,7 @@ test("MCP fills an omitted kickoff and preserves exact amounts through proposal 
 });
 
 for (const width of [1440, 375]) {
-  test(`selecting Own It Over Time lands at the clause in the editor and client at ${width}`, async ({
+  test(`selecting Own It Over Time offers a notice that lands at the clause in the editor and client at ${width}`, async ({
     page,
     request,
   }) => {
@@ -760,6 +760,15 @@ for (const width of [1440, 375]) {
         )
         .toBe(true);
     };
+    // The page stays put; a notice offers to show the new terms.
+    const viewTerms = async () => {
+      const notice = page
+        .locator(".terms-notice")
+        .filter({ hasText: "Added to the terms: 4.4 Own It Over Time" });
+      await expect(notice).toBeVisible();
+      await notice.getByRole("button", { name: "View", exact: true }).click();
+      await expect(page.locator(".terms-notice")).toHaveCount(0);
+    };
     const evidence = async (surface: string) => {
       if (process.env.CAPTURE_PREVIEW_TERMS !== "1") return;
       const gallery = "docs/screenshots/client-preview-terms";
@@ -770,6 +779,7 @@ for (const width of [1440, 375]) {
         animations: "disabled",
       });
     };
+    await viewTerms();
     await checkLanding(".editor-document-region");
     await evidence("editor-landing");
     await expect
@@ -787,6 +797,7 @@ for (const width of [1440, 375]) {
     await page.goto(`/p/${sent.token}`);
     await expect(clause).toHaveCount(0);
     await page.getByRole("radio", { name: /Own It Over Time/ }).check();
+    await viewTerms();
     await checkLanding();
     await expect(page.getByText("Ownership.", { exact: true })).toBeVisible();
     await expect(
