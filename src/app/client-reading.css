@@ -409,6 +409,7 @@
     color: white;
   }
   .flow-r25-reading .flow-choices .flow-review-actions {
+    grid-column: 2;
     display: flex;
   }
   .flow-r25-reading .flow-choices .flow-review-actions .button-wrap {

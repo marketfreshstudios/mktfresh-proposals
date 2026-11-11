@@ -56,6 +56,7 @@ export function printContent(input: {
   cents?: "auto" | "always";
   signatures?: string;
   signatureBlocks?: Partial<Record<"client" | "company", string>>;
+  signatureSeparator?: " | ";
   logo?: string;
   logoIcon?: string;
   accent?: string;
@@ -125,6 +126,7 @@ export function printContent(input: {
             : b.type === "signature_block"
               ? signatureHtml({
                   role: b.role ?? "client",
+                  separator: input.signatureSeparator,
                   name:
                     b.role === "company"
                       ? (input.signatory?.name ??

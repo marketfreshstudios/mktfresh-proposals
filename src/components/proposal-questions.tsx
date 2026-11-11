@@ -1,7 +1,20 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { blockText } from "../lib/editor-document";
-import { resolve } from "../lib/presentation";
+import { X } from "lucide-react";
+import type { z } from "zod";
+import type { AskQuestionSchema } from "../lib/proposal-questions";
+import {
+  questionExcerpt,
+  type questionTargets,
+  type QuestionTarget,
+} from "../lib/question-targets";
+import { ToolbarPopover } from "./toolbar-popover";
+import { ToastSurface } from "./toast-surface";
+import {
+  goToQuestionTarget,
+  isPhoneReading,
+  type QuestionRequest,
+} from "./client-question-controls";
 import {
   questionLimit,
   type ClientQuestionsResult,
@@ -82,6 +95,9 @@ function QuestionCard({
         </>
       )}
       {notify && <p className="question-note">New client question</p>}
+      {thread.excerpt && (
+        <blockquote className="question-excerpt">{thread.excerpt}</blockquote>
+      )}
       <p className="question-text">{thread.question}</p>
       {thread.replies.map((reply) => (
         <div className="question-reply" key={reply.id}>
@@ -113,25 +129,42 @@ export function ClientQuestions({
   requested,
   close,
   inReadingRail,
-  onCountChange,
+  preview,
+  historyOpen,
+  setHistoryOpen,
+  onThreadsChange,
   onAsk,
+  targets,
 }: {
   proposal: PublicProposal;
   token: string;
   password: string;
-  requested: string | null;
+  requested: QuestionRequest | null;
   close: () => void;
   inReadingRail?: boolean;
-  onCountChange?: (count: number) => void;
-  onAsk?: (section: string) => void;
+  preview?: boolean;
+  historyOpen: boolean;
+  setHistoryOpen: (open: boolean) => void;
+  onThreadsChange: (threads: PublicQuestion[]) => void;
+  onAsk?: (request: QuestionRequest) => void;
+  targets: ReturnType<typeof questionTargets>;
 }) {
   const url = `/api/public/${token}/questions`;
   const headers = { "x-proposal-password": password };
-  const [result, setResult] = useState<ClientQuestionsResult | null>(null);
+  const [result, setResult] = useState<ClientQuestionsResult | null>(
+    preview ? { threads: [], can_ask: true, needs_contact: false } : null,
+  );
   const [loadError, setLoadError] = useState("");
-  const [posted, setPosted] = useState("");
-  const history = useRef<HTMLElement>(null);
+  const [toast, setToast] = useState("");
+  const [edit, setEdit] = useState<PublicQuestion | null>(null);
+  const [remove, setRemove] = useState<PublicQuestion | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+  const [removeError, setRemoveError] = useState("");
+  const [reply, setReply] = useState<string | null>(null);
+  const openedHash = useRef(false);
+  const threads = result?.threads ?? emptyClientThreads;
   useEffect(() => {
+    if (preview) return;
     let active = true;
     setLoadError("");
     api<ClientQuestionsResult>(url, {
@@ -146,133 +179,399 @@ export function ClientQuestions({
     return () => {
       active = false;
     };
-  }, [url, password, proposal.status, requested]);
-  const count = result?.threads.length ?? 0;
-  useEffect(() => onCountChange?.(count), [count, onCountChange]);
-  useQuestionAnchor(!!result);
+  }, [url, password, proposal.status, preview, historyOpen]);
+  useEffect(() => onThreadsChange(threads), [onThreadsChange, threads]);
+  useEffect(() => {
+    if (!result || openedHash.current) return;
+    openedHash.current = true;
+    const hash = location.hash.slice(1);
+    const linked = threads.find((thread) => hash === `question-${thread.id}`);
+    if (!linked) return;
+    setReply(linked.id);
+    if (inReadingRail && isPhoneReading()) setHistoryOpen(true);
+    const frame = requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const node = document.getElementById(hash);
+        node?.scrollIntoView({ block: "start" });
+        node?.focus({ preventScroll: true });
+      }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [!!result]);
+
+  const replace = (thread: PublicQuestion) =>
+    setResult(
+      (current) =>
+        current && {
+          ...current,
+          needs_contact: false,
+          threads: current.threads.some((old) => old.id === thread.id)
+            ? current.threads.map((old) =>
+                old.id === thread.id ? thread : old,
+              )
+            : [thread, ...current.threads],
+        },
+    );
+  const mark = (message: string) => setToast(message);
+  const showTarget = (thread: PublicQuestion) => {
+    setHistoryOpen(false);
+    requestAnimationFrame(() =>
+      goToQuestionTarget(
+        thread.block_id ?? thread.section?.key.replace(/^section:/, "") ?? "",
+      ),
+    );
+  };
+  const writable = !!result?.can_ask && !preview;
+  const time = (value: string, date = false) =>
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: proposal.timezone,
+      ...(date ? { dateStyle: "medium" as const } : {}),
+      timeStyle: "short",
+    }).format(new Date(value));
+  const askAnother = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setHistoryOpen(false);
+    onAsk?.({ target: generalQuestion, trigger: event.currentTarget });
+  };
+  const list = (
+    <>
+      {historyOpen && (
+        <p className="muted">
+          Questions you’ve asked about this proposal, and{" "}
+          {proposal.contact.name
+            ? `${proposal.contact.name.split(" ")[0]}’s replies`
+            : "the sender’s replies"}
+          .
+        </p>
+      )}
+      {historyOpen && onAsk && (
+        <button className="question-text-action" onClick={askAnother}>
+          Ask another question
+        </button>
+      )}
+      {!threads.length && (
+        <p className="muted">
+          {preview
+            ? "No questions are recorded in preview."
+            : loadError
+              ? "Questions couldn’t be loaded."
+              : result
+                ? "No questions yet."
+                : "Loading questions…"}
+        </p>
+      )}
+      {result && !result.can_ask && threads.length > 0 && (
+        <p className="muted">This conversation is read-only.</p>
+      )}
+      {threads.map((thread) => {
+        const hasReply = thread.replies.length > 0;
+        const canLocate = !!thread.block_id || !!thread.section?.key;
+        return (
+          <article
+            className="client-question-thread"
+            id={`question-${thread.id}`}
+            tabIndex={-1}
+            key={thread.id}
+          >
+            <div className="client-question-context">
+              <strong>{thread.section?.label ?? "General question"}</strong>
+              {historyOpen && thread.excerpt && (
+                <p className="question-excerpt">{thread.excerpt}</p>
+              )}
+              {historyOpen && canLocate && (
+                <button
+                  className="question-text-action"
+                  onClick={() => showTarget(thread)}
+                >
+                  Go to this part
+                </button>
+              )}
+            </div>
+            {historyOpen && (
+              <div className="client-question-message-meta">
+                <strong>You</strong>
+                <time dateTime={thread.created_at}>
+                  {time(thread.created_at, true)}
+                </time>
+              </div>
+            )}
+            <p className="question-text">{thread.question}</p>
+            <div className="client-question-actions">
+              <span>
+                {hasReply
+                  ? `Answered by ${thread.replies[0].name}`
+                  : thread.status === "resolved"
+                    ? "Resolved"
+                    : "Waiting for a reply"}
+              </span>
+              <div>
+                {hasReply ? (
+                  <button
+                    className="question-text-action"
+                    onClick={() =>
+                      setReply(reply === thread.id ? null : thread.id)
+                    }
+                    aria-expanded={reply === thread.id}
+                  >
+                    {reply === thread.id ? "Hide reply" : "View reply"}
+                  </button>
+                ) : (
+                  <>
+                    {writable && (
+                      <button
+                        className="question-text-action"
+                        onClick={() => setEdit(thread)}
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {writable && historyOpen && (
+                      <button
+                        className="question-text-action"
+                        onClick={() => {
+                          setRemoveError("");
+                          setRemove(thread);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                    {!historyOpen && canLocate && (
+                      <button
+                        className="question-text-action"
+                        onClick={() => showTarget(thread)}
+                      >
+                        Go to
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            {hasReply &&
+              (historyOpen || reply === thread.id) &&
+              thread.replies.map((answer) => (
+                <div className="question-reply" key={answer.id}>
+                  <strong>{answer.name}</strong>
+                  <time dateTime={answer.created_at}>
+                    {time(answer.created_at, true)}
+                  </time>
+                  <p className="question-text">{answer.text}</p>
+                </div>
+              ))}
+          </article>
+        );
+      })}
+    </>
+  );
+  const askForm = requested && (
+    <>
+      {loadError && <p role="alert">{loadError}</p>}
+      {!result ? (
+        <p role="status">Loading questions…</p>
+      ) : result.can_ask ? (
+        <AskForm
+          initial={requested.target}
+          sections={targets.sections}
+          needsContact={result.needs_contact}
+          sender={proposal.contact.name}
+          preview={preview}
+          onClose={close}
+          send={async (value) => {
+            if (preview || !result.can_ask) return;
+            const thread = await api<PublicQuestion>(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(value),
+            });
+            replace(thread);
+            close();
+            mark("Question sent. We’ll email you when there’s a reply.");
+          }}
+        />
+      ) : (
+        <p>This conversation is read-only.</p>
+      )}
+    </>
+  );
   return (
     <>
-      {inReadingRail || count || posted ? (
+      {!historyOpen && (inReadingRail || threads.length > 0) && (
         <section
           className="card questions-panel"
           id={inReadingRail ? "your-questions" : undefined}
-          ref={history}
           aria-label="Your questions"
           tabIndex={-1}
         >
-          <h2>Your questions</h2>
-          {inReadingRail && !count && (
-            <p className="muted">
-              {loadError
-                ? "Questions couldn’t be loaded."
-                : result
-                  ? "No questions yet."
-                  : "Loading questions…"}
-            </p>
-          )}
-          {inReadingRail && onAsk && (
-            <div className="flow-questions-phone-action">
-              <Button onClick={() => onAsk("")}>Ask a question</Button>
-            </div>
-          )}
-          {posted && (
-            <p role="status" className="question-note">
-              Question sent. We’ll email you when there’s a reply.
-            </p>
-          )}
-          {result && !result.can_ask && (
-            <p className="muted">This conversation is read-only.</p>
-          )}
-          {result?.threads.map((thread) => (
-            <QuestionCard
-              key={thread.id}
-              thread={thread}
-              timezone={proposal.timezone}
-            />
-          ))}
+          <header className="client-question-list-heading">
+            <h2>Your questions</h2>
+            <span>{threads.length}</span>
+          </header>
+          {list}
         </section>
-      ) : null}
-      {requested !== null && (
+      )}
+      {historyOpen && (
         <Sheet
-          title="Ask a question"
+          title="Your questions"
+          className="client-question-history"
+          surface="client"
+          onClose={() => setHistoryOpen(false)}
+        >
+          {list}
+        </Sheet>
+      )}
+      {requested &&
+        (requested.anchor?.isConnected && !isPhoneReading() ? (
+          <ToolbarPopover
+            className="client-ask-popover"
+            placementAnchor={requested.anchor}
+            trigger={requested.trigger}
+            close={close}
+          >
+            <section
+              role="dialog"
+              aria-label="Ask a question"
+              className="client-ask-popover-body"
+            >
+              <div className="client-ask-heading">
+                <h2 tabIndex={-1} autoFocus>
+                  Ask a question
+                </h2>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="btn ghost"
+                  onClick={close}
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+              {askForm}
+            </section>
+          </ToolbarPopover>
+        ) : (
+          <Sheet
+            title="Ask a question"
+            className="client-question-sheet"
+            surface="client"
+            onClose={close}
+          >
+            {askForm}
+          </Sheet>
+        ))}
+      {edit && writable && (
+        <Sheet
+          title="Edit question"
           className="client-question-sheet"
           surface="client"
-          onClose={close}
+          onClose={() => setEdit(null)}
         >
-          {loadError && <p role="alert">{loadError}</p>}
-          {!result ? (
-            <p role="status">Loading questions…</p>
-          ) : result.can_ask ? (
-            <AskForm
-              initial={requested}
-              sections={proposal.content.flatMap((block, i) =>
-                block.type === "heading" && (block.level ?? 1) === 1
-                  ? [
-                      {
-                        key: `section:${block.id ?? i}`,
-                        label:
-                          resolve(blockText(block), proposal.variables) ||
-                          "Untitled section",
-                      },
-                    ]
-                  : [],
-              )}
-              needsContact={result.needs_contact}
-              onClose={close}
-              send={async (value) => {
-                const thread = await api<PublicQuestion>(url, {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify(value),
-                });
-                setResult(
-                  (current) =>
-                    current && {
-                      ...current,
-                      needs_contact: false,
-                      threads: [
-                        thread,
-                        ...current.threads.filter((t) => t.id !== thread.id),
-                      ],
-                    },
-                );
-                setPosted(thread.id);
-                close();
-                requestAnimationFrame(() => {
-                  history.current?.scrollIntoView({ block: "start" });
-                  history.current?.focus({ preventScroll: true });
-                });
-              }}
-            />
-          ) : (
-            <p>This conversation is read-only.</p>
-          )}
+          <AskForm
+            initial={{
+              label: edit.section?.label ?? "General question",
+              excerpt: edit.excerpt,
+            }}
+            sections={targets.sections}
+            needsContact={false}
+            sender={proposal.contact.name}
+            edit={edit.question}
+            onClose={() => setEdit(null)}
+            send={async ({ text }) => {
+              const thread = await api<PublicQuestion>(`${url}/${edit.id}`, {
+                method: "PATCH",
+                headers,
+                body: JSON.stringify({ text }),
+              });
+              replace(thread);
+              setEdit(null);
+              mark("Question updated.");
+            }}
+          />
         </Sheet>
+      )}
+      {remove && writable && (
+        <Sheet
+          title="Delete question?"
+          className="client-question-sheet"
+          surface="client"
+          onClose={() => setRemove(null)}
+        >
+          <p>This removes your question from the proposal.</p>
+          {removeError && <p role="alert">{removeError}</p>}
+          <DialogActions>
+            <Button disabled={removeBusy} onClick={() => setRemove(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              busy={removeBusy}
+              onClick={async () => {
+                setRemoveBusy(true);
+                setRemoveError("");
+                try {
+                  await api(`${url}/${remove.id}`, {
+                    method: "DELETE",
+                    headers,
+                  });
+                  setResult(
+                    (current) =>
+                      current && {
+                        ...current,
+                        threads: current.threads.filter(
+                          (thread) => thread.id !== remove.id,
+                        ),
+                      },
+                  );
+                  setRemove(null);
+                  mark("Question deleted.");
+                } catch (error) {
+                  setRemoveError((error as Error).message);
+                } finally {
+                  setRemoveBusy(false);
+                }
+              }}
+            >
+              Delete question
+            </Button>
+          </DialogActions>
+        </Sheet>
+      )}
+      {toast && (
+        <ToastSurface
+          className="client-question-toast"
+          onDismiss={() => setToast("")}
+        >
+          {toast}
+        </ToastSurface>
       )}
     </>
   );
 }
 
+const emptyClientThreads: PublicQuestion[] = [];
+export const generalQuestion: QuestionTarget = { label: "General question" };
+
 function AskForm({
   initial,
   sections,
   needsContact,
+  sender,
+  preview,
+  edit,
   onClose,
   send,
 }: {
-  initial: string;
-  sections: { key: string; label: string }[];
+  initial: QuestionTarget;
+  sections: Map<string, string>;
   needsContact: boolean;
+  sender: string;
+  preview?: boolean;
+  edit?: string;
   onClose: () => void;
-  send: (input: {
-    id: string;
-    text: string;
-    section?: string;
-    contact?: { name: string; email: string };
-  }) => Promise<void>;
+  send: (input: z.infer<typeof AskQuestionSchema>) => Promise<void>;
 }) {
-  const [section, setSection] = useState(initial);
-  const [text, setText] = useState("");
+  const [target, setTarget] = useState(initial);
+  const [changing, setChanging] = useState(false);
+  const [text, setText] = useState(edit ?? "");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
@@ -281,16 +580,19 @@ function AskForm({
   return (
     <form
       className="stack question-form"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (busy || !text.trim()) return;
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (preview || busy || !text.trim()) return;
         setBusy(true);
         setError("");
         try {
           await send({
             id: id.current,
             text,
-            ...(section ? { section } : {}),
+            ...(target.section ? { section: target.section } : {}),
+            ...(target.block_id
+              ? { block_id: target.block_id, excerpt: target.excerpt }
+              : {}),
             ...(needsContact ? { contact: { name, email } } : {}),
           });
         } catch (err) {
@@ -299,22 +601,57 @@ function AskForm({
         }
       }}
     >
-      <p className="muted">
-        The sender will see your question here. We’ll email you when they reply.
-      </p>
-      {sections.length > 0 && (
-        <label className="field">
-          Section
-          <Select value={section} onChange={(e) => setSection(e.target.value)}>
-            <option value="">General question</option>
-            {sections.map(({ key, label }) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </label>
-      )}
+      <div className="client-ask-about">
+        <div className="client-about-heading">
+          <strong>About this</strong>
+          {edit === undefined && (
+            <button
+              type="button"
+              className="question-text-action"
+              aria-expanded={changing}
+              onClick={() => setChanging(!changing)}
+            >
+              Change
+            </button>
+          )}
+        </div>
+        {changing ? (
+          <label className="field">
+            Section
+            <Select
+              value={target.section ?? ""}
+              onChange={(event) => {
+                const section = event.target.value;
+                setTarget(
+                  section
+                    ? { section, label: sections.get(section) ?? "Section" }
+                    : generalQuestion,
+                );
+                setChanging(false);
+              }}
+            >
+              <option value="">General question</option>
+              {[...sections]
+                .filter(
+                  ([key]) => key !== "section:cover" || initial.section === key,
+                )
+                .map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+            </Select>
+          </label>
+        ) : (
+          <>
+            <strong>{target.label}</strong>
+            {target.excerpt &&
+              target.excerpt !== questionExcerpt(target.label) && (
+                <p className="question-excerpt">{target.excerpt}</p>
+              )}
+          </>
+        )}
+      </div>
       {needsContact && (
         <>
           <label className="field">
@@ -324,7 +661,7 @@ function AskForm({
               autoComplete="name"
               value={name}
               maxLength={120}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(event) => setName(event.target.value)}
             />
           </label>
           <label className="field">
@@ -335,7 +672,7 @@ function AskForm({
               autoComplete="email"
               value={email}
               maxLength={254}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
             />
           </label>
         </>
@@ -347,12 +684,17 @@ function AskForm({
           rows={4}
           maxLength={questionLimit}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(event) => setText(event.target.value)}
         />
       </label>
-      <small className="muted">
-        {text.length.toLocaleString("en-US")} / 2,000 characters
-      </small>
+      <div className="client-question-helper">
+        <span>
+          {preview
+            ? "Preview: questions aren’t sent from here."
+            : `${sender.split(" ")[0] || "The sender"} sees it here. We’ll email you when there’s a reply.`}
+        </span>
+        <small>{text.length.toLocaleString("en-US")} / 2,000</small>
+      </div>
       {error && <p role="alert">{error}</p>}
       <DialogActions>
         <Button onClick={onClose} disabled={busy}>
@@ -362,9 +704,9 @@ function AskForm({
           variant="primary"
           type="submit"
           busy={busy}
-          disabled={!text.trim()}
+          disabled={preview || !text.trim()}
         >
-          Send question
+          {edit === undefined ? "Send question" : "Save question"}
         </Button>
       </DialogActions>
     </form>

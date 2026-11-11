@@ -24,12 +24,14 @@ export function clientDocumentHtml(
   logo?: string,
   plan = p.pagination,
   logoIcon?: string,
+  signatureSeparator?: " | ",
 ) {
   const signatures = Object.fromEntries(
     p.signers.map((s) => [
       s.role,
       signatureHtml({
         role: s.role,
+        separator: signatureSeparator,
         name: s.name,
         title: s.title,
         company:
@@ -73,6 +75,7 @@ export function clientDocumentHtml(
       title: p.company.signatory_title ?? "",
     },
     signatureBlocks: signatures,
+    signatureSeparator,
   });
 }
 export function clientDocumentCss(p: PublicProposal) {
@@ -87,8 +90,15 @@ export function paginateClientDocument(
   logo?: string,
   plan = p.pagination,
   logoIcon?: string,
+  signatureSeparator?: " | ",
 ) {
-  stage.innerHTML = clientDocumentHtml(p, logo, plan, logoIcon);
+  stage.innerHTML = clientDocumentHtml(
+    p,
+    logo,
+    plan,
+    logoIcon,
+    signatureSeparator,
+  );
   let root = stage.querySelector<HTMLElement>(".print-root")!;
   // No nested main landmark inside the client flow's existing main.
   const neutral = stage.ownerDocument.createElement("div");
