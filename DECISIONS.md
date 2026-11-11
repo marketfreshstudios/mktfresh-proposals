@@ -1339,3 +1339,21 @@ The countersign sheet uses the same saved company image and accessible
 name at every width. If the image is missing, the script-style name
 identifies the designated signatory; the existing setup warning still
 blocks countersigning.
+
+## R25 client reading and staff preview
+
+The client keeps the workspace's fonts, accent, and document settings. The
+deeper action color is derived from the workspace accent. The new reading
+layout changes the outside of each desktop page and paints the default choice
+well with the workspace accent after pagination. Explicit custom quote colors,
+authored covers, Letter content geometry, and PDF output stay as saved.
+
+Staff draft preview uses “Preview, not sent” and returns to the editor. The
+published-version preview keeps “Preview of published version” and returns to
+the record. The preview does not fetch client question history or submit client
+actions. The 375px preview changes only the reading stage; the staff bar stays
+the full width.
+
+The question controls belong to the follow-up. They will sit outside measured
+Letter content so they cannot reflow it. Clients can edit or delete only an
+unanswered question while the proposal is still open for questions.

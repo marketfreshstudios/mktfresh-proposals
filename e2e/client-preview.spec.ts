@@ -67,7 +67,7 @@ test("draft client preview has live local totals, branded steps and no client wr
         await page
           .getByRole("button", { name: "Phone width", exact: true })
           .click();
-        await expect(page.locator(".client-flow")).toHaveCSS("width", "390px");
+        await expect(page.locator(".flow-stage")).toHaveCSS("width", "375px");
         await page
           .getByRole("button", { name: "Desktop width", exact: true })
           .click();
@@ -82,11 +82,16 @@ test("draft client preview has live local totals, branded steps and no client wr
       ).not.toHaveText(before, { useInnerText: true });
       await optional.check();
       for (const [step, button] of [
-        ["read", "Reading view"],
-        ["sign", "Signing step"],
-        ["billing", "Billing step"],
+        ["read", "Reading"],
+        ["sign", "Signing"],
+        ["billing", "Billing"],
       ]) {
-        await page.getByRole("button", { name: button, exact: true }).click();
+        if (width < 700)
+          await page
+            .getByRole("combobox", { name: "Preview step" })
+            .selectOption(step);
+        else
+          await page.getByRole("button", { name: button, exact: true }).click();
         if (step === "sign") {
           await page.getByRole("checkbox").check();
           await page.getByRole("tab", { name: "Type", exact: true }).click();

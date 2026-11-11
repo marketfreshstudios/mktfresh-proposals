@@ -374,11 +374,11 @@ test("compact products share name/price rows and accessible selections across ed
     );
   }
   await page
-    .getByRole("checkbox", { name: "Optional care · included", exact: true })
+    .getByRole("checkbox", { name: "Optional care | included", exact: true })
     .uncheck();
   await expect(
     page.getByRole("checkbox", {
-      name: "Optional care · not included",
+      name: "Optional care | not included",
       exact: true,
     }),
   ).not.toBeChecked();

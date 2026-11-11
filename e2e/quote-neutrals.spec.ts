@@ -121,8 +121,23 @@ test("Harbor quote colors paint the editor, client page and PDF without changing
     plan,
   );
   const clientGroup = client.locator(".flow-choice-group").first();
-  await expect(clientGroup).toHaveCSS("background-color", "rgb(241, 244, 245)");
-  await expect(clientGroup).toHaveCSS("border-top-color", "rgb(220, 227, 230)");
+  // The reading chrome now tints the default choice well with the tenant accent.
+  // The test above still verifies the exact Harbor defaults on the editor and PDF.
+  await expect(clientGroup).toHaveCSS(
+    "background-color",
+    await clientGroup.evaluate((element) => {
+      const color = document.createElement("span");
+      color.style.color = "var(--client-choice-fill)";
+      element.append(color);
+      const result = getComputedStyle(color).color;
+      color.remove();
+      return result;
+    }),
+  );
+  await expect(clientGroup).not.toHaveCSS(
+    "background-color",
+    "rgb(241, 244, 245)",
+  );
   await expect(clientGroup.getByRole("radio").first()).toBeChecked();
   await clientGroup.scrollIntoViewIfNeeded();
   if (capture)

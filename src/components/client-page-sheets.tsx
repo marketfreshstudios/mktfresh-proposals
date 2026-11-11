@@ -254,6 +254,8 @@ export function ClientPageSheets({
         input.name = item.choice_group_id ?? item.id;
         input.dataset.clientItem = item.id;
         input.className = "client-sheet-input";
+        if (!tableRow && !item.choice_group_id)
+          label.dataset.clientOptional = "true";
         input.checked = selected(item);
         const canClear = item.choice_group_id && !choiceRequired(item);
         input.dataset.clearChoice =
@@ -268,7 +270,7 @@ export function ClientPageSheets({
           current.busy || (tableRow && el.dataset.layoutReady !== "true");
         input.setAttribute(
           "aria-label",
-          `${item.name} · ${selected(item) ? "included" : "not included"}`,
+          `${item.name} | ${selected(item) ? "included" : "not included"}`,
         );
         const slot = label.querySelector<HTMLElement>(".quote-control-slot")!;
         const visual = slot.querySelector<HTMLElement>(".print-selection")!;
@@ -539,20 +541,22 @@ export function ClientPageSheets({
 const sheetCss = `
 :host{display:block;position:relative;min-width:0;width:100%}
 .client-pages-root{width:100%;min-width:0}
-.client-page-frame{position:relative;overflow:clip;width:100%;background:white;border-radius:4px;box-shadow:0 1px 3px rgba(19, 48, 58,.08),0 14px 32px rgba(19, 48, 58,.08)}
+.client-page-frame{position:relative;overflow:clip;width:100%;background:white;border-radius:var(--client-page-card-radius,4px);box-shadow:var(--client-page-card-shadow,0 1px 3px rgba(19, 48, 58,.08),0 14px 32px rgba(19, 48, 58,.08))}
 .client-letter-sheet{position:absolute;left:0;top:0;transform-origin:top left;background:white;box-sizing:border-box}
 .client-sheet-content{display:flow-root;position:relative}
-.client-sheet-gap{height:52px;display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f1f4f5);color:var(--ink-muted,#56646a);font:600 11px/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
+.client-sheet-gap{height:var(--client-page-gap,52px);display:flex;align-items:center;justify-content:center;background:var(--surface-page,#f1f4f5);color:var(--ink-muted,#56646a);font:600 var(--client-page-gap-label-size,11px)/16px "Instrument Sans",sans-serif;letter-spacing:.08em}
 .proposal-typography.proposal-typography .flow-quote-line>.quote-control-slot{position:relative}
 .proposal-typography.proposal-typography .flow-quote-line .client-sheet-input{position:absolute;left:10px;top:10px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));margin:0;padding:0;border:0;opacity:0;z-index:1;cursor:pointer}
 .proposal-typography.proposal-typography .quote-table .client-sheet-input{position:absolute;left:22px;top:22px;transform:translate(-50%,-50%);width:calc(44px / var(--client-sheet-scale,1));height:calc(44px / var(--client-sheet-scale,1));min-height:calc(44px / var(--client-sheet-scale,1));border:0;opacity:0;z-index:1;cursor:pointer}.quote-table .quote-control-slot:focus-within>.print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-interactive-card{cursor:pointer}
+.client-interactive-card[data-client-optional]{position:relative}
+.client-interactive-card[data-client-optional]::after{content:var(--client-optional-label,none);position:absolute;right:10px;bottom:1px;color:var(--paper-muted);font:600 10px/10px var(--font-ui)}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
 .client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;inline-size:max-content;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px 4px;white-space:nowrap;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .client-section-question:hover{background:var(--client-selection)}.client-section-question:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:1px}
 /* These rules apply only after pagination. Preserve every shared print box. */
-.client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--quote-neutral-group,var(--paper));border-color:var(--quote-neutral-frame,var(--client-frame))}
+.client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--client-choice-fill,var(--quote-neutral-group,var(--paper)));border-color:var(--client-choice-line,var(--quote-neutral-frame,var(--client-frame)));box-shadow:inset 0 0 0 1px var(--client-choice-line,transparent)}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group>h3{color:var(--quote-neutral-label,var(--client-accent-text))}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line{border-radius:0;box-shadow:none;background:transparent}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line{position:relative}

@@ -1,4 +1,8 @@
-import { coverLayoutCss, sidePhotoCoverCss } from "../lib/cover-graphics";
+import {
+  coverLayoutCss,
+  sidePhotoCoverCss,
+  phonePreviewCoverCss,
+} from "../lib/cover-graphics";
 import { coverBrandCss } from "../lib/cover-render";
 import { PointerFocus } from "../components/pointer-focus";
 import "./globals.css";
@@ -25,6 +29,7 @@ import "./ink-clay-records.css";
 import "./ink-clay-editor-studio.css";
 import "./column-styles.css";
 import "./ink-clay-client-account.css";
+import "./client-reading.css";
 import "./staff-tables.css";
 import "./staff-account.css";
 import "./staff-headings.css";
@@ -38,7 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <style>{coverBrandCss + coverLayoutCss + sidePhotoCoverCss}</style>
+        <style>
+          {coverBrandCss +
+            coverLayoutCss +
+            sidePhotoCoverCss +
+            phonePreviewCoverCss}
+        </style>
       </head>
       <body>
         <PointerFocus />

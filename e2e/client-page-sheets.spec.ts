@@ -413,13 +413,13 @@ test("pricing controls keep their item identities across page splits and choice 
   );
   await host.waitFor();
   const last = host.getByRole("checkbox", {
-    name: "Service option 20 · not included",
+    name: "Service option 20 | not included",
     exact: true,
   });
   await last.check();
   await expect(
     host.getByRole("checkbox", {
-      name: "Service option 20 · included",
+      name: "Service option 20 | included",
       exact: true,
     }),
   ).toBeChecked();
@@ -430,19 +430,19 @@ test("pricing controls keep their item identities across page splits and choice 
     f.current().quote.find((i) => i.name === "Service option 19")!.selected,
   ).toBe(false);
   const second = host.getByRole("radio", {
-    name: "Service option 2 · not included",
+    name: "Service option 2 | not included",
     exact: true,
   });
   await second.check();
   await expect(
     host.getByRole("radio", {
-      name: "Service option 2 · included",
+      name: "Service option 2 | included",
       exact: true,
     }),
   ).toBeChecked();
   await expect(
     host.getByRole("radio", {
-      name: "Service option 1 · not included",
+      name: "Service option 1 | not included",
       exact: true,
     }),
   ).not.toBeChecked();
