@@ -557,7 +557,7 @@ const sheetCss = `
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line{border-radius:0;box-shadow:none;background:transparent}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line{position:relative}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group .flow-quote-line+.flow-quote-line::before{content:"";position:absolute;inset:-4px 0 auto;height:1px;background:var(--quote-neutral-divider,var(--paper-border))}
-.client-pages-root.proposal-typography.proposal-typography .client-interactive-card.selected{background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
+.client-pages-root.proposal-typography.proposal-typography .client-interactive-card.selected{background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}.client-pages-root.proposal-typography.proposal-typography .flow-quote-line{padding-inline:16px}
 .client-pages-root .quote-table-row:has(input:checked){background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
 .client-pages-root .print-selection[data-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .client-pages-root .print-radio[data-checked=true]{background:var(--paper);color:var(--accent)}
