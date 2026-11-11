@@ -1,5 +1,6 @@
 "use client";
 import { ToastSurface } from "./toast-surface";
+import { timelineEvents } from "../lib/timeline";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { StaffPerson } from "./staff-person";
 import { withCount } from "../lib/count-label";
@@ -3002,26 +3003,28 @@ export function RecordV4({
       aria-label="Timeline events"
       tabIndex={0}
     >
-      {p.events.toReversed().map((e) => {
-        const blockedEdit = unpublishedEdit?.id === e.id;
-        return (
-          <article
-            key={e.id}
-            className="timeline-entry"
-            data-unpublished={blockedEdit || undefined}
-          >
-            <span className="timeline-dot" aria-hidden="true" />
-            <div>
-              <strong>
-                {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
-              </strong>
-              <small className="timeline-entry-meta">
-                {timestamp(e.created_at, data)} | {person(e.actor, data)}
-              </small>
-            </div>
-          </article>
-        );
-      })}
+      {timelineEvents(p.events)
+        .toReversed()
+        .map((e) => {
+          const blockedEdit = unpublishedEdit?.id === e.id;
+          return (
+            <article
+              key={e.id}
+              className="timeline-entry"
+              data-unpublished={blockedEdit || undefined}
+            >
+              <span className="timeline-dot" aria-hidden="true" />
+              <div>
+                <strong>
+                  {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
+                </strong>
+                <small className="timeline-entry-meta">
+                  {timestamp(e.created_at, data)} | {person(e.actor, data)}
+                </small>
+              </div>
+            </article>
+          );
+        })}
     </div>
   );
   return (

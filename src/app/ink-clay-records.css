@@ -1495,6 +1495,13 @@
 }
 .ink-clay .record-section > .staff-section-heading {
   margin: 0;
+  /* Same height with or without action pills, so cards in the main column
+     and the rail start on the same line. */
+  min-block-size: 40px;
+  align-items: center;
+}
+.ink-clay .record-section > .engagement-panel {
+  margin-block: 0;
 }
 .record-section .staff-section-heading .pill {
   font: 600 12px/18px var(--font-ui);
