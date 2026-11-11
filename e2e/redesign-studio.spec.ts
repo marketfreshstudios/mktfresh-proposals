@@ -327,7 +327,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       });
     captures.push({ file, frame, width, theme });
   }
-  const image = settings.company_signatory!.image;
+  const image = settings.company_signatory!.image!;
   const complete = await service.sign(
     completedClient.id,
     companyConsent(completedClient.revision, settings),
@@ -615,9 +615,17 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
       await capture("send-checks", "8l", width, theme);
       if (width < 1100) await page.keyboard.press("Escape");
       await page.goto(`/proposals/${signed.id}?action=countersign`);
-      await expect(
-        page.getByAltText("Alex Morgan's stored signature"),
-      ).toBeVisible();
+      const savedSignature = page.getByRole("dialog").getByRole("img", {
+        name: "Alex Morgan's stored signature",
+        exact: true,
+      });
+      await expect(savedSignature).toBeVisible();
+      await expect(savedSignature).toHaveAttribute("src", image);
+      await expect
+        .poll(() =>
+          savedSignature.evaluate((img: HTMLImageElement) => img.naturalWidth),
+        )
+        .toBeGreaterThan(0);
       await capture("stored-signature", "7d", width, theme);
       await page.keyboard.press("Escape");
       settings.company_signatory!.image = null;
@@ -626,6 +634,12 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         page.getByText("No signature saved — add one in Workspace", {
           exact: true,
         }),
+      ).toBeVisible();
+      await expect(savedSignature).toHaveCount(0);
+      await expect(
+        page
+          .getByRole("dialog")
+          .getByText("Designated signatory: Alex Morgan", { exact: true }),
       ).toBeVisible();
       await capture("missing-signature", "7d", width, theme);
       await page.keyboard.press("Escape");
