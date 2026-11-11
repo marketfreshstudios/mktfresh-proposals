@@ -304,6 +304,15 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
     "Shared on 1 page | 1 hidden",
   );
   await capture(page, "1i-1440-styles");
+  if (process.env.CAPTURE_PANEL_CARDS === "1") {
+    const { mkdir } = await import("node:fs/promises");
+    const directory = "docs/screenshots/editor-panel-cards-rest";
+    await mkdir(directory, { recursive: true });
+    const shared = page.locator(".shared-bands-card");
+    await shared.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${directory}/2d-own-pages-1440.png` });
+    await shared.screenshot({ path: `${directory}/2d-own-pages-card.png` });
+  }
   await page
     .getByRole("button", { name: "Go to page 2 header", exact: true })
     .click();
