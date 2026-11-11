@@ -639,3 +639,28 @@
   background: var(--ink-title);
   color: var(--surface);
 }
+
+/* Owner 10 Nov: number columns in every table are right-aligned, values and
+   headers alike, with tabular figures. */
+@media (min-width: 1100px) {
+  .ink-clay .num-col {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* The last number column keeps a clear gap before the next column. */
+  .ink-clay .num-col:has(+ :not(.num-col)) {
+    padding-inline-end: 24px;
+  }
+}
+.ink-clay .num-col .catalog-price {
+  display: inline;
+}
+.ink-clay .report-table :is(th, td):not(:first-child) {
+  text-align: end;
+}
+.ink-clay .report-table thead th:not(:first-child) button {
+  justify-content: flex-end;
+  width: 100%;
+  text-align: end;
+}

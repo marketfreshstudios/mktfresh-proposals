@@ -611,6 +611,13 @@ export function ProposalMenu({
     </>
   );
 }
+// An empty amount is a muted dash with a spoken label, so it never reads as
+// part of the neighboring Owner column.
+const noAmount = (
+  <span className="no-amount" aria-label="None" role="img">
+    —
+  </span>
+);
 export function ProposalRows({
   proposals,
   data,
@@ -660,9 +667,9 @@ export function ProposalRows({
           )}
           <span>Status</span>
           <span className="next-cell">Next</span>
-          <span>One-time</span>
-          <span>Monthly</span>
-          {yearly && <span>Yearly</span>}
+          <span className="row-amount-head num-col">One-time</span>
+          <span className="row-amount-head num-col">Monthly</span>
+          {yearly && <span className="row-amount-head num-col">Yearly</span>}
           {showOwner && listActions && <span>Owner</span>}
           <span className="updated-cell">Updated</span>
           <span />
@@ -733,23 +740,29 @@ export function ProposalRows({
                   {!listActions && <SignLink p={p} data={data} />}
                 </div>
                 <span className="next-cell">{nextAction(p)}</span>
-                <span className="row-amount one-time" data-label="One-time">
+                <span
+                  className="num-col row-amount one-time"
+                  data-label="One-time"
+                >
                   {listActions && !t.one_time_total
-                    ? "—"
+                    ? noAmount
                     : money(t.one_time_total, p.currency)}
                 </span>
-                <span className="row-amount" data-label="Monthly">
+                <span className="num-col row-amount" data-label="Monthly">
                   {listActions && !t.monthly_total
-                    ? "—"
+                    ? noAmount
                     : money(t.monthly_total, p.currency) + "/mo"}
                 </span>
                 {yearly && (
-                  <span className="row-amount yearly" data-label="Yearly">
+                  <span
+                    className="num-col row-amount yearly"
+                    data-label="Yearly"
+                  >
                     {p.quote.some((i) =>
                       i.sublines.some((s) => s.interval === "year"),
                     )
                       ? money(t.yearly_total, p.currency) + "/yr"
-                      : "—"}
+                      : noAmount}
                   </span>
                 )}
                 {listActions && owner}
@@ -3015,7 +3028,12 @@ export function ClientsV4({
             <StaffTableHead className="client-table-head">
               {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
                 (label) => (
-                  <span key={label}>{label}</span>
+                  <span
+                    key={label}
+                    className={label === "Monthly now" ? "num-col" : undefined}
+                  >
+                    {label}
+                  </span>
                 ),
               )}
             </StaffTableHead>
@@ -3056,7 +3074,7 @@ export function ClientsV4({
                     {c.first_name} {c.last_name}
                   </span>
                   <span data-label="Proposals">{proposalStatus}</span>
-                  <span data-label="Monthly now">
+                  <span className="num-col" data-label="Monthly now">
                     {c.stripe_customer_id ? (
                       <a
                         className="inner-action"
