@@ -2210,7 +2210,12 @@ async function handleRoute(
             headers: { ...headers, "Content-Type": "image/png" },
           });
         }
-        const preview = previewResult(p, settings);
+        const mode = new URL(req.url).searchParams.get("mode");
+        const preview = previewResult(
+          p,
+          settings,
+          mode === "published" ? "published" : "working",
+        );
         return json({
           ...preview,
           company: {

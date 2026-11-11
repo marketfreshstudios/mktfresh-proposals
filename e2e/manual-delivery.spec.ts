@@ -157,10 +157,11 @@ test("manual publish exposes one copyable link, no email, record/list access and
   ).not.toBeChecked();
   await capture(page, "record-link-1440");
   await expect(page.getByText(/Sent manually by Alex Morgan/)).toBeVisible();
-  await page.getByRole("button", { name: "Copy link", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Copied", exact: true }),
-  ).toBeVisible();
+  const link = page.locator(".record-details-link");
+  await link
+    .getByRole("button", { name: "Copy client link", exact: true })
+    .click();
+  await expect(link.getByRole("status")).toHaveText("Copied");
   await page
     .getByRole("switch", { name: "Automatic reminders from the app" })
     .check();

@@ -419,17 +419,28 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
   ).toBeVisible();
 
   await page.goto(`/proposals/${f.proposal.id}`);
-  const invoice = page.getByText(`Invoice ${f.reference}`, { exact: true });
+  const row = page
+    .locator(".record-billing-row")
+    .filter({ hasText: "One-time" });
+  const invoice = row
+    .locator("summary")
+    .filter({ hasText: `QuickBooks invoice ${f.reference}` });
   await expect(invoice).toBeVisible();
-  await expect(
-    page.getByText("Invoices go to billing@example.test"),
-  ).toBeVisible();
-  await invoice.scrollIntoViewIfNeeded();
-  const invoiceLabel = page.getByText("One-time invoice", { exact: true });
+  await expect(row.getByText("Draft", { exact: true })).toBeVisible();
+  const invoiceLabel = row.getByText("One-time", { exact: true });
   const labelBox = (await invoiceLabel.boundingBox())!;
   const invoiceBox = (await invoice.boundingBox())!;
-  expect(invoiceBox.y).toBeGreaterThan(labelBox.y + labelBox.height);
-  expect(Math.abs(invoiceBox.x - labelBox.x)).toBeLessThanOrEqual(1);
+  expect(invoiceBox.x).toBeGreaterThan(labelBox.x + labelBox.width);
+  expect(Math.abs(invoiceBox.y - labelBox.y)).toBeLessThanOrEqual(5);
+  await invoice.click();
+  await expect(
+    row.getByText("Invoices go to billing@example.test"),
+  ).toBeVisible();
+  await expect(
+    row.getByRole("link", { name: "Open in QuickBooks" }),
+  ).toBeVisible();
+  await invoice.click();
+  await invoice.scrollIntoViewIfNeeded();
   await capture(page, "record-draft-invoice-1440");
   f.fail();
   await page.reload();

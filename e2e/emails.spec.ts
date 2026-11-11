@@ -366,9 +366,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await page.waitForURL(
     (url) => url.pathname === `/proposals/${current.id}` && !url.search,
   );
-  await expect(
-    page.getByRole("heading", { name: "Email log", exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".record-email-log > summary")).toBeVisible();
   expect((await emailTemplates(repo))[0].subject).toContain(
     "{{client.company}}",
   );
@@ -385,10 +383,9 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
     sentLog.snapshot,
   );
   await page.goto(`/proposals/${current.id}`);
-  await expect(
-    page.getByRole("heading", { name: "Email log", exact: true }),
-  ).toBeVisible();
-  await page.getByText(/Just for this send ·/).click();
+  await expect(page.locator(".record-email-log > summary")).toBeVisible();
+  await page.locator(".record-email-log > summary").click();
+  await page.getByText(/Just for this send \|/).click();
   await expect(
     page.locator('iframe[title="Sent email: Just for this send"]'),
   ).toBeVisible();

@@ -312,6 +312,18 @@ test("sent editor publishes on its existing link, keeps invalid work off the cli
   expect(previous.content.some((b: any) => b.type === "pricing_table")).toBe(
     true,
   );
+  await page.goto(`/p/${sent.id}?preview=published`);
+  await expect(page.getByText("Preview of published version")).toBeVisible();
+  await expect(page.locator("#proposal-document")).toContainText(
+    "This saved text is live on the same link.",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Your investment" }),
+  ).toBeVisible();
+  await page.goto(`/proposals/${sent.id}?view=send&focus=readiness`);
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "Add a pricing table" }),
+  ).toBeFocused();
   const { signature } = await import("../tests/helpers");
   await f.signRemote({
     ...signature(f.active().revision),

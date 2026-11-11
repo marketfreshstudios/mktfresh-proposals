@@ -301,7 +301,7 @@ test("record/list summaries match the retained sessions, with empty and responsi
   const f = await fixture(page);
   await page.goto(`/proposals/${f.p.id}`);
   await expect(
-    page.getByRole("heading", { name: "No client views yet" }),
+    page.getByRole("heading", { name: "Not opened yet" }),
   ).toBeVisible();
   await capture(page, "record-empty-1440", true);
   const now = Date.now(),
@@ -348,6 +348,7 @@ test("record/list summaries match the retained sessions, with empty and responsi
   });
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   const panel = page.locator(".engagement-panel");
+  await panel.getByText("Engagement details", { exact: true }).click();
   await expect(panel.locator("dd").nth(0)).toHaveText("3");
   await expect(panel.locator("dd").nth(1)).toHaveText("2");
   await expect(

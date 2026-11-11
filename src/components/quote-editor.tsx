@@ -85,6 +85,7 @@ import { usePdfPreview } from "./use-pdf-preview";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { useEditorPanels } from "./use-editor-panels";
 import { usePhoneEditorViewport } from "./editor/phone-editor-viewport";
+import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { ProposalStyles } from "./proposal-styles";
 import {
   resolveStyles,
@@ -223,8 +224,10 @@ function QuoteEditorContent({
   user,
   documents = [],
   initialTab = "Quote",
+  focusReadiness = false,
 }: {
   initialTab?: string;
+  focusReadiness?: boolean;
   initial: Proposal;
   appUrl: string;
   settings?: WorkspaceSettings | null;
@@ -1114,8 +1117,27 @@ function QuoteEditorContent({
     (protectedLink && !p.password_hash && password.length < 8
       ? "Enter a password with at least 8 characters."
       : "");
+  const sendPanelRoot = useRef<HTMLDivElement>(null);
+  const focusedReadiness = useRef(false);
+  const afterVisible = useVisibleEditorAction();
+  useEffect(() => {
+    if (
+      !focusReadiness ||
+      !panels.ready ||
+      focusedReadiness.current ||
+      tab !== "Send"
+    )
+      return;
+    const firstBlocker = sendPanelRoot.current?.querySelector<HTMLElement>(
+      ".readiness-row.blocker:not([hidden])",
+    );
+    if (!firstBlocker) return;
+    focusedReadiness.current = true;
+    afterVisible(firstBlocker, () => firstBlocker.focus());
+  }, [focusReadiness, panels.ready, tab, afterVisible]);
+
   const sendPanel = (
-    <div className="send-panel stack">
+    <div className="send-panel stack" ref={sendPanelRoot}>
       <PanelCard
         title="Readiness"
         className="send-readiness-card"
@@ -1126,7 +1148,7 @@ function QuoteEditorContent({
           {ready.errors
             .filter((e) => !e.startsWith("Confirm review of AI changes"))
             .map((e, n) => (
-              <li className="readiness-row blocker" key={n}>
+              <li className="readiness-row blocker" key={n} tabIndex={-1}>
                 <span className="readiness-badge" aria-hidden="true">
                   <TriangleAlert aria-hidden="true" />
                 </span>
@@ -1194,6 +1216,7 @@ function QuoteEditorContent({
         {/* A fast review response must not detach the native control mid-activation. */}
         <div
           className="send-ai-review readiness-row blocker"
+          tabIndex={-1}
           hidden={pending.length === 0}
         >
           <span className="readiness-badge" aria-hidden="true">

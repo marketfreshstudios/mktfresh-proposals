@@ -415,9 +415,14 @@ test("short copy links, visible record Edit, signature default and unchanged lin
   await expect(
     record.getByRole("link", { name: "Edit", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".record-link-header input")).toHaveValue(
+  await expect(page.locator(".record-details-link")).toContainText(
     `http://127.0.0.1:3100/p/${published.token}`,
   );
+  await expect(
+    page
+      .locator(".record-details-link")
+      .getByRole("button", { name: "Copy client link" }),
+  ).toBeVisible();
   await shot(page, "record-short-link-1440");
   await page.setViewportSize({ width: 375, height: 1000 });
   await expect(
