@@ -224,8 +224,8 @@ test("band menus are accessible, controls keep 44px hit areas, and bars stay att
     .click();
   await page.getByRole("button", { name: /^Open Quote\b/ }).click();
   await page
-    .locator(".editor-v2-sheet")
-    .getByRole("button", { name: "Done", exact: true })
+    .getByRole("dialog", { name: "Proposal tools", exact: true })
+    .getByRole("button", { name: "Close Quote", exact: true })
     .click();
   await page.setViewportSize({ width: 768, height: 1000 });
   await expect(page.locator(".editor-v2-drawer:modal")).toHaveCount(0);
