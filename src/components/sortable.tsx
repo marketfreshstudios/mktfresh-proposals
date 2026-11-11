@@ -96,7 +96,7 @@ export function Sortable({
       aria-label={`Drag ${label}`}
       title={`Drag ${label}`}
       onPointerOver={(e) => {
-        if (block) {
+        if (block && e.pointerType === "mouse") {
           e.stopPropagation();
           const id = e.currentTarget
             .closest(".block-sortable")

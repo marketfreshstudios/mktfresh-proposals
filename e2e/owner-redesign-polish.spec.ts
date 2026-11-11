@@ -99,10 +99,13 @@ test("tab sets and real record and editor navigation use readable shared styles"
 
   await page.goto(`/proposals/${f.draft.id}/edit`);
   const back = page.getByRole("link", {
-    name: "Back to proposals",
+    name: "Back to proposal",
     exact: true,
   });
-  await expect(back).toHaveAttribute("href", "/proposals");
+  await expect(back).toHaveAttribute(
+    "href",
+    `/proposals/${f.draft.id}?view=record`,
+  );
   await expect(back.locator("svg.lucide-chevron-left")).toHaveCount(1);
   await back.hover();
   await expect(back).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");

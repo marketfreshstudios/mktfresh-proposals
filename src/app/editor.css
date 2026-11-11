@@ -281,9 +281,13 @@
   padding: 0;
   opacity: 0;
 }
-.editor-outline nav .quote-sortable:hover > .drag-handle,
 .editor-outline nav .quote-sortable:focus-within > .drag-handle {
   opacity: 1;
+}
+@media (hover: hover) {
+  .editor-outline nav .quote-sortable:hover > .drag-handle {
+    opacity: 1;
+  }
 }
 .editor-outline nav .quote-sortable > button:not(.drag-handle) {
   width: 100%;
@@ -306,9 +310,13 @@
   min-height: 44px;
   padding: 0;
 }
-.document-quote .quote-sortable:hover > .drag-handle,
 .document-quote .quote-sortable:focus-within > .drag-handle {
   opacity: 1;
+}
+@media (hover: hover) {
+  .document-quote .quote-sortable:hover > .drag-handle {
+    opacity: 1;
+  }
 }
 .document-reading .flow-quote-line input {
   width: 20px;
@@ -2811,8 +2819,13 @@
     font-size: 10px;
     opacity: 0;
   }
-  .sections-nav .quote-sortable:is(:hover, :focus-within) > .drag-handle {
+  .sections-nav .quote-sortable:is(:focus-within) > .drag-handle {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .sections-nav .quote-sortable:is(:hover, :focus-within) > .drag-handle {
+      opacity: 1;
+    }
   }
   :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
     .outline-page {
@@ -2839,9 +2852,16 @@
     flex: none;
   }
   .sections-nav
-    .outline-page-title:is(:hover, :focus-within)
+    .outline-page-title:is(:focus-within)
     > button[aria-label^="Delete page"] {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .sections-nav
+      .outline-page-title:is(:hover, :focus-within)
+      > button[aria-label^="Delete page"] {
+      opacity: 1;
+    }
   }
   :is(.editor-v2, .editor-v2-sections-drawer, .studio-template-layout)
     .sections-nav
@@ -5978,12 +5998,23 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .editor-v2
   .sections-nav
   .quote-sortable:has(
-    > .outline-section:is(:hover, :focus-visible),
-    > .drag-handle:is(:hover, :focus-visible),
-    > .outline-page > .outline-page-title:hover
+    > .outline-section:focus-visible,
+    > .drag-handle:focus-visible
   )
   > .drag-handle {
   opacity: 1;
+}
+@media (hover: hover) {
+  .editor-v2
+    .sections-nav
+    .quote-sortable:has(
+      > .outline-section:is(:hover, :focus-visible),
+      > .drag-handle:is(:hover, :focus-visible),
+      > .outline-page > .outline-page-title:hover
+    )
+    > .drag-handle {
+    opacity: 1;
+  }
 }
 @media (min-width: 700px) {
   .editor-v2 .editor-v2-sections .editor-sidebar-header {
@@ -6143,10 +6174,14 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .cover-logo-controls > button {
   opacity: 0;
 }
-.cover-logo:hover .cover-logo-controls > button,
 .cover-logo-controls:focus-within > button,
 .cover-logo:not(:has(img)) .cover-logo-controls > button {
   opacity: 1;
+}
+@media (hover: hover) {
+  .cover-logo:hover .cover-logo-controls > button {
+    opacity: 1;
+  }
 }
 .cover-logo-menu {
   display: grid;
@@ -6431,9 +6466,14 @@ nav.sections-nav > .quote-sortable > .drag-handle {
     outline: 1.5px solid #9db3a8;
     z-index: 20;
   }
-  .page-band-frame[tabindex]:is(:hover, :focus, :focus-within)
-    > .band-hover-controls {
+  .page-band-frame[tabindex]:is(:focus, :focus-within) > .band-hover-controls {
     display: flex;
+  }
+  @media (hover: hover) {
+    .page-band-frame[tabindex]:is(:hover, :focus, :focus-within)
+      > .band-hover-controls {
+      display: flex;
+    }
   }
   :is(.editor-paper, .template-paged-paper)[data-band-editing]
     > :not(.editor-page-sheets, style, .document-page-count) {
@@ -6971,10 +7011,15 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 .page-band-frame[data-band-selected="true"] {
   outline: 1px dashed #9db3a8;
 }
-.page-band-frame[tabindex]:is(:hover, :focus, :focus-within)
-  > .band-hover-controls,
+.page-band-frame[tabindex]:is(:focus, :focus-within) > .band-hover-controls,
 .page-band-frame[data-band-selected="true"] > .band-hover-controls {
   display: flex;
+}
+@media (hover: hover) {
+  .page-band-frame[tabindex]:is(:hover, :focus, :focus-within)
+    > .band-hover-controls {
+    display: flex;
+  }
 }
 .page-band-frame[data-band-source="unique"]:is(:hover, :focus, :focus-within),
 .page-band-frame[data-band-source="unique"][data-band-selected="true"] {
@@ -6990,9 +7035,14 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   z-index: var(--z-formatting);
 }
 .page-band-frame[data-band-selected="true"] > .band-source-tag,
-.page-band-frame:is(:hover, :focus, :focus-within) > .band-source-tag,
+.page-band-frame:is(:focus, :focus-within) > .band-source-tag,
 .page-band-frame[data-band-state="editing"] > .band-source-tag {
   visibility: hidden;
+}
+@media (hover: hover) {
+  .page-band-frame:is(:hover, :focus, :focus-within) > .band-source-tag {
+    visibility: hidden;
+  }
 }
 :is(.editor-paper, .template-paged-paper)[data-band-editing]
   > :not(.editor-page-sheets, style, .document-page-count) {
@@ -7181,8 +7231,13 @@ nav.sections-nav > .quote-sortable > .drag-handle {
   border-radius: inherit;
   background: #fff;
 }
-.cover-band-zone:is(:hover, :focus-within) > button {
+.cover-band-zone:is(:focus-within) > button {
   opacity: 1;
+}
+@media (hover: hover) {
+  .cover-band-zone:is(:hover, :focus-within) > button {
+    opacity: 1;
+  }
 }
 .band-touch-scope {
   display: none;
@@ -10021,4 +10076,19 @@ dialog.foundation-sheet.block-style-sheet {
 .quote-condition-note {
   color: var(--ink-muted);
   font: 400 12px/1.35 var(--font-ui);
+}
+
+/* Touch screens have no hover, so controls that a mouse reveals on hover stay
+   visible. Revealing them on the first tap made iOS hold that tap as a hover
+   preview and wait for a second tap. */
+@media (hover: none) {
+  .editor-outline nav .quote-sortable > .drag-handle,
+  .document-quote .quote-sortable > .drag-handle,
+  .sections-nav .quote-sortable > .drag-handle,
+  .editor-v2 nav.sections-nav .quote-sortable > .drag-handle,
+  .sections-nav .outline-page-title > button[aria-label^="Delete page"],
+  .cover-logo-controls > button,
+  .cover-band-zone > button {
+    opacity: 1;
+  }
 }

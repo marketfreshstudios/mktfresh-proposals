@@ -2908,8 +2908,8 @@ function QuoteEditorContent({
         onReviewSend={() => openTools("Send")}
         sendPanelOpen={tab === "Send" && toolsOpen}
         title={p.title}
-        backLabel="Proposals"
-        backHref="/proposals"
+        backLabel="Proposal"
+        backHref={`/proposals/${p.id}?view=record`}
         save={save}
         dirty={dirty}
         saving={saving}
