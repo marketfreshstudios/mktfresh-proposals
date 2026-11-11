@@ -22,6 +22,7 @@ import {
   printedChoiceGroupLabel,
 } from "../lib/quote-options";
 import { useTermsJump } from "./use-terms-jump";
+import { TermsNotice } from "./terms-notice";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
 import { EditClientModal } from "./edit-client-modal";
@@ -265,6 +266,7 @@ function QuoteEditorContent({
   const [blockSettings, setBlockSettings] = useState<string | null>(null);
   const selection = useBlockSelection();
   const jumpToTerms = useTermsJump("editor");
+  const [termsNotice, setTermsNotice] = useState<string | null>(null);
   const money = useMoney(),
     [p, setP] = useState<Proposal>({
       ...initial,
@@ -941,15 +943,16 @@ function QuoteEditorContent({
     );
     const term = revealedOiotClause(p.content, p.quote, quote);
     change({ quote });
-    if (term) {
-      selection.clear();
-      if (panels.phone) {
-        setFullDocument(true);
-        setSection(0);
-        setDrawer(false);
-      } else if (drawer) panels.toggle("right");
-      jumpToTerms(term);
-    }
+    setTermsNotice(term ?? null);
+  }
+  function viewTerms(term: string) {
+    selection.clear();
+    if (panels.phone) {
+      setFullDocument(true);
+      setSection(0);
+      setDrawer(false);
+    } else if (drawer) panels.toggle("right");
+    jumpToTerms(term);
   }
   function addItem(item?: Item, insert?: (value: QuoteItem) => QuoteItem[]) {
     const id = uid(),
@@ -3417,6 +3420,12 @@ function QuoteEditorContent({
           {refPanel}
         </Sheet>
       )}
+      <TermsNotice
+        clause={termsNotice}
+        content={p.content}
+        onView={viewTerms}
+        onDismiss={() => setTermsNotice(null)}
+      />
     </div>
   );
 }

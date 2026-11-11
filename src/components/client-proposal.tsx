@@ -11,6 +11,7 @@ import {
   revealedOiotClause,
 } from "../lib/oiot";
 import { useTermsJump } from "./use-terms-jump";
+import { TermsNotice } from "./terms-notice";
 import { ClientQuestions, generalQuestion } from "./proposal-questions";
 import {
   ClientQuestionButton,
@@ -241,6 +242,7 @@ function NewClientFlow({
   const [barHeight, setBarHeight] = useState(0);
   const [readSection, setReadSection] = useState<number | null>(null);
   const jumpToTerms = useTermsJump("client");
+  const [termsNotice, setTermsNotice] = useState<string | null>(null);
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
   const [questionRequest, setQuestionRequest] =
@@ -497,7 +499,7 @@ function NewClientFlow({
       ),
     });
     if (preview) {
-      jumpToTerms(term ?? null);
+      setTermsNotice(term ?? null);
       return;
     }
     pending.current = true;
@@ -511,7 +513,7 @@ function NewClientFlow({
         selected,
       });
       setP(saved);
-      jumpToTerms(term ?? null);
+      setTermsNotice(term ?? null);
       engagement.choice(id, selected);
     } catch (e) {
       setP(previous);
@@ -1562,6 +1564,12 @@ function NewClientFlow({
           />
         )}
         <ContactToast />
+        <TermsNotice
+          clause={termsNotice}
+          content={p?.content ?? []}
+          onView={jumpToTerms}
+          onDismiss={() => setTermsNotice(null)}
+        />
         <p className="flow-engagement-privacy">
           The sender can see when and how this proposal was viewed.
         </p>
