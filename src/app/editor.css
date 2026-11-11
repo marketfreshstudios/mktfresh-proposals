@@ -9488,3 +9488,6 @@ dialog.foundation-sheet.block-style-sheet {
   min-height: 40px;
   padding: 0;
 }
+.ink-clay .quote-panel .quote-row-body .field > span {
+  color: var(--ink-muted);
+}
