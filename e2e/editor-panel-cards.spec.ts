@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
-import type { Template } from "../src/lib/model";
+import type { Item, Template } from "../src/lib/model";
 import { editorFixture } from "./editor-fixture";
 import { openEditorPanel } from "./editor-ui";
 import { cssColorToken } from "./css-color-token";
@@ -52,6 +52,13 @@ async function fixture(page: Page, template: boolean) {
       },
     ],
   });
+  const product = (await f.repo.entities<Item>("pricing_items")).find(
+    (item) => item.id === f.active().quote[1].pricing_item_id,
+  )!;
+  await f.repo.put("pricing_items", {
+    ...product,
+    display_name: "Website build",
+  });
   const t = (await f.repo.entities<Template>("templates"))[0];
   if (template) {
     t.default_items = structuredClone(f.active().quote);
@@ -100,6 +107,16 @@ for (const template of [false, true]) {
     );
     const group = panel.locator(".editor-choice-group");
     await expect(group).toHaveCSS("border-radius", "14px");
+    const handle = (await panel
+      .getByRole("button", { name: "Drag choice group", exact: true })
+      .boundingBox())!;
+    const title = (await group
+      .getByRole("heading", { name: "Choose one" })
+      .boundingBox())!;
+    expect(handle.x + handle.width).toBeLessThanOrEqual(title.x);
+    expect(
+      Math.abs(handle.y + handle.height / 2 - title.y - title.height / 2),
+    ).toBeLessThanOrEqual(2);
     await expect(group.locator(".quote-choice-well")).toHaveCSS(
       "background-color",
       await cssColorToken(group, "--surface-sunken"),
@@ -129,6 +146,18 @@ for (const template of [false, true]) {
     await expect(row.locator(".quote-item-footer")).not.toContainText(
       "Add sub-line",
     );
+    const display = row.locator(".currency-input-display");
+    const amount = row.getByRole("spinbutton", { name: "Amount Own It Now" });
+    await expect(display).toHaveText("$2,750.00");
+    await expect(display).toBeVisible();
+    const amountBox = (await amount.boundingBox())!;
+    const fieldBox = (await row.locator(".currency-input").boundingBox())!;
+    expect(amountBox.width).toBe(fieldBox.width);
+    await amount.click();
+    await expect(amount).toHaveValue("2750");
+    await expect(display).toBeHidden();
+    await amount.blur();
+    await expect(display).toBeVisible();
     if (!template) {
       await row.locator(".quote-price-heading").click();
       await shot(page, "2a", 1440, "light");
@@ -146,9 +175,17 @@ for (const template of [false, true]) {
       name: "Sub-line label for Own It Now",
     });
     await expect(labels).toHaveCount(2);
+    await expect(labels.first()).toHaveValue("Website build");
+    await expect(labels.last()).toHaveAttribute(
+      "placeholder",
+      "Sub-line 2 | One-time",
+    );
     await expect(labels.last()).toBeFocused();
     await expect(
       row.getByText("Name these sub-lines so the client can tell them apart."),
+    ).toBeVisible();
+    await expect(
+      row.locator(".subline-warning + .button-wrap .quote-add-subline"),
     ).toBeVisible();
     const read = async () =>
       template
@@ -158,7 +195,10 @@ for (const template of [false, true]) {
         : f.active().quote;
     await expect.poll(async () => (await read())[1].sublines.length).toBe(2);
     const changed = await read();
-    expect(changed[1].sublines[0]).toEqual(source[1].sublines[0]);
+    expect(changed[1].sublines[0]).toEqual({
+      ...source[1].sublines[0],
+      label: "Website build",
+    });
     expect(changed[1].sublines[1]).toMatchObject({
       amount: 0,
       interval: "one_time",
@@ -208,7 +248,18 @@ for (const width of [1440, 375]) {
       expect(
         await amount.evaluate((input) => input.scrollWidth - input.clientWidth),
       ).toBeLessThanOrEqual(0);
+      await amount.blur();
+      const formatted = row.locator(".currency-input-display").first();
+      await expect(formatted).toHaveText("$999,999.99");
+      expect(
+        await formatted.evaluate((el) => el.scrollWidth - el.clientWidth),
+      ).toBeLessThanOrEqual(0);
       await amount.fill("2750");
+      await amount.blur();
+      await expect(formatted).toHaveText("$2,750.00");
+      expect(
+        await formatted.evaluate((el) => el.scrollWidth - el.clientWidth),
+      ).toBeLessThanOrEqual(0);
       const interval = row.getByRole("combobox", { name: /^Interval/ }).first();
       await expect(interval).toHaveCSS("width", "116px");
       expect(

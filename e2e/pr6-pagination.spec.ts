@@ -365,15 +365,19 @@ test("sub-line placeholders, duplicate hint, 3→2→1 removal and undo stay in 
     name: "Sub-line label for Sub-line service",
   });
   for (const [n, label] of [
-    "Setup fee",
-    "Subscription",
-    "Annual subscription",
+    "Sub-line 1 | One-time",
+    "Sub-line 2 | Monthly",
+    "Sub-line 3 | Yearly",
   ].entries())
     await expect(labels.nth(n)).toHaveAttribute("placeholder", label);
   await page
     .getByRole("combobox", { name: "Interval Sub-line service" })
     .nth(2)
     .selectOption("month");
+  await expect(labels.nth(2)).toHaveAttribute(
+    "placeholder",
+    "Sub-line 3 | Monthly",
+  );
   await expect(
     page.getByText("Name these sub-lines so the client can tell them apart."),
   ).toBeVisible();

@@ -7,7 +7,7 @@ import type icons from "./icons.json";
 export type BlockOption = {
   name: string;
   description: string;
-  icon: keyof typeof icons;
+  icon: keyof typeof icons | "divider";
   group: string;
   block?: Block;
   extra?: Block[];
@@ -138,7 +138,7 @@ export function blockOptions({
       group: "Text",
       name: "Divider",
       description: "A horizontal dividing line",
-      icon: "file-lines",
+      icon: "divider",
       block: {
         type: "paragraph",
         content: { type: "doc", content: [{ type: "horizontalRule" }] },

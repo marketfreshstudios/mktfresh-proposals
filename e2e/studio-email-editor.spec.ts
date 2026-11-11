@@ -223,6 +223,18 @@ test("per-email pickers and read-only notifications follow existing permissions 
         .locator(".editor-sidepanel .field-option code")
         .allTextContents();
       expect(fields.length).toBeGreaterThan(0);
+      if (t.key.startsWith("team_") || t.key === "staff_billing_failed") {
+        const group = t.key.startsWith("team_") ? "Team" : "Job";
+        const section = page
+          .locator(".editor-sidepanel .field-option-group")
+          .filter({ has: page.getByText(group, { exact: true }) });
+        await expect(section).toHaveCount(1);
+        expect(
+          (await section.locator("code").allTextContents()).some((path) =>
+            path.startsWith(`{{${group.toLowerCase()}.`),
+          ),
+        ).toBe(true);
+      }
       if (t.key.startsWith("team_"))
         expect(
           fields.every((path) => /{{(?:team|sender|workspace)\./.test(path)),

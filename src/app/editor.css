@@ -5335,37 +5335,36 @@
   }
 }
 .quote-panel .subline-grid .currency-input {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 36px;
+  display: block;
+  position: relative;
   min-width: 0;
-  border: 1px solid var(--editor-control-border);
-  border-radius: 8px;
-  background: var(--paper);
-}
-.currency-input > span {
-  font: 500 13px/18px var(--font-ui);
-  color: var(--paper-muted);
 }
 .quote-panel .subline-grid .currency-input input {
-  flex: 1;
   width: 100%;
   min-width: 0;
-  padding: 0;
-  border: 0 solid var(--editor-control-border);
-  border-radius: 0;
-  background: transparent;
-  font: 600 14px/20px var(--font-ui);
+  padding-inline: 8px;
+  font: 600 13px/20px var(--font-ui);
   font-variant-numeric: tabular-nums;
 }
-.quote-panel .subline-grid .currency-input:focus-within {
-  outline: var(--focus-outline);
-  outline-offset: var(--focus-offset);
+.quote-panel .currency-input-display {
+  position: absolute;
+  inset: 1px;
+  display: flex;
+  align-items: center;
+  padding-inline: 7px;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 13px/20px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
 }
-.quote-panel .subline-grid .currency-input input:focus-visible {
-  outline: none;
+.quote-panel
+  .currency-input:has(input:focus:not([readonly]))
+  .currency-input-display {
+  visibility: hidden;
 }
 .quote-panel .subline-grid select {
   font: 500 13px/18px var(--font-ui);
@@ -5442,7 +5441,7 @@
 }
 .quote-panel .quote-sortable:has(> .editor-choice-group) > .drag-handle {
   left: 12px;
-  top: 0;
+  top: 13px;
   height: 24px;
   min-height: 24px;
 }
@@ -5838,14 +5837,9 @@ nav.sections-nav > .quote-sortable > .drag-handle {
 @media (max-width: 699px) {
   :is(.editor-v2-sheet, .editor-v2-panel)
     :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select),
-  .quote-panel .quote-row-body :is(input, select),
-  .quote-panel .subline-grid .currency-input {
+  .quote-panel .quote-row-body :is(input, select) {
     height: 44px;
     min-height: 44px;
-  }
-  .quote-panel .subline-grid .currency-input input {
-    height: 40px;
-    min-height: 40px;
   }
   .quote-row-body .item-options .check,
   .quote-panel .quote-item-footer button {
@@ -9287,6 +9281,7 @@ dialog.foundation-sheet.block-style-sheet {
 .ink-clay .quote-panel .quote-row-body .subline {
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
   gap: 8px;
   margin: 0;
   padding: 10px;
@@ -9323,13 +9318,7 @@ dialog.foundation-sheet.block-style-sheet {
   overflow: visible;
   clip-path: none;
 }
-.ink-clay .quote-panel .subline-grid .currency-input {
-  padding-inline: 6px;
-  gap: 2px;
-  background: var(--surface);
-}
 .ink-clay .quote-panel .subline-grid .currency-input input {
-  font-size: 13px;
   appearance: textfield;
 }
 .ink-clay
@@ -9440,9 +9429,14 @@ dialog.foundation-sheet.block-style-sheet {
 .ink-clay .quote-panel .item-options .check {
   color: var(--ink);
 }
-/* Keep longer entered amounts readable without compressing Qty or Interval. */
+/* Give the amount a row of its own where the three fields would clip it. */
 .ink-clay .quote-panel .subline-grid[data-wide-amount="true"] .subline-amount {
   grid-column: 1 / -1;
+}
+@container (max-width: 264px) {
+  .ink-clay .quote-panel .subline-grid .subline-amount {
+    grid-column: 1 / -1;
+  }
 }
 .ink-clay .quote-panel .subline-quantity {
   grid-column: 2;
@@ -9492,10 +9486,14 @@ dialog.foundation-sheet.block-style-sheet {
   min-height: 44px;
   margin: 0;
 }
-.ink-clay .field-options-cards .fields-hint {
+.ink-clay :is(.field-options-cards, .blocks-panel) .fields-hint {
   margin: 0 0 2px;
   color: var(--ink-muted);
   font: 400 12px/18px var(--font-ui);
+}
+.ink-clay .blocks-panel .saved-blocks-empty {
+  margin: 0;
+  padding: 12px 16px;
 }
 .ink-clay :is(.field-options-cards, .blocks-panel) .panel-card-body {
   padding: 0;
@@ -9734,6 +9732,7 @@ dialog.foundation-sheet.block-style-sheet {
   .styles-action-row
   .btn {
   width: 100%;
+  min-height: 40px;
   white-space: nowrap;
   padding-inline: 12px;
 }
