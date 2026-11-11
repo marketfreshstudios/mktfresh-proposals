@@ -406,6 +406,21 @@ export class ProposalService {
         now,
       );
     p.content = contentAfterCover(p.content);
+    // Owner 10 Nov: a connector draft belongs to the staff member who
+    // connected that assistant, if they are still an active member.
+    if (actor.actor.startsWith("ai:") && actor.on_behalf_of_user_id) {
+      const member = (await this.members(this.repo.workspaceId)).find(
+        (m) =>
+          m.user_id === actor.on_behalf_of_user_id &&
+          (!("status" in m) || m.status === "active"),
+      );
+      if (member)
+        p.owner = {
+          user_id: member.user_id,
+          display_name: member.display_name,
+          email: member.email,
+        };
+    }
     await this.repo.save(p, -1);
     return withDraftSettings(p, settings);
   }
