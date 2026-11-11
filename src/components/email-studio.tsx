@@ -1,4 +1,5 @@
 "use client";
+import { CountChip } from "./count-chip";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { HeadingTokens } from "./editor/heading-tokens";
 import { groupedEmails, emailWhen, studioDate } from "../lib/studio-v3";
@@ -113,8 +114,10 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
             key={String(staff)}
             onClick={() => setStaffTab(staff)}
           >
-            {staff ? "Staff notifications" : "Client emails"} ·{" "}
-            {templates?.filter((t) => t.staff === staff).length ?? "–"}
+            {staff ? "Staff notifications" : "Client emails"}{" "}
+            <CountChip
+              count={templates?.filter((t) => t.staff === staff).length}
+            />
           </button>
         ))}
       </div>
