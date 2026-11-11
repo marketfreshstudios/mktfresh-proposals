@@ -609,7 +609,13 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
     .locator(".record-toolbar")
     .getByRole("button", { name: "Unarchive", exact: true })
     .click();
-  await expect(page.locator(".quote-workspace")).toBeVisible();
+  // Rows open the overview, so an unarchived draft stays on its overview.
+  await expect(
+    page
+      .locator(".record-toolbar")
+      .getByRole("button", { name: "Unarchive", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".record-v4")).toBeVisible();
   await page.goto(`/clients/${draft.client.id}`);
   await page.getByRole("button", { name: "Client actions" }).click();
   await expect(
