@@ -219,8 +219,8 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   await page.keyboard.press("ArrowDown");
   await expect(
     page
-      .locator('[id^="DndLiveRegion"]')
-      .filter({ hasText: `over droppable area ${quoteIds[1]}.` }),
+      .locator('.editor-sidepanel span[role="status"]')
+      .filter({ hasText: /Moved in the quote list, position 2 of/ }),
   ).toHaveCount(1);
   await page.keyboard.press("Space");
   await expect(handle).not.toHaveAttribute("aria-pressed", "true");
