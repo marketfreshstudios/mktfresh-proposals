@@ -266,6 +266,16 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await expect(questions.getByText(/set up a call to review/)).toBeVisible();
   await capture(page, "client-reply-1440");
   await page.setViewportSize({ width: 375, height: 780 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const header = page.locator(".flow-header");
+  const progress = (await header
+    .getByRole("navigation", { name: "Proposal progress" })
+    .boundingBox())!;
+  const headerButton = (await header
+    .getByRole("button", { name: "Ask a question", exact: true })
+    .boundingBox())!;
+  expect(headerButton.y).toBeGreaterThan(progress.y + progress.height);
+  await capture(page, "r25-phone-reading");
   await page.getByRole("link", { name: "Questions", exact: true }).click();
   const history = page.getByRole("dialog", { name: "Your questions" });
   await expect(history.getByText(/set up a call to review/)).toBeVisible();
@@ -334,6 +344,21 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
   expect((await request.post(url, { headers, data: body })).status()).toBe(201);
   expect((await request.post(url, { headers, data: body })).status()).toBe(201);
   const { p: other } = await sent(request, "Other proposal");
+  expect(
+    (
+      await request.delete(`/api/public/${other.token}/questions/${body.id}`, {
+        headers: client,
+      })
+    ).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.patch(`${url}/${body.id}`, {
+        headers: client,
+        data: { text: "Password required" },
+      })
+    ).status(),
+  ).toBe(401);
   expect(
     await (await request.get(`/api/public/${other.token}/questions`)).json(),
   ).toMatchObject({ threads: [] });

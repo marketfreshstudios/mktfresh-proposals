@@ -36,6 +36,7 @@
 .flow-question-surface [data-client-asking] {
   outline: 1px solid var(--client-frame);
   outline-offset: 3px;
+  border-radius: 8px;
   background-color: var(--client-selection);
 }
 .client-question-marker {
@@ -254,9 +255,9 @@
     bottom: -22px;
   }
   .client-flow .client-ask-block-phone {
-    transform: translate(calc(-100% - 8px), 2px);
+    transform: translate(calc(-100% - 8px), -50%);
   }
-  .flow-question-surface [data-client-asking] {
+  .flow-question-surface [data-client-asking="phone"] {
     padding-inline-end: 60px !important;
     min-block-size: 48px;
   }

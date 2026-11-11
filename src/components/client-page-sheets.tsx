@@ -517,7 +517,7 @@ const sheetCss = `
 .client-interactive-card[data-client-optional]::after{content:var(--client-optional-label,none);position:absolute;right:10px;bottom:1px;color:var(--paper-muted);font:600 10px/10px var(--font-ui)}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
-[data-client-asking]{outline:1px solid var(--client-frame);outline-offset:3px;background-color:var(--client-selection)}
+[data-client-asking]{outline:1px solid var(--client-frame);outline-offset:3px;border-radius:8px;background-color:var(--client-selection)}
 [data-client-ask-target]:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:3px}
 /* These rules apply only after pagination. Preserve every shared print box. */
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--client-choice-fill,var(--quote-neutral-group,var(--paper)));border-color:var(--client-choice-line,var(--quote-neutral-frame,var(--client-frame)));box-shadow:inset 0 0 0 1px var(--client-choice-line,transparent)}

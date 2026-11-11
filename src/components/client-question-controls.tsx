@@ -79,6 +79,7 @@ export function goToQuestionTarget(id: string) {
   node?.focus({ preventScroll: true });
 }
 
+type TargetSelection = { node: HTMLElement; phone: boolean };
 type Positioned = {
   node: HTMLElement;
   x: number;
@@ -98,7 +99,7 @@ export function ClientQuestionSurface({
   onAsk?: (request: QuestionRequest) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState<HTMLElement | null>(null);
+  const [active, setActive] = useState<TargetSelection | null>(null);
   const [layout, setLayout] = useState<{
     pages: Positioned[];
     markers: Positioned[];
@@ -194,23 +195,39 @@ export function ClientQuestionSurface({
           ];
         });
         const current =
-          active?.isConnected && targets.has(key(active) ?? "")
-            ? active
+          active?.phone === phone &&
+          active.node.isConnected &&
+          targets.has(key(active.node) ?? "")
+            ? active.node
             : undefined;
         setLayout({
           pages,
           markers,
-          active: current && point(current, key(current)!),
+          active: current && {
+            ...point(current, key(current)!),
+            ...(phone
+              ? {
+                  y:
+                    current.getBoundingClientRect().top +
+                    current.getBoundingClientRect().height / 2 -
+                    bounds.top,
+                }
+              : {}),
+          },
           phone,
         });
       });
     };
     observer = new ResizeObserver(project);
     observer.observe(wrapper);
+    const select = (node: HTMLElement, phone: boolean) =>
+      setActive((last) =>
+        last?.node === node && last.phone === phone ? last : { node, phone },
+      );
     const pointer = (event: PointerEvent) => {
       if (event.pointerType === "touch" || isPhoneReading()) return;
       const target = targetFromEvent(event);
-      if (target && handlers.current.onAsk) setActive(target);
+      if (target && handlers.current.onAsk) select(target, false);
     };
     const click = (event: MouseEvent) => {
       if (!isPhoneReading() || !handlers.current.onAsk) return;
@@ -221,7 +238,7 @@ export function ClientQuestionSurface({
       )
         return;
       const target = targetFromEvent(event);
-      if (target) setActive(target);
+      if (target) select(target, true);
     };
     const focus = (event: FocusEvent) => {
       const target = targetFromEvent(event);
@@ -231,7 +248,7 @@ export function ClientQuestionSurface({
         event.composedPath()[0] === target &&
         handlers.current.onAsk
       )
-        setActive(target);
+        select(target, false);
     };
     const enter = (event: KeyboardEvent) => {
       const node = targetFromEvent(event);
@@ -241,6 +258,13 @@ export function ClientQuestionSurface({
         event.preventDefault();
         handlers.current.onAsk({ target, anchor: node, trigger: node });
       }
+    };
+    let wasPhone = isPhoneReading();
+    const resize = () => {
+      const phone = isPhoneReading();
+      if (phone !== wasPhone) setActive(null);
+      wasPhone = phone;
+      project();
     };
     const leave = () => {
       if (!isPhoneReading() && !wrapper.contains(document.activeElement))
@@ -253,7 +277,7 @@ export function ClientQuestionSurface({
     wrapper.addEventListener("keydown", enter);
     wrapper.addEventListener("client-question-project", project);
     document.addEventListener("client-document-ready", project);
-    window.addEventListener("resize", project);
+    window.addEventListener("resize", resize);
     project();
     return () => {
       cancelAnimationFrame(frame);
@@ -265,14 +289,15 @@ export function ClientQuestionSurface({
       wrapper.removeEventListener("keydown", enter);
       wrapper.removeEventListener("client-question-project", project);
       document.removeEventListener("client-document-ready", project);
-      window.removeEventListener("resize", project);
+      window.removeEventListener("resize", resize);
     };
   }, []);
   useLayoutEffect(() => {
-    if (active && onAsk) active.dataset.clientAsking = "";
+    if (active && onAsk)
+      active.node.dataset.clientAsking = active.phone ? "phone" : "desktop";
     ref.current?.dispatchEvent(new Event("client-question-project"));
     return () => {
-      if (active) delete active.dataset.clientAsking;
+      if (active) delete active.node.dataset.clientAsking;
     };
   }, [active, !!onAsk, targets, threads]);
 

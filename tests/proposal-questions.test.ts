@@ -265,9 +265,11 @@ it("stores published block context and edits or deletes only unanswered open-lin
   const input = AskQuestionSchema.parse({
     ...ask(),
     block_id: block.id ?? String(i),
-    excerpt: "Invented context",
   });
   const options = { members: async () => members };
+  await expect(
+    askQuestion(repo, p, { ...input, excerpt: "Invented context" }, options),
+  ).rejects.toMatchObject({ status: 409 });
   const q = await askQuestion(repo, p, input, options);
   expect(q).toMatchObject({
     block_id: input.block_id,

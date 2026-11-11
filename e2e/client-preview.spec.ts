@@ -44,8 +44,8 @@ test("draft client preview has live local totals, branded steps and no client wr
       (t) => localStorage.setItem("proposal-theme", t),
       theme,
     );
-    for (const width of [1440, 390]) {
-      await page.setViewportSize({ width, height: 1000 });
+    for (const width of [1440, 375]) {
+      await page.setViewportSize({ width, height: width === 375 ? 780 : 1000 });
       await page.goto(`/p/${draft.id}?preview=1`);
       await expect(
         page.getByText("Preview, not sent", { exact: true }),
@@ -145,7 +145,7 @@ test("draft client preview has live local totals, branded steps and no client wr
         await page.evaluate(() => document.fonts.ready);
         if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
           await page.screenshot({
-            path: `.data/evidence/screens/preview-${step}-${width === 390 ? "phone" : "desktop"}-${theme}.png`,
+            path: `.data/evidence/screens/preview-${step}-${width < 700 ? "phone" : "desktop"}-${theme}.png`,
             fullPage: true,
           });
       }

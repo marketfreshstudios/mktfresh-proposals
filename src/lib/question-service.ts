@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import { workspaceStaff } from "./auth";
 import { prepareEmail, logSentEmail } from "./email-templates";
-import { questionTargets } from "./question-targets";
+import { questionExcerpt, questionTargets } from "./question-targets";
 import type { Mailer } from "./jobs";
 import { proposalLink, appOrigin } from "./links";
 import { AppError, check, type Actor, type Proposal } from "./model";
@@ -106,7 +106,10 @@ export async function askQuestion(
     ? targets.blocks.get(input.block_id)
     : undefined;
   check(
-    !input.block_id || target,
+    !input.block_id ||
+      (target &&
+        (input.excerpt === undefined ||
+          questionExcerpt(input.excerpt) === target.excerpt)),
     "That block has changed. Reload the proposal and try again.",
     409,
   );
