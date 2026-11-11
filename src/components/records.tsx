@@ -1,5 +1,6 @@
 "use client";
 import { ToastSurface } from "./toast-surface";
+import { timelineEvents } from "../lib/timeline";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { StaffPerson } from "./staff-person";
 import { withCount } from "../lib/count-label";
@@ -3266,7 +3267,9 @@ export function RecordV4({
               aria-label="Timeline events"
               tabIndex={0}
             >
-              {p.events.toReversed().map((e) => {
+              {timelineEvents(p.events)
+                .toReversed()
+                .map((e) => {
                 const blockedEdit = unpublishedEdit?.id === e.id;
                 return (
                   <article
