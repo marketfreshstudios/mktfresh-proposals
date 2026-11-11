@@ -1,5 +1,5 @@
 "use client";
-import { listenOutsidePress } from "@/lib/outside-press";
+import { listenOutsidePress } from "../../lib/outside-press";
 import {
   useEffect,
   useLayoutEffect,

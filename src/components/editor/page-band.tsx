@@ -1,5 +1,5 @@
 "use client";
-import { listenOutsidePress } from "@/lib/outside-press";
+import { listenOutsidePress } from "../../lib/outside-press";
 import { FontSizePicker } from "../inline-font-size";
 import { useHasEditorPopover } from "../editor-popovers";
 import { bandRichText } from "./band-rich-text";
