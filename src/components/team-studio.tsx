@@ -151,11 +151,22 @@ export function TeamStudio({
           >
             <div role="cell">
               <span className="avatar" aria-hidden="true">
-                {person.display_name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join("")}
+                {data.staff.find((m) => m.user_id === person.user_id)
+                  ?.photo_url ? (
+                  <img
+                    src={
+                      data.staff.find((m) => m.user_id === person.user_id)!
+                        .photo_url
+                    }
+                    alt=""
+                  />
+                ) : (
+                  person.display_name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")
+                )}
               </span>
               <strong>{person.display_name}</strong>
               <small>{person.email}</small>
