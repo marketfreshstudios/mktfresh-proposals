@@ -9801,6 +9801,9 @@ dialog.foundation-sheet.block-style-sheet {
   > input[type="range"] {
   appearance: none;
   background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
 }
 .ink-clay
   :is(.editor-v2-panel, .tools-sheet)
@@ -9866,6 +9869,7 @@ dialog.foundation-sheet.block-style-sheet {
 }
 .ink-clay
   :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
   .shared-bands-card
   > .panel-card-header {
   cursor: default;

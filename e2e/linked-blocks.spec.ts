@@ -362,6 +362,7 @@ test("saved group mini document shows Used in and save scope; phone select mode 
   await expect(
     page.getByRole("button", { name: "Save changes", exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".saved-block-usage")).not.toContainText("·");
   await shotBoth(page, "used-in");
   const story = page.locator(".studio-blocks .tiptap").first();
   await story.fill("Updated shared story.");

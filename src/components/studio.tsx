@@ -1793,7 +1793,7 @@ function TemplatesStudioContent({
             >
               <strong>{p.title}</strong>
               <small>
-                {p.status} ·{" "}
+                {p.status} |{" "}
                 {data.staff.find((m) => m.user_id === p.owner)?.display_name ??
                   p.owner}
               </small>

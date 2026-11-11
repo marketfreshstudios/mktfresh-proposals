@@ -96,6 +96,15 @@ for (const width of [1440, 768, 375])
         if (tab === "Styles") {
           const shared = surface.locator(".shared-bands-card");
           await expect(
+            surface
+              .locator('.spacing-slider-row > input[type="range"]')
+              .first(),
+          ).toHaveCSS("border-top-width", "0px");
+          await expect(shared.locator(":scope > .panel-card-header")).toHaveCSS(
+            "border-bottom-width",
+            "0px",
+          );
+          await expect(
             shared.getByRole("button", { name: "Edit header", exact: true }),
           ).toBeVisible();
           await expect(
