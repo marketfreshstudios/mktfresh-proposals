@@ -9,13 +9,17 @@ export function GutterInsert({
   layout = "gutter",
 }: {
   onAdd?: (edge: "above" | "below", anchor: HTMLElement) => void;
-  dragHandle: ReactNode;
-  layout?: "gutter" | "edges";
+  dragHandle?: ReactNode;
+  layout?: "gutter" | "edges" | "bar";
 }) {
   return (
     <div
       data-editor-chrome
-      className={`editor-gutter rich-toolbar editor-insert-${layout}`}
+      className={
+        layout === "bar"
+          ? "editor-insert-bar"
+          : `editor-gutter rich-toolbar editor-insert-${layout}`
+      }
     >
       {onAdd && (
         <button
@@ -27,7 +31,13 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("above", e.currentTarget)}
         >
-          {layout === "edges" ? "Add above" : <Icon name="plus" />}
+          {layout === "bar" ? (
+            "Add a block above"
+          ) : layout === "edges" ? (
+            "Add above"
+          ) : (
+            <Icon name="plus" />
+          )}
         </button>
       )}
       {layout === "gutter" && dragHandle}
@@ -41,7 +51,13 @@ export function GutterInsert({
           onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => onAdd("below", e.currentTarget)}
         >
-          {layout === "edges" ? "Add below" : <Icon name="plus" />}
+          {layout === "bar" ? (
+            "Add a block below"
+          ) : layout === "edges" ? (
+            "Add below"
+          ) : (
+            <Icon name="plus" />
+          )}
         </button>
       )}
     </div>

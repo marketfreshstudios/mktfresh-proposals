@@ -1263,3 +1263,24 @@ Blocks keeps the Saved blocks card visible with a zero count when empty.
 Team and Job cards in the shared Fields picker depend on the supplied
 fields. The proposal field map supplies neither group. Team and job
 notification emails supply the corresponding fields.
+
+## Phone proposal editor tools and caret
+
+The phone proposal editor keeps the full paged document mounted when staff
+select a block. Selecting a block previously changed the page projection and
+hid the tool dock before WebKit had placed the caret. A single tap from the
+resting dock already opened a tool in emulation. Once the tools opened, the
+old dock was behind the native modal.
+
+The phone tools dialog now includes the dock at its bottom, below the scrollable
+tool content. Tap the selected tool, use its close button, press Escape, or tap
+the backdrop to close it. Focus returns to the opening tool. Explicit focus
+on the tool before the dialog opens prevents native focus restoration from
+scrolling back to a document field when it closes.
+
+The editor follows the visual viewport as the keyboard opens and closes. Its
+formatting bar sits above the dock. Add above and Add below sit in that bar so
+the controls do not cover nearby text in the paged document. The document
+scrolls only enough to expose the caret. A single touch click uses the rendered text position when
+WebKit snaps the caret to a word edge. Text selection gestures keep their
+native behavior. The proposal's text styles and page measurements stay the same.

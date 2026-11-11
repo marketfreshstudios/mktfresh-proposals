@@ -7,10 +7,17 @@ import {
   LayoutGrid,
   Send,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { PanelChevron } from "../editor-header";
 import { Disclosure } from "../ui";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 /** Shared disclosure for the R23 tools cards. Callers retain their own state. */
 export function PanelCard({
   title,
@@ -155,30 +162,13 @@ export function PanelTabs<T extends string = EditorTab>({
   tabs?: readonly T[];
   label?: string;
 }) {
-  const root = useRef<HTMLDivElement>(null);
   return (
     <div
-      ref={root}
       className="editor-tabs"
       data-tab-style="segment"
       role="tablist"
       aria-label={label}
-      onKeyDown={(event) => {
-        const delta =
-          event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-        if (!delta && !["Home", "End"].includes(event.key)) return;
-        event.preventDefault();
-        const index =
-          event.key === "Home"
-            ? 0
-            : event.key === "End"
-              ? tabs.length - 1
-              : (tabs.indexOf(tab) + delta + tabs.length) % tabs.length;
-        onTab(tabs[index]);
-        root.current
-          ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-          [index].focus();
-      }}
+      onKeyDown={(event) => moveTabFocus(event, tabs, tab, onTab)}
     >
       {tabs.map((value) => (
         <button
@@ -199,6 +189,29 @@ export function PanelTabs<T extends string = EditorTab>({
     </div>
   );
 }
+
+function moveTabFocus<T extends string>(
+  event: KeyboardEvent<HTMLElement>,
+  tabs: readonly T[],
+  tab: T,
+  onTab: (tab: T) => void,
+) {
+  const delta =
+    event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+  if (!delta && !["Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const index =
+    event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : (tabs.indexOf(tab) + delta + tabs.length) % tabs.length;
+  onTab(tabs[index]);
+  event.currentTarget
+    .querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    [index]?.focus({ preventScroll: true });
+}
+
 export function ToolsPanel<T extends string = EditorTab>({
   tab,
   open,
@@ -211,6 +224,7 @@ export function ToolsPanel<T extends string = EditorTab>({
   tabs = editorTabs as unknown as readonly T[],
   label = "Proposal tools",
   phoneDock = true,
+  keepPhoneDock = false,
   actions,
   sheetTitle,
 }: {
@@ -222,6 +236,7 @@ export function ToolsPanel<T extends string = EditorTab>({
   tabs?: readonly T[];
   label?: string;
   phoneDock?: boolean;
+  keepPhoneDock?: boolean;
   actions?: ReactNode;
   sheetTitle?: string;
   onToggle: () => void;
@@ -230,6 +245,9 @@ export function ToolsPanel<T extends string = EditorTab>({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const handledClose = useRef(false);
+  const dock = useRef<HTMLElement>(null);
+  const openedFromDock = useRef<T | null>(null);
+  const persistentDock = mode === "sheet" && phoneDock && keepPhoneDock;
   const openedCallbacks = useRef({ onToggle, onCloseComplete });
   useEffect(() => {
     if (mode === "docked" || !open) return;
@@ -237,7 +255,7 @@ export function ToolsPanel<T extends string = EditorTab>({
     handledClose.current = false;
     openedCallbacks.current = { onToggle, onCloseComplete };
     el?.showModal();
-    if (mode === "sheet" && sheetTitle)
+    if (mode === "sheet" && (sheetTitle || persistentDock))
       el?.querySelector("h2")?.focus({ preventScroll: true });
     return () => el?.close();
   }, [mode, open]);
@@ -253,8 +271,70 @@ export function ToolsPanel<T extends string = EditorTab>({
     // Commit the originating panel state now. A queued native close event can
     // arrive after a resize and must not toggle a different breakpoint's panel.
     onToggle();
-    requestAnimationFrame(() => onCloseComplete?.());
+    const opener = openedFromDock.current;
+    openedFromDock.current = null;
+    requestAnimationFrame(() => {
+      if (persistentDock && opener)
+        dock.current
+          ?.querySelector<HTMLButtonElement>(`[data-phone-tool="${opener}"]`)
+          ?.focus({ preventScroll: true });
+      onCloseComplete?.();
+    });
   };
+  function phoneButtons(inside: boolean) {
+    return (
+      <nav
+        ref={inside ? undefined : dock}
+        className="editor-phone-dock"
+        role={inside ? "tablist" : undefined}
+        aria-label={label}
+        data-persistent-tools={persistentDock || undefined}
+        data-preserve-block-selection={persistentDock ? "" : undefined}
+        onKeyDown={
+          inside ? (event) => moveTabFocus(event, tabs, tab, onTab) : undefined
+        }
+      >
+        {tabs.map((value) => (
+          <button
+            key={value}
+            type="button"
+            data-phone-tool={value}
+            role={inside ? "tab" : undefined}
+            aria-selected={inside ? tab === value : undefined}
+            aria-controls={inside ? "editor-active-panel" : undefined}
+            aria-haspopup={persistentDock && !inside ? "dialog" : undefined}
+            tabIndex={inside && tab !== value ? -1 : undefined}
+            onMouseDown={(event) => {
+              // Stop the compatibility mouse event from moving focus before
+              // click. Canceling pointerdown also suppresses taps in WebKit.
+              if (persistentDock) event.preventDefault();
+            }}
+            onClick={(event) => {
+              if (inside && tab === value) close();
+              else {
+                if (persistentDock) {
+                  // A native dialog remembers the focused element. Leave the
+                  // text editor before opening so close cannot scroll back to it.
+                  event.currentTarget.focus({ preventScroll: true });
+                  if (!inside) openedFromDock.current = value;
+                }
+                onTab(value);
+              }
+            }}
+            aria-label={`${inside ? "" : "Open "}${value}${value === "Quote" ? ` ${totals}` : ""}`}
+          >
+            {value !== "Quote" && (
+              <span aria-hidden="true">
+                <TabGlyph tab={value} />
+              </span>
+            )}
+            <small>{value}</small>
+            {value === "Quote" && <span aria-hidden="true">{totals}</span>}
+          </button>
+        ))}
+      </nav>
+    );
+  }
   const content = (
     <>
       {mode === "sheet" && (
@@ -264,22 +344,33 @@ export function ToolsPanel<T extends string = EditorTab>({
         className="editor-tools-header"
         data-preserve-block-selection={tab === "Styles" ? "" : undefined}
       >
-        {mode === "sheet" && sheetTitle ? (
-          <h2 tabIndex={-1}>{sheetTitle}</h2>
+        {mode === "sheet" && (sheetTitle || persistentDock) ? (
+          <h2 tabIndex={-1}>{sheetTitle ?? tab}</h2>
         ) : (
           <>
             {mode !== "docked" && <h2 className="sr-only">{label}</h2>}
             <PanelTabs tab={tab} onTab={onTab} tabs={tabs} label={label} />
           </>
         )}
-        {mode === "sheet" && (
+        {persistentDock ? (
           <button
             type="button"
+            className="editor-phone-tool-close"
+            aria-label={`Close ${tab}`}
             onClick={close}
-            className={sheetTitle ? "column-text-action" : undefined}
           >
-            <span>Done</span>
+            <X size={20} aria-hidden="true" />
           </button>
+        ) : (
+          mode === "sheet" && (
+            <button
+              type="button"
+              onClick={close}
+              className={sheetTitle ? "column-text-action" : undefined}
+            >
+              <span>Done</span>
+            </button>
+          )
         )}
         {mode !== "sheet" && (
           <button
@@ -309,28 +400,7 @@ export function ToolsPanel<T extends string = EditorTab>({
   return (
     <>
       {mode === "sheet" ? (
-        phoneDock && (
-          <nav className="editor-phone-dock" aria-label={label}>
-            {tabs.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onTab(value)}
-                aria-label={
-                  value === "Quote" ? `Open Quote ${totals}` : `Open ${value}`
-                }
-              >
-                {value !== "Quote" && (
-                  <span aria-hidden="true">
-                    <TabGlyph tab={value} />
-                  </span>
-                )}
-                <small>{value}</small>
-                {value === "Quote" && <span>{totals}</span>}
-              </button>
-            ))}
-          </nav>
-        )
+        phoneDock && (!persistentDock || !open) && phoneButtons(false)
       ) : (
         <aside
           className={`editor-sidepanel editor-v2-panel ${mode === "docked" && open ? "" : "sidebar-rail"}`}
@@ -353,6 +423,7 @@ export function ToolsPanel<T extends string = EditorTab>({
         <dialog
           ref={dialog}
           aria-label={mode === "sheet" && sheetTitle ? sheetTitle : label}
+          data-phone-tools={persistentDock || undefined}
           data-style-sheet={(mode === "sheet" && !!sheetTitle) || undefined}
           className={`${mode === "sheet" ? "editor-v2-sheet" : "editor-v2-drawer"} tools-sheet`}
           onClose={(event) => {
@@ -361,6 +432,7 @@ export function ToolsPanel<T extends string = EditorTab>({
               handledClose.current = false;
               return;
             }
+            openedFromDock.current = null;
             openedCallbacks.current.onToggle();
             openedCallbacks.current.onCloseComplete?.();
           }}
@@ -410,6 +482,7 @@ export function ToolsPanel<T extends string = EditorTab>({
           }}
         >
           {content}
+          {persistentDock && phoneButtons(true)}
         </dialog>
       )}
     </>

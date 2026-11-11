@@ -84,6 +84,7 @@ import { SourceParagraph } from "./page-spacers";
 import { usePdfPreview } from "./use-pdf-preview";
 import { PdfPreviewViewer } from "./pdf-preview-viewer";
 import { useEditorPanels } from "./use-editor-panels";
+import { usePhoneEditorViewport } from "./editor/phone-editor-viewport";
 import { ProposalStyles } from "./proposal-styles";
 import {
   resolveStyles,
@@ -351,6 +352,9 @@ function QuoteEditorContent({
     true,
     380,
   );
+  const phoneEditor = useRef<HTMLDivElement>(null);
+  usePhoneEditorViewport(phoneEditor, panels.phone);
+  const toolsOpen = panels.phone ? phoneDrawer : panels.right;
   const drawer =
     phoneDrawer || (!panels.phone && panels.mode === "drawer" && panels.right);
   const outlineOpen =
@@ -2629,13 +2633,11 @@ function QuoteEditorContent({
   return (
     <div
       {...blockDrop.handlers}
+      ref={phoneEditor}
       data-panels-ready={panels.ready}
       data-stale={stale}
       data-compact={panels.compact}
       data-shell-mode={panels.phone ? "phone" : "v2"}
-      data-phone-editing={
-        panels.phone && !!selection.selected && !selection.selectMode
-      }
       data-phone-select-mode={selection.selectMode}
       className={`quote-workspace editor-v2 editor-round3 ${panels.printMode ? "pdf-width-editor" : "phone-editing"} ${section === null ? "section-list-mode" : "section-edit-mode"} ${fullDocument ? "full-document-mode" : ""}`}
     >
@@ -2819,7 +2821,7 @@ function QuoteEditorContent({
             window.open(`/p/${p.id}?preview=1`, "_blank", "noopener");
         }}
         onReviewSend={() => openTools("Send")}
-        sendPanelOpen={tab === "Send" && (panels.right || drawer)}
+        sendPanelOpen={tab === "Send" && toolsOpen}
         title={p.title}
         backLabel="Proposals"
         backHref="/proposals"
@@ -3017,14 +3019,7 @@ function QuoteEditorContent({
                       p.template_style_overrides,
                       p.style_overrides,
                     )}
-                    enabled={
-                      panels.printMode &&
-                      !(
-                        panels.phone &&
-                        selection.selected &&
-                        !selection.selectMode
-                      )
-                    }
+                    enabled={panels.printMode}
                     sheets
                     headerFooter={bands}
                     onHeaderFooter={
@@ -3178,8 +3173,9 @@ function QuoteEditorContent({
         {
           <ToolsPanel
             tab={tab as EditorTab}
-            open={panels.phone ? phoneDrawer : panels.right}
+            open={toolsOpen}
             mode={panels.phone ? "sheet" : panels.mode}
+            keepPhoneDock
             onTab={openTools}
             onToggle={toggleRight}
             sheetTitle={
