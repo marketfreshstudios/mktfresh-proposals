@@ -935,15 +935,17 @@ function BandSettings({
         </div>
         {own.length > 0 && (
           <section className="band-own-pages" aria-label="Pages with their own">
-            <h3>Pages with their own ({own.length})</h3>
+            <PanelHeading nested className="band-own-pages-title">
+              Pages with their own ({own.length})
+            </PanelHeading>
             {own.map((p) => (
               <div key={`${p.page}-${p.kind}`}>
                 <span>
-                  Page {p.page} | {p.kind}
+                  Page {p.page} | {p.kind === "header" ? "Header" : "Footer"}
                   {p.source === "hidden" ? " hidden" : ""}
                 </span>
-                <button
-                  type="button"
+                <Button
+                  className="band-page-go"
                   onClick={() => editing?.goTo(p.kind, p.page)}
                 >
                   Go to
@@ -951,7 +953,7 @@ function BandSettings({
                     {" "}
                     page {p.page} {p.kind}
                   </span>
-                </button>
+                </Button>
               </div>
             ))}
             <button type="button" onClick={(e) => setConfirm(e.currentTarget)}>

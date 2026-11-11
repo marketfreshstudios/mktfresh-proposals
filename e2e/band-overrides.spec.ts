@@ -296,7 +296,15 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   await page.getByRole("tab", { name: "Styles", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Pages with their own", exact: true }),
-  ).toContainText("Page 2 | footer hidden");
+  ).toContainText("Page 2 | Footer hidden");
+  await expect(page.locator(".band-own-pages-title")).toHaveCSS(
+    "text-transform",
+    "none",
+  );
+  await expect(page.locator(".band-page-go").first()).toHaveCSS(
+    "border-top-width",
+    "1px",
+  );
   await expect(page.locator(".band-settings")).toContainText(
     "Shared on 1 page | 1 unique",
   );

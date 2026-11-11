@@ -9668,14 +9668,37 @@ dialog.foundation-sheet.block-style-sheet {
   background: var(--surface-preview);
   padding: 14px 16px;
   margin: 0;
+  border-radius: 0;
 }
 .ink-clay
   :is(.editor-v2-panel, .tools-sheet)
   .proposal-styles
   .band-own-pages
-  h3 {
+  .band-own-pages-title {
   font: 600 12px/18px var(--font-ui);
   margin: 0 0 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.ink-clay
+  :is(.editor-v2-panel, .tools-sheet)
+  .proposal-styles
+  .band-own-pages
+  .band-page-go {
+  min-height: 32px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-button);
+  padding: 0 12px;
+}
+@media (max-width: 959px) {
+  .ink-clay
+    :is(.editor-v2-panel, .tools-sheet)
+    .proposal-styles
+    .band-own-pages
+    .band-page-go {
+    min-height: 44px;
+  }
 }
 .ink-clay
   :is(.editor-v2-panel, .tools-sheet)
