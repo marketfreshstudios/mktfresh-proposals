@@ -188,7 +188,7 @@ test("Harbor fills the app and editor canvases without replacing client branding
   await expect(client).toHaveCSS("background-color", pageLight);
   await expect(
     page.getByRole("button", { name: "Review and sign", exact: true }).first(),
-  ).toHaveCSS("background-color", "rgb(40, 88, 71)");
+  ).toHaveCSS("background-color", "color(srgb 0.0988235 0.217412 0.175412)");
   await expect(page.locator(".client-document-sheets")).toHaveAttribute(
     "data-layout-ready",
     "true",

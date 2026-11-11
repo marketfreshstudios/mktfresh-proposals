@@ -368,7 +368,8 @@ for (const width of [1440, 1024, 768, 375]) {
       ).toBeVisible();
       await expect(page.locator(".flow-header .flow-progress")).toBeVisible();
       await expect(sign).toHaveCSS("height", "52px");
-      await expect(page.locator(".flow-document")).toHaveCSS("width", "375px");
+      await expect(page.locator(".flow-review")).toHaveCSS("width", "375px");
+      await expect(page.locator(".flow-document")).toHaveCSS("width", "343px");
       await captureR25(page, "1a");
     }
     await group.scrollIntoViewIfNeeded();
