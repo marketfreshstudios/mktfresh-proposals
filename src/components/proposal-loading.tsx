@@ -1,7 +1,7 @@
 "use client";
 
 const bar = (className: string, key?: number) => (
-  <span className={`loading-bar ${className}`} key={key} />
+  <span className={`loading-bar ${className}`} key={key} aria-hidden="true" />
 );
 
 /** Placeholder shaped like the proposal editor while it loads. */
@@ -12,6 +12,7 @@ export function EditorLoading() {
       role="status"
       aria-label="Loading the editor"
     >
+      <h1 className="sr-only">Proposal</h1>
       <span className="sr-only">Loading the editor…</span>
       <div className="editor-loading-header" aria-hidden="true">
         {bar("on-chrome loading-back")}
@@ -72,10 +73,10 @@ export function DetailsLoading() {
         {bar("loading-pill")}
         {bar("loading-pill")}
       </div>
-      <div className="details-loading-hero" aria-hidden="true">
+      <div className="details-loading-hero">
         {bar("on-chrome loading-eyebrow")}
         <div className="details-loading-hero-row">
-          {bar("on-chrome loading-heading")}
+          <h1 className="details-loading-title">Proposal</h1>
           {bar("on-chrome loading-amount")}
         </div>
         {bar("on-chrome loading-text loading-short")}

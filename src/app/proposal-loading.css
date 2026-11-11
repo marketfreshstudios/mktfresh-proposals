@@ -226,6 +226,13 @@
   width: 45%;
   height: 30px;
 }
+.details-loading-title {
+  margin: 0;
+  color: var(--chrome-ink);
+  font-family: var(--font-title);
+  font-size: 30px;
+  line-height: 1.1;
+}
 .details-loading-hero .loading-amount {
   width: 180px;
   height: 30px;
