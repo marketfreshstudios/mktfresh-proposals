@@ -657,6 +657,16 @@ for (const width of [1440, 768, 375]) {
           await page.evaluate(() => document.documentElement.scrollWidth),
           `${path} should fit ${width}px`,
         ).toBeLessThanOrEqual(width + 1);
+        // Theme initialization can transition a button's background after the
+        // foreground has already switched. Audit the settled theme colors.
+        await page.locator(selector).evaluate(async (root) => {
+          await Promise.allSettled(
+            root
+              .getAnimations({ subtree: true })
+              .filter((animation) => animation instanceof CSSTransition)
+              .map((animation) => animation.finished),
+          );
+        });
         const results = await new AxeBuilder({ page })
           .include(selector)
           .analyze();

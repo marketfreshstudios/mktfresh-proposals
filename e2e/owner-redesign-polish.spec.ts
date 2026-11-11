@@ -90,7 +90,9 @@ test("tab sets and real record and editor navigation use readable shared styles"
   await screenshot(page, "proposal-tabs-1440");
 
   await page.goto(`/proposals/${f.draft.id}?view=record`);
-  const edit = page.getByRole("link", { name: "Edit", exact: true });
+  const edit = page
+    .locator(".record-toolbar")
+    .getByRole("link", { name: "Edit", exact: true });
   await edit.hover();
   await expectReadable(edit, "Record Edit hover");
   await screenshot(page, "record-edit-hover-1440");
