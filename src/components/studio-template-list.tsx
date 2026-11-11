@@ -1,4 +1,5 @@
 "use client";
+import { CountChip } from "./count-chip";
 import { workspaceBusinessName } from "../lib/business-details";
 import { StaffSectionHeading } from "./staff-section-heading";
 import {
@@ -239,13 +240,13 @@ export function StudioTemplateList({
             aria-current={!blocks ? "page" : undefined}
             href="/studio/templates"
           >
-            Templates · {data ? templates.length : "–"}
+            Templates <CountChip count={data ? templates.length : undefined} />
           </a>
           <a
             aria-current={blocks ? "page" : undefined}
             href="/studio/templates?view=blocks"
           >
-            Saved blocks · {data ? library.length : "–"}
+            Saved blocks <CountChip count={data ? library.length : undefined} />
           </a>
         </nav>
         <label className="field studio-search">
