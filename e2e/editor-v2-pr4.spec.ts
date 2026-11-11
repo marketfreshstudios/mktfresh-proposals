@@ -302,7 +302,7 @@ test("sent editor publishes on its existing link, keeps invalid work off the cli
     .getByRole("button", { name: "Delete block", exact: true })
     .click();
   await expect(page.locator(".editor-save-status")).toContainText(
-    "Not live · Add a pricing table",
+    "Not live | Add a pricing table",
   );
   expect(f.active().versions).toHaveLength(2);
   const previous = await page.evaluate(
@@ -331,7 +331,7 @@ test("sent editor publishes on its existing link, keeps invalid work off the cli
   });
   await text.fill("Local edits made just after the client signed");
   await expect(page.locator(".editor-save-status")).toHaveText(
-    "Signed · locked",
+    "Signed | locked",
   );
   await expect(
     page.getByRole("button", { name: "Duplicate as new draft", exact: true }),

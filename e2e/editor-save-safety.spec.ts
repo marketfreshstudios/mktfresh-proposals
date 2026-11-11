@@ -47,7 +47,7 @@ test("pagination alone is clean; text and its computed plan use one content revi
   );
   await page.reload();
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   await expect(page.locator(".editor-notice-recovered")).toHaveCount(0);
   await page.locator(".editor-paper").evaluate((el) => {
@@ -64,7 +64,7 @@ test("pagination alone is clean; text and its computed plan use one content revi
   expect(f.patches).toHaveLength(0);
   expect(f.active().revision).toBe(revision);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   await expect(page.locator(".editor-notice-recovered")).toHaveCount(0);
   expect(
@@ -80,7 +80,7 @@ test("pagination alone is clean; text and its computed plan use one content revi
   await paragraph.fill("This content change also changes the page breaks.");
   await expect.poll(() => f.patches.length).toBe(1);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   expect(f.patches[0].pagination).toEqual(await plan(page));
   expect(f.active().revision).toBe(revision + 1);
@@ -135,7 +135,7 @@ test("a real concurrent edit preserves local rich text as a suggestion and recom
   await page.getByRole("button", { name: "Keep", exact: true }).click();
   await expect(paragraph).toHaveText(localText.trim());
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   await expect.poll(() => f.patches.length).toBe(2);
   expect(f.patches[1].revision).toBe(remote.revision);
@@ -234,7 +234,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
     .fill("Keep this during the outage.");
   await expect(
     page.getByRole("button", {
-      name: /Couldn.t save (—|·) Retry/,
+      name: /Couldn.t save (—|·|\|) Retry/,
       exact: true,
     }),
   ).toBeVisible();
@@ -249,10 +249,10 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
   await expect(page).toHaveURL(new RegExp(`/proposals/${f.draft.id}$`));
   fail = false;
   await page
-    .getByRole("button", { name: /Couldn.t save (—|·) Retry/, exact: true })
+    .getByRole("button", { name: /Couldn.t save (—|·|\|) Retry/, exact: true })
     .click();
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   await expect(page.locator(".editor-save-status")).toHaveAttribute(
     "title",
@@ -260,7 +260,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
   );
   await context.setOffline(true);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(Offline — changes kept on this device|Offline · saved on this device)$/,
+    /^(Offline — changes kept on this device|Offline \| saved on this device)$/,
   );
   await page
     .locator(`[data-block-id="block-${f.content[1].id}"] .tiptap`)
@@ -276,7 +276,7 @@ test("failed saves ask before leaving, retry preserves text, and offline changes
     .toBe(true);
   await context.setOffline(false);
   await expect(page.locator(".editor-save-status")).toHaveText(
-    /^(All changes saved|Draft · Saved)$/,
+    /^(All changes saved|Draft \| Saved)$/,
   );
   expect(blockText(f.active().content[1])).toBe("Kept offline on this device.");
 });

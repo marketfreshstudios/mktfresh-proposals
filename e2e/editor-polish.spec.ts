@@ -410,7 +410,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
   ).toEqual([true, true]);
   // A reload discards session history, not the saved proposal.
   await expect(
-    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
+    page.getByText(/^(All changes saved|Draft \| Saved)$/, { exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(undo).toBeDisabled();

@@ -341,7 +341,7 @@ test("moving a title-field section to the top survives saving and reload without
       .sort(),
   ).toEqual(ids);
   await expect(
-    page.getByText(/^(All changes saved|Draft · Saved)$/, { exact: true }),
+    page.getByText(/^(All changes saved|Draft \| Saved)$/, { exact: true }),
   ).toBeVisible();
   const revision = f.active().revision;
   await page.reload();

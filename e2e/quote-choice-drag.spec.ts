@@ -183,6 +183,37 @@ async function sideBySide(left: Buffer, right: Buffer, name: string) {
     .toFile(`${evidence}/${name}.png`);
 }
 
+test("an option leaves a group at the top of the quote by dragging just above it", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1500 });
+  const f = await fixture(page, false);
+  const panel = page.locator(".editor-v2-panel:not(.sidebar-rail)");
+  const group = panel.locator(".editor-choice-group");
+  await startDrag(
+    page,
+    panel.getByRole("button", { name: "Drag Own It Now", exact: true }),
+  );
+  const box = (await group.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y - 12, { steps: 8 });
+  await expect(
+    panel.locator(".quote-drag-units > [data-quote-drop-gap]"),
+  ).toBeVisible();
+  await page.mouse.up();
+  // Leaving a two-option group dissolves it.
+  await expect(group).toHaveCount(0);
+  await expect
+    .poll(() =>
+      f.active().quote.map((item) => [item.name, !!item.choice_group_id]),
+    )
+    .toEqual([
+      ["Own It Now", false],
+      ["Own It Over Time", false],
+      ["Care Standard", false],
+      ["Care Essentials", false],
+    ]);
+});
+
 test("quote items open a live gap inside a group and in the outer list, then drop at the gap", async ({
   page,
 }) => {

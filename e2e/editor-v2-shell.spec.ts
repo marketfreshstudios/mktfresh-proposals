@@ -91,7 +91,7 @@ for (const width of [1440, 1180, 1024, 960, 959, 924, 768, 700])
       header.getByRole("button", { name: "Redo", exact: true }),
     ).toHaveCount(width < 960 ? 0 : 1);
     await expect(header.locator(".editor-save-status")).toHaveText(
-      width < 960 ? "Saved" : "Draft · Saved",
+      width < 960 ? "Saved" : "Draft | Saved",
     );
     await expect(page.locator(".sidebar")).toBeHidden();
   });
@@ -207,10 +207,10 @@ test("AI pill counts sections, cycles in order and wraps, then distinguishes don
     f = await editorFixture(page, false, { content });
   await ready(page, f.draft.id, 1440);
   const pill = page.getByRole("button", {
-    name: "3 to review · Next",
+    name: "3 to review | Next",
     exact: true,
   });
-  await expect(pill).toHaveText("3 to review · Next");
+  await expect(pill).toHaveText("3 to review | Next");
   await expect(pill.locator("svg.disclosure-icon")).toHaveCount(1);
   const pending = content.filter((b) => b.ai_review);
   for (const b of [pending[0], pending[2], pending[3], pending[0]]) {

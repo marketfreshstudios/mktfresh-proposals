@@ -19,18 +19,18 @@ it("renders Live and Locked header props without production state wiring or unpu
     published: "live" as const,
   };
   const live = renderToStaticMarkup(createElement(EditorHeader, base));
-  expect(live).toContain("Sent · Not viewed · Saved");
+  expect(live).toContain("Sent | Not viewed | Saved");
   expect(live).not.toMatch(/Send update|Unpublished changes/);
   const locked = renderToStaticMarkup(
     createElement(EditorHeader, { ...base, locked: true }),
   );
-  expect(locked).toContain("Signed · locked");
+  expect(locked).toContain("Signed | locked");
   expect(locked).toContain("Duplicate as new draft");
   expect(locked).toMatch(/disabled=""[^>]*>Duplicate as new draft/);
   const offline = renderToStaticMarkup(
     createElement(EditorHeader, { ...base, offline: true }),
   );
-  expect(offline).toContain("Offline · saved on this device");
+  expect(offline).toContain("Offline | saved on this device");
   expect(offline).toMatch(
     /disabled="" title="Reconnect to send">Review &amp; send/,
   );

@@ -108,7 +108,7 @@ for (const width of [1440, 1024, 768]) {
     await error.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(error).toHaveCount(0);
     await expect(page.locator(".editor-save-status")).toHaveText(
-      width < 960 ? "Saved" : "Draft · Saved",
+      width < 960 ? "Saved" : "Draft | Saved",
     );
     await expect(paragraph).toHaveText(
       "Preserve my local text through conflict and retry.",

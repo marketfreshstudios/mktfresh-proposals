@@ -290,3 +290,62 @@ test("headings, list text, quote amounts and field search take focus on one tap"
   await sheet.getByRole("button", { name: "Close Fields" }).tap();
   expect(await document.evaluate((el) => el.scrollTop)).toBe(scrollBefore);
 });
+
+test("touching header and dock controls changes nothing before the click, even while editing text", async ({
+  page,
+}) => {
+  await openProposal(page);
+  await expect(page.locator(".phone-header-back")).toHaveAttribute(
+    "aria-label",
+    "Back to proposal",
+  );
+  const text = page.locator(".block-frame .tiptap").nth(1);
+  await text.scrollIntoViewIfNeeded();
+  await text.tap();
+  await expect(text).toBeFocused();
+  for (const selector of [
+    '.editor-phone-dock button[data-phone-tool="Quote"]',
+    '.editor-phone-dock button[data-phone-tool="Styles"]',
+    ".phone-header-back",
+    ".phone-header-more",
+  ]) {
+    // iOS holds a tap as a hover preview when the touch, before the click,
+    // makes new content appear. Replay the touch events up to the click.
+    const changed = await page.locator(selector).evaluate(async (el) => {
+      const visible = () =>
+        new Set(
+          [...document.querySelectorAll("body *")].filter((node) => {
+            const box = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return (
+              box.width > 0 &&
+              box.height > 0 &&
+              style.visibility !== "hidden" &&
+              style.opacity !== "0"
+            );
+          }),
+        );
+      const before = visible();
+      const box = el.getBoundingClientRect();
+      const init = {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: box.left + box.width / 2,
+        clientY: box.top + box.height / 2,
+        pointerId: 9,
+        pointerType: "touch",
+        isPrimary: true,
+      };
+      for (const type of ["pointerover", "pointerdown", "pointerup"])
+        el.dispatchEvent(new PointerEvent(type, init));
+      for (const type of ["mouseover", "mousemove"])
+        el.dispatchEvent(new MouseEvent(type, init));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      return [...visible()]
+        .filter((node) => !before.has(node))
+        .map((node) => node.className.toString());
+    });
+    expect(changed, selector).toEqual([]);
+  }
+});

@@ -2824,7 +2824,7 @@ function QuoteEditorContent({
         published={live ? "live" : "draft"}
         liveLabel={
           live
-            ? `Sent · ${p.first_viewed_at ? `Viewed ${readableDate(p.first_viewed_at, p.workspace_settings?.timezone)}` : "Not viewed"}`
+            ? `Sent | ${p.first_viewed_at ? `Viewed ${readableDate(p.first_viewed_at, p.workspace_settings?.timezone)}` : "Not viewed"}`
             : closed
               ? p.status === "expired"
                 ? "Expired"

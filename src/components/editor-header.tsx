@@ -201,26 +201,27 @@ export function EditorHeader({
         editingTitle={editingTitle}
         status={
           locked
-            ? "Signed · locked"
+            ? "Signed | locked"
             : stale
-              ? "Edited elsewhere · Reload"
+              ? "Edited elsewhere | Reload"
               : offline
-                ? "Offline · saved on this device"
+                ? "Offline | saved on this device"
                 : pending
                   ? "Saving…"
                   : error
                     ? isStaffSignedOut(error)
-                      ? "Signed out · Sign in"
-                      : "Couldn't save · Retry"
+                      ? "Signed out | Sign in"
+                      : "Couldn't save | Retry"
                     : dirty
                       ? "Unsaved changes"
                       : notLiveReason
-                        ? `Not live · ${notLiveReason}`
-                        : `${liveLabel ?? "Draft"} · Saved`
+                        ? `Not live | ${notLiveReason}`
+                        : `${liveLabel ?? "Draft"} | Saved`
         }
         locked={locked || stale}
         aiPending={aiPending}
         onBack={goBack}
+        backLabel={backLabel}
         onDone={onDone}
         onNextAi={onNextAi}
         onPreviewPdf={onPreviewPdf}
@@ -249,24 +250,24 @@ export function EditorHeader({
                 ? "dirty"
                 : "saved";
     const text = locked
-      ? "Signed · locked"
+      ? "Signed | locked"
       : stale
-        ? "Edited elsewhere · Reload"
+        ? "Edited elsewhere | Reload"
         : offline
-          ? "Offline · saved on this device"
+          ? "Offline | saved on this device"
           : pending
             ? "Saving…"
             : error
               ? isStaffSignedOut(error)
-                ? "Signed out · Sign in"
-                : "Couldn't save · Retry"
+                ? "Signed out | Sign in"
+                : "Couldn't save | Retry"
               : recovered
                 ? "Unsaved changes recovered"
                 : dirty
                   ? "Unsaved changes"
                   : notLiveReason
-                    ? `Not live · ${notLiveReason}`
-                    : `${liveLabel ?? (published === "live" ? "Sent · Not viewed" : "Draft")} · Saved`;
+                    ? `Not live | ${notLiveReason}`
+                    : `${liveLabel ?? (published === "live" ? "Sent | Not viewed" : "Draft")} | Saved`;
     const shortText = locked
       ? "Locked"
       : stale
@@ -312,7 +313,7 @@ export function EditorHeader({
         <div
           className="editor-save-status"
           data-state={state}
-          title={tablet ? `${text} · ${tooltip}` : tooltip}
+          title={tablet ? `${text} | ${tooltip}` : tooltip}
           role="status"
         >
           <span className="editor-status-dot" aria-hidden="true" />
@@ -444,7 +445,7 @@ export function EditorHeader({
             <button
               type="button"
               className="editor-ai-pill"
-              aria-label={`${aiPending} to review${tablet ? "" : " · Next"}`}
+              aria-label={`${aiPending} to review${tablet ? "" : " | Next"}`}
               title="Go to the next unreviewed AI section"
               disabled={locked || stale}
               onClick={onNextAi}
@@ -454,7 +455,7 @@ export function EditorHeader({
               {!tablet && !compact && (
                 <>
                   {" "}
-                  · Next{" "}
+                  | Next{" "}
                   <Icon name="chevron-right" className="disclosure-icon" />
                 </>
               )}
