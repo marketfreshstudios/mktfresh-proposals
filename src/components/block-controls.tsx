@@ -616,6 +616,7 @@ export function BlockFrame({
   const frame = useRef<HTMLDivElement>(null);
   const [showAppearance, setShowAppearance] = useState(false);
   const boxStyle = blockBoxStyle(appearance?.value);
+  const dockInsert = layout.phone && !layout.compactPhone && !selectionBar;
   const selection = useBlockSelection();
   const clipboard = useStyleClipboard();
   const documentBinding = useContext(DocumentBindingContext);
@@ -851,15 +852,22 @@ export function BlockFrame({
                     </>
                   }
                   blockType={blockType}
+                  insertActions={
+                    dockInsert && insert ? (
+                      <GutterInsert layout="bar" onAdd={insert} />
+                    ) : undefined
+                  }
                   objectAction={objectAction}
                   plainText={plainText}
                 />
               )}
-              <GutterInsert
-                onAdd={insert}
-                dragHandle={dragHandle}
-                layout={layout.phone ? "edges" : "gutter"}
-              />
+              {!dockInsert && (
+                <GutterInsert
+                  onAdd={insert}
+                  dragHandle={dragHandle}
+                  layout={layout.phone ? "edges" : "gutter"}
+                />
+              )}
             </>
           )}
         {layout.desktop && !layout.locked && onReviewed && (

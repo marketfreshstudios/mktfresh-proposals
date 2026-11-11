@@ -20,7 +20,7 @@ import { FieldOptions } from "./field-options";
 import { useVisibleEditorAction } from "./use-visible-editor-action";
 import { useEditorHistory, textHistoryScope } from "./editor-history";
 import { Node, Extension, mergeAttributes } from "@tiptap/core";
-import { Plugin } from "@tiptap/pm/state";
+import { Plugin, TextSelection } from "@tiptap/pm/state";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { blockText, type TextLevel } from "../lib/editor-document";
 import StarterKit from "@tiptap/starter-kit";
@@ -96,6 +96,7 @@ export function FieldEditor({
   const toolbar = standalone ? undefined : scope;
   const root = useRef<HTMLDivElement>(null);
   const cursor = useRef<{ from: number; to: number } | null>(null);
+  const touchTap = useRef(false);
   const styleChange = useRef(onTextStyle);
   styleChange.current = onTextStyle;
   const reveal = useRef(onBeforeInsert);
@@ -170,6 +171,41 @@ export function FieldEditor({
         return false;
       },
       handleDOMEvents: {
+        pointerdown: (view, event) => {
+          touchTap.current =
+            event.pointerType === "touch" &&
+            !!view.dom.closest('.quote-workspace[data-shell-mode="phone"]');
+          return false;
+        },
+        pointercancel: () => {
+          touchTap.current = false;
+          return false;
+        },
+        click: (view, event) => {
+          const tapped = touchTap.current;
+          touchTap.current = false;
+          if (
+            !tapped ||
+            event.detail !== 1 ||
+            !view.hasFocus() ||
+            !window.getSelection()?.isCollapsed
+          )
+            return false;
+
+          // WebKit can snap a first tap to the end of a word. Use the
+          // rendered character position without requesting another scroll.
+          const point = view.posAtCoords({
+            left: event.clientX,
+            top: event.clientY,
+          });
+          if (!point) return false;
+          const position = view.state.doc.resolve(point.pos);
+          if (position.parent.inlineContent)
+            view.dispatch(
+              view.state.tr.setSelection(new TextSelection(position)),
+            );
+          return false;
+        },
         dragover: (view, event) =>
           imageOptions.current && editor
             ? bandImageDragOver(editor, imageOptions.current, event)
