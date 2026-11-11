@@ -1320,3 +1320,17 @@ The record shows compact signature metadata with the original signature
 mark. Full signing evidence remains available on the Evidence view.
 Countersigned records fill all five milestone markers and retain the
 accessible current-step label. The email log starts collapsed.
+
+### R24 phone and tablet
+
+The phone record uses the same authorized actions in its bottom bar and
+keeps Preview as client and Edit available in the record menu. Details
+follows Billing on open records and moves before Quote when complete.
+The compact progress bar and disclosures use the existing milestones,
+engagement data and event history. The signed phone and tablet frames
+omit Expires once the client signs.
+
+The phone countersign sheet keeps the existing agreement consent and
+the separate authorization for delegates. The selected items and
+separate totals appear in the sheet, with the frozen agreement and
+version available under Read the agreement.
