@@ -1,6 +1,6 @@
 "use client";
 import { YeswellBrand } from "../yeswell-brand";
-import { ChevronLeft, Ellipsis } from "lucide-react";
+import { ChevronLeft, Ellipsis, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { ToolbarPopover } from "../toolbar-popover";
 import { useHistoryStatus } from "../editor-history";
@@ -88,8 +88,14 @@ export function PhoneEditorHeader({
         <Ellipsis size={18} aria-hidden="true" />
       </button>
       {editingTitle && (
-        <button type="button" className="phone-header-done" onClick={onDone}>
-          Done
+        <button
+          type="button"
+          className="phone-header-done round-icon"
+          aria-label="Done"
+          title="Done"
+          onClick={onDone}
+        >
+          <X size={20} aria-hidden="true" />
         </button>
       )}
       {open && (
